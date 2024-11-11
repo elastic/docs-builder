@@ -14,7 +14,7 @@ public class CardBlock(DirectiveBlockParser parser, Dictionary<string, string> p
 
 	public string? Footer { get; set; }
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Arguments;
 		Link = Properties.GetValueOrDefault("link");

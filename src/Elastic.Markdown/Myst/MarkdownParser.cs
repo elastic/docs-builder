@@ -36,30 +36,37 @@ public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context)
 	// TODO only scan for yaml front matter and toc information
 	public Task<MarkdownDocument> QuickParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context);
-		return ParseAsync(path, context, ctx);
+		var context = new ParserContext(this, path, null, Context)
+		{
+			SkipValidation = true
+		};
+		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
 		var context = new ParserContext(this, path, matter, Context);
-		return ParseAsync(path, context, ctx);
+		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-	private async Task<MarkdownDocument> ParseAsync(IFileInfo path, MarkdownParserContext context, Cancel ctx)
+	private async Task<MarkdownDocument> ParseAsync(
+		IFileInfo path,
+		MarkdownParserContext context,
+		MarkdownPipeline pipeline,
+		Cancel ctx)
 	{
 		if (path.FileSystem is FileSystem)
 		{
 			//real IO optimize through UTF8 stream reader.
 			await using var streamReader = new Utf8StreamReader(path.FullName, fileOpenMode: FileOpenMode.Throughput);
 			var inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, Pipeline, context);
+			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
 			return markdownDocument;
 		}
 		else
 		{
 			var inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, Pipeline, context);
+			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
 			return markdownDocument;
 		}
 	}

@@ -7,15 +7,16 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.SiteMap;
 
-public class NavigationTests
+public class NavigationTests(ITestOutputHelper output)
 {
 	[Fact]
 	public async Task CreatesDefaultOutputDirectory()
 	{
-		var logger = NullLoggerFactory.Instance;
+		var logger = new TestLoggerFactory(output);
 		var readFs = new FileSystem(); //use real IO to read docs.
 		var writeFs = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
 		{

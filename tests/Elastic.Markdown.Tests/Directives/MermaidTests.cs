@@ -4,10 +4,11 @@
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MermaidBlockTests() : DirectiveTest<MermaidBlock>(
+public class MermaidBlockTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
 """
 ```{mermaid} /_static/img/observability.png
 flowchart LR

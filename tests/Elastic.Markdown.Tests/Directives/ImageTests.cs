@@ -4,10 +4,11 @@
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ImageBlockTests() : DirectiveTest<ImageBlock>(
+public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
 """
 ```{image} /_static/img/observability.png
 :alt: Elasticsearch
@@ -28,7 +29,7 @@ public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 	}
 }
 
-public class FigureTests() : DirectiveTest<ImageBlock>(
+public class FigureTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
 """
 ```{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true
 :label: myFigure

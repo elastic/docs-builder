@@ -25,7 +25,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 		}
 	}
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Classes = Properties.GetValueOrDefault("class");
 		CrossReferenceName = Properties.GetValueOrDefault("name");
@@ -38,9 +38,9 @@ public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, strin
 	: AdmonitionBlock(parser, "admonition", properties)
 {
 	// ReSharper disable once RedundantOverriddenMember
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
-		base.FinalizeAndValidate();
+		base.FinalizeAndValidate(context);
 		Classes = $"dropdown {Classes}";
 	}
 }

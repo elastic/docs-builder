@@ -29,6 +29,8 @@ public class DiagnosticsChannel
 		_ctxSource.Cancel();
 	}
 
+	public ValueTask<bool> WaitToWrite() => _channel.Writer.WaitToWriteAsync();
+
 	public void Write(Diagnostic diagnostic)
 	{
 		var written = _channel.Writer.TryWrite(diagnostic);
@@ -84,10 +86,18 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 
 	public async Task StartAsync(Cancel ctx)
 	{
+		await Channel.WaitToWrite();
 		while (!Channel.CancellationToken.IsCancellationRequested)
 		{
-			while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-				Drain();
+			try
+			{
+				while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+					Drain();
+			}
+			catch
+			{
+				//ignore
+			}
 		}
 		Drain();
 

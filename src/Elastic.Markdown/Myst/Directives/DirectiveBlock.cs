@@ -66,7 +66,8 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
     /// <summary>
     /// Allows blocks to finalize setting properties once fully parsed
     /// </summary>
-    public abstract void FinalizeAndValidate();
+    /// <param name="context"></param>
+    public abstract void FinalizeAndValidate(ParserContext context);
 
 	protected void ParseBool(string key, Action<bool> setter)
 	{

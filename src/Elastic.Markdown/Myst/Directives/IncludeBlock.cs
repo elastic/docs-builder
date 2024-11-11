@@ -28,7 +28,7 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		var includePath = Arguments; //todo validate
 		Literal |= bool.TryParse(Properties.GetValueOrDefault("literal"), out var b) && b;

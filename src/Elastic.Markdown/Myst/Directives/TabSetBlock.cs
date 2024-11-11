@@ -10,7 +10,7 @@ public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string>
 	: DirectiveBlock(parser, properties)
 {
 	public int Index { get; set; }
-	public override void FinalizeAndValidate() => Index = FindIndex();
+	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
 
 	private int _index = -1;
 	public int FindIndex()
@@ -28,7 +28,7 @@ public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string
 	public int Index { get; set; }
 	public int TabSetIndex { get; set; }
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Arguments ?? "Unnamed Tab";
 		Index = Parent!.IndexOf(this);
@@ -80,7 +80,7 @@ public class GridBlock(DirectiveBlockParser parser, Dictionary<string, string> p
 	public string? ClassRow { get; set; }
 
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		//todo we always assume 4 integers
 		if (!string.IsNullOrEmpty(Arguments))
@@ -124,17 +124,7 @@ public class GridBlock(DirectiveBlockParser parser, Dictionary<string, string> p
 public class GridItemCardBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
-	public override void FinalizeAndValidate()
-	{
-	}
-}
-
-public class UnknownDirectiveBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
-{
-	public string Directive => directive;
-
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 	}
 }

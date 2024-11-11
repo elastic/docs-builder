@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using FluentAssertions;
 using Markdig.Syntax.Inlines;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class InlineImageTest() : InlineTest<LinkInline>(
+public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
 """
 ![Elasticsearch](/_static/img/observability.png){w=350px align=center}
 """

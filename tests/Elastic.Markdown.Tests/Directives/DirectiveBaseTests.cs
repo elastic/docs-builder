@@ -9,11 +9,13 @@ using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")]string content) : DirectiveTest(content)
+public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	: DirectiveTest(output, content)
 	where TDirective : DirectiveBlock
 {
 	protected TDirective? Block { get; private set; }
@@ -31,16 +33,28 @@ public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")]s
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 
 }
+
+public class TestDiagnosticsCollector(ILoggerFactory logger)
+	: DiagnosticsCollector(logger, [])
+{
+	private readonly List<Diagnostic> _diagnostics = new();
+
+	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
+
+	protected override void HandleItem(Diagnostic diagnostic) => _diagnostics.Add(diagnostic);
+}
+
 public abstract class DirectiveTest : IAsyncLifetime
 {
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
 	protected MarkdownDocument Document { get; private set; }
 	protected MockFileSystem FileSystem { get; }
+	protected TestDiagnosticsCollector Collector { get; }
 
-	protected DirectiveTest([LanguageInjection("markdown")]string content)
+	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
 	{
-		var logger = NullLoggerFactory.Instance;
+		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/source/index.md", new MockFileData(content) }
@@ -51,11 +65,12 @@ public abstract class DirectiveTest : IAsyncLifetime
 
 		var file = FileSystem.FileInfo.New("docs/source/index.md");
 		var root = FileSystem.DirectoryInfo.New(Paths.Root.FullName);
+		Collector = new TestDiagnosticsCollector(logger);
 		var context = new BuildContext
 		{
 			ReadFileSystem = FileSystem,
 			WriteFileSystem = FileSystem,
-			Collector = new DiagnosticsCollector(logger, [])
+			Collector = Collector
 		};
 		var parser = new MarkdownParser(root, context);
 
@@ -66,8 +81,15 @@ public abstract class DirectiveTest : IAsyncLifetime
 
 	public virtual async Task InitializeAsync()
 	{
+		var collectTask =  Task.Run(async () => await Collector.StartAsync(default), default);
+
 		Document = await File.ParseFullAsync(default);
 		Html = await File.CreateHtmlAsync(File.YamlFrontMatter, default);
+		Collector.Channel.TryComplete();
+
+		await collectTask;
+		await Collector.Channel.Reader.Completion;
+		await Collector.StopAsync(default);
 	}
 
 	public Task DisposeAsync() => Task.CompletedTask;

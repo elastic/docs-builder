@@ -20,7 +20,7 @@ public class CodeBlock(DirectiveBlockParser parser, string directive, Dictionary
 		}
 	}
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Caption = Properties.GetValueOrDefault("caption");
 		CrossReferenceName = Properties.GetValueOrDefault("name");

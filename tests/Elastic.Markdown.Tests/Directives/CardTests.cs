@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class CardTests() : DirectiveTest<CardBlock>(
+public class CardTests(ITestOutputHelper output) : DirectiveTest<CardBlock>(output,
 """
 ```{card} Card title
 Card content
@@ -19,7 +20,7 @@ Card content
 
 }
 
-public class LinkCardTests() : DirectiveTest<CardBlock>(
+public class LinkCardTests(ITestOutputHelper output) : DirectiveTest<CardBlock>(output,
 """
 ```{card} Clickable Card
 :link: https://elastic.co/docs

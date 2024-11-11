@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Markdig.Syntax;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class VersionTests(string directive) : DirectiveTest<VersionBlock>(
+public abstract class VersionTests(ITestOutputHelper output, string directive) : DirectiveTest<VersionBlock>(output,
 $$"""
 ```{{{directive}}}
 Version brief summary
@@ -22,23 +24,23 @@ A regular paragraph.
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be(directive);
 }
 
-public class VersionAddedTests() : VersionTests("versionadded")
+public class VersionAddedTests(ITestOutputHelper output) : VersionTests(output, "versionadded")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Added");
 }
 
-public class VersionChangedTests() : VersionTests("versionchanged")
+public class VersionChangedTests(ITestOutputHelper output) : VersionTests(output, "versionchanged")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Changed");
 }
-public class VersionRemovedTests() : VersionTests("versionremoved")
+public class VersionRemovedTests(ITestOutputHelper output) : VersionTests(output, "versionremoved")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Version Removed");
 }
-public class VersionDeprectatedTests() : VersionTests("deprecated")
+public class VersionDeprectatedTests(ITestOutputHelper output) : VersionTests(output, "deprecated")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Deprecated");

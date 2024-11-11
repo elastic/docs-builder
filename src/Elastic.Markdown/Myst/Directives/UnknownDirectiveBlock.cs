@@ -1,11 +1,14 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 namespace Elastic.Markdown.Myst.Directives;
 
-public class SideBarBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
+public class UnknownDirectiveBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
+	public string Directive => directive;
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 	}

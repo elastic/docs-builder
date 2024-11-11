@@ -4,11 +4,12 @@
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
 
-public class IncludeTests() : DirectiveTest<IncludeBlock>(
+public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
 ```{include} snippets/test.md
 ```
@@ -35,7 +36,7 @@ public class IncludeTests() : DirectiveTest<IncludeBlock>(
 }
 
 
-public class IncludeSubstitutionTests() : DirectiveTest<IncludeBlock>(
+public class IncludeSubstitutionTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
 ---
 title: My Document

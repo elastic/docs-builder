@@ -16,7 +16,7 @@ public class TocTreeBlock(DirectiveBlockParser parser, Dictionary<string, string
 {
 	public OrderedList<TocTreeLink> Links { get; } = new();
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 	}
 }

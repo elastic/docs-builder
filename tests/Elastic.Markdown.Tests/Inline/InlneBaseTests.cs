@@ -5,16 +5,16 @@ using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
-using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Microsoft.Extensions.Logging.Abstractions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class LeafTest<TDirective>([LanguageInjection("markdown")]string content) : InlineTest(content)
+public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	: InlineTest(output, content)
 	where TDirective : LeafInline
 {
 	protected TDirective? Block { get; private set; }
@@ -37,7 +37,8 @@ public abstract class LeafTest<TDirective>([LanguageInjection("markdown")]string
 
 }
 
-public abstract class InlineTest<TDirective>([LanguageInjection("markdown")]string content) : InlineTest(content)
+public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	: InlineTest(output, content)
 	where TDirective : ContainerInline
 {
 	protected TDirective? Block { get; private set; }
@@ -65,9 +66,9 @@ public abstract class InlineTest : IAsyncLifetime
 	protected string Html { get; private set; }
 	protected MarkdownDocument Document { get; private set; }
 
-	protected InlineTest([LanguageInjection("markdown")]string content)
+	protected InlineTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
 	{
-		var logger = NullLoggerFactory.Instance;
+		var logger = new TestLoggerFactory(output);
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/source/index.md", new MockFileData(content) }

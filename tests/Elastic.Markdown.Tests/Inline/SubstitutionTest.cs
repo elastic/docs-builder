@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Substitution;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class SubstitutionTest() : LeafTest<SubstitutionLeaf>(
+public class SubstitutionTest(ITestOutputHelper output) : LeafTest<SubstitutionLeaf>(output,
 """
 ---
 sub:
@@ -30,7 +31,7 @@ not a comment
 			);
 }
 
-public class NeedsDoubleBrackets() : InlineTest(
+public class NeedsDoubleBrackets(ITestOutputHelper output) : InlineTest(output,
 """
 ---
 sub:

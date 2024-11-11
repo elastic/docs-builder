@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class SideBarTests() : DirectiveTest<SideBarBlock>(
+public class SideBarTests(ITestOutputHelper output) : DirectiveTest<SideBarBlock>(output,
 """
 ```{sidebar}
 This code is very helpful.

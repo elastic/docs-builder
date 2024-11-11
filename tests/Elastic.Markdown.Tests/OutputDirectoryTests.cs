@@ -6,15 +6,16 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests;
 
-public class OutputDirectoryTests
+public class OutputDirectoryTests(ITestOutputHelper output)
 {
 	[Fact]
 	public async Task CreatesDefaultOutputDirectory()
 	{
-		var logger = NullLoggerFactory.Instance;
+		var logger = new TestLoggerFactory(output);
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/source/index.md", new MockFileData("test") }

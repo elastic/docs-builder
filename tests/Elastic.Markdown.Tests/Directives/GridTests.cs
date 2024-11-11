@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class GridTests() : DirectiveTest<GridBlock>(
+public class GridTests(ITestOutputHelper output) : DirectiveTest<GridBlock>(output,
 """
 ````{grid} 2 2 3 4
 ```{grid-item-card} Admonitions

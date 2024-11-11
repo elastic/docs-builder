@@ -56,7 +56,7 @@ public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> 
 
 	public string ImageUrl { get; private set; } = default!;
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 		ImageUrl = Arguments ?? string.Empty; //todo validate
 		Classes = Properties.GetValueOrDefault("class");

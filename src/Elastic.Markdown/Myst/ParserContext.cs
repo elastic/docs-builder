@@ -48,4 +48,5 @@ public class ParserContext : MarkdownParserContext
 	public IFileInfo Path { get; }
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
+	public bool SkipValidation { get; init; }
 }

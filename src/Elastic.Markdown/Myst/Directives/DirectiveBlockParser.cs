@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Collections.Frozen;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using static System.StringSplitOptions;
@@ -36,6 +37,20 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	private readonly string[] _versionBlocks = [ "versionadded", "versionchanged", "versionremoved", "deprecated" ];
 
 	private readonly string[] _codeBlocks = [ "code", "code-block", "sourcecode"];
+
+	private readonly FrozenDictionary<string, int> _unsupportedBlocks = new Dictionary<string, int>
+	{
+		{ "bibliography", 5 },
+		{ "blockquote", 6 },
+		{ "csv-table", 9 },
+		{ "iframe", 14 },
+		{ "list-table", 17 },
+		{ "myst", 22 },
+		{ "topic", 24 },
+		{ "exercise", 30 },
+		{ "solution", 31 },
+		{ "toctree", 32 },
+	}.ToFrozenDictionary();
 
     protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
     {
@@ -108,6 +123,10 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		    if (info.IndexOf($"{{{code}}}") > 0)
 			    return new CodeBlock(this, code, _admonitionData);
 	    }
+	    // TODO alternate lookup .NET 9
+	    var directive = info.ToString().Trim(['{', '}', '`']);
+	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
+		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId);
 
 	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData);
     }
@@ -115,7 +134,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
     public override bool Close(BlockProcessor processor, Block block)
     {
 	    if (block is DirectiveBlock directiveBlock)
-		    directiveBlock.FinalizeAndValidate();
+		    directiveBlock.FinalizeAndValidate(processor.GetContext());
 
 
 	    if (block is not TocTreeBlock toc)

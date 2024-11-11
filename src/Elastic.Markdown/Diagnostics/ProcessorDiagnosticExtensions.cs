@@ -12,6 +12,8 @@ public static class ProcessorDiagnosticExtensions
 {
 	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message)
 	{
+		var context = processor.GetContext();
+		if (context.SkipValidation) return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
@@ -21,6 +23,53 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		processor.GetBuildContext().Collector.Channel.Write(d);
+		context.Build.Collector.Channel.Write(d);
+	}
+
+
+	public static void EmitWarning(this BlockProcessor processor, int line, int column, int length, string message)
+	{
+		var context = processor.GetContext();
+		if (context.SkipValidation) return;
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = processor.GetContext().Path.FullName,
+			Column = column,
+			Line = line,
+			Message = message,
+			Length = length
+		};
+		context.Build.Collector.Channel.Write(d);
+	}
+
+	public static void EmitError(this ParserContext context, int line, int column, int length, string message)
+	{
+		if (context.SkipValidation) return;
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = context.Path.FullName,
+			Column = column,
+			Line = line,
+			Message = message,
+			Length = length
+		};
+		context.Build.Collector.Channel.Write(d);
+	}
+
+	public static void EmitWarning(this ParserContext context, int line, int column, int length, string message)
+	{
+		if (context.SkipValidation) return;
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = context.Path.FullName,
+			Column = column,
+			Line = line,
+			Message = message,
+			Length = length
+		};
+		context.Build.Collector.Channel.Write(d);
 	}
 }

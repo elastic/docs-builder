@@ -21,7 +21,7 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, Diction
 		}
 	}
 
-	public override void FinalizeAndValidate()
+	public override void FinalizeAndValidate(ParserContext context)
 	{
 	}
 }

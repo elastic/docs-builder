@@ -4,11 +4,12 @@
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
 
-public class LiteralIncludeUsingPropertyTests() : DirectiveTest<IncludeBlock>(
+public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
 ```{include} snippets/test.txt
 :literal: true
@@ -35,7 +36,7 @@ public class LiteralIncludeUsingPropertyTests() : DirectiveTest<IncludeBlock>(
 }
 
 
-public class LiteralIncludeTests() : DirectiveTest<IncludeBlock>(
+public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
 ```{literalinclude} snippets/test.md
 ```
