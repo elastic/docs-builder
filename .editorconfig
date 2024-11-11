@@ -7,6 +7,9 @@ indent_size = 4
 # Spell checker configuration
 spelling_exclusion_path = "./build/exclusion.dic"
 
+[*.{fs,fsx,cs,vb}]
+file_header_template=Licensed to Elasticsearch B.V under one or more agreements.\nElasticsearch B.V licenses this file to you under the Apache 2.0 License.\nSee the LICENSE file in the project root for more information
+
 [*.{fs,fsx}]
 indent_style = space
 indent_size = 4
