@@ -22,3 +22,6 @@ public class ImageFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string mim
 
 public class StaticFile(IFileInfo sourceFile, IDirectoryInfo rootPath)
 	: DocumentationFile(sourceFile, rootPath);
+
+public class ExcludedFile(IFileInfo sourceFile, IDirectoryInfo rootPath)
+	: DocumentationFile(sourceFile, rootPath);

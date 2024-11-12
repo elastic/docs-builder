@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 
 public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{include} snippets/test.md
+```{include} _snippets/test.md
 ```
 """
 )
@@ -20,7 +20,7 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		FileSystem.AddFile(@"docs/source/snippets/test.md", inclusion);
+		FileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
 		return base.InitializeAsync();
 	}
 
@@ -43,7 +43,7 @@ title: My Document
 sub:
   foo: "bar"
 ---
-```{include} snippets/test.md
+```{include} _snippets/test.md
 ```
 """
 )
@@ -52,7 +52,7 @@ sub:
 	{
 		// language=markdown
 		var inclusion = "*Hello {{foo}}*";
-		FileSystem.AddFile(@"docs/source/snippets/test.md", inclusion);
+		FileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
 		return base.InitializeAsync();
 	}
 

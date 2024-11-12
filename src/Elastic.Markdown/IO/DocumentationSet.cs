@@ -34,16 +34,19 @@ public class DocumentationSet
 		var configurationFile = context.ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
 		Configuration = new ConfigurationFile(configurationFile, SourcePath, context);
 
-		Files = context.ReadFileSystem.Directory.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)
+		Files = context.ReadFileSystem.Directory
+			.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
 			{
 				".svg" => new ImageFile(file, SourcePath, "image/svg+xml"),
 				".png" => new ImageFile(file, SourcePath),
-				".md" => new MarkdownFile(file, SourcePath, MarkdownParser, context),
+				".md" => CreateMarkDownFile(file, context),
 				_ => new StaticFile(file, SourcePath)
 			})
+
 			.ToList();
+
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
@@ -59,6 +62,25 @@ public class DocumentationSet
 			.ToDictionary(k => k.Key, v => v.ToArray());
 
 		Tree = new DocumentationFolder(markdownFiles, 0, "");
+	}
+
+	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
+	{
+		if (Configuration.Exclude.Any(g => g.IsMatch(file.Name)))
+			return new ExcludedFile(file, SourcePath);
+
+		var relativePath = Path.GetRelativePath(SourcePath.FullName, file.FullName);
+		if (Configuration.Files.Contains(relativePath))
+			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
+
+		if (Configuration.Globs.Any(g => g.IsMatch(relativePath)))
+			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
+
+		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith("_"))
+			return new ExcludedFile(file, SourcePath);
+
+		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");
+		return new ExcludedFile(file, SourcePath);
 	}
 
 	public DocumentationFolder Tree { get; }

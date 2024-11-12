@@ -34,7 +34,7 @@ ELSER is a model trained by Elastic. If you have an Elasticsearch deployment, th
 
 ## Create an inference endpoint
 
-```{include} snippets/inference-endpoint.md
+```{include} _snippets/inference-endpoint.md
 ```
 
 ```{code-block} bash
@@ -57,7 +57,7 @@ You don’t need to download and deploy the ELSER model upfront, the API request
 
 ## Create the index mapping
 
-```{include} snippets/index-mapping.md
+```{include} _snippets/index-mapping.md
 ```
 
 ```{code-block} bash

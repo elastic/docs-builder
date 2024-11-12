@@ -3,14 +3,30 @@ exclude:
   - '_*.md'
 toc:
   - file: index.md
-  - file: config.md
-  - file: search.md
+  - folder: markup
+  - folder: elastic
     children:
-      - file: search-part2.md
-      - folder: search
-  - folder: my-folder1
-  - folder: my-folder2
+      - file: index.md
+      - folder: observability
+      - folder: reference
+      - folder: semantic-search
+      - folder: search-labs
+        children:
+          - file: index.md
+          - file: chat.md
+            children:
+              - file: chat/req.md
+              - file: chat/rag.md
+          - file: search.md
+            children:
+              - file: search/req.md
+              - file: search/setup.md
+          - file: install.md
+            children:
+              - file: install/cloud.md
+              - file: install/docker.md
+  - folder: nested
     children:
-      - file: subpath/file.md
-      - file: file.md
-      - folder: sub/folder
+      - folder: content
+      - file: index.md
+  - folder: versioning

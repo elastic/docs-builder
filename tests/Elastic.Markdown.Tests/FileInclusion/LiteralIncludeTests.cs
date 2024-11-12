@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 
 public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{include} snippets/test.txt
+```{include} _snippets/test.txt
 :literal: true
 ```
 """
@@ -21,7 +21,7 @@ public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : Direct
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		FileSystem.AddFile(@"docs/source/snippets/test.txt", inclusion);
+		FileSystem.AddFile(@"docs/source/_snippets/test.txt", inclusion);
 		return base.InitializeAsync();
 	}
 
@@ -38,7 +38,7 @@ public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : Direct
 
 public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{literalinclude} snippets/test.md
+```{literalinclude} _snippets/test.md
 ```
 """
 )
@@ -47,7 +47,7 @@ public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<Inclu
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		FileSystem.AddFile(@"docs/source/snippets/test.md", inclusion);
+		FileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
 		return base.InitializeAsync();
 	}
 

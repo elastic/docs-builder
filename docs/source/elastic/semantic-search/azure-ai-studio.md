@@ -39,7 +39,7 @@ The examples in this tutorial use models available through [Azure AI Studio](htt
 
 ## Create an inference endpoint
 
-```{include} snippets/inference-endpoint.md
+```{include} _snippets/inference-endpoint.md
 ```
 
 ```{code-block} bash
@@ -67,7 +67,7 @@ PUT _inference/text_embedding/azure_ai_studio_embeddings
 
 ## Create the index mapping
 
-```{include} snippets/index-mapping.md
+```{include} _snippets/index-mapping.md
 ```
 
 ```{code-block} bash
