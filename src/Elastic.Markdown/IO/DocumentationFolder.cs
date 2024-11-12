@@ -20,18 +20,29 @@ public class DocumentationFolder
 	public DocumentationFolder(IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
-		int level = 0)
+		int level = 0,
+		MarkdownFile? index = null)
 	{
 		Level = level;
+		Index = index;
 
 		foreach (var tocItem in toc)
 		{
 			if (tocItem is TocFile file)
 			{
-				if (lookup.TryGetValue(file.Path, out var d) && d is MarkdownFile md)
-					FilesInOrder.Add(md);
-				if (file.Path.EndsWith("index.md") && d is MarkdownFile index)
-					Index = index;
+				if (!lookup.TryGetValue(file.Path, out var d) || d is not MarkdownFile md)
+					continue;
+
+				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
+				{
+					var group = new DocumentationFolder(file.Children, lookup, folderLookup, level + 1, virtualIndex);
+					GroupsInOrder.Add(group);
+					continue;
+				}
+
+				FilesInOrder.Add(md);
+				if (file.Path.EndsWith("index.md") && d is MarkdownFile i)
+					Index ??= i;
 			}
 			else if (tocItem is TocFolder folder)
 			{
