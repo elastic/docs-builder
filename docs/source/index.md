@@ -23,7 +23,6 @@ Here's my warning
 ```
 ````
 
-
 ```javascript
 const variable = "hello world";
 ```
@@ -43,6 +42,7 @@ Read the [quick start guide](https://github.com/elastic/markitpy/tree/main), clo
 :hidden:
 
 elastic/index.md
+migration/index.md
 markup/index.md
 nested/index.md
 versioning/index.md
