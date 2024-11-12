@@ -16,8 +16,8 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	[Fact]
 	public void ParsesNestedFoldersAndPrefixesPaths()
 	{
-		Configuration.Folders.Should().NotBeNullOrEmpty();
-		Configuration.Folders.Should()
+		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
+		Configuration.ImplicitFolders.Should()
 			.Contain("markup")
 			.And.Contain("elastic/observability");
 	}

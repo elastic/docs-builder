@@ -21,7 +21,7 @@ public class ConfigurationFile : DocumentationFile
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
 
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
-	public HashSet<string> Folders { get; } = new(StringComparer.OrdinalIgnoreCase);
+	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public Glob[] Globs { get; } = [];
 
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context)
@@ -72,7 +72,7 @@ public class ConfigurationFile : DocumentationFile
 					break;
 			}
 		}
-		Globs = Folders.Select(f=> Glob.Parse($"{f}/*.md")).ToArray();
+		Globs = ImplicitFolders.Select(f=> Glob.Parse($"{f}/*.md")).ToArray();
 	}
 
 	private List<ITocItem> ReadChildren(KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
@@ -99,7 +99,8 @@ public class ConfigurationFile : DocumentationFile
 	{
 		string? file = null;
 		string? folder = null;
-		var found = false;
+		var fileFound = false;
+		var folderFound = false;
 		IReadOnlyCollection<ITocItem>? children = null;
 		foreach (var entry in tocEntry.Children)
 		{
@@ -107,10 +108,10 @@ public class ConfigurationFile : DocumentationFile
 			switch (key)
 			{
 				case "file":
-					file = ReadFile(entry, parentPath);
+					file = ReadFile(entry, parentPath, out fileFound);
 					break;
 				case "folder":
-					folder = ReadString(entry);
+					folder = ReadFolder(entry, parentPath, out folderFound);
 					parentPath += $"/{folder}";
 					break;
 				case "children":
@@ -120,30 +121,47 @@ public class ConfigurationFile : DocumentationFile
 		}
 
 		if (file is not null)
-			return new TocFile(file, found, children ?? []);
+			return new TocFile($"{parentPath}/{file}".TrimStart('/'), fileFound, children ?? []);
 
 		if (folder is not null)
 		{
 			if (children is null)
-				Folders.Add(parentPath.TrimStart('/'));
+				ImplicitFolders.Add(parentPath.TrimStart('/'));
 
-			return new TocFolder(folder, children ?? []);
+			return new TocFolder($"{parentPath}".TrimStart('/'), folderFound, children ?? []);
 		}
 
 		return null;
 	}
 
-	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
+	private string? ReadFolder(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
 	{
-		var file = ReadString(entry);
-		if (file is not null)
+		found = false;
+		var folder = ReadString(entry);
+		if (folder is not null)
 		{
-			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), file);
-			if (!_context.ReadFileSystem.FileInfo.New(path).Exists)
-				EmitError($"File '{path}' does not exist", entry.Key);
+			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), folder);
+			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
+				EmitError($"Directory '{path}' does not exist", entry.Key);
+			else
+				found = true;
 		}
+		return folder;
+	}
 
+	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	{
+		found = false;
+		var file = ReadString(entry);
+		if (file is null) return null;
+
+		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), file);
+		if (!_context.ReadFileSystem.FileInfo.New(path).Exists)
+			EmitError($"File '{path}' does not exist", entry.Key);
+		else
+			found = true;
 		Files.Add((parentPath + "/" + file).TrimStart('/'));
+
 		return file;
 	}
 
@@ -210,31 +228,3 @@ public class ConfigurationFile : DocumentationFile
 	}
 }
 
-public interface ITocItem;
-
-public record TocFile(string Path, bool Found, IReadOnlyCollection<ITocItem> Children) : ITocItem;
-
-public record TocFolder(string Path, IReadOnlyCollection<ITocItem> Children) : ITocItem;
-
-
-/*
-exclude:
-  - notes.md
-  - '**ignore.md'
-toc:
-- file: index.md
-- file: config.md
-- file: search.md
-children:
-- file: search-part2.md
-- folder: search
-- folder: my-folder1
-exclude:
-- '_*.md'
-- folder: my-folder2
-children:
-- file: subpath/file.md
-- file: file.md
-- pattern: *.md
-- folder: sub/folder
-*/

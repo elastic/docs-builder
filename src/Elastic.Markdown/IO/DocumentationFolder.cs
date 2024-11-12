@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using Markdig.Helpers;
 
 namespace Elastic.Markdown.IO;
@@ -8,75 +9,66 @@ namespace Elastic.Markdown.IO;
 public class DocumentationFolder
 {
 	public MarkdownFile? Index { get; }
-	private MarkdownFile[] Files { get; }
-	private DocumentationFolder[] Nested { get; }
 
-	public OrderedList<MarkdownFile> FilesInOrder { get; private set; }
-	public OrderedList<DocumentationFolder> GroupsInOrder { get; private set; }
+	public List<MarkdownFile> FilesInOrder { get; } = new();
+	public List<DocumentationFolder> GroupsInOrder { get; } = new();
+
+	private HashSet<MarkdownFile> OwnFiles { get; }
+
 	public int Level { get; }
-	public string? FolderName { get; }
 
-	public DocumentationFolder(Dictionary<string, MarkdownFile[]> markdownFiles, int level, string folderName)
+	public DocumentationFolder(IReadOnlyCollection<ITocItem> toc,
+		IDictionary<string, DocumentationFile> lookup,
+		IDictionary<string, DocumentationFile[]> folderLookup,
+		int level = 0)
 	{
 		Level = level;
-		FolderName = folderName;
 
-		var files = markdownFiles
-			.Where(k => k.Key.EndsWith(".md")).SelectMany(g => g.Value)
-			.Where(file => file.ParentFolders.Count == level)
-			.ToArray();
-
-
-		Files = files
-			.Where(file => file.FileName != "index.md")
-			.ToArray();
-
-		FilesInOrder = new OrderedList<MarkdownFile>(Files);
-
-		Index = files.FirstOrDefault(f => f.FileName == "index.md");
-
-		var newLevel = level + 1;
-		var groups = new List<DocumentationFolder>();
-		foreach (var kv in markdownFiles.Where(kv=> !kv.Key.EndsWith(".md")))
+		foreach (var tocItem in toc)
 		{
-			var folder = kv.Key;
-			var folderFiles = kv.Value
-				.Where(file => file.ParentFolders.Count > level)
-				.Where(file => file.ParentFolders[level] == folder).ToArray();
-			var mapped = folderFiles
-				.GroupBy(file =>
+			if (tocItem is TocFile file)
+			{
+				if (lookup.TryGetValue(file.Path, out var d) && d is MarkdownFile md)
+					FilesInOrder.Add(md);
+				if (file.Path.EndsWith("index.md") && d is MarkdownFile index)
+					Index = index;
+			}
+			else if (tocItem is TocFolder folder)
+			{
+				var children = folder.Children;
+				if (children.Count == 0
+				    && folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
-					var path = file.ParentFolders.Count > newLevel ? file.ParentFolders[newLevel] : file.FileName;
-					return path;
-				})
-				.ToDictionary(k => k.Key, v => v.ToArray());
-			var documentationGroup  = new DocumentationFolder(mapped, newLevel, folder);
-			groups.Add(documentationGroup);
+					children = documentationFiles
+						.Select(d => new TocFile(d.RelativePath, true, []))
+						.ToArray();
+				}
 
+				var group = new DocumentationFolder(children, lookup, folderLookup, level + 1);
+				GroupsInOrder.Add(group);
+			}
 		}
-		Nested = groups.ToArray();
-		GroupsInOrder = new OrderedList<DocumentationFolder>(Nested);
+
+		Index ??= FilesInOrder.FirstOrDefault();
+		if (Index != null)
+			FilesInOrder = FilesInOrder.Except(new[] { Index }).ToList();
+		OwnFiles = [..FilesInOrder];
 	}
 
 	public bool HoldsCurrent(MarkdownFile current) =>
-		Index == current || Files.Contains(current) || Nested.Any(n => n.HoldsCurrent(current));
+		Index == current || OwnFiles.Contains(current) || GroupsInOrder.Any(n => n.HoldsCurrent(current));
 
 	private bool _resolved;
+
 	public async Task Resolve(Cancel ctx = default)
 	{
 		if (_resolved) return;
 
-		await Parallel.ForEachAsync(Files, ctx, async (file, token) => await file.ParseAsync(token));
-		await Parallel.ForEachAsync(Nested, ctx, async (group, token) => await group.Resolve(token));
+		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.ParseAsync(token));
+		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
 		await (Index?.ParseAsync(ctx) ?? Task.CompletedTask);
 
-		var fileList = new OrderedList<MarkdownFile>();
-		var groupList = new OrderedList<DocumentationFolder>();
-
-
-		FilesInOrder = fileList;
-		GroupsInOrder = groupList;
 		_resolved = true;
 	}
 }

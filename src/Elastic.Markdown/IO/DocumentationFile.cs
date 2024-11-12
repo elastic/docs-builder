@@ -9,6 +9,7 @@ public abstract class DocumentationFile(IFileInfo sourceFile, IDirectoryInfo roo
 {
 	public IFileInfo SourceFile { get; } = sourceFile;
 	public string RelativePath { get; } = Path.GetRelativePath(rootPath.FullName, sourceFile.FullName);
+	public string RelativeFolder { get; } = Path.GetRelativePath(rootPath.FullName, sourceFile.Directory!.FullName);
 
 	public FileInfo OutputFile(IDirectoryInfo outputPath) =>
 		new(Path.Combine(outputPath.FullName, RelativePath.Replace(".md", ".html")));

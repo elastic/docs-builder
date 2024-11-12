@@ -3,7 +3,6 @@ exclude:
   - '_*.md'
 toc:
   - file: index.md
-  - folder: markup
   - folder: elastic
     children:
       - file: index.md
@@ -25,6 +24,7 @@ toc:
             children:
               - file: install/cloud.md
               - file: install/docker.md
+  - folder: markup
   - folder: nested
     children:
       - folder: content

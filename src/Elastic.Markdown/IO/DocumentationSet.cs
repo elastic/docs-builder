@@ -47,21 +47,14 @@ public class DocumentationSet
 
 			.ToList();
 
-
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
 		FlatMappedFiles = Files.ToDictionary(file => file.RelativePath, file => file);
+		var folderFiles = Files
+			.GroupBy(file => file.RelativeFolder)
+			.ToDictionary(g=>g.Key, g=>g.ToArray());
 
-		var markdownFiles = Files.OfType<MarkdownFile>()
-			.Where(file => !file.RelativePath.StartsWith("_"))
-			.GroupBy(file =>
-			{
-				var path = file.ParentFolders.Count >= 1 ? file.ParentFolders[0] : file.FileName;
-				return path;
-			})
-			.ToDictionary(k => k.Key, v => v.ToArray());
-
-		Tree = new DocumentationFolder(markdownFiles, 0, "");
+		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles);
 	}
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)

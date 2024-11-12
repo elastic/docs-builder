@@ -50,7 +50,7 @@ public class HtmlWriter
 			PageTocItems = markdown.TableOfContents,
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
-			Navigation = navigationHtml,
+			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);

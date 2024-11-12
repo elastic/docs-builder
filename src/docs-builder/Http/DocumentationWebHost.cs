@@ -35,6 +35,7 @@ public class DocumentationWebHost
 		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(sourcePath, null, context, logger));
 		builder.Services.AddHostedService<ReloadGeneratorService>();
 		builder.Services.AddSingleton(logger);
+		builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
@@ -51,11 +52,11 @@ public class DocumentationWebHost
 		});
 		_webApplication.UseRouting();
 
-		_webApplication.MapGet("/", async (ReloadableGeneratorState holder, Cancel ctx) =>
-			await ServeDocumentationFile(holder, "index.md", ctx));
+		_webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeDocumentationFile(holder, "index.md", ctx));
 
-		_webApplication.MapGet("{**slug}", async (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
-			await ServeDocumentationFile(holder, slug, ctx));
+		_webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeDocumentationFile(holder, slug, ctx));
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
