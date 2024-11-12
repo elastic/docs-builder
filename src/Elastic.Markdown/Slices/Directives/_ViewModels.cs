@@ -29,7 +29,6 @@ public class VersionViewModel
 	public required string Title { get; init; }
 }
 
-public class SideBarViewModel;
 public class TabSetViewModel;
 
 public class TabItemViewModel
@@ -37,23 +36,6 @@ public class TabItemViewModel
 	public required int Index { get; init; }
 	public required int TabSetIndex { get; init; }
 	public required string Title { get; init; }
-}
-
-public class CardViewModel
-{
-	public required string? Title { get; init; }
-	public required string? Link { get; init; }
-}
-
-public class GridViewModel
-{
-	public required GridResponsive BreakPoint { get; init; }
-}
-
-public class GridItemCardViewModel
-{
-	public required string? Title { get; init; }
-	public required string? Link { get; init; }
 }
 
 public class IncludeViewModel

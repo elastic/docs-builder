@@ -50,6 +50,16 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "exercise", 30 },
 		{ "solution", 31 },
 		{ "toctree", 32 },
+		{ "grid", 26 },
+		{ "grid-item-card", 26 },
+		{ "card", 25 },
+		{ "mermaid", 20 },
+		{ "aside", 4 },
+		{ "margin", 4 },
+		{ "sidebar", 4 },
+		{ "code-cell", 8 },
+
+
 	}.ToFrozenDictionary();
 
     protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
@@ -67,23 +77,16 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    if (info.IndexOf("{") == -1)
 		    return new CodeBlock(this, "raw", _admonitionData);
 
+	    // TODO alternate lookup .NET 9
+	    var directive = info.ToString().Trim(['{', '}', '`']);
+	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
+		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId);
+
 	    if (info.IndexOf("{tab-set}") > 0)
 		    return new TabSetBlock(this, _admonitionData);
 
 	    if (info.IndexOf("{tab-item}") > 0)
 		    return new TabItemBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{sidebar}") > 0)
-		    return new SideBarBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{card}") > 0)
-		    return new CardBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{grid}") > 0)
-		    return new GridBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{grid-item-card}") > 0)
-		    return new GridItemCardBlock(this, _admonitionData);
 
 	    if (info.IndexOf("{dropdown}") > 0)
 		    return new DropdownBlock(this, _admonitionData);
@@ -97,6 +100,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    if (info.IndexOf("{figure-md}") > 0)
 		    return new FigureBlock(this, _admonitionData, context);
 
+	    // this is currently listed as unsupported
+	    // leaving the parsing in untill we are confident we don't want this
+	    // for dev-docs
 	    if (info.IndexOf("{mermaid}") > 0)
 		    return new MermaidBlock(this, _admonitionData);
 
@@ -123,11 +129,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		    if (info.IndexOf($"{{{code}}}") > 0)
 			    return new CodeBlock(this, code, _admonitionData);
 	    }
-	    // TODO alternate lookup .NET 9
-	    var directive = info.ToString().Trim(['{', '}', '`']);
-	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
-		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId);
-
 	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData);
     }
 

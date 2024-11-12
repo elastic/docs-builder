@@ -54,23 +54,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case CodeBlock codeBlock:
 				WriteCode(renderer, codeBlock);
 				return;
-			case SideBarBlock sideBar:
-				WriteSideBar(renderer, sideBar);
-				return;
 			case TabSetBlock tabSet:
 				WriteTabSet(renderer, tabSet);
 				return;
 			case TabItemBlock tabItem:
 				WriteTabItem(renderer, tabItem);
-				return;
-			case CardBlock card:
-				WriteCard(renderer, card);
-				return;
-			case GridBlock grid:
-				WriteGrid(renderer, grid);
-				return;
-			case GridItemCardBlock gridItemCard:
-				WriteGridItemCard(renderer, gridItemCard);
 				return;
 			case LiteralIncludeBlock literalIncludeBlock:
 				WriteLiteralIncludeBlock(renderer, literalIncludeBlock);
@@ -135,30 +123,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>
 		renderer.WriteChildren(directiveBlock);
 
-	private void WriteCard(HtmlRenderer renderer, CardBlock block)
-	{
-		var slice = Card.Create(new CardViewModel { Title = block.Title, Link = block.Link });
-		RenderRazorSlice(slice, renderer, block);
-	}
-
-	private void WriteGrid(HtmlRenderer renderer, GridBlock block)
-	{
-		var slice = Grid.Create(new GridViewModel
-		{
-			BreakPoint = block.BreakPoint
-		});
-		RenderRazorSlice(slice, renderer, block);
-	}
-
-	private void WriteGridItemCard(HtmlRenderer renderer, GridItemCardBlock directiveBlock)
-	{
-		var title = directiveBlock.Arguments;
-		var link = directiveBlock.Properties.GetValueOrDefault("link");
-		var slice = GridItemCard.Create(new GridItemCardViewModel { Title = title, Link = link });
-		RenderRazorSlice(slice, renderer, directiveBlock);
-	}
-
-
 	private void WriteVersion(HtmlRenderer renderer, VersionBlock block)
 	{
 		var slice = Slices.Directives.Version.Create(new VersionViewModel
@@ -203,12 +167,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-
-	private void WriteSideBar(HtmlRenderer renderer, SideBarBlock directiveBlock)
-	{
-		var slice = SideBar.Create(new SideBarViewModel());
-		RenderRazorSlice(slice, renderer, directiveBlock);
-	}
 
 	private void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
