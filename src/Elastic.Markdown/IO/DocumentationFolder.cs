@@ -69,39 +69,11 @@ public class DocumentationFolder
 		await Parallel.ForEachAsync(Files, ctx, async (file, token) => await file.ParseAsync(token));
 		await Parallel.ForEachAsync(Nested, ctx, async (group, token) => await group.Resolve(token));
 
-		//foreach (var f in Files) await f.ParseAsync(ctx);
-		//foreach (var n in Nested) await n.Resolve(ctx);
-
 		await (Index?.ParseAsync(ctx) ?? Task.CompletedTask);
-		if (Index?.TocTree == null)
-			return;
 
-		var tree = Index.TocTree;
 		var fileList = new OrderedList<MarkdownFile>();
 		var groupList = new OrderedList<DocumentationFolder>();
 
-		foreach (var link in tree)
-		{
-			var file = Files.FirstOrDefault(f => f.RelativePath.EndsWith(link.Link));
-			if (file != null)
-			{
-				file.TocTitle = link.Title;
-				fileList.Add(file);
-				continue;
-			}
-
-			var group = Nested.FirstOrDefault(f => f.Index != null && f.Index.RelativePath.EndsWith(link.Link));
-			if (group != null)
-			{
-				groupList.Add(group);
-				if (group.Index != null && !string.IsNullOrEmpty(link.Title))
-					group.Index.TocTitle = link.Title;
-			}
-			else if (group == null || file == null)
-			{
-
-			}
-		}
 
 		FilesInOrder = fileList;
 		GroupsInOrder = groupList;

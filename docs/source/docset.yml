@@ -1,0 +1,16 @@
+project: 'doc-builder'
+exclude:
+  - '_*.md'
+toc:
+  - file: index.md
+  - file: config.md
+  - file: search.md
+    children:
+      - file: search-part2.md
+      - folder: search
+  - folder: my-folder1
+  - folder: my-folder2
+    children:
+      - file: subpath/file.md
+      - file: file.md
+      - folder: sub/folder

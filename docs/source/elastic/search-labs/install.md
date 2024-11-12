@@ -2,13 +2,6 @@
 title: "Install Elasticsearch"
 ---
 
-```{toctree}
-:hidden:
-
-install/cloud.md
-install/docker.md
-```
-
 In this section you will learn about some of the options you have for running Elasticsearch. Most of the tutorials and content on this site will require you to first follow the instructions below for your chosen method of installation.
 
 ## How to run Elasticsearch

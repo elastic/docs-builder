@@ -9,10 +9,3 @@ This section includes one example yaml file and two auto-generated outputs based
 
 * [example `yaml` file](source.md)
 * [generated output](generated.md)
-
-```{toctree}
-:hidden:
-
-source.md
-generated.md
-```

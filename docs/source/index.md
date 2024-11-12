@@ -36,14 +36,3 @@ Hate it? Love it? We want to hear it all. Say hello and leave your thoughts in [
 
 Hosted docs are great and all, but what's the contributor experience like?
 Read the [quick start guide](https://github.com/elastic/markitpy/tree/main), clone the repository, and spin up the docs locally in seconds.
-
-
-```{toctree}
-:caption: Elastic Docs Guide
-:hidden:
-
-elastic/index.md
-markup/index.md
-nested/index.md
-versioning/index.md
-```

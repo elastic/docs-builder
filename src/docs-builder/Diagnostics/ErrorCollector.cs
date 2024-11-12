@@ -66,7 +66,7 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 			{
 				Severity.Error =>
 					Errata.Diagnostic.Error(item.Message)
-						.WithLabel(new Label(item.File, new Location(item.Line, item.Column ?? 0), "bad substitution")
+						.WithLabel(new Label(item.File, new Location(item.Line ?? 0, item.Column ?? 0), "bad substitution")
 							.WithLength(item.Length ?? 3)
 							.WithPriority(1)
 							.WithColor(Color.Red)),

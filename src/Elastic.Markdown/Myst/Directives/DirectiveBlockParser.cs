@@ -70,10 +70,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-
-	    if (info.EndsWith("{toctree}"))
-		    return new TocTreeBlock(this, _admonitionData);
-
 	    if (info.IndexOf("{") == -1)
 		    return new CodeBlock(this, "raw", _admonitionData);
 
@@ -101,7 +97,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		    return new FigureBlock(this, _admonitionData, context);
 
 	    // this is currently listed as unsupported
-	    // leaving the parsing in untill we are confident we don't want this
+	    // leaving the parsing in until we are confident we don't want this
 	    // for dev-docs
 	    if (info.IndexOf("{mermaid}") > 0)
 		    return new MermaidBlock(this, _admonitionData);
@@ -137,23 +133,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    if (block is DirectiveBlock directiveBlock)
 		    directiveBlock.FinalizeAndValidate(processor.GetContext());
 
-
-	    if (block is not TocTreeBlock toc)
-		    return base.Close(processor, block);
-
-	    if (toc is not { Count: > 0 } || toc[0] is not ParagraphBlock p)
-			return base.Close(processor, block);
-
-		var text =  p.Lines.ToSlice().AsSpan().ToString();
-		foreach (var line in text.Split('\n'))
-		{
-			var tokens = line.Split('<', '>').Where(e => !string.IsNullOrWhiteSpace(e)).ToArray();
-			var fileName = tokens.Last().Trim();
-			var title = string.Join(" ", tokens.Take(tokens.Length - 1)).Trim();
-			toc.Links.Add(new TocTreeLink { Title = title, Link = fileName });
-		}
-
-	    return base.Close(processor, block);
+		return base.Close(processor, block);
     }
 
     public override BlockState TryContinue(BlockProcessor processor, Block block)

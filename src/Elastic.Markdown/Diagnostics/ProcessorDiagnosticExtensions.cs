@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -71,5 +72,27 @@ public static class ProcessorDiagnosticExtensions
 			Length = length
 		};
 		context.Build.Collector.Channel.Write(d);
+	}
+
+	public static void EmitError(this BuildContext context, IFileInfo file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = file.FullName,
+			Message = message,
+		};
+		context.Collector.Channel.Write(d);
+	}
+
+	public static void EmitWarning(this BuildContext context, IFileInfo file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = file.FullName,
+			Message = message,
+		};
+		context.Collector.Channel.Write(d);
 	}
 }

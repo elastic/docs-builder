@@ -55,14 +55,6 @@ public class MarkdownFile : DocumentationFile
 			Title = YamlFrontMatter.Title;
 		}
 
-		if (SourceFile.Name == "index.md")
-		{
-			TocTree = document
-				.Where(block => block is TocTreeBlock)
-				.Cast<TocTreeBlock>()
-				.FirstOrDefault()?.Links ?? new OrderedList<TocTreeLink>();
-		}
-
 		var contents = document
 			.Where(block => block is HeadingBlock { Level: 2 })
 			.Cast<HeadingBlock>()
@@ -74,8 +66,6 @@ public class MarkdownFile : DocumentationFile
 		TableOfContents.AddRange(contents);
 		return document;
 	}
-
-	public OrderedList<TocTreeLink>? TocTree { get; private set; }
 
 	public async Task<string> CreateHtmlAsync(YamlFrontMatter? matter, Cancel ctx)
 	{

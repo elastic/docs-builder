@@ -38,8 +38,8 @@ public class NavigationTests(ITestOutputHelper output)
 
 		await generator.GenerateAll(default);
 
-		writeFs.Directory.Exists(".artifacts/docs/html").Should().BeTrue();
-		readFs.Directory.Exists(".artifacts/docs/html").Should().BeFalse();
+		var configuration = generator.DocumentationSet.Configuration;
+		configuration.TableOfContents.Should().NotBeNullOrEmpty();
 
 	}
 }

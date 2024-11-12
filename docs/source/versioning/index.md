@@ -9,8 +9,3 @@ Multiversion support
 This file demonstrates versioning support.
 See the `markitpy` readme to learn how to test this content.
 
-```{toctree}
-:hidden:
-
-versioned.md
-```

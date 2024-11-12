@@ -2,15 +2,6 @@
 title: Search Labs Tutorials
 ---
 
-```{toctree}
-:hidden:
-
-install.md
-search.md
-chat.md
-```
-
-
 ## Start here
 
 ````{grid} 3

@@ -17,6 +17,7 @@ public class DocumentationSet
 	public DateTimeOffset LastWrite { get; }
 	public IFileInfo OutputStateFile { get; }
 
+	public ConfigurationFile Configuration { get; }
 
 	private MarkdownParser MarkdownParser { get; }
 
@@ -29,6 +30,9 @@ public class DocumentationSet
 		Name = SourcePath.FullName;
 		MarkdownParser = new MarkdownParser(SourcePath, context);
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));
+
+		var configurationFile = context.ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
+		Configuration = new ConfigurationFile(configurationFile, SourcePath, context);
 
 		Files = context.ReadFileSystem.Directory.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
