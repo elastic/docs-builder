@@ -16,7 +16,7 @@ namespace Elastic.Markdown.IO;
 public class MarkdownFile : DocumentationFile
 {
 	private readonly SlugHelper _slugHelper = new();
-	private string? _tocTitle;
+	private string? _navigationTitle;
 
 	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext context)
 		: base(sourceFile, rootPath)
@@ -32,10 +32,10 @@ public class MarkdownFile : DocumentationFile
 	private FrontMatterParser FrontMatterParser { get; } = new();
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? Title { get; private set; }
-	public string? TocTitle
+	public string? NavigationTitle
 	{
-		get => !string.IsNullOrEmpty(_tocTitle) ? _tocTitle : Title;
-		set => _tocTitle = value;
+		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
+		private set => _navigationTitle = value;
 	}
 
 	public List<PageTocItem> TableOfContents { get; } = new();
@@ -53,6 +53,7 @@ public class MarkdownFile : DocumentationFile
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 			YamlFrontMatter = FrontMatterParser.Deserialize(raw);
 			Title = YamlFrontMatter.Title;
+			NavigationTitle = YamlFrontMatter.NavigationTitle;
 		}
 
 		var contents = document

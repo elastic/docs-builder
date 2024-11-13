@@ -1,5 +1,6 @@
 ---
 title: "Semantic search with the inference API"
+navigation_title: "Azure AI Studio"
 ---
 
 Semantic search helps you find data based on the intent and contextual meaning of a search query, instead of a match on query terms (lexical search).

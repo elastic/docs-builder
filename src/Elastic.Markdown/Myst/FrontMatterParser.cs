@@ -12,7 +12,12 @@ public partial class YamlFrontMatterStaticContext;
 [YamlSerializable]
 public class YamlFrontMatter
 {
+	[YamlMember(Alias = "title")]
 	public string? Title { get; set; }
+
+	[YamlMember(Alias = "navigation_title")]
+	public string? NavigationTitle { get; set; }
+
 	[YamlMember(Alias = "sub")]
 	public Dictionary<string, string>? Properties { get; set; }
 }
@@ -25,7 +30,6 @@ public class FrontMatterParser
 
 		var deserializer = new StaticDeserializerBuilder(new YamlFrontMatterStaticContext())
 			.IgnoreUnmatchedProperties()
-			.WithNamingConvention(CamelCaseNamingConvention.Instance)
 			.Build();
 
 		var frontMatter = deserializer.Deserialize<YamlFrontMatter>(input);
