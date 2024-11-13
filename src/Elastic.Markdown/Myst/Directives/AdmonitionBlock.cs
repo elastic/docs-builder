@@ -29,7 +29,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 	{
 		Classes = Properties.GetValueOrDefault("class");
 		CrossReferenceName = Properties.GetValueOrDefault("name");
-		ParseBool("open", b => DropdownOpen = b);
+		DropdownOpen = PropBool("open");
 	}
 }
 
