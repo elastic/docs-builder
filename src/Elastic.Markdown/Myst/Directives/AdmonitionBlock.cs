@@ -7,6 +7,9 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 	: DirectiveBlock(parser, properties)
 {
 	public string Admonition => admonition == "admonition" ? Classes?.Trim() ?? "note" : admonition;
+
+	public override string Directive => Admonition;
+
 	public string? Classes { get; protected set; }
 	public string? CrossReferenceName  { get; private set; }
 	public bool? DropdownOpen  { get; private set; }
@@ -15,7 +18,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 	{
 		get
 		{
-			var t = Admonition == "seealso" ? "see also" : Admonition;
+			var t = Admonition;
 			var title = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(t);
 			if (admonition is "admonition" && !string.IsNullOrEmpty(Arguments))
 				title = Arguments;

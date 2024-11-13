@@ -7,7 +7,7 @@ namespace Elastic.Markdown.Myst.Directives;
 public class UnknownDirectiveBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
-	public string Directive => directive;
+	public override string Directive => directive;
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{

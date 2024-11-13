@@ -6,6 +6,8 @@ namespace Elastic.Markdown.Myst.Directives;
 public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
 	: DirectiveBlock(parser, properties)
 {
+	public override string Directive => "image";
+
 	public BuildContext Build { get; } = context.Build;
 
 	/// <summary>

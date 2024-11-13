@@ -6,7 +6,7 @@ namespace Elastic.Markdown.Myst.Directives;
 public class CodeBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
-	public string Directive => directive;
+	public override string Directive => directive;
 	public string? Caption { get; private set; }
 	public string? CrossReferenceName { get; private set; }
 

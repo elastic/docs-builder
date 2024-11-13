@@ -9,6 +9,8 @@ namespace Elastic.Markdown.Myst.Directives;
 public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
+	public override string Directive => "tab-set";
+
 	public int Index { get; set; }
 	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
 
@@ -24,6 +26,8 @@ public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string>
 public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
+	public override string Directive => "tab-set-item";
+
 	public string Title { get; set; } = default!;
 	public int Index { get; set; }
 	public int TabSetIndex { get; set; }

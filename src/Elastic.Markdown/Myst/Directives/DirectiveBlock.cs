@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Elastic.Markdown.Diagnostics;
 using Markdig.Helpers;
 using Markdig.Syntax;
 
@@ -24,7 +25,6 @@ namespace Elastic.Markdown.Myst.Directives;
 public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
 	: ContainerBlock(parser), IFencedBlock
 {
-
 	public IReadOnlyDictionary<string, string> Properties { get; } = properties;
 
 	/// <inheritdoc />
@@ -88,6 +88,11 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
 
 		return default;
 	}
+
+	public abstract string Directive { get; }
+
+	protected void EmitError(ParserContext context, string message) =>
+		context.EmitError(Line + 1, 1, Directive.Length + 4 , message);
 
 
 }

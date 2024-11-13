@@ -9,6 +9,8 @@ namespace Elastic.Markdown.Myst.Directives;
 public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
 	: DirectiveBlock(parser, properties)
 {
+	public override string Directive => "include";
+
 	public BuildContext Build { get; } = context.Build;
 
 	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
@@ -20,8 +22,6 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 	public string? IncludePath { get; private set; }
 
 	public bool Found { get; private set; }
-
-	protected virtual string Directive { get; } = "include";
 
 	public bool Literal { get; protected set; }
 	public string? Language { get; private set; }
@@ -54,7 +54,7 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 		if (FileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
-			context.EmitError(Line, Column, "```{include}".Length , $"`{IncludePath}` does not exist.");
+			EmitError(context, $"`{IncludePath}` does not exist.");
 
 
 	}
@@ -66,5 +66,6 @@ public class LiteralIncludeBlock : IncludeBlock
 	public LiteralIncludeBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
 		: base(parser, properties, context) => Literal = true;
 
-	protected override string Directive { get; } = "literalinclude";
+	public override string Directive => "literalinclude";
+
 }

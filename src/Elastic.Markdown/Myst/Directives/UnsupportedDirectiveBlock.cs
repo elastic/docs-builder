@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Myst.Directives;
 public class UnsupportedDirectiveBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties, int issueId)
 	: DirectiveBlock(parser, properties)
 {
-	public string Directive => directive;
+	public override string Directive => directive;
 
 	public string IssueUrl => $"https://github.com/elastic/docs-builder/issues/{issueId}";
 
