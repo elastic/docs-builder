@@ -14,5 +14,5 @@ public class UnsupportedDirectiveBlock(DirectiveBlockParser parser, string direc
 	public string IssueUrl => $"https://github.com/elastic/docs-builder/issues/{issueId}";
 
 	public override void FinalizeAndValidate(ParserContext context) =>
-		context.EmitWarning(line:1, column:1, length:2, message: $"Directive block '{directive}' is unsupported. See {IssueUrl} for more information.");
+		context.EmitWarning(line:1, column:1, length:directive.Length, message: $"Directive block '{directive}' is unsupported. See {IssueUrl} for more information.");
 }

@@ -33,8 +33,7 @@ A regular paragraph.
 	[Fact]
 	public void EmitsUnsupportedWarnings()
 	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty()
-			.And.HaveCount(1);
+		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Warning);
 		Collector.Diagnostics.Should()
 			.OnlyContain(d => d.Message.StartsWith($"Directive block '{directive}' is unsupported."));

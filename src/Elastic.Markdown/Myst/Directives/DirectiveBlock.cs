@@ -69,18 +69,25 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
     /// <param name="context"></param>
     public abstract void FinalizeAndValidate(ParserContext context);
 
-	protected void ParseBool(string key, Action<bool> setter)
+	protected bool PropBool(params string[] keys)
 	{
-		var value = Properties.GetValueOrDefault(key);
+		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
+			return Properties.ContainsKey(key);
+
+		return bool.TryParse(value, out var result) && result;
+	}
+
+	protected string? Prop(params string[] keys)
+	{
+		foreach (var key in keys)
 		{
-			setter(Properties.ContainsKey(key));
-			return;
+			if (Properties.TryGetValue(key, out var value))
+				return value;
 		}
 
-		if (bool.TryParse(value, out var result))
-			setter(result);
-		//todo invalidate
+		return default;
 	}
+
 
 }
