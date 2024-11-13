@@ -73,7 +73,7 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
 	{
 		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
-			return Properties.ContainsKey(key);
+			return keys.Any(k => Properties.ContainsKey(k));
 
 		return bool.TryParse(value, out var result) && result;
 	}
