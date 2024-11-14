@@ -30,6 +30,7 @@ app.Add("", async Task<int> (Cancel ctx) =>
 	{
 		Console.WriteLine("The build left unchecked artifacts in the source folder");
 		await "git status --porcelain";
+		await "git diff NOTICE.txt";
 		return 1;
 	}
 
