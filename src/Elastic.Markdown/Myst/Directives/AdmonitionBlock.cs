@@ -10,6 +10,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 
 	public override string Directive => Admonition;
 
+	public string? Label { get; protected set; }
 	public string? Classes { get; protected set; }
 	public string? CrossReferenceName  { get; private set; }
 	public bool? DropdownOpen  { get; private set; }
@@ -30,6 +31,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		Label = Prop("label");
 		Classes = Properties.GetValueOrDefault("class");
 		CrossReferenceName = Properties.GetValueOrDefault("name");
 		DropdownOpen = PropBool("open");
