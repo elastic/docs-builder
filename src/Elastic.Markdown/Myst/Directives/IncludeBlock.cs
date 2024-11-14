@@ -33,13 +33,17 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 	//https://mystmd.org/guide/directives#directive-include
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		var includePath = Arguments; //todo validate
-
 		Literal |= PropBool("literal");
 		Language = Prop("lang", "language", "code");
 		Caption = Prop("caption");
 		Label = Prop("label");
 
+		ExtractInclusionPath(context);
+	}
+
+	private void ExtractInclusionPath(ParserContext context)
+	{
+		var includePath = Arguments;
 		if (string.IsNullOrWhiteSpace(includePath))
 		{
 			context.EmitError(Line, Column, $"```{{{Directive}}}".Length , "include requires an argument.");
@@ -55,8 +59,6 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 			Found = true;
 		else
 			EmitError(context, $"`{IncludePath}` does not exist.");
-
-
 	}
 }
 

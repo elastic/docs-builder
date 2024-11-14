@@ -94,5 +94,8 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
 	protected void EmitError(ParserContext context, string message) =>
 		context.EmitError(Line + 1, 1, Directive.Length + 4 , message);
 
+	protected void EmitWarning(ParserContext context, string message) =>
+		context.EmitWarning(Line + 1, 1, Directive.Length + 4 , message);
+
 
 }

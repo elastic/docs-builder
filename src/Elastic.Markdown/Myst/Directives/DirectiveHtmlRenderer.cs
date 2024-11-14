@@ -79,13 +79,14 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private void WriteImage(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl = block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static")
+		var imageUrl =
+			block.ImageUrl != null &&
+		               (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = Image.Create(new ImageViewModel
 		{
-			Classes = block.Classes,
-			CrossReferenceName = block.CrossReferenceName,
+			Label = block.Label,
 			Align = block.Align,
 			Alt = block.Alt,
 			Height = block.Height,
@@ -99,13 +100,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl = block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static")
+		var imageUrl = block.ImageUrl != null && (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = Slices.Directives.Figure.Create(new ImageViewModel
 		{
-			Classes = block.Classes,
-			CrossReferenceName = block.CrossReferenceName,
+			Label = block.Label,
 			Align = block.Align,
 			Alt = block.Alt,
 			Height = block.Height,

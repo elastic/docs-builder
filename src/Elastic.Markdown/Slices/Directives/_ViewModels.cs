@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.Text;
-using Elastic.Markdown.Myst.Directives;
 
 namespace Elastic.Markdown.Slices.Directives;
 
@@ -45,8 +44,7 @@ public class IncludeViewModel
 
 public class ImageViewModel
 {
-	public required string? CrossReferenceName { get; init; }
-	public required string? Classes { get; init; }
+	public required string? Label { get; init; }
 	public required string? Align { get; init; }
 	public required string? Alt { get; init; }
 	public required string? Height { get; init; }

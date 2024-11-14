@@ -64,7 +64,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 		});
 
 		var file = FileSystem.FileInfo.New("docs/source/index.md");
-		var root = FileSystem.DirectoryInfo.New(Paths.Root.FullName);
+		var root = file.Directory!;
 		Collector = new TestDiagnosticsCollector(logger);
 		var context = new BuildContext
 		{
