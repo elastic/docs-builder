@@ -8,11 +8,34 @@ using Zx;
 //using static Zx.Env;
 
 var app = ConsoleApp.Create();
-app.Add("", async (Cancel _) =>
+
+app.Add("", async Task<int> (Cancel ctx) =>
 {
 	await "dotnet tool restore";
 	await "dotnet build -c Release --verbosity minimal";
+	await File.WriteAllTextAsync("NOTICE.txt",
+		$"""
+		Elastic Documentation Tooling
+		Copyright 2024-{DateTime.UtcNow.Year} Elasticsearch B.V.
+
+
+		""", ctx);
+	await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj --output .artifacts/NOTICE_temp.txt";
+	await File.AppendAllTextAsync("NOTICE.txt", File.ReadAllText(".artifacts/NOTICE_temp.txt"), ctx);
+	try
+	{
+		await "git diff-index --quiet HEAD --";
+	}
+	catch
+	{
+		Console.WriteLine("The build left unchecked artifacts in the source folder");
+		await "git status --porcelain";
+		return 1;
+	}
+
+	return 0;
 });
+
 app.Add("publish", async (Cancel _) =>
 {
 	var source = "src/docs-builder/docs-builder.csproj";

@@ -1,2 +1,309 @@
-Elastic .NET OpenTelemetry Distribution
-Copyright 2012-2024 Elasticsearch B.V.
+Elastic Documentation Tooling
+Copyright 2024-2024 Elasticsearch B.V.
+
+License notice for Errata (v0.13.0)
+------------------------------------
+
+https://github.com/spectreconsole/errata at 2f819fb40220b14f00e4678a5499768f7437c1ee
+
+Patrik Svensson, Phil Scott, James Randall
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for GitHub.Actions.Core (v8.1.1)
+------------------------------------
+
+https://github.com/IEvangelist/dotnet-github-actions-sdk at 57f96243866a8143e0c52dd00776d7a345c15681
+
+Copyright © 2022-2024 David Pine
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.DotNet.ILCompiler (v8.0.8)
+------------------------------------
+
+https://github.com/dotnet/runtime at 08338fcaa5c9b9a8190abb99222fed12aaba956c
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.Extensions.Logging (v8.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 5535e31a712343a63f5d7d796cd874e563e5ac14
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.NET.ILLink.Tasks (v8.0.8)
+------------------------------------
+
+https://github.com/dotnet/runtime at 08338fcaa5c9b9a8190abb99222fed12aaba956c
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for DotNet.Glob (v3.1.3)
+------------------------------------
+
+https://github.com/dazinator/DotNet.Glob.git at 6f8a320a9cc6069e80f36bb24f777a21d1c48064
+
+https://github.com/dazinator/DotNet.Glob
+
+License available at https://github.com/dazinator/DotNet.Glob/blob/master/LICENSE
+
+
+License notice for Markdig (v0.37.0)
+------------------------------------
+
+https://github.com/xoofx/markdig at 1a1bbecc467a800dd6b39e68825df50309f6065c
+
+https://github.com/lunet-io/markdig
+
+Alexandre Mutel
+
+Licensed under BSD-2-Clause
+
+Available at https://licenses.nuget.org/BSD-2-Clause
+
+
+License notice for Microsoft.Extensions.DependencyInjection (v8.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 5535e31a712343a63f5d7d796cd874e563e5ac14
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.Extensions.DependencyInjection.Abstractions (v8.0.1)
+------------------------------------
+
+https://github.com/dotnet/runtime at 9f4b1f5d664afdfc80e1508ab7ed099dff210fbd
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.Extensions.Logging.Abstractions (v8.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 5535e31a712343a63f5d7d796cd874e563e5ac14
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.Extensions.Options (v8.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 5535e31a712343a63f5d7d796cd874e563e5ac14
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.Extensions.Primitives (v8.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 5535e31a712343a63f5d7d796cd874e563e5ac14
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for RazorSlices (v0.8.1)
+------------------------------------
+
+https://github.com/DamianEdwards/RazorSlices at 65fde587ac2363d8af45ca551eb845d141aba7d2
+
+Copyright © Damian Edwards
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Slugify.Core (v4.0.1)
+------------------------------------
+
+https://github.com/ctolkien/Slugify at d480e12e3a1451e4b5ca5f070b7fb58db8f48b6c
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Spectre.Console (v0.47.0)
+------------------------------------
+
+https://github.com/spectreconsole/spectre.console at 018f4ebd17b379e6455b3ac071ad144fc648a84a
+
+Patrik Svensson, Phil Scott, Nils Andresen
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for System.IO.Abstractions (v21.0.29)
+------------------------------------
+
+https://github.com/TestableIO/System.IO.Abstractions at f4afa40042a9ebea35abee195d5d49a46846523f
+
+Copyright © Tatham Oddie & friends 2010-2024
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for System.Memory (v4.5.5)
+------------------------------------
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+License available at https://github.com/dotnet/corefx/blob/master/LICENSE.TXT
+
+
+License notice for System.Runtime.CompilerServices.Unsafe (v6.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 4822e3c3aa77eb82b2fb33c9321f923cf11ddde6
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for System.Text.Encoding.CodePages (v6.0.0)
+------------------------------------
+
+https://github.com/dotnet/runtime at 4822e3c3aa77eb82b2fb33c9321f923cf11ddde6
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for TestableIO.System.IO.Abstractions (v21.0.29)
+------------------------------------
+
+https://github.com/TestableIO/System.IO.Abstractions at f4afa40042a9ebea35abee195d5d49a46846523f
+
+Copyright © Tatham Oddie & friends 2010-2024
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for TestableIO.System.IO.Abstractions.Wrappers (v21.0.29)
+------------------------------------
+
+https://github.com/TestableIO/System.IO.Abstractions at f4afa40042a9ebea35abee195d5d49a46846523f
+
+Copyright © Tatham Oddie & friends 2010-2024
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Utf8StreamReader (v1.3.2)
+------------------------------------
+
+https://github.com/Cysharp/Utf8StreamReader at 35e2361b7a67e0838b777262c4a7798da50206ca
+
+Copyright © Cysharp, Inc.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Vecc.YamlDotNet.Analyzers.StaticGenerator (v16.1.3)
+------------------------------------
+
+https://github.com/aaubry/YamlDotNet.git
+
+https://github.com/aaubry/YamlDotNet/wiki
+
+Available at https://aka.ms/deprecateLicenseUrl
+
+LICENSE.txt
+
+
+License notice for YamlDotNet (v16.1.3)
+------------------------------------
+
+https://github.com/aaubry/YamlDotNet at 7923dd8e600f7fea7710f3b45f3fadcfa1aa589c
+
+https://github.com/aaubry/YamlDotNet/wiki
+
+Copyright (c) Antoine Aubry and contributors
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
