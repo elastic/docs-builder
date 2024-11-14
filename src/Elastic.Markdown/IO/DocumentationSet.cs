@@ -14,8 +14,9 @@ public class DocumentationSet
 	public string Name { get; }
 	public IDirectoryInfo SourcePath { get; }
 	public IDirectoryInfo OutputPath { get; }
-	public DateTimeOffset LastWrite { get; }
 	public IFileInfo OutputStateFile { get; }
+
+	public DateTimeOffset LastWrite { get; }
 
 	public ConfigurationFile Configuration { get; }
 

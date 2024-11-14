@@ -13,12 +13,12 @@ namespace Elastic.Markdown;
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(OutputState))]
-internal partial class SourceGenerationContext : JsonSerializerContext
-{
-}
+internal partial class SourceGenerationContext : JsonSerializerContext;
+
 public class OutputState
 {
 	public DateTimeOffset LastSeenChanges { get; set; }
+	public string[] Conflict { get; set; } = [];
 }
 
 public class DocumentationGenerator
@@ -87,8 +87,15 @@ public class DocumentationGenerator
 			DocumentationSet.ClearOutputDirectory();
 
 		_logger.LogInformation($"Last write source: {DocumentationSet.LastWrite}, output observed: {OutputState?.LastSeenChanges}");
+
+		var offendingFiles = new HashSet<string>(OutputState?.Conflict ?? []);
 		var outputSeenChanges = OutputState?.LastSeenChanges ?? DateTimeOffset.MinValue;
-		if (DocumentationSet.LastWrite > outputSeenChanges && OutputState != null)
+		if (offendingFiles.Count > 0)
+		{
+			_logger.LogInformation($"Reapplying changes since {DocumentationSet.LastWrite}");
+			_logger.LogInformation($"Reapplying for {offendingFiles.Count} files with errors/warnings");
+		}
+		else if (DocumentationSet.LastWrite > outputSeenChanges && OutputState != null)
 			_logger.LogInformation($"Using incremental build picking up changes since: {OutputState.LastSeenChanges}");
 		else if (DocumentationSet.LastWrite <= outputSeenChanges && OutputState != null)
 		{
@@ -108,8 +115,11 @@ public class DocumentationGenerator
 
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
-			if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
+			if (offendingFiles.Contains(file.SourceFile.FullName))
+				_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
+			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
 				return;
+
 			var item = Interlocked.Increment(ref handledItems);
 			var outputFile = OutputFile(file.RelativePath);
 			if (file is MarkdownFile markdown)
@@ -147,7 +157,13 @@ public class DocumentationGenerator
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
 		_logger.LogInformation($"Writing documentation state {DocumentationSet.LastWrite} to {stateFile.FullName}");
-		var state = new OutputState { LastSeenChanges = DocumentationSet.LastWrite };
+		var badFiles = Context.Collector.OffendingFiles.ToArray();
+		var state = new OutputState
+		{
+			LastSeenChanges = DocumentationSet.LastWrite,
+			Conflict = badFiles
+
+		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.OutputState);
 		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
 	}

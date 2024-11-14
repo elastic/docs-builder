@@ -84,6 +84,8 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 	public long Warnings => _warnings;
 	public long Errors => _errors;
 
+	public HashSet<string> OffendingFiles { get; } = new();
+
 	public async Task StartAsync(Cancel ctx)
 	{
 		await Channel.WaitToWrite();
@@ -107,6 +109,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 			{
 				IncrementSeverityCount(item);
 				HandleItem(item);
+				OffendingFiles.Add(item.File);
 				foreach (var output in _outputs)
 					output.Write(item);
 			}
