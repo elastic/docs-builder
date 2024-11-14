@@ -6,7 +6,7 @@
         {
             "label": "Build Documentation",
             "type": "shell",
-            "command": "docker run -v .:/app/docs -v ./../.artifacts:/app/.artifacts ghcr.io/mpdreamz/docs-builder:edge",
+            "command": "docker run -v .:/app/docs -v ./../.artifacts:/app/.artifacts ghcr.io/mpdreamz/docset-builder:edge",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -16,7 +16,7 @@
         {
             "label": "Serve Documentation",
             "type": "shell",
-            "command": "docker run --expose 8080 -v .:/app/docs -v ./../.artifacts:/app/.artifacts ghcr.io/mpdreamz/docs-builder:edge serve",
+            "command": "docker run --expose 8080 -v .:/app/docs -v ./../.artifacts:/app/.artifacts ghcr.io/mpdreamz/docset-builder:edge serve",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
