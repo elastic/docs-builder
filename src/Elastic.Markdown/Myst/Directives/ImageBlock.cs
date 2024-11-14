@@ -95,7 +95,7 @@ public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> 
 
 		ImageUrl = imageUrl;
 		var imagePath = Path.Combine(includeFrom, imageUrl.TrimStart('/'));
-		if (context.Build.ReadFileSystem.File.Exists(imageUrl))
+		if (context.Build.ReadFileSystem.File.Exists(imagePath))
 			Found = true;
 		else
 			EmitError(context, $"`{imageUrl}` does not exist. resolved to `{imagePath}");

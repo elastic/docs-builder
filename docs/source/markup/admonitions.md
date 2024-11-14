@@ -49,11 +49,11 @@ This is a tip
 Feature A
 ```
 
-```{versionchanged} 8.15
+```{versionchanged} 8.15.0
 Feature B
 ```
 
-```{deprecated} 2
+```{deprecated} 0.2.0
 Feature C
 ```
 

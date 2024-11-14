@@ -42,6 +42,9 @@ public class ParserContext : MarkdownParserContext
 			foreach (var (key, value) in props)
 				Properties[key] = value;
 		}
+
+		if (frontMatter?.Title is {} title)
+			Properties["page_title"] = title;
 	}
 
 	public MarkdownParser Parser { get; }

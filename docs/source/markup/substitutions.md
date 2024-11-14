@@ -8,5 +8,4 @@ Here are some variable substitutions:
 
 | Value               | Source       |
 | ------------------- | ------------ |
-| {{project}}         | conf.py      |
 | {{frontmatter_key}} | Front Matter |

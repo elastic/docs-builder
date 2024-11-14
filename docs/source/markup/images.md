@@ -31,8 +31,9 @@ Here is an image from the local image folder.
 
 We can use the `figure-md` directive to add caption to an image.
 
-```{figure-md}
-![Elasticsearch](/_static/img/observability.png){w=350px align=center}
+```{figure-md} /_static/img/observability.png
+:width: 350px
+:align: center
 
 This is a caption in **Markdown**
 ```
