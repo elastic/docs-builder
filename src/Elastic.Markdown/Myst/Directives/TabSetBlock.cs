@@ -26,15 +26,24 @@ public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string
 {
 	public override string Directive => "tab-item";
 
-	public string Title { get; set; } = default!;
-	public int Index { get; set; }
-	public int TabSetIndex { get; set; }
+	public string Title { get; private set; } = default!;
+	public int Index { get; private set; }
+	public int TabSetIndex { get; private set; }
+
+	public string? SyncKey { get; private set; }
+	public bool Selected { get; private set; }
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		Title = Arguments ?? "Unnamed Tab";
+		if (string.IsNullOrWhiteSpace(Arguments))
+			EmitError(context, "{tab-item} requires an argument to name the tab.");
+
+		Title = Arguments ?? "{undefined}";
 		Index = Parent!.IndexOf(this);
 		TabSetIndex = Parent is TabSetBlock tb ? tb.FindIndex() : -1;
+
+		SyncKey = Prop("sync");
+		Selected = PropBool("selected");
 	}
 
 }
