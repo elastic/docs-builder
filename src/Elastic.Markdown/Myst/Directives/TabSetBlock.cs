@@ -1,8 +1,6 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-using System.Xml;
-using System.Xml.Xsl;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -26,7 +24,7 @@ public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string>
 public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
 	: DirectiveBlock(parser, properties)
 {
-	public override string Directive => "tab-set-item";
+	public override string Directive => "tab-item";
 
 	public string Title { get; set; } = default!;
 	public int Index { get; set; }
