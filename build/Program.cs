@@ -2,54 +2,101 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
 using ConsoleAppFramework;
-using ProcNet;
 using Zx;
-//using static Zx.Env;
+using static Zx.Env;
 
 var app = ConsoleApp.Create();
 
-app.Add("", async Task<int> (Cancel ctx) =>
+app.Add("", async Task (Cancel _) =>
 {
 	await "dotnet tool restore";
 	await "dotnet build -c Release --verbosity minimal";
+});
+
+app.Add("publish", async (Cancel _) =>
+{
+	var source = "src/docs-builder/docs-builder.csproj";
+	await $"""
+		dotnet publish {source} -c Release -o .artifacts/publish \
+			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
+		""";
+});
+
+// this is manual for now and quite hacky.
+// this ensures we download the actual LICENSE files in the repositories.
+// NOT the SPDX html from licenses.nuget.org
+
+app.Add("notices", async Task<int> (Cancel ctx) =>
+{
 	await File.WriteAllTextAsync("NOTICE.txt",
 		$"""
-		Elastic Documentation Tooling
-		Copyright 2024-{DateTime.UtcNow.Year} Elasticsearch B.V.
+		 Elastic Documentation Tooling
+		 Copyright 2024-{DateTime.UtcNow.Year} Elasticsearch B.V.
 
 
-		""", ctx);
-	await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj --output .artifacts/NOTICE_temp.txt";
-	await File.AppendAllTextAsync("NOTICE.txt", File.ReadAllText(".artifacts/NOTICE_temp.txt"), ctx);
+		 """, ctx);
 
-	//bit hacky for now clean this up later
-	var lines = await File.ReadAllLinesAsync("NOTICE.txt");
-	var newLines = new List<string>(lines.Length);
-	var bclReference = false;
-	for (var index = 0; index < lines.Length; index++)
+	var packages = await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj";
+	var packageLines = packages.Split(Environment.NewLine).Where(l=>l.StartsWith("+"));
+
+	Console.WriteLine("Package lines:");
+	foreach (var line in packageLines)
 	{
-		var line = lines[index];
-		if (index <= 2)
-		{
-			newLines.Add(line);
+		var package = line.Split('+', '(')[1].ToLowerInvariant().Trim();
+		var version = line.Split('(', ')')[1].TrimStart('v').Trim();
+		if (package.StartsWith("microsoft.") || package.StartsWith("system"))
 			continue;
+
+		var text = await fetchText($"https://api.nuget.org/v3-flatcontainer/{package}/{version}/{package}.nuspec");
+		var xml = XDocument.Load(new StringReader(text));
+		var projectUrl = xml.XPathSelectElement("//*[local-name()='projectUrl']")?.Value;
+		var id = xml.XPathSelectElement("//*[local-name()='id']")?.Value;
+		projectUrl = projectUrl?.Replace("/wiki", string.Empty);
+
+		if (projectUrl is null || projectUrl.Contains(".github.com"))
+			throw new Exception($"Can not download license for {id}: {projectUrl}");
+
+		var rawUrl = projectUrl.Replace("github.com", "raw.githubusercontent.com");
+		string[] targets =
+		[
+			rawUrl + $"/refs/heads/master/" + "LICENSE.txt",
+			rawUrl + $"/refs/heads/master/" + "license.txt",
+			rawUrl + $"/refs/heads/master/" + "LICENSE",
+			rawUrl + $"/refs/heads/master/" + "LICENSE.md",
+			rawUrl + $"/refs/heads/main/" + "LICENSE.txt",
+			rawUrl + $"/refs/heads/main/" + "license.txt",
+			rawUrl + $"/refs/heads/main/" + "LICENSE",
+			rawUrl + $"/refs/heads/main/" + "LICENSE.md",
+		];
+		var license = string.Empty;
+		foreach (var target in targets)
+		{
+			Console.WriteLine($"Downloading license for {id}: {target}");
+			try
+			{
+				license = await fetchText(target);
+			}
+			catch { }
+			if (license.Length > 0)
+				break;
 		}
 
-		if (line.StartsWith("License notice for"))
-		{
-			if (line.StartsWith("License notice for System.") || line.StartsWith("License notice for Microsoft."))
-				bclReference = true;
-			else
-			{
-				bclReference = false;
-				newLines.Add("");
-			}
-		}
-		if (string.IsNullOrWhiteSpace(line) || bclReference) continue;
-		newLines.Add(line);
+		if (string.IsNullOrWhiteSpace(license))
+			throw new Exception($"Can not download license for {id}: {projectUrl}");
+
+		await File.AppendAllTextAsync("NOTICE.txt",
+			$"""
+			 License notice for {id} (v{version})
+			 ------------------------------------
+			 {license}
+
+
+			 """, ctx);
 	}
-	await File.WriteAllLinesAsync("NOTICE.txt", newLines, ctx);
 
 	try
 	{
@@ -66,12 +113,4 @@ app.Add("", async Task<int> (Cancel ctx) =>
 	return 0;
 });
 
-app.Add("publish", async (Cancel _) =>
-{
-	var source = "src/docs-builder/docs-builder.csproj";
-	await $"""
-		dotnet publish {source} -c Release -o .artifacts/publish \
-			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
-		""";
-});
 await app.RunAsync(args);
