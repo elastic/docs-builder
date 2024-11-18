@@ -20,7 +20,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 {
 	public override Task InitializeAsync()
 	{
-		FileSystem.AddFile(@"img/observability.png", "");
+		FileSystem.AddFile(@"docs/source/img/observability.png", "");
 		return base.InitializeAsync();
 	}
 

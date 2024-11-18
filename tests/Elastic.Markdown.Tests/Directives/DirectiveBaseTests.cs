@@ -84,7 +84,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 		var collectTask =  Task.Run(async () => await Collector.StartAsync(default), default);
 
 		Document = await File.ParseFullAsync(default);
-		Html = await File.CreateHtmlAsync(File.YamlFrontMatter, default);
+		Html = File.CreateHtml(Document);
 		Collector.Channel.TryComplete();
 
 		await collectTask;

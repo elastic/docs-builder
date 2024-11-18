@@ -10,7 +10,7 @@ using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Markdown.IO;
 
-public class ConfigurationFile : DocumentationFile
+public record ConfigurationFile : DocumentationFile
 {
 	private readonly IFileInfo _sourceFile;
 	private readonly IDirectoryInfo _rootPath;

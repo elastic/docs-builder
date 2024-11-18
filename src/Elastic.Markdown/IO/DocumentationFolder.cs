@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Markdig.Helpers;
-
 namespace Elastic.Markdown.IO;
 
 public class DocumentationFolder
@@ -75,10 +73,10 @@ public class DocumentationFolder
 	{
 		if (_resolved) return;
 
-		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.ParseAsync(token));
+		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParse(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
-		await (Index?.ParseAsync(ctx) ?? Task.CompletedTask);
+		await (Index?.MinimalParse(ctx) ?? Task.CompletedTask);
 
 		_resolved = true;
 	}

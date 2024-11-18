@@ -124,7 +124,7 @@ public class DocumentationGenerator
 			var outputFile = OutputFile(file.RelativePath);
 			if (file is MarkdownFile markdown)
 			{
-				await markdown.ParseAsync(token);
+				await markdown.ParseFullAsync(token);
 				await HtmlWriter.WriteAsync(outputFile, markdown, token);
 			}
 			else

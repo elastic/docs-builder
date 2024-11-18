@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Markdown.Myst.Comments;
@@ -17,7 +18,13 @@ public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context)
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 	public BuildContext Context { get; } = context;
 
-	public MarkdownPipeline Pipeline =>
+	public MarkdownPipeline MinimalPipeline { get; } =
+		new MarkdownPipelineBuilder()
+			.UseSubstitution()
+			.UseYamlFrontMatter()
+			.Build();
+
+	public MarkdownPipeline Pipeline { get; } =
 		new MarkdownPipelineBuilder()
 			.EnableTrackTrivia()
 			.UsePreciseSourceLocation()
@@ -30,17 +37,14 @@ public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context)
 			.UseGridTables()
 			.UsePipeTables()
 			.UseDirectives()
+			.DisableHtml()
 			.Build();
 
 
-	// TODO only scan for yaml front matter and toc information
-	public Task<MarkdownDocument> QuickParseAsync(IFileInfo path, Cancel ctx)
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context)
-		{
-			SkipValidation = true
-		};
-		return ParseAsync(path, context, Pipeline, ctx);
+		var context = new ParserContext(this, path, null, Context) { SkipValidation = true };
+		return ParseAsync(path, context, MinimalPipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)

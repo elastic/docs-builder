@@ -70,7 +70,7 @@ public class DocumentationWebHost
 		{
 			case MarkdownFile markdown:
 			{
-				await markdown.ParseAsync(ctx);
+				await markdown.ParseFullAsync(ctx);
 				var rendered = await generator.RenderLayout(markdown, ctx);
 				return Results.Content(rendered, "text/html");
 			}

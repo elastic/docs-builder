@@ -22,9 +22,9 @@ public class YamlFrontMatter
 	public Dictionary<string, string>? Properties { get; set; }
 }
 
-public class FrontMatterParser
+public static class FrontMatterParser
 {
-	public YamlFrontMatter Deserialize(string yaml)
+	public static YamlFrontMatter Deserialize(string yaml)
 	{
 		var input = new StringReader(yaml);
 

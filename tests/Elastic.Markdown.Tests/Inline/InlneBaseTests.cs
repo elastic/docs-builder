@@ -95,7 +95,7 @@ public abstract class InlineTest : IAsyncLifetime
 	public virtual async Task InitializeAsync()
 	{
 		Document = await File.ParseFullAsync(default);
-		Html = await File.CreateHtmlAsync(File.YamlFrontMatter, default);
+		Html = File.CreateHtml(Document);
 	}
 
 	public Task DisposeAsync() => Task.CompletedTask;

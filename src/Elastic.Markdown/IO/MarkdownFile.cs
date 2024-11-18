@@ -3,17 +3,15 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
-using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
-using Markdig.Helpers;
 using Markdig.Syntax;
 using Slugify;
 
 namespace Elastic.Markdown.IO;
 
-public class MarkdownFile : DocumentationFile
+public record MarkdownFile : DocumentationFile
 {
 	private readonly SlugHelper _slugHelper = new();
 	private string? _navigationTitle;
@@ -21,7 +19,6 @@ public class MarkdownFile : DocumentationFile
 	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext context)
 		: base(sourceFile, rootPath)
 	{
-		ParentFolders = RelativePath.Split(Path.DirectorySeparatorChar).SkipLast(1).ToArray();
 		FileName = sourceFile.Name;
 		UrlPathPrefix = context.UrlPathPrefix;
 		MarkdownParser = parser;
@@ -29,7 +26,6 @@ public class MarkdownFile : DocumentationFile
 
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
-	private FrontMatterParser FrontMatterParser { get; } = new();
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? Title { get; private set; }
 	public string? NavigationTitle
@@ -38,16 +34,32 @@ public class MarkdownFile : DocumentationFile
 		private set => _navigationTitle = value;
 	}
 
-	public List<PageTocItem> TableOfContents { get; } = new();
-	public IReadOnlyList<string> ParentFolders { get; }
+	private readonly List<PageTocItem> _tableOfContent = new();
+	public IReadOnlyCollection<PageTocItem> TableOfContents => _tableOfContent;
+
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
-	public async Task ParseAsync(Cancel ctx) => await ParseFullAsync(ctx);
+	private bool _instructionsParsed;
+
+	public async Task<MarkdownDocument> MinimalParse(Cancel ctx)
+	{
+		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
+		ReadDocumentInstructions(document);
+		return document;
+	}
 
 	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
 	{
-		var document = await MarkdownParser.QuickParseAsync(SourceFile, ctx);
+		if (!_instructionsParsed)
+			await MinimalParse(ctx);
+
+		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
+		return document;
+	}
+
+	private void ReadDocumentInstructions(MarkdownDocument document)
+	{
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
@@ -63,14 +75,20 @@ public class MarkdownFile : DocumentationFile
 			.Where(title => !string.IsNullOrWhiteSpace(title))
 			.Select(title => new PageTocItem { Heading = title!, Slug = _slugHelper.GenerateSlug(title) })
 			.ToList();
-		TableOfContents.Clear();
-		TableOfContents.AddRange(contents);
-		return document;
+		_tableOfContent.Clear();
+		_tableOfContent.AddRange(contents);
+		_instructionsParsed = true;
 	}
 
-	public async Task<string> CreateHtmlAsync(YamlFrontMatter? matter, Cancel ctx)
-	{
-		var document = await MarkdownParser.ParseAsync(SourceFile, matter, ctx);
-		return document.ToHtml(MarkdownParser.Pipeline);
-	}
+
+	public string CreateHtml(MarkdownDocument document) =>
+		// var writer = new StringWriter();
+		// var renderer = new HtmlRenderer(writer);
+		// renderer.LinkRewriter = (s => s);
+		// MarkdownParser.Pipeline.Setup(renderer);
+		//
+		// var document = MarkdownParser.Parse(markdown, pipeline);
+		// renderer.Render(document);
+		// writer.Flush();
+		document.ToHtml(MarkdownParser.Pipeline);
 }
