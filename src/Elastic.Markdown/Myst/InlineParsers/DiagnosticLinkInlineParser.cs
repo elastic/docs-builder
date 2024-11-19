@@ -57,7 +57,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
 		{
-			processor.EmitWarning(line, column, length, $"external URI: {uri} ");
+			var baseDomain = string.Join('.', uri.Host.Split('.')[^2..]);
+			if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
+				processor.EmitWarning(line, column, length, $"external URI: {uri} ");
 			return match;
 		}
 
@@ -65,19 +67,45 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url.StartsWith('/'))
 			includeFrom = context.Parser.SourcePath.FullName;
 
-		var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
-		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
-			processor.EmitError(line, column, length, $"`{url}` does not exist. resolved to `{pathOnDisk}");
+		var anchors = url.Split('#');
+		var anchor = anchors.Length > 1 ? anchors[1] : null;
+		url = anchors[0];
 
-		if (link.FirstChild == null)
+		if (!string.IsNullOrWhiteSpace(url))
 		{
-			var title = context.GetTitle?.Invoke(url);
-			if (!string.IsNullOrEmpty(title))
+			var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
+			if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
+				processor.EmitError(line, column, length, $"`{url}` does not exist. resolved to `{pathOnDisk}");
+		}
+		else
+			link.Url = "";
+
+		if (link.FirstChild == null || !string.IsNullOrEmpty(anchor))
+		{
+			var file = string.IsNullOrWhiteSpace(url) ? context.Path
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url));
+			var markdown = context.GetMarkdownFile?.Invoke(file);
+			var title = markdown?.Title;
+
+			if (!string.IsNullOrEmpty(anchor))
+			{
+				if (markdown == null || !markdown.TableOfContents.TryGetValue(anchor, out var heading))
+					processor.EmitError(line, column, length, $"`{anchor}` does not exist in {markdown?.FileName}.");
+
+				else if (link.FirstChild == null)
+					title += " > " + heading.Heading;
+
+			}
+
+			if (link.FirstChild == null && !string.IsNullOrEmpty(title))
 				link.AppendChild(new LiteralInline(title));
 		}
 
 		if (url.EndsWith(".md"))
 			link.Url = Path.ChangeExtension(url, ".html");
+
+		if (!string.IsNullOrEmpty(anchor))
+			link.Url += $"#{anchor}";
 
 		return match;
 

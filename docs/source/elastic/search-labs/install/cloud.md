@@ -30,13 +30,9 @@ Follow these steps to obtain your Cloud ID:
 1. Locate your deployment, and click the **Manage** link under the **Actions** column.
 1. The Cloud ID is displayed on the right side of the page. See the screenshot below as a reference.
 
-<!-- ![My deployment](/assets/images/guides/elastic-cloud-my-deployment.png) -->
-
 ## Creating an API Key
 
 For security purposes, it is recommended that you create an API Key to use when authenticating to the Elasticsearch service.
-
-<!-- ![my deployment](/assets/images/guides/elastic-cloud-api-key.png) -->
 
 Follow these steps to create an API Key:
 

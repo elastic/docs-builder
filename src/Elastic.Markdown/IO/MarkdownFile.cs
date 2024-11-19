@@ -34,8 +34,9 @@ public record MarkdownFile : DocumentationFile
 		private set => _navigationTitle = value;
 	}
 
-	private readonly List<PageTocItem> _tableOfContent = new();
-	public IReadOnlyCollection<PageTocItem> TableOfContents => _tableOfContent;
+	//indexed by slug
+	private readonly Dictionary<string, PageTocItem> _tableOfContent = new();
+	public IReadOnlyDictionary<string, PageTocItem> TableOfContents => _tableOfContent;
 
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
@@ -76,7 +77,8 @@ public record MarkdownFile : DocumentationFile
 			.Select(title => new PageTocItem { Heading = title!, Slug = _slugHelper.GenerateSlug(title) })
 			.ToList();
 		_tableOfContent.Clear();
-		_tableOfContent.AddRange(contents);
+		foreach (var t in contents)
+			_tableOfContent[t.Slug] = t;
 		_instructionsParsed = true;
 	}
 

@@ -8,6 +8,7 @@ using Documentation.Builder.Diagnostics;
 using Documentation.Builder.Http;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
@@ -50,15 +51,14 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	{
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		var context = new BuildContext
+		var context = new BuildContext(fileSystem, fileSystem, path, output)
 		{
 			UrlPathPrefix = pathPrefix,
 			Force = force ?? false,
-			ReadFileSystem = fileSystem,
-			WriteFileSystem = fileSystem,
 			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
 		};
-		var generator = DocumentationGenerator.Create(path, output, context, logger);
+		var set = new DocumentationSet(context);
+		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
 		return context.Collector.Errors > 1 ? 1 : 0;
 	}

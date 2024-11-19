@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -13,7 +14,9 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 
 	public BuildContext Build { get; } = context.Build;
 
-	public Func<string, string?>? GetTitle { get; } = context.GetTitle;
+	public Func<IFileInfo, MarkdownFile?>? GetMarkdownFile { get; } = context.GetMarkdownFile;
+
+	public ConfigurationFile Configuration { get; } = context.Configuration;
 
 	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
 

@@ -10,10 +10,12 @@ namespace Elastic.Markdown.IO;
 
 public class DocumentationSet
 {
+	public BuildContext Context { get; }
 	public string Name { get; }
+	public IFileInfo OutputStateFile { get; }
+
 	public IDirectoryInfo SourcePath { get; }
 	public IDirectoryInfo OutputPath { get; }
-	public IFileInfo OutputStateFile { get; }
 
 	public DateTimeOffset LastWrite { get; }
 
@@ -21,29 +23,17 @@ public class DocumentationSet
 
 	public MarkdownParser MarkdownParser { get; }
 
-	public DocumentationSet(BuildContext context) : this(null, null, context) { }
-
-	public DocumentationSet(IDirectoryInfo? sourcePath, IDirectoryInfo? outputPath, BuildContext context)
+	public DocumentationSet(BuildContext context)
 	{
-		SourcePath = sourcePath ?? context.ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
-		OutputPath = outputPath ?? context.WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+		Context = context;
+		SourcePath = context.SourcePath;
+		OutputPath = context.OutputPath;
+		Configuration = new ConfigurationFile(context.ConfigurationPath, SourcePath, context);
 
-		var configurationFile = SourcePath.EnumerateFiles("docset.yml", SearchOption.AllDirectories).FirstOrDefault();
-		if (configurationFile is null)
-		{
-			configurationFile = context.ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
-			context.EmitWarning(configurationFile, "No configuration file found");
-		}
-
-		if (configurationFile.Directory!.FullName != SourcePath.FullName)
-			SourcePath = configurationFile.Directory;
-
-		MarkdownParser = new MarkdownParser(SourcePath, context, GetTitle);
+		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration);
 
 		Name = SourcePath.FullName;
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));
-
-		Configuration = new ConfigurationFile(configurationFile, SourcePath, context);
 
 		Files = context.ReadFileSystem.Directory
 			.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)
@@ -68,10 +58,9 @@ public class DocumentationSet
 		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles);
 	}
 
-	private string? GetTitle(string relativePath) => GetMarkdownFile(relativePath)?.YamlFrontMatter?.Title;
-
-	public MarkdownFile? GetMarkdownFile(string relativePath)
+	public MarkdownFile? GetMarkdownFile(IFileInfo sourceFile)
 	{
+		var relativePath = Path.GetRelativePath(SourcePath.FullName, sourceFile.FullName);
 		if (FlatMappedFiles.TryGetValue(relativePath, out var file) && file is MarkdownFile markdownFile)
 			return markdownFile;
 		return null;

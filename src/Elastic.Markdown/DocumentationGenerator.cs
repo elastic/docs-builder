@@ -33,34 +33,20 @@ public class DocumentationGenerator
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
-		BuildContext context,
 		ILoggerFactory logger
 	)
 	{
-		_readFileSystem = context.ReadFileSystem;
-		_writeFileSystem = context.WriteFileSystem;
+		_readFileSystem = docSet.Context.ReadFileSystem;
+		_writeFileSystem = docSet.Context.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
-		Context = context;
+		Context = docSet.Context;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
 
 		_logger.LogInformation($"Created documentation set for: {DocumentationSet.Name}");
 		_logger.LogInformation($"Source directory: {docSet.SourcePath} Exists: {docSet.SourcePath.Exists}");
 		_logger.LogInformation($"Output directory: {docSet.OutputPath} Exists: {docSet.OutputPath.Exists}");
-	}
-
-	public static DocumentationGenerator Create(
-		string? path,
-		string? output,
-		BuildContext context,
-		ILoggerFactory logger
-	)
-	{
-		var sourcePath = path != null ? context.ReadFileSystem.DirectoryInfo.New(path) : null;
-		var outputPath = output != null ? context.WriteFileSystem.DirectoryInfo.New(output) : null;
-		var docSet = new DocumentationSet(sourcePath, outputPath, context);
-		return new DocumentationGenerator(docSet, context, logger);
 	}
 
 	public OutputState? OutputState

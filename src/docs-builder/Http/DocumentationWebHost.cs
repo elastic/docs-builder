@@ -26,10 +26,8 @@ public class DocumentationWebHost
 	{
 		var builder = WebApplication.CreateSlimBuilder();
 		var sourcePath = path != null ? fileSystem.DirectoryInfo.New(path) : null;
-		var context = new BuildContext
+		var context = new BuildContext(fileSystem)
 		{
-			ReadFileSystem = fileSystem,
-			WriteFileSystem = fileSystem,
 			Collector = new ConsoleDiagnosticsCollector(logger)
 		};
 		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(sourcePath, null, context, logger));

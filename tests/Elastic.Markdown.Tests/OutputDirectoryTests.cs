@@ -23,14 +23,12 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
-		var context = new BuildContext
+		var context = new BuildContext(fileSystem)
 		{
-			ReadFileSystem = fileSystem,
-			WriteFileSystem = fileSystem,
 			Collector = new DiagnosticsCollector(logger, [])
 		};
-		var set = new DocumentationSet(null, null, context);
-		var generator = new DocumentationGenerator(set, context, logger);
+		var set = new DocumentationSet(context);
+		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(default);
 

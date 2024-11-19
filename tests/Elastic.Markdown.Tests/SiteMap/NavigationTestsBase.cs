@@ -21,19 +21,17 @@ public class NavigationTestsBase : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
-		var context = new BuildContext
+		var context = new BuildContext(readFs, writeFs)
 		{
 			Force = false,
 			UrlPathPrefix = null,
-			ReadFileSystem = readFs,
-			WriteFileSystem = writeFs,
 			Collector = new DiagnosticsCollector(logger, [])
 		};
 
 		var set = new DocumentationSet(context);
 
 		set.Files.Should().HaveCountGreaterThan(10);
-		Generator = new DocumentationGenerator(set, context, logger);
+		Generator = new DocumentationGenerator(set, logger);
 
 	}
 

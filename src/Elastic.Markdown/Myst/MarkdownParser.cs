@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.InlineParsers;
@@ -14,7 +15,11 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context, Func<string, string?>? getTitle)
+public class MarkdownParser(
+	IDirectoryInfo sourcePath,
+	BuildContext context,
+	Func<IFileInfo, MarkdownFile?>? getMarkdownFile,
+	ConfigurationFile configuration)
 {
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 	public BuildContext Context { get; } = context;
@@ -46,19 +51,19 @@ public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context, Fun
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context)
+		var context = new ParserContext(this, path, null, Context, configuration)
 		{
 			SkipValidation = true,
-			GetTitle = getTitle
+			GetMarkdownFile = getMarkdownFile
 		};
 		return ParseAsync(path, context, MinimalPipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, matter, Context)
+		var context = new ParserContext(this, path, matter, Context, configuration)
 		{
-			GetTitle = getTitle
+			GetMarkdownFile = getMarkdownFile
 		};
 		return ParseAsync(path, context, Pipeline, ctx);
 	}

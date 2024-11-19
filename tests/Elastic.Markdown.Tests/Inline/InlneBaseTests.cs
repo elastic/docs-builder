@@ -46,12 +46,7 @@ public abstract class InlineTest<TDirective>(ITestOutputHelper output, [Language
 	{
 		await base.InitializeAsync();
 		Block = Document
-			.Where(block => block is ParagraphBlock)
-			.Cast<ParagraphBlock>()
-			.FirstOrDefault()?
-			.Inline?
-			.Where(block => block is TDirective)
-			.Cast<TDirective>()
+			.Descendants<TDirective>()
 			.FirstOrDefault();
 	}
 
@@ -87,14 +82,12 @@ public abstract class InlineTest : IAsyncLifetime
 		FileSystem.GenerateDocSetYaml(root);
 
 		Collector = new TestDiagnosticsCollector(logger);
-		var context = new BuildContext
+		var context = new BuildContext(FileSystem)
 		{
-			ReadFileSystem = FileSystem,
-			WriteFileSystem = FileSystem,
 			Collector = Collector
 		};
-		Set = new DocumentationSet(null, null, context);
-		File = Set.GetMarkdownFile("index.md") ?? throw new NullReferenceException();
+		Set = new DocumentationSet(context);
+		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/source/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}

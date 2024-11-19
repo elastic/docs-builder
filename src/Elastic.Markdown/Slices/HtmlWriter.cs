@@ -48,7 +48,7 @@ public class HtmlWriter
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
-			PageTocItems = markdown.TableOfContents,
+			PageTocItems = markdown.TableOfContents.Values.ToList(),
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			NavigationHtml = navigationHtml,

@@ -208,7 +208,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetTitle);
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetMarkdownFile, block.Configuration);
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(parser.Pipeline);

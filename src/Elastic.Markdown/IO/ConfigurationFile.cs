@@ -23,6 +23,11 @@ public record ConfigurationFile : DocumentationFile
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public Glob[] Globs { get; } = [];
+	public HashSet<string> ExternalLinkHosts { get; } = new(StringComparer.OrdinalIgnoreCase)
+	{
+		"elastic.co",
+		"github.com",
+	};
 
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context)
 		: base(sourceFile, rootPath)
@@ -61,6 +66,12 @@ public record ConfigurationFile : DocumentationFile
 					Exclude = ReadStringArray(entry)
 						.Select(Glob.Parse)
 						.ToArray();
+					break;
+				case "external_hosts":
+					var hosts = ReadStringArray(entry)
+						.ToArray();
+					foreach (var host in hosts)
+						ExternalLinkHosts.Add(host);
 					break;
 				case "toc":
 					var entries = ReadChildren(entry, string.Empty);
