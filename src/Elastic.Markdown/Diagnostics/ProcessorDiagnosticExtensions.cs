@@ -28,7 +28,7 @@ public static class ProcessorDiagnosticExtensions
 	}
 
 
-	public static void EmitWarning(this BlockProcessor processor, int line, int column, int length, string message)
+	public static void EmitWarning(this InlineProcessor processor, int line, int column, int length, string message)
 	{
 		var context = processor.GetContext();
 		if (context.SkipValidation) return;

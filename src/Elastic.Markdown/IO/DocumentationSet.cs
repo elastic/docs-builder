@@ -19,7 +19,7 @@ public class DocumentationSet
 
 	public ConfigurationFile Configuration { get; }
 
-	private MarkdownParser MarkdownParser { get; }
+	public MarkdownParser MarkdownParser { get; }
 
 	public DocumentationSet(BuildContext context) : this(null, null, context) { }
 
@@ -27,11 +27,22 @@ public class DocumentationSet
 	{
 		SourcePath = sourcePath ?? context.ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
 		OutputPath = outputPath ?? context.WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+
+		var configurationFile = SourcePath.EnumerateFiles("docset.yml", SearchOption.AllDirectories).FirstOrDefault();
+		if (configurationFile is null)
+		{
+			configurationFile = context.ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
+			context.EmitWarning(configurationFile, "No configuration file found");
+		}
+
+		if (configurationFile.Directory!.FullName != SourcePath.FullName)
+			SourcePath = configurationFile.Directory;
+
+		MarkdownParser = new MarkdownParser(SourcePath, context, GetTitle);
+
 		Name = SourcePath.FullName;
-		MarkdownParser = new MarkdownParser(SourcePath, context);
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));
 
-		var configurationFile = context.ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
 		Configuration = new ConfigurationFile(configurationFile, SourcePath, context);
 
 		Files = context.ReadFileSystem.Directory
@@ -56,6 +67,18 @@ public class DocumentationSet
 
 		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles);
 	}
+
+	private string? GetTitle(string relativePath) => GetMarkdownFile(relativePath)?.YamlFrontMatter?.Title;
+
+	public MarkdownFile? GetMarkdownFile(string relativePath)
+	{
+		if (FlatMappedFiles.TryGetValue(relativePath, out var file) && file is MarkdownFile markdownFile)
+			return markdownFile;
+		return null;
+	}
+
+	public async Task ResolveDirectoryTree(Cancel ctx) =>
+		await Tree.Resolve(ctx);
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{

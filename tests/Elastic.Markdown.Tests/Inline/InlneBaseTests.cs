@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst;
+using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
@@ -65,37 +64,56 @@ public abstract class InlineTest : IAsyncLifetime
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
 	protected MarkdownDocument Document { get; private set; }
+	protected TestDiagnosticsCollector Collector { get; }
+	protected MockFileSystem FileSystem { get; }
+	protected DocumentationSet Set { get; }
+
 
 	protected InlineTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
 	{
 		var logger = new TestLoggerFactory(output);
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/source/index.md", new MockFileData(content) }
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
+		// ReSharper disable once VirtualMemberCallInConstructor
+		// nasty but sub implementations won't use class state.
+		AddToFileSystem(FileSystem);
 
-		var file = fileSystem.FileInfo.New("docs/source/index.md");
-		var root = fileSystem.DirectoryInfo.New(Paths.Root.FullName);
+		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
+		FileSystem.GenerateDocSetYaml(root);
+
+		Collector = new TestDiagnosticsCollector(logger);
 		var context = new BuildContext
 		{
-			ReadFileSystem = fileSystem,
-			WriteFileSystem = fileSystem,
-			Collector = new DiagnosticsCollector(logger, [])
+			ReadFileSystem = FileSystem,
+			WriteFileSystem = FileSystem,
+			Collector = Collector
 		};
-		var parser = new MarkdownParser(root, context);
-
-		File = new MarkdownFile(file, root, parser, context);
+		Set = new DocumentationSet(null, null, context);
+		File = Set.GetMarkdownFile("index.md") ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}
 
+	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
+
 	public virtual async Task InitializeAsync()
 	{
+		var collectTask =  Task.Run(async () => await Collector.StartAsync(default), default);
+
+		await Set.ResolveDirectoryTree(default);
+
 		Document = await File.ParseFullAsync(default);
 		Html = File.CreateHtml(Document);
+		Collector.Channel.TryComplete();
+
+		await collectTask;
+		await Collector.Channel.Reader.Completion;
+		await Collector.StopAsync(default);
 	}
 
 	public Task DisposeAsync() => Task.CompletedTask;

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
@@ -18,11 +19,8 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 """
 )
 {
-	public override Task InitializeAsync()
-	{
-		FileSystem.AddFile(@"docs/source/img/observability.png", "");
-		return base.InitializeAsync();
-	}
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(@"docs/source/img/observability.png", "");
 
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();

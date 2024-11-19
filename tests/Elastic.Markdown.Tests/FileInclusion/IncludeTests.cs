@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
@@ -18,12 +19,11 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 """
 )
 {
-	public override Task InitializeAsync()
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		FileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
-		return base.InitializeAsync();
+		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -50,12 +50,11 @@ sub:
 """
 )
 {
-	public override Task InitializeAsync()
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
 		var inclusion = "*Hello {{foo}}*";
-		FileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
-		return base.InitializeAsync();
+		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
 	}
 
 	[Fact]

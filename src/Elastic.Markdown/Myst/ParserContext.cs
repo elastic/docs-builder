@@ -52,4 +52,5 @@ public class ParserContext : MarkdownParserContext
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; init; }
+	public Func<string, string?>? GetTitle { get; init; }
 }

@@ -13,6 +13,8 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 
 	public BuildContext Build { get; } = context.Build;
 
+	public Func<string, string?>? GetTitle { get; } = context.GetTitle;
+
 	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
 
 	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
@@ -13,21 +14,23 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context)
+public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context, Func<string, string?>? getTitle)
 {
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 	public BuildContext Context { get; } = context;
 
 	public MarkdownPipeline MinimalPipeline { get; } =
 		new MarkdownPipelineBuilder()
+			.UseDiagnosticLinks()
 			.UseSubstitution()
 			.UseYamlFrontMatter()
 			.Build();
 
-	public MarkdownPipeline Pipeline { get; } =
+	public MarkdownPipeline Pipeline =>
 		new MarkdownPipelineBuilder()
 			.EnableTrackTrivia()
 			.UsePreciseSourceLocation()
+			.UseDiagnosticLinks()
 			.UseGenericAttributes()
 			.UseEmphasisExtras(EmphasisExtraOptions.Default)
 			.UseSoftlineBreakAsHardlineBreak()
@@ -43,13 +46,20 @@ public class MarkdownParser(IDirectoryInfo sourcePath, BuildContext context)
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context) { SkipValidation = true };
+		var context = new ParserContext(this, path, null, Context)
+		{
+			SkipValidation = true,
+			GetTitle = getTitle
+		};
 		return ParseAsync(path, context, MinimalPipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, matter, Context);
+		var context = new ParserContext(this, path, matter, Context)
+		{
+			GetTitle = getTitle
+		};
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 

@@ -43,7 +43,7 @@ public class NavigationTestsBase : IAsyncLifetime
 
 	public async Task InitializeAsync()
 	{
-		await Generator.GenerateAll(default);
+		await Generator.ResolveDirectoryTree(default);
 		Configuration = Generator.DocumentationSet.Configuration;
 	}
 

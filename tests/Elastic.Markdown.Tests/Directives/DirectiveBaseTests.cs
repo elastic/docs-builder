@@ -51,6 +51,8 @@ public abstract class DirectiveTest : IAsyncLifetime
 	protected MarkdownDocument Document { get; private set; }
 	protected MockFileSystem FileSystem { get; }
 	protected TestDiagnosticsCollector Collector { get; }
+	protected DocumentationSet Set { get; set; }
+
 
 	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
 	{
@@ -62,9 +64,13 @@ public abstract class DirectiveTest : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
+		// ReSharper disable once VirtualMemberCallInConstructor
+		// nasty but sub implementations won't use class state.
+		AddToFileSystem(FileSystem);
 
-		var file = FileSystem.FileInfo.New("docs/source/index.md");
-		var root = file.Directory!;
+		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
+		FileSystem.GenerateDocSetYaml(root);
+
 		Collector = new TestDiagnosticsCollector(logger);
 		var context = new BuildContext
 		{
@@ -72,12 +78,13 @@ public abstract class DirectiveTest : IAsyncLifetime
 			WriteFileSystem = FileSystem,
 			Collector = Collector
 		};
-		var parser = new MarkdownParser(root, context);
-
-		File = new MarkdownFile(file, root, parser, context);
+		Set = new DocumentationSet(null, null, context);
+		File = Set.GetMarkdownFile("index.md") ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}
+
+	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
 
 	public virtual async Task InitializeAsync()
 	{
