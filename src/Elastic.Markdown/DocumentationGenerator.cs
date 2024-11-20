@@ -128,6 +128,11 @@ public class DocumentationGenerator
 		outputSeenChanges = generationState?.LastSeenChanges ?? DateTimeOffset.MinValue;
 		if (generationState == null)
 			return false;
+		if (Context.Force)
+		{
+			_logger.LogInformation($"Full compilation: --force was specified");
+			return false;
+		}
 
 		if (Context.Git != generationState.Git)
 		{
@@ -144,7 +149,6 @@ public class DocumentationGenerator
 			_logger.LogInformation($"Incremental compilation. since: {generationState.LastSeenChanges}");
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
-			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges}");
 			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges} "
 			                       + "Pass --force to force a full regeneration");
 			return true;
@@ -157,6 +161,7 @@ public class DocumentationGenerator
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = LinkReference.Create(DocumentationSet);
+
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
 		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
 	}
