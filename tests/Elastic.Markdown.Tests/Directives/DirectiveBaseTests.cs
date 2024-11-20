@@ -86,14 +86,12 @@ public abstract class DirectiveTest : IAsyncLifetime
 
 	public virtual async Task InitializeAsync()
 	{
-		var collectTask =  Task.Run(async () => await Collector.StartAsync(default), default);
+		_ = Collector.StartAsync(default);
 
 		Document = await File.ParseFullAsync(default);
 		Html = File.CreateHtml(Document);
 		Collector.Channel.TryComplete();
 
-		await collectTask;
-		await Collector.Channel.Reader.Completion;
 		await Collector.StopAsync(default);
 	}
 

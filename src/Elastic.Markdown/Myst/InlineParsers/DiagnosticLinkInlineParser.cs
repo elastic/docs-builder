@@ -76,6 +76,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
 			if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 				processor.EmitError(line, column, length, $"`{url}` does not exist. resolved to `{pathOnDisk}");
+			else
+			{
+
+			}
 		}
 		else
 			link.Url = "";

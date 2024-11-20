@@ -41,7 +41,6 @@ public class DiagnosticsChannel
 	}
 }
 
-
 public enum Severity { Error, Warning }
 
 public readonly record struct Diagnostic
@@ -70,7 +69,6 @@ public class LogDiagnosticOutput(ILogger logger) : IDiagnosticsOutput
 	}
 }
 
-
 public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollection<IDiagnosticsOutput> outputs)
 	: IHostedService
 {
@@ -84,24 +82,32 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 	public long Warnings => _warnings;
 	public long Errors => _errors;
 
+	private Task? _started;
+
 	public HashSet<string> OffendingFiles { get; } = new();
 
-	public async Task StartAsync(Cancel ctx)
+	public Task StartAsync(Cancel ctx)
 	{
-		await Channel.WaitToWrite();
-		while (!Channel.CancellationToken.IsCancellationRequested)
+		if (_started is not null) return _started;
+		_started = Task.Run(async () =>
 		{
-			try
+			await Channel.WaitToWrite();
+			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
-				while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-					Drain();
+				try
+				{
+					while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+						Drain();
+				}
+				catch
+				{
+					//ignore
+				}
 			}
-			catch
-			{
-				//ignore
-			}
-		}
-		Drain();
+
+			Drain();
+		}, ctx);
+		return _started;
 
 		void Drain()
 		{
@@ -124,7 +130,12 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 			Interlocked.Increment(ref _warnings);
 	}
 
-	protected virtual void HandleItem(Diagnostic diagnostic) {}
+	protected virtual void HandleItem(Diagnostic diagnostic) { }
 
-	public virtual Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+	public virtual async Task StopAsync(CancellationToken cancellationToken)
+	{
+		if (_started is not null)
+			await _started;
+		await Channel.Reader.Completion;
+	}
 }

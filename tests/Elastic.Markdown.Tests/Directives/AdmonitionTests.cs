@@ -41,6 +41,12 @@ public class TipTests(ITestOutputHelper output) : AdmonitionTests(output, "tip")
 	public void SetsTitle() => Block!.Title.Should().Be("Tip");
 }
 
+public class AttentionTests(ITestOutputHelper output) : AdmonitionTests(output, "attention")
+{
+	[Fact]
+	public void SetsTitle() => Block!.Title.Should().Be("Attention");
+}
+
 public class NoteTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
 """
 ```{note} This is my custom note

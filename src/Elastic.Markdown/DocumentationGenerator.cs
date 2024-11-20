@@ -97,7 +97,7 @@ public class DocumentationGenerator
 
 		var handledItems = 0;
 
-		var collectTask =  Task.Run(async () => await Context.Collector.StartAsync(ctx), ctx);
+		_ = Context.Collector.StartAsync(ctx);
 
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
@@ -126,10 +126,7 @@ public class DocumentationGenerator
 
 		await GenerateDocumentationState(ctx);
 
-		await collectTask;
-		await Context.Collector.Channel.Reader.Completion;
 		await Context.Collector.StopAsync(ctx);
-
 
 		IFileInfo OutputFile(string relativePath)
 		{

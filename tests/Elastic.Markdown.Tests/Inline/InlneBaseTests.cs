@@ -96,7 +96,7 @@ public abstract class InlineTest : IAsyncLifetime
 
 	public virtual async Task InitializeAsync()
 	{
-		var collectTask =  Task.Run(async () => await Collector.StartAsync(default), default);
+		_ = Collector.StartAsync(default);
 
 		await Set.ResolveDirectoryTree(default);
 
@@ -104,8 +104,6 @@ public abstract class InlineTest : IAsyncLifetime
 		Html = File.CreateHtml(Document);
 		Collector.Channel.TryComplete();
 
-		await collectTask;
-		await Collector.Channel.Reader.Completion;
 		await Collector.StopAsync(default);
 	}
 

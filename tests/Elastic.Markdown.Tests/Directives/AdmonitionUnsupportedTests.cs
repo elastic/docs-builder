@@ -26,7 +26,6 @@ public abstract class AdmonitionUnsupportedTests(ITestOutputHelper output, strin
 }
 
 // ReSharper disable UnusedType.Global
-public class AttentionTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "attention");
 public class DangerTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "danger");
 public class ErrorTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "error");
 public class HintTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "hint");
