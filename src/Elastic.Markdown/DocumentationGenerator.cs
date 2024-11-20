@@ -88,11 +88,15 @@ public class DocumentationGenerator
 
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
-			if (offendingFiles.Contains(file.SourceFile.FullName))
-				_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
-			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
-				return;
+			if (!Context.Force)
+			{
+				if (offendingFiles.Contains(file.SourceFile.FullName))
+					_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
+				else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
+					return;
+			}
 
+			_logger.LogTrace($"{file.SourceFile.FullName}");
 			var item = Interlocked.Increment(ref handledItems);
 			var outputFile = OutputFile(file.RelativePath);
 			if (file is MarkdownFile markdown)
