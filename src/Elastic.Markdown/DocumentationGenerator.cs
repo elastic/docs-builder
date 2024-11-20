@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Markdown.IO;
@@ -12,13 +11,20 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Markdown;
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(OutputState))]
+[JsonSerializable(typeof(GenerationState))]
+[JsonSerializable(typeof(LinkReference))]
+[JsonSerializable(typeof(GitConfiguration))]
 internal partial class SourceGenerationContext : JsonSerializerContext;
 
-public class OutputState
+public record GenerationState
 {
-	public DateTimeOffset LastSeenChanges { get; set; }
-	public string[] Conflict { get; set; } = [];
+	[JsonPropertyName("last_seen_changes")]
+	public required DateTimeOffset LastSeenChanges { get; init; }
+	[JsonPropertyName("invalid_files")]
+	public required string[] InvalidFiles { get; init; } = [];
+
+	[JsonPropertyName("git")]
+	public required GitConfiguration Git { get; init; }
 }
 
 public class DocumentationGenerator
@@ -49,18 +55,13 @@ public class DocumentationGenerator
 		_logger.LogInformation($"Output directory: {docSet.OutputPath} Exists: {docSet.OutputPath.Exists}");
 	}
 
-	public OutputState? OutputState
+	public GenerationState? GetPreviousGenerationState()
 	{
-		get
-		{
-			var stateFile = DocumentationSet.OutputStateFile;
-			stateFile.Refresh();
-			if (!stateFile.Exists) return null;
-			var contents = stateFile.FileSystem.File.ReadAllText(stateFile.FullName);
-			return JsonSerializer.Deserialize(contents, SourceGenerationContext.Default.OutputState);
-
-
-		}
+		var stateFile = DocumentationSet.OutputStateFile;
+		stateFile.Refresh();
+		if (!stateFile.Exists) return null;
+		var contents = stateFile.FileSystem.File.ReadAllText(stateFile.FullName);
+		return JsonSerializer.Deserialize(contents, SourceGenerationContext.Default.GenerationState);
 	}
 
 
@@ -69,26 +70,12 @@ public class DocumentationGenerator
 
 	public async Task GenerateAll(Cancel ctx)
 	{
-		if (Context.Force || OutputState == null)
+		var generationState = GetPreviousGenerationState();
+		if (Context.Force || generationState == null)
 			DocumentationSet.ClearOutputDirectory();
 
-		_logger.LogInformation($"Last write source: {DocumentationSet.LastWrite}, output observed: {OutputState?.LastSeenChanges}");
-
-		var offendingFiles = new HashSet<string>(OutputState?.Conflict ?? []);
-		var outputSeenChanges = OutputState?.LastSeenChanges ?? DateTimeOffset.MinValue;
-		if (offendingFiles.Count > 0)
-		{
-			_logger.LogInformation($"Reapplying changes since {DocumentationSet.LastWrite}");
-			_logger.LogInformation($"Reapplying for {offendingFiles.Count} files with errors/warnings");
-		}
-		else if (DocumentationSet.LastWrite > outputSeenChanges && OutputState != null)
-			_logger.LogInformation($"Using incremental build picking up changes since: {OutputState.LastSeenChanges}");
-		else if (DocumentationSet.LastWrite <= outputSeenChanges && OutputState != null)
-		{
-			_logger.LogInformation($"No changes in source since last observed write {OutputState.LastSeenChanges} "
-			                       + "Pass --force to force a full regeneration");
+		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return;
-		}
 
 		_logger.LogInformation("Resolving tree");
 		await ResolveDirectoryTree(ctx);
@@ -122,6 +109,7 @@ public class DocumentationGenerator
 		Context.Collector.Channel.TryComplete();
 
 		await GenerateDocumentationState(ctx);
+		await GenerateLinkReference(ctx);
 
 		await Context.Collector.StopAsync(ctx);
 
@@ -133,18 +121,58 @@ public class DocumentationGenerator
 
 	}
 
+	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,
+		out DateTimeOffset outputSeenChanges)
+	{
+		offendingFiles = new HashSet<string>(generationState?.InvalidFiles ?? []);
+		outputSeenChanges = generationState?.LastSeenChanges ?? DateTimeOffset.MinValue;
+		if (generationState == null)
+			return false;
+
+		if (Context.Git != generationState.Git)
+		{
+			_logger.LogInformation($"Full compilation: current git context: {Context.Git} differs from previous git context: {generationState.Git}");
+			return false;
+		}
+
+		if (offendingFiles.Count > 0)
+		{
+			_logger.LogInformation($"Incremental compilation. since: {DocumentationSet.LastWrite}");
+			_logger.LogInformation($"Incremental compilation. {offendingFiles.Count} files with errors/warnings");
+		}
+		else if (DocumentationSet.LastWrite > outputSeenChanges)
+			_logger.LogInformation($"Incremental compilation. since: {generationState.LastSeenChanges}");
+		else if (DocumentationSet.LastWrite <= outputSeenChanges)
+		{
+			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges}");
+			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges} "
+			                       + "Pass --force to force a full regeneration");
+			return true;
+		}
+
+		return false;
+	}
+
+	private async Task GenerateLinkReference(Cancel ctx)
+	{
+		var file = DocumentationSet.LinkReferenceFile;
+		var state = LinkReference.Create(DocumentationSet);
+		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
+		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+	}
+
 	private async Task GenerateDocumentationState(Cancel ctx)
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
 		_logger.LogInformation($"Writing documentation state {DocumentationSet.LastWrite} to {stateFile.FullName}");
 		var badFiles = Context.Collector.OffendingFiles.ToArray();
-		var state = new OutputState
+		var state = new GenerationState
 		{
 			LastSeenChanges = DocumentationSet.LastWrite,
-			Conflict = badFiles
-
+			InvalidFiles = badFiles,
+			Git = Context.Git
 		};
-		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.OutputState);
+		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);
 		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
 	}
 

@@ -16,28 +16,29 @@ public class NavigationTestsBase : IAsyncLifetime
 	protected NavigationTestsBase(ITestOutputHelper output)
 	{
 		var logger = new TestLoggerFactory(output);
-		var readFs = new FileSystem(); //use real IO to read docs.
+		ReadFileSystem = new FileSystem(); //use real IO to read docs.
 		var writeFs = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
-		var context = new BuildContext(readFs, writeFs)
+		var context = new BuildContext(ReadFileSystem, writeFs)
 		{
 			Force = false,
 			UrlPathPrefix = null,
 			Collector = new DiagnosticsCollector(logger, [])
 		};
 
-		var set = new DocumentationSet(context);
+		Set = new DocumentationSet(context);
 
-		set.Files.Should().HaveCountGreaterThan(10);
-		Generator = new DocumentationGenerator(set, logger);
+		Set.Files.Should().HaveCountGreaterThan(10);
+		Generator = new DocumentationGenerator(Set, logger);
 
 	}
 
-	public DocumentationGenerator Generator { get; }
-
-	public ConfigurationFile Configuration { get; set; } = default!;
+	protected FileSystem ReadFileSystem { get; set; }
+	protected DocumentationSet Set { get; }
+	protected DocumentationGenerator Generator { get; }
+	protected ConfigurationFile Configuration { get; set; } = default!;
 
 	public async Task InitializeAsync()
 	{

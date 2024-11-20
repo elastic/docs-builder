@@ -13,6 +13,7 @@ public class DocumentationSet
 	public BuildContext Context { get; }
 	public string Name { get; }
 	public IFileInfo OutputStateFile { get; }
+	public IFileInfo LinkReferenceFile { get; }
 
 	public IDirectoryInfo SourcePath { get; }
 	public IDirectoryInfo OutputPath { get; }
@@ -34,6 +35,7 @@ public class DocumentationSet
 
 		Name = SourcePath.FullName;
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));
+		LinkReferenceFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, "links.json"));
 
 		Files = context.ReadFileSystem.Directory
 			.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)

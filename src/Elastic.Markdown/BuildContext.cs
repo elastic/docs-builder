@@ -17,6 +17,8 @@ public record BuildContext
 
 	public IFileInfo ConfigurationPath { get; }
 
+	public GitConfiguration Git { get; }
+
 	public required DiagnosticsCollector Collector { get; init; }
 
 	public bool Force { get; init; }
@@ -53,6 +55,8 @@ public record BuildContext
 
 		if (ConfigurationPath.FullName != SourcePath.FullName)
 			SourcePath = ConfigurationPath.Directory!;
+
+		Git = GitConfiguration.Create(ReadFileSystem);
 
 
 	}
