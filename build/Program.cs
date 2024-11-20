@@ -15,6 +15,7 @@ app.Add("", async Task (Cancel _) =>
 {
 	await "dotnet tool restore";
 	await "dotnet build -c Release --verbosity minimal";
+	await "dotnet test --configuration Release --logger GitHubActions -- RunConfiguration.CollectSourceInformation=true";
 });
 
 app.Add("publish", async (Cancel _) =>
