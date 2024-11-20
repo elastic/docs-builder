@@ -29,9 +29,17 @@ public record GitConfiguration
 		if (!gitConfig.Exists)
 			throw new Exception($"{Paths.Root.FullName} is not a git repository.");
 
-		var head = Read(".git/HEAD").Replace("ref: ", string.Empty);
-		var gitRef = Read(".git/" + head);
+		var head = Read(".git/HEAD");
+		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
+		//not detached HEAD
+		if (head.StartsWith("ref:"))
+		{
+			head = head.Replace("ref: ", string.Empty);
+			gitRef = Read(".git/" + head);
+		}
+		else
+			branch = "detached/head";
 
 		var ini = new FileIniDataParser();
 		using var stream = gitConfig.OpenRead();
