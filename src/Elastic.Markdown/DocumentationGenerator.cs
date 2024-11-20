@@ -109,10 +109,7 @@ public class DocumentationGenerator
 			var item = Interlocked.Increment(ref handledItems);
 			var outputFile = OutputFile(file.RelativePath);
 			if (file is MarkdownFile markdown)
-			{
-				await markdown.ParseFullAsync(token);
 				await HtmlWriter.WriteAsync(outputFile, markdown, token);
-			}
 			else
 			{
 				if (outputFile.Directory is { Exists: false })
