@@ -50,7 +50,8 @@ public record GitConfiguration
 			remote = BranchTrackingRemote("main", config);
 		if (string.IsNullOrEmpty(remote))
 			remote = BranchTrackingRemote("master", config);
-
+		if (string.IsNullOrEmpty(remote))
+			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "elastic/docs-builder-unknown";
 
 		return new GitConfiguration { Ref = gitRef, Branch = branch, Remote = remote };
 
