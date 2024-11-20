@@ -8,7 +8,6 @@ public class CodeBlock(DirectiveBlockParser parser, string directive, Dictionary
 {
 	public override string Directive => directive;
 	public string? Caption { get; private set; }
-	public string? CrossReferenceName { get; private set; }
 
 	public string Language
 	{
@@ -23,6 +22,6 @@ public class CodeBlock(DirectiveBlockParser parser, string directive, Dictionary
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Caption = Properties.GetValueOrDefault("caption");
-		CrossReferenceName = Properties.GetValueOrDefault("name");
+		CrossReferenceName = Prop("name", "label");
 	}
 }

@@ -58,7 +58,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "code-cell", 8 },
 
 		{ "admonition", 3 },
-		{ "attention", 3 },
 		{ "danger", 3 },
 		{ "error", 3 },
 		{ "hint", 3 },

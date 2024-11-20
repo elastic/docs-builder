@@ -27,6 +27,8 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
 {
 	public IReadOnlyDictionary<string, string> Properties { get; } = properties;
 
+	public string? CrossReferenceName  { get; protected set; }
+
 	/// <inheritdoc />
 	public char FencedChar { get; set; }
 

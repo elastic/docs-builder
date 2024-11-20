@@ -83,6 +83,9 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 		// Render the report
 		report.Render(AnsiConsole.Console);
 		AnsiConsole.WriteLine();
+		AnsiConsole.Write(new Markup($"	[bold red]{Errors} Errors[/] / [bold blue]{Warnings} Warnings[/]"));
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
 		await Task.CompletedTask;
 	}
 }

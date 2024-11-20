@@ -46,15 +46,11 @@ public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> 
 	/// </summary>
 	public string? Target { get; set; }
 
-	/// <summary>
-	/// A reference target for the admonition (see cross-referencing).
-	/// </summary>
-	public string? Label  { get; private set; }
-
 	public string? ImageUrl { get; private set; }
 
 	public bool Found { get; private set; }
 
+	public string? Label { get; private set; }
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{

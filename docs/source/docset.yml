@@ -19,6 +19,7 @@ exclude:
   - '_*.md'
 toc:
   - file: index.md
+  - folder: markup
   - folder: elastic
     children:
       - file: index.md
@@ -40,7 +41,6 @@ toc:
             children:
               - file: search/req.md
               - file: search/setup.md
-  - folder: markup
   - folder: nested
     children:
       - folder: content

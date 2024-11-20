@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
@@ -37,6 +38,9 @@ public record MarkdownFile : DocumentationFile
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _tableOfContent = new();
 	public IReadOnlyDictionary<string, PageTocItem> TableOfContents => _tableOfContent;
+
+	private readonly HashSet<string> _additionalLabels = new();
+	public IReadOnlySet<string> AdditionalLabels => _additionalLabels;
 
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
@@ -79,6 +83,18 @@ public record MarkdownFile : DocumentationFile
 		_tableOfContent.Clear();
 		foreach (var t in contents)
 			_tableOfContent[t.Slug] = t;
+
+		var labels = document.Descendants<DirectiveBlock>()
+			.Select(b=>b.CrossReferenceName)
+			.Where(l=>!string.IsNullOrWhiteSpace(l))
+			.Select(_slugHelper.GenerateSlug)
+			.ToArray();
+		foreach(var label in labels)
+		{
+			if (!string.IsNullOrEmpty(label))
+				_additionalLabels.Add(label);
+		}
+
 		_instructionsParsed = true;
 	}
 

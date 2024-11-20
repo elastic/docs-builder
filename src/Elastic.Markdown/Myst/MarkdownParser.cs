@@ -24,11 +24,13 @@ public class MarkdownParser(
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 	public BuildContext Context { get; } = context;
 
-	public MarkdownPipeline MinimalPipeline { get; } =
+	//TODO directive properties are stateful, rewrite this so we can cache builders
+	public MarkdownPipeline MinimalPipeline =>
 		new MarkdownPipelineBuilder()
 			.UseDiagnosticLinks()
-			.UseSubstitution()
 			.UseYamlFrontMatter()
+			.UseDirectives()
+			.UseSubstitution()
 			.Build();
 
 	public MarkdownPipeline Pipeline =>
