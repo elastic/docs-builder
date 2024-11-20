@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>docs-builder</AssemblyName>
-    <RootNamespace>Documentation.Builder</RootNamespace>
+    <RootNamespace>Documentation.Assembler</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
 
     <PublishAot>false</PublishAot>
@@ -23,6 +23,9 @@
     <PackageReference Include="Errata" Version="0.13.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0"/>
     <PackageReference Include="Github.Actions.Core" Version="8.1.1"/>
+    <PackageReference Include="Proc" Version="0.8.2" />
+    <PackageReference Include="XenoAtom.Interop.libgit2" Version="1.0.0-alpha.2"/>
+    <PackageReference Include="LibGit2Sharp.NativeBinaries" Version="2.0.322" />
   </ItemGroup>
 
   <ItemGroup>
