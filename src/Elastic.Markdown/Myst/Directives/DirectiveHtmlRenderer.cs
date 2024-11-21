@@ -81,9 +81,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var imageUrl =
 			block.ImageUrl != null &&
-		               (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
-			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
-			: block.ImageUrl;
+			(block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+				? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
+				: block.ImageUrl;
 		var slice = Image.Create(new ImageViewModel
 		{
 			Label = block.Label,
@@ -100,7 +100,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl = block.ImageUrl != null && (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+		var imageUrl = block.ImageUrl != null &&
+		               (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = Slices.Directives.Figure.Create(new ImageViewModel
@@ -161,7 +162,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			CrossReferenceName = block.CrossReferenceName, Language = block.Language, Caption = block.Caption
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
 
@@ -179,7 +180,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
 	{
-		var slice = TabItem.Create(new TabItemViewModel { Index = block.Index, Title = block.Title, TabSetIndex = block.TabSetIndex });
+		var slice = TabItem.Create(new TabItemViewModel
+		{
+			Index = block.Index, Title = block.Title, TabSetIndex = block.TabSetIndex
+		});
 		RenderRazorSlice(slice, renderer, block);
 	}
 
@@ -200,7 +204,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			});
 			RenderRazorSlice(slice, renderer, content);
 		}
-
 	}
 
 	private void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
@@ -208,7 +211,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetMarkdownFile, block.Configuration);
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetMarkdownFile,
+			block.Configuration);
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(parser.Pipeline);
@@ -241,22 +245,47 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
 		renderer.Write(blocks[0]);
 		foreach (var o in obj)
+			Render(o);
+
+		renderer.Write(blocks[1]);
+
+		void RenderLeaf(LeafBlock p)
 		{
-			if (o is ParagraphBlock p)
+			renderer.WriteLeafRawLines(p, true, false, false);
+			renderer.EnableHtmlForInline = false;
+			foreach (var oo in p.Inline ?? [])
 			{
-				renderer.WriteLeafRawLines(p, true, false, false);
-				renderer.EnableHtmlForInline = false;
-				foreach (var oo in p.Inline ?? [])
+				if (oo is LiteralInline li)
+					renderer.Write(li);
+				if (oo is LineBreakInline)
+					renderer.WriteLine();
+			}
+
+			renderer.EnableHtmlForInline = true;
+		}
+
+		void RenderListBlock(ListBlock l)
+		{
+			foreach (var bb in l)
+			{
+				if (bb is LeafBlock lbi)
+					RenderLeaf(lbi);
+				else if (bb is ListItemBlock ll)
 				{
-					if (oo is LiteralInline li)
-						renderer.Write(li);
-					if (oo is LineBreakInline)
-						renderer.WriteLine();
+					renderer.Write(ll.TriviaBefore);
+					renderer.Write("-");
+					foreach (var lll in ll)
+						Render(lll);
 				}
-				renderer.EnableHtmlForInline = true;
 			}
 		}
 
-		renderer.Write(blocks[1]);
+		void Render(Block o)
+		{
+			if (o is LeafBlock p)
+				RenderLeaf(p);
+			else if (o is ListBlock l)
+				RenderListBlock(l);
+		}
 	}
 }

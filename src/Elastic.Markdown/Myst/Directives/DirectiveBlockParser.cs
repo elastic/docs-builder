@@ -73,7 +73,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-	    if (info.IndexOf("{") == -1)
+		if (info.IndexOf("{") == -1)
 		    return new CodeBlock(this, "raw", _admonitionData);
 
 	    // TODO alternate lookup .NET 9
