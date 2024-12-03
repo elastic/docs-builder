@@ -138,4 +138,26 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 			await _started;
 		await Channel.Reader.Completion;
 	}
+
+
+	public void EmitError(string file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = file,
+			Message = message,
+		};
+		Channel.Write(d);
+	}
+	public void EmitWarning(string file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = file,
+			Message = message,
+		};
+		Channel.Write(d);
+	}
 }

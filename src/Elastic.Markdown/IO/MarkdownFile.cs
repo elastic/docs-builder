@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Slices;
@@ -23,7 +24,10 @@ public record MarkdownFile : DocumentationFile
 		FileName = sourceFile.Name;
 		UrlPathPrefix = context.UrlPathPrefix;
 		MarkdownParser = parser;
+		Collector = context.Collector;
 	}
+
+	public DiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
@@ -60,6 +64,8 @@ public record MarkdownFile : DocumentationFile
 			await MinimalParse(ctx);
 
 		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
+		if (Title == RelativePath)
+			Collector.EmitWarning(SourceFile.FullName, "Missing yaml front-matter block defining a title or a level 1 header");
 		return document;
 	}
 

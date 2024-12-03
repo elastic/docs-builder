@@ -32,3 +32,17 @@ sub:
 			.And.ContainKey("key");
 	}
 }
+
+public class EmptyFileWarnsNeedingATitle(ITestOutputHelper output) : DirectiveTest(output, "")
+{
+	[Fact]
+	public void ReadsTitle() => File.Title.Should().Be("index.md");
+
+	[Fact]
+	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("index.md");
+
+	[Fact]
+	public void WarnsOfNoTitle() =>
+		Collector.Diagnostics.Should().NotBeEmpty()
+			.And.Contain(d=>d.Message.Contains("Missing yaml front-matter block defining a title"));
+}
