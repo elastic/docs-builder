@@ -28,9 +28,8 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, Diction
 		if (!SemVersion.TryParse(tokens[0], out var version))
 		{
 			var numbers = tokens[0].Split('.', RemoveEmptyEntries);
-			if (numbers.Length != 2 || !SemVersion.TryParse($"{numbers[0]}.{numbers[1]}", out version))
+			if (numbers.Length != 2 || !SemVersion.TryParse($"{numbers[0]}.{numbers[1]}.0", out version))
 				EmitError(context, $"'{tokens[0]}' is not a valid version");
-			return;
 		}
 
 		Version = version;

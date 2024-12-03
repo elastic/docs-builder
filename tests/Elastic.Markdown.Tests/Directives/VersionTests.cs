@@ -54,7 +54,7 @@ public class VersionDeprectatedTests(ITestOutputHelper output) : VersionTests(ou
 public abstract class VersionValidationTests(ITestOutputHelper output, string version) : DirectiveTest<VersionBlock>(output,
 $$"""
 ```{versionchanged} {{version}} more information
-Version brief summary 
+Version brief summary
 ```
 A regular paragraph.
 """
@@ -64,6 +64,9 @@ public class SimpleVersion(ITestOutputHelper output) : VersionValidationTests(ou
 {
 	[Fact]
 	public void SetsVersion() => Block!.Version.Should().Be(new SemVersion(7, 17, 0));
+
+	[Fact]
+	public void HasNoError() => Collector.Diagnostics.Should().BeEmpty();
 }
 
 public class MajorVersionOnly(ITestOutputHelper output) : VersionValidationTests(output, "8")
