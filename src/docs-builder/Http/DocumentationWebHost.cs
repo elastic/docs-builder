@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Westwind.AspNetCore.LiveReload;
 
 namespace Documentation.Builder.Http;
 
@@ -30,6 +31,11 @@ public class DocumentationWebHost
 		{
 			Collector = new ConsoleDiagnosticsCollector(logger)
 		};
+		builder.Services.AddLiveReload(s =>
+		{
+			s.FolderToMonitor = context.SourcePath.FullName;
+			s.ClientFileExtensions = ".md";
+		});
 		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(sourcePath, null, context, logger));
 		builder.Services.AddHostedService<ReloadGeneratorService>();
 		builder.Services.AddSingleton(logger);
@@ -39,10 +45,12 @@ public class DocumentationWebHost
 		SetUpRoutes();
 	}
 
+
 	public async Task RunAsync(Cancel ctx) => await _webApplication.RunAsync(ctx);
 
 	private void SetUpRoutes()
 	{
+		_webApplication.UseLiveReload();
 		_webApplication.UseStaticFiles(new StaticFileOptions
 		{
 			FileProvider = new PhysicalFileProvider(_staticFilesDirectory),
