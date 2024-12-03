@@ -72,6 +72,11 @@ public record MarkdownFile : DocumentationFile
 			Title = YamlFrontMatter.Title;
 			NavigationTitle = YamlFrontMatter.NavigationTitle;
 		}
+		else
+		{
+			Title = RelativePath;
+			NavigationTitle = RelativePath;
+		}
 
 		var contents = document
 			.Where(block => block is HeadingBlock { Level: 2 })

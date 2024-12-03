@@ -66,6 +66,8 @@ public class ReloadGeneratorService(
 
 		if (e.FullPath.EndsWith("docset.yml"))
 			Reload();
+		if (e.FullPath.EndsWith(".md"))
+			Reload();
 
 		Logger.LogInformation($"Changed: {e.FullPath}");
 	}
