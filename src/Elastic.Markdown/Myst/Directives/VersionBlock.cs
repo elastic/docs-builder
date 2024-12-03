@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Helpers;
+using static System.StringSplitOptions;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -17,7 +18,7 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, Diction
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		var tokens = Arguments?.Split(" ", 2, StringSplitOptions.RemoveEmptyEntries) ?? [];
+		var tokens = Arguments?.Split(" ", 2, RemoveEmptyEntries) ?? [];
 		if (tokens.Length < 1)
 		{
 			EmitError(context, $"{directive} needs exactly 2 arguments: <version> <title>");
@@ -26,7 +27,9 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, Diction
 
 		if (!SemVersion.TryParse(tokens[0], out var version))
 		{
-			EmitError(context, $"{tokens[0]} is not a valid version");
+			var numbers = tokens[0].Split('.', RemoveEmptyEntries);
+			if (numbers.Length != 2 || !SemVersion.TryParse($"{numbers[0]}.{numbers[1]}", out version))
+				EmitError(context, $"'{tokens[0]}' is not a valid version");
 			return;
 		}
 
