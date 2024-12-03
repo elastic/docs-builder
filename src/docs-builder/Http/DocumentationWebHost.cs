@@ -34,7 +34,7 @@ public class DocumentationWebHost
 		builder.Services.AddLiveReload(s =>
 		{
 			s.FolderToMonitor = context.SourcePath.FullName;
-			s.ClientFileExtensions = ".md";
+			s.ClientFileExtensions = ".md,.yml";
 		});
 		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(sourcePath, null, context, logger));
 		builder.Services.AddHostedService<ReloadGeneratorService>();
