@@ -12,14 +12,14 @@ namespace Elastic.Markdown.Tests.Inline;
 
 public abstract class AnchorLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest<LinkInline>(output,
-		$"""
-		## Hello world
+$"""
+## Hello world
 
-		A paragraph
+A paragraph
 
-		{content}
+{content}
 
-		""")
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{

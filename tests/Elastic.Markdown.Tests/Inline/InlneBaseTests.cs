@@ -69,7 +69,16 @@ public abstract class InlineTest : IAsyncLifetime
 		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/source/index.md", new MockFileData(content) }
+			{ "docs/source/index.md", new MockFileData(string.IsNullOrEmpty(content) || content.StartsWith("---") ? content :
+				// language=markdown
+$"""
+---
+title: Test Document
+---
+
+{content}
+"""
+			)}
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName
