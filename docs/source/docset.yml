@@ -45,5 +45,4 @@ toc:
     children:
       - folder: content
       - file: index.md
-      - file: test.md
   - folder: versioning
