@@ -62,3 +62,26 @@ not a {substitution}
 				"""{{valid-key}}"""
 			);
 }
+
+public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : LeafTest<SubstitutionLeaf>(output,
+"""
+---
+sub:
+  version: "7.17.0"
+---
+```{code} sh
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
+shasum -a 512 -c elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512 <1>
+tar -xzf elasticsearch-{{version}}-linux-x86_64.tar.gz
+cd elasticsearch-{{version}}/ <2>
+```
+"""
+)
+{
+
+	[Fact]
+	public void GeneratesAttributesInHtml() =>
+		Html.Should().Contain("7.17.0");
+}
+

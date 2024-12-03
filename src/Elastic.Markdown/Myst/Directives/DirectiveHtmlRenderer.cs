@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Elastic.Markdown.Myst.Substitution;
 using Elastic.Markdown.Slices;
 using Elastic.Markdown.Slices.Directives;
 using Markdig;
@@ -255,6 +256,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			renderer.EnableHtmlForInline = false;
 			foreach (var oo in p.Inline ?? [])
 			{
+
+				if (oo is SubstitutionLeaf sl)
+					renderer.Write(sl.Replacement);
 				if (oo is LiteralInline li)
 					renderer.Write(li);
 				if (oo is LineBreakInline)

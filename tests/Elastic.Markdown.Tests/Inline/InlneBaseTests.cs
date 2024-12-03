@@ -22,12 +22,7 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 	{
 		await base.InitializeAsync();
 		Block = Document
-			.Where(block => block is ParagraphBlock)
-			.Cast<ParagraphBlock>()
-			.FirstOrDefault()?
-			.Inline?
-			.Where(block => block is TDirective)
-			.Cast<TDirective>()
+			.Descendants<TDirective>()
 			.FirstOrDefault();
 	}
 
