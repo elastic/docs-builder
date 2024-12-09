@@ -1,0 +1,16 @@
+name: 'Documentation Generator'
+description: 'Generates a random yet deterministic documentation set'
+
+branding:
+  icon: 'filter'
+  color: 'red'
+
+inputs:
+  output:
+    description: 'Path to output the documentation'
+    required: false
+
+runs:
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-generator:edge"
+
