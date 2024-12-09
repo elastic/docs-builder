@@ -25,6 +25,12 @@ app.Add("publish", async (Cancel _) =>
 		dotnet publish {source} -c Release -o .artifacts/publish \
 			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
 		""";
+
+	var generatorSource = "src/docs-generator/docs-generator.csproj";
+	await $"""
+		dotnet publish {generatorSource} -c Release -o .artifacts/publish \
+			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
+		""";
 });
 
 // this is manual for now and quite hacky.
