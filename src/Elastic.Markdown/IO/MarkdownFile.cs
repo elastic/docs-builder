@@ -85,7 +85,7 @@ public record MarkdownFile : DocumentationFile
 		}
 
 		var contents = document
-			.Where(block => block is HeadingBlock { Level: 2 })
+			.Where(block => block is HeadingBlock { Level: >= 2 })
 			.Cast<HeadingBlock>()
 			.Select(h => h.Inline?.FirstChild?.ToString())
 			.Where(title => !string.IsNullOrWhiteSpace(title))

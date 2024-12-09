@@ -68,7 +68,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			includeFrom = context.Parser.SourcePath.FullName;
 
 		var anchors = url.Split('#');
-		var anchor = anchors.Length > 1 ? anchors[1] : null;
+		var anchor = anchors.Length > 1 ? anchors[1].Trim() : null;
 		url = anchors[0];
 
 		if (!string.IsNullOrWhiteSpace(url))
@@ -87,7 +87,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (link.FirstChild == null || !string.IsNullOrEmpty(anchor))
 		{
 			var file = string.IsNullOrWhiteSpace(url) ? context.Path
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url));
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')));
 			var markdown = context.GetMarkdownFile?.Invoke(file);
 			var title = markdown?.Title;
 

@@ -26,8 +26,7 @@ public class DocumentationWebHost
 	public DocumentationWebHost(string? path, ILoggerFactory logger, IFileSystem fileSystem)
 	{
 		var builder = WebApplication.CreateSlimBuilder();
-		var sourcePath = path != null ? fileSystem.DirectoryInfo.New(path) : null;
-		var context = new BuildContext(fileSystem)
+		var context = new BuildContext(fileSystem, fileSystem, path, null)
 		{
 			Collector = new ConsoleDiagnosticsCollector(logger)
 		};
@@ -36,7 +35,7 @@ public class DocumentationWebHost
 			s.FolderToMonitor = context.SourcePath.FullName;
 			s.ClientFileExtensions = ".md,.yml";
 		});
-		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(sourcePath, null, context, logger));
+		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(context.SourcePath, null, context, logger));
 		builder.Services.AddHostedService<ReloadGeneratorService>();
 		builder.Services.AddSingleton(logger);
 		builder.Logging.SetMinimumLevel(LogLevel.Warning);
