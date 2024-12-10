@@ -7,7 +7,6 @@ using ConsoleAppFramework;
 using Documentation.Builder.Diagnostics;
 using Documentation.Builder.Http;
 using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 

@@ -47,7 +47,6 @@ public class DocumentationSet
 				".md" => CreateMarkDownFile(file, context),
 				_ => new StaticFile(file, SourcePath)
 			})
-
 			.ToList();
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);

@@ -4,6 +4,7 @@
 
 using Actions.Core.Extensions;
 using ConsoleAppFramework;
+using Documentation.Builder;
 using Documentation.Builder.Cli;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ services.AddLogging(x =>
 });
 services.AddSingleton<DiagnosticsChannel>();
 services.AddSingleton<DiagnosticsCollector>();
+
 
 await using var serviceProvider = services.BuildServiceProvider();
 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();

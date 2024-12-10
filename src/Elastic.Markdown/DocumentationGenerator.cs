@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Markdown.IO;
@@ -110,6 +111,27 @@ public class DocumentationGenerator
 			if (item % 1_000 == 0)
 				_logger.LogInformation($"Handled {handledItems} files");
 		});
+
+		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
+			.GetManifestResourceNames()
+			.ToList();
+		foreach (var a in embeddedStaticFiles)
+		{
+			await using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(a);
+			if (resourceStream == null)
+				continue;
+
+			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", "_static/");
+
+			var outputFile = OutputFile(path);
+			if (outputFile.Directory is { Exists: false })
+				outputFile.Directory.Create();
+			await using var stream = outputFile.OpenWrite();
+			await resourceStream.CopyToAsync(stream, ctx);
+			_logger.LogInformation($"Copied static embedded resource {path}");
+		}
+
+
 		Context.Collector.Channel.TryComplete();
 
 		await GenerateDocumentationState(ctx);
