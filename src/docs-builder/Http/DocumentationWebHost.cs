@@ -10,9 +10,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Westwind.AspNetCore.LiveReload;
+using IFileInfo = Microsoft.Extensions.FileProviders.IFileInfo;
 
 namespace Documentation.Builder.Http;
 
@@ -20,8 +23,7 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly string _staticFilesDirectory =
-		Path.Combine(Paths.Root.FullName, "docs", "source", "_static");
+	private readonly string _staticFilesDirectory;
 
 	public DocumentationWebHost(string? path, ILoggerFactory logger, IFileSystem fileSystem)
 	{
@@ -40,6 +42,15 @@ public class DocumentationWebHost
 		builder.Services.AddSingleton(logger);
 		builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
+		_staticFilesDirectory = Path.Combine(context.SourcePath.FullName, "_static");
+		#if DEBUG
+		// this attempts to serve files directly from their source rather than the embedded resourses during development.
+		// this allows us to change js/css files without restarting the webserver
+		var solutionRoot = Paths.GetSolutionDirectory();
+		if (solutionRoot != null)
+			_staticFilesDirectory = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
+		#endif
+
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}
@@ -52,7 +63,7 @@ public class DocumentationWebHost
 		_webApplication.UseLiveReload();
 		_webApplication.UseStaticFiles(new StaticFileOptions
 		{
-			FileProvider = new PhysicalFileProvider(_staticFilesDirectory),
+			FileProvider = new EmbeddedOrPhysicalFileProvider(_staticFilesDirectory),
 			RequestPath = "/_static"
 		});
 		_webApplication.UseRouting();
@@ -84,5 +95,42 @@ public class DocumentationWebHost
 			default:
 				return Results.NotFound();
 		}
+	}
+}
+
+
+public class EmbeddedOrPhysicalFileProvider : IFileProvider
+{
+	private readonly EmbeddedFileProvider _embeddedProvider;
+	private readonly PhysicalFileProvider _fileProvider;
+
+	public EmbeddedOrPhysicalFileProvider(string root)
+	{
+		_embeddedProvider = new EmbeddedFileProvider(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
+		_fileProvider = new PhysicalFileProvider(root);
+	}
+
+	public IDirectoryContents GetDirectoryContents(string subpath)
+	{
+		var contents = _fileProvider.GetDirectoryContents(subpath);
+		if (!contents.Exists)
+			contents = _embeddedProvider.GetDirectoryContents(subpath);
+		return contents;
+	}
+
+	public IFileInfo GetFileInfo(string subpath)
+	{
+		var fileInfo = _fileProvider.GetFileInfo(subpath.Replace("/_static", ""));
+		if (!fileInfo.Exists)
+			fileInfo = _embeddedProvider.GetFileInfo(subpath);
+		return fileInfo;
+	}
+
+	public IChangeToken Watch(string filter)
+	{
+		var changeToken = _fileProvider.Watch(filter);
+		if (changeToken is NullChangeToken)
+			changeToken = _embeddedProvider.Watch(filter);
+		return changeToken;
 	}
 }

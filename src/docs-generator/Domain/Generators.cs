@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Slugify;
 using Soenneker.Utils.AutoBogus;
 
 namespace Documentation.Generator.Domain;
@@ -12,7 +11,6 @@ public static class Generators
 	public static AutoFaker<FolderName> FolderName { get; } = new();
 	public static AutoFaker<Section> Section { get; } = new();
 	public static AutoFaker<MarkdownFile> File { get; } = new();
-	public static SlugHelper Slug { get; } = new();
 
 	static Generators()
 	{

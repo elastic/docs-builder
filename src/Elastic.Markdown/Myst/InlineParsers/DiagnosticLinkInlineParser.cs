@@ -107,7 +107,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 		if (url.EndsWith(".md"))
-			link.Url = Path.ChangeExtension(url, ".html");
+			link.Url = $"{processor.GetBuildContext().UrlPathPrefix}/{Path.ChangeExtension(url, ".html")}";
 
 		if (!string.IsNullOrEmpty(anchor))
 			link.Url += $"#{anchor}";

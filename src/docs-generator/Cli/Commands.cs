@@ -95,7 +95,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 			WriteMarkdownFile(outputFolder, file);
 		}
 
-		var name = $"random-docset-{seedContent}-{seedFileSystem}";
+		var name = $"random-docset-{Determinism.Random.SeedFileSystem}-{Determinism.Random.SeedFileSystem}";
 		WriteIndexMarkdownFile(name, outputFolder);
 
 		var docset = Path.Combine(outputFolder.FullName, "docset.yml");

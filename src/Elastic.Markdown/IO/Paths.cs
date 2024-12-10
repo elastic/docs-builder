@@ -15,4 +15,13 @@ public static class Paths
 	}
 
 	public static readonly DirectoryInfo Root = RootDirectoryInfo();
+
+	/// Used in debug to locate static folder so we can change js/css files while the server is running
+	public static DirectoryInfo? GetSolutionDirectory()
+	{
+		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+		while (directory != null && directory.GetFiles("*.sln").Length == 0)
+			directory = directory.Parent;
+		return directory;
+	}
 }
