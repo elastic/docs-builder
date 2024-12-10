@@ -12,6 +12,10 @@ public record LinkReference
 {
 	[JsonPropertyName("origin")]
 	public required GitConfiguration Origin { get; init; }
+
+	[JsonPropertyName("url_path_prefix")]
+	public required string? UrlPathPrefix { get; init; }
+
 	[JsonPropertyName("links")]
 	public required string[] Links { get; init; } = [];
 
@@ -20,6 +24,11 @@ public record LinkReference
 		var links = set.FlatMappedFiles.Values
 			.OfType<MarkdownFile>()
 			.Select(m => m.RelativePath).ToArray();
-		return new LinkReference { Origin = set.Context.Git, Links = links };
+		return new LinkReference
+		{
+			UrlPathPrefix = set.Context.UrlPathPrefix,
+			Origin = set.Context.Git,
+			Links = links
+		};
 	}
 }
