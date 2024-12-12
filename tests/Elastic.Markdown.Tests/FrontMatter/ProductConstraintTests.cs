@@ -89,5 +89,5 @@ applies:
 {
 	[Fact]
 	public void Assert() =>
-		File.YamlFrontMatter!.AppliesTo!.Cloud!.Ess.Should().BeEquivalentTo(AllVersions.Instance);
+		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(AllVersions.Instance);
 }

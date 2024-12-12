@@ -68,15 +68,15 @@ public class SelfManagedDeployment
 [YamlSerializable]
 public class CloudManagedDeployment
 {
-	[YamlMember(Alias = "ess")]
-	public SemVersion? Ess { get; set; }
+	[YamlMember(Alias = "hosted")]
+	public SemVersion? Hosted { get; set; }
 
 	[YamlMember(Alias = "serverless")]
 	public SemVersion? Serverless { get; set; }
 
 	public static CloudManagedDeployment All { get; } = new()
 	{
-		Ess = AllVersions.Instance,
+		Hosted = AllVersions.Instance,
 		Serverless = AllVersions.Instance
 	};
 
@@ -121,6 +121,15 @@ public class SemVersionConverter : IYamlTypeConverter
 			return;
 		emitter.Emit(new Scalar(value.ToString()!));
 	}
+
+	public static SemVersion? Parse(string? value) =>
+		value?.Trim().ToLowerInvariant() switch
+		{
+			null => AllVersions.Instance,
+			"all" => AllVersions.Instance,
+			"" => AllVersions.Instance,
+			_ => SemVersion.TryParse(value, out var v) ? v : null
+		};
 }
 
 public class CloudManagedSerializer : IYamlTypeConverter
@@ -141,10 +150,10 @@ public class CloudManagedSerializer : IYamlTypeConverter
 			return null;
 
 		var cloudManaged = new CloudManagedDeployment();
-		if (dictionary.TryGetValue("ess", out var v))
-			cloudManaged.Ess = (SemVersion)v;
+		if (dictionary.TryGetValue("hosted", out var v))
+			cloudManaged.Hosted = SemVersionConverter.Parse(v);
 		if (dictionary.TryGetValue("serverless", out v))
-			cloudManaged.Serverless = (SemVersion)v;
+			cloudManaged.Serverless = SemVersionConverter.Parse(v);
 		return cloudManaged;
 
 	}
@@ -172,11 +181,11 @@ public class SelfManagedSerializer : IYamlTypeConverter
 
 		var deployment = new SelfManagedDeployment();
 		if (dictionary.TryGetValue("stack", out var v))
-			deployment.Stack = (SemVersion)v;
+			deployment.Stack =  SemVersionConverter.Parse(v);
 		if (dictionary.TryGetValue("ece", out v))
-			deployment.Ece = (SemVersion)v;
+			deployment.Ece = SemVersionConverter.Parse(v);
 		if (dictionary.TryGetValue("eck", out v))
-			deployment.Eck = (SemVersion)v;
+			deployment.Eck = SemVersionConverter.Parse(v);
 		return deployment;
 
 	}
