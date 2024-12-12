@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Helpers;
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>
-public sealed class SemVersion :
+public class SemVersion :
 	IEquatable<SemVersion>,
 	IComparable<SemVersion>,
 	IComparable

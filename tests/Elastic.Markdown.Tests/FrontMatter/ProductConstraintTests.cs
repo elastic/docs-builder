@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
 using Xunit.Abstractions;
@@ -41,3 +42,52 @@ applies:
 	}
 }
 
+public class CanSpecifyAllForProductVersions(ITestOutputHelper output) : DirectiveTest(output,
+"""
+---
+title: Elastic Docs v3
+navigation_title: "Documentation Guide"
+applies:
+  self:
+    stack: all
+---
+"""
+)
+{
+	[Fact]
+	public void Assert() =>
+		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(AllVersions.Instance);
+}
+
+public class EmptyProductVersionMeansAll(ITestOutputHelper output) : DirectiveTest(output,
+"""
+---
+title: Elastic Docs v3
+navigation_title: "Documentation Guide"
+applies:
+  self:
+    stack:
+---
+"""
+)
+{
+	[Fact]
+	public void Assert() =>
+		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(AllVersions.Instance);
+}
+
+public class EmptyCloudSetsAllProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
+"""
+---
+title: Elastic Docs v3
+navigation_title: "Documentation Guide"
+applies:
+  cloud:
+---
+"""
+)
+{
+	[Fact]
+	public void Assert() =>
+		File.YamlFrontMatter!.AppliesTo!.Cloud!.Ess.Should().BeEquivalentTo(AllVersions.Instance);
+}
