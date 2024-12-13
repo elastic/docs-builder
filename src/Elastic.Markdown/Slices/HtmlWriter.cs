@@ -52,7 +52,8 @@ public class HtmlWriter
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			NavigationHtml = navigationHtml,
-			UrlPathPrefix = markdown.UrlPathPrefix
+			UrlPathPrefix = markdown.UrlPathPrefix,
+			Applies = markdown.YamlFrontMatter?.AppliesTo
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

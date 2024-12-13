@@ -31,3 +31,36 @@ body > footer > div > div > div.sy-foot-copyright > p:nth-child(2){
   margin-top: 0;
   margin-bottom: 0;
 }
+
+.applies-badge {
+	font-size: 1em;
+	margin-top: 0.4em;
+}
+
+h1 {
+	padding-bottom: 0.4em;
+	border-bottom: 1px solid #dfdfdf;
+}
+.sd-outline-muted
+{
+	border: 1px solid #dfdfdf;
+}
+.product-availability {
+	padding-bottom: 0.8em;
+	border-bottom: 1px solid #dfdfdf;
+}
+
+h1:has(+ .product-availability) {
+	margin-bottom: 0.4em;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+.applies-to-label {
+	font-size: 1em;
+	margin-top: 0.4em;
+	margin-left: 0;
+	font-weight: bold;
+	text-align: left;
+	padding-left: 0;
+}
