@@ -79,35 +79,34 @@ public class DeploymentConverter : IYamlTypeConverter
 			return null;
 
 		var deployment = new Deployment();
-
-		if (TryGetVersion("stack", out var version))
+		if (TryGetAvailability("stack", out var version))
 		{
 			deployment.SelfManaged ??= new SelfManagedDeployment();
 			deployment.SelfManaged.Stack = version;
 		}
-		if (TryGetVersion("ece", out version))
+		if (TryGetAvailability("ece", out version))
 		{
 			deployment.SelfManaged ??= new SelfManagedDeployment();
 			deployment.SelfManaged.Ece = version;
 		}
-		if (TryGetVersion("eck", out version))
+		if (TryGetAvailability("eck", out version))
 		{
 			deployment.SelfManaged ??= new SelfManagedDeployment();
 			deployment.SelfManaged.Eck = version;
 		}
-		if (TryGetVersion("hosted", out version))
+		if (TryGetAvailability("hosted", out version))
 		{
 			deployment.Cloud ??= new CloudManagedDeployment();
 			deployment.Cloud.Hosted = version;
 		}
-		if (TryGetVersion("serverless", out version))
+		if (TryGetAvailability("serverless", out version))
 		{
 			deployment.Cloud ??= new CloudManagedDeployment();
 			deployment.Cloud.Serverless = version;
 		}
 		return deployment;
 
-		bool TryGetVersion(string key, out ProductAvailability? semVersion)
+		bool TryGetAvailability(string key, out ProductAvailability? semVersion)
 		{
 			semVersion = null;
 			return dictionary.TryGetValue(key, out var v) && ProductAvailability.TryParse(v, out semVersion);

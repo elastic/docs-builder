@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.Substitution;
 using Elastic.Markdown.Slices;
 using Elastic.Markdown.Slices.Directives;
@@ -33,6 +34,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			case MermaidBlock mermaidBlock:
 				WriteMermaid(renderer, mermaidBlock);
+				return;
+			case AppliesBlock appliesBlock:
+				WriteApplies(renderer, appliesBlock);
 				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
@@ -179,6 +183,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
+	private void WriteApplies(HtmlRenderer renderer, AppliesBlock block)
+	{
+		if (block.Deployment is null || block.Deployment == Deployment.All)
+			return;
+
+		var slice = Applies.Create(block.Deployment);
+		RenderRazorSliceNoContent(slice, renderer);
+	}
+
 	private void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
 	{
 		var slice = TabItem.Create(new TabItemViewModel
@@ -238,6 +251,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		renderer.Write(blocks[0]);
 		renderer.WriteChildren(obj);
 		renderer.Write(blocks[1]);
+	}
+
+	private static void RenderRazorSliceNoContent<T>(RazorSlice<T> slice, HtmlRenderer renderer)
+	{
+		var html = slice.RenderAsync().GetAwaiter().GetResult();
+		renderer.Write(html);
 	}
 
 	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)

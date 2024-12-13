@@ -46,3 +46,15 @@ applies:
 ```
 
 Are equivalent, note `all` just means we won't be rendering the version portion in the html.
+
+
+## This section has its own applies annotations
+```{applies}
+:stack: unavailable
+:serverless: tech-preview
+```
+
+This section describes a feature that's unavailable in `stack` and in tech preview on `serverless`
+
+
+the `{applies}` directive **MUST** be preceded by a heading.

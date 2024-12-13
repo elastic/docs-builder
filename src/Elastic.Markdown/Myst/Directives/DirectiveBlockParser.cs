@@ -111,6 +111,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    if (info.IndexOf("{literalinclude}") > 0)
 			return new LiteralIncludeBlock(this, _admonitionData, context);
 
+	    if (info.IndexOf("{applies}") > 0)
+			return new AppliesBlock(this, _admonitionData);
+
 	    foreach (var admonition in _admonitions)
 	    {
 		    if (info.IndexOf($"{{{admonition}}}") > 0)

@@ -47,11 +47,20 @@ h1 {
 }
 .product-availability {
 	padding-bottom: 0.8em;
+}
+
+h1 + .product-availability {
 	border-bottom: 1px solid #dfdfdf;
 }
 
 h1:has(+ .product-availability) {
 	margin-bottom: 0.4em;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+section:has(+ .product-availability) h2 {
+	margin-bottom: 0.0em;
 	padding-bottom: 0;
 	border-bottom: none;
 }
