@@ -7,6 +7,7 @@ using Cysharp.IO;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig;

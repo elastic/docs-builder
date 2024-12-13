@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;
 

@@ -5,6 +5,7 @@ using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;

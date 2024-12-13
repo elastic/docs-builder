@@ -4,6 +4,7 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Directives;
 
