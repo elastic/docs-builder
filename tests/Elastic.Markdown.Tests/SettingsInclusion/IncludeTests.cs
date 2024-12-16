@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
@@ -12,28 +13,33 @@ using Xunit.Abstractions;
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 
 public class IncludeTests(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
-```{settings} _snippets/test.md
+$$"""
+```{settings} /{{SettingsPath.Replace("docs/source/", "")}}
 ```
 """
 )
 {
+	private static readonly string SettingsPath =
+		"docs/source/elastic/reference/kibana-alerting-action-settings.yml";
+
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
+		var realSettingsPath = Path.Combine(Paths.Root.FullName, SettingsPath);
 		// language=markdown
-		var inclusion = "*Hello world*";
-		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+		var inclusion = System.IO.File.ReadAllText(realSettingsPath);
+		fileSystem.AddFile(SettingsPath, inclusion);
 	}
 
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
 	public void IncludesInclusionHtml() =>
 		Html.Should()
-			.Contain("Hello world")
-			.And.Be("<p><em>Hello world</em></p>\n")
-		;
+			.Contain("xpack.encryptedSavedObjects.encryptionKey");
 }
 public class RandomFileEmitsAnError(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
 """

@@ -33,6 +33,7 @@ groups:
         default: an empty list
         platforms:
           - cloud
+        # language=markdown
         example: |
           In the following example, two custom host settings
           are defined.  The first provides a custom host setting for mail server
