@@ -2,13 +2,18 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using static System.StringSplitOptions;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class VersionBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class VersionBlock(
+	DirectiveBlockParser parser,
+	string directive,
+	Dictionary<string, string> properties,
+	ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public override string Directive => directive;
 	public string Class => directive.Replace("version", "");
@@ -21,7 +26,7 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, Diction
 		var tokens = Arguments?.Split(" ", 2, RemoveEmptyEntries) ?? [];
 		if (tokens.Length < 1)
 		{
-			EmitError(context, $"{directive} needs exactly 2 arguments: <version> <title>");
+			this.EmitError($"{directive} needs exactly 2 arguments: <version> <title>");
 			return;
 		}
 
@@ -29,7 +34,7 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, Diction
 		{
 			var numbers = tokens[0].Split('.', RemoveEmptyEntries);
 			if (numbers.Length != 2 || !SemVersion.TryParse($"{numbers[0]}.{numbers[1]}.0", out version))
-				EmitError(context, $"'{tokens[0]}' is not a valid version");
+				this.EmitError($"'{tokens[0]}' is not a valid version");
 		}
 
 		Version = version;

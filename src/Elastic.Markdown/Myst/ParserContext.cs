@@ -57,5 +57,5 @@ public class ParserContext : MarkdownParserContext
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; init; }
-	public Func<IFileInfo, MarkdownFile?>? GetMarkdownFile { get; init; }
+	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; init; }
 }

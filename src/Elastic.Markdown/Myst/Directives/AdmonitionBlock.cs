@@ -3,8 +3,12 @@
 // See the LICENSE file in the project root for more information
 namespace Elastic.Markdown.Myst.Directives;
 
-public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class AdmonitionBlock(
+	DirectiveBlockParser parser,
+	string admonition,
+	Dictionary<string, string> properties,
+	ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public string Admonition => admonition == "admonition" ? Classes?.Trim() ?? "note" : admonition;
 
@@ -36,8 +40,8 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 }
 
 
-public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
-	: AdmonitionBlock(parser, "admonition", properties)
+public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
+	: AdmonitionBlock(parser, "admonition", properties, context)
 {
 	// ReSharper disable once RedundantOverriddenMember
 	public override void FinalizeAndValidate(ParserContext context)

@@ -74,21 +74,21 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			throw new Exception("Expected parser context to be of type ParserContext");
 
 		if (info.IndexOf("{") == -1)
-		    return new CodeBlock(this, "raw", _admonitionData);
+		    return new CodeBlock(this, "raw", _admonitionData, context);
 
 	    // TODO alternate lookup .NET 9
 	    var directive = info.ToString().Trim(['{', '}', '`']);
 	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
-		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId);
+		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId, context);
 
 	    if (info.IndexOf("{tab-set}") > 0)
-		    return new TabSetBlock(this, _admonitionData);
+		    return new TabSetBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{tab-item}") > 0)
-		    return new TabItemBlock(this, _admonitionData);
+		    return new TabItemBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{dropdown}") > 0)
-		    return new DropdownBlock(this, _admonitionData);
+		    return new DropdownBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{image}") > 0)
 		    return new ImageBlock(this, _admonitionData, context);
@@ -103,7 +103,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    // leaving the parsing in until we are confident we don't want this
 	    // for dev-docs
 	    if (info.IndexOf("{mermaid}") > 0)
-		    return new MermaidBlock(this, _admonitionData);
+		    return new MermaidBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, _admonitionData, context);
@@ -112,26 +112,29 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			return new LiteralIncludeBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{applies}") > 0)
-			return new AppliesBlock(this, _admonitionData);
+			return new AppliesBlock(this, _admonitionData, context);
+
+	    if (info.IndexOf("{settings}") > 0)
+			return new SettingsBlock(this, _admonitionData, context);
 
 	    foreach (var admonition in _admonitions)
 	    {
 		    if (info.IndexOf($"{{{admonition}}}") > 0)
-			    return new AdmonitionBlock(this, admonition, _admonitionData);
+			    return new AdmonitionBlock(this, admonition, _admonitionData, context);
 	    }
 
 	    foreach (var version in _versionBlocks)
 	    {
 		    if (info.IndexOf($"{{{version}}}") > 0)
-			    return new VersionBlock(this, version, _admonitionData);
+			    return new VersionBlock(this, version, _admonitionData, context);
 	    }
 
 	    foreach (var code in _codeBlocks)
 	    {
 		    if (info.IndexOf($"{{{code}}}") > 0)
-			    return new CodeBlock(this, code, _admonitionData);
+			    return new CodeBlock(this, code, _admonitionData, context);
 	    }
-	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData);
+	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData, context);
     }
 
     public override bool Close(BlockProcessor processor, Block block)

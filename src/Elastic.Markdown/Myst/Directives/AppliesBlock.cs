@@ -2,13 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public override string Directive => "mermaid";
 
@@ -48,7 +49,7 @@ public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string
 		}
 
 		if (Deployment is null)
-			EmitError(context, "{applies} block with no product availability specified");
+			this.EmitError("{applies} block with no product availability specified");
 
 		var index = Parent?.IndexOf(this);
 		if (Parent is not null && index > 0)
@@ -56,7 +57,7 @@ public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string
 			var i = index - 1 ?? 0;
 			var prevSib = Parent[i];
 			if (prevSib is not HeadingBlock)
-				EmitError(context, "{applies} should follow a heading");
+				this.EmitError("{applies} should follow a heading");
 		}
 
 		bool TryGetAvailability(string key, out ProductAvailability? semVersion)
