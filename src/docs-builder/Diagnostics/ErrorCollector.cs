@@ -1,3 +1,7 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Actions.Core;
@@ -53,28 +57,34 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 
 	public override async Task StopAsync(Cancel ctx)
 	{
-		_logger.LogError("Stopping...");
-		// Create a new report
 		var report = new Report(new FileSourceRepository());
 		foreach (var item in _items)
 		{
 			var d = item.Severity switch
 			{
-				Severity.Error =>
-					Errata.Diagnostic.Error(item.Message)
-						.WithLabel(new Label(item.File, new Location(item.Line, item.Column ?? 0), "bad substitution")
-							.WithLength(item.Length ?? 3)
-							.WithPriority(1)
-							.WithColor(Color.Red)),
-				Severity.Warning =>
-					Errata.Diagnostic.Warning(item.Message),
+				Severity.Error => Errata.Diagnostic.Error(item.Message),
+				Severity.Warning => Errata.Diagnostic.Warning(item.Message),
 				_ => Errata.Diagnostic.Info(item.Message)
 			};
+			if (item is { Line: not null, Column: not null })
+			{
+				var location = new Location(item.Line ?? 0, item.Column ?? 0);
+				d = d.WithLabel(new Label(item.File, location, "")
+					.WithLength(item.Length == null ? 1 : Math.Clamp(item.Length.Value, 1, item.Length.Value + 3))
+					.WithPriority(1)
+					.WithColor(item.Severity == Severity.Error ? Color.Red : Color.Blue));
+			}
+			else
+				d = d.WithNote(item.File);
+
 			report.AddDiagnostic(d);
 		}
 
 		// Render the report
 		report.Render(AnsiConsole.Console);
+		AnsiConsole.WriteLine();
+		AnsiConsole.Write(new Markup($"	[bold red]{Errors} Errors[/] / [bold blue]{Warnings} Warnings[/]"));
+		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 		await Task.CompletedTask;
 	}

@@ -12,15 +12,13 @@ permissions:
   packages: write
 
 env:
-  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-  IMAGE_NAME: elastic/docs-builder
   BASE_IMAGE: mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-jammy-chiseled-aot
+  BASE_IMAGE_SINGLE: mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-jammy-chiseled
   DOCKER_TAG: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && 'latest;edge' || 'edge' }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: false
     permissions:
       pages: write
       id-token: write
@@ -33,6 +31,8 @@ jobs:
       name: github-pages
       url: ${{steps.deployment.outputs.page_url}}
     steps:
+      - id: repo-basename
+        run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
       - uses: actions/checkout@v4
       - name: Setup Pages
         id: pages
@@ -40,7 +40,7 @@ jobs:
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
-          prefix: "docs-builder"
+          prefix: '${{ steps.repo-basename.outputs.value }}'
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3.0.1
         with:
@@ -70,7 +70,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish app
+      - name: Publish docs-builder
         run: |
           dotnet publish "src/docs-builder/docs-builder.csproj" \
             /t:PublishContainer \
@@ -79,4 +79,15 @@ jobs:
             -p ContainerBaseImage=${{ env.BASE_IMAGE }} \
             -p ContainerRegistry=ghcr.io \
             -p ContainerImageTags='"${{ env.DOCKER_TAG }};${{ steps.bootstrap.outputs.full-version }}"' \
-            -p ContainerRepository=${{ env.IMAGE_NAME }} \
+            -p ContainerRepository=${{ github.repository }} 
+
+      - name: Publish docs-generator
+        run: |
+          dotnet publish "src/docs-generator/docs-generator.csproj" \
+            /t:PublishContainer \
+            -p DebugType=none \
+            -p ContainerUser=1001:1001 \
+            -p ContainerBaseImage=${{ env.BASE_IMAGE_SINGLE }} \
+            -p ContainerRegistry=ghcr.io \
+            -p ContainerImageTags='"${{ env.DOCKER_TAG }};${{ steps.bootstrap.outputs.full-version }}"' \
+            -p ContainerRepository=elastic/docs-generator \

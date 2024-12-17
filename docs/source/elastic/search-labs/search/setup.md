@@ -12,8 +12,6 @@ Download the starter search application by clicking on the link below.
 
 Find a suitable parent directory for your project, such as your *Documents* directory, and extract the contents of the zip file there. This should add a *search-tutorial* directory with several sub-directories and files inside.
 
-<!-- ![Search Starter App](/assets/images/guides/starter-app-structure.png) -->
-
 
 ## Install the Python Dependencies
 
@@ -68,8 +66,6 @@ flask run
 ```
 
 To confirm that the application is running, open your browser and navigate to http://localhost:5001.
-
-<!-- ![Search Starter App](/assets/images/guides/starter-app-screenshot.png) -->
 
 ```{note}
 The application in this early stage is just an empty shell. You can type something in the search box and request a search if you like, but the response is always going to be that there are no results. In the following sections you will learn how to load some content in an Elasticsearch index and perform searches.

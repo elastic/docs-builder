@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>docs-generator</AssemblyName>
+    <RootNamespace>Documentation.Generator</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishAot>false</PublishAot>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+
+    <IsPublishable>true</IsPublishable>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+
+    <!-- attempt fix for: https://github.com/dotnet/sdk-container-builds/issues/559
+        Fixed in upcomming .NET 9
+     -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConsoleAppFramework" Version="5.2.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0"/>
+    <PackageReference Include="Github.Actions.Core" Version="8.1.1"/>
+    <PackageReference Include="Soenneker.Utils.AutoBogus" Version="2.1.388"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Elastic.Markdown/Elastic.Markdown.csproj"/>
+  </ItemGroup>
+</Project>

@@ -5,20 +5,17 @@ using System.IO.Abstractions;
 
 namespace Elastic.Markdown.IO;
 
-public abstract class DocumentationFile(IFileInfo sourceFile, IDirectoryInfo rootPath)
+public abstract record DocumentationFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
 {
-	public IFileInfo SourceFile { get; } = sourceFile;
-	public string RelativePath { get; } = Path.GetRelativePath(rootPath.FullName, sourceFile.FullName);
-
-	public FileInfo OutputFile(IDirectoryInfo outputPath) =>
-		new(Path.Combine(outputPath.FullName, RelativePath.Replace(".md", ".html")));
+	public string RelativePath { get; } = Path.GetRelativePath(RootPath.FullName, SourceFile.FullName);
+	public string RelativeFolder { get; } = Path.GetRelativePath(RootPath.FullName, SourceFile.Directory!.FullName);
 }
 
-public class ImageFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string mimeType = "image/png")
-	: DocumentationFile(sourceFile, rootPath)
-{
-	public string MimeType { get; } = mimeType;
-}
+public record ImageFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string MimeType = "image/png")
+	: DocumentationFile(SourceFile, RootPath);
 
-public class StaticFile(IFileInfo sourceFile, IDirectoryInfo rootPath)
-	: DocumentationFile(sourceFile, rootPath);
+public record StaticFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
+	: DocumentationFile(SourceFile, RootPath);
+
+public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
+	: DocumentationFile(SourceFile, RootPath);

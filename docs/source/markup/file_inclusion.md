@@ -11,5 +11,5 @@ The rest of this page is from a snippet and "{{page_title}}" below is taken from
 
 ## Snippet
 
-```{include} snippets/my_snippet.md
+```{include} _snippets/my_snippet.md
 ```

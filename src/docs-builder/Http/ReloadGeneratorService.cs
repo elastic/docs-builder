@@ -21,15 +21,16 @@ public class ReloadGeneratorService(
 	{
 		await ReloadableGenerator.ReloadAsync(ctx);
 
-		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourcePath.FullName);
-
-		watcher.NotifyFilter = NotifyFilters.Attributes
-		                       | NotifyFilters.CreationTime
-		                       | NotifyFilters.DirectoryName
-		                       | NotifyFilters.FileName
-		                       | NotifyFilters.LastWrite
-		                       | NotifyFilters.Security
-		                       | NotifyFilters.Size;
+		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourcePath.FullName)
+		{
+			NotifyFilter = NotifyFilters.Attributes
+							   | NotifyFilters.CreationTime
+							   | NotifyFilters.DirectoryName
+							   | NotifyFilters.FileName
+							   | NotifyFilters.LastWrite
+							   | NotifyFilters.Security
+							   | NotifyFilters.Size
+		};
 
 		watcher.Changed += OnChanged;
 		watcher.Created += OnCreated;
@@ -37,7 +38,8 @@ public class ReloadGeneratorService(
 		watcher.Renamed += OnRenamed;
 		watcher.Error += OnError;
 
-		watcher.Filter = "*.md";
+		watcher.Filters.Add("*.md");
+		watcher.Filters.Add("docset.yml");
 		watcher.IncludeSubdirectories = true;
 		watcher.EnableRaisingEvents = true;
 		_watcher = watcher;
@@ -62,7 +64,9 @@ public class ReloadGeneratorService(
 		if (e.ChangeType != WatcherChangeTypes.Changed)
 			return;
 
-		if (e.FullPath.EndsWith("index.md"))
+		if (e.FullPath.EndsWith("docset.yml"))
+			Reload();
+		if (e.FullPath.EndsWith(".md"))
 			Reload();
 
 		Logger.LogInformation($"Changed: {e.FullPath}");

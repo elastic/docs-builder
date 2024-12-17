@@ -1,9 +1,8 @@
 ---
-title: Kibana Configuration
+title: Generate Settings References
+navigation_title: Settings References
 ---
 
 
-```{yaml-to-md}
-:yaml: _static/yaml/settings.yaml
-:template: _static/templates/settings.jinja
+```{settings} /elastic/reference/kibana-alerting-action-settings.yml
 ```

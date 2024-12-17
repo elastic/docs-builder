@@ -42,13 +42,3 @@ Amazon Bedrock examples use the `amazon.titan-embed-text-v1` model from the [Ama
 ```{tip}
 Not seeing the tutorial? Select a service above to get started.
 ```
-
-```{toctree}
-:hidden:
-
-Amazon Bedrock <amazon-bedrock.md>
-Azure AI Studio <azure-ai-studio.md>
-Azure OpenAI <azure-openai.md>
-Cohere <cohere.md>
-ELSER <elser.md>
-```

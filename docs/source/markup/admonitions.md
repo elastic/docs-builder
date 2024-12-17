@@ -6,37 +6,13 @@ Admonitions bring the attention of readers.
 
 ## Basic admonitions
 
-```{attention}
-:name: attention_ref
-This is an 'attention' admonition
-```
-
 ```{caution}
+:name: caution_ref
 This is a 'caution' admonition
-```
-
-```{danger}
-This is a 'danger' admonition
-```
-
-```{error}
-This is an 'error' admonition
-```
-
-```{hint}
-This is an 'hint' admonition
-```
-
-```{important}
-This is an 'important' admonition
 ```
 
 ```{note}
 This is a 'note' admonition
-```
-
-```{seealso}
-This is a 'seealso' admonition
 ```
 
 ```{tip}
@@ -49,11 +25,11 @@ This is a tip
 Feature A
 ```
 
-```{versionchanged} 8.15
+```{versionchanged} 8.15.0
 Feature B
 ```
 
-```{deprecated} 2
+```{deprecated} 0.2.0
 Feature C
 ```
 
@@ -70,10 +46,10 @@ Here is a tip.
 
 ## Collapsible admonitions
 
-You can use `:class: dropdown` to make an admonition collapsible.
+You can use `:open: <bool>` to make an admonition collapsible.
 
 ```{note}
-:class: dropdown
+:open: 
 
 Longer content can be collapsed to take less space.
 
@@ -84,4 +60,4 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 ## Link to admonitions
 You can add a 'name' option to an admonition, so that you can link to it elsewhere
 
-Here is a [link to attention](#attention_ref)
+Here is a [link to attention](#caution_ref)

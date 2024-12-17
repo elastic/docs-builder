@@ -9,11 +9,13 @@ using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")]string content) : DirectiveTest(content)
+public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	: DirectiveTest(output, content)
 	where TDirective : DirectiveBlock
 {
 	protected TDirective? Block { get; private set; }
@@ -31,43 +33,75 @@ public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")]s
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 
 }
+
+public class TestDiagnosticsCollector(ILoggerFactory logger)
+	: DiagnosticsCollector(logger, [])
+{
+	private readonly List<Diagnostic> _diagnostics = new();
+
+	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
+
+	protected override void HandleItem(Diagnostic diagnostic) => _diagnostics.Add(diagnostic);
+}
+
 public abstract class DirectiveTest : IAsyncLifetime
 {
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
 	protected MarkdownDocument Document { get; private set; }
 	protected MockFileSystem FileSystem { get; }
+	protected TestDiagnosticsCollector Collector { get; }
+	protected DocumentationSet Set { get; set; }
 
-	protected DirectiveTest([LanguageInjection("markdown")]string content)
+
+	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
 	{
-		var logger = NullLoggerFactory.Instance;
+		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/source/index.md", new MockFileData(content) }
+			{ "docs/source/index.md", new MockFileData(string.IsNullOrEmpty(content) || content.StartsWith("---") ? content :
+				// language=markdown
+$"""
+---
+title: Test Document
+---
+
+{content}
+"""
+			)}
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
+		// ReSharper disable once VirtualMemberCallInConstructor
+		// nasty but sub implementations won't use class state.
+		AddToFileSystem(FileSystem);
 
-		var file = FileSystem.FileInfo.New("docs/source/index.md");
-		var root = FileSystem.DirectoryInfo.New(Paths.Root.FullName);
-		var context = new BuildContext
+		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
+		FileSystem.GenerateDocSetYaml(root);
+
+		Collector = new TestDiagnosticsCollector(logger);
+		var context = new BuildContext(FileSystem)
 		{
-			ReadFileSystem = FileSystem,
-			WriteFileSystem = FileSystem,
-			Collector = new DiagnosticsCollector(logger, [])
+			Collector = Collector
 		};
-		var parser = new MarkdownParser(root, context);
-
-		File = new MarkdownFile(file, root, parser, context);
+		Set = new DocumentationSet(context);
+		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/source/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}
 
+	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
+
 	public virtual async Task InitializeAsync()
 	{
+		_ = Collector.StartAsync(default);
+
 		Document = await File.ParseFullAsync(default);
-		Html = await File.CreateHtmlAsync(File.YamlFrontMatter, default);
+		Html = File.CreateHtml(Document);
+		Collector.Channel.TryComplete();
+
+		await Collector.StopAsync(default);
 	}
 
 	public Task DisposeAsync() => Task.CompletedTask;

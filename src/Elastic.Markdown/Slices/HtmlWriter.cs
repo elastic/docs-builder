@@ -40,18 +40,20 @@ public class HtmlWriter
 
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
-		var html = await markdown.CreateHtmlAsync(markdown.YamlFrontMatter, ctx);
+		var document = await markdown.ParseFullAsync(ctx);
+		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 		var navigationHtml = await RenderNavigation(markdown, ctx);
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
-			PageTocItems = markdown.TableOfContents,
+			PageTocItems = markdown.TableOfContents.Values.ToList(),
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
-			Navigation = navigationHtml,
-			UrlPathPrefix = markdown.UrlPathPrefix
+			NavigationHtml = navigationHtml,
+			UrlPathPrefix = markdown.UrlPathPrefix,
+			Applies = markdown.YamlFrontMatter?.AppliesTo
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

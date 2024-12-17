@@ -1,5 +1,6 @@
 ---
 title: "Semantic search with the inference API"
+navigation_title: "Cohere"
 ---
 
 Semantic search helps you find data based on the intent and contextual meaning of a search query, instead of a match on query terms (lexical search).
@@ -37,7 +38,7 @@ A [Cohere account](https://cohere.com/) is required to use the inference API wit
 
 ## Create an inference endpoint
 
-```{include} snippets/inference-endpoint.md
+```{include} _snippets/inference-endpoint.md
 ```
 
 ```{code-block} bash
@@ -65,7 +66,7 @@ When using this model the recommended similarity measure to use in the dense_vec
 
 ## Create the index mapping
 
-```{include} snippets/index-mapping.md
+```{include} _snippets/index-mapping.md
 ```
 
 ```{code-block} bash

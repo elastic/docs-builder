@@ -2,13 +2,6 @@
 title: "Search Tutorial"
 ---
 
-```{toctree}
-:hidden:
-
-search/req.md
-search/setup.md
-```
-
 Welcome!
 
 This hands-on tutorial will teach you how to build a complete search solution using [Elasticsearch](https://www.elastic.co/). In this tutorial you will learn:

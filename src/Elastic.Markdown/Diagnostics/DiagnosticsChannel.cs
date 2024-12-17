@@ -1,3 +1,7 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -25,6 +29,8 @@ public class DiagnosticsChannel
 		_ctxSource.Cancel();
 	}
 
+	public ValueTask<bool> WaitToWrite() => _channel.Writer.WaitToWriteAsync();
+
 	public void Write(Diagnostic diagnostic)
 	{
 		var written = _channel.Writer.TryWrite(diagnostic);
@@ -35,13 +41,12 @@ public class DiagnosticsChannel
 	}
 }
 
-
 public enum Severity { Error, Warning }
 
 public readonly record struct Diagnostic
 {
 	public Severity Severity { get; init; }
-	public int Line { get; init; }
+	public int? Line { get; init; }
 	public int? Column { get; init; }
 	public int? Length { get; init; }
 	public string File { get; init; }
@@ -64,7 +69,6 @@ public class LogDiagnosticOutput(ILogger logger) : IDiagnosticsOutput
 	}
 }
 
-
 public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollection<IDiagnosticsOutput> outputs)
 	: IHostedService
 {
@@ -73,19 +77,37 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 
 	public DiagnosticsChannel Channel { get; } = new();
 
-	private long _errors;
-	private long _warnings;
-	public long Warnings => _warnings;
-	public long Errors => _errors;
+	private int _errors;
+	private int _warnings;
+	public int Warnings => _warnings;
+	public int Errors => _errors;
 
-	public async Task StartAsync(Cancel ctx)
+	private Task? _started;
+
+	public HashSet<string> OffendingFiles { get; } = new();
+
+	public Task StartAsync(Cancel ctx)
 	{
-		while (!Channel.CancellationToken.IsCancellationRequested)
+		if (_started is not null) return _started;
+		_started = Task.Run(async () =>
 		{
-			while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-				Drain();
-		}
-		Drain();
+			await Channel.WaitToWrite();
+			while (!Channel.CancellationToken.IsCancellationRequested)
+			{
+				try
+				{
+					while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+						Drain();
+				}
+				catch
+				{
+					//ignore
+				}
+			}
+
+			Drain();
+		}, ctx);
+		return _started;
 
 		void Drain()
 		{
@@ -93,6 +115,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 			{
 				IncrementSeverityCount(item);
 				HandleItem(item);
+				OffendingFiles.Add(item.File);
 				foreach (var output in _outputs)
 					output.Write(item);
 			}
@@ -107,7 +130,34 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 			Interlocked.Increment(ref _warnings);
 	}
 
-	protected virtual void HandleItem(Diagnostic diagnostic) {}
+	protected virtual void HandleItem(Diagnostic diagnostic) { }
 
-	public virtual Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+	public virtual async Task StopAsync(CancellationToken cancellationToken)
+	{
+		if (_started is not null)
+			await _started;
+		await Channel.Reader.Completion;
+	}
+
+
+	public void EmitError(string file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = file,
+			Message = message,
+		};
+		Channel.Write(d);
+	}
+	public void EmitWarning(string file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = file,
+			Message = message,
+		};
+		Channel.Write(d);
+	}
 }

@@ -5,6 +5,8 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.IO.Abstractions;
+using Elastic.Markdown.Diagnostics;
 using Markdig.Helpers;
 using Markdig.Syntax;
 
@@ -21,11 +23,24 @@ namespace Elastic.Markdown.Myst.Directives;
 /// <param name="parser">The parser used to create this block.</param>
 /// <param name="properties"></param>
 /// <param name="context"></param>
-public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
+public abstract class DirectiveBlock(
+	DirectiveBlockParser parser,
+	Dictionary<string, string> properties,
+	ParserContext context
+	)
 	: ContainerBlock(parser), IFencedBlock
 {
+	protected IReadOnlyDictionary<string, string> Properties { get; } = properties;
 
-	public IReadOnlyDictionary<string, string> Properties { get; } = properties;
+	public BuildContext Build { get; } = context.Build;
+
+	public IFileInfo CurrentFile { get; } = context.Path;
+
+	public bool SkipValidation { get; } = context.SkipValidation;
+
+	public abstract string Directive { get; }
+
+	public string? CrossReferenceName  { get; protected set; }
 
 	/// <inheritdoc />
 	public char FencedChar { get; set; }
@@ -66,20 +81,27 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
     /// <summary>
     /// Allows blocks to finalize setting properties once fully parsed
     /// </summary>
-    public abstract void FinalizeAndValidate();
+    /// <param name="context"></param>
+    public abstract void FinalizeAndValidate(ParserContext context);
 
-	protected void ParseBool(string key, Action<bool> setter)
+	protected bool PropBool(params string[] keys)
 	{
-		var value = Properties.GetValueOrDefault(key);
+		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
+			return keys.Any(k => Properties.ContainsKey(k));
+
+		return bool.TryParse(value, out var result) && result;
+	}
+
+	protected string? Prop(params string[] keys)
+	{
+		foreach (var key in keys)
 		{
-			setter(Properties.ContainsKey(key));
-			return;
+			if (Properties.TryGetValue(key, out var value))
+				return value;
 		}
 
-		if (bool.TryParse(value, out var result))
-			setter(result);
-		//todo invalidate
+		return default;
 	}
 
 }

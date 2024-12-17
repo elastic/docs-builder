@@ -42,14 +42,6 @@ project:
   subject: MyST Markdown
 ```
 
-```{sidebar}
-This code is very helpful.
-
-It does lots of things.
-
-But it does not sing.
-```
-
 ```{code-block} python
     :caption: Code blocks can also have sidebars.
     :linenos:

@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <Content Include="$(SolutionRoot)\build\nuget-icon.png" Pack="True" Link="nuget-icon.png" PackagePath="nuget-icon.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="$(SolutionRoot)\LICENSE.txt" Pack="True" PackagePath="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="$(SolutionRoot)\NOTICE.txt" Pack="True" PackagePath="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SolutionRoot)\LICENSE.txt" Pack="True" PackagePath="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(SolutionRoot)\NOTICE.txt" Pack="True" PackagePath="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <ItemGroup>

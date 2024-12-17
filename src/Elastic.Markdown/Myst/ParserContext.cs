@@ -1,4 +1,10 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
 using System.IO.Abstractions;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;
 
@@ -26,22 +32,30 @@ public class ParserContext : MarkdownParserContext
 	public ParserContext(MarkdownParser markdownParser,
 		IFileInfo path,
 		YamlFrontMatter? frontMatter,
-		BuildContext context)
+		BuildContext context,
+		ConfigurationFile configuration)
 	{
 		Parser = markdownParser;
 		Path = path;
 		FrontMatter = frontMatter;
 		Build = context;
+		Configuration = configuration;
 
 		if (frontMatter?.Properties is { } props)
 		{
 			foreach (var (key, value) in props)
 				Properties[key] = value;
 		}
+
+		if (frontMatter?.Title is {} title)
+			Properties["page_title"] = title;
 	}
 
+	public ConfigurationFile Configuration { get; }
 	public MarkdownParser Parser { get; }
 	public IFileInfo Path { get; }
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
+	public bool SkipValidation { get; init; }
+	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; init; }
 }

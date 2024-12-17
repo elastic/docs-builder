@@ -1,5 +1,6 @@
 ---
 title: "Semantic search with the inference API"
+navigation_title: "Amazon Bedrock"
 ---
 
 Semantic search helps you find data based on the intent and contextual meaning of a search query, instead of a match on query terms (lexical search).
@@ -38,7 +39,7 @@ The examples in this tutorial use the `amazon.titan-embed-text-v1` model from th
 
 ## Create an inference endpoint
 
-```{include} snippets/inference-endpoint.md
+```{include} _snippets/inference-endpoint.md
 ```
 
 ```{code-block} bash
@@ -67,7 +68,7 @@ PUT _inference/text_embedding/amazon_bedrock_embeddings
 
 ## Create the index mapping
 
-```{include} snippets/index-mapping.md
+```{include} _snippets/index-mapping.md
 ```
 
 ```{code-block} bash

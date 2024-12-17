@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.Text;
-using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Settings;
 
 namespace Elastic.Markdown.Slices.Directives;
 
@@ -29,7 +29,6 @@ public class VersionViewModel
 	public required string Title { get; init; }
 }
 
-public class SideBarViewModel;
 public class TabSetViewModel;
 
 public class TabItemViewModel
@@ -39,23 +38,6 @@ public class TabItemViewModel
 	public required string Title { get; init; }
 }
 
-public class CardViewModel
-{
-	public required string? Title { get; init; }
-	public required string? Link { get; init; }
-}
-
-public class GridViewModel
-{
-	public required GridResponsive BreakPoint { get; init; }
-}
-
-public class GridItemCardViewModel
-{
-	public required string? Title { get; init; }
-	public required string? Link { get; init; }
-}
-
 public class IncludeViewModel
 {
 	public required string Html { get; init; }
@@ -63,8 +45,7 @@ public class IncludeViewModel
 
 public class ImageViewModel
 {
-	public required string? CrossReferenceName { get; init; }
-	public required string? Classes { get; init; }
+	public required string? Label { get; init; }
 	public required string? Align { get; init; }
 	public required string? Alt { get; init; }
 	public required string? Height { get; init; }
@@ -83,6 +64,14 @@ public class ImageViewModel
 			return sb.ToString();
 		}
 	}
+}
+
+
+public class SettingsViewModel
+{
+	public required SettingsCollection SettingsCollection { get; init; }
+
+	public required Func<string, string> RenderMarkdown { get; init; }
 }
 
 public class MermaidViewModel;

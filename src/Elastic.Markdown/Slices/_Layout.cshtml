@@ -16,7 +16,7 @@
 	</div>
 </div>
 <div class="sy-page sy-container flex mx-auto">
-	@(new HtmlString(Model.Navigation))
+	@(new HtmlString(Model.NavigationHtml))
 	@*@(await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTree.Create(Model)))*@
 	@(await RenderPartialAsync(_TableOfContents.Create(Model)))
 	<main class="sy-main w-full max-sm:max-w-full print:pt-6">

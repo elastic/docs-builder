@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Collections.Frozen;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using static System.StringSplitOptions;
@@ -29,13 +30,40 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 	private Dictionary<string, string> _admonitionData = new();
 
-	private readonly string[] _admonitions = [
-		"admonition", "attention", "caution", "danger", "error", "hint", "important", "note", "tip", "seealso"
-	];
+	private readonly string[] _admonitions = [ "attention", "caution", "note", "tip" ];
 
 	private readonly string[] _versionBlocks = [ "versionadded", "versionchanged", "versionremoved", "deprecated" ];
 
 	private readonly string[] _codeBlocks = [ "code", "code-block", "sourcecode"];
+
+	private readonly FrozenDictionary<string, int> _unsupportedBlocks = new Dictionary<string, int>
+	{
+		{ "bibliography", 5 },
+		{ "blockquote", 6 },
+		{ "csv-table", 9 },
+		{ "iframe", 14 },
+		{ "list-table", 17 },
+		{ "myst", 22 },
+		{ "topic", 24 },
+		{ "exercise", 30 },
+		{ "solution", 31 },
+		{ "toctree", 32 },
+		{ "grid", 26 },
+		{ "grid-item-card", 26 },
+		{ "card", 25 },
+		{ "mermaid", 20 },
+		{ "aside", 4 },
+		{ "margin", 4 },
+		{ "sidebar", 4 },
+		{ "code-cell", 8 },
+
+		{ "admonition", 3 },
+		{ "danger", 3 },
+		{ "error", 3 },
+		{ "hint", 3 },
+		{ "important", 3 },
+		{ "seealso", 3 }
+	}.ToFrozenDictionary();
 
     protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
     {
@@ -45,33 +73,22 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
+		if (info.IndexOf("{") == -1)
+		    return new CodeBlock(this, "raw", _admonitionData, context);
 
-	    if (info.EndsWith("{toctree}"))
-		    return new TocTreeBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{") == -1)
-		    return new CodeBlock(this, "raw", _admonitionData);
+	    // TODO alternate lookup .NET 9
+	    var directive = info.ToString().Trim(['{', '}', '`']);
+	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
+		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId, context);
 
 	    if (info.IndexOf("{tab-set}") > 0)
-		    return new TabSetBlock(this, _admonitionData);
+		    return new TabSetBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{tab-item}") > 0)
-		    return new TabItemBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{sidebar}") > 0)
-		    return new SideBarBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{card}") > 0)
-		    return new CardBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{grid}") > 0)
-		    return new GridBlock(this, _admonitionData);
-
-	    if (info.IndexOf("{grid-item-card}") > 0)
-		    return new GridItemCardBlock(this, _admonitionData);
+		    return new TabItemBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{dropdown}") > 0)
-		    return new DropdownBlock(this, _admonitionData);
+		    return new DropdownBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{image}") > 0)
 		    return new ImageBlock(this, _admonitionData, context);
@@ -82,8 +99,11 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    if (info.IndexOf("{figure-md}") > 0)
 		    return new FigureBlock(this, _admonitionData, context);
 
+	    // this is currently listed as unsupported
+	    // leaving the parsing in until we are confident we don't want this
+	    // for dev-docs
 	    if (info.IndexOf("{mermaid}") > 0)
-		    return new MermaidBlock(this, _admonitionData);
+		    return new MermaidBlock(this, _admonitionData, context);
 
 	    if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, _admonitionData, context);
@@ -91,49 +111,38 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    if (info.IndexOf("{literalinclude}") > 0)
 			return new LiteralIncludeBlock(this, _admonitionData, context);
 
+	    if (info.IndexOf("{applies}") > 0)
+			return new AppliesBlock(this, _admonitionData, context);
+
+	    if (info.IndexOf("{settings}") > 0)
+			return new SettingsBlock(this, _admonitionData, context);
+
 	    foreach (var admonition in _admonitions)
 	    {
 		    if (info.IndexOf($"{{{admonition}}}") > 0)
-			    return new AdmonitionBlock(this, admonition, _admonitionData);
+			    return new AdmonitionBlock(this, admonition, _admonitionData, context);
 	    }
 
 	    foreach (var version in _versionBlocks)
 	    {
 		    if (info.IndexOf($"{{{version}}}") > 0)
-			    return new VersionBlock(this, version, _admonitionData);
+			    return new VersionBlock(this, version, _admonitionData, context);
 	    }
 
 	    foreach (var code in _codeBlocks)
 	    {
 		    if (info.IndexOf($"{{{code}}}") > 0)
-			    return new CodeBlock(this, code, _admonitionData);
+			    return new CodeBlock(this, code, _admonitionData, context);
 	    }
-
-	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData);
+	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData, context);
     }
 
     public override bool Close(BlockProcessor processor, Block block)
     {
 	    if (block is DirectiveBlock directiveBlock)
-		    directiveBlock.FinalizeAndValidate();
+		    directiveBlock.FinalizeAndValidate(processor.GetContext());
 
-
-	    if (block is not TocTreeBlock toc)
-		    return base.Close(processor, block);
-
-	    if (toc is not { Count: > 0 } || toc[0] is not ParagraphBlock p)
-			return base.Close(processor, block);
-
-		var text =  p.Lines.ToSlice().AsSpan().ToString();
-		foreach (var line in text.Split('\n'))
-		{
-			var tokens = line.Split('<', '>').Where(e => !string.IsNullOrWhiteSpace(e)).ToArray();
-			var fileName = tokens.Last().Trim();
-			var title = string.Join(" ", tokens.Take(tokens.Length - 1)).Trim();
-			toc.Links.Add(new TocTreeLink { Title = title, Link = fileName });
-		}
-
-	    return base.Close(processor, block);
+		return base.Close(processor, block);
     }
 
     public override BlockState TryContinue(BlockProcessor processor, Block block)

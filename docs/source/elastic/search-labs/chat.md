@@ -2,16 +2,7 @@
 title: Chatbot Tutorial
 ---
 
-```{toctree}
-:hidden:
-
-chat/req.md
-chat/rag.md
-```
-
 In this tutorial you are going to build a large language model (LLM) chatbot that uses a pattern known as [Retrieval-Augmented Generation (RAG)](https://www.elastic.co/what-is/retrieval-augmented-generation).
-
-<!-- ![Chatbot App Demo](/assets/images/guides/chatbot-app-demo.gif) -->
 
 Chatbots built with RAG can overcome some of the limitations that general-purpose conversational models such as ChatGPT have. In particular, they are able to discuss and answer questions about:
 

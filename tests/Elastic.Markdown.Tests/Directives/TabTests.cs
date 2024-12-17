@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class TabTests() : DirectiveTest<TabSetBlock>(
+public class TabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
 """
 `````{tab-set}
 
@@ -54,7 +55,7 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 	}
 }
 
-public class MultipleTabTests() : DirectiveTest<TabSetBlock>(
+public class MultipleTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
 """
 `````{tab-set}
 ````{tab-item} Admonition

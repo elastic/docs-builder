@@ -2,13 +2,13 @@
 @foreach (var file in Model.SubTree.FilesInOrder)
 {
 	var current = file == Model.CurrentDocument ? " current" : string.Empty;
-<li class="toctree-l@(Model.SubTree.Level + 1)@current"><a class="@(current.Trim()) reference internal" href="@file.Url">@file.TocTitle</a></li>
+<li class="toctree-l@(Model.SubTree.Level + 1)@current"><a class="@(current.Trim()) reference internal" href="@file.Url">@file.NavigationTitle</a></li>
 }
 @foreach (var g in Model.SubTree.GroupsInOrder)
 {
 	var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
 	var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
-<li class="toctree-l@(g.Level)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.TocTitle</a>@if (@g.FilesInOrder.Count > 0 || g.GroupsInOrder.Count > 0) {<ul class="@(current.Trim())">@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTreeNav.Create(new NavigationTreeItem
+<li class="toctree-l@(g.Level)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.FilesInOrder.Count > 0 || g.GroupsInOrder.Count > 0) {<ul class="@(current.Trim())">@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTreeNav.Create(new NavigationTreeItem
 		{
 			Level = g.Level,
 			CurrentDocument = Model.CurrentDocument,

@@ -1,0 +1,48 @@
+project: 'doc-builder'
+# docs-builder will warn for links to external hosts not declared here
+external_hosts:
+  - slack.com
+  - mystmd.org
+  - microsoft.com
+  - azure.com
+  - mistral.ai
+  - amazon.com
+  - python.org
+  - cohere.com
+  - docker.com
+  - langchain.com
+  - nodejs.org
+  - yarnpkg.com
+  - react.dev
+  - palletsprojects.com
+exclude:
+  - '_*.md'
+toc:
+  - file: index.md
+  - folder: markup
+  - folder: elastic
+    children:
+      - file: index.md
+      - folder: observability
+      - folder: reference
+      - folder: semantic-search
+      - folder: search-labs
+        children:
+          - file: index.md
+          - file: install.md
+            children:
+              - file: install/cloud.md
+              - file: install/docker.md
+          - file: chat.md
+            children:
+              - file: chat/req.md
+              - file: chat/rag.md
+          - file: search.md
+            children:
+              - file: search/req.md
+              - file: search/setup.md
+  - folder: nested
+    children:
+      - folder: content
+      - file: index.md
+  - folder: versioning

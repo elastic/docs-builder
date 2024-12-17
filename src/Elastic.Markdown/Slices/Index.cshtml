@@ -7,11 +7,15 @@
 		PageTocItems = Model.PageTocItems,
 		Tree = Model.Tree,
 		CurrentDocument = Model.CurrentDocument,
-		Navigation = Model.Navigation,
+		NavigationHtml = Model.NavigationHtml,
 		UrlPathPrefix = Model.UrlPathPrefix,
 	};
 }
 <section id="elastic-docs-v3">
 	<h1>@(Model.Title)</h1>
+	@if (Model.Applies is not null)
+	{
+		await RenderPartialAsync(Applies.Create(Model.Applies));
+	}
 	@(new HtmlString(Model.MarkdownHtml))
 </section>

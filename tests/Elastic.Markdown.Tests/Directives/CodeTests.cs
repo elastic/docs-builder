@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class CodeBlockTests(string directive, string? language = null) : DirectiveTest<CodeBlock>(
+public abstract class CodeBlockTests(ITestOutputHelper output, string directive, string? language = null) : DirectiveTest<CodeBlock>(output,
 $$"""
 ```{{directive}} {{language}}
 var x = 1;
@@ -22,25 +23,25 @@ A regular paragraph.
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be(language != null ? directive.Trim('{','}') : "raw");
 }
 
-public class CodeBlockDirectiveTests() : CodeBlockTests("{code-block}", "csharp")
+public class CodeBlockDirectiveTests(ITestOutputHelper output) : CodeBlockTests(output, "{code-block}", "csharp")
 {
 	[Fact]
 	public void SetsLanguage() => Block!.Language.Should().Be("csharp");
 }
 
-public class CodeTests() : CodeBlockTests("{code}", "python")
+public class CodeTests(ITestOutputHelper output) : CodeBlockTests(output, "{code}", "python")
 {
 	[Fact]
 	public void SetsLanguage() => Block!.Language.Should().Be("python");
 }
 
-public class SourceCodeTests() : CodeBlockTests("{sourcecode}", "java")
+public class SourceCodeTests(ITestOutputHelper output) : CodeBlockTests(output, "{sourcecode}", "java")
 {
 	[Fact]
 	public void SetsLanguage() => Block!.Language.Should().Be("java");
 }
 
-public class RawMarkdownCodeBlockTests() : CodeBlockTests("javascript")
+public class RawMarkdownCodeBlockTests(ITestOutputHelper output) : CodeBlockTests(output, "javascript")
 {
 	[Fact]
 	public void SetsLanguage() => Block!.Language.Should().Be("javascript");
