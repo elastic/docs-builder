@@ -1,149 +1,70 @@
+
 ---
-title: Admonitions
+title: Admonition Blocks
 ---
 
-This guide provides instructions for converting common AsciiDoc admonitions to MyST Markdown format.
+Admonition blocks allow you to highlight important information with varying levels of priority. In software documentation, these blocks are used to emphasize risks, provide helpful advice, or share relevant but non-critical details.
 
-## Admonition Mapping
+Admonitions are critical for:
+- Preventing data loss or security issues.
+- Improving system performance and stability.
+- Offering helpful tips for better product usage.
 
-| AsciiDoc     | MyST Markdown  |
-|--------------|----------------|
-| NOTE         | `{note}`       |
-| TIP          | `{tip}`        |
-| IMPORTANT    | `{important}`  |
-| WARNING      | `{warning}`    |
-| CAUTION      | `{caution}`    |
-| DANGER       | `{danger}`     |
+---
 
-### Example Conversion
+## Types of Admonitions
 
-In AsciiDoc:
-```text
-[NOTE]
-====
-This is a note.
+| **Type**     | **When to use it**                                                                 |
+|--------------|-----------------------------------------------------------------------------------|
+| **Warning**  | You could permanently lose data or leak sensitive information.                   |
+| **Important**| Ignoring the information could impact performance or the stability of your system.|
+| **Note**     | A relevant piece of information with no serious repercussions if ignored.        |
+| **Tip**      | Advice to help you make better choices when using a feature.                     |
+
+---
+
+`````{tab-set}
+
+````{tab-item} Asciidoc Syntax
+
+To create admonitions in Asciidoc, you can use inline or block syntax.
+
+**Inline Admonition:**
+```
+NOTE: This is a note.
 It can be multiple lines, but not multiple paragraphs.
-====
 ```
 
-In MyST Markdown:
+**Block Admonition:**
 ```
-:::{note}
-This is a note.
-It can be multiple lines, but not multiple paragraphs.
-:::
-```
-
-:::{note}
-This is a note.
-It can be multiple lines, but not multiple paragraphs.
-:::
-
-## Admonition Paragraphs
-
-For single-paragraph admonitions, convert them directly to MyST admonition syntax using the appropriate admonition type. Use triple colons `:::` to open and close the block.
-
-### Example
-
-In AsciiDoc:
-```text
 [WARNING]
-====
-This is a warning paragraph.
-====
+=======
+This is a warning.
+
+It can contain multiple paragraphs.
+=======
+```
+````
+
+````{tab-item} MD Syntax
+
+The new build system uses MyST Markdown directives for admonitions.
+
+**Basic Syntax:**
+
+```{note}
+This is a note.
+It can span multiple lines and supports inline formatting.
 ```
 
-In MyST Markdown:
-```
-:::{warning}
-This is a warning paragraph.
-:::
-```
+**Available Types:**
+- `note`
+- `caution`
+- `tip`
+- `attention`
+````
+`````
 
-:::{warning}
-This is a warning paragraph.
-:::
+## Related Issues
 
-## Multi-Paragraph Admonitions
-
-In AsciiDoc, multi-paragraph admonitions are formatted the same as single paragraphs. In MyST, you can still use the admonition type but separate paragraphs with blank lines.
-
-### Example
-
-In AsciiDoc:
-```text
-[IMPORTANT]
-====
-This is an important note.
-It contains multiple paragraphs.
-
-Make sure to read it carefully.
-====
-```
-
-In MyST Markdown:
-```
-:::{important}
-This is an important note.
-It contains multiple paragraphs.
-
-Make sure to read it carefully.
-:::
-```
-
-:::{important}
-This is an important note.
-It contains multiple paragraphs.
-
-Make sure to read it carefully.
-:::
-
-## Custom Titles for Admonitions
-
-To give an admonition a custom title in MyST, use the `admonition` directive with a `class` attribute. This is useful if you want to style the block as one of the core admonition types but need a custom title.
-
-### Example
-
-In AsciiDoc:
-```text
-[NOTE]
-.Title goes here
-====
-This note has a custom title.
-====
-```
-
-In MyST Markdown:
-```
-:::{admonition} Title goes here
-:class: note
-
-This note has a custom title.
-:::
-```
-
-:::{admonition} Title goes here
-:class: note
-
-This note has a custom title.
-:::
-
-## Collapsible Admonitions
-
-In MyST Markdown, you can make an admonition collapsible by adding a `dropdown` class, provided by the `sphinx-togglebutton` extension.
-
-### Example
-
-```
-:::{note}
-:class: dropdown
-
-This admonition can be collapsed, making it useful for longer notes or instructions.
-:::
-```
-
-:::{note}
-:class: dropdown
-
-This admonition can be collapsed, making it useful for longer notes or instructions.
-:::
+-

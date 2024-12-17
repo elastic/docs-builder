@@ -12,9 +12,9 @@ Adapted from the MDX migration guide: https://docs.elastic.dev/migration/syntax.
 * [Admonitions](syntax/admonitions.md)
 * [Tabs](syntax/tabs.md)
 
-```{toctree}
+<!-- ```{toctree}
 :hidden:
 
 syntax/admonitions.md
 syntax/tabs.md
-```
+``` -->
