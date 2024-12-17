@@ -29,9 +29,10 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		Classes = Properties.GetValueOrDefault("class");
 		CrossReferenceName = Properties.GetValueOrDefault("name");
 		DropdownOpen = PropBool("open");
+		if (DropdownOpen.HasValue)
+			Classes = "dropdown";
 	}
 }
 

@@ -49,7 +49,7 @@ Here is a tip.
 You can use `:class: dropdown` to make an admonition collapsible.
 
 ```{note}
-:class: dropdown
+:open: true
 
 Longer content can be collapsed to take less space.
 
