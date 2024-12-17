@@ -44,10 +44,4 @@ public class AdmonitionBlock(
 public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
 	: AdmonitionBlock(parser, "admonition", properties, context)
 {
-	// ReSharper disable once RedundantOverriddenMember
-	public override void FinalizeAndValidate(ParserContext context)
-	{
-		base.FinalizeAndValidate(context);
-		Classes = $"dropdown {Classes}";
-	}
 }
