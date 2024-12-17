@@ -42,6 +42,4 @@ public class AdmonitionBlock(
 
 
 public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: AdmonitionBlock(parser, "admonition", properties, context)
-{
-}
+	: AdmonitionBlock(parser, "admonition", properties, context);
