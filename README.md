@@ -63,7 +63,7 @@ Through the `serve` command you can continuously and partially compile your docu
 
 ```bash
 docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
-  --expose 8080 ghcr.io/elastic/docs-builder:edge serve
+  -p 8080:8080 ghcr.io/elastic/docs-builder:edge serve
 ```
 
 Each page is compiled on demand as you browse http://localhost:8080 and is never cached so changes to files and 
