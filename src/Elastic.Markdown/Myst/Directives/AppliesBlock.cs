@@ -16,7 +16,23 @@ public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		if (TryGetAvailability("stack", out var version))
+		if (TryGetAvailability("cloud", out var version))
+		{
+			Deployment ??= new Deployment();
+			Deployment.Cloud ??= new CloudManagedDeployment();
+			Deployment.Cloud.Serverless = version;
+			Deployment.Cloud.Hosted = version;
+		}
+		if (TryGetAvailability("self", out version))
+		{
+			Deployment ??= new Deployment();
+			Deployment.SelfManaged ??= new SelfManagedDeployment();
+			Deployment.SelfManaged.Ece = version;
+			Deployment.SelfManaged.Eck = version;
+			Deployment.SelfManaged.Stack = version;
+		}
+
+		if (TryGetAvailability("stack", out version))
 		{
 			Deployment ??= new Deployment();
 			Deployment.SelfManaged ??= new SelfManagedDeployment();
