@@ -37,3 +37,21 @@ We can use the `figure-md` directive to add caption to an image.
 
 This is a caption in **Markdown**
 ```
+
+
+
+```{directive} arguments
+:option: value
+
+# hello world
+[a link](https://www.google.com] with  **bold** text
+```
+
+
+
+:::{directive} arguments
+:option: value
+
+# hello world
+[a link](https://www.google.com] with  **bold** text
+:::

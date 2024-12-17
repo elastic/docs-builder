@@ -46,10 +46,10 @@ Here is a tip.
 
 ## Collapsible admonitions
 
-You can use `:class: dropdown` to make an admonition collapsible.
+You can use `:open: <bool>` to make an admonition collapsible.
 
 ```{note}
-:open: true
+:open: 
 
 Longer content can be collapsed to take less space.
 

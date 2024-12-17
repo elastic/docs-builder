@@ -49,6 +49,7 @@ Are equivalent, note `all` just means we won't be rendering the version portion 
 
 
 ## This section has its own applies annotations
+
 ```{applies}
 :stack: unavailable
 :serverless: tech-preview

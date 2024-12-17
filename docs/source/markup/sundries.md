@@ -25,11 +25,6 @@ Here is a quote. The attribution is added using the block attribute `attribution
 {attribution="Hamlet act 4, Scene 5"}
 > We know what we are, but know not what we may be.
 
-## Task lists
-
-- [ ] An item that needs doing
-- [x] An item that is complete
-
 ## Line breaks
 
 You can break a paraghraph \
