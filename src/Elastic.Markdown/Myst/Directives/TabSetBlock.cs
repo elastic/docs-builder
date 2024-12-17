@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Diagnostics;
+
 namespace Elastic.Markdown.Myst.Directives;
 
-public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public override string Directive => "tab-set";
 
@@ -21,8 +23,8 @@ public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string>
 		return _index;
 	}
 }
-public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public override string Directive => "tab-item";
 
@@ -36,7 +38,7 @@ public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		if (string.IsNullOrWhiteSpace(Arguments))
-			EmitError(context, "{tab-item} requires an argument to name the tab.");
+			this.EmitError("{tab-item} requires an argument to name the tab.");
 
 		Title = Arguments ?? "{undefined}";
 		Index = Parent!.IndexOf(this);

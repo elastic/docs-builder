@@ -5,18 +5,18 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.FrontMatter;
+using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Myst.Substitution;
-using Elastic.Markdown.Slices;
 using Elastic.Markdown.Slices.Directives;
 using Markdig;
-using Markdig.Extensions.Figures;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using RazorSlices;
-using YamlDotNet.Serialization.EventEmitters;
+using YamlDotNet.Core;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -70,6 +70,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					WriteLiteralIncludeBlock(renderer, includeBlock);
 				else
 					WriteIncludeBlock(renderer, includeBlock);
+				return;
+			case SettingsBlock settingsBlock:
+				WriteSettingsBlock(renderer, settingsBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -225,7 +228,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetMarkdownFile,
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetDocumentationFile,
 			block.Configuration);
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
@@ -233,6 +236,45 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		renderer.Write(html);
 		//var slice = Include.Create(new IncludeViewModel { Html = html });
 		//RenderRazorSlice(slice, renderer, block);
+	}
+
+	private void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)
+	{
+		if (!block.Found || block.IncludePath is null)
+			return;
+
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetDocumentationFile, block.Configuration);
+
+		var file = block.FileSystem.FileInfo.New(block.IncludePath);
+
+		SettingsCollection? settings;
+		try
+		{
+			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+			settings = YamlSerialization.Deserialize<SettingsCollection>(yaml);
+		}
+		catch (YamlException e)
+		{
+			block.EmitError("Can not be parsed as a valid settings file", e.InnerException ?? e);
+			return;
+		}
+		catch (Exception e)
+		{
+			block.EmitError("Can not be parsed as a valid settings file", e);
+			return;
+		}
+
+		var slice = Slices.Directives.Settings.Create(new SettingsViewModel
+		{
+			SettingsCollection = settings,
+			RenderMarkdown = s =>
+			{
+				var document = parser.Parse(s, block.IncludeFrom, block.FrontMatter);
+				var html = document.ToHtml(parser.Pipeline);
+				return html;
+			}
+		});
+		RenderRazorSliceNoContent(slice, renderer);
 	}
 
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, string contents)

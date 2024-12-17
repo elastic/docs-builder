@@ -50,12 +50,16 @@ Are equivalent, note `all` just means we won't be rendering the version portion 
 
 ## This section has its own applies annotations
 
-```{applies}
+:::{applies}
 :stack: unavailable
 :serverless: tech-preview
-```
+:cloud: ga
+:::
 
-This section describes a feature that's unavailable in `stack` and in tech preview on `serverless`
-
-
+:::{note}
 the `{applies}` directive **MUST** be preceded by a heading.
+:::
+
+
+This section describes a feature that's unavailable in `stack` and `ga` in all cloud products
+however its tech preview on `serverless` since it overrides what `cloud` specified.

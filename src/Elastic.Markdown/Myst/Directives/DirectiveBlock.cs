@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Markdig.Helpers;
 using Markdig.Syntax;
@@ -22,10 +23,22 @@ namespace Elastic.Markdown.Myst.Directives;
 /// <param name="parser">The parser used to create this block.</param>
 /// <param name="properties"></param>
 /// <param name="context"></param>
-public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
+public abstract class DirectiveBlock(
+	DirectiveBlockParser parser,
+	Dictionary<string, string> properties,
+	ParserContext context
+	)
 	: ContainerBlock(parser), IFencedBlock
 {
-	public IReadOnlyDictionary<string, string> Properties { get; } = properties;
+	protected IReadOnlyDictionary<string, string> Properties { get; } = properties;
+
+	public BuildContext Build { get; } = context.Build;
+
+	public IFileInfo CurrentFile { get; } = context.Path;
+
+	public bool SkipValidation { get; } = context.SkipValidation;
+
+	public abstract string Directive { get; }
 
 	public string? CrossReferenceName  { get; protected set; }
 
@@ -90,14 +103,5 @@ public abstract class DirectiveBlock(DirectiveBlockParser parser, Dictionary<str
 
 		return default;
 	}
-
-	public abstract string Directive { get; }
-
-	protected void EmitError(ParserContext context, string message) =>
-		context.EmitError(Line + 1, 1, Directive.Length + 4 , message);
-
-	protected void EmitWarning(ParserContext context, string message) =>
-		context.EmitWarning(Line + 1, 1, Directive.Length + 4 , message);
-
 
 }

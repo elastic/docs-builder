@@ -3,8 +3,12 @@
 // See the LICENSE file in the project root for more information
 namespace Elastic.Markdown.Myst.Directives;
 
-public class CodeBlock(DirectiveBlockParser parser, string directive, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class CodeBlock(
+	DirectiveBlockParser parser,
+	string directive,
+	Dictionary<string, string> properties,
+	ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public override string Directive => directive;
 	public string? Caption { get; private set; }

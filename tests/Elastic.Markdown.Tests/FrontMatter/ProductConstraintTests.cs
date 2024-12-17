@@ -111,13 +111,13 @@ applies:
 		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
 }
 
-public class EmptyCloudSetsAllProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
+public class EmptyCloudSetsAllCloudProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
 title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
-  hosted:
+  cloud:
 ---
 """
 )
@@ -126,3 +126,42 @@ applies:
 	public void Assert() =>
 		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
 }
+
+public class EmptySelfSetsAllSelfManagedProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
+"""
+---
+title: Elastic Docs v3
+navigation_title: "Documentation Guide"
+applies:
+  self:
+  stack: deprecated 9.0.0
+---
+"""
+)
+{
+	[Fact]
+	public void Assert()
+	{
+		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Eck.Should()
+			.BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should()
+			.BeEquivalentTo(new ProductAvailability { Lifecycle = Deprecated, Version = new (9,0,0) });
+	}
+}
+
+public class CloudProductsOverwriteDeploymentType(ITestOutputHelper output) : DirectiveTest(output,
+"""
+---
+title: Elastic Docs v3
+navigation_title: "Documentation Guide"
+applies:
+  cloud:
+---
+"""
+)
+{
+	[Fact]
+	public void Assert() =>
+		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+}
+

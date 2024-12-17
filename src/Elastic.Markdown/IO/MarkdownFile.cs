@@ -75,7 +75,7 @@ public record MarkdownFile : DocumentationFile
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			YamlFrontMatter = FrontMatterParser.Deserialize(raw);
+			YamlFrontMatter = YamlSerialization.Deserialize<YamlFrontMatter>(raw);
 			Title = YamlFrontMatter.Title;
 			NavigationTitle = YamlFrontMatter.NavigationTitle;
 		}

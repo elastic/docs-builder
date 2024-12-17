@@ -2,13 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
+	: DirectiveBlock(parser, properties, context)
 {
 	public override string Directive => "mermaid";
 
@@ -16,7 +17,23 @@ public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		if (TryGetAvailability("stack", out var version))
+		if (TryGetAvailability("cloud", out var version))
+		{
+			Deployment ??= new Deployment();
+			Deployment.Cloud ??= new CloudManagedDeployment();
+			Deployment.Cloud.Serverless = version;
+			Deployment.Cloud.Hosted = version;
+		}
+		if (TryGetAvailability("self", out version))
+		{
+			Deployment ??= new Deployment();
+			Deployment.SelfManaged ??= new SelfManagedDeployment();
+			Deployment.SelfManaged.Ece = version;
+			Deployment.SelfManaged.Eck = version;
+			Deployment.SelfManaged.Stack = version;
+		}
+
+		if (TryGetAvailability("stack", out version))
 		{
 			Deployment ??= new Deployment();
 			Deployment.SelfManaged ??= new SelfManagedDeployment();
@@ -48,7 +65,7 @@ public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string
 		}
 
 		if (Deployment is null)
-			EmitError(context, "{applies} block with no product availability specified");
+			this.EmitError("{applies} block with no product availability specified");
 
 		var index = Parent?.IndexOf(this);
 		if (Parent is not null && index > 0)
@@ -56,7 +73,7 @@ public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string
 			var i = index - 1 ?? 0;
 			var prevSib = Parent[i];
 			if (prevSib is not HeadingBlock)
-				EmitError(context, "{applies} should follow a heading");
+				this.EmitError("{applies} should follow a heading");
 		}
 
 		bool TryGetAvailability(string key, out ProductAvailability? semVersion)

@@ -74,12 +74,27 @@ public class DeploymentConverter : IYamlTypeConverter
 			if (string.Equals(value.Value, "all", StringComparison.InvariantCultureIgnoreCase))
 				return Deployment.All;
 		}
-		var x = rootDeserializer.Invoke(typeof(Dictionary<string, string>));
-		if (x is not Dictionary<string, string> { Count: > 0 } dictionary)
+		var deserialized = rootDeserializer.Invoke(typeof(Dictionary<string, string>));
+		if (deserialized is not Dictionary<string, string> { Count: > 0 } dictionary)
 			return null;
 
 		var deployment = new Deployment();
-		if (TryGetAvailability("stack", out var version))
+
+		if (TryGetAvailability("cloud", out var version))
+		{
+			deployment.Cloud ??= new CloudManagedDeployment();
+			deployment.Cloud.Serverless = version;
+			deployment.Cloud.Hosted = version;
+		}
+		if (TryGetAvailability("self", out version))
+		{
+			deployment.SelfManaged ??= new SelfManagedDeployment();
+			deployment.SelfManaged.Ece = version;
+			deployment.SelfManaged.Eck = version;
+			deployment.SelfManaged.Stack = version;
+		}
+
+		if (TryGetAvailability("stack", out version))
 		{
 			deployment.SelfManaged ??= new SelfManagedDeployment();
 			deployment.SelfManaged.Stack = version;

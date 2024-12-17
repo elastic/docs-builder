@@ -6,9 +6,6 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-[YamlStaticContext]
-public partial class YamlFrontMatterStaticContext;
-
 [YamlSerializable]
 public class YamlFrontMatter
 {
@@ -25,22 +22,3 @@ public class YamlFrontMatter
 	[YamlMember(Alias = "applies")]
 	public Deployment? AppliesTo { get; set; }
 }
-
-public static class FrontMatterParser
-{
-	public static YamlFrontMatter Deserialize(string yaml)
-	{
-		var input = new StringReader(yaml);
-
-		var deserializer = new StaticDeserializerBuilder(new YamlFrontMatterStaticContext())
-			.IgnoreUnmatchedProperties()
-			.WithTypeConverter(new SemVersionConverter())
-			.WithTypeConverter(new DeploymentConverter())
-			.Build();
-
-		var frontMatter = deserializer.Deserialize<YamlFrontMatter>(input);
-		return frontMatter;
-
-	}
-}
-
