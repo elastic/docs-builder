@@ -1,6 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using Elastic.Markdown.Myst.CallOutCode;
 using Elastic.Markdown.Myst.Substitution;
 using FluentAssertions;
 using Xunit.Abstractions;
@@ -55,7 +57,7 @@ not a {substitution}
 			.And.NotContain(
 				"""{{hello-world}}"""
 			)
-			.And.NotContain( // treated as attributes to the block
+			.And.Contain( // treated as attributes to the block
 				"""{substitution}"""
 			)
 			.And.Contain(
@@ -63,7 +65,7 @@ not a {substitution}
 			);
 }
 
-public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : LeafTest<SubstitutionLeaf>(output,
+public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : BlockTest<CodeBlockWithCallOuts>(output,
 """
 ---
 sub:
@@ -81,7 +83,7 @@ cd elasticsearch-{{version}}/ <2>
 {
 
 	[Fact]
-	public void GeneratesAttributesInHtml() =>
+	public void ReplacesSubsInCode() =>
 		Html.Should().Contain("7.17.0");
 }
 

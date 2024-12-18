@@ -31,6 +31,25 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 
 }
 
+public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	: InlineTest(output, content)
+	where TDirective : Block
+{
+	protected TDirective? Block { get; private set; }
+
+	public override async Task InitializeAsync()
+	{
+		await base.InitializeAsync();
+		Block = Document
+			.Descendants<TDirective>()
+			.FirstOrDefault();
+	}
+
+	[Fact]
+	public void BlockIsNotNull() => Block.Should().NotBeNull();
+
+}
+
 public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
 	: InlineTest(output, content)
 	where TDirective : ContainerInline

@@ -97,7 +97,7 @@ public static class ProcessorDiagnosticExtensions
 		context.Collector.Channel.Write(d);
 	}
 
-	public static void EmitError(this DirectiveBlock block, string message, Exception? e = null)
+	public static void EmitError(this IBlockExtension block, string message, Exception? e = null)
 	{
 		if (block.SkipValidation) return;
 
@@ -107,13 +107,13 @@ public static class ProcessorDiagnosticExtensions
 			File = block.CurrentFile.FullName,
 			Line = block.Line + 1,
 			Column = block.Column,
-			Length = block.Directive.Length + 5,
+			Length = block.OpeningLength + 5,
 			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
 		};
 		block.Build.Collector.Channel.Write(d);
 	}
 
-	public static void EmitWarning(this DirectiveBlock block, string message)
+	public static void EmitWarning(this IBlockExtension block, string message)
 	{
 		if (block.SkipValidation) return;
 
@@ -123,7 +123,7 @@ public static class ProcessorDiagnosticExtensions
 			File = block.CurrentFile.FullName,
 			Line = block.Line + 1,
 			Column = block.Column,
-			Length = block.Directive.Length + 4,
+			Length = block.OpeningLength + 4,
 			Message = message
 		};
 		block.Build.Collector.Channel.Write(d);

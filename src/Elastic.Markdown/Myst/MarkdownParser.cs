@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.CallOutCode;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -40,7 +41,6 @@ public class MarkdownParser(
 			.EnableTrackTrivia()
 			.UsePreciseSourceLocation()
 			.UseDiagnosticLinks()
-			.UseGenericAttributes()
 			.UseEmphasisExtras(EmphasisExtraOptions.Default)
 			.UseSoftlineBreakAsHardlineBreak()
 			.UseSubstitution()
@@ -49,6 +49,7 @@ public class MarkdownParser(
 			.UseGridTables()
 			.UsePipeTables()
 			.UseDirectives()
+			.UseCallOutAwareCodeBlocks()
 			.DisableHtml()
 			.Build();
 
