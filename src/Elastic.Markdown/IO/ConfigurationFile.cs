@@ -49,7 +49,10 @@ public record ConfigurationFile : DocumentationFile
 		yaml.Load(textReader);
 
 		if (yaml.Documents.Count == 0)
+		{
 			context.EmitWarning(sourceFile, "empty configuration");
+			return;
+		}
 
 		// Examine the stream
 		var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
