@@ -73,9 +73,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-		if (info.IndexOf("{") == -1)
-		    return new CodeBlock(this, "raw", _admonitionData, context);
-
 	    // TODO alternate lookup .NET 9
 	    var directive = info.ToString().Trim(['{', '}', '`']);
 	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
@@ -129,11 +126,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			    return new VersionBlock(this, version, _admonitionData, context);
 	    }
 
-	    foreach (var code in _codeBlocks)
-	    {
-		    if (info.IndexOf($"{{{code}}}") > 0)
-			    return new CodeBlock(this, code, _admonitionData, context);
-	    }
 	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData, context);
     }
 
@@ -143,6 +135,29 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		    directiveBlock.FinalizeAndValidate(processor.GetContext());
 
 		return base.Close(processor, block);
+    }
+
+    public override BlockState TryOpen(BlockProcessor processor)
+    {
+		if (processor.Context is not ParserContext context)
+			throw new Exception("Expected parser context to be of type ParserContext");
+
+        // We expect no indentation for a fenced code block.
+        if (processor.IsCodeIndent)
+            return BlockState.None;
+
+        var line = processor.Line;
+
+	    foreach (var code in _codeBlocks)
+	    {
+		    if (line.IndexOf($"{{{code}}}") > 0)
+			    return BlockState.None;
+	    }
+
+		if (line.IndexOf("{") == -1)
+		    return BlockState.None;
+
+	    return base.TryOpen(processor);
     }
 
     public override BlockState TryContinue(BlockProcessor processor, Block block)

@@ -12,6 +12,17 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 
+public interface IBlockExtension : IBlock
+{
+	BuildContext Build { get; }
+
+	bool SkipValidation { get; }
+
+	IFileInfo CurrentFile { get; }
+
+	int OpeningLength { get; }
+}
+
 /// <summary>
 /// A block custom container.
 /// </summary>
@@ -28,7 +39,7 @@ public abstract class DirectiveBlock(
 	Dictionary<string, string> properties,
 	ParserContext context
 	)
-	: ContainerBlock(parser), IFencedBlock
+	: ContainerBlock(parser), IFencedBlock, IBlockExtension
 {
 	protected IReadOnlyDictionary<string, string> Properties { get; } = properties;
 
@@ -37,6 +48,8 @@ public abstract class DirectiveBlock(
 	public IFileInfo CurrentFile { get; } = context.Path;
 
 	public bool SkipValidation { get; } = context.SkipValidation;
+
+	public int OpeningLength => Directive.Length;
 
 	public abstract string Directive { get; }
 

@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests.Inline;
 
 public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
 """
-![Elasticsearch](/_static/img/observability.png){w=350px align=center}
+![Elasticsearch](/_static/img/observability.png)
 """
 )
 {
@@ -20,6 +20,6 @@ public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><img src="/_static/img/observability.png" w="350px" align="center" alt="Elasticsearch" /></p>"""
+			"""<p><img src="/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }

@@ -6,6 +6,7 @@
 // See the license.txt file in the project root for more information.
 
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Myst.Substitution;
@@ -52,9 +53,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case VersionBlock versionBlock:
 				WriteVersion(renderer, versionBlock);
-				return;
-			case CodeBlock codeBlock:
-				WriteCode(renderer, codeBlock);
 				return;
 			case TabSetBlock tabSet:
 				WriteTabSet(renderer, tabSet);
@@ -164,13 +162,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteCode(HtmlRenderer renderer, CodeBlock block)
+	private void WriteCode(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var slice = Code.Create(new CodeViewModel
 		{
-			CrossReferenceName = block.CrossReferenceName, Language = block.Language, Caption = block.Caption
+			CrossReferenceName = string.Empty,// block.CrossReferenceName,
+			Language = block.Language,
+			Caption = string.Empty
 		});
-		RenderRazorSliceRawContent(slice, renderer, block);
+		//RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
 
@@ -317,13 +317,20 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			renderer.EnableHtmlForInline = false;
 			foreach (var oo in p.Inline ?? [])
 			{
-
 				if (oo is SubstitutionLeaf sl)
 					renderer.Write(sl.Replacement);
-				if (oo is LiteralInline li)
+				else if (oo is LiteralInline li)
 					renderer.Write(li);
-				if (oo is LineBreakInline)
+				else if (oo is LineBreakInline)
 					renderer.WriteLine();
+				else if (oo is Role r)
+				{
+					renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
+					renderer.WriteChildren(r);
+				}
+
+				else
+					renderer.Write($"(LeafBlock: {oo.GetType().Name}");
 			}
 
 			renderer.EnableHtmlForInline = true;
@@ -342,6 +349,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					foreach (var lll in ll)
 						Render(lll);
 				}
+				else
+					renderer.Write($"(ListBlock: {l.GetType().Name}");
 			}
 		}
 
@@ -351,6 +360,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				RenderLeaf(p);
 			else if (o is ListBlock l)
 				RenderListBlock(l);
+			else
+				renderer.Write($"(Block: {o.GetType().Name}");
 		}
 	}
 }
