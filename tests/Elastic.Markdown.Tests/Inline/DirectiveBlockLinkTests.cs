@@ -36,7 +36,7 @@ title: Special Requirements
 This is a 'caution' admonition
 ```
 """;
-		fileSystem.AddFile(@"docs/source/elastic/search-labs/search/req.md", inclusion);
+		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
 	}
 
@@ -61,7 +61,7 @@ public class InPageDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlock
 
 public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlockLinkTests(output,
 """
-[Sub Requirements](elastic/search-labs/search/req.md#hint_ref)
+[Sub Requirements](testing/req.md#hint_ref)
 """
 )
 {
@@ -75,4 +75,3 @@ public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlo
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
-

@@ -27,7 +27,7 @@ title: Special Requirements
 
 To follow this tutorial you will need to install the following components:
 """;
-		fileSystem.AddFile(@"docs/source/elastic/search-labs/search/req.md", inclusion);
+		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
 	}
 
@@ -52,7 +52,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 
 public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 """
-[Requirements](elastic/search-labs/search/req.md)
+[Requirements](testing/req.md)
 """
 )
 {
@@ -69,7 +69,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 
 public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
 """
-[](elastic/search-labs/search/req.md)
+[](testing/req.md)
 """
 )
 {

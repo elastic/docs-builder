@@ -34,7 +34,7 @@ title: Special Requirements
 
 To follow this tutorial you will need to install the following components:
 """;
-		fileSystem.AddFile(@"docs/source/elastic/search-labs/search/req.md", inclusion);
+		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
 	}
 
@@ -59,7 +59,7 @@ public class InPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(ou
 
 public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
 """
-[Sub Requirements](elastic/search-labs/search/req.md#sub-requirements)
+[Sub Requirements](testing/req.md#sub-requirements)
 """
 )
 {
@@ -76,7 +76,7 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 
 public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
 """
-[](elastic/search-labs/search/req.md#sub-requirements)
+[](testing/req.md#sub-requirements)
 """
 )
 {
@@ -112,7 +112,7 @@ public class InPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase
 
 public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
 """
-[Sub Requirements](elastic/search-labs/search/req.md#sub-requirements2)
+[Sub Requirements](testing/req.md#sub-requirements2)
 """
 )
 {
@@ -127,4 +127,3 @@ public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTe
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
 		.And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
 }
-
