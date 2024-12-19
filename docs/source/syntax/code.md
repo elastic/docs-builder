@@ -1,5 +1,5 @@
 ---
-title: Code
+title: Code blocks
 ---
 
 You can use the regular markdown code block:

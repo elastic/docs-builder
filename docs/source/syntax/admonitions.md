@@ -2,12 +2,11 @@
 title: Admonitions
 ---
 
-Admonitions bring the attention of readers.
+Admonitions allow you to highlight important information with varying levels of priority. In software documentation, these blocks are used to emphasize risks, provide helpful advice, or share relevant but non-critical details.
 
 ## Basic admonitions
 
 ```{caution}
-:name: caution_ref
 This is a 'caution' admonition
 ```
 
@@ -36,6 +35,7 @@ Feature C
 ## Nested admonitions
 
 Admonitions like other directives can be nested.
+But don't do this.
 
 ````{note}
 We can have nested admonitions.
@@ -49,7 +49,7 @@ Here is a tip.
 You can use `:open: <bool>` to make an admonition collapsible.
 
 ```{note}
-:open: 
+:open:
 
 Longer content can be collapsed to take less space.
 

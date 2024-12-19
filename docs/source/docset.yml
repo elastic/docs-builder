@@ -19,30 +19,36 @@ exclude:
   - '_*.md'
 toc:
   - file: index.md
-  - folder: markup
+  - folder: migration
+    children:
+      - file: index.md
+      - file: syntax/admonitions.md
+      - file: syntax/tabs.md
+      # - file: migration/syntax/tabs.md
+  - folder: syntax
+    children:
+      - file: index.md
+      - file: admonitions.md
+      - file: code.md
+      - file: conditionals.md
+      - file: dropdowns.md
+      - file: example_blocks.md
+      - file: extensions_with_roles_and_directives.md
+      - file: file_inclusions.md
+      - file: includes.md
+      - file: images.md
+      - file: links.md
+      - file: passthrough.md
+      - file: applies.md
+      - file: sidebars.md
+      - file: substitutions.md
+      - file: sundries.md
+      - file: tables.md
+      - file: tabs.md
+      - file: tagged_regions.md
+      - file: yaml_to_markdown.md
   - folder: elastic
     children:
       - file: index.md
       - folder: observability
       - folder: reference
-      - folder: semantic-search
-      - folder: search-labs
-        children:
-          - file: index.md
-          - file: install.md
-            children:
-              - file: install/cloud.md
-              - file: install/docker.md
-          - file: chat.md
-            children:
-              - file: chat/req.md
-              - file: chat/rag.md
-          - file: search.md
-            children:
-              - file: search/req.md
-              - file: search/setup.md
-  - folder: nested
-    children:
-      - folder: content
-      - file: index.md
-  - folder: versioning

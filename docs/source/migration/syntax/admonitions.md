@@ -1,4 +1,3 @@
-
 ---
 title: Admonition Blocks
 ---
@@ -14,7 +13,11 @@ Admonitions are critical for:
 
 ## Types of Admonitions
 
-| **Type**     | **When to use it**                                                                 |
+```{attention}
+Asciidoc and V3 currently support different admonition types
+```
+
+| **Asciidoc Type**     | **When to use it**                                                        |
 |--------------|-----------------------------------------------------------------------------------|
 | **Warning**  | You could permanently lose data or leak sensitive information.                   |
 | **Important**| Ignoring the information could impact performance or the stability of your system.|
@@ -27,16 +30,14 @@ Admonitions are critical for:
 
 ````{tab-item} Asciidoc Syntax
 
-To create admonitions in Asciidoc, you can use inline or block syntax.
-
 **Inline Admonition:**
-```
+```none
 NOTE: This is a note.
 It can be multiple lines, but not multiple paragraphs.
 ```
 
 **Block Admonition:**
-```
+```none
 [WARNING]
 =======
 This is a warning.
@@ -48,13 +49,20 @@ It can contain multiple paragraphs.
 
 ````{tab-item} MD Syntax
 
-The new build system uses MyST Markdown directives for admonitions.
-
 **Basic Syntax:**
 
 ```{note}
 This is a note.
 It can span multiple lines and supports inline formatting.
+```
+
+```{caution}
+```
+
+```{tip}
+```
+
+```{attention}
 ```
 
 **Available Types:**
@@ -67,4 +75,4 @@ It can span multiple lines and supports inline formatting.
 
 ## Related Issues
 
--
+- https://github.com/elastic/docs-builder/issues/106
