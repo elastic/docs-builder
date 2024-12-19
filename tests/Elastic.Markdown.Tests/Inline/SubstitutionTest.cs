@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Myst.CallOutCode;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Substitution;
 using FluentAssertions;
 using Xunit.Abstractions;
@@ -65,7 +65,7 @@ not a {substitution}
 			);
 }
 
-public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : BlockTest<CodeBlockWithCallOuts>(output,
+public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : BlockTest<EnhancedCodeBlock>(output,
 """
 ---
 sub:

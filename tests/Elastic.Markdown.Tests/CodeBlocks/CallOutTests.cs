@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Myst.CallOutCode;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -16,7 +16,7 @@ public abstract class CodeBlockCallOutTests(
 	[LanguageInjection("csharp")] string code,
 	[LanguageInjection("markdown")] string? markdown = null
 )
-	: BlockTest<CodeBlockWithCallOuts>(output,
+	: BlockTest<EnhancedCodeBlock>(output,
 $$"""
 ```{{language}}
 {{code}}

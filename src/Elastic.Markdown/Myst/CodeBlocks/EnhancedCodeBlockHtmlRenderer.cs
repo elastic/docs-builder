@@ -4,55 +4,37 @@
 
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
-using Markdig;
-using Markdig.Parsers;
+using Elastic.Markdown.Slices.Directives;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using RazorSlices;
 
-namespace Elastic.Markdown.Myst.CallOutCode;
+namespace Elastic.Markdown.Myst.CodeBlocks;
 
-public static class CallOutCodeBuilderExtensions
+public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBlock>
 {
-	public static MarkdownPipelineBuilder UseCallOutAwareCodeBlocks(this MarkdownPipelineBuilder pipeline)
+
+	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
-		pipeline.Extensions.AddIfNotAlready<CallOutCodeMarkdownExtension>();
-		return pipeline;
+		var html = slice.RenderAsync().GetAwaiter().GetResult();
+		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
+		renderer.Write(blocks[0]);
+		renderer.WriteLeafRawLines(block, true, false, false);
+		renderer.Write(blocks[1]);
 	}
-}
-
-/// <summary>
-/// Extension to allow custom containers.
-/// </summary>
-/// <seealso cref="IMarkdownExtension" />
-public class CallOutCodeMarkdownExtension : IMarkdownExtension
-{
-	public void Setup(MarkdownPipelineBuilder pipeline)
-	{
-		pipeline.BlockParsers.Replace<FencedCodeBlockParser>(new CallOutAwareFencedCodeBlockParser());
-	}
-
-	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
-	{
-		if (!renderer.ObjectRenderers.Contains<CodeBlockRenderer>())
-		{
-			// Must be inserted before CodeBlockRenderer
-			renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
-		}
-
-		renderer.ObjectRenderers.Replace<CodeBlockRenderer>(new CallOutCodeRenderer());
-	}
-}
-
-public class CallOutCodeRenderer : HtmlObjectRenderer<CodeBlockWithCallOuts>
-{
-	protected override void Write(HtmlRenderer renderer, CodeBlockWithCallOuts block)
+	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var callOuts = block.CallOuts ?? [];
 
-		renderer.WriteLine("<code><pre>");
-		renderer.WriteLeafRawLines(block, true, false, false);
-		renderer.WriteLine("</pre></code>");
+		var slice = Code.Create(new CodeViewModel
+		{
+			CrossReferenceName = string.Empty,// block.CrossReferenceName,
+			Language = block.Language,
+			Caption = string.Empty
+		});
+
+		RenderRazorSlice(slice, renderer, block);
 
 		if (!block.InlineAnnotations && callOuts.Count > 0)
 		{

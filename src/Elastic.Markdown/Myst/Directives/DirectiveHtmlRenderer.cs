@@ -6,7 +6,7 @@
 // See the license.txt file in the project root for more information.
 
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.CallOutCode;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Myst.Substitution;
@@ -162,7 +162,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteCode(HtmlRenderer renderer, CodeBlockWithCallOuts block)
+	private void WriteCode(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var slice = Code.Create(new CodeViewModel
 		{

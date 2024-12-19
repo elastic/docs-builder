@@ -2,70 +2,34 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
-using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.Directives;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
 
-namespace Elastic.Markdown.Myst.CallOutCode;
+namespace Elastic.Markdown.Myst.CodeBlocks;
 
-public record CallOut
-{
-	public required int Index { get; init; }
-	public required string Text { get; init; }
-	public required bool InlineCodeAnnotation { get; init; }
-
-	public required int SliceStart { get; init; }
-
-	public required int Line { get; init; }
-}
-
-public class CodeBlockWithCallOuts(BlockParser parser, ParserContext context)
-	: FencedCodeBlock(parser), IBlockExtension
-{
-	public BuildContext Build { get; } = context.Build;
-
-	public IFileInfo CurrentFile { get; } = context.Path;
-
-	public bool SkipValidation { get; } = context.SkipValidation;
-
-	public int OpeningLength => Info?.Length ?? 0 + 3;
-
-	public List<CallOut>? CallOuts { get; set; }
-
-	public bool InlineAnnotations { get; set; }
-
-	public string Language { get; set; } = "unknown";
-}
-
-/// <summary>
-/// Parser for a <see cref="FencedCodeBlock"/>.
-/// </summary>
-/// <seealso cref="BlockParser" />
-public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlockWithCallOuts>
+public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 {
 	private const string DefaultInfoPrefix = "language-";
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="FencedCodeBlockParser"/> class.
 	/// </summary>
-	public CallOutAwareFencedCodeBlockParser()
+	public EnhancedCodeBlockParser()
 	{
 		OpeningCharacters = ['`'];
 		InfoPrefix = DefaultInfoPrefix;
 		InfoParser = RoundtripInfoParser;
 	}
 
-	protected override CodeBlockWithCallOuts CreateFencedBlock(BlockProcessor processor)
+	protected override EnhancedCodeBlock CreateFencedBlock(BlockProcessor processor)
 	{
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-		var codeBlock = new CodeBlockWithCallOuts(this, context) { IndentCount = processor.Indent };
+		var codeBlock = new EnhancedCodeBlock(this, context) { IndentCount = processor.Indent };
 
 		if (processor.TrackTrivia)
 		{
@@ -85,7 +49,7 @@ public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlock
 		var result = base.TryContinue(processor, block);
 		if (result == BlockState.Continue && !processor.TrackTrivia)
 		{
-			var fence = (CodeBlockWithCallOuts)block;
+			var fence = (EnhancedCodeBlock)block;
 			// Remove any indent spaces
 			var c = processor.CurrentChar;
 			var indentCount = fence.IndentCount;
@@ -101,7 +65,7 @@ public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlock
 
 	public override bool Close(BlockProcessor processor, Block block)
 	{
-		if (block is not CodeBlockWithCallOuts codeBlock)
+		if (block is not EnhancedCodeBlock codeBlock)
 			return base.Close(processor, block);
 
 		if (processor.Context is not ParserContext context)
@@ -111,7 +75,7 @@ public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlock
 			(codeBlock.Info?.IndexOf("{") ?? -1) != -1
 				? codeBlock.Arguments
 				: codeBlock.Info
-			) ?? "unknown";
+		) ?? "unknown";
 
 		var lines = codeBlock.Lines;
 		var callOutIndex = 0;
@@ -153,7 +117,10 @@ public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlock
 			foreach (var callout in codeBlock.CallOuts)
 			{
 				var line = lines.Lines[callout.Line - 1];
-				line.Slice.End = line.Slice.Start + callout.SliceStart;
+
+				var newSpan = line.Slice.AsSpan()[..callout.SliceStart];
+				var s = new StringSlice(newSpan.ToString());
+				lines.Lines[callout.Line -1 ] = new StringLine(ref s);
 
 			}
 		}
@@ -233,16 +200,4 @@ public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlock
 
 		return null;
 	}
-}
-
-public static partial class CallOutParser
-{
-	[GeneratedRegex(@"^.+\S+.*?\s<\d+>$", RegexOptions.IgnoreCase, "en-US")]
-	public static partial Regex CallOutNumber();
-
-	[GeneratedRegex(@"^.+\S+.*?\s(?:\/\/|#)\s[^""]+$", RegexOptions.IgnoreCase, "en-US")]
-	public static partial Regex MathInlineAnnotation();
-
-	[GeneratedRegex(@"\{\{[^\r\n}]+?\}\}", RegexOptions.IgnoreCase, "en-US")]
-	public static partial Regex MatchSubstitutions();
 }
