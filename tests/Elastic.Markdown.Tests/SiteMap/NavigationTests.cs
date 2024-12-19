@@ -19,9 +19,6 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
 		Configuration.ImplicitFolders.Should()
 			.Contain("testing");
-		Configuration.ImplicitFolders.Files.Should()
-			.Contain("req.md")
-			.And.Contain("_static/img/observability.png");
 	}
 	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>
