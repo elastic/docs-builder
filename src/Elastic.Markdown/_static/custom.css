@@ -15,14 +15,6 @@ This hides the ugly one */
   display: none !important;
 }
 
-.sd-tab-content {
-  padding-top: 20px !important;
-}
-
-body {
-  background-color: #FF0000;
-}
-
 /* The version selector in the header is broken
 This prevents it from showing up */
 .md\:inline{
