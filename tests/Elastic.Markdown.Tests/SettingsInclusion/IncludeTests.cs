@@ -20,7 +20,7 @@ $$"""
 )
 {
 	private static readonly string SettingsPath =
-		"docs/source/elastic/reference/kibana-alerting-action-settings.yml";
+		"docs/source/syntax/kibana-alerting-action-settings.yml";
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
