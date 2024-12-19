@@ -18,7 +18,7 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	{
 		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
 		Configuration.ImplicitFolders.Should()
-			.Conta("markup")
+			.Contain("markup")
 			.And.Contain("elastic/observability");
 	}
 	[Fact]
