@@ -13,6 +13,7 @@ project:
     content: CC-BY-4.0 <1>
   subject: MyST Markdown 
 ```
+1. The license
 
 
 ### C#
