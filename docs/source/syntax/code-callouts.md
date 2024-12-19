@@ -1,5 +1,5 @@
 ---
-title: Callouts
+title: Code Callouts
 ---
 
 You can use the regular markdown code block:
@@ -13,6 +13,7 @@ project:
     content: CC-BY-4.0 <1>
   subject: MyST Markdown 
 ```
+1. The license use by myst
 
 
 ### C#

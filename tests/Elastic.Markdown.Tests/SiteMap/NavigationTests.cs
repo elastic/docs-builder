@@ -18,7 +18,7 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	{
 		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
 		Configuration.ImplicitFolders.Should()
-			.Contain("testing");
+			.Contain("testing/nested");
 	}
 	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>
