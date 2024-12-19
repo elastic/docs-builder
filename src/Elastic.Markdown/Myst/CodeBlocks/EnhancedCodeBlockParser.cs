@@ -94,6 +94,9 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				span = lines.Lines[index].Slice.AsSpan();
 			}
 
+			if (codeBlock.OpeningFencedCharCount > 3)
+				continue;
+
 			var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
 			var callOut = EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false);
 
