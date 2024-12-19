@@ -2,55 +2,35 @@
 title: Code blocks
 ---
 
-You can use the regular markdown code block:
+Code blocks can be used to display multiple lines of code. They preserve formatting and provide syntax highlighting when possible.
+
+### Syntax
+
+:::none
+\`\`\`yaml
+project:
+  title: MyST Markdown
+  github: https://github.com/jupyter-book/mystmd
+\`\`\`
+:::
 
 ```yaml
 project:
   title: MyST Markdown
   github: https://github.com/jupyter-book/mystmd
-  license:
-    code: MIT
-    content: CC-BY-4.0
-  subject: MyST Markdown
 ```
 
-But you can also use the [code directive](https://mystmd.org/guide/code) that supposedly give you more features.
+### Asciidoc syntax
 
-```{code} yaml
-project:
-  title: MyST Markdown
-  github: https://github.com/jupyter-book/mystmd
-  license:
-    code: MIT
-    content: CC-BY-4.0
-  subject: MyST Markdown
-```
+:::none
+[source,sh]
+--------------------------------------------------
+GET _tasks
+GET _tasks?nodes=nodeId1,nodeId2
+GET _tasks?nodes=nodeId1,nodeId2&actions=cluster:*
+--------------------------------------------------
+:::
 
-This page also documents the [code directive](https://mystmd.org/guide/directives). It mentions `code-block` and `sourcecode` as aliases of the `code` directive. But `code-block` seems to behave differently. For example the `caption` option works for `code-block`, but not for `code`.
+### Code blocks with callouts
 
-```{code-block} yaml
-:linenos:
-:caption: How to configure `license` of a project
-:name: myst.yml
-:emphasize-lines: 4, 5, 6
-project:
-  title: MyST Markdown
-  github: https://github.com/jupyter-book/mystmd
-  license:
-    code: MIT
-    content: CC-BY-4.0
-  subject: MyST Markdown
-```
-
-```{code-block} python
-    :caption: Code blocks can also have sidebars.
-    :linenos:
-
-    print("one")
-    print("two")
-    print("three")
-    print("four")
-    print("five")
-    print("six")
-    print("seven")
-```
+_coming soon!_

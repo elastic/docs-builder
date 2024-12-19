@@ -2,56 +2,55 @@
 title: Images
 ---
 
-## Top-level image
+Images include screenshots, inline images, icons, and more.
 
-Here is a block-level image from the top-level static folder. The image directive supports attributes such as alt text and image width as shown here.
+Images can be referenced from the top-level `_static` dir or a local image dir.
+
+## Screenshots
+
+```{caution}
+This feature is not currently supported in Elastic Docs V3.
+```
+
+Screenshots get a box-shadow.
+
+## Block-level images
+
+:::none
+\!\[APM](/_static/img/apm.png)
+:::
+
+![APM](/_static/img/apm.png)
+
+Or, use the `image` directive.
+
+:::none
+\`\`\`\{image} /_static/img/observability.png
+:alt: Elasticsearch
+:width: 250px
+\`\`\`
+:::
 
 ```{image} /_static/img/observability.png
-:alt: Elastic Search
+:alt: Elasticsearch
 :width: 250px
 ```
 
-Here is the same image used inline ![Elasticsearch](/_static/img/observability.png){width=30px}. Myst's `attr-inline` extension allows adding attributes to inline directives.
-Here we used `w=30px` to make the image fit.
+## Inline image
 
-This is also inline:
-![Elasticsearch](/_static/img/observability.png){width=200px align=center}
-But we used `{w=200px align=center}`
+:::none
+Here is the same image used inline \!\[Elasticsearch](/_static/img/observability.png)\{width=30px}
+:::
 
-## Local image
+Here is the same image used inline ![Elasticsearch](/_static/img/observability.png){width=30px}.
 
-Here is an image from the local image folder. 
+## Asciidoc syntax
 
-```{image} img/serverless-capabilities.svg
-:alt: Elastic Search
-:height: 400px
-```
+:::none
+[role="screenshot"]
+image::images/metrics-alert-filters-and-group.png[Metric threshold filter and group fields]
+:::
 
-## Image with caption
-
-We can use the `figure-md` directive to add caption to an image.
-
-```{figure-md} /_static/img/observability.png
-:width: 350px
-:align: center
-
-This is a caption in **Markdown**
-```
-
-
-
-```{directive} arguments
-:option: value
-
-# hello world
-[a link](https://www.google.com] with  **bold** text
-```
-
-
-
-:::{directive} arguments
-:option: value
-
-# hello world
-[a link](https://www.google.com] with  **bold** text
+:::none
+image::images/synthetics-get-started-projects.png[]
 :::

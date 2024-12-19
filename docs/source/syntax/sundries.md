@@ -16,7 +16,7 @@ H~2~O, and 4^th^ of July
 
 ## Block attributes
 
-Using Myst's `attrs_block` extension, we can add attributes to a block-level element. For example we can use it to add a class to a header, paragraph, etc. Check out quotation section for another example. 
+Using Myst's `attrs_block` extension, we can add attributes to a block-level element. For example we can use it to add a class to a header, paragraph, etc. Check out quotation section for another example.
 
 ## Quotation
 
@@ -27,7 +27,7 @@ Here is a quote. The attribution is added using the block attribute `attribution
 
 ## Line breaks
 
-You can break a paraghraph \
+You can break a paragraph \
 using `\` at the end of a line.
 
 ## Thematic break

@@ -1,15 +1,26 @@
 ---
-title: File Inclusion
-myst:
-    substitutions:
-        'page_title': "File Inclusion Page"
+title: File inclusion
+test: hi
 ---
 
-You can include any markdown page using `include` directive. The snippets can also contain variables and be substituted as shown in the [Substitutions](substitutions.md) page. This is specially useful if pages need to customize the snippet. For that, pages just need to use the front matter to define their own values for the variables in the snippet.
+File inclusion is useful for
+- including entire pages in a content set (usually done in the `docset.yml` file)
+- breaking files into smaller units and including them where appropriate
 
-The rest of this page is from a snippet and "{{page_title}}" below is taken from the front matter on this page.
+If there are portions of content that are relevant to multiple pages, you can inject content from another file into any given MD file using the `include` directive.
 
-## Snippet
+### Syntax
+
+:::none
+\`\`\`\{include} _snippets/my_snippet.md
+\`\`\`
+:::
 
 ```{include} _snippets/my_snippet.md
 ```
+
+### Asciidoc syntax
+
+:::none
+include::shared-monitor-config.asciidoc[]
+:::

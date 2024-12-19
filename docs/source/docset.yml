@@ -19,23 +19,17 @@ exclude:
   - '_*.md'
 toc:
   - file: index.md
-  - folder: migration
-    children:
-      - file: index.md
-      - file: syntax/admonitions.md
-      - file: syntax/tabs.md
-      # - file: migration/syntax/tabs.md
   - folder: syntax
     children:
       - file: index.md
       - file: admonitions.md
+      - file: automated_settings.md
       - file: code.md
       - file: conditionals.md
       - file: dropdowns.md
       - file: example_blocks.md
-      - file: extensions_with_roles_and_directives.md
-      - file: file_inclusions.md
-      - file: includes.md
+      - file: file_inclusion.md
+      - file: frontmatter.md
       - file: images.md
       - file: links.md
       - file: passthrough.md
@@ -46,9 +40,4 @@ toc:
       - file: tables.md
       - file: tabs.md
       - file: tagged_regions.md
-      - file: yaml_to_markdown.md
-  - folder: elastic
-    children:
-      - file: index.md
-      - folder: observability
-      - folder: reference
+      - file: titles.md

@@ -33,7 +33,7 @@ Where version is optional.
 
 ```yaml
 applies:
-  stack: 
+  stack:
   serverless: all
 ```
 
