@@ -7,7 +7,7 @@ Elastic Docs V3 supports the ability to build a markdown settings reference from
 ### Syntax
 
 :::none
-\`\`\`\{settings} kibana-alerting-action-settings.yml
+\`\`\`\{settings} /syntax/kibana-alerting-action-settings.yml
 \`\`\`
 :::
 
