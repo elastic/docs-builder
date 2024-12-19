@@ -106,6 +106,16 @@ public abstract class DirectiveBlock(
 		return bool.TryParse(value, out var result) && result;
 	}
 
+	protected bool? TryPropBool(params string[] keys)
+	{
+		var value = Prop(keys);
+		if (string.IsNullOrEmpty(value))
+			return keys.Any(k => Properties.ContainsKey(k)) ? true : null;
+
+		return bool.TryParse(value, out var result) ? result : null;
+	}
+
+
 	protected string? Prop(params string[] keys)
 	{
 		foreach (var key in keys)
