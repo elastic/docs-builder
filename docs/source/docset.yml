@@ -25,7 +25,6 @@ toc:
       - file: admonitions.md
       - file: automated_settings.md
       - file: code.md
-      - file: code-callouts.md
       - file: conditionals.md
       - file: dropdowns.md
       - file: example_blocks.md

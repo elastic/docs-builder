@@ -6,19 +6,19 @@ Tabbed content is created using the `tab-set` directive with individual `tab-ite
 
 ## Syntax
 
-:::none
-\:\:\:\:\{tab-set}
+```markdown
+::::{tab-set}
 
-\:\:\:\{tab-item} Tab #1 title
+:::{tab-item} Tab #1 title
 This is where the content for tab #1 goes.
-\:\:\:
-
-\:\:\:\{tab-item} Tab #2 title
-This is where the content for tab #2 goes.
-\:\:\:
-
-\:\:\:\:
 :::
+
+:::{tab-item} Tab #2 title
+This is where the content for tab #2 goes.
+:::
+
+::::
+```
 
 ::::{tab-set}
 
@@ -34,7 +34,7 @@ This is where the content for tab #2 goes.
 
 ## Asciidoc syntax
 
-:::none
+`````asciidoc
 **`widget.asciidoc`**
 
 [source,asciidoc]
@@ -79,4 +79,4 @@ This is where the content for tab #1 goes.
 This is where the content for tab #2 goes.
 // end::reg-config[]
 ----
-:::
+```

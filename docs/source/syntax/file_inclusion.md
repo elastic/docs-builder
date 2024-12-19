@@ -11,16 +11,16 @@ If there are portions of content that are relevant to multiple pages, you can in
 
 ### Syntax
 
-:::none
-\`\`\`\{include} _snippets/my_snippet.md
-\`\`\`
+```markdown
+:::{include} _snippets/my_snippet.md
 :::
-
-```{include} _snippets/my_snippet.md
 ```
+
+:::{include} _snippets/my_snippet.md
+:::
 
 ### Asciidoc syntax
 
-:::none
+```asciidoc
 include::shared-monitor-config.asciidoc[]
-:::
+```

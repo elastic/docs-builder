@@ -29,12 +29,12 @@ Admonitions can span multiple lines and support inline formatting.
 
 A relevant piece of information with no serious repercussions if ignored.
 
-:::none
-\`\`\`\{note}
+```markdown
+:::{note}
 This is a note.
 It can span multiple lines and supports inline formatting.
-\`\`\`
 :::
+```
 
 :::{note}
 This is a note.
@@ -44,11 +44,11 @@ This is a note.
 
 You could permanently lose data or leak sensitive information.
 
-:::none
-\`\`\`\{caution}
+```markdown
+:::{caution}
 This is a caution.
-\`\`\`
 :::
+```
 
 ```{caution}
 This is a caution.
@@ -58,11 +58,11 @@ This is a caution.
 
 Advice to help users make better choices when using a feature.
 
-:::none
-\`\`\`\{tip}
+```markdown
+:::{tip}
 This is a tip.
-\`\`\`
 :::
+```
 
 ```{tip}
 This is a tip.
@@ -72,11 +72,11 @@ This is a tip.
 
 Ignoring this information could impact performance or the stability of your system.
 
-:::none
-\`\`\`\{attention}
+```markdown
+:::{attention}
 This is an attention.
-\`\`\`
 :::
+```
 
 ```{attention}
 This is an attention.
@@ -96,13 +96,14 @@ This is an attention.
 
 
 **Inline Admonition:**
-:::none
+```none
 NOTE: This is a note.
 It can be multiple lines, but not multiple paragraphs.
-:::
+```
 
 **Block Admonition:**
-:::none
+
+```none
 [WARNING]
 =======
 This is a warning.
@@ -110,7 +111,7 @@ This is a warning.
 It can contain multiple paragraphs.
 =======
 :::
-````
+```
 
 `````
 
@@ -118,15 +119,15 @@ It can contain multiple paragraphs.
 
 You can use `:open: <bool>` to make an admonition collapsible.
 
-:::none
-\`\`\`\{note}
+```none
+:::{note}
 :open:
 
 Longer content can be collapsed to take less space.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-\`\`\`
 :::
+```
 
 ```{note}
 :open:

@@ -8,19 +8,19 @@ Dropdowns allow you to hide and reveal content on user interaction.
 
 By default, dropdowns are collapsed. This hides content until a user clicks the title of the collapsible block.
 
-:::none
-\`\`\`\{dropdown} Dropdown Title
+```markdown
+:::{dropdown} Dropdown Title
 Dropdown content
-\`\`\`
 :::
-
-```{dropdown} Dropdown Title
-Dropdown content
 ```
+
+:::{dropdown} Dropdown Title
+Dropdown content
+:::
 
 ### Asciidoc syntax
 
-:::none
+```asciidoc
 .The `elasticsearch-setup-passwords` tool is deprecated.
 [%collapsible]
 ====
@@ -38,18 +38,18 @@ for the first time. If you run `elasticsearch-setup-passwords` after
 starting {es}, it will fail because the `elastic`
 user password is already configured.
 ====
-:::
+```
 
 ### Open by default
 
 You can also specify that the content should be visible by default, but can also be collapsed by the user. Do this by specifying the `open` option.
 
-:::none
-\`\`\`\{dropdown} Dropdown Title
+```markdown
+:::{dropdown} Dropdown Title
 :open:
 Dropdown content
-\`\`\`
 :::
+```
 
 ```{dropdown} Dropdown Title
 :open:

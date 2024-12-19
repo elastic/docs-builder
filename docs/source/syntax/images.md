@@ -16,20 +16,20 @@ Screenshots get a box-shadow.
 
 ## Block-level images
 
-:::none
-\!\[APM](/_static/img/apm.png)
-:::
+```markdown
+![APM](/_static/img/apm.png)
+```
 
 ![APM](/_static/img/apm.png)
 
 Or, use the `image` directive.
 
-:::none
-\`\`\`\{image} /_static/img/observability.png
+```markdown
+:::{image} /_static/img/observability.png
 :alt: Elasticsearch
 :width: 250px
-\`\`\`
 :::
+```
 
 ```{image} /_static/img/observability.png
 :alt: Elasticsearch
@@ -38,19 +38,19 @@ Or, use the `image` directive.
 
 ## Inline image
 
-:::none
-Here is the same image used inline \!\[Elasticsearch](/_static/img/observability.png)\{width=30px}
-:::
+```markdown
+Here is the same image used inline ![Elasticsearch](/_static/img/observability.png)
+```
 
-Here is the same image used inline ![Elasticsearch](/_static/img/observability.png){width=30px}.
+Here is the same image used inline ![Elasticsearch](/_static/img/observability.png)
 
 ## Asciidoc syntax
 
-:::none
+```asciidoc
 [role="screenshot"]
 image::images/metrics-alert-filters-and-group.png[Metric threshold filter and group fields]
-:::
+```
 
-:::none
+```asciidoc
 image::images/synthetics-get-started-projects.png[]
-:::
+```

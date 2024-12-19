@@ -20,7 +20,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
 		renderer.Write(blocks[0]);
-		renderer.WriteLeafRawLines(block, true, false, false);
+		renderer.WriteLeafRawLines(block, true, true, false);
 		renderer.Write(blocks[1]);
 	}
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)

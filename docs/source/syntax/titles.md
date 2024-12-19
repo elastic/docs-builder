@@ -5,9 +5,9 @@ navigation_title: Title
 
 ### Syntax
 
-:::none
+```markdown
 ---
 title: Page title for SEO purposes (Page title)
 navigation_title: Shorter title for TOC (Title)
 ---
-:::
+```
