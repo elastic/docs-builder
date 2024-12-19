@@ -151,7 +151,11 @@ public class CallOutAwareFencedCodeBlockParser : FencedBlockParserBase<CodeBlock
 		if (codeBlock.CallOuts is not null)
 		{
 			foreach (var callout in codeBlock.CallOuts)
-				lines.Lines[callout.Line - 1].Slice.End = callout.SliceStart;
+			{
+				var line = lines.Lines[callout.Line - 1];
+				line.Slice.End = line.Slice.Start + callout.SliceStart;
+
+			}
 		}
 
 		var inlineAnnotations = codeBlock.CallOuts?.Where(c => c.InlineCodeAnnotation).Count() ?? 0;
