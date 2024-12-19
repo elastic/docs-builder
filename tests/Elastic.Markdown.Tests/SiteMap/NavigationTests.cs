@@ -18,12 +18,14 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	{
 		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
 		Configuration.ImplicitFolders.Should()
-			.Contain("testing")
-			.And.Contain("testing/req.md");
+			.Contain("testing");
+		Configuration.ImplicitFolders.Files.Should()
+			.Contain("req.md")
+			.And.Contain("_static/img/observability.png");
 	}
 	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>
 		Configuration.Files.Should()
 			.Contain("index.md")
-			.And.Contain("syntax");
+			.And.Contain("syntax/index.md");
 }
