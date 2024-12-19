@@ -34,7 +34,7 @@ public class AdmonitionBlock(
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		CrossReferenceName = Properties.GetValueOrDefault("name");
-		DropdownOpen = PropBool("open");
+		DropdownOpen = TryPropBool("open");
 		if (DropdownOpen.HasValue)
 			Classes = "dropdown";
 	}
