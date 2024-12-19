@@ -19,7 +19,7 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
 		Configuration.ImplicitFolders.Should()
 			.Contain("markup")
-			.And.Contain("elastic/observability");
+			.And.Contain("syntax");
 	}
 	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>

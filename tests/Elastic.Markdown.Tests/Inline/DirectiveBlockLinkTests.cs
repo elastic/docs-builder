@@ -69,7 +69,7 @@ public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlo
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="elastic/search-labs/search/req.html#hint_ref">Sub Requirements</a></p>"""
+			"""<p><a href="testing/req.html#hint_ref">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
