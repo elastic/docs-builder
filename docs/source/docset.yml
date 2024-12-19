@@ -43,4 +43,6 @@ toc:
       - file: titles.md
   - folder: testing
     children:
+      - file: index.md
+      - file: req.md
       - folder: nested

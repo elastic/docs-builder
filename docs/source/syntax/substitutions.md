@@ -18,9 +18,9 @@ Substitutions should work in code blocks too.
 ```{code} sh
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
-shasum -a 512 -c elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512 <1>
+shasum -a 512 -c elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
 tar -xzf elasticsearch-{{version}}-linux-x86_64.tar.gz
-cd elasticsearch-{{version}}/ <2>
+cd elasticsearch-{{version}}/
 ```
 
 
