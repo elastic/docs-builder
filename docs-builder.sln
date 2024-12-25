@@ -7,12 +7,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{94AC66E5-38C3-4625-92D3-08990FD5F429}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
-		Dockerfile = Dockerfile
 		README.md = README.md
-		run.sh = run.sh
 		build.bat = build.bat
 		build.sh = build.sh
 		dotnet-tools.json = dotnet-tools.json
+		global.json = global.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BE6011CC-1200-4957-B01F-FCCA10C5CF5A}"

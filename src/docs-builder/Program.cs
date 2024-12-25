@@ -41,3 +41,6 @@ var app = ConsoleApp.Create();
 app.Add<Commands>();
 
 await app.RunAsync(arguments.Args).ConfigureAwait(false);
+
+
+//internal static partial class ConsoleApp;

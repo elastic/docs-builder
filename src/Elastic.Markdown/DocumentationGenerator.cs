@@ -21,6 +21,7 @@ public record GenerationState
 {
 	[JsonPropertyName("last_seen_changes")]
 	public required DateTimeOffset LastSeenChanges { get; init; }
+
 	[JsonPropertyName("invalid_files")]
 	public required string[] InvalidFiles { get; init; } = [];
 
