@@ -13,10 +13,7 @@
 
     <IsPublishable>true</IsPublishable>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
-
-    <!-- attempt fix for: https://github.com/dotnet/sdk-container-builds/issues/559 
-        Fixed in upcomming .NET 9
-     -->
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
   <ItemGroup>

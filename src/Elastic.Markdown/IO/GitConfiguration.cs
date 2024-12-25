@@ -4,8 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
-using IniParser;
-using IniParser.Model;
+using SoftCircuits.IniFileParser;
 
 namespace Elastic.Markdown.IO;
 
@@ -42,15 +41,16 @@ public record GitConfiguration
 		else
 			branch = "detached/head";
 
-		var ini = new FileIniDataParser();
+		var ini = new IniFile();
 		using var stream = gitConfig.OpenRead();
 		using var streamReader = new StreamReader(stream);
-		var config = ini.ReadData(streamReader);
-		var remote = BranchTrackingRemote(branch, config);
+		ini.Load(streamReader);
+
+		var remote = BranchTrackingRemote(branch, ini);
 		if (string.IsNullOrEmpty(remote))
-			remote = BranchTrackingRemote("main", config);
+			remote = BranchTrackingRemote("main", ini);
 		if (string.IsNullOrEmpty(remote))
-			remote = BranchTrackingRemote("master", config);
+			remote = BranchTrackingRemote("master", ini);
 		if (string.IsNullOrEmpty(remote))
 			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "elastic/docs-builder-unknown";
 
@@ -61,11 +61,19 @@ public record GitConfiguration
 		string Read(string path) =>
 			fileSystem.File.ReadAllText(Git(path).FullName).Trim(Environment.NewLine.ToCharArray());
 
-		string BranchTrackingRemote(string b, IniData c)
+		string BranchTrackingRemote(string b, IniFile c)
 		{
-			var remoteName = c[$"branch \"{b}\""]["remote"];
-			remote = c[$"remote \"{remoteName}\""]["url"];
-			return remote;
+			var sections = c.GetSections();
+			var branchSection = $"branch \"{b}\"";
+			if (!sections.Contains(branchSection))
+				return string.Empty;
+
+			var remoteName = ini.GetSetting(branchSection, "remote");
+
+			var remoteSection = $"remote \"{remoteName}\"";
+
+			remote = ini.GetSetting(remoteSection, "url");
+			return remote ?? string.Empty;
 		}
 	}
 }
