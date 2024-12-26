@@ -32,7 +32,7 @@ public class DocumentationWebHost
 		{
 			Collector = new ConsoleDiagnosticsCollector(logger)
 		};
-		builder.Services.AddLiveReload(s =>
+		builder.Services.AddAotLiveReload(s =>
 		{
 			s.FolderToMonitor = context.SourcePath.FullName;
 			s.ClientFileExtensions = ".md,.yml";

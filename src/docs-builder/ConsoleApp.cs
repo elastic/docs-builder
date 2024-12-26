@@ -11,9 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 // ReSharper disable once CheckNamespace
 namespace ConsoleAppFramework;
 
-[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode",
-	Justification = "Everything referenced in the loaded assembly is manually preserved, so it's safe")]
-[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresUnreferencedCode",
-	Justification = "Everything referenced in the loaded assembly is manually preserved, so it's safe")]
+[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 internal static partial class ConsoleApp;
 

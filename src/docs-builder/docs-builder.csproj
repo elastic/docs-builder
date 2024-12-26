@@ -6,12 +6,14 @@
     <AssemblyName>docs-builder</AssemblyName>
     <RootNamespace>Documentation.Builder</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <PublishAot>true</PublishAot>
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
 
     <IsPublishable>true</IsPublishable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
@@ -25,7 +27,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0"/>
     <PackageReference Include="Github.Actions.Core" Version="8.1.1"/>
     <PackageReference Include="Westwind.AspNetCore.LiveReload" Version="0.5.0" />
-    <PackageReference Include="Chorn.EmbeddedResourceAccessGenerator" Version="1.1.5" />
   </ItemGroup>
 
   <ItemGroup>
