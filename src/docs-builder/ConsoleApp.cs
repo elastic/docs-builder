@@ -14,4 +14,3 @@ namespace ConsoleAppFramework;
 [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
 [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 internal static partial class ConsoleApp;
-

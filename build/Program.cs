@@ -22,14 +22,12 @@ app.Add("publish", async (Cancel _) =>
 {
 	var source = "src/docs-builder/docs-builder.csproj";
 	await $"""
-		dotnet publish {source} -c Release -o .artifacts/publish \
-			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
+		dotnet publish {source}
 		""";
 
 	var generatorSource = "src/docs-generator/docs-generator.csproj";
 	await $"""
-		dotnet publish {generatorSource} -c Release -o .artifacts/publish \
-			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
+		dotnet publish {generatorSource}
 		""";
 });
 
