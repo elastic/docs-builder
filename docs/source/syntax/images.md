@@ -8,7 +8,7 @@ Images can be referenced from the top-level `_static` dir or a local image dir.
 
 ## Screenshots
 
-```{caution}
+```{warning}
 This feature is not currently supported in Elastic Docs V3.
 ```
 
