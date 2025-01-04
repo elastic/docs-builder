@@ -1,6 +1,6 @@
-# docs-builder. 
+# docs-builder.
 
-You've reached the home of the latest incarnation of the documentation tooling. 
+You've reached the home of the latest incarnation of the documentation tooling.
 
 This repository is host to:
 
@@ -48,7 +48,7 @@ docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.ar
 
 This ensures `.git`/`docs` and `.artifacts` (the default output directory) are mounted.
 
-The tool will default to incremental compilation. 
+The tool will default to incremental compilation.
 Only the changed files on subsequent runs will be compiled unless you pass `--force`
 to force a new compilation.
 
@@ -66,7 +66,7 @@ docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.ar
   -p 8080:8080 ghcr.io/elastic/docs-builder:edge serve
 ```
 
-Each page is compiled on demand as you browse http://localhost:8080 and is never cached so changes to files and 
+Each page is compiled on demand as you browse http://localhost:8080 and is never cached so changes to files and
 navigation will always be reflected upon refresh.
 
 Note the docker image is `linux-x86` and will be somewhat slower to invoke on OSX due to virtualization.
@@ -74,7 +74,7 @@ Note the docker image is `linux-x86` and will be somewhat slower to invoke on OS
 
 ## Github Action
 
-The `docs-builder` tool is available as github action. 
+The `docs-builder` tool is available as github action.
 
 Since it runs from a precompiled distroless image `~25mb` it's able to execute snappy. (no need to wait for building the tool itself)
 
@@ -93,8 +93,8 @@ jobs:
 
 ### GitHub Pages
 
-To setup the tool to publish to GitHub pages use the following configuration.  
-**NOTE**: In the near feature we'll make this a dedicated single step Github ction 
+To setup the tool to publish to GitHub pages use the following configuration.
+**NOTE**: In the near feature we'll make this a dedicated single step Github ction
 
 ```yaml
 steps:
@@ -112,10 +112,10 @@ steps:
     uses: actions/upload-pages-artifact@v3.0.1
     with:
       path: .artifacts/docs/html
-      
+
   - name: Deploy artifact
     id: deployment
-    uses: actions/deploy-pages@v4.0.5 
+    uses: actions/deploy-pages@v4.0.5
 ```
 
 Note `prefix:` is required to inject the appropiate `--path-prefix` argument to `docs-builder`
@@ -135,7 +135,7 @@ If you have dotnet 8 installed you can use its CLI to publish a self-contained `
 binary. (On my M2 Pro mac the binary is currently 13mb)
 
 ```bash
-$ dotnet publish "src/docs-builder/docs-builder.csproj" -c Release -o .artifacts/publish \
+dotnet publish "src/docs-builder/docs-builder.csproj" -c Release -o .artifacts/publish \
     --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true -a arm64
 ```
 
@@ -147,5 +147,5 @@ The resulting binary `./.artifacts/publish/docs-builder` will run on machines wi
 
 To test performance it's best to build the binary and run outside of docker:
 
-For refence here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to 
+For refence here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
 existing surveyed tools

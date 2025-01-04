@@ -30,7 +30,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 	private Dictionary<string, string> _admonitionData = new();
 
-	private readonly string[] _admonitions = [ "attention", "caution", "note", "tip" ];
+	private readonly string[] _admonitions = [ "important", "warning", "note", "tip" ];
 
 	private readonly string[] _versionBlocks = [ "versionadded", "versionchanged", "versionremoved", "deprecated" ];
 
@@ -56,12 +56,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "margin", 4 },
 		{ "sidebar", 4 },
 		{ "code-cell", 8 },
-
 		{ "admonition", 3 },
+		{ "attention", 3 },
+		{ "caution", 3 },
 		{ "danger", 3 },
 		{ "error", 3 },
 		{ "hint", 3 },
-		{ "important", 3 },
 		{ "seealso", 3 }
 	}.ToFrozenDictionary();
 

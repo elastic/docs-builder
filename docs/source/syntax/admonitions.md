@@ -4,10 +4,6 @@ title: Admonitions
 
 Admonitions allow you to highlight important information with varying levels of priority. In software documentation, these blocks are used to emphasize risks, provide helpful advice, or share relevant but non-critical details.
 
-```{attention}
-Asciidoc and V3 currently support different admonition types. See [#106](https://github.com/elastic/docs-builder/issues/106) for details.
-```
-
 ## Basic admonitions
 
 Admonitions can span multiple lines and support inline formatting.
@@ -19,9 +15,9 @@ Admonitions can span multiple lines and support inline formatting.
 ### Available admonition types
 
 - `note`
-- `caution`
+- `warning`
 - `tip`
-- `attention`
+- `important`
 
 ### Syntax
 
@@ -40,18 +36,18 @@ It can span multiple lines and supports inline formatting.
 This is a note.
 :::
 
-**Caution**
+**Warning**
 
 You could permanently lose data or leak sensitive information.
 
 ```markdown
-:::{caution}
-This is a caution.
+:::{warning}
+This is a warning.
 :::
 ```
 
-```{caution}
-This is a caution.
+```{warning}
+This is a warning.
 ```
 
 **Tip**
@@ -68,20 +64,19 @@ This is a tip.
 This is a tip.
 ```
 
-**Attention**
+**Important**
 
 Ignoring this information could impact performance or the stability of your system.
 
 ```markdown
-:::{attention}
-This is an attention.
+:::{important}
+This is an important notice.
 :::
 ```
 
-```{attention}
-This is an attention.
+```{important}
+This is an important notice.
 ```
-
 
 ````
 

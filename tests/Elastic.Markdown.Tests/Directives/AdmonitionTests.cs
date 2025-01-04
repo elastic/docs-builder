@@ -23,10 +23,10 @@ A regular paragraph.
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be(directive);
 }
 
-public class CautionTests(ITestOutputHelper output) : AdmonitionTests(output, "caution")
+public class WarningTests(ITestOutputHelper output) : AdmonitionTests(output, "warning")
 {
 	[Fact]
-	public void SetsTitle() => Block!.Title.Should().Be("Caution");
+	public void SetsTitle() => Block!.Title.Should().Be("Warning");
 }
 
 public class NoteTests(ITestOutputHelper output) : AdmonitionTests(output, "note")
@@ -41,10 +41,10 @@ public class TipTests(ITestOutputHelper output) : AdmonitionTests(output, "tip")
 	public void SetsTitle() => Block!.Title.Should().Be("Tip");
 }
 
-public class AttentionTests(ITestOutputHelper output) : AdmonitionTests(output, "attention")
+public class ImportantTests(ITestOutputHelper output) : AdmonitionTests(output, "important")
 {
-	[Fact]
-	public void SetsTitle() => Block!.Title.Should().Be("Attention");
+    [Fact]
+    public void SetsTitle() => Block!.Title.Should().Be("Important");
 }
 
 public class NoteTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
@@ -82,4 +82,3 @@ A regular paragraph.
 	[Fact]
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 }
-
