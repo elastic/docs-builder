@@ -22,9 +22,17 @@ toc:
   - folder: migration
     children:
       - file: index.md
+      - file: file-structure.md
   - folder: contribute
     children:
       - file: index.md
+      - file: change-browser.md
+      - file: change-local.md
+  - folder: configure
+    children:
+      - file: index.md
+      - file: page-level.md
+      - file: site-level.md
   - folder: syntax
     children:
       - file: index.md

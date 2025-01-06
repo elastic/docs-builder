@@ -3,12 +3,8 @@ title: Elastic Docs contribution guide
 navigation_title: Contribution guide
 ---
 
-Want to contribute to the Elastic documentation? You're in the right spot!
+Want to contribute to the Elastic documentation? You're in the right spot! Select an option below to get started:
 
-1. Install dependencies
-2. Clone repositories
-3. Make changes
-4. Open a Pull Request
-5. Work with CI
-6. Get approvals and merge
-7. View your changes live on elastic.co
+* I just want to suggest a change --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
+* I want to make a small change to a single page --> [Update the docs in your _web browser_](change-browser.md).
+* I want to make a larger change or a change to multiple pages --> [Update the docs in your _code editor_](change-local.md).
