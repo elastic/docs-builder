@@ -7,16 +7,16 @@ A link contains link text (the visible text) and a link destination (the URI tha
 ## Inline link
 
 ```
-[Link title](links.html)
+[Link title](links.md)
 ```
 
-[Link title](links.html)
+[Link title](links.md)
 
 ```
-[**Hi**, _I'm md_](links.html)
+[**Hi**, _I'm md_](links.md)
 ```
 
-[**Hi**, _I'm md_](links.html)
+[**Hi**, _I'm md_](links.md)
 
 ## Anchor link
 
@@ -29,7 +29,7 @@ I link to the [Inline link](#inline-link) heading above.
 I link to the [Inline link](#inline-link) heading above.
 
 ```
-I link to the [Notes](tables.html#notes) heading on the [Tables](tables.html) page.
+I link to the [Notes](tables.html#notes) heading on the [Tables](tables.md) page.
 ```
 
-I link to the [Notes](tables.html#notes) heading on the [Tables](tables.html) page.
+I link to the [Notes](tables.md#notes) heading on the [Tables](tables.md) page.
