@@ -19,6 +19,10 @@ exclude:
   - '_*.md'
 toc:
   - file: index.md
+  - folder: migration
+      - file: index.md
+  - folder: contribute
+      - file: index.md
   - folder: syntax
     children:
       - file: index.md
