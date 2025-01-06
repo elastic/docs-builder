@@ -1,5 +1,6 @@
 ---
-title: Contribution guide
+title: Elastic Docs contribution guide
+navigation_title: Contribution guide
 ---
 
 Want to contribute to the Elastic documentation? You're in the right spot!

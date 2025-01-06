@@ -20,8 +20,10 @@ exclude:
 toc:
   - file: index.md
   - folder: migration
+    children:
       - file: index.md
   - folder: contribute
+    children:
       - file: index.md
   - folder: syntax
     children:
