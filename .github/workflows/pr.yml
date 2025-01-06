@@ -31,12 +31,12 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
-      - name: build
+      - name: Build
         run: ./build.sh
 
-      - name: test
+      - name: Test
         run: ./build.sh test
 
-      - name: publish AOT 
+      - name: Publish AOT
         run: ./build.sh publishbinaries
         

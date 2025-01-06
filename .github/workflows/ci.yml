@@ -66,5 +66,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
 
-      - name: publish containers
+      - name: Publish Containers
         run: ./build.sh publishcontainers
