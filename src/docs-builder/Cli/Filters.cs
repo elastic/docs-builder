@@ -44,7 +44,7 @@ internal class CatchExceptionFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
 				return;
 			}
 
-			ConsoleApp.LogError(ex.ToString()); // .ToString() shows stacktrace, .Message can avoid showing stacktrace to user.
+			ConsoleApp.LogError(ex.ToString());
 		}
 	}
 }

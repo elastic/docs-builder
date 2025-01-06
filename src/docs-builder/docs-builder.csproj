@@ -24,8 +24,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Errata" Version="0.13.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0"/>
-    <PackageReference Include="Github.Actions.Core" Version="8.1.1"/>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Github.Actions.Core" Version="9.0.0" />
     <PackageReference Include="Westwind.AspNetCore.LiveReload" Version="0.5.0" />
   </ItemGroup>
 

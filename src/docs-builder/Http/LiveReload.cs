@@ -7,13 +7,16 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+// ReSharper disable once CheckNamespace
 namespace Westwind.AspNetCore.LiveReload;
+
+// This exists to disable AOT trimming error messages for the LiveReload middleware's own AddLiveReload() method.
+// longer term we should build our own LiveReload middleware that doesn't rely on this also to help reduce dependencies
 
 [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
 [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 public static class LiveReloadMiddlewareExtensions
 {
-
 	public static IServiceCollection AddAotLiveReload(this IServiceCollection services,
 		Action<LiveReloadConfiguration> configAction)
 	{
@@ -26,31 +29,29 @@ public static class LiveReloadMiddlewareExtensions
 
 		LiveReloadConfiguration.Current = config;
 
-		if (config.LiveReloadEnabled)
+		if (!config.LiveReloadEnabled)
+			return services;
+
+		var env = provider.GetService<IWebHostEnvironment>();
+		if (string.IsNullOrEmpty(config.FolderToMonitor))
+			config.FolderToMonitor = env!.ContentRootPath;
+		else if (config.FolderToMonitor.StartsWith("~"))
 		{
-			var env = provider.GetService<IWebHostEnvironment>();
-			if (string.IsNullOrEmpty(config.FolderToMonitor))
+			if (config.FolderToMonitor.Length > 1)
 			{
+				var folder = config.FolderToMonitor.Substring(1);
+				if (folder.StartsWith('/') || folder.StartsWith("\\"))
+					folder = folder.Substring(1);
+				config.FolderToMonitor = Path.Combine(env!.ContentRootPath, folder);
+				config.FolderToMonitor = Path.GetFullPath(config.FolderToMonitor);
+			}
+			else
 				config.FolderToMonitor = env!.ContentRootPath;
-			}
-			else if (config.FolderToMonitor.StartsWith("~"))
-			{
-				if (config.FolderToMonitor.Length > 1)
-				{
-					var folder = config.FolderToMonitor.Substring(1);
-					if (folder.StartsWith('/') || folder.StartsWith("\\"))
-						folder = folder.Substring(1);
-					config.FolderToMonitor = Path.Combine(env!.ContentRootPath, folder);
-					config.FolderToMonitor = Path.GetFullPath(config.FolderToMonitor);
-				}
-				else
-					config.FolderToMonitor = env!.ContentRootPath;
-			}
-
-			configAction.Invoke(config);
-
-			LiveReloadConfiguration.Current = config;
 		}
+
+		configAction.Invoke(config);
+
+		LiveReloadConfiguration.Current = config;
 
 		return services;
 	}
