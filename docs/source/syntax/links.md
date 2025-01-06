@@ -32,4 +32,4 @@ I link to the [Inline link](#inline-link) heading above.
 I link to the [Notes](tables.html#notes) heading on the [Tables](tables.md) page.
 ```
 
-I link to the [Notes](tables.md#notes) heading on the [Tables](tables.md) page.
+% I link to the [Notes](tables.md#notes) heading on the [Tables](tables.md) page.
