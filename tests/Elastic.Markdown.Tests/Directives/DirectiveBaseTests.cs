@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: DirectiveTest(output, content)
 	where TDirective : DirectiveBlock
 {
@@ -54,7 +54,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 	protected DocumentationSet Set { get; set; }
 
 
-	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	{
 		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>

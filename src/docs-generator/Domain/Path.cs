@@ -10,7 +10,7 @@ public static class Paths
 	{
 		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
 		while (directory != null &&
-		       (directory.GetFiles("*.sln").Length == 0 || directory.GetDirectories(".git").Length == 0))
+			   (directory.GetFiles("*.sln").Length == 0 || directory.GetDirectories(".git").Length == 0))
 			directory = directory.Parent;
 		return directory ?? new DirectoryInfo(Directory.GetCurrentDirectory());
 	}

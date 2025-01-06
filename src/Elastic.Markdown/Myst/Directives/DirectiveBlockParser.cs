@@ -19,20 +19,20 @@ namespace Elastic.Markdown.Myst.Directives;
 public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 {
 	/// <summary>
-    /// Initializes a new instance of the <see cref="DirectiveBlockParser"/> class.
-    /// </summary>
-    public DirectiveBlockParser()
-    {
-        OpeningCharacters = [':', '`'];
-        // We don't need a prefix
-        InfoPrefix = null;
-    }
+	/// Initializes a new instance of the <see cref="DirectiveBlockParser"/> class.
+	/// </summary>
+	public DirectiveBlockParser()
+	{
+		OpeningCharacters = [':', '`'];
+		// We don't need a prefix
+		InfoPrefix = null;
+	}
 
-	private readonly string[] _admonitions = [ "important", "warning", "note", "tip" ];
+	private readonly string[] _admonitions = ["important", "warning", "note", "tip"];
 
-	private readonly string[] _versionBlocks = [ "versionadded", "versionchanged", "versionremoved", "deprecated" ];
+	private readonly string[] _versionBlocks = ["versionadded", "versionchanged", "versionremoved", "deprecated"];
 
-	private readonly string[] _codeBlocks = [ "code", "code-block", "sourcecode"];
+	private readonly string[] _codeBlocks = ["code", "code-block", "sourcecode"];
 
 	private readonly FrozenDictionary<string, int> _unsupportedBlocks = new Dictionary<string, int>
 	{
@@ -63,119 +63,119 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "seealso", 3 }
 	}.ToFrozenDictionary();
 
-    protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
-    {
-	    var info = processor.Line.AsSpan();
+	protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
+	{
+		var info = processor.Line.AsSpan();
 
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-	    // TODO alternate lookup .NET 9
-	    var directive = info.ToString().Trim(['{', '}', '`']);
-	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
-		    return new UnsupportedDirectiveBlock(this, directive, issueId, context);
+		// TODO alternate lookup .NET 9
+		var directive = info.ToString().Trim(['{', '}', '`']);
+		if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
+			return new UnsupportedDirectiveBlock(this, directive, issueId, context);
 
-	    if (info.IndexOf("{tab-set}") > 0)
-		    return new TabSetBlock(this, context);
+		if (info.IndexOf("{tab-set}") > 0)
+			return new TabSetBlock(this, context);
 
-	    if (info.IndexOf("{tab-item}") > 0)
-		    return new TabItemBlock(this, context);
+		if (info.IndexOf("{tab-item}") > 0)
+			return new TabItemBlock(this, context);
 
-	    if (info.IndexOf("{dropdown}") > 0)
-		    return new DropdownBlock(this, context);
+		if (info.IndexOf("{dropdown}") > 0)
+			return new DropdownBlock(this, context);
 
-	    if (info.IndexOf("{image}") > 0)
-		    return new ImageBlock(this, context);
+		if (info.IndexOf("{image}") > 0)
+			return new ImageBlock(this, context);
 
-	    if (info.IndexOf("{figure}") > 0)
-		    return new FigureBlock(this, context);
+		if (info.IndexOf("{figure}") > 0)
+			return new FigureBlock(this, context);
 
-	    if (info.IndexOf("{figure-md}") > 0)
-		    return new FigureBlock(this, context);
+		if (info.IndexOf("{figure-md}") > 0)
+			return new FigureBlock(this, context);
 
-	    // this is currently listed as unsupported
-	    // leaving the parsing in until we are confident we don't want this
-	    // for dev-docs
-	    if (info.IndexOf("{mermaid}") > 0)
-		    return new MermaidBlock(this, context);
+		// this is currently listed as unsupported
+		// leaving the parsing in until we are confident we don't want this
+		// for dev-docs
+		if (info.IndexOf("{mermaid}") > 0)
+			return new MermaidBlock(this, context);
 
-	    if (info.IndexOf("{include}") > 0)
+		if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, context);
 
-	    if (info.IndexOf("{literalinclude}") > 0)
+		if (info.IndexOf("{literalinclude}") > 0)
 			return new LiteralIncludeBlock(this, context);
 
-	    if (info.IndexOf("{applies}") > 0)
+		if (info.IndexOf("{applies}") > 0)
 			return new AppliesBlock(this, context);
 
-	    if (info.IndexOf("{settings}") > 0)
+		if (info.IndexOf("{settings}") > 0)
 			return new SettingsBlock(this, context);
 
-	    foreach (var admonition in _admonitions)
-	    {
-		    if (info.IndexOf($"{{{admonition}}}") > 0)
-			    return new AdmonitionBlock(this, admonition, context);
-	    }
+		foreach (var admonition in _admonitions)
+		{
+			if (info.IndexOf($"{{{admonition}}}") > 0)
+				return new AdmonitionBlock(this, admonition, context);
+		}
 
-	    foreach (var version in _versionBlocks)
-	    {
-		    if (info.IndexOf($"{{{version}}}") > 0)
-			    return new VersionBlock(this, version, context);
-	    }
+		foreach (var version in _versionBlocks)
+		{
+			if (info.IndexOf($"{{{version}}}") > 0)
+				return new VersionBlock(this, version, context);
+		}
 
-	    return new UnknownDirectiveBlock(this, info.ToString(), context);
-    }
+		return new UnknownDirectiveBlock(this, info.ToString(), context);
+	}
 
-    public override bool Close(BlockProcessor processor, Block block)
-    {
-	    if (block is DirectiveBlock directiveBlock)
-		    directiveBlock.FinalizeAndValidate(processor.GetContext());
+	public override bool Close(BlockProcessor processor, Block block)
+	{
+		if (block is DirectiveBlock directiveBlock)
+			directiveBlock.FinalizeAndValidate(processor.GetContext());
 
 		return base.Close(processor, block);
-    }
+	}
 
-    public override BlockState TryOpen(BlockProcessor processor)
-    {
+	public override BlockState TryOpen(BlockProcessor processor)
+	{
 		if (processor.Context is not ParserContext)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-        // We expect no indentation for a fenced code block.
-        if (processor.IsCodeIndent)
-            return BlockState.None;
+		// We expect no indentation for a fenced code block.
+		if (processor.IsCodeIndent)
+			return BlockState.None;
 
-        var line = processor.Line;
+		var line = processor.Line;
 
-	    foreach (var code in _codeBlocks)
-	    {
-		    if (line.IndexOf($"{{{code}}}") > 0)
-			    return BlockState.None;
-	    }
+		foreach (var code in _codeBlocks)
+		{
+			if (line.IndexOf($"{{{code}}}") > 0)
+				return BlockState.None;
+		}
 
 		if (line.IndexOf("{") == -1)
-		    return BlockState.None;
+			return BlockState.None;
 
-	    return base.TryOpen(processor);
-    }
+		return base.TryOpen(processor);
+	}
 
-    public override BlockState TryContinue(BlockProcessor processor, Block block)
-    {
-	    var line = processor.Line.AsSpan();
+	public override BlockState TryContinue(BlockProcessor processor, Block block)
+	{
+		var line = processor.Line.AsSpan();
 
-	    if (!line.StartsWith(":"))
-		    return base.TryContinue(processor, block);
+		if (!line.StartsWith(":"))
+			return base.TryContinue(processor, block);
 
-	    if (block is not DirectiveBlock directiveBlock)
-		    return base.TryContinue(processor, block);
+		if (block is not DirectiveBlock directiveBlock)
+			return base.TryContinue(processor, block);
 
-	    var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
-	    if (tokens.Length < 1)
-		    return base.TryContinue(processor, block);
+		var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
+		if (tokens.Length < 1)
+			return base.TryContinue(processor, block);
 
-	    var name = tokens[0];
-	    var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
-	    directiveBlock.AddProperty(name, data);
+		var name = tokens[0];
+		var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
+		directiveBlock.AddProperty(name, data);
 
-	    return BlockState.Continue;
+		return BlockState.Continue;
 
-    }
+	}
 }

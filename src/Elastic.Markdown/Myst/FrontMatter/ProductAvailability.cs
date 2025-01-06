@@ -15,7 +15,8 @@ public record ProductAvailability
 
 	public static ProductAvailability GenerallyAvailable { get; } = new()
 	{
-		Lifecycle = ProductLifecycle.GenerallyAvailable, Version = AllVersions.Instance
+		Lifecycle = ProductLifecycle.GenerallyAvailable,
+		Version = AllVersions.Instance
 	};
 
 	// <lifecycle> [version]

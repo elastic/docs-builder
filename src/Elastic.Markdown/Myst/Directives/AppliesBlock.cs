@@ -78,7 +78,7 @@ public class AppliesBlock(DirectiveBlockParser parser, ParserContext context) : 
 		bool TryGetAvailability(string key, out ProductAvailability? semVersion)
 		{
 			semVersion = null;
-			return Prop(key) is {} v && ProductAvailability.TryParse(v, out semVersion);
+			return Prop(key) is { } v && ProductAvailability.TryParse(v, out semVersion);
 		}
 	}
 }

@@ -46,5 +46,5 @@ public class EmptyFileWarnsNeedingATitle(ITestOutputHelper output) : DirectiveTe
 	[Fact]
 	public void WarnsOfNoTitle() =>
 		Collector.Diagnostics.Should().NotBeEmpty()
-			.And.Contain(d=>d.Message.Contains("Missing yaml front-matter block defining a title"));
+			.And.Contain(d => d.Message.Contains("Missing yaml front-matter block defining a title"));
 }

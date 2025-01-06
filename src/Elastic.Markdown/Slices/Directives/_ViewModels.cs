@@ -59,8 +59,10 @@ public class ImageViewModel
 		get
 		{
 			var sb = new StringBuilder();
-			if (Height != null) sb.Append($"height: {Height};");
-			if (Width != null) sb.Append($"width: {Width};");
+			if (Height != null)
+				sb.Append($"height: {Height};");
+			if (Width != null)
+				sb.Append($"width: {Width};");
 			return sb.ToString();
 		}
 	}

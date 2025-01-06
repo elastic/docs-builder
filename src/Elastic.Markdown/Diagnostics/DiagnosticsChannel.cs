@@ -73,7 +73,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 	: IHostedService
 {
 	private readonly IReadOnlyCollection<IDiagnosticsOutput> _outputs =
-		[new LogDiagnosticOutput(loggerFactory.CreateLogger<LogDiagnosticOutput>()), ..outputs];
+		[new LogDiagnosticOutput(loggerFactory.CreateLogger<LogDiagnosticOutput>()), .. outputs];
 
 	public DiagnosticsChannel Channel { get; } = new();
 
@@ -88,7 +88,8 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 
 	public Task StartAsync(Cancel ctx)
 	{
-		if (_started is not null) return _started;
+		if (_started is not null)
+			return _started;
 		_started = Task.Run(async () =>
 		{
 			await Channel.WaitToWrite();

@@ -84,7 +84,10 @@ public class CommentBlockParser : BlockParser
 			// Move to the content
 			var headingBlock = new CommentBlock(this)
 			{
-				CommentChar = matchingChar, Level = leadingCount, Column = column, Span = { Start = sourcePosition },
+				CommentChar = matchingChar,
+				Level = leadingCount,
+				Column = column,
+				Span = { Start = sourcePosition },
 			};
 
 			if (processor.TrackTrivia)
@@ -106,8 +109,8 @@ public class CommentBlockParser : BlockParser
 			var countClosingTags = 0;
 			var sourceEnd = processor.Line.End;
 			for (var i = processor.Line.End;
-			     i >= processor.Line.Start - 1;
-			     i--) // Go up to Start - 1 in order to match the space after the first ###
+				 i >= processor.Line.Start - 1;
+				 i--) // Go up to Start - 1 in order to match the space after the first ###
 			{
 				c = processor.Line.Text[i];
 				if (endState == 0)

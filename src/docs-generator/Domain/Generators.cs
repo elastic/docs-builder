@@ -32,7 +32,8 @@ public static class Generators
 	public static IEnumerable<string> CreateSubPaths(string parent, int maxDepth, int currentDepth)
 	{
 		yield return parent;
-		if (currentDepth == maxDepth) yield break;
+		if (currentDepth == maxDepth)
+			yield break;
 		var subFolders = FolderName.Generate(Determinism.Random.FileSystem.Number(0, 4));
 		foreach (var subFolder in subFolders)
 		{

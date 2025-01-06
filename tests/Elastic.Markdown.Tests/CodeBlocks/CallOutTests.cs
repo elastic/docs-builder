@@ -46,7 +46,7 @@ var z = y - 2; // another callout
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.NotContain(c=>c.Text.Contains("not a callout"));
+		.And.NotContain(c => c.Text.Contains("not a callout"));
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -64,11 +64,11 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c=>c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c=> c.Message.StartsWith("Code block with annotations is not followed by any content"));
+		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by any content"));
 }
 
 public class ClassicCallOutsNotFollowedByList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
@@ -87,11 +87,11 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c=>c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c=> c.Message.StartsWith("Code block with annotations is not followed by a list"));
+		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
 }
 
 public class ClassicCallOutsFollowedByListWithWrongCoung(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
@@ -110,11 +110,11 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c=>c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c=> c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
+		.And.OnlyContain(c => c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
 }
 
 public class ClassicCallOutWithTheRightListItems(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
@@ -134,7 +134,7 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c=>c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);

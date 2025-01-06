@@ -15,7 +15,8 @@ public static class ProcessorDiagnosticExtensions
 	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message)
 	{
 		var context = processor.GetContext();
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
@@ -32,7 +33,8 @@ public static class ProcessorDiagnosticExtensions
 	public static void EmitWarning(this InlineProcessor processor, int line, int column, int length, string message)
 	{
 		var context = processor.GetContext();
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
@@ -47,7 +49,8 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitError(this ParserContext context, int line, int column, int length, string message, Exception? e = null)
 	{
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
@@ -62,7 +65,8 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitWarning(this ParserContext context, int line, int column, int length, string message)
 	{
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
@@ -99,7 +103,8 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitError(this IBlockExtension block, string message, Exception? e = null)
 	{
-		if (block.SkipValidation) return;
+		if (block.SkipValidation)
+			return;
 
 		var d = new Diagnostic
 		{
@@ -115,7 +120,8 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitWarning(this IBlockExtension block, string message)
 	{
-		if (block.SkipValidation) return;
+		if (block.SkipValidation)
+			return;
 
 		var d = new Diagnostic
 		{

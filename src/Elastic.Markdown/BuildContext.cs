@@ -52,7 +52,7 @@ public record BuildContext
 			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
 
 		ConfigurationPath =
-		    ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
+			ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
 
 		if (ConfigurationPath.FullName != SourcePath.FullName)
 			SourcePath = ConfigurationPath.Directory!;
@@ -63,7 +63,7 @@ public record BuildContext
 	private IDirectoryInfo FindDocsFolderFromRoot(IDirectoryInfo rootPath)
 	{
 		if (rootPath.Exists &&
-		    ReadFileSystem.File.Exists(Path.Combine(rootPath.FullName, "docset.yml")))
+			ReadFileSystem.File.Exists(Path.Combine(rootPath.FullName, "docset.yml")))
 			return rootPath;
 
 		var docsFolder = rootPath.EnumerateFiles("docset.yml", SearchOption.AllDirectories).FirstOrDefault();

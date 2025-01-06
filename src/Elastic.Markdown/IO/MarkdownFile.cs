@@ -97,11 +97,11 @@ public record MarkdownFile : DocumentationFile
 			_tableOfContent[t.Slug] = t;
 
 		var labels = document.Descendants<DirectiveBlock>()
-			.Select(b=>b.CrossReferenceName)
-			.Where(l=>!string.IsNullOrWhiteSpace(l))
+			.Select(b => b.CrossReferenceName)
+			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.Select(_slugHelper.GenerateSlug)
 			.ToArray();
-		foreach(var label in labels)
+		foreach (var label in labels)
 		{
 			if (!string.IsNullOrEmpty(label))
 				_additionalLabels.Add(label);

@@ -13,7 +13,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Par
 	public override string Directive => Admonition;
 
 	public string? Classes { get; protected set; }
-	public bool? DropdownOpen  { get; private set; }
+	public bool? DropdownOpen { get; private set; }
 
 	public string Title
 	{

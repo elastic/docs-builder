@@ -101,7 +101,8 @@ public class ReloadGeneratorService(
 
 	private void PrintException(Exception? ex)
 	{
-		if (ex == null) return;
+		if (ex == null)
+			return;
 		Logger.LogError($"Message: {ex.Message}");
 		Logger.LogError("Stacktrace:");
 		Logger.LogError(ex.StackTrace);

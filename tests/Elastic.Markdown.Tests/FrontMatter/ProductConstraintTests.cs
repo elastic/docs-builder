@@ -33,11 +33,11 @@ applies:
 		appliesTo.Should().NotBeNull();
 		appliesTo!.Cloud.Should().NotBeNull();
 		appliesTo.Cloud!.Serverless.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = TechnicalPreview });
-		appliesTo.Cloud!.Hosted.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Beta, Version = new (8,1,1)});
+		appliesTo.Cloud!.Hosted.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Beta, Version = new(8, 1, 1) });
 		appliesTo.SelfManaged.Should().NotBeNull();
-		appliesTo.SelfManaged!.Eck.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Beta, Version = new (3,0,2)});
+		appliesTo.SelfManaged!.Eck.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Beta, Version = new(3, 0, 2) });
 		appliesTo.SelfManaged!.Ece.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Unavailable });
-		appliesTo.SelfManaged!.Stack.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = GenerallyAvailable, Version = new (8,1,0)});
+		appliesTo.SelfManaged!.Stack.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = GenerallyAvailable, Version = new(8, 1, 0) });
 	}
 }
 
@@ -64,20 +64,20 @@ applies:
 	}
 }
 
-public class ParsesGa(ITestOutputHelper output) : ParsingTests(output, "ga", new () { Lifecycle = GenerallyAvailable }) ;
-public class ParsesDev(ITestOutputHelper output) : ParsingTests(output, "dev", new () { Lifecycle = Development }) ;
-public class ParsesDevelopment(ITestOutputHelper output) : ParsingTests(output, "development", new () { Lifecycle = Development }) ;
-public class ParsesBeta(ITestOutputHelper output) : ParsingTests(output, "beta", new () { Lifecycle = Beta }) ;
-public class ParsesComing(ITestOutputHelper output) : ParsingTests(output, "coming", new () { Lifecycle = Coming }) ;
-public class ParsesDeprecated(ITestOutputHelper output) : ParsingTests(output, "deprecated", new () { Lifecycle = Deprecated }) ;
-public class ParsesDiscontinued(ITestOutputHelper output) : ParsingTests(output, "discontinued", new () { Lifecycle = Discontinued }) ;
-public class ParsesUnavailable(ITestOutputHelper output) : ParsingTests(output, "unavailable", new () { Lifecycle = Unavailable }) ;
-public class ParsesTechnicalPreview(ITestOutputHelper output) : ParsingTests(output, "tech-preview", new () { Lifecycle = TechnicalPreview }) ;
-public class ParsesPreview(ITestOutputHelper output) : ParsingTests(output, "preview", new () { Lifecycle = TechnicalPreview }) ;
-public class ParsesEmpty(ITestOutputHelper output) : ParsingTests(output, "", ProductAvailability.GenerallyAvailable) ;
-public class ParsesAll(ITestOutputHelper output) : ParsingTests(output, "all", ProductAvailability.GenerallyAvailable) ;
-public class ParsesWithVersion(ITestOutputHelper output) : ParsingTests(output, "ga 7.7.0", new () { Lifecycle = GenerallyAvailable, Version = new (7,7,0) });
-public class ParsesWithAllVersion(ITestOutputHelper output) : ParsingTests(output, "ga all", new () { Lifecycle = GenerallyAvailable, Version = AllVersions.Instance });
+public class ParsesGa(ITestOutputHelper output) : ParsingTests(output, "ga", new() { Lifecycle = GenerallyAvailable });
+public class ParsesDev(ITestOutputHelper output) : ParsingTests(output, "dev", new() { Lifecycle = Development });
+public class ParsesDevelopment(ITestOutputHelper output) : ParsingTests(output, "development", new() { Lifecycle = Development });
+public class ParsesBeta(ITestOutputHelper output) : ParsingTests(output, "beta", new() { Lifecycle = Beta });
+public class ParsesComing(ITestOutputHelper output) : ParsingTests(output, "coming", new() { Lifecycle = Coming });
+public class ParsesDeprecated(ITestOutputHelper output) : ParsingTests(output, "deprecated", new() { Lifecycle = Deprecated });
+public class ParsesDiscontinued(ITestOutputHelper output) : ParsingTests(output, "discontinued", new() { Lifecycle = Discontinued });
+public class ParsesUnavailable(ITestOutputHelper output) : ParsingTests(output, "unavailable", new() { Lifecycle = Unavailable });
+public class ParsesTechnicalPreview(ITestOutputHelper output) : ParsingTests(output, "tech-preview", new() { Lifecycle = TechnicalPreview });
+public class ParsesPreview(ITestOutputHelper output) : ParsingTests(output, "preview", new() { Lifecycle = TechnicalPreview });
+public class ParsesEmpty(ITestOutputHelper output) : ParsingTests(output, "", ProductAvailability.GenerallyAvailable);
+public class ParsesAll(ITestOutputHelper output) : ParsingTests(output, "all", ProductAvailability.GenerallyAvailable);
+public class ParsesWithVersion(ITestOutputHelper output) : ParsingTests(output, "ga 7.7.0", new() { Lifecycle = GenerallyAvailable, Version = new(7, 7, 0) });
+public class ParsesWithAllVersion(ITestOutputHelper output) : ParsingTests(output, "ga all", new() { Lifecycle = GenerallyAvailable, Version = AllVersions.Instance });
 
 public class CanSpecifyAllForProductVersions(ITestOutputHelper output) : DirectiveTest(output,
 """
@@ -145,7 +145,7 @@ applies:
 		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Eck.Should()
 			.BeEquivalentTo(ProductAvailability.GenerallyAvailable);
 		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should()
-			.BeEquivalentTo(new ProductAvailability { Lifecycle = Deprecated, Version = new (9,0,0) });
+			.BeEquivalentTo(new ProductAvailability { Lifecycle = Deprecated, Version = new(9, 0, 0) });
 	}
 }
 

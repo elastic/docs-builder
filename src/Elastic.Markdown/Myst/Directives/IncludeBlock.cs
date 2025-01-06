@@ -57,7 +57,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		var includePath = Arguments;
 		if (string.IsNullOrWhiteSpace(includePath))
 		{
-			context.EmitError(Line, Column, $"```{{{Directive}}}".Length , "include requires an argument.");
+			context.EmitError(Line, Column, $"```{{{Directive}}}".Length, "include requires an argument.");
 			return;
 		}
 

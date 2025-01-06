@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Documentation.Builder.Diagnostics;
 using Elastic.Markdown;
@@ -43,13 +44,13 @@ public class DocumentationWebHost
 		builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
 		_staticFilesDirectory = Path.Combine(context.SourcePath.FullName, "_static");
-		#if DEBUG
+#if DEBUG
 		// this attempts to serve files directly from their source rather than the embedded resourses during development.
 		// this allows us to change js/css files without restarting the webserver
 		var solutionRoot = Paths.GetSolutionDirectory();
 		if (solutionRoot != null)
 			_staticFilesDirectory = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
-		#endif
+#endif
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
@@ -85,11 +86,11 @@ public class DocumentationWebHost
 		switch (documentationFile)
 		{
 			case MarkdownFile markdown:
-			{
-				await markdown.ParseFullAsync(ctx);
-				var rendered = await generator.RenderLayout(markdown, ctx);
-				return Results.Content(rendered, "text/html");
-			}
+				{
+					await markdown.ParseFullAsync(ctx);
+					var rendered = await generator.RenderLayout(markdown, ctx);
+					return Results.Content(rendered, "text/html");
+				}
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:

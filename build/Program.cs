@@ -38,7 +38,7 @@ app.Add("publish", async (Cancel _) =>
 app.Add("notices", async Task<int> (Cancel ctx) =>
 {
 	var packages = await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj --output NOTICE.txt";
-	var packageLines = packages.Split(Environment.NewLine).Where(l=>l.StartsWith("+"));
+	var packageLines = packages.Split(Environment.NewLine).Where(l => l.StartsWith("+"));
 
 	await File.WriteAllTextAsync("NOTICE.txt",
 		$"""

@@ -61,7 +61,8 @@ public class DocumentationGenerator
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
 		stateFile.Refresh();
-		if (!stateFile.Exists) return null;
+		if (!stateFile.Exists)
+			return null;
 		var contents = stateFile.FileSystem.File.ReadAllText(stateFile.FullName);
 		return JsonSerializer.Deserialize(contents, SourceGenerationContext.Default.GenerationState);
 	}
@@ -177,7 +178,7 @@ public class DocumentationGenerator
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
 			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges} "
-			                       + "Pass --force to force a full regeneration");
+								   + "Pass --force to force a full regeneration");
 			return true;
 		}
 

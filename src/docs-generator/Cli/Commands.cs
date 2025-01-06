@@ -150,9 +150,11 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 
 	private void LoadStateFromFile(FileInfo fileInfo, bool? clear, ref int? seedFs, ref bool cleanOutput)
 	{
-		if (!fileInfo.Exists) return;
+		if (!fileInfo.Exists)
+			return;
 		var state = File.ReadAllText(fileInfo.FullName).Split("|");
-		if (state.Length != 2) return;
+		if (state.Length != 2)
+			return;
 		seedFs ??= int.TryParse(state[0], out var seed) ? seed : seedFs;
 		_logger.LogInformation($"Seeding with {seedFs} from previous run {fileInfo.FullName}");
 		cleanOutput = clear ?? false;

@@ -47,7 +47,7 @@ public class ParserContext : MarkdownParserContext
 				Properties[key] = value;
 		}
 
-		if (frontMatter?.Title is {} title)
+		if (frontMatter?.Title is { } title)
 			Properties["page_title"] = title;
 	}
 

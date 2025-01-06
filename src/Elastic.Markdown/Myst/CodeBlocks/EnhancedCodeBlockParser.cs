@@ -123,7 +123,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 				var newSpan = line.Slice.AsSpan()[..callout.SliceStart];
 				var s = new StringSlice(newSpan.ToString());
-				lines.Lines[callout.Line -1 ] = new StringLine(ref s);
+				lines.Lines[callout.Line - 1] = new StringLine(ref s);
 
 			}
 		}
@@ -178,10 +178,12 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	{
 		foreach (var match in matches)
 		{
-			if (match.Length == 0) continue;
+			if (match.Length == 0)
+				continue;
 
 			var startIndex = span.LastIndexOf("<");
-			if (!inlineCodeAnnotation && startIndex <= 0) continue;
+			if (!inlineCodeAnnotation && startIndex <= 0)
+				continue;
 			if (inlineCodeAnnotation)
 			{
 				startIndex = Math.Max(span.LastIndexOf("//"), span.LastIndexOf('#'));

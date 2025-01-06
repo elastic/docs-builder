@@ -43,8 +43,8 @@ public class TipTests(ITestOutputHelper output) : AdmonitionTests(output, "tip")
 
 public class ImportantTests(ITestOutputHelper output) : AdmonitionTests(output, "important")
 {
-    [Fact]
-    public void SetsTitle() => Block!.Title.Should().Be("Important");
+	[Fact]
+	public void SetsTitle() => Block!.Title.Should().Be("Important");
 }
 
 public class NoteTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,

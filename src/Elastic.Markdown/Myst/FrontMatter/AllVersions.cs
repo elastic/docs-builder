@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 
 public class AllVersions() : SemVersion(9999, 9999, 9999)
 {
-	public static AllVersions Instance { get; } = new ();
+	public static AllVersions Instance { get; } = new();
 }
 
 public class SemVersionConverter : IYamlTypeConverter

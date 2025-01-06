@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest(output, content)
 	where TDirective : LeafInline
 {
@@ -31,7 +31,7 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 
 }
 
-public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest(output, content)
 	where TDirective : Block
 {
@@ -50,7 +50,7 @@ public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageI
 
 }
 
-public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest(output, content)
 	where TDirective : ContainerInline
 {
@@ -78,7 +78,7 @@ public abstract class InlineTest : IAsyncLifetime
 	protected DocumentationSet Set { get; }
 
 
-	protected InlineTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	protected InlineTest(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	{
 		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>

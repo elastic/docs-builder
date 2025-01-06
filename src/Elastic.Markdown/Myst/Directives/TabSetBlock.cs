@@ -17,7 +17,8 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 	private int _index = -1;
 	public int FindIndex()
 	{
-		if (_index > -1) return _index;
+		if (_index > -1)
+			return _index;
 		var siblings = Parent!.OfType<TabSetBlock>().ToList();
 		_index = siblings.IndexOf(this);
 		return _index;

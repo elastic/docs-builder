@@ -28,7 +28,7 @@ public record Determinism
 	public Randomizer Contents { get; }
 
 	public float ContentProbability { get; }
-	public float FileProbability { get;  }
+	public float FileProbability { get; }
 
 	public static Determinism Random { get; set; } = new(null, null);
 }

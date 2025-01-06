@@ -46,7 +46,7 @@ public class DocumentationFolder
 			{
 				var children = folder.Children;
 				if (children.Count == 0
-				    && folderLookup.TryGetValue(folder.Path, out var documentationFiles))
+					&& folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
 					children = documentationFiles
 						.Select(d => new TocFile(d.RelativePath, true, []))
@@ -61,7 +61,7 @@ public class DocumentationFolder
 		Index ??= FilesInOrder.FirstOrDefault();
 		if (Index != null)
 			FilesInOrder = FilesInOrder.Except(new[] { Index }).ToList();
-		OwnFiles = [..FilesInOrder];
+		OwnFiles = [.. FilesInOrder];
 	}
 
 	public bool HoldsCurrent(MarkdownFile current) =>
@@ -71,7 +71,8 @@ public class DocumentationFolder
 
 	public async Task Resolve(Cancel ctx = default)
 	{
-		if (_resolved) return;
+		if (_resolved)
+			return;
 
 		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParse(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));

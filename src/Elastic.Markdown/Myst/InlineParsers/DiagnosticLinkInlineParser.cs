@@ -37,7 +37,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
 		var match = base.Match(processor, ref slice);
-		if (!match) return false;
+		if (!match)
+			return false;
 
 		if (processor.Inline is not LinkInline link)
 			return match;
@@ -96,7 +97,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			if (!string.IsNullOrEmpty(anchor))
 			{
 				if (markdown == null || (!markdown.TableOfContents.TryGetValue(anchor, out var heading)
-				    && !markdown.AdditionalLabels.Contains(anchor)))
+					&& !markdown.AdditionalLabels.Contains(anchor)))
 					processor.EmitError(line, column, length, $"`{anchor}` does not exist in {markdown?.FileName}.");
 
 				else if (link.FirstChild == null && heading != null)

@@ -86,7 +86,7 @@ public record ConfigurationFile : DocumentationFile
 					break;
 			}
 		}
-		Globs = ImplicitFolders.Select(f=> Glob.Parse($"{f}/*.md")).ToArray();
+		Globs = ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md")).ToArray();
 	}
 
 	private List<ITocItem> ReadChildren(KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
@@ -167,7 +167,8 @@ public record ConfigurationFile : DocumentationFile
 	{
 		found = false;
 		var file = ReadString(entry);
-		if (file is null) return null;
+		if (file is null)
+			return null;
 
 		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), file);
 		if (!_context.ReadFileSystem.FileInfo.New(path).Exists)

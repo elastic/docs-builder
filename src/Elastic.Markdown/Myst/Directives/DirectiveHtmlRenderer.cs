@@ -107,7 +107,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
 		var imageUrl = block.ImageUrl != null &&
-		               (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+					   (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = Slices.Directives.Figure.Create(new ImageViewModel
@@ -131,7 +131,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var slice = Slices.Directives.Version.Create(new VersionViewModel
 		{
-			Directive = block.Directive, Title = block.Title, VersionClass = block.Class
+			Directive = block.Directive,
+			Title = block.Title,
+			VersionClass = block.Class
 		});
 		RenderRazorSlice(slice, renderer, block);
 	}
@@ -187,7 +189,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var slice = TabItem.Create(new TabItemViewModel
 		{
-			Index = block.Index, Title = block.Title, TabSetIndex = block.TabSetIndex
+			Index = block.Index,
+			Title = block.Title,
+			TabSetIndex = block.TabSetIndex
 		});
 		RenderRazorSlice(slice, renderer, block);
 	}
@@ -205,7 +209,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			var slice = Code.Create(new CodeViewModel
 			{
-				CrossReferenceName = null, Language = block.Language, Caption = null
+				CrossReferenceName = null,
+				Language = block.Language,
+				Caption = null
 			});
 			RenderRazorSlice(slice, renderer, content);
 		}

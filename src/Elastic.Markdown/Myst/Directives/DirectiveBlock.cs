@@ -51,59 +51,60 @@ public abstract class DirectiveBlock(
 
 	public abstract string Directive { get; }
 
-	public string? CrossReferenceName  { get; protected set; }
+	public string? CrossReferenceName { get; protected set; }
 
 	/// <inheritdoc />
 	public char FencedChar { get; set; }
 
-    /// <inheritdoc />
-    public int OpeningFencedCharCount { get; set; }
+	/// <inheritdoc />
+	public int OpeningFencedCharCount { get; set; }
 
-    /// <inheritdoc />
-    public StringSlice TriviaAfterFencedChar { get; set; }
+	/// <inheritdoc />
+	public StringSlice TriviaAfterFencedChar { get; set; }
 
-    /// <inheritdoc />
-    public string? Info { get; set; }
+	/// <inheritdoc />
+	public string? Info { get; set; }
 
-    /// <inheritdoc />
-    public StringSlice UnescapedInfo { get; set; }
+	/// <inheritdoc />
+	public StringSlice UnescapedInfo { get; set; }
 
-    /// <inheritdoc />
-    public StringSlice TriviaAfterInfo { get; set; }
+	/// <inheritdoc />
+	public StringSlice TriviaAfterInfo { get; set; }
 
-    /// <inheritdoc />
-    public string? Arguments { get; set; }
+	/// <inheritdoc />
+	public string? Arguments { get; set; }
 
-    /// <inheritdoc />
-    public StringSlice UnescapedArguments { get; set; }
+	/// <inheritdoc />
+	public StringSlice UnescapedArguments { get; set; }
 
-    /// <inheritdoc />
-    public StringSlice TriviaAfterArguments { get; set; }
+	/// <inheritdoc />
+	public StringSlice TriviaAfterArguments { get; set; }
 
-    /// <inheritdoc />
-    public NewLine InfoNewLine { get; set; }
+	/// <inheritdoc />
+	public NewLine InfoNewLine { get; set; }
 
-    /// <inheritdoc />
-    public StringSlice TriviaBeforeClosingFence { get; set; }
+	/// <inheritdoc />
+	public StringSlice TriviaBeforeClosingFence { get; set; }
 
-    /// <inheritdoc />
-    public int ClosingFencedCharCount { get; set; }
+	/// <inheritdoc />
+	public int ClosingFencedCharCount { get; set; }
 
-    /// <summary>
-    /// Allows blocks to finalize setting properties once fully parsed
-    /// </summary>
-    /// <param name="context"></param>
-    public abstract void FinalizeAndValidate(ParserContext context);
+	/// <summary>
+	/// Allows blocks to finalize setting properties once fully parsed
+	/// </summary>
+	/// <param name="context"></param>
+	public abstract void FinalizeAndValidate(ParserContext context);
 
-    internal void AddProperty(string key, string value)
-    {
-	    _properties ??= new Dictionary<string, string>();
-	    _properties[key] = value;
-    }
+	internal void AddProperty(string key, string value)
+	{
+		_properties ??= new Dictionary<string, string>();
+		_properties[key] = value;
+	}
 
-    protected bool PropBool(params string[] keys)
-    {
-	    if (Properties is null) return false;
+	protected bool PropBool(params string[] keys)
+	{
+		if (Properties is null)
+			return false;
 		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
 			return keys.Any(k => Properties.ContainsKey(k));
@@ -113,7 +114,8 @@ public abstract class DirectiveBlock(
 
 	protected bool? TryPropBool(params string[] keys)
 	{
-	    if (Properties is null) return null;
+		if (Properties is null)
+			return null;
 		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
 			return keys.Any(k => Properties.ContainsKey(k)) ? true : null;
@@ -124,7 +126,8 @@ public abstract class DirectiveBlock(
 
 	protected string? Prop(params string[] keys)
 	{
-	    if (Properties is null) return null;
+		if (Properties is null)
+			return null;
 		foreach (var key in keys)
 		{
 			if (Properties.TryGetValue(key, out var value))
