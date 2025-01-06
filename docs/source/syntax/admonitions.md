@@ -7,21 +7,14 @@ Admonitions allow you to highlight important information with varying levels of 
 ## Basic admonitions
 
 Admonitions can span multiple lines and support inline formatting.
+Available admonition types include:
 
-`````{tab-set}
+- Note
+- Warning
+- Tip
+- Important
 
-````{tab-item} MD Syntax
-
-### Available admonition types
-
-- `note`
-- `warning`
-- `tip`
-- `important`
-
-### Syntax
-
-**Note**
+### Note
 
 A relevant piece of information with no serious repercussions if ignored.
 
@@ -36,7 +29,7 @@ It can span multiple lines and supports inline formatting.
 This is a note.
 :::
 
-**Warning**
+### Warning
 
 You could permanently lose data or leak sensitive information.
 
@@ -50,7 +43,7 @@ This is a warning.
 This is a warning.
 ```
 
-**Tip**
+### Tip
 
 Advice to help users make better choices when using a feature.
 
@@ -64,7 +57,7 @@ This is a tip.
 This is a tip.
 ```
 
-**Important**
+### Important
 
 Ignoring this information could impact performance or the stability of your system.
 
@@ -78,43 +71,11 @@ This is an important notice.
 This is an important notice.
 ```
 
-````
-
-````{tab-item} Asciidoc Syntax
-
-| **Asciidoc Type**     | **When to use it**                                                        |
-|--------------|-----------------------------------------------------------------------------------|
-| **Warning**  | You could permanently lose data or leak sensitive information.                   |
-| **Important**| Ignoring the information could impact performance or the stability of your system.|
-| **Note**     | A relevant piece of information with no serious repercussions if ignored.        |
-| **Tip**      | Advice to help you make better choices when using a feature.                     |
-
-
-**Inline Admonition:**
-```none
-NOTE: This is a note.
-It can be multiple lines, but not multiple paragraphs.
-```
-
-**Block Admonition:**
-
-```none
-[WARNING]
-=======
-This is a warning.
-
-It can contain multiple paragraphs.
-=======
-:::
-```
-
-`````
-
 ## Collapsible admonitions
 
-You can use `:open: <bool>` to make an admonition collapsible.
+Use `:open: <bool>` to make an admonition collapsible.
 
-```none
+```markdown
 :::{note}
 :open:
 
@@ -130,4 +91,27 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 Longer content can be collapsed to take less space.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+```
+
+---
+
+## Asciidoc Syntax
+
+### Inline Admonition
+
+```markdown
+NOTE: This is a note.
+It can be multiple lines, but not multiple paragraphs.
+```
+
+### Block Admonition
+
+```markdown
+[WARNING]
+=======
+This is a warning.
+
+It can contain multiple paragraphs.
+=======
+:::
 ```
