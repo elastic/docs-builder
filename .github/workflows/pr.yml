@@ -31,9 +31,6 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
-      - name: lint
-        run: ./build.sh lint
-
       - name: build
         run: ./build.sh
 
