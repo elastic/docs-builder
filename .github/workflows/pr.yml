@@ -30,10 +30,16 @@ jobs:
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
-        
+
+      - name: lint
+        run: ./build.sh lint
+
       - name: build
         run: ./build.sh
-        
+
+      - name: test
+        run: ./build.sh test
+
       - name: publish AOT 
-        run: ./build.sh publish
+        run: ./build.sh publishbinaries
         

@@ -18,19 +18,6 @@ app.Add("", async Task (Cancel _) =>
 	await "dotnet test --configuration Release --logger GitHubActions -- RunConfiguration.CollectSourceInformation=true";
 });
 
-app.Add("publish", async (Cancel _) =>
-{
-	var source = "src/docs-builder/docs-builder.csproj";
-	await $"""
-		dotnet publish {source}
-		""";
-
-	var generatorSource = "src/docs-generator/docs-generator.csproj";
-	await $"""
-		dotnet publish {generatorSource}
-		""";
-});
-
 // this is manual for now and quite hacky.
 // this ensures we download the actual LICENSE files in the repositories.
 // NOT the SPDX html from licenses.nuget.org

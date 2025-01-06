@@ -11,11 +11,6 @@ permissions:
   contents: read
   packages: write
 
-env:
-  BASE_IMAGE: mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-jammy-chiseled-aot
-  BASE_IMAGE_SINGLE: mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-jammy-chiseled
-  DOCKER_TAG: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && 'latest;edge' || 'edge' }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -70,24 +65,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish docs-builder
-        run: |
-          dotnet publish "src/docs-builder/docs-builder.csproj" \
-            /t:PublishContainer \
-            -p DebugType=none \
-            -p ContainerUser=1001:1001 \
-            -p ContainerBaseImage=${{ env.BASE_IMAGE }} \
-            -p ContainerRegistry=ghcr.io \
-            -p ContainerImageTags='"${{ env.DOCKER_TAG }};${{ steps.bootstrap.outputs.full-version }}"' \
-            -p ContainerRepository=${{ github.repository }} 
 
-      - name: Publish docs-generator
-        run: |
-          dotnet publish "src/docs-generator/docs-generator.csproj" \
-            /t:PublishContainer \
-            -p DebugType=none \
-            -p ContainerUser=1001:1001 \
-            -p ContainerBaseImage=${{ env.BASE_IMAGE_SINGLE }} \
-            -p ContainerRegistry=ghcr.io \
-            -p ContainerImageTags='"${{ env.DOCKER_TAG }};${{ steps.bootstrap.outputs.full-version }}"' \
-            -p ContainerRepository=elastic/docs-generator \
+      - name: publish containers
+        run: ./build.sh publishcontainers
