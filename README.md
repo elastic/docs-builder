@@ -1,4 +1,4 @@
-# docs-builder.
+# docs-builder
 
 You've reached the home of the latest incarnation of the documentation tooling.
 
@@ -131,15 +131,17 @@ https://github.com/elastic/{your-repository}/settings/pages
 
 ## Run without docker
 
-If you have dotnet 8 installed you can use its CLI to publish a self-contained `docs-builder` native code
+You can use the .NET CLI to publish a self-contained `docs-builder` native code
 binary. (On my M2 Pro mac the binary is currently 13mb)
+
+Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
 
 ```bash
 dotnet publish "src/docs-builder/docs-builder.csproj" -c Release -o .artifacts/publish \
     --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true -a arm64
 ```
 
-**Note**: `-a` should be the machines CPU architecture
+**Note**: `-a` should be the machine's CPU architecture
 
 The resulting binary `./.artifacts/publish/docs-builder` will run on machines without .NET installed
 

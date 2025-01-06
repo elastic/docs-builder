@@ -2,17 +2,19 @@
 title: Images
 ---
 
-Images include screenshots, inline images, icons, and more.
+Images include screenshots, inline images, icons, and more. Syntax for images is like the syntax for links, with two differences:
+1. instead of link text, you provide an image description
+2. an image description starts with `![` not just `[`
 
 Images can be referenced from the top-level `_static` dir or a local image dir.
 
 ## Screenshots
 
+Screenshots are images displayed with a box-shadow.
+
 ```{warning}
 This feature is not currently supported in Elastic Docs V3.
 ```
-
-Screenshots get a box-shadow.
 
 ## Block-level images
 
@@ -36,7 +38,7 @@ Or, use the `image` directive.
 :width: 250px
 ```
 
-## Inline image
+## Inline images
 
 ```markdown
 Here is the same image used inline ![Elasticsearch](/_static/img/observability.png)

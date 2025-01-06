@@ -73,6 +73,10 @@ This is an important notice.
 
 ## Collapsible admonitions
 
+```{tip}
+Also see [dropdowns](./dropdowns.md).
+```
+
 Use `:open: <bool>` to make an admonition collapsible.
 
 ```markdown
