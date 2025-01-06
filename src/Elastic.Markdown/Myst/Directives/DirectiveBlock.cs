@@ -32,16 +32,14 @@ public interface IBlockExtension : IBlock
 /// Initializes a new instance of the <see cref="DirectiveBlock"/> class.
 /// </remarks>
 /// <param name="parser">The parser used to create this block.</param>
-/// <param name="properties"></param>
 /// <param name="context"></param>
 public abstract class DirectiveBlock(
 	DirectiveBlockParser parser,
-	Dictionary<string, string> properties,
-	ParserContext context
-	)
+	ParserContext context)
 	: ContainerBlock(parser), IFencedBlock, IBlockExtension
 {
-	protected IReadOnlyDictionary<string, string> Properties { get; } = properties;
+	private Dictionary<string, string>? _properties;
+	protected IReadOnlyDictionary<string, string>? Properties => _properties;
 
 	public BuildContext Build { get; } = context.Build;
 
@@ -97,8 +95,15 @@ public abstract class DirectiveBlock(
     /// <param name="context"></param>
     public abstract void FinalizeAndValidate(ParserContext context);
 
-	protected bool PropBool(params string[] keys)
-	{
+    internal void AddProperty(string key, string value)
+    {
+	    _properties ??= new Dictionary<string, string>();
+	    _properties[key] = value;
+    }
+
+    protected bool PropBool(params string[] keys)
+    {
+	    if (Properties is null) return false;
 		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
 			return keys.Any(k => Properties.ContainsKey(k));
@@ -108,6 +113,7 @@ public abstract class DirectiveBlock(
 
 	protected bool? TryPropBool(params string[] keys)
 	{
+	    if (Properties is null) return null;
 		var value = Prop(keys);
 		if (string.IsNullOrEmpty(value))
 			return keys.Any(k => Properties.ContainsKey(k)) ? true : null;
@@ -118,6 +124,7 @@ public abstract class DirectiveBlock(
 
 	protected string? Prop(params string[] keys)
 	{
+	    if (Properties is null) return null;
 		foreach (var key in keys)
 		{
 			if (Properties.TryGetValue(key, out var value))

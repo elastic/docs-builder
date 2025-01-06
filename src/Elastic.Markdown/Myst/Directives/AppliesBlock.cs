@@ -8,8 +8,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class AppliesBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class AppliesBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "mermaid";
 

@@ -6,13 +6,8 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class UnsupportedDirectiveBlock(
-	DirectiveBlockParser parser,
-	string directive,
-	Dictionary<string, string> properties,
-	int issueId,
-	ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class UnsupportedDirectiveBlock(DirectiveBlockParser parser, string directive, int issueId, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public override string Directive => directive;
 

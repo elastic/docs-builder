@@ -8,8 +8,15 @@ using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class LiteralIncludeBlock : IncludeBlock
+{
+	public LiteralIncludeBlock(DirectiveBlockParser parser, ParserContext context) : base(parser, context) =>
+		Literal = true;
+
+	public override string Directive => "literalinclude";
+}
+
+public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "include";
 
@@ -64,14 +71,4 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
 	}
-}
-
-
-public class LiteralIncludeBlock : IncludeBlock
-{
-	public LiteralIncludeBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-		: base(parser, properties, context) => Literal = true;
-
-	public override string Directive => "literalinclude";
-
 }

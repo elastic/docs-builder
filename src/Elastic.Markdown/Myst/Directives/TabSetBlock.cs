@@ -6,8 +6,8 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public override string Directive => "tab-set";
 
@@ -23,8 +23,8 @@ public class TabSetBlock(DirectiveBlockParser parser, Dictionary<string, string>
 		return _index;
 	}
 }
-public class TabItemBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public override string Directive => "tab-item";
 

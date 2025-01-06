@@ -162,18 +162,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteCode(HtmlRenderer renderer, EnhancedCodeBlock block)
-	{
-		var slice = Code.Create(new CodeViewModel
-		{
-			CrossReferenceName = string.Empty,// block.CrossReferenceName,
-			Language = block.Language,
-			Caption = string.Empty
-		});
-		//RenderRazorSliceRawContent(slice, renderer, block);
-	}
-
-
 	private void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
 		var slice = TabSet.Create(new TabSetViewModel());
@@ -232,7 +220,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			block.Configuration);
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
-		var html = document.ToHtml(parser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.Pipeline);
 		renderer.Write(html);
 		//var slice = Include.Create(new IncludeViewModel { Html = html });
 		//RenderRazorSlice(slice, renderer, block);
@@ -270,7 +258,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			RenderMarkdown = s =>
 			{
 				var document = parser.Parse(s, block.IncludeFrom, block.FrontMatter);
-				var html = document.ToHtml(parser.Pipeline);
+				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
 		});

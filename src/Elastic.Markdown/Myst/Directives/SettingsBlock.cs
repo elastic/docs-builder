@@ -8,8 +8,7 @@ using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class SettingsBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "settings";
 
@@ -32,10 +31,7 @@ public class SettingsBlock(DirectiveBlockParser parser, Dictionary<string, strin
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
-	public override void FinalizeAndValidate(ParserContext context)
-	{
-		ExtractInclusionPath(context);
-	}
+	public override void FinalizeAndValidate(ParserContext context) => ExtractInclusionPath(context);
 
 	private void ExtractInclusionPath(ParserContext context)
 	{

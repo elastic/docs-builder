@@ -28,8 +28,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
         InfoPrefix = null;
     }
 
-	private Dictionary<string, string> _admonitionData = new();
-
 	private readonly string[] _admonitions = [ "important", "warning", "note", "tip" ];
 
 	private readonly string[] _versionBlocks = [ "versionadded", "versionchanged", "versionremoved", "deprecated" ];
@@ -67,7 +65,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
     protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
     {
-	    _admonitionData = new Dictionary<string, string>();
 	    var info = processor.Line.AsSpan();
 
 		if (processor.Context is not ParserContext context)
@@ -76,57 +73,57 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	    // TODO alternate lookup .NET 9
 	    var directive = info.ToString().Trim(['{', '}', '`']);
 	    if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
-		    return new UnsupportedDirectiveBlock(this, directive, _admonitionData, issueId, context);
+		    return new UnsupportedDirectiveBlock(this, directive, issueId, context);
 
 	    if (info.IndexOf("{tab-set}") > 0)
-		    return new TabSetBlock(this, _admonitionData, context);
+		    return new TabSetBlock(this, context);
 
 	    if (info.IndexOf("{tab-item}") > 0)
-		    return new TabItemBlock(this, _admonitionData, context);
+		    return new TabItemBlock(this, context);
 
 	    if (info.IndexOf("{dropdown}") > 0)
-		    return new DropdownBlock(this, _admonitionData, context);
+		    return new DropdownBlock(this, context);
 
 	    if (info.IndexOf("{image}") > 0)
-		    return new ImageBlock(this, _admonitionData, context);
+		    return new ImageBlock(this, context);
 
 	    if (info.IndexOf("{figure}") > 0)
-		    return new FigureBlock(this, _admonitionData, context);
+		    return new FigureBlock(this, context);
 
 	    if (info.IndexOf("{figure-md}") > 0)
-		    return new FigureBlock(this, _admonitionData, context);
+		    return new FigureBlock(this, context);
 
 	    // this is currently listed as unsupported
 	    // leaving the parsing in until we are confident we don't want this
 	    // for dev-docs
 	    if (info.IndexOf("{mermaid}") > 0)
-		    return new MermaidBlock(this, _admonitionData, context);
+		    return new MermaidBlock(this, context);
 
 	    if (info.IndexOf("{include}") > 0)
-			return new IncludeBlock(this, _admonitionData, context);
+			return new IncludeBlock(this, context);
 
 	    if (info.IndexOf("{literalinclude}") > 0)
-			return new LiteralIncludeBlock(this, _admonitionData, context);
+			return new LiteralIncludeBlock(this, context);
 
 	    if (info.IndexOf("{applies}") > 0)
-			return new AppliesBlock(this, _admonitionData, context);
+			return new AppliesBlock(this, context);
 
 	    if (info.IndexOf("{settings}") > 0)
-			return new SettingsBlock(this, _admonitionData, context);
+			return new SettingsBlock(this, context);
 
 	    foreach (var admonition in _admonitions)
 	    {
 		    if (info.IndexOf($"{{{admonition}}}") > 0)
-			    return new AdmonitionBlock(this, admonition, _admonitionData, context);
+			    return new AdmonitionBlock(this, admonition, context);
 	    }
 
 	    foreach (var version in _versionBlocks)
 	    {
 		    if (info.IndexOf($"{{{version}}}") > 0)
-			    return new VersionBlock(this, version, _admonitionData, context);
+			    return new VersionBlock(this, version, context);
 	    }
 
-	    return new UnknownDirectiveBlock(this, info.ToString(), _admonitionData, context);
+	    return new UnknownDirectiveBlock(this, info.ToString(), context);
     }
 
     public override bool Close(BlockProcessor processor, Block block)
@@ -139,7 +136,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
     public override BlockState TryOpen(BlockProcessor processor)
     {
-		if (processor.Context is not ParserContext context)
+		if (processor.Context is not ParserContext)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
         // We expect no indentation for a fenced code block.
@@ -164,19 +161,21 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
     {
 	    var line = processor.Line.AsSpan();
 
-	    // TODO only parse this if no content proceeds it (and not in a code fence)
-	    if (line.StartsWith(":"))
-	    {
-		    var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
-		    if (tokens.Length < 1)
-				return base.TryContinue(processor, block);
+	    if (!line.StartsWith(":"))
+		    return base.TryContinue(processor, block);
 
-		    var name = tokens[0];
-		    var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
-		    _admonitionData[name] = data;
-		    return BlockState.Continue;
-	    }
+	    if (block is not DirectiveBlock directiveBlock)
+		    return base.TryContinue(processor, block);
 
-	    return base.TryContinue(processor, block);
+	    var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
+	    if (tokens.Length < 1)
+		    return base.TryContinue(processor, block);
+
+	    var name = tokens[0];
+	    var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
+	    directiveBlock.AddProperty(name, data);
+
+	    return BlockState.Continue;
+
     }
 }

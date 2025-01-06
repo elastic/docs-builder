@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information
 namespace Elastic.Markdown.Myst.Directives;
 
-public class AdmonitionBlock(
-	DirectiveBlockParser parser,
-	string admonition,
-	Dictionary<string, string> properties,
-	ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "admonition", context);
+
+public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public string Admonition => admonition == "admonition" ? Classes?.Trim() ?? "note" : admonition;
 
@@ -33,7 +31,7 @@ public class AdmonitionBlock(
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		CrossReferenceName = Properties.GetValueOrDefault("name");
+		CrossReferenceName = Prop("name");
 		DropdownOpen = TryPropBool("open");
 		if (DropdownOpen.HasValue)
 			Classes = "dropdown";
@@ -41,5 +39,3 @@ public class AdmonitionBlock(
 }
 
 
-public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: AdmonitionBlock(parser, "admonition", properties, context);

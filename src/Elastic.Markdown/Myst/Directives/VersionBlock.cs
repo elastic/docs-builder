@@ -8,12 +8,8 @@ using static System.StringSplitOptions;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class VersionBlock(
-	DirectiveBlockParser parser,
-	string directive,
-	Dictionary<string, string> properties,
-	ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class VersionBlock(DirectiveBlockParser parser, string directive, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public override string Directive => directive;
 	public string Class => directive.Replace("version", "");

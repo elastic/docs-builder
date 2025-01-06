@@ -6,8 +6,10 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties, context)
+public class FigureBlock(DirectiveBlockParser parser, ParserContext context) : ImageBlock(parser, context);
+
+public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public override string Directive => "image";
 
@@ -100,5 +102,3 @@ public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> 
 }
 
 
-public class FigureBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: ImageBlock(parser, properties, context);
