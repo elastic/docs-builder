@@ -127,7 +127,7 @@ Also make sure your repository settings are set up to deploy from github actions
 https://github.com/elastic/{your-repository}/settings/pages
 
 ---
-![_static/img/github-pages.png](docs/source/_static/img/github-pages.png)
+![_static/img/github-pages.png](_static/img/github-pages.png)
 
 ---
 
