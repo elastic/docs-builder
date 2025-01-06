@@ -57,6 +57,22 @@ let private pristineCheck (arguments:ParseResults<Build>) =
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
     exec { run "dotnet" "publish" "src/docs-generator/docs-generator.csproj" }
+    Zip.zip
+        ".artifacts/publish/docs-builder/release"
+        $"docs-builder-%s{OS.Name}-{OS.Arch}.zip"
+        [".artifacts/publish/docs-builder/release/docs-builder"]
+
+let private publishZip _ =
+    exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
+    let binary = match OS.Current with Windows -> "docs-builder.exe" | _ -> "docs-builder"
+    Zip.zip
+        ".artifacts/publish/docs-builder/release"
+        $".artifacts/publish/docs-builder/release/docs-builder-%s{OS.Name}-{OS.Arch}.zip"
+        [
+            $".artifacts/publish/docs-builder/release/%s{binary}";
+            ".artifacts/publish/docs-builder/release/LICENSE.txt";
+            ".artifacts/publish/docs-builder/release/NOTICE.txt"
+        ]
 
 let private publishContainers _ =
 
@@ -155,6 +171,7 @@ let Setup (parsed:ParseResults<Build>) =
         | PristineCheck -> Build.Step pristineCheck
         | PublishBinaries -> Build.Step publishBinaries
         | PublishContainers -> Build.Step publishContainers
+        | PublishZip -> Build.Step publishZip
         | ValidateLicenses -> Build.Step validateLicenses
         | ReleaseNotes -> Build.Step generateReleaseNotes
 

@@ -6,6 +6,7 @@ module BuildInformation
 
 open System
 open System.IO
+open System.Runtime.InteropServices
 open System.Threading
 open System.Xml.Linq
 open System.Xml.XPath
@@ -63,8 +64,24 @@ type OS =
     | OSX | Windows | Linux
 with
     static member Current = 
-        match int Environment.OSVersion.Platform with
-        | 4 | 128 -> Linux
-        | 6       -> OSX
-        | _       -> Windows
+        match 1 with
+        | _ when RuntimeInformation.IsOSPlatform OSPlatform.OSX -> OSX
+        | _ when RuntimeInformation.IsOSPlatform OSPlatform.Windows -> Windows
+        | _ -> Linux
+
+    static member Name =
+        match OS.Current with
+        | Linux -> "linux"
+        | OSX -> "mac"
+        | Windows -> "win"
+
+    static member Arch =
+        match RuntimeInformation.ProcessArchitecture with
+        | Architecture.X86 -> "x86"
+        | Architecture.X64 -> "x64"
+        | Architecture.Arm -> "arm"
+        | Architecture.Arm64 -> "arm64"
+        | _ -> "unknown"
+
+
 

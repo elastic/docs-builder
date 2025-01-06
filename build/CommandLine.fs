@@ -25,6 +25,7 @@ type Build =
     | [<CliPrefix(CliPrefix.None);SubCommand>] Publish
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishBinaries
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishContainers
+    | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishZip
 
     | [<CliPrefix(CliPrefix.None);SubCommand>] ReleaseNotes
     | [<CliPrefix(CliPrefix.None);SubCommand>] Release
@@ -51,6 +52,7 @@ with
             | PristineCheck
             | PublishBinaries
             | PublishContainers
+            | PublishZip
             | ValidateLicenses
             | ReleaseNotes
             | Compile 
