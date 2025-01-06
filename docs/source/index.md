@@ -28,7 +28,7 @@ Options:
 Commands:
   generate    Converts a source markdown folder or file to an output folder
   serve       Continuously serve a documentation folder at http://localhost:5000.
-	File systems changes will be reflected without having to restart the server.
+    File systems changes will be reflected without having to restart the server.
 ```
 
 In the near term native code will be published by CI for the following platforms
@@ -44,7 +44,8 @@ And we'll invest time in making sure these are easily obtainable (`brew`, `winge
 For now you can run the tool locally through `docker run`
 
 ```bash
-docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" ghcr.io/elastic/docs-builder:edge
+docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
+  ghcr.io/elastic/docs-builder:edge
 ```
 
 This ensures `.git`/`docs` and `.artifacts` (the default output directory) are mounted.
@@ -54,7 +55,8 @@ Only the changed files on subsequent runs will be compiled unless you pass `--fo
 to force a new compilation.
 
 ```bash
-docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" ghcr.io/elastic/docs-builder:edge --force
+docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
+  ghcr.io/elastic/docs-builder:edge --force
 ```
 
 #### Live mode
@@ -62,7 +64,8 @@ docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.ar
 Through the `serve` command you can continuously and partially compile your documentation.
 
 ```bash
-docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" --expose 8080 ghcr.io/elastic/docs-builder:edge serve
+docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
+  -p 8080:8080 ghcr.io/elastic/docs-builder:edge serve
 ```
 
 Each page is compiled on demand as you browse http://localhost:8080 and is never cached so changes to files and
@@ -124,24 +127,26 @@ Also make sure your repository settings are set up to deploy from github actions
 https://github.com/elastic/{your-repository}/settings/pages
 
 ---
-![_static/img/github-pages.png](_static/img/github-pages.png)
+![docs/source/_static/img/github-pages.png](docs/source/_static/img/github-pages.png)
 
 ---
 
 ## Run without docker
 
-If you have dotnet 8 installed you can use its CLI to publish a self-contained `docs-builder` native code
+You can use the .NET CLI to publish a self-contained `docs-builder` native code
 binary. (On my M2 Pro mac the binary is currently 16mb)
 
+Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
+
 ```bash
-$ dotnet publish "src/docs-builder/docs-builder.csproj"
+dotnet publish "src/docs-builder/docs-builder.csproj"
 ```
 
-The resulting binary `./.artifacts/publish/docs-builder/release/docs-builder` will run on machines without .NET installed
+The resulting binary `./.artifacts/publish/docs-builder/release/docs-builder` will run on machines without .NET installed.
 
 # Performance
 
 To test performance it's best to build the binary and run outside of docker:
 
-For refence here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
+For reference here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
 existing surveyed tools

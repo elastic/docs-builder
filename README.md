@@ -7,11 +7,11 @@ This repository is host to:
 * *`docs-builder`* command line tool to generate single doc-sets (13mb native code, no dependencies)
 * *`docs-assembler`* command line tool to assemble all the doc sets. (IN PROGRESS)
 * `elastic/docs-builder@main` Github Action to build and validate a repositories documentation
-
+* *`docs-generator`* command line tool to deterministically generate a docset and incremental updates to generated content
 
 ## Command line interface
 
-```
+```bash
 $ docs-builder --help
 Usage: [command] [options...] [-h|--help] [--version]
 
@@ -26,7 +26,7 @@ Options:
 Commands:
   generate    Converts a source markdown folder or file to an output folder
   serve       Continuously serve a documentation folder at http://localhost:5000.
-	File systems changes will be reflected without having to restart the server.
+    File systems changes will be reflected without having to restart the server.
 ```
 
 In the near term native code will be published by CI for the following platforms
@@ -132,22 +132,19 @@ https://github.com/elastic/{your-repository}/settings/pages
 ## Run without docker
 
 You can use the .NET CLI to publish a self-contained `docs-builder` native code
-binary. (On my M2 Pro mac the binary is currently 13mb)
+binary. (On my M2 Pro mac the binary is currently 16mb)
 
 Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
 
 ```bash
-dotnet publish "src/docs-builder/docs-builder.csproj" -c Release -o .artifacts/publish \
-    --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true -a arm64
+dotnet publish "src/docs-builder/docs-builder.csproj"
 ```
 
-**Note**: `-a` should be the machine's CPU architecture
-
-The resulting binary `./.artifacts/publish/docs-builder` will run on machines without .NET installed
+The resulting binary `./.artifacts/publish/docs-builder/release/docs-builder` will run on machines without .NET installed.
 
 # Performance
 
 To test performance it's best to build the binary and run outside of docker:
 
-For refence here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
+For reference here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
 existing surveyed tools
