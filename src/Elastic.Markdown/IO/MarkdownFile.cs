@@ -28,7 +28,9 @@ public record MarkdownFile : DocumentationFile
 		Collector = context.Collector;
 	}
 
-	public DiagnosticsCollector Collector { get; }
+	private DiagnosticsCollector Collector { get; }
+
+	public DocumentationFolder? Parent { get; set; }
 
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }

@@ -6,24 +6,53 @@ namespace Elastic.Markdown.IO;
 
 public class DocumentationFolder
 {
-	public MarkdownFile? Index { get; }
+	public MarkdownFile? Index { get; set; }
 
-	public List<MarkdownFile> FilesInOrder { get; } = new();
-	public List<DocumentationFolder> GroupsInOrder { get; } = new();
+	public List<MarkdownFile> FilesInOrder { get; }
+	public List<DocumentationFolder> GroupsInOrder { get; }
+
+	public required DocumentationFolder? Parent { get; init; }
 
 	private HashSet<MarkdownFile> OwnFiles { get; }
 
 	public int Level { get; }
 
-	public DocumentationFolder(IReadOnlyCollection<ITocItem> toc,
+	public DocumentationFolder(
+		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
 		int level = 0,
-		MarkdownFile? index = null)
+		MarkdownFile? index = null
+	)
 	{
 		Level = level;
-		Index = index;
+		var foundIndex = ProcessTocItems(toc, lookup, folderLookup, level, out var groupsInOrder, out var filesInOrder);
 
+		GroupsInOrder = groupsInOrder;
+		FilesInOrder = filesInOrder;
+		Index = index ?? foundIndex;
+
+		if (Index is not null)
+		{
+			FilesInOrder = FilesInOrder.Except([Index]).ToList();
+			Index.Parent ??= this;
+		}
+
+		OwnFiles = [.. FilesInOrder];
+	}
+
+	private MarkdownFile? ProcessTocItems(
+		IReadOnlyCollection<ITocItem> toc,
+		IDictionary<string, DocumentationFile> lookup,
+		IDictionary<string, DocumentationFile[]> folderLookup,
+		int level,
+		out List<DocumentationFolder> groupsInOrder,
+		out List<MarkdownFile> filesInOrder
+	)
+	{
+		groupsInOrder = [];
+		filesInOrder = [];
+		MarkdownFile? index = null;
 		foreach (var tocItem in toc)
 		{
 			if (tocItem is TocFile file)
@@ -31,37 +60,42 @@ public class DocumentationFolder
 				if (!lookup.TryGetValue(file.Path, out var d) || d is not MarkdownFile md)
 					continue;
 
+				md.Parent = this;
+
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
-					var group = new DocumentationFolder(file.Children, lookup, folderLookup, level + 1, virtualIndex);
-					GroupsInOrder.Add(group);
+					var group = new DocumentationFolder(file.Children, lookup, folderLookup, level + 1, virtualIndex)
+					{
+						Parent = this
+					};
+					groupsInOrder.Add(group);
 					continue;
 				}
 
-				FilesInOrder.Add(md);
+				filesInOrder.Add(md);
 				if (file.Path.EndsWith("index.md") && d is MarkdownFile i)
-					Index ??= i;
+					index ??= i;
 			}
 			else if (tocItem is TocFolder folder)
 			{
 				var children = folder.Children;
 				if (children.Count == 0
-					&& folderLookup.TryGetValue(folder.Path, out var documentationFiles))
+				    && folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
 					children = documentationFiles
 						.Select(d => new TocFile(d.RelativePath, true, []))
 						.ToArray();
 				}
 
-				var group = new DocumentationFolder(children, lookup, folderLookup, level + 1);
-				GroupsInOrder.Add(group);
+				var group = new DocumentationFolder(children, lookup, folderLookup, level + 1)
+				{
+					Parent = this
+				};
+				groupsInOrder.Add(group);
 			}
 		}
 
-		Index ??= FilesInOrder.FirstOrDefault();
-		if (Index != null)
-			FilesInOrder = FilesInOrder.Except(new[] { Index }).ToList();
-		OwnFiles = [.. FilesInOrder];
+		return index ?? filesInOrder.FirstOrDefault();
 	}
 
 	public bool HoldsCurrent(MarkdownFile current) =>

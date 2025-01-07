@@ -17,7 +17,6 @@
 </div>
 <div class="sy-page sy-container flex mx-auto">
 	@(new HtmlString(Model.NavigationHtml))
-	@*@(await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTree.Create(Model)))*@
 	@(await RenderPartialAsync(_TableOfContents.Create(Model)))
 	<main class="sy-main w-full max-sm:max-w-full print:pt-6">
 		<div class="sy-breadcrumbs" role="navigation">
@@ -35,9 +34,19 @@
 						<span>/</span>
 						<meta itemprop="position" content="1">
 					</li>
+					@foreach (var item in Model.Parents.Reverse())
+					{
+						<li itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+							<a itemprop="item" href="@item.Url">
+								<span itemprop="name">@item.Title</span>
+							</a>
+							<span>/</span>
+							<meta itemprop="position" content="2">
+						</li>
+					}
 					<li itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-						<strong itemprop="name">Elastic Docs v3</strong>
-						<meta itemprop="position" content="2">
+						<strong itemprop="name">@Model.CurrentDocument.Title</strong>
+						<meta itemprop="position" content="3">
 					</li>
 				</ol>
 				<div class="xl:hidden ml-1">

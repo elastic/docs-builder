@@ -56,7 +56,10 @@ public class DocumentationSet
 			.GroupBy(file => file.RelativeFolder)
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
-		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles);
+		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles)
+		{
+			Parent = null
+		};
 	}
 
 	public MarkdownFile? GetMarkdownFile(IFileInfo sourceFile)
