@@ -10,9 +10,21 @@ namespace Elastic.Markdown.IO;
 
 public record GitConfiguration
 {
-	[JsonPropertyName("branch")] public required string Branch { get; init; }
-	[JsonPropertyName("remote")] public required string Remote { get; init; }
-	[JsonPropertyName("ref")] public required string Ref { get; init; }
+	private static GitConfiguration Unavailable { get; } = new()
+	{
+		Branch = "unavailable",
+		Remote = "unavailable",
+		Ref = "unavailable"
+	};
+
+	[JsonPropertyName("branch")]
+	public required string Branch { get; init; }
+
+	[JsonPropertyName("remote")]
+	public required string Remote { get; init; }
+
+	[JsonPropertyName("ref")]
+	public required string Ref { get; init; }
 
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitConfiguration Create(IFileSystem fileSystem)
@@ -26,7 +38,7 @@ public record GitConfiguration
 
 		var gitConfig = Git(".git/config");
 		if (!gitConfig.Exists)
-			throw new Exception($"{Paths.Root.FullName} is not a git repository.");
+			return Unavailable;
 
 		var head = Read(".git/HEAD");
 		var gitRef = head;
