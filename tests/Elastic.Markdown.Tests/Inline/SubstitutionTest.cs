@@ -97,7 +97,7 @@ sub:
 The following should be subbed: {{hello-world}}
 The following should be subbed as well: {{global-var}}
 """
-, new () {{"global-var", "A variable from docset.yml"}}
+, new() { { "global-var", "A variable from docset.yml" } }
 )
 {
 
@@ -119,7 +119,7 @@ sub:
 The following should be subbed: {{hello-world}}
 The following should be subbed as well: {{hello-world}}
 """
-, new () {{"hello-world", "A variable from docset.yml"}}
+, new() { { "hello-world", "A variable from docset.yml" } }
 )
 {
 
