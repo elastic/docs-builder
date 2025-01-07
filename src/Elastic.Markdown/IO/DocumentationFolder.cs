@@ -80,7 +80,7 @@ public class DocumentationFolder
 			{
 				var children = folder.Children;
 				if (children.Count == 0
-				    && folderLookup.TryGetValue(folder.Path, out var documentationFiles))
+					&& folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
 					children = documentationFiles
 						.Select(d => new TocFile(d.RelativePath, true, []))
