@@ -23,6 +23,7 @@ public record MarkdownFile : DocumentationFile
 		: base(sourceFile, rootPath)
 	{
 		FileName = sourceFile.Name;
+		FilePath = sourceFile.FullName;
 		UrlPathPrefix = context.UrlPathPrefix;
 		MarkdownParser = parser;
 		Collector = context.Collector;
@@ -47,6 +48,7 @@ public record MarkdownFile : DocumentationFile
 	private readonly HashSet<string> _additionalLabels = new();
 	public IReadOnlySet<string> AdditionalLabels => _additionalLabels;
 
+	public string FilePath { get; }
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
@@ -75,7 +77,7 @@ public record MarkdownFile : DocumentationFile
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			YamlFrontMatter = YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+			YamlFrontMatter = ReadYamlFrontMatter(document, raw);
 			Title = YamlFrontMatter.Title;
 			NavigationTitle = YamlFrontMatter.NavigationTitle;
 		}
@@ -108,6 +110,19 @@ public record MarkdownFile : DocumentationFile
 		}
 
 		_instructionsParsed = true;
+	}
+
+	private YamlFrontMatter ReadYamlFrontMatter(MarkdownDocument document, string raw)
+	{
+		try
+		{
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
+			return new YamlFrontMatter();
+		}
 	}
 
 

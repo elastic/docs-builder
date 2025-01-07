@@ -141,13 +141,16 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 	}
 
 
-	public void EmitError(string file, string message)
+	public void EmitError(string file, string message, Exception? e = null)
 	{
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
 			File = file,
-			Message = message,
+			Message = message
+			          + (e != null ? Environment.NewLine + e : string.Empty)
+			          + (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty),
+
 		};
 		Channel.Write(d);
 	}

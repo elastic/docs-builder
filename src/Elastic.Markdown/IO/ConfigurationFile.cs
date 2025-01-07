@@ -23,11 +23,7 @@ public record ConfigurationFile : DocumentationFile
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public Glob[] Globs { get; } = [];
-	public HashSet<string> ExternalLinkHosts { get; } = new(StringComparer.OrdinalIgnoreCase)
-	{
-		"elastic.co",
-		"github.com",
-	};
+	public HashSet<string> ExternalLinkHosts { get; } = new(StringComparer.OrdinalIgnoreCase) { "elastic.co", "github.com", };
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
@@ -57,41 +53,49 @@ public record ConfigurationFile : DocumentationFile
 			return;
 		}
 
-		// Examine the stream
-		var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
-
-		foreach (var entry in mapping.Children)
+		try
 		{
-			var key = ((YamlScalarNode)entry.Key).Value;
-			switch (key)
-			{
-				case "project":
-					Project = ReadString(entry);
-					break;
-				case "exclude":
-					Exclude = ReadStringArray(entry)
-						.Select(Glob.Parse)
-						.ToArray();
-					break;
-				case "subs":
-					_substitutions = ReadDictionary(entry);
-					break;
-				case "external_hosts":
-					var hosts = ReadStringArray(entry)
-						.ToArray();
-					foreach (var host in hosts)
-						ExternalLinkHosts.Add(host);
-					break;
-				case "toc":
-					var entries = ReadChildren(entry, string.Empty);
+			// Examine the stream
+			var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
 
-					TableOfContents = entries;
-					break;
-				default:
-					EmitWarning($"{key} is not a known configuration", entry.Key);
-					break;
+			foreach (var entry in mapping.Children)
+			{
+				var key = ((YamlScalarNode)entry.Key).Value;
+				switch (key)
+				{
+					case "project":
+						Project = ReadString(entry);
+						break;
+					case "exclude":
+						Exclude = ReadStringArray(entry)
+							.Select(Glob.Parse)
+							.ToArray();
+						break;
+					case "subs":
+						_substitutions = ReadDictionary(entry);
+						break;
+					case "external_hosts":
+						var hosts = ReadStringArray(entry)
+							.ToArray();
+						foreach (var host in hosts)
+							ExternalLinkHosts.Add(host);
+						break;
+					case "toc":
+						var entries = ReadChildren(entry, string.Empty);
+
+						TableOfContents = entries;
+						break;
+					default:
+						EmitWarning($"{key} is not a known configuration", entry.Key);
+						break;
+				}
 			}
 		}
+		catch (Exception e)
+		{
+			EmitError("Could not load docset.yml", e);
+		}
+
 		Globs = ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md")).ToArray();
 	}
 
@@ -100,8 +104,14 @@ public record ConfigurationFile : DocumentationFile
 		var entries = new List<ITocItem>();
 		if (entry.Value is not YamlSequenceNode sequence)
 		{
-			var key = ((YamlScalarNode)entry.Key).Value;
-			EmitWarning($"'{key}' is not an array");
+			if (entry.Key is YamlScalarNode scalarKey)
+			{
+				var key = scalarKey.Value;
+				EmitWarning($"'{key}' is not an array");
+			}
+			else
+				EmitWarning($"'{entry.Key}' is not an array");
+
 			return entries;
 		}
 
@@ -159,10 +169,17 @@ public record ConfigurationFile : DocumentationFile
 		var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		if (entry.Value is not YamlMappingNode mapping)
 		{
-			var key = ((YamlScalarNode)entry.Key).Value;
-			EmitWarning($"'{key}' is not a dictionary");
+			if (entry.Key is YamlScalarNode scalarKey)
+			{
+				var key = scalarKey.Value;
+				EmitWarning($"'{key}' is not a dictionary");
+			}
+			else
+				EmitWarning($"'{entry.Key}' is not a dictionary");
+
 			return dictionary;
 		}
+
 		foreach (var entryValue in mapping.Children)
 		{
 			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
@@ -172,6 +189,7 @@ public record ConfigurationFile : DocumentationFile
 			if (value is not null)
 				dictionary.Add(key, value);
 		}
+
 		return dictionary;
 	}
 
@@ -187,6 +205,7 @@ public record ConfigurationFile : DocumentationFile
 			else
 				found = true;
 		}
+
 		return folder;
 	}
 
@@ -212,9 +231,14 @@ public record ConfigurationFile : DocumentationFile
 		if (entry.Value is YamlScalarNode scalar)
 			return scalar.Value;
 
-		var key = ((YamlScalarNode)entry.Key).Value;
+		if (entry.Key is YamlScalarNode scalarKey)
+		{
+			var key = scalarKey.Value;
+			EmitError($"'{key}' is not a string", entry.Key);
+			return null;
+		}
 
-		EmitError($"'{key}' is not a string", entry.Key);
+		EmitError($"'{entry.Key}' is not a string", entry.Key);
 		return null;
 	}
 
@@ -238,6 +262,9 @@ public record ConfigurationFile : DocumentationFile
 
 	private void EmitWarning(string message, YamlNode? node) =>
 		EmitWarning(message, node?.Start, node?.End, (node as YamlScalarNode)?.Value?.Length);
+
+	private void EmitError(string message, Exception e) =>
+		_context.Collector.EmitError(_sourceFile.FullName, message, e);
 
 	private void EmitError(string message, Mark? start = null, Mark? end = null, int? length = null)
 	{
@@ -269,4 +296,3 @@ public record ConfigurationFile : DocumentationFile
 		_context.Collector.Channel.Write(d);
 	}
 }
-
