@@ -31,8 +31,20 @@ toc:
   - folder: configure
     children:
       - file: index.md
-      - file: page-level.md
-      - file: site-level.md
+      - folder: site
+        children:
+          - file: index.md
+          - file: content.md
+          - file: shared-attributes.md
+          - file: landing-page.md
+          - file: redirects.md
+      - folder: content-set
+        children:
+          - file: index.md
+          - file: file-structure.md
+          - file: attributes.md
+          - file: navigation.md
+      - file: page.md
   - folder: syntax
     children:
       - file: index.md
