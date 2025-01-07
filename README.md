@@ -84,7 +84,10 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout the repo
+        # Verified creator: https://github.com/marketplace/actions/checkout
+        # GitHub Action for checking out a repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build documentation
         uses: elastic/docs-builder@main
 ```
@@ -100,22 +103,31 @@ To setup the tool to publish to GitHub pages use the following configuration.
 steps:
   - id: repo-basename
     run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-  - uses: actions/checkout@v4
+  - name: Checkout the repo
+    # Verified creator: https://github.com/marketplace/actions/checkout
+    # GitHub Action for checking out a repo
+    uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
   - name: Setup Pages
     id: pages
-    uses: actions/configure-pages@v5.0.0
+    # Verified creator: https://github.com/marketplace/actions/configure-github-pages
+    # A GitHub Action to enable Pages and extract various metadata about a site.
+    uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
   - name: Build documentation
     uses: elastic/docs-builder@main
     with:
       prefix: '${{ steps.repo-basename.outputs.value }}'
   - name: Upload artifact
-    uses: actions/upload-pages-artifact@v3.0.1
+    # Verified creator: https://github.com/marketplace/actions/upload-github-pages-artifact
+    # A composite action for packaging and uploading an artifact that can be deployed to GitHub Pages.
+    uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
     with:
       path: .artifacts/docs/html
 
   - name: Deploy artifact
     id: deployment
-    uses: actions/deploy-pages@v4.0.5
+    # Verified creator: https://github.com/marketplace/actions/deploy-github-pages-site
+    # GitHub Action to publish artifacts to GitHub Pages for deployments
+    uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 ```
 
 Note `prefix:` is required to inject the appropiate `--path-prefix` argument to `docs-builder`
