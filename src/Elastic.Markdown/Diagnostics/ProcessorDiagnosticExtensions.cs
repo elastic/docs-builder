@@ -47,7 +47,7 @@ public static class ProcessorDiagnosticExtensions
 		context.Build.Collector.Channel.Write(d);
 	}
 
-	public static void EmitError(this ParserContext context, int line, int column, int length, string message, Exception? e = null)
+	public static void EmitError(this ParserContext context, string message, Exception? e = null)
 	{
 		if (context.SkipValidation)
 			return;
@@ -55,10 +55,7 @@ public static class ProcessorDiagnosticExtensions
 		{
 			Severity = Severity.Error,
 			File = context.Path.FullName,
-			Column = column,
-			Line = line,
 			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
-			Length = length
 		};
 		context.Build.Collector.Channel.Write(d);
 	}

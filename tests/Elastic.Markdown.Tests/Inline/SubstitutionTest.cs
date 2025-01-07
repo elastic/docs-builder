@@ -22,7 +22,7 @@ not a comment
 {
 
 	[Fact]
-	public void GeneratesAttributesInHtml() =>
+	public void ReplacesSubsFromFrontMatter() =>
 		Html.Should().Contain(
 				"""Hello World!<br />"""
 			).And.Contain(
@@ -48,7 +48,7 @@ not a {substitution}
 {
 
 	[Fact]
-	public void GeneratesAttributesInHtml() =>
+	public void PreservesSingleBracket() =>
 		Html.Should().Contain(
 				"""Hello World!<br />"""
 			).And.Contain(
@@ -87,3 +87,49 @@ cd elasticsearch-{{version}}/ <2>
 		Html.Should().Contain("7.17.0");
 }
 
+
+public class SupportsSubstitutionsFromDocSet(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  hello-world: "Hello World!"
+---
+The following should be subbed: {{hello-world}}
+The following should be subbed as well: {{global-var}}
+"""
+, new () {{"global-var", "A variable from docset.yml"}}
+)
+{
+
+	[Fact]
+	public void EmitsGlobalVariable() =>
+		Html.Should().Contain("Hello World!<br />")
+			.And.NotContain("{{hello-world}}")
+			.And.Contain("A variable from docset.yml")
+			.And.NotContain("{{global-var}}");
+}
+
+
+public class CanNotShadeGlobalVariables(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  hello-world: "Hello World!"
+---
+The following should be subbed: {{hello-world}}
+The following should be subbed as well: {{hello-world}}
+"""
+, new () {{"hello-world", "A variable from docset.yml"}}
+)
+{
+
+	[Fact]
+	public void OnlySeesGlobalVariable() =>
+		Html.Should().NotContain("Hello World!<br />")
+			.And.NotContain("{{hello-world}}")
+			.And.Contain("A variable from docset.yml");
+
+	[Fact]
+	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.Contain(d => d.Message.Contains("{hello-world} can not be redeclared in front matter as its a global substitution"));
+}

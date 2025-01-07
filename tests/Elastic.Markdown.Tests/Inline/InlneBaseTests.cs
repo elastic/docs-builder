@@ -78,7 +78,10 @@ public abstract class InlineTest : IAsyncLifetime
 	protected DocumentationSet Set { get; }
 
 
-	protected InlineTest(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
+	protected InlineTest(
+		ITestOutputHelper output,
+		[LanguageInjection("markdown")] string content,
+		Dictionary<string, string>? globalVariables = null)
 	{
 		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -102,7 +105,7 @@ title: Test Document
 		AddToFileSystem(FileSystem);
 
 		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
-		FileSystem.GenerateDocSetYaml(root);
+		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(logger);
 		var context = new BuildContext(FileSystem)

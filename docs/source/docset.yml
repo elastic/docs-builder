@@ -17,6 +17,8 @@ external_hosts:
   - palletsprojects.com
 exclude:
   - '_*.md'
+subs:
+  a-global-variable: "This was defined in docset.yml"
 toc:
   - file: index.md
   - folder: migration

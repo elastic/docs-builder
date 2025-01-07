@@ -29,6 +29,9 @@ public record ConfigurationFile : DocumentationFile
 		"github.com",
 	};
 
+	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
+	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
+
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context)
 		: base(sourceFile, rootPath)
 	{
@@ -69,6 +72,9 @@ public record ConfigurationFile : DocumentationFile
 					Exclude = ReadStringArray(entry)
 						.Select(Glob.Parse)
 						.ToArray();
+					break;
+				case "subs":
+					_substitutions = ReadDictionary(entry);
 					break;
 				case "external_hosts":
 					var hosts = ReadStringArray(entry)
@@ -146,6 +152,27 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		return null;
+	}
+
+	private Dictionary<string, string> ReadDictionary(KeyValuePair<YamlNode, YamlNode> entry)
+	{
+		var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		if (entry.Value is not YamlMappingNode mapping)
+		{
+			var key = ((YamlScalarNode)entry.Key).Value;
+			EmitWarning($"'{key}' is not a dictionary");
+			return dictionary;
+		}
+		foreach (var entryValue in mapping.Children)
+		{
+			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+				continue;
+			var key = scalar.Value;
+			var value = ReadString(entryValue);
+			if (value is not null)
+				dictionary.Add(key, value);
+		}
+		return dictionary;
 	}
 
 	private string? ReadFolder(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
