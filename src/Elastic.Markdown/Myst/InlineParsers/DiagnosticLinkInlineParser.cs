@@ -62,7 +62,15 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			var baseDomain = string.Join('.', uri.Host.Split('.')[^2..]);
 			if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
-				processor.EmitWarning(line, column, length, $"external URI: {uri} ");
+			{
+				processor.EmitWarning(
+					line, 
+					column, 
+					length, 
+					$"External URI '{uri}' is not allowed. Add '{baseDomain}' to the " +
+					$"'external_hosts' list in {context.Configuration.SourceFile} to " +
+					"allow links to this domain.");
+			}
 			return match;
 		}
 
