@@ -8,6 +8,7 @@ namespace Documentation.Builder;
 
 [YamlStaticContext]
 [YamlSerializable(typeof(AssemblyConfiguration))]
+[YamlSerializable(typeof(Repository))]
 public partial class YamlStaticContext;
 
 public record AssemblyConfiguration
@@ -20,10 +21,29 @@ public record AssemblyConfiguration
 			.IgnoreUnmatchedProperties()
 			.Build();
 
-		var config = deserializer.Deserialize<AssemblyConfiguration>(input);
-		return config;
+		try
+		{
+			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
+			return config;
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e);
+			Console.WriteLine(e.InnerException);
+			throw;
+		}
 	}
 
 	[YamlMember(Alias = "repos")]
-	public Dictionary<string, string> Repositories { get; set; } = new();
+	public Dictionary<string, Repository> Repositories { get; set; } = new();
+}
+
+public record Repository
+{
+	[YamlMember(Alias = "repo")]
+	public string Origin { get; set; } = string.Empty;
+
+	[YamlMember(Alias = "branch")]
+	public string? Branch { get; set; }
+
 }
