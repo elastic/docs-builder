@@ -29,10 +29,8 @@ public class MarkdownParser(
 
 	public static MarkdownPipeline MinimalPipeline { get; } =
 		new MarkdownPipelineBuilder()
-			.UseDiagnosticLinks()
 			.UseYamlFrontMatter()
 			.UseDirectives()
-			.UseSubstitution()
 			.Build();
 
 	public static MarkdownPipeline Pipeline { get; } =
