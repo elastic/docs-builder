@@ -30,7 +30,8 @@ public class GithubAnnotationOutput(ICoreService githubActions) : IDiagnosticsOu
 {
 	public void Write(Diagnostic diagnostic)
 	{
-		if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_ACTION"))) return;
+		if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_ACTION")))
+			return;
 		var properties = new AnnotationProperties
 		{
 			File = diagnostic.File,

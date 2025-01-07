@@ -47,7 +47,6 @@ public class DocumentationSet
 				".md" => CreateMarkDownFile(file, context),
 				_ => new StaticFile(file, SourcePath)
 			})
-
 			.ToList();
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
@@ -55,7 +54,7 @@ public class DocumentationSet
 		FlatMappedFiles = Files.ToDictionary(file => file.RelativePath, file => file);
 		var folderFiles = Files
 			.GroupBy(file => file.RelativeFolder)
-			.ToDictionary(g=>g.Key, g=>g.ToArray());
+			.ToDictionary(g => g.Key, g => g.ToArray());
 
 		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles);
 	}

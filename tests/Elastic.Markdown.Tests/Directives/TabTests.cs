@@ -40,7 +40,7 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 )
 {
 	[Fact]
-	public void ParsesBlock () => Block.Should().NotBeNull();
+	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Fact]
 	public void ParsesTabItems()

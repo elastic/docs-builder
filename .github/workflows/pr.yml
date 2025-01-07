@@ -15,13 +15,6 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build documentation
-        uses: elastic/docs-builder@main
-  
   build:
     runs-on: ubuntu-latest
     steps:
@@ -30,10 +23,17 @@ jobs:
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
-        
-      - name: build
+
+      - name: Build
         run: ./build.sh
-        
-      - name: publish AOT 
-        run: ./build.sh publish
-        
+
+      - name: Test
+        run: ./build.sh test
+
+      - name: Publish AOT
+        run: ./build.sh publishbinaries
+
+      # we run our artifact directly please use the prebuild
+      # elastic/docs-builder@main GitHub Action for all other repositories!
+      - name: Build documentation
+        run: .artifacts/publish/docs-builder/release/docs-builder

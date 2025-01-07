@@ -15,15 +15,7 @@ app.Add("", async Task (Cancel _) =>
 {
 	await "dotnet tool restore";
 	await "dotnet build -c Release --verbosity minimal";
-});
-
-app.Add("publish", async (Cancel _) =>
-{
-	var source = "src/docs-builder/docs-builder.csproj";
-	await $"""
-		dotnet publish {source} -c Release -o .artifacts/publish \
-			--self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=false /p:PublishAot=true
-		""";
+	await "dotnet test --configuration Release --logger GitHubActions -- RunConfiguration.CollectSourceInformation=true";
 });
 
 // this is manual for now and quite hacky.
@@ -32,6 +24,9 @@ app.Add("publish", async (Cancel _) =>
 
 app.Add("notices", async Task<int> (Cancel ctx) =>
 {
+	var packages = await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj --output NOTICE.txt";
+	var packageLines = packages.Split(Environment.NewLine).Where(l => l.StartsWith("+"));
+
 	await File.WriteAllTextAsync("NOTICE.txt",
 		$"""
 		 Elastic Documentation Tooling
@@ -40,8 +35,6 @@ app.Add("notices", async Task<int> (Cancel ctx) =>
 
 		 """, ctx);
 
-	var packages = await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj";
-	var packageLines = packages.Split(Environment.NewLine).Where(l=>l.StartsWith("+"));
 
 	Console.WriteLine("Package lines:");
 	foreach (var line in packageLines)

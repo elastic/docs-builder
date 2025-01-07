@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest(output, content)
 	where TDirective : LeafInline
 {
@@ -22,12 +22,7 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 	{
 		await base.InitializeAsync();
 		Block = Document
-			.Where(block => block is ParagraphBlock)
-			.Cast<ParagraphBlock>()
-			.FirstOrDefault()?
-			.Inline?
-			.Where(block => block is TDirective)
-			.Cast<TDirective>()
+			.Descendants<TDirective>()
 			.FirstOrDefault();
 	}
 
@@ -36,7 +31,26 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 
 }
 
-public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
+	: InlineTest(output, content)
+	where TDirective : Block
+{
+	protected TDirective? Block { get; private set; }
+
+	public override async Task InitializeAsync()
+	{
+		await base.InitializeAsync();
+		Block = Document
+			.Descendants<TDirective>()
+			.FirstOrDefault();
+	}
+
+	[Fact]
+	public void BlockIsNotNull() => Block.Should().NotBeNull();
+
+}
+
+public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest(output, content)
 	where TDirective : ContainerInline
 {
@@ -64,12 +78,24 @@ public abstract class InlineTest : IAsyncLifetime
 	protected DocumentationSet Set { get; }
 
 
-	protected InlineTest(ITestOutputHelper output, [LanguageInjection("markdown")]string content)
+	protected InlineTest(
+		ITestOutputHelper output,
+		[LanguageInjection("markdown")] string content,
+		Dictionary<string, string>? globalVariables = null)
 	{
 		var logger = new TestLoggerFactory(output);
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/source/index.md", new MockFileData(content) }
+			{ "docs/source/index.md", new MockFileData(string.IsNullOrEmpty(content) || content.StartsWith("---") ? content :
+				// language=markdown
+$"""
+---
+title: Test Document
+---
+
+{content}
+"""
+			)}
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName
@@ -79,7 +105,7 @@ public abstract class InlineTest : IAsyncLifetime
 		AddToFileSystem(FileSystem);
 
 		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
-		FileSystem.GenerateDocSetYaml(root);
+		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(logger);
 		var context = new BuildContext(FileSystem)

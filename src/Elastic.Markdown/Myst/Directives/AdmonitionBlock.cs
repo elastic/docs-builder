@@ -3,15 +3,17 @@
 // See the LICENSE file in the project root for more information
 namespace Elastic.Markdown.Myst.Directives;
 
-public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dictionary<string, string> properties)
-	: DirectiveBlock(parser, properties)
+public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "admonition", context);
+
+public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public string Admonition => admonition == "admonition" ? Classes?.Trim() ?? "note" : admonition;
 
 	public override string Directive => Admonition;
 
 	public string? Classes { get; protected set; }
-	public bool? DropdownOpen  { get; private set; }
+	public bool? DropdownOpen { get; private set; }
 
 	public string Title
 	{
@@ -29,20 +31,11 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Dic
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		Classes = Properties.GetValueOrDefault("class");
-		CrossReferenceName = Properties.GetValueOrDefault("name");
-		DropdownOpen = PropBool("open");
+		CrossReferenceName = Prop("name");
+		DropdownOpen = TryPropBool("open");
+		if (DropdownOpen.HasValue)
+			Classes = "dropdown";
 	}
 }
 
 
-public class DropdownBlock(DirectiveBlockParser parser, Dictionary<string, string> properties)
-	: AdmonitionBlock(parser, "admonition", properties)
-{
-	// ReSharper disable once RedundantOverriddenMember
-	public override void FinalizeAndValidate(ParserContext context)
-	{
-		base.FinalizeAndValidate(context);
-		Classes = $"dropdown {Classes}";
-	}
-}

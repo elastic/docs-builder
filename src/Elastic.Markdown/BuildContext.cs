@@ -42,23 +42,32 @@ public record BuildContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		SourcePath = !string.IsNullOrWhiteSpace(source)
+		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
+			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs"));
+		SourcePath = FindDocsFolderFromRoot(rootFolder);
+
 		OutputPath = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
 			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
 
 		ConfigurationPath =
-			SourcePath.EnumerateFiles("docset.yml", SearchOption.AllDirectories).FirstOrDefault()
-		    ?? ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
+			ReadFileSystem.FileInfo.New(Path.Combine(SourcePath.FullName, "docset.yml"));
 
 		if (ConfigurationPath.FullName != SourcePath.FullName)
 			SourcePath = ConfigurationPath.Directory!;
 
 		Git = GitConfiguration.Create(ReadFileSystem);
+	}
 
+	private IDirectoryInfo FindDocsFolderFromRoot(IDirectoryInfo rootPath)
+	{
+		if (rootPath.Exists &&
+			ReadFileSystem.File.Exists(Path.Combine(rootPath.FullName, "docset.yml")))
+			return rootPath;
 
+		var docsFolder = rootPath.EnumerateFiles("docset.yml", SearchOption.AllDirectories).FirstOrDefault();
+		return docsFolder?.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 	}
 
 }

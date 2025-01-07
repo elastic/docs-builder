@@ -1,0 +1,75 @@
+/* There's a weird double copy button showing up
+This hides the ugly one */
+#codecell0 > button,
+#codecell1 > button,
+#codecell2 > button,
+#codecell3 > button,
+#codecell4 > button,
+#codecell5 > button,
+#codecell6 > button,
+#codecell7 > button,
+#codecell8 > button,
+#codecell9 > button
+#codecell10 > button
+#codecell11 > button{
+  display: none !important;
+}
+
+/* The version selector in the header is broken
+This prevents it from showing up */
+.md\:inline{
+  display: none;
+}
+
+/* hide annoying footer */
+body > footer > div > div > div.sy-foot-copyright > p:nth-child(2){
+  display: none;
+}
+
+/* hide annoyingly large margin on inline images */
+.yue img {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.applies-badge {
+	font-size: 1em;
+	margin-top: 0.4em;
+}
+
+h1 {
+	padding-bottom: 0.4em;
+	border-bottom: 1px solid #dfdfdf;
+}
+.sd-outline-muted
+{
+	border: 1px solid #dfdfdf;
+}
+.product-availability {
+	padding-bottom: 0.8em;
+}
+
+h1 + .product-availability {
+	border-bottom: 1px solid #dfdfdf;
+}
+
+h1:has(+ .product-availability) {
+	margin-bottom: 0.4em;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+section:has(+ .product-availability) h2 {
+	margin-bottom: 0.0em;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+.applies-to-label {
+	font-size: 1em;
+	margin-top: 0.4em;
+	margin-left: 0;
+	font-weight: bold;
+	text-align: left;
+	padding-left: 0;
+}

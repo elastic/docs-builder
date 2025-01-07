@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.Text;
+using Elastic.Markdown.Myst.Settings;
 
 namespace Elastic.Markdown.Slices.Directives;
 
@@ -58,11 +59,21 @@ public class ImageViewModel
 		get
 		{
 			var sb = new StringBuilder();
-			if (Height != null) sb.Append($"height: {Height};");
-			if (Width != null) sb.Append($"width: {Width};");
+			if (Height != null)
+				sb.Append($"height: {Height};");
+			if (Width != null)
+				sb.Append($"width: {Width};");
 			return sb.ToString();
 		}
 	}
+}
+
+
+public class SettingsViewModel
+{
+	public required SettingsCollection SettingsCollection { get; init; }
+
+	public required Func<string, string> RenderMarkdown { get; init; }
 }
 
 public class MermaidViewModel;

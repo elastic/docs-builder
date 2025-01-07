@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
@@ -23,7 +25,10 @@ public record MarkdownFile : DocumentationFile
 		FileName = sourceFile.Name;
 		UrlPathPrefix = context.UrlPathPrefix;
 		MarkdownParser = parser;
+		Collector = context.Collector;
 	}
+
+	public DiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
@@ -60,6 +65,8 @@ public record MarkdownFile : DocumentationFile
 			await MinimalParse(ctx);
 
 		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
+		if (Title == RelativePath)
+			Collector.EmitWarning(SourceFile.FullName, "Missing yaml front-matter block defining a title or a level 1 header");
 		return document;
 	}
 
@@ -68,13 +75,18 @@ public record MarkdownFile : DocumentationFile
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			YamlFrontMatter = FrontMatterParser.Deserialize(raw);
+			YamlFrontMatter = YamlSerialization.Deserialize<YamlFrontMatter>(raw);
 			Title = YamlFrontMatter.Title;
 			NavigationTitle = YamlFrontMatter.NavigationTitle;
 		}
+		else
+		{
+			Title = RelativePath;
+			NavigationTitle = RelativePath;
+		}
 
 		var contents = document
-			.Where(block => block is HeadingBlock { Level: 2 })
+			.Where(block => block is HeadingBlock { Level: >= 2 })
 			.Cast<HeadingBlock>()
 			.Select(h => h.Inline?.FirstChild?.ToString())
 			.Where(title => !string.IsNullOrWhiteSpace(title))
@@ -85,11 +97,11 @@ public record MarkdownFile : DocumentationFile
 			_tableOfContent[t.Slug] = t;
 
 		var labels = document.Descendants<DirectiveBlock>()
-			.Select(b=>b.CrossReferenceName)
-			.Where(l=>!string.IsNullOrWhiteSpace(l))
+			.Select(b => b.CrossReferenceName)
+			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.Select(_slugHelper.GenerateSlug)
 			.ToArray();
-		foreach(var label in labels)
+		foreach (var label in labels)
 		{
 			if (!string.IsNullOrEmpty(label))
 				_additionalLabels.Add(label);

@@ -4,17 +4,23 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties)
+public class LiteralIncludeBlock : IncludeBlock
+{
+	public LiteralIncludeBlock(DirectiveBlockParser parser, ParserContext context) : base(parser, context) =>
+		Literal = true;
+
+	public override string Directive => "literalinclude";
+}
+
+public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "include";
 
-	public BuildContext Build { get; } = context.Build;
-
-	public Func<IFileInfo, MarkdownFile?>? GetMarkdownFile { get; } = context.GetMarkdownFile;
+	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; } = context.GetDocumentationFile;
 
 	public ConfigurationFile Configuration { get; } = context.Configuration;
 
@@ -51,7 +57,7 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 		var includePath = Arguments;
 		if (string.IsNullOrWhiteSpace(includePath))
 		{
-			context.EmitError(Line, Column, $"```{{{Directive}}}".Length , "include requires an argument.");
+			this.EmitError("include requires an argument.");
 			return;
 		}
 
@@ -63,16 +69,6 @@ public class IncludeBlock(DirectiveBlockParser parser, Dictionary<string, string
 		if (FileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
-			EmitError(context, $"`{IncludePath}` does not exist.");
+			this.EmitError($"`{IncludePath}` does not exist.");
 	}
-}
-
-
-public class LiteralIncludeBlock : IncludeBlock
-{
-	public LiteralIncludeBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-		: base(parser, properties, context) => Literal = true;
-
-	public override string Directive => "literalinclude";
-
 }

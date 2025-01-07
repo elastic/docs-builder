@@ -13,9 +13,9 @@ namespace Elastic.Markdown.Tests.Inline;
 public abstract class DirectiveBlockLinkTests(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest<LinkInline>(output,
 $$"""
-```{caution}
+```{warning}
 :name: caution_ref
-This is a 'caution' admonition
+This is a 'warning' admonition
 ```
 
 {{content}}
@@ -31,12 +31,12 @@ This is a 'caution' admonition
 title: Special Requirements
 ---
 
-```{attention}
+```{important}
 :name: hint_ref
-This is a 'caution' admonition
+This is a 'important' admonition
 ```
 """;
-		fileSystem.AddFile(@"docs/source/elastic/search-labs/search/req.md", inclusion);
+		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
 	}
 
@@ -61,7 +61,7 @@ public class InPageDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlock
 
 public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlockLinkTests(output,
 """
-[Sub Requirements](elastic/search-labs/search/req.md#hint_ref)
+[Sub Requirements](testing/req.md#hint_ref)
 """
 )
 {
@@ -69,10 +69,9 @@ public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlo
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="elastic/search-labs/search/req.html#hint_ref">Sub Requirements</a></p>"""
+			"""<p><a href="testing/req.html#hint_ref">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
-

@@ -2,39 +2,139 @@
 title: Elastic Docs v3
 ---
 
-Elastic Docs v3 is built with
+You've reached the home of the latest incarnation of the documentation tooling.
 
-Test during zoom with colleen
+This repository is host to:
 
-TODO ADD README for doc-builder
+* *`docs-builder`* command line tool to generate single doc-sets (13mb native code, no dependencies)
+* *`docs-assembler`* command line tool to assemble all the doc sets. (IN PROGRESS)
+* `elastic/docs-builder@main` Github Action to build and validate a repositories documentation
+* *`docs-generator`* command line tool to deterministically generate a docset and incremental updates to generated content
 
-:::{tip}
-On the right side of every page, there is an `Edit this page` link that you can use to see the markdown source for that page.
-:::
+## Command line interface
 
-:::{admonition} My custom title with *Markdown*!
-:class: tip
+```bash
+$ docs-builder --help
+Usage: [command] [options...] [-h|--help] [--version]
 
-This is a custom title for a tip admonition.
-:::
+Converts a source markdown folder or file to an output folder
 
-````{note}
-The next info should be nested
-```{warning}
-Here's my warning
+Options:
+  -p|--path <string?>        Defaults to the`{pwd}/docs` folder (Default: null)
+  -o|--output <string?>      Defaults to `.artifacts/html` (Default: null)
+  --path-prefix <string?>    Specifies the path prefix for urls (Default: null)
+  --force <bool?>            Force a full rebuild of the destination folder (Default: null)
+
+Commands:
+  generate    Converts a source markdown folder or file to an output folder
+  serve       Continuously serve a documentation folder at http://localhost:5000.
+    File systems changes will be reflected without having to restart the server.
 ```
-````
 
+In the near term native code will be published by CI for the following platforms
 
-```javascript
-const variable = "hello world";
+| OS       | Architectures |
+|----------|---------------|
+| Windows	 | x64, Arm64    |
+| Linux	   | x64, Arm64    |
+| macOS    | 	x64, Arm64   |
+
+And we'll invest time in making sure these are easily obtainable (`brew`, `winget`, `apt`)
+
+For now you can run the tool locally through `docker run`
+
+```bash
+docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
+  ghcr.io/elastic/docs-builder:edge
 ```
 
-## Feedback
+This ensures `.git`/`docs` and `.artifacts` (the default output directory) are mounted.
 
-Hate it? Love it? We want to hear it all. Say hello and leave your thoughts in [#elastic-docs-v3](https://elastic.slack.com/archives/C07APH4RCDT).
+The tool will default to incremental compilation.
+Only the changed files on subsequent runs will be compiled unless you pass `--force`
+to force a new compilation.
 
-## Build the docs locally
+```bash
+docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
+  ghcr.io/elastic/docs-builder:edge --force
+```
 
-Hosted docs are great and all, but what's the contributor experience like?
-Read the [quick start guide](https://github.com/elastic/markitpy/tree/main), clone the repository, and spin up the docs locally in seconds.
+#### Live mode
+
+Through the `serve` command you can continuously and partially compile your documentation.
+
+```bash
+docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
+  -p 8080:8080 ghcr.io/elastic/docs-builder:edge serve
+```
+
+Each page is compiled on demand as you browse http://localhost:8080 and is never cached so changes to files and
+navigation will always be reflected upon refresh.
+
+Note the docker image is `linux-x86` and will be somewhat slower to invoke on OSX due to virtualization.
+
+
+## Github Action
+
+The `docs-builder` tool is available as github action.
+
+Since it runs from a precompiled distroless image `~25mb` it's able to execute snappy. (no need to wait for building the tool itself)
+
+
+```yaml
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build documentation
+        uses: elastic/docs-builder@main
+```
+
+
+
+### GitHub Pages
+
+To set up the tool to publish to GitHub pages use the following configuration.
+**NOTE**: In the near feature we'll make this a dedicated single step GitHub action
+
+```yaml
+environment:
+  name: github-pages
+  url: ${{ steps.deployment.outputs.page_url }}
+steps:
+  - uses: actions/checkout@v4
+    
+  - name: Publish Github
+    uses: elastic/docs-builder/actions/publish@main
+    id: deployment
+```
+
+Make sure your repository settings are set up to deploy from GitHub actions see:
+
+https://github.com/elastic/{your-repository}/settings/pages
+
+---
+![_static/img/github-pages.png](_static/img/github-pages.png)
+
+---
+
+## Run without docker
+
+You can use the .NET CLI to publish a self-contained `docs-builder` native code
+binary. (On my M2 Pro mac the binary is currently 16mb)
+
+Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
+
+```bash
+dotnet publish "src/docs-builder/docs-builder.csproj"
+```
+
+The resulting binary `./.artifacts/publish/docs-builder/release/docs-builder` will run on machines without .NET installed.
+
+# Performance
+
+To test performance it's best to build the binary and run outside of docker:
+
+For reference here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
+existing surveyed tools

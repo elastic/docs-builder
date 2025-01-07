@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests;
 
 public static class MockFileSystemExtensions
 {
-	public static void GenerateDocSetYaml(this MockFileSystem fileSystem, IDirectoryInfo root)
+	public static void GenerateDocSetYaml(this MockFileSystem fileSystem, IDirectoryInfo root, Dictionary<string, string>? globalVariables = null)
 	{
 		// language=yaml
 		var yaml = new StringWriter();
@@ -21,6 +21,14 @@ public static class MockFileSystemExtensions
 			var relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
 			yaml.WriteLine($" - file: {relative}");
 		}
+
+		if (globalVariables is not null)
+		{
+			yaml.WriteLine($"subs:");
+			foreach (var (key, value) in globalVariables)
+				yaml.WriteLine($"  {key}: {value}");
+		}
+
 		fileSystem.AddFile(Path.Combine(root.FullName, "docset.yml"), new MockFileData(yaml.ToString()));
 	}
 

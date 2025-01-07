@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests;
 
 public class TestLogger(ITestOutputHelper output) : ILogger
 {
-	private class NullScope  : IDisposable
+	private class NullScope : IDisposable
 	{
 		public void Dispose() { }
 	}

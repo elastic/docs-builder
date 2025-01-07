@@ -66,6 +66,8 @@ public class ReloadGeneratorService(
 
 		if (e.FullPath.EndsWith("docset.yml"))
 			Reload();
+		if (e.FullPath.EndsWith(".md"))
+			Reload();
 
 		Logger.LogInformation($"Changed: {e.FullPath}");
 	}
@@ -99,7 +101,8 @@ public class ReloadGeneratorService(
 
 	private void PrintException(Exception? ex)
 	{
-		if (ex == null) return;
+		if (ex == null)
+			return;
 		Logger.LogError($"Message: {ex.Message}");
 		Logger.LogError("Stacktrace:");
 		Logger.LogError(ex.StackTrace);

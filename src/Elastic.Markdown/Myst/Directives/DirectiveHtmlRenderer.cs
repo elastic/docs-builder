@@ -5,16 +5,19 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Elastic.Markdown.Slices;
+using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.CodeBlocks;
+using Elastic.Markdown.Myst.FrontMatter;
+using Elastic.Markdown.Myst.Settings;
+using Elastic.Markdown.Myst.Substitution;
 using Elastic.Markdown.Slices.Directives;
 using Markdig;
-using Markdig.Extensions.Figures;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using RazorSlices;
-using YamlDotNet.Serialization.EventEmitters;
+using YamlDotNet.Core;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -33,6 +36,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MermaidBlock mermaidBlock:
 				WriteMermaid(renderer, mermaidBlock);
 				return;
+			case AppliesBlock appliesBlock:
+				WriteApplies(renderer, appliesBlock);
+				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
 				return;
@@ -47,9 +53,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case VersionBlock versionBlock:
 				WriteVersion(renderer, versionBlock);
-				return;
-			case CodeBlock codeBlock:
-				WriteCode(renderer, codeBlock);
 				return;
 			case TabSetBlock tabSet:
 				WriteTabSet(renderer, tabSet);
@@ -66,6 +69,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				else
 					WriteIncludeBlock(renderer, includeBlock);
 				return;
+			case SettingsBlock settingsBlock:
+				WriteSettingsBlock(renderer, settingsBlock);
+				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -81,9 +87,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var imageUrl =
 			block.ImageUrl != null &&
-		               (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
-			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
-			: block.ImageUrl;
+			(block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+				? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
+				: block.ImageUrl;
 		var slice = Image.Create(new ImageViewModel
 		{
 			Label = block.Label,
@@ -100,7 +106,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl = block.ImageUrl != null && (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+		var imageUrl = block.ImageUrl != null &&
+					   (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = Slices.Directives.Figure.Create(new ImageViewModel
@@ -124,7 +131,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var slice = Slices.Directives.Version.Create(new VersionViewModel
 		{
-			Directive = block.Directive, Title = block.Title, VersionClass = block.Class
+			Directive = block.Directive,
+			Title = block.Title,
+			VersionClass = block.Class
 		});
 		RenderRazorSlice(slice, renderer, block);
 	}
@@ -155,16 +164,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteCode(HtmlRenderer renderer, CodeBlock block)
-	{
-		var slice = Code.Create(new CodeViewModel
-		{
-			CrossReferenceName = block.CrossReferenceName, Language = block.Language, Caption = block.Caption
-		});
-		RenderRazorSlice(slice, renderer, block);
-	}
-
-
 	private void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
 		var slice = TabSet.Create(new TabSetViewModel());
@@ -177,9 +176,23 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
+	private void WriteApplies(HtmlRenderer renderer, AppliesBlock block)
+	{
+		if (block.Deployment is null || block.Deployment == Deployment.All)
+			return;
+
+		var slice = Applies.Create(block.Deployment);
+		RenderRazorSliceNoContent(slice, renderer);
+	}
+
 	private void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
 	{
-		var slice = TabItem.Create(new TabItemViewModel { Index = block.Index, Title = block.Title, TabSetIndex = block.TabSetIndex });
+		var slice = TabItem.Create(new TabItemViewModel
+		{
+			Index = block.Index,
+			Title = block.Title,
+			TabSetIndex = block.TabSetIndex
+		});
 		RenderRazorSlice(slice, renderer, block);
 	}
 
@@ -196,11 +209,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			var slice = Code.Create(new CodeViewModel
 			{
-				CrossReferenceName = null, Language = block.Language, Caption = null
+				CrossReferenceName = null,
+				Language = block.Language,
+				Caption = null
 			});
 			RenderRazorSlice(slice, renderer, content);
 		}
-
 	}
 
 	private void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
@@ -208,13 +222,53 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetMarkdownFile, block.Configuration);
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetDocumentationFile,
+			block.Configuration);
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
-		var html = document.ToHtml(parser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.Pipeline);
 		renderer.Write(html);
 		//var slice = Include.Create(new IncludeViewModel { Html = html });
 		//RenderRazorSlice(slice, renderer, block);
+	}
+
+	private void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)
+	{
+		if (!block.Found || block.IncludePath is null)
+			return;
+
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetDocumentationFile, block.Configuration);
+
+		var file = block.FileSystem.FileInfo.New(block.IncludePath);
+
+		SettingsCollection? settings;
+		try
+		{
+			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+			settings = YamlSerialization.Deserialize<SettingsCollection>(yaml);
+		}
+		catch (YamlException e)
+		{
+			block.EmitError("Can not be parsed as a valid settings file", e.InnerException ?? e);
+			return;
+		}
+		catch (Exception e)
+		{
+			block.EmitError("Can not be parsed as a valid settings file", e);
+			return;
+		}
+
+		var slice = Slices.Directives.Settings.Create(new SettingsViewModel
+		{
+			SettingsCollection = settings,
+			RenderMarkdown = s =>
+			{
+				var document = parser.Parse(s, block.IncludeFrom, block.FrontMatter);
+				var html = document.ToHtml(MarkdownParser.Pipeline);
+				return html;
+			}
+		});
+		RenderRazorSliceNoContent(slice, renderer);
 	}
 
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, string contents)
@@ -235,28 +289,73 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		renderer.Write(blocks[1]);
 	}
 
+	private static void RenderRazorSliceNoContent<T>(RazorSlice<T> slice, HtmlRenderer renderer)
+	{
+		var html = slice.RenderAsync().GetAwaiter().GetResult();
+		renderer.Write(html);
+	}
+
 	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
 		renderer.Write(blocks[0]);
 		foreach (var o in obj)
+			Render(o);
+
+		renderer.Write(blocks[1]);
+
+		void RenderLeaf(LeafBlock p)
 		{
-			if (o is ParagraphBlock p)
+			renderer.WriteLeafRawLines(p, true, false, false);
+			renderer.EnableHtmlForInline = false;
+			foreach (var oo in p.Inline ?? [])
 			{
-				renderer.WriteLeafRawLines(p, true, false, false);
-				renderer.EnableHtmlForInline = false;
-				foreach (var oo in p.Inline ?? [])
+				if (oo is SubstitutionLeaf sl)
+					renderer.Write(sl.Replacement);
+				else if (oo is LiteralInline li)
+					renderer.Write(li);
+				else if (oo is LineBreakInline)
+					renderer.WriteLine();
+				else if (oo is Role r)
 				{
-					if (oo is LiteralInline li)
-						renderer.Write(li);
-					if (oo is LineBreakInline)
-						renderer.WriteLine();
+					renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
+					renderer.WriteChildren(r);
 				}
-				renderer.EnableHtmlForInline = true;
+
+				else
+					renderer.Write($"(LeafBlock: {oo.GetType().Name}");
+			}
+
+			renderer.EnableHtmlForInline = true;
+		}
+
+		void RenderListBlock(ListBlock l)
+		{
+			foreach (var bb in l)
+			{
+				if (bb is LeafBlock lbi)
+					RenderLeaf(lbi);
+				else if (bb is ListItemBlock ll)
+				{
+					renderer.Write(ll.TriviaBefore);
+					renderer.Write("-");
+					foreach (var lll in ll)
+						Render(lll);
+				}
+				else
+					renderer.Write($"(ListBlock: {l.GetType().Name}");
 			}
 		}
 
-		renderer.Write(blocks[1]);
+		void Render(Block o)
+		{
+			if (o is LeafBlock p)
+				RenderLeaf(p);
+			else if (o is ListBlock l)
+				RenderListBlock(l);
+			else
+				renderer.Write($"(Block: {o.GetType().Name}");
+		}
 	}
 }

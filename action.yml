@@ -7,10 +7,9 @@ branding:
 
 inputs:
   prefix:
-    description: 'The relative location of the documentation'
+    description: 'Path prefix for all urls'
     required: false
 
 runs:
   using: 'docker'
-  image: "docker://ghcr.io/mpdreamz/docset-builder:edge"
-  
+  image: "docker://ghcr.io/elastic/docs-builder:edge"

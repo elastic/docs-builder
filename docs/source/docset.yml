@@ -17,32 +17,60 @@ external_hosts:
   - palletsprojects.com
 exclude:
   - '_*.md'
+subs:
+  a-global-variable: "This was defined in docset.yml"
 toc:
   - file: index.md
-  - folder: markup
-  - folder: elastic
+  - folder: migration
     children:
       - file: index.md
-      - folder: observability
-      - folder: reference
-      - folder: semantic-search
-      - folder: search-labs
+      - file: file-structure.md
+  - folder: contribute
+    children:
+      - file: index.md
+      - file: change-browser.md
+      - file: change-local.md
+  - folder: configure
+    children:
+      - file: index.md
+      - folder: site
         children:
           - file: index.md
-          - file: install.md
-            children:
-              - file: install/cloud.md
-              - file: install/docker.md
-          - file: chat.md
-            children:
-              - file: chat/req.md
-              - file: chat/rag.md
-          - file: search.md
-            children:
-              - file: search/req.md
-              - file: search/setup.md
-  - folder: nested
+          - file: content.md
+          - file: shared-attributes.md
+          - file: landing-page.md
+          - file: redirects.md
+      - folder: content-set
+        children:
+          - file: index.md
+          - file: file-structure.md
+          - file: attributes.md
+          - file: navigation.md
+      - file: page.md
+  - folder: syntax
     children:
-      - folder: content
       - file: index.md
-  - folder: versioning
+      - file: admonitions.md
+      - file: automated_settings.md
+      - file: code.md
+      - file: conditionals.md
+      - file: dropdowns.md
+      - file: example_blocks.md
+      - file: file_inclusion.md
+      - file: frontmatter.md
+      - file: images.md
+      - file: links.md
+      - file: passthrough.md
+      - file: applies.md
+      - file: sidebars.md
+      - file: substitutions.md
+      - file: sundries.md
+      - file: tables.md
+      - file: tabs.md
+      - file: tagged_regions.md
+      - file: titles.md
+  - folder: testing
+    children:
+      - file: index.md
+      - file: req.md
+      - folder: nested

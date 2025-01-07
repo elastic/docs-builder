@@ -73,14 +73,14 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 	: IHostedService
 {
 	private readonly IReadOnlyCollection<IDiagnosticsOutput> _outputs =
-		[new LogDiagnosticOutput(loggerFactory.CreateLogger<LogDiagnosticOutput>()), ..outputs];
+		[new LogDiagnosticOutput(loggerFactory.CreateLogger<LogDiagnosticOutput>()), .. outputs];
 
 	public DiagnosticsChannel Channel { get; } = new();
 
-	private long _errors;
-	private long _warnings;
-	public long Warnings => _warnings;
-	public long Errors => _errors;
+	private int _errors;
+	private int _warnings;
+	public int Warnings => _warnings;
+	public int Errors => _errors;
 
 	private Task? _started;
 
@@ -88,7 +88,8 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 
 	public Task StartAsync(Cancel ctx)
 	{
-		if (_started is not null) return _started;
+		if (_started is not null)
+			return _started;
 		_started = Task.Run(async () =>
 		{
 			await Channel.WaitToWrite();
@@ -137,5 +138,27 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 		if (_started is not null)
 			await _started;
 		await Channel.Reader.Completion;
+	}
+
+
+	public void EmitError(string file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = file,
+			Message = message,
+		};
+		Channel.Write(d);
+	}
+	public void EmitWarning(string file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = file,
+			Message = message,
+		};
+		Channel.Write(d);
 	}
 }

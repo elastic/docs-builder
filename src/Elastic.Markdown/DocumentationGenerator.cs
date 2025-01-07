@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Markdown.IO;
@@ -20,6 +21,7 @@ public record GenerationState
 {
 	[JsonPropertyName("last_seen_changes")]
 	public required DateTimeOffset LastSeenChanges { get; init; }
+
 	[JsonPropertyName("invalid_files")]
 	public required string[] InvalidFiles { get; init; } = [];
 
@@ -59,7 +61,8 @@ public class DocumentationGenerator
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
 		stateFile.Refresh();
-		if (!stateFile.Exists) return null;
+		if (!stateFile.Exists)
+			return null;
 		var contents = stateFile.FileSystem.File.ReadAllText(stateFile.FullName);
 		return JsonSerializer.Deserialize(contents, SourceGenerationContext.Default.GenerationState);
 	}
@@ -88,11 +91,15 @@ public class DocumentationGenerator
 
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
-			if (offendingFiles.Contains(file.SourceFile.FullName))
-				_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
-			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
-				return;
+			if (!Context.Force)
+			{
+				if (offendingFiles.Contains(file.SourceFile.FullName))
+					_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
+				else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
+					return;
+			}
 
+			_logger.LogTrace($"{file.SourceFile.FullName}");
 			var item = Interlocked.Increment(ref handledItems);
 			var outputFile = OutputFile(file.RelativePath);
 			if (file is MarkdownFile markdown)
@@ -106,6 +113,27 @@ public class DocumentationGenerator
 			if (item % 1_000 == 0)
 				_logger.LogInformation($"Handled {handledItems} files");
 		});
+
+		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
+			.GetManifestResourceNames()
+			.ToList();
+		foreach (var a in embeddedStaticFiles)
+		{
+			await using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(a);
+			if (resourceStream == null)
+				continue;
+
+			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", "_static/");
+
+			var outputFile = OutputFile(path);
+			if (outputFile.Directory is { Exists: false })
+				outputFile.Directory.Create();
+			await using var stream = outputFile.OpenWrite();
+			await resourceStream.CopyToAsync(stream, ctx);
+			_logger.LogInformation($"Copied static embedded resource {path}");
+		}
+
+
 		Context.Collector.Channel.TryComplete();
 
 		await GenerateDocumentationState(ctx);
@@ -150,7 +178,7 @@ public class DocumentationGenerator
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
 			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges} "
-			                       + "Pass --force to force a full regeneration");
+								   + "Pass --force to force a full regeneration");
 			return true;
 		}
 

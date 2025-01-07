@@ -4,13 +4,11 @@
 
 using Actions.Core.Extensions;
 using ConsoleAppFramework;
+using Documentation.Builder;
 using Documentation.Builder.Cli;
-using Documentation.Builder.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-var arguments = Arguments.Filter(args);
 
 var services = new ServiceCollection();
 services.AddGitHubActionsCore();
@@ -23,20 +21,22 @@ services.AddLogging(x =>
 		c.SingleLine = true;
 		c.IncludeScopes = true;
 		c.UseUtcTimestamp = true;
-		c.TimestampFormat = "[yyyy-MM-ddTHH:mm:ss] ";
+		c.TimestampFormat = Environment.UserInteractive ? ":: " : "[yyyy-MM-ddTHH:mm:ss] ";
 	});
 });
 services.AddSingleton<DiagnosticsChannel>();
 services.AddSingleton<DiagnosticsCollector>();
 
+
 await using var serviceProvider = services.BuildServiceProvider();
 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 ConsoleApp.ServiceProvider = serviceProvider;
-if (!arguments.IsHelp)
+var isHelp = args.Contains("-h") || args.Contains("--help");
+if (!isHelp)
 	ConsoleApp.Log = msg => logger.LogInformation(msg);
 ConsoleApp.LogError = msg => logger.LogError(msg);
 
 var app = ConsoleApp.Create();
 app.Add<Commands>();
 
-await app.RunAsync(arguments.Args).ConfigureAwait(false);
+await app.RunAsync(args).ConfigureAwait(false);

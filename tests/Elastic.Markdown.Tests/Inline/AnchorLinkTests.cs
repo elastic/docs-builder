@@ -12,14 +12,14 @@ namespace Elastic.Markdown.Tests.Inline;
 
 public abstract class AnchorLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest<LinkInline>(output,
-		$"""
-		## Hello world
+$"""
+## Hello world
 
-		A paragraph
+A paragraph
 
-		{content}
+{content}
 
-		""")
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -34,7 +34,7 @@ title: Special Requirements
 
 To follow this tutorial you will need to install the following components:
 """;
-		fileSystem.AddFile(@"docs/source/elastic/search-labs/search/req.md", inclusion);
+		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
 	}
 
@@ -59,7 +59,7 @@ public class InPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(ou
 
 public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
 """
-[Sub Requirements](elastic/search-labs/search/req.md#sub-requirements)
+[Sub Requirements](testing/req.md#sub-requirements)
 """
 )
 {
@@ -67,7 +67,7 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="elastic/search-labs/search/req.html#sub-requirements">Sub Requirements</a></p>"""
+			"""<p><a href="testing/req.html#sub-requirements">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -76,7 +76,7 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 
 public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
 """
-[](elastic/search-labs/search/req.md#sub-requirements)
+[](testing/req.md#sub-requirements)
 """
 )
 {
@@ -84,7 +84,7 @@ public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : Anchor
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="elastic/search-labs/search/req.html#sub-requirements">Special Requirements &gt; Sub Requirements</a></p>"""
+			"""<p><a href="testing/req.html#sub-requirements">Special Requirements &gt; Sub Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -112,7 +112,7 @@ public class InPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase
 
 public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
 """
-[Sub Requirements](elastic/search-labs/search/req.md#sub-requirements2)
+[Sub Requirements](testing/req.md#sub-requirements2)
 """
 )
 {
@@ -120,11 +120,10 @@ public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTe
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="elastic/search-labs/search/req.html#sub-requirements2">Sub Requirements</a></p>"""
+			"""<p><a href="testing/req.html#sub-requirements2">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
 		.And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
 }
-

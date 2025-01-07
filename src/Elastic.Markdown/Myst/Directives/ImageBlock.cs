@@ -1,14 +1,17 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using Elastic.Markdown.Diagnostics;
+
 namespace Elastic.Markdown.Myst.Directives;
 
-public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: DirectiveBlock(parser, properties)
+public class FigureBlock(DirectiveBlockParser parser, ParserContext context) : ImageBlock(parser, context);
+
+public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
+	: DirectiveBlock(parser, context)
 {
 	public override string Directive => "image";
-
-	public BuildContext Build { get; } = context.Build;
 
 	/// <summary>
 	/// Alternate text: a short description of the image, displayed by applications that cannot display images,
@@ -73,13 +76,13 @@ public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> 
 		var imageUrl = Arguments;
 		if (string.IsNullOrWhiteSpace(imageUrl))
 		{
-			EmitError(context , $"{Directive} requires an argument.");
+			this.EmitError($"{Directive} requires an argument.");
 			return;
 		}
 
 		if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
 		{
-			EmitWarning(context, $"{Directive} is using an external URI: {uri} ");
+			this.EmitWarning($"{Directive} is using an external URI: {uri} ");
 			Found = true;
 			ImageUrl = imageUrl;
 			return;
@@ -94,10 +97,8 @@ public class ImageBlock(DirectiveBlockParser parser, Dictionary<string, string> 
 		if (context.Build.ReadFileSystem.File.Exists(imagePath))
 			Found = true;
 		else
-			EmitError(context, $"`{imageUrl}` does not exist. resolved to `{imagePath}");
+			this.EmitError($"`{imageUrl}` does not exist. resolved to `{imagePath}");
 	}
 }
 
 
-public class FigureBlock(DirectiveBlockParser parser, Dictionary<string, string> properties, ParserContext context)
-	: ImageBlock(parser, properties, context);

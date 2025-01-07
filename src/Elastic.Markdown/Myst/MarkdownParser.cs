@@ -5,8 +5,10 @@
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig;
@@ -18,27 +20,24 @@ namespace Elastic.Markdown.Myst;
 public class MarkdownParser(
 	IDirectoryInfo sourcePath,
 	BuildContext context,
-	Func<IFileInfo, MarkdownFile?>? getMarkdownFile,
+	Func<IFileInfo, DocumentationFile?>? getDocumentationFile,
 	ConfigurationFile configuration)
 {
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
-	public BuildContext Context { get; } = context;
 
-	//TODO directive properties are stateful, rewrite this so we can cache builders
-	public MarkdownPipeline MinimalPipeline =>
+	private BuildContext Context { get; } = context;
+
+	public static MarkdownPipeline MinimalPipeline { get; } =
 		new MarkdownPipelineBuilder()
-			.UseDiagnosticLinks()
 			.UseYamlFrontMatter()
 			.UseDirectives()
-			.UseSubstitution()
 			.Build();
 
-	public MarkdownPipeline Pipeline =>
+	public static MarkdownPipeline Pipeline { get; } =
 		new MarkdownPipelineBuilder()
 			.EnableTrackTrivia()
 			.UsePreciseSourceLocation()
 			.UseDiagnosticLinks()
-			.UseGenericAttributes()
 			.UseEmphasisExtras(EmphasisExtraOptions.Default)
 			.UseSoftlineBreakAsHardlineBreak()
 			.UseSubstitution()
@@ -47,16 +46,16 @@ public class MarkdownParser(
 			.UseGridTables()
 			.UsePipeTables()
 			.UseDirectives()
+			.UseEnhancedCodeBlocks()
 			.DisableHtml()
 			.Build();
-
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
 		var context = new ParserContext(this, path, null, Context, configuration)
 		{
 			SkipValidation = true,
-			GetMarkdownFile = getMarkdownFile
+			GetDocumentationFile = getDocumentationFile
 		};
 		return ParseAsync(path, context, MinimalPipeline, ctx);
 	}
@@ -65,7 +64,7 @@ public class MarkdownParser(
 	{
 		var context = new ParserContext(this, path, matter, Context, configuration)
 		{
-			GetMarkdownFile = getMarkdownFile
+			GetDocumentationFile = getDocumentationFile
 		};
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
@@ -91,4 +90,16 @@ public class MarkdownParser(
 			return markdownDocument;
 		}
 	}
+
+	public MarkdownDocument Parse(string yaml, IFileInfo parent, YamlFrontMatter? matter)
+	{
+		var context = new ParserContext(this, parent, matter, Context, configuration)
+		{
+			GetDocumentationFile = getDocumentationFile
+		};
+		var markdownDocument = Markdig.Markdown.Parse(yaml, Pipeline, context);
+		return markdownDocument;
+	}
+
+
 }

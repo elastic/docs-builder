@@ -18,12 +18,15 @@ runs:
       run: |
         git fetch --prune --unshallow --tags
         git tag --list
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
         
     - id: dotnet
       shell: bash
       run: |
         dotnet tool restore
-        REPO_VERSION=$(dotnet minver -t=v -p=canary.0 -v=e)
+        REPO_VERSION=$(dotnet minver -t=v -p=canary.0 -v=e -m=0.1)
         echo "Version Number: ${REPO_VERSION}"
         echo "REPO_VERSION=${REPO_VERSION}" >> $GITHUB_ENV
         echo "full-version=${REPO_VERSION}" >> $GITHUB_OUTPUT

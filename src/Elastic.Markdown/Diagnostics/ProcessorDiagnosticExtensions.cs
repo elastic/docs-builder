@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.Directives;
 using Markdig.Helpers;
 using Markdig.Parsers;
 
@@ -14,7 +15,8 @@ public static class ProcessorDiagnosticExtensions
 	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message)
 	{
 		var context = processor.GetContext();
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
@@ -31,7 +33,8 @@ public static class ProcessorDiagnosticExtensions
 	public static void EmitWarning(this InlineProcessor processor, int line, int column, int length, string message)
 	{
 		var context = processor.GetContext();
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
@@ -44,24 +47,23 @@ public static class ProcessorDiagnosticExtensions
 		context.Build.Collector.Channel.Write(d);
 	}
 
-	public static void EmitError(this ParserContext context, int line, int column, int length, string message)
+	public static void EmitError(this ParserContext context, string message, Exception? e = null)
 	{
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
 			File = context.Path.FullName,
-			Column = column,
-			Line = line,
-			Message = message,
-			Length = length
+			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
 		};
 		context.Build.Collector.Channel.Write(d);
 	}
 
 	public static void EmitWarning(this ParserContext context, int line, int column, int length, string message)
 	{
-		if (context.SkipValidation) return;
+		if (context.SkipValidation)
+			return;
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
@@ -74,13 +76,13 @@ public static class ProcessorDiagnosticExtensions
 		context.Build.Collector.Channel.Write(d);
 	}
 
-	public static void EmitError(this BuildContext context, IFileInfo file, string message)
+	public static void EmitError(this BuildContext context, IFileInfo file, string message, Exception? e = null)
 	{
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
 			File = file.FullName,
-			Message = message,
+			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
 		};
 		context.Collector.Channel.Write(d);
 	}
@@ -89,10 +91,44 @@ public static class ProcessorDiagnosticExtensions
 	{
 		var d = new Diagnostic
 		{
-			Severity = Severity.Error,
+			Severity = Severity.Warning,
 			File = file.FullName,
 			Message = message,
 		};
 		context.Collector.Channel.Write(d);
+	}
+
+	public static void EmitError(this IBlockExtension block, string message, Exception? e = null)
+	{
+		if (block.SkipValidation)
+			return;
+
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = block.CurrentFile.FullName,
+			Line = block.Line + 1,
+			Column = block.Column,
+			Length = block.OpeningLength + 5,
+			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
+		};
+		block.Build.Collector.Channel.Write(d);
+	}
+
+	public static void EmitWarning(this IBlockExtension block, string message)
+	{
+		if (block.SkipValidation)
+			return;
+
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = block.CurrentFile.FullName,
+			Line = block.Line + 1,
+			Column = block.Column,
+			Length = block.OpeningLength + 4,
+			Message = message
+		};
+		block.Build.Collector.Channel.Write(d);
 	}
 }

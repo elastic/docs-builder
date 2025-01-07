@@ -7,7 +7,6 @@ using ConsoleAppFramework;
 using Documentation.Builder.Diagnostics;
 using Documentation.Builder.Http;
 using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -60,7 +59,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		var set = new DocumentationSet(context);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
-		return context.Collector.Errors > 1 ? 1 : 0;
+		return context.Collector.Errors + context.Collector.Warnings;
 	}
 
 	/// <summary>

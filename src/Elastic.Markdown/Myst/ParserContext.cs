@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;
 
@@ -40,13 +42,22 @@ public class ParserContext : MarkdownParserContext
 		Build = context;
 		Configuration = configuration;
 
+		foreach (var (key, value) in configuration.Substitutions)
+			Properties[key] = value;
+
 		if (frontMatter?.Properties is { } props)
 		{
 			foreach (var (key, value) in props)
-				Properties[key] = value;
+			{
+				if (configuration.Substitutions.TryGetValue(key, out _))
+					this.EmitError($"{{{key}}} can not be redeclared in front matter as its a global substitution");
+				else
+					Properties[key] = value;
+			}
+
 		}
 
-		if (frontMatter?.Title is {} title)
+		if (frontMatter?.Title is { } title)
 			Properties["page_title"] = title;
 	}
 
@@ -56,5 +67,5 @@ public class ParserContext : MarkdownParserContext
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; init; }
-	public Func<IFileInfo, MarkdownFile?>? GetMarkdownFile { get; init; }
+	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; init; }
 }

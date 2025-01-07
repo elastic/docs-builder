@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Helpers;
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>
-public sealed class SemVersion :
+public class SemVersion :
 	IEquatable<SemVersion>,
 	IComparable<SemVersion>,
 	IComparable
@@ -91,6 +91,14 @@ public sealed class SemVersion :
 		Prerelease = prerelease ?? string.Empty;
 		Metadata = metadata ?? string.Empty;
 	}
+
+	public static explicit operator SemVersion(string b)
+	{
+		var semVersion = TryParse(b, out var version) ? version : TryParse(b + ".0", out version) ? version : null;
+		return semVersion ?? throw new ArgumentException($"'{b}' is not a valid semver2 version string.");
+	}
+
+	public static implicit operator string(SemVersion d) => d.ToString();
 
 	/// <summary>
 	///
