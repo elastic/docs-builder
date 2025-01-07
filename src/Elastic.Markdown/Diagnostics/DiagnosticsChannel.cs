@@ -148,8 +148,8 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 			Severity = Severity.Error,
 			File = file,
 			Message = message
-			          + (e != null ? Environment.NewLine + e : string.Empty)
-			          + (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty),
+					  + (e != null ? Environment.NewLine + e : string.Empty)
+					  + (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty),
 
 		};
 		Channel.Write(d);
