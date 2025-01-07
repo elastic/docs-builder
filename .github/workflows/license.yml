@@ -12,6 +12,8 @@ jobs:
 
     steps:
       - name: Checkout the repo
+        # Verified creator: https://github.com/marketplace/actions/checkout
+        # GitHub Action for checking out a repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Check license headers
