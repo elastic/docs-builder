@@ -64,9 +64,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
 			{
 				processor.EmitWarning(
-					line, 
-					column, 
-					length, 
+					line,
+					column,
+					length,
 					$"External URI '{uri}' is not allowed. Add '{baseDomain}' to the " +
 					$"'external_hosts' list in {context.Configuration.SourceFile} to " +
 					"allow links to this domain.");
