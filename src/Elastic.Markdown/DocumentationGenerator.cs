@@ -85,33 +85,28 @@ public class DocumentationGenerator
 		_logger.LogInformation("Resolved tree");
 
 
-		var handledItems = 0;
-
+		var processedFileCount = 0;
+		var exceptionCount = 0;
 		_ = Context.Collector.StartAsync(ctx);
-
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
-			if (!Context.Force)
+			var processedFiles = Interlocked.Increment(ref processedFileCount);
+			try
 			{
-				if (offendingFiles.Contains(file.SourceFile.FullName))
-					_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
-				else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
-					return;
+				await ProcessFile(offendingFiles, file, outputSeenChanges, token);
+			}
+			catch (Exception e)
+			{
+				var currentCount = Interlocked.Increment(ref exceptionCount);
+				// this is not the main error logging mechanism
+				// if we hit this from too many files fail hard
+				if (currentCount <= 25)
+					Context.Collector.EmitError(file.RelativePath, "Uncaught exception while processing file", e);
+				else throw;
 			}
 
-			_logger.LogTrace($"{file.SourceFile.FullName}");
-			var item = Interlocked.Increment(ref handledItems);
-			var outputFile = OutputFile(file.RelativePath);
-			if (file is MarkdownFile markdown)
-				await HtmlWriter.WriteAsync(outputFile, markdown, token);
-			else
-			{
-				if (outputFile.Directory is { Exists: false })
-					outputFile.Directory.Create();
-				await CopyFileFsAware(file, outputFile, ctx);
-			}
-			if (item % 1_000 == 0)
-				_logger.LogInformation($"Handled {handledItems} files");
+			if (processedFiles % 1_000 == 0)
+				_logger.LogInformation($"Handled {processedFiles} files");
 		});
 
 		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
@@ -140,13 +135,34 @@ public class DocumentationGenerator
 		await GenerateLinkReference(ctx);
 
 		await Context.Collector.StopAsync(ctx);
+	}
 
-		IFileInfo OutputFile(string relativePath)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CancellationToken token)
+	{
+		if (!Context.Force)
 		{
-			var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputPath.FullName, relativePath));
-			return outputFile;
+			if (offendingFiles.Contains(file.SourceFile.FullName))
+				_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
+			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
+				return;
 		}
 
+		_logger.LogTrace($"{file.SourceFile.FullName}");
+		var outputFile = OutputFile(file.RelativePath);
+		if (file is MarkdownFile markdown)
+			await HtmlWriter.WriteAsync(outputFile, markdown, token);
+		else
+		{
+			if (outputFile.Directory is { Exists: false })
+				outputFile.Directory.Create();
+			await CopyFileFsAware(file, outputFile, token);
+		}
+	}
+
+	private IFileInfo OutputFile(string relativePath)
+	{
+		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputPath.FullName, relativePath));
+		return outputFile;
 	}
 
 	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,

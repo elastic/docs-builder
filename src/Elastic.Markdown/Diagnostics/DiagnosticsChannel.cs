@@ -154,6 +154,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 		};
 		Channel.Write(d);
 	}
+
 	public void EmitWarning(string file, string message)
 	{
 		var d = new Diagnostic
