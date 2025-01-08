@@ -34,7 +34,7 @@ title: Special Requirements
 
 To follow this tutorial you will need to install the following components:
 
-## New Requirements [new-reqs]
+## New Requirements [#new-reqs]
 
 These are new requirements
 """;
