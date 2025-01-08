@@ -135,6 +135,7 @@ public class SubstitutionParser : InlineParser
 
 		// We've already skipped the opening sticks. Account for that here.
 		startPosition -= openSticks;
+		startPosition = Math.Max(startPosition, 0);
 
 		var key = content.ToString().Trim(['{', '}']);
 		var found = false;
@@ -145,11 +146,14 @@ public class SubstitutionParser : InlineParser
 			replacement = value.ToString() ?? string.Empty;
 		}
 
+		var start = processor.GetSourcePosition(startPosition, out var line, out var column);
+		var end = processor.GetSourcePosition(slice.Start);
+		var sourceSpan = new SourceSpan(start, end);
+
 		var substitutionLeaf = new SubstitutionLeaf(content.ToString(), found, replacement)
 		{
-			Delimiter = slice.Text[startPosition],
-			Span = new SourceSpan(processor.GetSourcePosition(startPosition, out var line, out var column),
-				processor.GetSourcePosition(slice.Start)),
+			Delimiter = '{',
+			Span = sourceSpan,
 			Line = line,
 			Column = column,
 			DelimiterCount = openSticks
