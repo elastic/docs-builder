@@ -54,6 +54,19 @@ public record MarkdownFile : DocumentationFile
 
 	private bool _instructionsParsed;
 
+	public MarkdownFile[] YieldParents()
+	{
+		var parents = new List<MarkdownFile>();
+		var parent = Parent;
+		do
+		{
+			if (parent is { Index: not null } && parent.Index != this)
+				parents.Add(parent.Index);
+			parent = parent?.Parent;
+		} while (parent != null);
+		return parents.ToArray();
+	}
+
 	public async Task<MarkdownDocument> MinimalParse(Cancel ctx)
 	{
 		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);

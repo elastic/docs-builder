@@ -35,16 +35,7 @@ public class LayoutViewModel
 			if (_parents is not null)
 				return _parents;
 
-			var parents = new List<MarkdownFile>();
-			var current = CurrentDocument.Parent;
-			do
-			{
-				if (current is { Index: not null } && current.Index != CurrentDocument)
-					parents.Add(current.Index);
-				current = current?.Parent;
-			} while (current != null);
-
-			_parents = [.. parents];
+			_parents = [.. CurrentDocument.YieldParents()];
 			return _parents;
 		}
 	}
