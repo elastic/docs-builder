@@ -102,7 +102,8 @@ public class DocumentationGenerator
 				// if we hit this from too many files fail hard
 				if (currentCount <= 25)
 					Context.Collector.EmitError(file.RelativePath, "Uncaught exception while processing file", e);
-				else throw;
+				else
+					throw;
 			}
 
 			if (processedFiles % 1_000 == 0)
