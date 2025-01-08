@@ -4,6 +4,7 @@
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Slugify;
 
 namespace Elastic.Markdown.Myst;
@@ -29,15 +30,14 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 			? headings[index]
 			: $"h{obj.Level}";
 
-		var slug = string.Empty;
-		if (headingText == "h2")
-		{
-			renderer.Write(@"<section id=""");
-			slug = _slugHelper.GenerateSlug(obj.Inline?.FirstChild?.ToString());
-			renderer.Write(slug);
-			renderer.Write(@""">");
+		var header = obj.GetData("header") as string;
+		var anchor = obj.GetData("anchor") as string;
 
-		}
+		var slug = _slugHelper.GenerateSlug(anchor ?? header);
+
+		renderer.Write(@"<section id=""");
+		renderer.Write(slug);
+		renderer.Write(@""">");
 
 		renderer.Write('<');
 		renderer.Write(headingText);
@@ -47,16 +47,14 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 		renderer.WriteLeafInline(obj);
 
 
-		if (headingText == "h2")
-			// language=html
-			renderer.WriteLine($@"<a class=""headerlink"" href=""#{slug}"" title=""Link to this heading"">¶</a>");
+		// language=html
+		renderer.WriteLine($@"<a class=""headerlink"" href=""#{slug}"" title=""Link to this heading"">¶</a>");
 
 		renderer.Write("</");
 		renderer.Write(headingText);
 		renderer.WriteLine('>');
 
-		if (headingText == "h2")
-			renderer.Write("</section>");
+		renderer.Write("</section>");
 
 		renderer.EnsureLine();
 	}

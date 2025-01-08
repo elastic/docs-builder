@@ -30,6 +30,7 @@ public class MarkdownParser(
 	public static MarkdownPipeline MinimalPipeline { get; } =
 		new MarkdownPipelineBuilder()
 			.UseYamlFrontMatter()
+			.UseHeadingsWithSlugs()
 			.UseDirectives()
 			.Build();
 
@@ -38,6 +39,7 @@ public class MarkdownParser(
 			.EnableTrackTrivia()
 			.UsePreciseSourceLocation()
 			.UseDiagnosticLinks()
+			.UseHeadingsWithSlugs()
 			.UseEmphasisExtras(EmphasisExtraOptions.Default)
 			.UseSoftlineBreakAsHardlineBreak()
 			.UseSubstitution()

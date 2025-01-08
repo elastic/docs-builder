@@ -90,9 +90,12 @@ public record MarkdownFile : DocumentationFile
 		var contents = document
 			.Where(block => block is HeadingBlock { Level: >= 2 })
 			.Cast<HeadingBlock>()
-			.Select(h => h.Inline?.FirstChild?.ToString())
-			.Where(title => !string.IsNullOrWhiteSpace(title))
-			.Select(title => new PageTocItem { Heading = title!, Slug = _slugHelper.GenerateSlug(title) })
+			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string))
+			.Select(h => new PageTocItem
+			{
+				Heading = h.Item1!.Replace("`", "").Replace("*", ""),
+				Slug = _slugHelper.GenerateSlug(h.Item2 ?? h.Item1)
+			})
 			.ToList();
 		_tableOfContent.Clear();
 		foreach (var t in contents)
