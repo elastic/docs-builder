@@ -38,14 +38,14 @@
 					{
 						<li itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 							<a itemprop="item" href="@item.Url">
-								<span itemprop="name">@item.Title</span>
+								<span itemprop="name">@item.NavigationTitle</span>
 							</a>
 							<span>/</span>
 							<meta itemprop="position" content="2">
 						</li>
 					}
 					<li itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-						<strong itemprop="name">@Model.CurrentDocument.Title</strong>
+						<strong itemprop="name">@Model.CurrentDocument.NavigationTitle</strong>
 						<meta itemprop="position" content="3">
 					</li>
 				</ol>
