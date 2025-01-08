@@ -37,7 +37,7 @@ I link to the [Notes](tables.md#notes) heading on the [Tables](tables.md) page.
 Headings will automatically create anchor links in the resulting html. 
 
 ```markdown
-## This Is An Header
+## This Is A Header
 ```
 
 Will have an anchor link injected with the name `this-is-an-header`.
@@ -46,7 +46,7 @@ Will have an anchor link injected with the name `this-is-an-header`.
 If you need more control over the anchor name you may specify it inline
 
 ```markdown
-## This Is An Header [but-this-is-my-anchor]
+## This Is A Header [but-this-is-my-anchor]
 ```
 
 Will result in an anchor link named `but-this-my-anchor` to be injected instead. Do note that these inline anchors will be normalized.
@@ -54,7 +54,7 @@ Will result in an anchor link named `but-this-my-anchor` to be injected instead.
 Meaning 
 
 ```markdown
-## This Is An Header [What about this for an anchor!]
+## This Is A Header [What about this for an anchor!]
 ```
 
 Will result in the anchor `what-about-this-for-an-anchor`.
