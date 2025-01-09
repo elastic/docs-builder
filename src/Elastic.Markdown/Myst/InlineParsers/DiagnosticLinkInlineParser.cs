@@ -60,7 +60,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
 		{
-			var baseDomain = string.Join('.', uri.Host.Split('.')[^2..]);
+			var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);
 			if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
 			{
 				processor.EmitWarning(
