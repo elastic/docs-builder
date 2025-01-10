@@ -33,8 +33,9 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 public class DiagnosticLinkInlineParser : LinkInlineParser
 {
-
-	private static readonly ImmutableHashSet<string> ExcludedSchemes = new[] { "http", "https", "tel", "jdbc" }.ToImmutableHashSet();
+	// See https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml for a list of URI schemes
+	// We can add more schemes as needed
+	private static readonly ImmutableHashSet<string> ExcludedSchemes = ["http", "https", "tel", "jdbc"];
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
