@@ -175,15 +175,15 @@ public class DuplicateExternalLinkTest(ITestOutputHelper output) : LinkTestBase(
 			"""
 		);
 
-    [Fact]
-    public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-    [Fact]
-    public void EmitsExternalLink()
-    {
-        Collector.ExternalLinks.Should().HaveCount(2);
-        Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
-        Collector.ExternalLinks.Should().ContainKey("elasticsearch://index.md");
-    }
+	[Fact]
+	public void EmitsExternalLink()
+	{
+		Collector.ExternalLinks.Should().HaveCount(2);
+		Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
+		Collector.ExternalLinks.Should().ContainKey("elasticsearch://index.md");
+	}
 }
 
