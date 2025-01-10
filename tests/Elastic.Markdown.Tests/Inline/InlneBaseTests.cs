@@ -107,7 +107,7 @@ title: Test Document
 		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
-		Collector = new TestDiagnosticsCollector(logger);
+		Collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(FileSystem)
 		{
 			Collector = Collector

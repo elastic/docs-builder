@@ -58,23 +58,9 @@ public interface IDiagnosticsOutput
 	public void Write(Diagnostic diagnostic);
 }
 
-public class LogDiagnosticOutput(ILogger logger) : IDiagnosticsOutput
-{
-	public void Write(Diagnostic diagnostic)
-	{
-		if (diagnostic.Severity == Severity.Error)
-			logger.LogError($"{diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
-		else
-			logger.LogWarning($"{diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
-	}
-}
-
-public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollection<IDiagnosticsOutput> outputs)
+public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
 	: IHostedService
 {
-	private readonly IReadOnlyCollection<IDiagnosticsOutput> _outputs =
-		[new LogDiagnosticOutput(loggerFactory.CreateLogger<LogDiagnosticOutput>()), .. outputs];
-
 	public DiagnosticsChannel Channel { get; } = new();
 
 	private int _errors;
@@ -117,7 +103,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 				IncrementSeverityCount(item);
 				HandleItem(item);
 				OffendingFiles.Add(item.File);
-				foreach (var output in _outputs)
+				foreach (var output in outputs)
 					output.Write(item);
 			}
 		}

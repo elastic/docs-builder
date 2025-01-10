@@ -4,6 +4,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Documentation.Builder.Diagnostics;
+using Documentation.Builder.Diagnostics.Console;
+using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
@@ -25,25 +27,35 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly string _staticFilesDirectory;
+	private readonly BuildContext _context;
 
 	public DocumentationWebHost(string? path, ILoggerFactory logger, IFileSystem fileSystem)
 	{
 		var builder = WebApplication.CreateSlimBuilder();
-		var context = new BuildContext(fileSystem, fileSystem, path, null)
+
+		builder.Logging.ClearProviders();
+		builder.Logging.SetMinimumLevel(LogLevel.Warning)
+			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
+			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
+			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information)
+
+			.AddSimpleConsole(o => o.SingleLine = true);
+
+		_context = new BuildContext(fileSystem, fileSystem, path, null)
 		{
-			Collector = new ConsoleDiagnosticsCollector(logger)
+			Collector = new LiveModeDiagnosticsCollector(logger)
 		};
 		builder.Services.AddAotLiveReload(s =>
 		{
-			s.FolderToMonitor = context.SourcePath.FullName;
+			s.FolderToMonitor = _context.SourcePath.FullName;
 			s.ClientFileExtensions = ".md,.yml";
 		});
-		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(context.SourcePath, null, context, logger));
+		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(_context.SourcePath, null, _context, logger));
 		builder.Services.AddHostedService<ReloadGeneratorService>();
-		builder.Services.AddSingleton(logger);
-		builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
-		_staticFilesDirectory = Path.Combine(context.SourcePath.FullName, "_static");
+		//builder.Services.AddSingleton(logger);
+
+		_staticFilesDirectory = Path.Combine(_context.SourcePath.FullName, "_static");
 #if DEBUG
 		// this attempts to serve files directly from their source rather than the embedded resourses during development.
 		// this allows us to change js/css files without restarting the webserver
@@ -57,7 +69,17 @@ public class DocumentationWebHost
 	}
 
 
-	public async Task RunAsync(Cancel ctx) => await _webApplication.RunAsync(ctx);
+	public async Task RunAsync(Cancel ctx)
+	{
+		_ = _context.Collector.StartAsync(ctx);
+		await _webApplication.RunAsync(ctx);
+	}
+
+	public async Task StopAsync(Cancel ctx)
+	{
+		_context.Collector.Channel.TryComplete();
+		await _context.Collector.StopAsync(ctx);
+	}
 
 	private void SetUpRoutes()
 	{
@@ -87,8 +109,8 @@ public class DocumentationWebHost
 		{
 			case MarkdownFile markdown:
 				{
-					await markdown.ParseFullAsync(ctx);
 					var rendered = await generator.RenderLayout(markdown, ctx);
+
 					return Results.Content(rendered, "text/html");
 				}
 			case ImageFile image:

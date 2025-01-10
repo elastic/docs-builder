@@ -21,11 +21,12 @@ public class NavigationTestsBase : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
+		var collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(ReadFileSystem, writeFs)
 		{
 			Force = false,
 			UrlPathPrefix = null,
-			Collector = new DiagnosticsCollector(logger, [])
+			Collector = collector
 		};
 
 		Set = new DocumentationSet(context);

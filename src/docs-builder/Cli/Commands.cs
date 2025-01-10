@@ -5,6 +5,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Diagnostics;
+using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
@@ -27,6 +28,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	{
 		var host = new DocumentationWebHost(path, logger, new FileSystem());
 		await host.RunAsync(ctx);
+		await host.StopAsync(ctx);
+
 	}
 
 	/// <summary>
