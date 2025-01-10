@@ -1,5 +1,5 @@
 ---
-title: External Links
+title: Cross Links
 ---
 
 [Elasticsearch](elasticsearch://index.md)

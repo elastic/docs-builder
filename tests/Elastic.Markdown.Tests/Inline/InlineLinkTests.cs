@@ -103,7 +103,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	"""
 	[test][test]
 
@@ -123,14 +123,14 @@ public class ExternalLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsExternalLink()
+	public void EmitsCrossLink()
 	{
-		Collector.ExternalLinks.Should().HaveCount(1);
-		Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
+		Collector.CrossLinks.Should().HaveCount(1);
+		Collector.CrossLinks.Should().ContainKey("kibana://index.md");
 	}
 }
 
-public class ExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	"""
 	[test](kibana://index.md)
 	"""
@@ -148,14 +148,14 @@ public class ExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsExternalLink()
+	public void EmitsCrossLink()
 	{
-		Collector.ExternalLinks.Should().HaveCount(1);
-		Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
+		Collector.CrossLinks.Should().HaveCount(1);
+		Collector.CrossLinks.Should().ContainKey("kibana://index.md");
 	}
 }
 
-public class DuplicateExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+public class DuplicateCrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	"""
 	[a](kibana://index.md)
 	[b](kibana://index.md)
@@ -179,11 +179,11 @@ public class DuplicateExternalLinkTest(ITestOutputHelper output) : LinkTestBase(
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsExternalLink()
+	public void EmitsCrossLink()
 	{
-		Collector.ExternalLinks.Should().HaveCount(2);
-		Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
-		Collector.ExternalLinks.Should().ContainKey("elasticsearch://index.md");
+		Collector.CrossLinks.Should().HaveCount(2);
+		Collector.CrossLinks.Should().ContainKey("kibana://index.md");
+		Collector.CrossLinks.Should().ContainKey("elasticsearch://index.md");
 	}
 }
 

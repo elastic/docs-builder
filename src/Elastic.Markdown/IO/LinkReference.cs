@@ -17,12 +17,12 @@ public record LinkReference
 	[JsonPropertyName("links")]
 	public required string[] Links { get; init; } = [];
 
-	[JsonPropertyName("external_links")]
-	public required string[] ExternalLinks { get; init; } = [];
+	[JsonPropertyName("cross_links")]
+	public required string[] CrossLinks { get; init; } = [];
 
 	public static LinkReference Create(DocumentationSet set)
 	{
-		var externalLinks = set.Context.Collector.ExternalLinks.Select(i => i.Key).ToArray();
+		var crossLinks = set.Context.Collector.CrossLinks.Select(i => i.Key).ToArray();
 
 		var links = set.FlatMappedFiles.Values
 			.OfType<MarkdownFile>()
@@ -32,7 +32,7 @@ public record LinkReference
 			UrlPathPrefix = set.Context.UrlPathPrefix,
 			Origin = set.Context.Git,
 			Links = links,
-			ExternalLinks = externalLinks
+			CrossLinks = crossLinks
 		};
 	}
 }

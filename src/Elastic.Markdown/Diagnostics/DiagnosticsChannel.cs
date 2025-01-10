@@ -87,7 +87,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 
 	public HashSet<string> OffendingFiles { get; } = new();
 
-	public ConcurrentDictionary<string, bool> ExternalLinks { get; } = new();
+	public ConcurrentDictionary<string, bool> CrossLinks { get; } = new();
 
 	public Task StartAsync(Cancel ctx)
 	{
@@ -143,7 +143,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 		await Channel.Reader.Completion;
 	}
 
-	public void EmitExternalLink(string link) => ExternalLinks.TryAdd(link, true);
+	public void EmitExternalLink(string link) => CrossLinks.TryAdd(link, true);
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{
