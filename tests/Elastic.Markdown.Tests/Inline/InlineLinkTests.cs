@@ -115,6 +115,7 @@ public class ExternalLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
+			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
 			"""<p><a href="kibana://index.html">test</a></p>"""
 		);
 
@@ -139,6 +140,7 @@ public class ExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
+			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
 			"""<p><a href="kibana://index.html">test</a></p>"""
 		);
 
@@ -153,4 +155,35 @@ public class ExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	}
 }
 
+public class DuplicateExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[a](kibana://index.md)
+	[b](kibana://index.md)
+	[c](elasticsearch://index.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
+			"""
+			<p><a href="kibana://index.html">a</a><br />
+			<a href="kibana://index.html">b</a><br />
+			<a href="elasticsearch://index.html">c</a></p>
+			"""
+		);
+
+    [Fact]
+    public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+    [Fact]
+    public void EmitsExternalLink()
+    {
+        Collector.ExternalLinks.Should().HaveCount(2);
+        Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
+        Collector.ExternalLinks.Should().ContainKey("elasticsearch://index.md");
+    }
+}
 
