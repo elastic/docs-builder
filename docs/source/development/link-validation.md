@@ -5,7 +5,8 @@ title: Link validation
 * See the [RFC](https://docs.google.com/document/d/1fZNeJCVLKu19s4WIKkkqrHyE9YlWQHNed94Y_V7ofRI/edit?tab=t.0#heading=h.z8tixe192fr4).
 * Infrastructure lives in [docs-infra](https://github.com/elastic/docs-infra).
 
-```{mermaid}
+The mermaid chart below is currently unsupported.
+```
 flowchart TD
     subgraph **Repository Build Process**
         direction LR
