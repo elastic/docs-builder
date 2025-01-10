@@ -52,8 +52,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var column = link.Column;
 		var length = url?.Length ?? 1;
 
-		if (IsExternalLink(uri))
-			processor.GetContext().Build.Collector.EmitExternalLink(url!);
+		if (IsCrossLink(uri))
+			processor.GetContext().Build.Collector.EmitCrossLink(url!);
 
 		var context = processor.GetContext();
 		if (processor.GetContext().SkipValidation)
@@ -133,7 +133,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return match;
 	}
 
-	private static bool IsExternalLink(Uri? uri) =>
+	private static bool IsCrossLink(Uri? uri) =>
 		uri != null
 		&& !ExcludedSchemes.Contains(uri.Scheme)
 		&& !uri.IsFile

@@ -143,7 +143,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 		await Channel.Reader.Completion;
 	}
 
-	public void EmitExternalLink(string link) => CrossLinks.TryAdd(link, true);
+	public void EmitCrossLink(string link) => CrossLinks.TryAdd(link, true);
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{
