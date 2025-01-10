@@ -24,7 +24,11 @@ toc:
   - folder: migration
     children:
       - file: index.md
+      - file: guide.md
       - file: file-structure.md
+      - file: mapping.md
+      - file: tabs.md
+      - file: codeowner.md
   - folder: contribute
     children:
       - file: index.md
