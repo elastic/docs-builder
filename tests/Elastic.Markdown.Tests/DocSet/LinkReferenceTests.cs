@@ -6,7 +6,7 @@ using Elastic.Markdown.IO;
 using FluentAssertions;
 using Xunit.Abstractions;
 
-namespace Elastic.Markdown.Tests.SiteMap;
+namespace Elastic.Markdown.Tests.DocSet;
 
 public class LinkReferenceTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {

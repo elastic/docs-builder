@@ -31,7 +31,11 @@ public record MarkdownFile : DocumentationFile
 
 	private DiagnosticsCollector Collector { get; }
 
-	public DocumentationFolder? Parent { get; set; }
+	public DocumentationFolder? Parent
+	{
+		get => FileName == "index.md" ? _parent?.Parent : _parent;
+		set => _parent = value;
+	}
 
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
@@ -55,6 +59,7 @@ public record MarkdownFile : DocumentationFile
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
 	private bool _instructionsParsed;
+	private DocumentationFolder? _parent;
 
 	public MarkdownFile[] YieldParents()
 	{

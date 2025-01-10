@@ -33,10 +33,7 @@ public class DocumentationFolder
 		Index = index ?? foundIndex;
 
 		if (Index is not null)
-		{
 			FilesInOrder = FilesInOrder.Except([Index]).ToList();
-			Index.Parent ??= this;
-		}
 
 		OwnFiles = [.. FilesInOrder];
 	}
@@ -55,7 +52,7 @@ public class DocumentationFolder
 		MarkdownFile? index = null;
 		foreach (var tocItem in toc)
 		{
-			if (tocItem is TocFile file)
+			if (tocItem is FileReference file)
 			{
 				if (!lookup.TryGetValue(file.Path, out var d) || d is not MarkdownFile md)
 					continue;
@@ -76,14 +73,14 @@ public class DocumentationFolder
 				if (file.Path.EndsWith("index.md") && d is MarkdownFile i)
 					index ??= i;
 			}
-			else if (tocItem is TocFolder folder)
+			else if (tocItem is FolderReference folder)
 			{
 				var children = folder.Children;
 				if (children.Count == 0
 					&& folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
 					children = documentationFiles
-						.Select(d => new TocFile(d.RelativePath, true, []))
+						.Select(d => new FileReference(d.RelativePath, true, []))
 						.ToArray();
 				}
 

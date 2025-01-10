@@ -69,6 +69,9 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
+  # nested TOCs are only allowed from docset.yml
+  # to prevent them from being nested deeply arbitrarily
+  - toc: development
   - folder: testing
     children:
       - file: index.md

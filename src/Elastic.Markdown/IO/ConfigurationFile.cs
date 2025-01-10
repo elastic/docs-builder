@@ -15,6 +15,7 @@ public record ConfigurationFile : DocumentationFile
 	private readonly IFileInfo _sourceFile;
 	private readonly IDirectoryInfo _rootPath;
 	private readonly BuildContext _context;
+	private readonly int _depth;
 	public string? Project { get; }
 	public Glob[] Exclude { get; } = [];
 
@@ -28,12 +29,13 @@ public record ConfigurationFile : DocumentationFile
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
-	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context)
+	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context, int depth = 0, string parentPath = "")
 		: base(sourceFile, rootPath)
 	{
 		_sourceFile = sourceFile;
 		_rootPath = rootPath;
 		_context = context;
+		_depth = depth;
 		if (!sourceFile.Exists)
 		{
 			Project = "unknown";
@@ -81,7 +83,13 @@ public record ConfigurationFile : DocumentationFile
 							ExternalLinkHosts.Add(host);
 						break;
 					case "toc":
-						var entries = ReadChildren(entry, string.Empty);
+						if (depth > 1)
+						{
+							EmitError($"toc.yml files may only be linked from docset.yml", entry.Key);
+							break;
+						}
+
+						var entries = ReadChildren(entry, parentPath);
 
 						TableOfContents = entries;
 						break;
@@ -115,20 +123,19 @@ public record ConfigurationFile : DocumentationFile
 			return entries;
 		}
 
-		foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
-		{
-			var tocItem = ReadChild(tocEntry, parentPath);
-			if (tocItem is not null)
-				entries.Add(tocItem);
-		}
+		entries.AddRange(
+			sequence.Children.OfType<YamlMappingNode>()
+				.SelectMany(tocEntry => ReadChild(tocEntry, parentPath) ?? [])
+		);
 
 		return entries;
 	}
 
-	private ITocItem? ReadChild(YamlMappingNode tocEntry, string parentPath)
+	private IEnumerable<ITocItem>? ReadChild(YamlMappingNode tocEntry, string parentPath)
 	{
 		string? file = null;
 		string? folder = null;
+		ConfigurationFile? toc = null;
 		var fileFound = false;
 		var folderFound = false;
 		IReadOnlyCollection<ITocItem>? children = null;
@@ -137,6 +144,9 @@ public record ConfigurationFile : DocumentationFile
 			var key = ((YamlScalarNode)entry.Key).Value;
 			switch (key)
 			{
+				case "toc":
+					toc = ReadNestedToc(entry, parentPath, out fileFound);
+					break;
 				case "file":
 					file = ReadFile(entry, parentPath, out fileFound);
 					break;
@@ -150,15 +160,23 @@ public record ConfigurationFile : DocumentationFile
 			}
 		}
 
+		if (toc is not null)
+		{
+			foreach (var f in toc.Files)
+				Files.Add(f);
+
+			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, toc.TableOfContents)];
+		}
+
 		if (file is not null)
-			return new TocFile($"{parentPath}/{file}".TrimStart('/'), fileFound, children ?? []);
+			return [new FileReference($"{parentPath}/{file}".TrimStart('/'), fileFound, children ?? [])];
 
 		if (folder is not null)
 		{
 			if (children is null)
 				ImplicitFolders.Add(parentPath.TrimStart('/'));
 
-			return new TocFolder($"{parentPath}".TrimStart('/'), folderFound, children ?? []);
+			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, children ?? [])];
 		}
 
 		return null;
@@ -225,6 +243,29 @@ public record ConfigurationFile : DocumentationFile
 
 		return file;
 	}
+
+	private ConfigurationFile? ReadNestedToc(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	{
+		found = false;
+		var tocPath = ReadString(entry);
+		if (tocPath is null)
+		{
+			EmitError($"Empty toc: reference", entry.Key);
+			return null;
+		}
+
+		var rootPath = _context.ReadFileSystem.DirectoryInfo.New(Path.Combine(_rootPath.FullName, tocPath));
+		var path = Path.Combine(rootPath.FullName, "toc.yml");
+		var source = _context.ReadFileSystem.FileInfo.New(path);
+		if (!source.Exists)
+			EmitError($"Nested toc: '{source.FullName}' does not exist", entry.Key);
+		else
+			found = true;
+
+		var nestedConfiguration = new ConfigurationFile(source, _rootPath, _context, _depth + 1, tocPath);
+		return nestedConfiguration;
+	}
+
 
 	private string? ReadString(KeyValuePair<YamlNode, YamlNode> entry)
 	{
