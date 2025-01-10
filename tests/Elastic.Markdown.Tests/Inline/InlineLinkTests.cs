@@ -65,6 +65,12 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(0);
+	}
 }
 
 public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
@@ -82,6 +88,12 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(0);
+	}
 }
 
 public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
@@ -101,6 +113,12 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(0);
+	}
 }
 
 public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
@@ -126,13 +144,14 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
-		Collector.CrossLinks.Should().ContainKey("kibana://index.md");
+		Collector.CrossLinks.Should().Contain("kibana://index.md");
 	}
 }
 
 public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	"""
-	[test](kibana://index.md)
+
+	Go to [test](kibana://index.md)
 	"""
 )
 {
@@ -141,7 +160,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 		// language=html
 		Html.Should().Contain(
 			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
-			"""<p><a href="kibana://index.html">test</a></p>"""
+			"""<p>Go to <a href="kibana://index.html">test</a></p>"""
 		);
 
 	[Fact]
@@ -151,39 +170,6 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void EmitsCrossLink()
 	{
 		Collector.CrossLinks.Should().HaveCount(1);
-		Collector.CrossLinks.Should().ContainKey("kibana://index.md");
+		Collector.CrossLinks.Should().Contain("kibana://index.md");
 	}
 }
-
-public class DuplicateCrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
-	"""
-	[a](kibana://index.md)
-	[b](kibana://index.md)
-	[c](elasticsearch://index.md)
-	"""
-)
-{
-	[Fact]
-	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
-			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
-			"""
-			<p><a href="kibana://index.html">a</a><br />
-			<a href="kibana://index.html">b</a><br />
-			<a href="elasticsearch://index.html">c</a></p>
-			"""
-		);
-
-	[Fact]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
-
-	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(2);
-		Collector.CrossLinks.Should().ContainKey("kibana://index.md");
-		Collector.CrossLinks.Should().ContainKey("elasticsearch://index.md");
-	}
-}
-
