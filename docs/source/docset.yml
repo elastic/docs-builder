@@ -77,3 +77,4 @@ toc:
       - file: index.md
       - file: req.md
       - folder: nested
+      - file: external-links.md

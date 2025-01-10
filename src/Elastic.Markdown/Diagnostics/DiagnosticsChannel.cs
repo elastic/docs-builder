@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -86,6 +87,8 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 
 	public HashSet<string> OffendingFiles { get; } = new();
 
+	public ConcurrentDictionary<string, bool> ExternalLinks { get; } = new();
+
 	public Task StartAsync(Cancel ctx)
 	{
 		if (_started is not null)
@@ -140,6 +143,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 		await Channel.Reader.Completion;
 	}
 
+	public void EmitExternalLink(string link) => ExternalLinks.TryAdd(link, true);
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{

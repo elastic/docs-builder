@@ -83,3 +83,74 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
+
+public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[test][test]
+
+	[test]: testing/req.md
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="testing/req.html">test</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class ExternalLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[test][test]
+
+	[test]: kibana://index.md
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="kibana://index.html">test</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsExternalLink()
+	{
+		Collector.ExternalLinks.Should().HaveCount(1);
+		Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
+	}
+}
+
+public class ExternalLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[test](kibana://index.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="kibana://index.html">test</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsExternalLink()
+	{
+		Collector.ExternalLinks.Should().HaveCount(1);
+		Collector.ExternalLinks.Should().ContainKey("kibana://index.md");
+	}
+}
+
+
