@@ -4,9 +4,8 @@ title: Migration Guide
 
 How to migrate content from Asciidoc to V3.
 
-1. Clone https://github.com/elastic/adoc-to-md
-2. Run the migration tool
-3. Copy the output to the appropriate directory in https://github.com/elastic/docs-content
-4. Update the `docset.yml` file to reflect the new IA of the content set
-5. Build your changes with https://github.com/elastic/docs-builder
-6. Open a PR and merge your changes
+## Migration tooling
+
+Use the [adoc-to-md](https://github.com/elastic/adoc-to-md) conversion tool to migrate content sets from Asciidoc syntax to docs-builder syntax. Instructions to use the tool are in the readme file.
+
+After running the migration tool, you can move, and manipulate files while viewing a live preview of the content with docs-builder.
