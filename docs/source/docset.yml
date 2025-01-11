@@ -31,12 +31,21 @@ toc:
   - folder: migration
     children:
       - file: index.md
-      - file: guide.md
-      - file: file-structure.md
-      - file: mapping.md
-      - file: tabs.md
-      - file: gh-action.md
-      - file: codeowner.md
+      - folder: freeze
+        children:
+          - file: index.md
+          - file: codeowner.md
+          - file: gh-action.md
+      - file: syntax.md
+      - file: ia.md
+      - file: versioning.md
+      - file: engineering.md
+      - folder: guide
+        children:
+          - file: index.md
+          - file: file-structure.md
+          - file: mapping.md
+          - file: migration-scripts.md
   - folder: configure
     children:
       - file: index.md

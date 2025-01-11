@@ -6,11 +6,11 @@ Elastic Docs V3 is our next-generation documentation platform designed to improv
 
 **What do you want to do today?**
 
-* [Contribute to Elastic documentation](/contribute/index.html)
-* [Learn about migration to Elastic Docs V3](/migration/index.html)
-* [Configure content sets in V3](/configure/index.html)
-* [Learn about V3 syntax](/syntax/index.html)
-* [Contribute to V3 (developer guide)](/development/index.html)
+* [Contribute to Elastic documentation](./contribute/index.html)
+* [Learn about migration to Elastic Docs V3](./migration/index.html)
+* [Configure content sets in V3](./configure/index.html)
+* [Learn about V3 syntax](./syntax/index.html)
+* [Contribute to V3 (developer guide)](./development/index.md)
 
 ## About this repo
 

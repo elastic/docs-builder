@@ -1,14 +1,19 @@
 ---
-title: HTML to Markdown Tab Converter
+title: Other migration scripts
+navigation_title: Other scripts
 ---
 
-### HTML to Markdown Tab Converter
+:::{tip}
+This page probably doesn't apply to you 😊
+:::
+
+## HTML to Markdown Tab Converter
 
 The tab converter script is used to convert HTML tabs into Markdown tabs within documentation files. The script scans through specified directories, finds all Markdown (`.md`) files, and replaces any HTML-based tab structures with their Markdown equivalents.
 
 **Note**: Running this script may or may not be necessary depending on the evolution of our migration tool. Use it as needed based on the current state of the documentation.
 
-#### How to Run the Script
+### How to Run the Script
 
 To execute the script and convert HTML tabs to Markdown tabs, follow these steps:
 
@@ -36,7 +41,7 @@ To execute the script and convert HTML tabs to Markdown tabs, follow these steps
 
    This command processes all `.md` files within the `content/docs/` directory relative to the script's location.
 
-#### Important Notes
+### Important Notes
 
 - **Backup Your Files**: Before running the script, it's recommended to back up your Markdown files or ensure they are under version control (e.g., in a Git repository). This allows you to revert changes if necessary.
 - **Verify Changes**: After running the script, review the modified files to ensure that the tabs have been converted correctly.

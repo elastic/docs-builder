@@ -1,5 +1,5 @@
 ---
-title: Documentation freeze CODEOWNERS
+title: Codeowner
 ---
 
 This document lists the CODEOWNERS configuration used to enforce documentation freezes across Elastic repositories. During a documentation freeze, the `@docs-freeze-team` must approve any pull requests that modify documentation files (`.asciidoc`) before they can be merged. This prevents unintended documentation changes during crucial periods such as releases.
@@ -7,7 +7,7 @@ This document lists the CODEOWNERS configuration used to enforce documentation f
 To regenerate this list, run the following commands from the repository root:
 
 ```sh
-cd docs/source/migration/scripts/codeowner-gen
+cd docs/source/migration/freeze/scripts/codeowner-gen
 python3 codeowner.py
 ```
 

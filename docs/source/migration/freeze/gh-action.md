@@ -1,5 +1,5 @@
 ---
-title: Documentation Freeze GH Action
+title: GH Action
 ---
 
 ## Overview
