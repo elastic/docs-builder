@@ -6,7 +6,7 @@ navigation_title: Migration
 We are ready to migrate our documentation to our new build system, [elastic/docs-builder](https://github.com/elastic/docs-builder)!
 
 :::{important}
-We will enforce a [Documentation Freeze](./freeze/index.html) while we migration docs between our two build systems.
+We will enforce a [Documentation Freeze](./freeze/index.md) while we migration docs between our two build systems.
 :::
 
 Migrating to Elastic Docs V3 is more than just moving to a new documentation build system. This migration also includes:
