@@ -23,6 +23,11 @@ subs:
   a-global-variable: "This was defined in docset.yml"
 toc:
   - file: index.md
+  - folder: contribute
+    children:
+      - file: index.md
+      - file: locally.md
+      - file: on-the-web.md
   - folder: migration
     children:
       - file: index.md
@@ -30,12 +35,8 @@ toc:
       - file: file-structure.md
       - file: mapping.md
       - file: tabs.md
+      - file: gh-action.md
       - file: codeowner.md
-  - folder: contribute
-    children:
-      - file: index.md
-      - file: change-browser.md
-      - file: change-local.md
   - folder: configure
     children:
       - file: index.md

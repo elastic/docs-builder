@@ -1,22 +1,20 @@
 ---
-title: Build the docs locally
+title: Contribute locally
 ---
 
-1. Install dependencies
-2. Clone repositories
-3. Make changes
-4. Open a Pull Request
-5. Work with CI
-6. Get approvals and merge
-7. View your changes live on elastic.co
+Follow these steps to contribute to Elastic docs.
+* [Step 1: Install `docs-builder`](#step-one)
+* [Step 2: Clone the `docs-content` repository](#step-two)
+* [Step 3: Serve the Documentation](#step-three)
+* [Step 4: Open a PR](#step-three)
 
-Follow these instructions to get started with docs-builder on your machine.
+## Step 1: Install `docs-builder` [#step-one]
 
 ::::{tab-set}
 
 :::{tab-item} macOS
 
-### macOS Installation
+### macOS
 
 1. **Download the Binary:**
    Download the latest macOS binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
@@ -40,7 +38,7 @@ Follow these instructions to get started with docs-builder on your machine.
 
 :::{tab-item} Windows
 
-### Windows Installation
+### Windows
 
 1. **Download the Binary:**
    Download the latest Windows binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
@@ -64,7 +62,7 @@ Follow these instructions to get started with docs-builder on your machine.
 
 :::{tab-item} Linux
 
-### Linux Installation
+### Linux
 
 1. **Download the Binary:**
    Download the latest Linux binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
@@ -88,14 +86,14 @@ Follow these instructions to get started with docs-builder on your machine.
 
 ::::
 
-### Clone the `docs-content` Repository
+## Clone the `docs-content` Repository  [#step-two]
 
 Clone the `docs-content` repository to a directory of your choice:
 ```sh
 git clone https://github.com/elastic/docs-content.git
 ```
 
-### Serve the Documentation
+## Serve the Documentation [#step-three]
 
 1. **Navigate to the cloned repository:**
    ```sh
@@ -113,3 +111,11 @@ git clone https://github.com/elastic/docs-content.git
    ```
 
 Now you should be able to view the documentation locally by navigating to http://localhost:5000.
+
+## Step 4: Open a PR [#step-four]
+
+Open a PR. Good luck.
+
+## Step 5: View on elastic.co/docs
+
+soon...

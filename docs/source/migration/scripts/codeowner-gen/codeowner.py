@@ -25,7 +25,7 @@ def traverse_sections(sections, repo_paths):
                 # Remove trailing slashes and replace double slashes with single slashes
                 clean_path = path.rstrip('/').replace('//', '/')
                 # Format the path for CODEOWNERS
-                formatted_path = f"{clean_path}/*.asciidoc @docs-freeze-team"
+                formatted_path = f"{clean_path}/*.asciidoc @elastic/docs-freeze-team"
                 repo_paths[repo_name].add(formatted_path)
 
         # If there are nested sections, traverse them recursively

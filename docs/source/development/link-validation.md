@@ -6,6 +6,7 @@ title: Link validation
 * Infrastructure lives in [docs-infra](https://github.com/elastic/docs-infra).
 
 The mermaid chart below is currently unsupported.
+
 ```
 flowchart TD
     subgraph **Repository Build Process**

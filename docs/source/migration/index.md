@@ -16,7 +16,7 @@ To make the transition to Elastic Docs v3 as smooth as possible, we’ve establi
 * Open an issue in [elastic/docs-content](https://github.com/elastic/docs-content/issues), including details about the documentation requirements, links to resources, and drafts of documentation in GDocs.
 * Post in [#docs](https://elastic.slack.com/archives/C0JF80CJZ) for emergency documentation requests.
 
-During the documentation freeze, maintaining consistency and avoiding conflicts is key. To prevent documentation changes from merging during the documentation freeze, [codeowners](./codeowner.md) are being added to /docs directories for public-facing documentation in all relevant repositories.
+During the documentation freeze, maintaining consistency and avoiding conflicts is key. To prevent documentation changes from merging during the documentation freeze, [CODEOWNERS](./codeowner.md) and a [GH Action](./gh-action.md) are being added to /docs directories for public-facing documentation in all relevant repositories.
 
 ## Improved information architecture
 
