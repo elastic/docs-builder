@@ -4,6 +4,7 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Discovery;
 
 namespace Elastic.Markdown;
 

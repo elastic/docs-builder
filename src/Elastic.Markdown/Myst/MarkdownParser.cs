@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;

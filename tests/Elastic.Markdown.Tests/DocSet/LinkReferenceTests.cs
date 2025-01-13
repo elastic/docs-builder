@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Discovery;
+using Elastic.Markdown.IO.State;
 using FluentAssertions;
 using Xunit.Abstractions;
 

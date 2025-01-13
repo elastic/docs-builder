@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using SoftCircuits.IniFileParser;
 
-namespace Elastic.Markdown.IO;
+namespace Elastic.Markdown.IO.Discovery;
 
 public record GitCheckoutInformation
 {

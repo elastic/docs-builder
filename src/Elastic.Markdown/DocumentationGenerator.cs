@@ -5,6 +5,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 

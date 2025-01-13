@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
+
+namespace Elastic.Markdown.IO.Navigation;
 
 public interface INavigationItem
 {

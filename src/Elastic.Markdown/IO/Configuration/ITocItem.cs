@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Markdown.IO;
+namespace Elastic.Markdown.IO.Configuration;
 
 public interface ITocItem;
 

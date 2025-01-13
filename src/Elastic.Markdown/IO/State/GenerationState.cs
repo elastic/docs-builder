@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Discovery;
 
-namespace Elastic.Markdown;
+namespace Elastic.Markdown.IO.State;
 
 public record GenerationState
 {

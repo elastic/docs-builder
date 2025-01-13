@@ -8,7 +8,7 @@ using Elastic.Markdown.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace Elastic.Markdown.IO;
+namespace Elastic.Markdown.IO.Configuration;
 
 public record ConfigurationFile : DocumentationFile
 {
