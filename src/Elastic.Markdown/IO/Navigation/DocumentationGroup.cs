@@ -4,32 +4,46 @@
 
 namespace Elastic.Markdown.IO;
 
-public class DocumentationFolder
+public interface INavigationItem
+{
+	int Order { get; }
+	int Depth { get; }
+}
+
+public record GroupNavigation(int Order, int Depth, DocumentationGroup Group) : INavigationItem;
+public record FileNavigation(int Order, int Depth, MarkdownFile File) : INavigationItem;
+
+
+public class DocumentationGroup
 {
 	public MarkdownFile? Index { get; set; }
 
-	public List<MarkdownFile> FilesInOrder { get; }
-	public List<DocumentationFolder> GroupsInOrder { get; }
+	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
-	public required DocumentationFolder? Parent { get; init; }
+	private IReadOnlyCollection<DocumentationGroup> GroupsInOrder { get; }
+
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+
+	public required DocumentationGroup? Parent { get; init; }
 
 	private HashSet<MarkdownFile> OwnFiles { get; }
 
-	public int Level { get; }
+	public int Depth { get; }
 
-	public DocumentationFolder(
+	public DocumentationGroup(
 		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
-		int level = 0,
+		int depth = 0,
 		MarkdownFile? index = null
 	)
 	{
-		Level = level;
-		var foundIndex = ProcessTocItems(toc, lookup, folderLookup, level, out var groupsInOrder, out var filesInOrder);
+		Depth = depth;
+		var foundIndex = ProcessTocItems(toc, lookup, folderLookup, depth, out var groups, out var files, out var navigationItems);
 
-		GroupsInOrder = groupsInOrder;
-		FilesInOrder = filesInOrder;
+		GroupsInOrder = groups;
+		FilesInOrder = files;
+		NavigationItems = navigationItems;
 		Index = index ?? foundIndex;
 
 		if (Index is not null)
@@ -42,15 +56,17 @@ public class DocumentationFolder
 		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
-		int level,
-		out List<DocumentationFolder> groupsInOrder,
-		out List<MarkdownFile> filesInOrder
+		int depth,
+		out List<DocumentationGroup> groups,
+		out List<MarkdownFile> files,
+		out List<INavigationItem> navigationItems
 	)
 	{
-		groupsInOrder = [];
-		filesInOrder = [];
-		MarkdownFile? index = null;
-		foreach (var tocItem in toc)
+		groups = [];
+		navigationItems = [];
+		files = [];
+		MarkdownFile? indexFile = null;
+		foreach (var (tocItem, index) in toc.Select((t, i) => (t, i)))
 		{
 			if (tocItem is FileReference file)
 			{
@@ -61,17 +77,19 @@ public class DocumentationFolder
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
-					var group = new DocumentationFolder(file.Children, lookup, folderLookup, level + 1, virtualIndex)
+					var group = new DocumentationGroup(file.Children, lookup, folderLookup, depth + 1, virtualIndex)
 					{
 						Parent = this
 					};
-					groupsInOrder.Add(group);
+					groups.Add(group);
+					navigationItems.Add(new GroupNavigation(index, depth, group));
 					continue;
 				}
 
-				filesInOrder.Add(md);
+				files.Add(md);
+				navigationItems.Add(new FileNavigation(index, depth, md));
 				if (file.Path.EndsWith("index.md") && d is MarkdownFile i)
-					index ??= i;
+					indexFile ??= i;
 			}
 			else if (tocItem is FolderReference folder)
 			{
@@ -84,15 +102,16 @@ public class DocumentationFolder
 						.ToArray();
 				}
 
-				var group = new DocumentationFolder(children, lookup, folderLookup, level + 1)
+				var group = new DocumentationGroup(children, lookup, folderLookup, depth + 1)
 				{
 					Parent = this
 				};
-				groupsInOrder.Add(group);
+				groups.Add(group);
+				navigationItems.Add(new GroupNavigation(index, depth, group));
 			}
 		}
 
-		return index ?? filesInOrder.FirstOrDefault();
+		return indexFile ?? files.FirstOrDefault();
 	}
 
 	public bool HoldsCurrent(MarkdownFile current) =>

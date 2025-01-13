@@ -14,6 +14,7 @@ using Slugify;
 
 namespace Elastic.Markdown.IO;
 
+
 public record MarkdownFile : DocumentationFile
 {
 	private readonly SlugHelper _slugHelper = new();
@@ -31,7 +32,7 @@ public record MarkdownFile : DocumentationFile
 
 	private DiagnosticsCollector Collector { get; }
 
-	public DocumentationFolder? Parent
+	public DocumentationGroup? Parent
 	{
 		get => FileName == "index.md" ? _parent?.Parent : _parent;
 		set => _parent = value;
@@ -59,7 +60,7 @@ public record MarkdownFile : DocumentationFile
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
 	private bool _instructionsParsed;
-	private DocumentationFolder? _parent;
+	private DocumentationGroup? _parent;
 
 	public MarkdownFile[] YieldParents()
 	{

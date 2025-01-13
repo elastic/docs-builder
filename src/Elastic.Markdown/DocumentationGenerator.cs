@@ -4,30 +4,11 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown;
-
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(GenerationState))]
-[JsonSerializable(typeof(LinkReference))]
-[JsonSerializable(typeof(GitConfiguration))]
-internal partial class SourceGenerationContext : JsonSerializerContext;
-
-public record GenerationState
-{
-	[JsonPropertyName("last_seen_changes")]
-	public required DateTimeOffset LastSeenChanges { get; init; }
-
-	[JsonPropertyName("invalid_files")]
-	public required string[] InvalidFiles { get; init; } = [];
-
-	[JsonPropertyName("git")]
-	public required GitConfiguration Git { get; init; }
-}
 
 public class DocumentationGenerator
 {

@@ -1,19 +1,27 @@
+@using Elastic.Markdown.IO
 @inherits RazorSlice<NavigationTreeItem>
-@foreach (var file in Model.SubTree.FilesInOrder)
+@foreach (var item in Model.SubTree.NavigationItems)
 {
-	var current = file == Model.CurrentDocument ? " current" : string.Empty;
-<li class="toctree-l@(Model.SubTree.Level + 1)@current"><a class="@(current.Trim()) reference internal" href="@file.Url">@file.NavigationTitle</a></li>
-}
-@foreach (var g in Model.SubTree.GroupsInOrder)
-{
-	var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
-	var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
-<li class="toctree-l@(g.Level)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.FilesInOrder.Count > 0 || g.GroupsInOrder.Count > 0) {<ul class="@(current.Trim())">@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTreeNav.Create(new NavigationTreeItem
-		{
-			Level = g.Level,
-			CurrentDocument = Model.CurrentDocument,
-			SubTree = g
-		}))</ul>
-}
-</li>
+	if (item is FileNavigation file)
+	{
+		var f = file.File;
+		var current = f == Model.CurrentDocument ? " current" : string.Empty;
+		<li class="toctree-l@(Model.SubTree.Depth + 1)@current"><a class="@(current.Trim()) reference internal" href="@f.Url">@f.NavigationTitle</a></li>
+	}
+	else if (item is GroupNavigation folder)
+	{
+		var g = folder.Group;
+		var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
+		var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
+		<li class="toctree-l@(g.Depth)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.NavigationItems.Count > 0) {<ul class="@(current.Trim())">
+				                                                                                                                                      @await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+				                                                                                                                                      {
+					                                                                                                                                      Level = g.Depth,
+					                                                                                                                                      CurrentDocument = Model.CurrentDocument,
+					                                                                                                                                      SubTree = g
+				                                                                                                                                      }))
+			                                                                                                                                      </ul>
+			}
+		</li>
+	}
 }

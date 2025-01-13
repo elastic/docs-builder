@@ -19,12 +19,12 @@ public class LinkReferenceTests(ITestOutputHelper output) : NavigationTestsBase(
 	}
 }
 
-public class GitConfigurationTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {
 	[Fact]
 	public void Create()
 	{
-		var git = GitConfiguration.Create(ReadFileSystem);
+		var git = GitCheckoutInformation.Create(ReadFileSystem);
 
 		git.Should().NotBeNull();
 		git!.Branch.Should().NotBeNullOrWhiteSpace();

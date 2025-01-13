@@ -9,7 +9,7 @@ namespace Elastic.Markdown.IO;
 public record LinkReference
 {
 	[JsonPropertyName("origin")]
-	public required GitConfiguration Origin { get; init; }
+	public required GitCheckoutInformation Origin { get; init; }
 
 	[JsonPropertyName("url_path_prefix")]
 	public required string? UrlPathPrefix { get; init; }
