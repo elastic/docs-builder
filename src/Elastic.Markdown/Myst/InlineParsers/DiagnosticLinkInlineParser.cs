@@ -47,13 +47,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 
 		var url = link.Url;
-		var uri = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u : null;
 		var line = link.Line + 1;
 		var column = link.Column;
 		var length = url?.Length ?? 1;
 
-		if (IsCrossLink(uri))
-			processor.GetContext().Build.Collector.EmitCrossLink(url!);
 
 		var context = processor.GetContext();
 		if (processor.GetContext().SkipValidation)
@@ -64,6 +61,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			processor.EmitWarning(line, column, length, $"Found empty url");
 			return match;
 		}
+
+		var uri = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u : null;
+
+		if (IsCrossLink(uri))
+			processor.GetContext().Build.Collector.EmitCrossLink(url!);
 
 		if (uri != null && uri.Scheme.StartsWith("http"))
 		{
