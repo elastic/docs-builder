@@ -45,7 +45,6 @@ toc:
           - file: index.md
           - file: file-structure.md
           - file: mapping.md
-          - file: migration-scripts.md
   - folder: configure
     children:
       - file: index.md
