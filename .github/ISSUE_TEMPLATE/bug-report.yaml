@@ -1,0 +1,38 @@
+name: "Bug Report"
+description: "File a bug report."
+labels: ["bug"]
+projects: ["elastic/1625"]
+body:
+  - type: "textarea"
+    id: description
+    attributes:
+      label: "Describe the bug"
+      description: "A clear and concise description of what the bug is. If applicable, add screenshots to help explain your problem."
+    validations:
+      required: true
+  - type: "textarea"
+    id: expected
+    attributes:
+      label: "Expected behavior"
+      description: "A clear and concise description of what you expected to happen."
+    validations:
+      required: true
+  - type: "textarea"
+    id: repro
+    attributes:
+      label: "Steps to reproduce"
+      description: "If relevant, provide steps to reproduce the issue."
+    validations:
+      required: false
+  - type: "checkboxes"
+    id: tooling
+    attributes:
+      label: "Tooling"
+      description: "Select the tool this bug relates to."
+      options:
+      - label: "docs-builder"
+        required: false
+      - label: "migration tooling"
+        required: false
+      - label: "I'm not sure"
+        required: false

@@ -15,21 +15,36 @@ external_hosts:
   - yarnpkg.com
   - react.dev
   - palletsprojects.com
+  - google.com
+  - checkvist.com
 exclude:
   - '_*.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
 toc:
   - file: index.md
-  - folder: migration
-    children:
-      - file: index.md
-      - file: file-structure.md
   - folder: contribute
     children:
       - file: index.md
-      - file: change-browser.md
-      - file: change-local.md
+      - file: locally.md
+      - file: on-the-web.md
+  - folder: migration
+    children:
+      - file: index.md
+      - folder: freeze
+        children:
+          - file: index.md
+          - file: codeowner.md
+          - file: gh-action.md
+      - file: syntax.md
+      - file: ia.md
+      - file: versioning.md
+      - file: engineering.md
+      - folder: guide
+        children:
+          - file: index.md
+          - file: file-structure.md
+          - file: mapping.md
   - folder: configure
     children:
       - file: index.md

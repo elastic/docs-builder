@@ -26,7 +26,7 @@ in the APM docs:
 * **New filename**: The page ID determines the filename of the migrated MD file:
 % `data-model-spans.mdx`. This file will be in the root directory of the directory containing the content for the `en/apm/guide` book.
 * **New URL**: The new URL for this page in the new docs system will be `xxxx`.
-*
+
 Because a single AsciiDoc file can contain the content for multiple pages (or content
 displayed on a single page could be spread across multiple AsciiDoc files), the `.asciidoc`
 filename can be different than the `.md` filename. However, you should be able to locate
