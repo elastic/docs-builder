@@ -19,6 +19,10 @@ on:
       - synchronize
       - opened
       - reopened
+    branches:
+      - main
+      - master
+      - "9.0"
 
 jobs:
   comment-on-asciidoc-change:

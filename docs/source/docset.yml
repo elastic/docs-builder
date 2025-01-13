@@ -34,7 +34,6 @@ toc:
       - folder: freeze
         children:
           - file: index.md
-          - file: codeowner.md
           - file: gh-action.md
       - file: syntax.md
       - file: ia.md
