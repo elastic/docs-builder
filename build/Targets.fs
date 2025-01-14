@@ -57,6 +57,7 @@ let private pristineCheck (arguments:ParseResults<Build>) =
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
     exec { run "dotnet" "publish" "src/docs-generator/docs-generator.csproj" }
+    exec { run "dotnet" "publish" "src/docs-assembler/docs-assembler.csproj" }
     Zip.zip
         ".artifacts/publish/docs-builder/release"
         $"docs-builder-%s{OS.Name}-{OS.Arch}.zip"
@@ -103,6 +104,7 @@ let private publishContainers _ =
         exec { run "dotnet" (args @ registry) }
     createImage "docs-builder"
     createImage "docs-generator"
+    createImage "docs-assembler"
 
 let private runTests _ =
     exec {

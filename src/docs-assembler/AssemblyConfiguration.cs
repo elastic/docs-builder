@@ -4,7 +4,7 @@
 
 using YamlDotNet.Serialization;
 
-namespace Documentation.Builder;
+namespace Documentation.Assembler;
 
 [YamlStaticContext]
 [YamlSerializable(typeof(AssemblyConfiguration))]

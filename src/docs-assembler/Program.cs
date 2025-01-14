@@ -3,8 +3,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using ConsoleAppFramework;
+using Documentation.Assembler;
 using Documentation.Assembler.Cli;
-using Documentation.Builder;
 using Elastic.Markdown.IO;
 using ProcNet;
 using ProcNet.Std;
@@ -59,14 +59,13 @@ app.Add("list", async Task (CancellationToken ctx) =>{
 	{
 		var checkoutFolder = Path.Combine(assemblyPath, d.Name);
 
-		var consoleOut = new NoopConsoleLineHandler();
-		var capture = Proc.StartRedirected(
+		var capture = Proc.Start(
 			new StartArguments("git", "rev-parse", "--abbrev-ref", "HEAD")
 			{
 				WorkingDirectory = checkoutFolder
 			}
-			, consoleOut);
-		dictionary.Add(d.Name, consoleOut.Lines.FirstOrDefault()?.Line ?? "unknown");
+		);
+		dictionary.Add(d.Name, capture.ConsoleOut.FirstOrDefault()?.Line ?? "unknown");
 	}
 	foreach(var kv in dictionary.OrderBy(kv => kv.Value))
 		Console.WriteLine($"-> {kv.Key}\tbranch: {kv.Value}");
@@ -76,20 +75,14 @@ app.Add("list", async Task (CancellationToken ctx) =>{
 
 await app.RunAsync(args);
 
-public class ConsoleLineHandler(string prefix) : IConsoleLineHandler
+namespace Documentation.Assembler
 {
-	public void Handle(LineOut lineOut) => lineOut.CharsOrString(
-		r => Console.Write(prefix + ": " + r),
-		l => Console.WriteLine(prefix + ": " + l));
+	public class ConsoleLineHandler(string prefix) : IConsoleLineHandler
+	{
+		public void Handle(LineOut lineOut) => lineOut.CharsOrString(
+			r => Console.Write(prefix + ": " + r),
+			l => Console.WriteLine(prefix + ": " + l));
 
-	public void Handle(Exception e) {}
-}
-
-public class NoopConsoleLineHandler : IConsoleLineHandler
-{
-	public List<LineOut> Lines { get; } = new();
-
-	public void Handle(LineOut lineOut) => Lines.Add(lineOut);
-
-	public void Handle(Exception e) {}
+		public void Handle(Exception e) {}
+	}
 }

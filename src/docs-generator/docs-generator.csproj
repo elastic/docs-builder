@@ -6,16 +6,13 @@
     <AssemblyName>docs-generator</AssemblyName>
     <RootNamespace>Documentation.Generator</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+
     <PublishAot>false</PublishAot>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
 
     <IsPublishable>true</IsPublishable>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
-
-    <!-- attempt fix for: https://github.com/dotnet/sdk-container-builds/issues/559
-        Fixed in upcomming .NET 9
-     -->
   </PropertyGroup>
 
   <ItemGroup>
