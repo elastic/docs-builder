@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -102,6 +103,24 @@ public record MarkdownFile : DocumentationFile
 			YamlFrontMatter = ReadYamlFrontMatter(document, raw);
 			Title = YamlFrontMatter.Title;
 			NavigationTitle = YamlFrontMatter.NavigationTitle;
+			if (!string.IsNullOrEmpty(NavigationTitle))
+			{
+				var props = MarkdownParser.Configuration.Substitutions;
+				var properties = YamlFrontMatter.Properties;
+				if (properties is { Count: >= 0 } local)
+				{
+					var allProperties = new Dictionary<string, string>(local);
+					foreach (var (key, value) in props)
+						allProperties[key] = value;
+					if (NavigationTitle.AsSpan().ReplaceSubstitutions(allProperties, out var replacement))
+						NavigationTitle = replacement;
+				}
+				else
+				{
+					if (NavigationTitle.AsSpan().ReplaceSubstitutions(properties, out var replacement))
+						NavigationTitle = replacement;
+				}
+			}
 		}
 		else
 		{
