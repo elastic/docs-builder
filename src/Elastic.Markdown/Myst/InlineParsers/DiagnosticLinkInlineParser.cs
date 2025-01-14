@@ -119,7 +119,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				processor.EmitWarning(line,
 					column,
 					length,
-					$"Can not create an auto title link to '{file.FullName}' however this file can not be resolved.");
+					$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
 			}
 
 			var title = markdown?.Title;
