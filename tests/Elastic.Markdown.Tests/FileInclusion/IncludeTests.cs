@@ -114,3 +114,70 @@ public class IncludeRequiresArgument(ITestOutputHelper output) : DirectiveTest<I
 			.OnlyContain(d => d.Message.Contains("include requires an argument."));
 	}
 }
+
+public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+```{include} test.md
+```
+"""
+)
+{
+
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=markdown
+		var inclusion = "*Hello world*";
+		fileSystem.AddFile(@"docs/source/test.md", inclusion);
+	}
+
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void IncludesNothing() => Html.Should().Be("");
+
+	[Fact]
+	public void EmitsError()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
+		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
+		Collector.Diagnostics.Should()
+			.OnlyContain(d => d.Message.Contains("only supports including snippets from `_snippet` folders."));
+	}
+}
+
+
+public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+```{include} _snippets/test.md
+```
+"""
+)
+{
+
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=markdown
+		var inclusion =
+"""
+:::{include} test.md
+:::
+""";
+		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+	}
+
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void IncludesNothing() => Html.Should().Be("");
+
+	[Fact]
+	public void EmitsError()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
+		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
+		Collector.Diagnostics.Should()
+			.OnlyContain(d => d.Message.Contains("cyclical include detected"));
+	}
+}

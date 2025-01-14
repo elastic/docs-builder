@@ -10,15 +10,23 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class LinkReferenceTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class LinkReferenceTests : NavigationTestsBase
 {
-	[Fact]
-	public void Create()
-	{
-		var reference = LinkReference.Create(Set);
+	public LinkReferenceTests(ITestOutputHelper output) : base(output) => Reference = LinkReference.Create(Set);
 
-		reference.Should().NotBeNull();
-	}
+	private LinkReference Reference { get; }
+
+	[Fact]
+	public void ShouldNotBeNull() =>
+		Reference.Should().NotBeNull();
+
+	[Fact]
+	public void EmitsLinks() =>
+		Reference.Links.Should().NotBeNullOrEmpty();
+
+	[Fact]
+	public void ShouldNotIncludeSnippets() =>
+		Reference.Links.Should().NotContain(l => l.Contains("_snippets/"));
 }
 
 public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)
@@ -34,5 +42,8 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 		git.Branch.Should().NotContain(git.Ref);
 		git.Ref.Should().NotBeNullOrWhiteSpace();
 		git.Remote.Should().NotBeNullOrWhiteSpace();
+		git.Remote.Should().NotContain("unknown");
+		git.RepositoryName.Should().NotContain(".git");
+		git.Remote.Should().NotContain(".git");
 	}
 }

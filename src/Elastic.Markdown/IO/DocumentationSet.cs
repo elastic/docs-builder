@@ -20,6 +20,8 @@ public class DocumentationSet
 	public IDirectoryInfo SourcePath { get; }
 	public IDirectoryInfo OutputPath { get; }
 
+	public string RelativeSourcePath { get; }
+
 	public DateTimeOffset LastWrite { get; }
 
 	public ConfigurationFile Configuration { get; }
@@ -31,6 +33,7 @@ public class DocumentationSet
 		Context = context;
 		SourcePath = context.SourcePath;
 		OutputPath = context.OutputPath;
+		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
 		Configuration = new ConfigurationFile(context.ConfigurationPath, SourcePath, context);
 
 		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration);
@@ -87,6 +90,11 @@ public class DocumentationSet
 		if (Configuration.Globs.Any(g => g.IsMatch(relativePath)))
 			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
 
+		// we ignore files in folders that start with an underscore
+		if (relativePath.IndexOf("_snippets", StringComparison.Ordinal) >= 0)
+			return new SnippetFile(file, SourcePath);
+
+		// we ignore files in folders that start with an underscore
 		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith("_"))
 			return new ExcludedFile(file, SourcePath);
 

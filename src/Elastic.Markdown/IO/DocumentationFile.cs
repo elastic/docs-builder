@@ -19,3 +19,6 @@ public record StaticFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
 
 public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
 	: DocumentationFile(SourceFile, RootPath);
+
+public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
+	: DocumentationFile(SourceFile, RootPath);

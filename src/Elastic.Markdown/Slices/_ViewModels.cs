@@ -16,6 +16,7 @@ public class IndexViewModel
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
+	public required string? GithubEditUrl { get; init; }
 	public required Deployment? Applies { get; init; }
 }
 
@@ -27,6 +28,7 @@ public class LayoutViewModel
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required string NavigationHtml { get; set; }
 	public required string? UrlPathPrefix { get; set; }
+	public required string? GithubEditUrl { get; set; }
 
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents
