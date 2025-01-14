@@ -74,7 +74,8 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 		// literal includes may point to locations other than `_snippets` since they do not
 		// participate in emitting links
-		if (Literal) return;
+		if (Literal)
+			return;
 
 		var file = FileSystem.FileInfo.New(IncludePath);
 
