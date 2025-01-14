@@ -64,7 +64,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (url.Contains("{{") || url.Contains("}}"))
 		{
-			processor.EmitWarning(line, column, length,"The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
+			processor.EmitWarning(line, column, length, "The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
 			return match;
 		}
 
