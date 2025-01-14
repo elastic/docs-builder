@@ -50,7 +50,7 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 		var tabSet = Parent as TabSetBlock;
 
 		TabSetIndex = tabSet?.FindIndex() ?? -1;
-		TabSetGroupKey = tabSet?.GetGroupKey(); // ?? "default"
+		TabSetGroupKey = tabSet?.GetGroupKey();
 
 		SyncKey = Prop("sync");
 		Selected = PropBool("selected");
