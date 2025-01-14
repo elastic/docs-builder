@@ -86,7 +86,10 @@ public record GitCheckoutInformation
 
 		return new GitCheckoutInformation
 		{
-			Ref = gitRef, Branch = branch, Remote = remote, RepositoryName = remote.Split('/').Last()
+			Ref = gitRef,
+			Branch = branch,
+			Remote = remote,
+			RepositoryName = remote.Split('/').Last()
 		};
 
 		IFileInfo Git(string path) => fileSystem.FileInfo.New(Path.Combine(Paths.Root.FullName, path));
