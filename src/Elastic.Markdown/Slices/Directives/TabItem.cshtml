@@ -1,6 +1,6 @@
 @inherits RazorSlice<TabItemViewModel>
-<input checked="@(Model.Index == 0 ? "checked" : "")" id="sd-tab-item-@Model.Index" name="sd-tab-set-@Model.TabSetIndex" type="radio">
-<label class="sd-tab-label" for="sd-tab-item-@Model.Index">@Model.Title</label>
+<input checked="@(Model.Index == 0 ? "checked" : "")" id="sd-tab-item-@Model.TabSetIndex-@Model.Index" name="sd-tab-set-@Model.TabSetIndex" type="radio">
+<label class="sd-tab-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.TabSetGroupKey" for="sd-tab-item-@Model.TabSetIndex-@Model.Index">@Model.Title</label>
 <div class="sd-tab-content docutils">
 	[CONTENT]
 </div>

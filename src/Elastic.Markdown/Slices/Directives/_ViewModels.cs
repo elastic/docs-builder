@@ -36,8 +36,9 @@ public class TabItemViewModel
 	public required int Index { get; init; }
 	public required int TabSetIndex { get; init; }
 	public required string Title { get; init; }
+	public required string? SyncKey { get; init; }
+	public required string? TabSetGroupKey { get; init; }
 }
-
 public class IncludeViewModel
 {
 	public required string Html { get; init; }

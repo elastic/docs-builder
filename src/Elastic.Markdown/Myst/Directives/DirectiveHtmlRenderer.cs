@@ -191,7 +191,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			Index = block.Index,
 			Title = block.Title,
-			TabSetIndex = block.TabSetIndex
+			TabSetIndex = block.TabSetIndex,
+			SyncKey = block.SyncKey,
+			TabSetGroupKey = block.TabSetGroupKey
 		});
 		RenderRazorSlice(slice, renderer, block);
 	}

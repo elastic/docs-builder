@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Slices.Directives;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -12,6 +13,8 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 	public override string Directive => "tab-set";
 
 	public int Index { get; set; }
+	public string? GetGroupKey() => Prop("group");
+
 	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
 
 	private int _index = -1;
@@ -32,7 +35,7 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 	public string Title { get; private set; } = default!;
 	public int Index { get; private set; }
 	public int TabSetIndex { get; private set; }
-
+	public string? TabSetGroupKey { get; private set; }
 	public string? SyncKey { get; private set; }
 	public bool Selected { get; private set; }
 
@@ -43,7 +46,11 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 
 		Title = Arguments ?? "{undefined}";
 		Index = Parent!.IndexOf(this);
-		TabSetIndex = Parent is TabSetBlock tb ? tb.FindIndex() : -1;
+
+		var tabSet = Parent as TabSetBlock;
+
+		TabSetIndex = tabSet?.FindIndex() ?? -1;
+		TabSetGroupKey = tabSet?.GetGroupKey(); // ?? "default"
 
 		SyncKey = Prop("sync");
 		Selected = PropBool("selected");

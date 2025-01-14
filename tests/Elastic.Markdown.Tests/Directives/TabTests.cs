@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
+using Markdig;
 using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -89,6 +90,78 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 				items[i].Index.Should().Be(i);
 				items[i].TabSetIndex.Should().Be(s);
 			}
+		}
+	}
+}
+
+public class GroupTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
+	"""
+	::::{tab-set}
+	:group: languages
+	:::{tab-item} Java
+	:sync: java
+	Content for Java tab
+	:::
+
+	:::{tab-item} Golang
+	:sync: golang
+	Content for Golang tab
+	:::
+
+	:::{tab-item} C#
+	:sync: csharp
+	Content for C# tab
+	:::
+
+	::::
+
+	::::{tab-set}
+	:group: languages
+	:::{tab-item} Java
+	:sync: java
+	Content for Java tab
+	:::
+
+	:::{tab-item} Golang
+	:sync: golang
+	Content for Golang tab
+	:::
+
+	:::{tab-item} C#
+	:sync: csharp
+	Content for C# tab
+	:::
+
+	::::
+	"""
+)
+{
+	[Fact]
+	public void ParsesMultipleTabSets()
+	{
+		var sets = Document.OfType<TabSetBlock>().ToArray();
+		sets.Length.Should().Be(2);
+		for (var s = 0; s < sets.Length; s++)
+		{
+			var items = sets[s].OfType<TabItemBlock>().ToArray();
+			items.Should().NotBeNull().And.HaveCount(3);
+			for (var i = 0; i < items.Length; i++)
+			{
+				items[i].Index.Should().Be(i);
+				items[i].TabSetIndex.Should().Be(s);
+			}
+		}
+	}
+
+	[Fact]
+	public void ParsesGroup()
+	{
+		var sets = Document.OfType<TabSetBlock>().ToArray();
+		sets.Length.Should().Be(2);
+
+		foreach (var t in sets)
+		{
+			t.GetGroupKey().Should().Be("languages");
 		}
 	}
 }
