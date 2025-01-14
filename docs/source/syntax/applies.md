@@ -1,5 +1,4 @@
 ---
-title: Product Availability
 applies:
   stack: ga 8.1
   serverless: tech-preview
@@ -7,6 +6,8 @@ applies:
   eck: beta 3.0.2
   ece: unavailable
 ---
+
+# Product Availability
 
 
 Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status

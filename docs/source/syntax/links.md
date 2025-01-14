@@ -1,6 +1,4 @@
----
-title: Links
----
+# Links
 
 A link contains link text (the visible text) and a link destination (the URI that is the link destination). The link text can include inline elements.
 

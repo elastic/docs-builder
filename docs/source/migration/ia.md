@@ -1,7 +1,8 @@
 ---
-title: Improved information architecture
 navigation_title: New IA
 ---
+
+# Improved information architecture
 
 The improved information architecture fundamentally transforms how we organize and present Elastic Docs. By addressing longstanding challenges—such as fragmented content across many books and duplicated information—this new structure introduces a cohesive framework that emphasizes clarity, usability, and alignment with user goals. These updates are designed to create a seamless experience for both readers and contributors, fostering greater understanding of our products and their benefits.
 

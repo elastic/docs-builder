@@ -1,6 +1,4 @@
----
-title: Tables
----
+# Tables
 
 A table is an arrangement of data with rows and columns. Each row consists of cells containing arbitrary text in which inlines are parsed, separated by pipes `|`. The rows of a table consist of:
 

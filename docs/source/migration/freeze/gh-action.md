@@ -1,6 +1,4 @@
----
-title: GH Action
----
+# GH Action
 
 ## Overview
 This GitHub Action enforces documentation freezes by adding comments to pull requests that modify `.asciidoc` files. It complements the use of `CODEOWNERS` to ensure changes during a freeze period are reviewed and approved by the `@docs-freeze-team`.

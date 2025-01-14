@@ -1,6 +1,4 @@
----
-title: Consolidated versioning
----
+# Consolidated versioning
 
 As part of the new information architecture, pages with varying versioning schemes are now interwoven, creating the opportunity and necessity to rethink the scope and versioning of each page. The previous approach of creating entirely separate docs sets for every minor version resulted in fragmentation and unnecessary duplication. Consolidating versioning resolves these issues while maintaining clarity and usability.
 

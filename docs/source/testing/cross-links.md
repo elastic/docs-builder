@@ -1,6 +1,4 @@
----
-title: Cross Links
----
+# Cross Links
 
 [Elasticsearch](elasticsearch://index.md)
 

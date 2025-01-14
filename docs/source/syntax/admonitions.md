@@ -1,6 +1,4 @@
----
-title: Admonitions
----
+# Admonitions
 
 Admonitions allow you to highlight important information with varying levels of priority. In software documentation, these blocks are used to emphasize risks, provide helpful advice, or share relevant but non-critical details.
 

@@ -1,5 +1,3 @@
----
-title: Landing page
----
+# Landing page
 
 tbd

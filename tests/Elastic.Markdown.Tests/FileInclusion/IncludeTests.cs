@@ -33,7 +33,7 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 	public void IncludesInclusionHtml() =>
 		Html.Should()
 			.Contain("Hello world")
-			.And.Be("<p><em>Hello world</em></p>\n")
+			.And.Be("<p><em>Hello world</em></p>")
 		;
 }
 
@@ -41,7 +41,6 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 public class IncludeSubstitutionTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
 ---
-title: My Document
 sub:
   foo: "bar"
 ---
@@ -64,7 +63,7 @@ sub:
 	public void InclusionInheritsYamlContext() =>
 		Html.Should()
 			.Contain("Hello bar")
-			.And.Be("<p><em>Hello bar</em></p>\n")
+			.And.Be("<p><em>Hello bar</em></p>")
 		;
 }
 

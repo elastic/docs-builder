@@ -34,6 +34,9 @@ public class AppliesBlockTests(ITestOutputHelper output) : DirectiveTest<Applies
 
 public class EmptyAppliesBlock(ITestOutputHelper output) : DirectiveTest<AppliesBlock>(output,
 """
+
+A paragraph that's not a heading
+
 ```{applies}
 ```
 """
@@ -44,7 +47,7 @@ public class EmptyAppliesBlock(ITestOutputHelper output) : DirectiveTest<Applies
 
 	[Fact]
 	public void DoesNotRender() =>
-		Html.Should().BeNullOrWhiteSpace();
+		Html.Should().Be("<p>A paragraph that's not a heading</p>");
 
 	[Fact]
 	public void EmitErrorOnEmptyBlock()

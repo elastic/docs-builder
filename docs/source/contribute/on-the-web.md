@@ -1,6 +1,4 @@
----
-title: Contribute on the web
----
+# Contribute on the web
 
 :::{warning}
 This feature is not supported yet. See [#171](https://github.com/elastic/docs-builder/issues/171) for more information.

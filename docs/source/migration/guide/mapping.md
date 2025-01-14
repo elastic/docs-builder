@@ -1,7 +1,8 @@
 ---
-title: Book to content set mapping
 navigation_title: What books are migrating
 ---
+
+# Book to content set mapping
 
 What full books are staying in Asciidoc? What books are migrating `main`/`master`? See the table below.
 

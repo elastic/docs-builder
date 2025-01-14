@@ -1,6 +1,4 @@
----
-title: Automated settings reference
----
+# Automated settings reference
 
 Elastic Docs V3 supports the ability to build a markdown settings reference from a YAML source file.
 

@@ -1,10 +1,11 @@
 ---
-title: Substitutions
 sub:
   frontmatter_key: "Front Matter Value"
   a-key-with-dashes: "A key with dashes"
   version: 7.17.0
 ---
+
+# Substitutions
 
 Substitutions can be defined in two places:
 

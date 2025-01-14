@@ -1,7 +1,8 @@
 ---
-title: Elastic Docs contribution guide
 navigation_title: Contribute
 ---
+
+# Elastic Docs contribution guide
 
 Welcome, **contributor**!
 

@@ -1,6 +1,4 @@
----
-title: File structure
----
+# File structure
 
 In both the AsciiDoc- and V3-based systems, file structure is largely independent from the resulting site navigation.
 

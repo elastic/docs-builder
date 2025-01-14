@@ -1,7 +1,8 @@
 ---
-title: Content set configuration
 navigation_title: Content set
 ---
+
+# Content set configuration
 
 Now we'll zoom into the AsciiDoc book level, and explore the V3 equivalent: content sets. At the book level, the system consists of:
 

@@ -26,9 +26,7 @@ A paragraph
 		// language=markdown
 		var inclusion =
 """
----
-title: Special Requirements
----
+# Special Requirements
 
 ## Sub Requirements
 

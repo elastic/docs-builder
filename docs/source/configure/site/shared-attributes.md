@@ -1,6 +1,4 @@
----
-title: Shared attributes
----
+# Shared attributes
 
 To promote consistency across documentation, AsciiDoc uses shared attributes for common terms, URLs, and versions.
 

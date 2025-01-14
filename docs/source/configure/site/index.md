@@ -1,7 +1,8 @@
 ---
-title: Site configuration
 navigation_title: Site
 ---
+
+# Site configuration
 
 Start by understanding how the new V3 system works at the site level compared to how our custom AsciiDoctor system works. The system consists of:
 

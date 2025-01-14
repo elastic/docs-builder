@@ -21,9 +21,7 @@ public abstract class LinkTestBase(ITestOutputHelper output, [LanguageInjection(
 		// language=markdown
 		var inclusion =
 """
----
-title: Special Requirements
----
+# Special Requirements
 
 To follow this tutorial you will need to install the following components:
 """;

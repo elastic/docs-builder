@@ -11,11 +11,12 @@ namespace Elastic.Markdown.Tests.FrontMatter;
 public class YamlFrontMatterTests(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 sub:
   key: "value"
 ---
+
+# Elastic Docs v3
 """
 )
 {
@@ -46,5 +47,5 @@ public class EmptyFileWarnsNeedingATitle(ITestOutputHelper output) : DirectiveTe
 	[Fact]
 	public void WarnsOfNoTitle() =>
 		Collector.Diagnostics.Should().NotBeEmpty()
-			.And.Contain(d => d.Message.Contains("Missing yaml front-matter block defining a title"));
+			.And.Contain(d => d.Message.Contains("Document has no title, using file name as title."));
 }

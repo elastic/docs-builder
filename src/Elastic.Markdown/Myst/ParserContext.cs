@@ -31,7 +31,8 @@ public static class ParserContextExtensions
 
 public class ParserContext : MarkdownParserContext
 {
-	public ParserContext(MarkdownParser markdownParser,
+	public ParserContext(
+		MarkdownParser markdownParser,
 		IFileInfo path,
 		YamlFrontMatter? frontMatter,
 		BuildContext context,

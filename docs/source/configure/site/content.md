@@ -1,6 +1,4 @@
----
-title: Content config
----
+# Content config
 
 In both the AsciiDoctor- and V3-based system, there is site-wide configuration where you list all content sources, where to find those sources, and in what order they should be added to the site.
 

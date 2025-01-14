@@ -1,6 +1,4 @@
----
-title: Syntax guide
----
+# Syntax guide
 
 Elastic docs V3 supports markdown and various directives that add additional functionality to markdown.
 

@@ -1,7 +1,8 @@
 ---
-title: New syntax
 navigation_title: New syntax
 ---
+
+# New syntax
 
 With the migration to Elastic Docs v3, the primary format for all Elastic Docs is transitioning from AsciiDoc to Markdown. Why Markdown? Markdown is already an industry standard across the industry, and 90% of Elastic developers are comfortable working with Markdown syntax [[source](https://docs.google.com/presentation/d/1morhFX4tyVB0A2f1_fnySzeJvPYf0kXGjVVYU_lVRys/edit#slide=id.g13b75c8f1f3_0_463)].
 

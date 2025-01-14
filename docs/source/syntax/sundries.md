@@ -1,6 +1,4 @@
----
-title: Sundries
----
+# Sundries
 
 ## Inline text formatting
 

@@ -117,9 +117,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		var filePath = Path.Combine(directoryInfo.FullName, "index.md");
 		File.WriteAllText(filePath,
 			$"""
-			 ---
-			 title: {name} Documentation Set
-			 ---
+			 # {name} Documentation Set
 
 			 """);
 		File.AppendAllText(filePath, "This docset is generated using docs-generator");
@@ -131,9 +129,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		var filePath = Path.Combine(directoryInfo.FullName, markdownFile.RelativePath);
 		File.WriteAllText(filePath,
 			$"""
-			 ---
-			 title: {markdownFile.Title}
-			 ---
+			 # {markdownFile.Title}
 
 			 """);
 		foreach (var section in markdownFile.Sections)

@@ -1,7 +1,4 @@
----
-title: File inclusion
-test: hi
----
+# File inclusion
 
 File inclusion is useful for
 - including entire pages in a content set (usually done in the `docset.yml` file)

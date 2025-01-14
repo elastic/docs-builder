@@ -1,6 +1,4 @@
----
-title: Migration Guide
----
+# Migration Guide
 
 How to migrate content from Asciidoc to V3.
 

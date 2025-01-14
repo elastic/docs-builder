@@ -27,9 +27,7 @@ This is a 'warning' admonition
 		// language=markdown
 		var inclusion =
 """
----
-title: Special Requirements
----
+# Special Requirements
 
 ```{important}
 :name: hint_ref

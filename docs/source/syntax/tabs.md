@@ -1,6 +1,4 @@
----
-title: Tabs
----
+# Tabs
 
 Tabbed content is created using the `tab-set` directive with individual `tab-item` blocks for each tab's content. You can embed other directives, like admonitions directly in tabs.
 

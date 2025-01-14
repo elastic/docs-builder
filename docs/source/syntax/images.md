@@ -1,6 +1,4 @@
----
-title: Images
----
+# Images
 
 Images include screenshots, inline images, icons, and more. Syntax for images is like the syntax for links, with two differences:
 1. instead of link text, you provide an image description

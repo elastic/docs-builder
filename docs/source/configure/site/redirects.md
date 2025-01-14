@@ -1,6 +1,4 @@
----
-title: Redirects
----
+# Redirects
 
 ## From an elastic.co/guide page
 

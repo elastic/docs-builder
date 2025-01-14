@@ -1,5 +1,3 @@
----
-title: File structure
----
+# File structure
 
 tbd

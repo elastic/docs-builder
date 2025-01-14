@@ -1,6 +1,4 @@
----
-title: "Requirements"
----
+# Requirements
 
 To follow this tutorial you will need to install the following components:
 

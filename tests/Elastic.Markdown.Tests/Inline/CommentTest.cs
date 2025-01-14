@@ -25,7 +25,6 @@ not a comment
 		).And.Be(
 			"""
 			<p>not a comment</p>
-
 			"""
 		);
 }

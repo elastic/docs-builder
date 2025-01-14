@@ -39,6 +39,9 @@ public class NeedsDoubleBrackets(ITestOutputHelper output) : InlineTest(output,
 sub:
   hello-world: "Hello World!"
 ---
+
+# Testing substitutions
+
 The following should be subbed: {{hello-world}}
 not a comment
 not a {{valid-key}}
@@ -71,6 +74,9 @@ public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : BlockTest<E
 sub:
   version: "7.17.0"
 ---
+
+# Testing substitutions
+
 ```{code} sh
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
@@ -116,6 +122,9 @@ public class CanNotShadeGlobalVariables(ITestOutputHelper output) : InlineTest(o
 sub:
   hello-world: "Hello World!"
 ---
+
+# Testing CanNotShadeGlobalVariables
+
 The following should be subbed: {{hello-world}}
 The following should be subbed as well: {{hello-world}}
 """
@@ -140,6 +149,8 @@ public class ReplaceInHeader(ITestOutputHelper output) : InlineTest(output,
 sub:
   hello-world: "Hello World!"
 ---
+
+# Testing ReplaceInHeader
 
 ## {{hello-world}} [#custom-anchor]
 

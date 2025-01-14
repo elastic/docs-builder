@@ -1,6 +1,4 @@
----
-title: Reference docs guidelines
----
+# Reference docs guidelines
 
 ## Engineering ownership of reference documentation
 

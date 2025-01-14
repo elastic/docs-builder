@@ -1,7 +1,8 @@
 ---
-title: "Migration to docs-builder"
 navigation_title: Migration
 ---
+
+# "Migration to docs-builder"
 
 We are ready to migrate our documentation to our new build system, [elastic/docs-builder](https://github.com/elastic/docs-builder)!
 

@@ -13,7 +13,6 @@ namespace Elastic.Markdown.Tests.FrontMatter;
 public class ProductConstraintTests(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   stack: ga 8.1
@@ -45,7 +44,6 @@ public abstract class ParsingTests(ITestOutputHelper output, string moniker, Pro
 	: DirectiveTest(output,
 $"""
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   serverless: {moniker}
@@ -82,7 +80,6 @@ public class ParsesWithAllVersion(ITestOutputHelper output) : ParsingTests(outpu
 public class CanSpecifyAllForProductVersions(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   stack: all
@@ -98,7 +95,6 @@ applies:
 public class EmptyProductVersionMeansAll(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   stack:
@@ -114,7 +110,6 @@ applies:
 public class EmptyCloudSetsAllCloudProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   cloud:
@@ -130,7 +125,6 @@ applies:
 public class EmptySelfSetsAllSelfManagedProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   self:
@@ -152,7 +146,6 @@ applies:
 public class CloudProductsOverwriteDeploymentType(ITestOutputHelper output) : DirectiveTest(output,
 """
 ---
-title: Elastic Docs v3
 navigation_title: "Documentation Guide"
 applies:
   cloud:

@@ -77,6 +77,7 @@ public abstract class InlineTest : IAsyncLifetime
 	protected MockFileSystem FileSystem { get; }
 	protected DocumentationSet Set { get; }
 
+	private bool TestingFullDocument { get; }
 
 	protected InlineTest(
 		ITestOutputHelper output,
@@ -84,18 +85,19 @@ public abstract class InlineTest : IAsyncLifetime
 		Dictionary<string, string>? globalVariables = null)
 	{
 		var logger = new TestLoggerFactory(output);
+		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---");
+
+		var documentContents = TestingFullDocument ? content :
+// language=markdown
+$"""
+ # Test Document
+
+ {content}
+ """;
+
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/source/index.md", new MockFileData(string.IsNullOrEmpty(content) || content.StartsWith("---") ? content :
-				// language=markdown
-$"""
----
-title: Test Document
----
-
-{content}
-"""
-			)}
+			{ "docs/source/index.md", new MockFileData(documentContents) }
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName
@@ -127,9 +129,13 @@ title: Test Document
 		await Set.ResolveDirectoryTree(default);
 
 		Document = await File.ParseFullAsync(default);
-		Html = File.CreateHtml(Document);
+		var html = File.CreateHtml(Document).AsSpan();
+		var find = "</section>";
+		var start = html.IndexOf(find, StringComparison.Ordinal);
+		Html = start >= 0 && !TestingFullDocument
+			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
+			: html.ToString().Trim(Environment.NewLine.ToCharArray());
 		Collector.Channel.TryComplete();
-
 		await Collector.StopAsync(default);
 	}
 

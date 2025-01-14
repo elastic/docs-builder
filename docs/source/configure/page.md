@@ -1,7 +1,8 @@
 ---
-title: Page configuration
 navigation_title: Page
 ---
+
+# Page configuration
 
 tbd
 

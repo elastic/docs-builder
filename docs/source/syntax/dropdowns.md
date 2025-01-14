@@ -1,6 +1,4 @@
----
-title: Dropdowns
----
+# Dropdowns
 
 Dropdowns allow you to hide and reveal content on user interaction. By default, dropdowns are collapsed. This hides content until a user clicks the title of the collapsible block.
 
