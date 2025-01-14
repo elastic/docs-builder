@@ -10,11 +10,14 @@ namespace Elastic.Markdown.IO.Discovery;
 
 public record GitCheckoutInformation
 {
+	private string? _repositoryName;
+
 	private static GitCheckoutInformation Unavailable { get; } = new()
 	{
 		Branch = "unavailable",
 		Remote = "unavailable",
-		Ref = "unavailable"
+		Ref = "unavailable",
+		RepositoryName = "unavailable"
 	};
 
 	[JsonPropertyName("branch")]
@@ -26,6 +29,13 @@ public record GitCheckoutInformation
 	[JsonPropertyName("ref")]
 	public required string Ref { get; init; }
 
+	[JsonIgnore]
+	public string? RepositoryName
+	{
+		get => _repositoryName ??= Remote.Split('/').Last();
+		set => _repositoryName = value;
+	}
+
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitCheckoutInformation Create(IFileSystem fileSystem)
 	{
@@ -33,7 +43,13 @@ public record GitCheckoutInformation
 		if (fileSystem is not FileSystem)
 		{
 			var fakeRef = Guid.NewGuid().ToString().Substring(0, 16);
-			return new GitCheckoutInformation { Branch = $"test-{fakeRef}", Remote = "elastic/docs-builder", Ref = fakeRef, };
+			return new GitCheckoutInformation
+			{
+				Branch = $"test-{fakeRef}",
+				Remote = "elastic/docs-builder",
+				Ref = fakeRef,
+				RepositoryName = "docs-builder"
+			};
 		}
 
 		var gitConfig = Git(".git/config");
@@ -66,7 +82,12 @@ public record GitCheckoutInformation
 		if (string.IsNullOrEmpty(remote))
 			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "elastic/docs-builder-unknown";
 
-		return new GitCheckoutInformation { Ref = gitRef, Branch = branch, Remote = remote };
+		remote = remote.AsSpan().TrimEnd(".git").ToString();
+
+		return new GitCheckoutInformation
+		{
+			Ref = gitRef, Branch = branch, Remote = remote, RepositoryName = remote.Split('/').Last()
+		};
 
 		IFileInfo Git(string path) => fileSystem.FileInfo.New(Path.Combine(Paths.Root.FullName, path));
 
@@ -80,7 +101,7 @@ public record GitCheckoutInformation
 			if (!sections.Contains(branchSection))
 				return string.Empty;
 
-			var remoteName = ini.GetSetting(branchSection, "remote");
+			var remoteName = ini.GetSetting(branchSection, "remote")?.Trim();
 
 			var remoteSection = $"remote \"{remoteName}\"";
 

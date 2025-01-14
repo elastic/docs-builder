@@ -20,6 +20,8 @@ public class DocumentationSet
 	public IDirectoryInfo SourcePath { get; }
 	public IDirectoryInfo OutputPath { get; }
 
+	public string RelativeSourcePath { get; }
+
 	public DateTimeOffset LastWrite { get; }
 
 	public ConfigurationFile Configuration { get; }
@@ -31,6 +33,7 @@ public class DocumentationSet
 		Context = context;
 		SourcePath = context.SourcePath;
 		OutputPath = context.OutputPath;
+		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
 		Configuration = new ConfigurationFile(context.ConfigurationPath, SourcePath, context);
 
 		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration);

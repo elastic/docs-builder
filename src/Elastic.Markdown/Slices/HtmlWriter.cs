@@ -47,6 +47,11 @@ public class HtmlWriter
 
 		var previous = DocumentationSet;
 
+		var remote = DocumentationSet.Context.Git.RepositoryName;
+		var branch = DocumentationSet.Context.Git.Branch;
+		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
+		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
@@ -56,7 +61,8 @@ public class HtmlWriter
 			CurrentDocument = markdown,
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
-			Applies = markdown.YamlFrontMatter?.AppliesTo
+			Applies = markdown.YamlFrontMatter?.AppliesTo,
+			GithubEditUrl = editUrl
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

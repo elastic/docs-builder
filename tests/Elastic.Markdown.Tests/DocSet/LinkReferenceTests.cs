@@ -34,5 +34,8 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 		git.Branch.Should().NotContain(git.Ref);
 		git.Ref.Should().NotBeNullOrWhiteSpace();
 		git.Remote.Should().NotBeNullOrWhiteSpace();
+		git.Remote.Should().NotContain("unknown");
+		git.RepositoryName.Should().NotContain(".git");
+		git.Remote.Should().NotContain(".git");
 	}
 }
