@@ -41,12 +41,11 @@ public class DocumentationGroup
 	)
 	{
 		Depth = depth;
-		var foundIndex = ProcessTocItems(toc, lookup, folderLookup, depth, out var groups, out var files, out var navigationItems);
+		Index = ProcessTocItems(index, toc, lookup, folderLookup, depth, out var groups, out var files, out var navigationItems);
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
-		Index = index ?? foundIndex;
 
 		if (Index is not null)
 			FilesInOrder = FilesInOrder.Except([Index]).ToList();
@@ -55,19 +54,19 @@ public class DocumentationGroup
 	}
 
 	private MarkdownFile? ProcessTocItems(
+		MarkdownFile? configuredIndex,
 		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
 		int depth,
 		out List<DocumentationGroup> groups,
 		out List<MarkdownFile> files,
-		out List<INavigationItem> navigationItems
-	)
+		out List<INavigationItem> navigationItems)
 	{
 		groups = [];
 		navigationItems = [];
 		files = [];
-		MarkdownFile? indexFile = null;
+		var indexFile = configuredIndex;
 		foreach (var (tocItem, index) in toc.Select((t, i) => (t, i)))
 		{
 			if (tocItem is FileReference file)
@@ -89,9 +88,14 @@ public class DocumentationGroup
 				}
 
 				files.Add(md);
-				navigationItems.Add(new FileNavigation(index, depth, md));
 				if (file.Path.EndsWith("index.md") && d is MarkdownFile i)
 					indexFile ??= i;
+
+				// add the page to navigation items unless it's the index file
+				// the index file can either be the discovered `index.md` or the parent group's
+				// explicit index page. E.g. when grouping related files together.
+				if (indexFile != md)
+					navigationItems.Add(new FileNavigation(index, depth, md));
 			}
 			else if (tocItem is FolderReference folder)
 			{
