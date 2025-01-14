@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Tests.Directives;
 public abstract class AdmonitionUnsupportedTests(ITestOutputHelper output, string directive)
 	: DirectiveTest<UnsupportedDirectiveBlock>(output,
 $$"""
-  :::{directive}}}
+  :::{{{directive}}}
   This is an attention block
   :::
   A regular paragraph.
