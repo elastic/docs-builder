@@ -26,7 +26,7 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		});
 		var context = new BuildContext(fileSystem)
 		{
-			Collector = new DiagnosticsCollector(logger, [])
+			Collector = new DiagnosticsCollector([])
 		};
 		var set = new DocumentationSet(context);
 		var generator = new DocumentationGenerator(set, logger);

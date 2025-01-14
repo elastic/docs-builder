@@ -6,10 +6,11 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
 using FluentAssertions;
 using Xunit.Abstractions;
 
-namespace Elastic.Markdown.Tests.SiteMap;
+namespace Elastic.Markdown.Tests.DocSet;
 
 public class NavigationTestsBase : IAsyncLifetime
 {
@@ -21,11 +22,12 @@ public class NavigationTestsBase : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
+		var collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(ReadFileSystem, writeFs)
 		{
 			Force = false,
 			UrlPathPrefix = null,
-			Collector = new DiagnosticsCollector(logger, [])
+			Collector = collector
 		};
 
 		Set = new DocumentationSet(context);

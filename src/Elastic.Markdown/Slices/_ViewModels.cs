@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Slices;
@@ -10,7 +11,7 @@ public class IndexViewModel
 {
 	public required string Title { get; init; }
 	public required string MarkdownHtml { get; init; }
-	public required DocumentationFolder Tree { get; init; }
+	public required DocumentationGroup Tree { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required string NavigationHtml { get; init; }
@@ -22,11 +23,23 @@ public class LayoutViewModel
 {
 	public string Title { get; set; } = "Elastic Documentation";
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
-	public required DocumentationFolder Tree { get; init; }
+	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required string NavigationHtml { get; set; }
 	public required string? UrlPathPrefix { get; set; }
 
+	private MarkdownFile[]? _parents;
+	public MarkdownFile[] Parents
+	{
+		get
+		{
+			if (_parents is not null)
+				return _parents;
+
+			_parents = [.. CurrentDocument.YieldParents()];
+			return _parents;
+		}
+	}
 
 	public string Static(string path)
 	{
@@ -50,7 +63,7 @@ public class PageTocItem
 
 public class NavigationViewModel
 {
-	public required DocumentationFolder Tree { get; init; }
+	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 }
 
@@ -58,5 +71,5 @@ public class NavigationTreeItem
 {
 	public required int Level { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
-	public required DocumentationFolder SubTree { get; init; }
+	public required DocumentationGroup SubTree { get; init; }
 }

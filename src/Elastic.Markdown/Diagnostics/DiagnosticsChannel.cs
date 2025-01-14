@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -58,23 +59,9 @@ public interface IDiagnosticsOutput
 	public void Write(Diagnostic diagnostic);
 }
 
-public class LogDiagnosticOutput(ILogger logger) : IDiagnosticsOutput
-{
-	public void Write(Diagnostic diagnostic)
-	{
-		if (diagnostic.Severity == Severity.Error)
-			logger.LogError($"{diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
-		else
-			logger.LogWarning($"{diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
-	}
-}
-
-public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollection<IDiagnosticsOutput> outputs)
+public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
 	: IHostedService
 {
-	private readonly IReadOnlyCollection<IDiagnosticsOutput> _outputs =
-		[new LogDiagnosticOutput(loggerFactory.CreateLogger<LogDiagnosticOutput>()), .. outputs];
-
 	public DiagnosticsChannel Channel { get; } = new();
 
 	private int _errors;
@@ -85,6 +72,8 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 	private Task? _started;
 
 	public HashSet<string> OffendingFiles { get; } = new();
+
+	public ConcurrentBag<string> CrossLinks { get; } = new();
 
 	public Task StartAsync(Cancel ctx)
 	{
@@ -117,7 +106,7 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 				IncrementSeverityCount(item);
 				HandleItem(item);
 				OffendingFiles.Add(item.File);
-				foreach (var output in _outputs)
+				foreach (var output in outputs)
 					output.Write(item);
 			}
 		}
@@ -140,17 +129,22 @@ public class DiagnosticsCollector(ILoggerFactory loggerFactory, IReadOnlyCollect
 		await Channel.Reader.Completion;
 	}
 
+	public void EmitCrossLink(string link) => CrossLinks.Add(link);
 
-	public void EmitError(string file, string message)
+	public void EmitError(string file, string message, Exception? e = null)
 	{
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
 			File = file,
-			Message = message,
+			Message = message
+					  + (e != null ? Environment.NewLine + e : string.Empty)
+					  + (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty),
+
 		};
 		Channel.Write(d);
 	}
+
 	public void EmitWarning(string file, string message)
 	{
 		var d = new Diagnostic

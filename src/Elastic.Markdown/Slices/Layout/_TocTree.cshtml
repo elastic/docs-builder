@@ -8,7 +8,7 @@
 				</p>
 				<ul class="current">@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTreeNav.Create(new NavigationTreeItem
 					{
-						Level = Model.Tree.Level,
+						Level = Model.Tree.Depth,
 						SubTree = Model.Tree,
 						CurrentDocument = Model.CurrentDocument
 					}))

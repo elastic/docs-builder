@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -14,6 +15,7 @@ using Slugify;
 
 namespace Elastic.Markdown.IO;
 
+
 public record MarkdownFile : DocumentationFile
 {
 	private readonly SlugHelper _slugHelper = new();
@@ -23,12 +25,19 @@ public record MarkdownFile : DocumentationFile
 		: base(sourceFile, rootPath)
 	{
 		FileName = sourceFile.Name;
+		FilePath = sourceFile.FullName;
 		UrlPathPrefix = context.UrlPathPrefix;
 		MarkdownParser = parser;
 		Collector = context.Collector;
 	}
 
-	public DiagnosticsCollector Collector { get; }
+	private DiagnosticsCollector Collector { get; }
+
+	public DocumentationGroup? Parent
+	{
+		get => FileName == "index.md" ? _parent?.Parent : _parent;
+		set => _parent = value;
+	}
 
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
@@ -47,10 +56,25 @@ public record MarkdownFile : DocumentationFile
 	private readonly HashSet<string> _additionalLabels = new();
 	public IReadOnlySet<string> AdditionalLabels => _additionalLabels;
 
+	public string FilePath { get; }
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
 	private bool _instructionsParsed;
+	private DocumentationGroup? _parent;
+
+	public MarkdownFile[] YieldParents()
+	{
+		var parents = new List<MarkdownFile>();
+		var parent = Parent;
+		do
+		{
+			if (parent is { Index: not null } && parent.Index != this)
+				parents.Add(parent.Index);
+			parent = parent?.Parent;
+		} while (parent != null);
+		return parents.ToArray();
+	}
 
 	public async Task<MarkdownDocument> MinimalParse(Cancel ctx)
 	{
@@ -75,7 +99,7 @@ public record MarkdownFile : DocumentationFile
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			YamlFrontMatter = YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+			YamlFrontMatter = ReadYamlFrontMatter(document, raw);
 			Title = YamlFrontMatter.Title;
 			NavigationTitle = YamlFrontMatter.NavigationTitle;
 		}
@@ -88,9 +112,12 @@ public record MarkdownFile : DocumentationFile
 		var contents = document
 			.Where(block => block is HeadingBlock { Level: >= 2 })
 			.Cast<HeadingBlock>()
-			.Select(h => h.Inline?.FirstChild?.ToString())
-			.Where(title => !string.IsNullOrWhiteSpace(title))
-			.Select(title => new PageTocItem { Heading = title!, Slug = _slugHelper.GenerateSlug(title) })
+			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string))
+			.Select(h => new PageTocItem
+			{
+				Heading = h.Item1!.Replace("`", "").Replace("*", ""),
+				Slug = _slugHelper.GenerateSlug(h.Item2 ?? h.Item1)
+			})
 			.ToList();
 		_tableOfContent.Clear();
 		foreach (var t in contents)
@@ -108,6 +135,19 @@ public record MarkdownFile : DocumentationFile
 		}
 
 		_instructionsParsed = true;
+	}
+
+	private YamlFrontMatter ReadYamlFrontMatter(MarkdownDocument document, string raw)
+	{
+		try
+		{
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
+			return new YamlFrontMatter();
+		}
 	}
 
 

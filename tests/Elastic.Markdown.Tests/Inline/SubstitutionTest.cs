@@ -133,3 +133,25 @@ The following should be subbed as well: {{hello-world}}
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
 		.And.Contain(d => d.Message.Contains("{hello-world} can not be redeclared in front matter as its a global substitution"));
 }
+
+public class ReplaceInHeader(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  hello-world: "Hello World!"
+---
+
+## {{hello-world}} [#custom-anchor]
+
+"""
+)
+{
+
+	[Fact]
+	public void OnlySeesGlobalVariable() =>
+		Html.Should().Contain("<h2>Hello World!");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+}

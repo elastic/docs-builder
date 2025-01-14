@@ -1,13 +1,19 @@
 ---
-title: Migrate from Asciidoc to V3
-navigation_title: Migration guide
+title: "Migration to docs-builder"
+navigation_title: Migration
 ---
 
-How to migrate content from Asciidoc to V3.
+We are ready to migrate our documentation to our new build system, [elastic/docs-builder](https://github.com/elastic/docs-builder)!
 
-1. Clone https://github.com/elastic/adoc-to-md
-2. Run the migration tool
-3. Copy the output to the appropriate directory in https://github.com/elastic/docs-content
-4. Update the `docset.yml` file to reflect the new IA of the content set
-5. Build your changes with https://github.com/elastic/docs-builder
-6. Open a PR and merge your changes
+:::{important}
+We will enforce a [Documentation Freeze](./freeze/index.md) while we migration docs between our two build systems.
+:::
+
+Migrating to Elastic Docs V3 is more than just moving to a new documentation build system. This migration also includes:
+
+* [Transition from AsciiDoc to Markdown](./syntax.md)
+* [Improved information architecture](./ia.md)
+* [Consolidated versioning](./versioning.md)
+* [Engineering ownership of reference documentation & New API guidelines](./engineering.md)
+
+View the [migration guide](./guide/index.md) to learn more about migration tooling, what content sets are migrating, how to migrate content, and more.

@@ -6,11 +6,11 @@ using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using SoftCircuits.IniFileParser;
 
-namespace Elastic.Markdown.IO;
+namespace Elastic.Markdown.IO.Discovery;
 
-public record GitConfiguration
+public record GitCheckoutInformation
 {
-	private static GitConfiguration Unavailable { get; } = new()
+	private static GitCheckoutInformation Unavailable { get; } = new()
 	{
 		Branch = "unavailable",
 		Remote = "unavailable",
@@ -27,13 +27,13 @@ public record GitConfiguration
 	public required string Ref { get; init; }
 
 	// manual read because libgit2sharp is not yet AOT ready
-	public static GitConfiguration Create(IFileSystem fileSystem)
+	public static GitCheckoutInformation Create(IFileSystem fileSystem)
 	{
 		// filesystem is not real so return a dummy
 		if (fileSystem is not FileSystem)
 		{
 			var fakeRef = Guid.NewGuid().ToString().Substring(0, 16);
-			return new GitConfiguration { Branch = $"test-{fakeRef}", Remote = "elastic/docs-builder", Ref = fakeRef, };
+			return new GitCheckoutInformation { Branch = $"test-{fakeRef}", Remote = "elastic/docs-builder", Ref = fakeRef, };
 		}
 
 		var gitConfig = Git(".git/config");
@@ -66,7 +66,7 @@ public record GitConfiguration
 		if (string.IsNullOrEmpty(remote))
 			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "elastic/docs-builder-unknown";
 
-		return new GitConfiguration { Ref = gitRef, Branch = branch, Remote = remote };
+		return new GitCheckoutInformation { Ref = gitRef, Branch = branch, Remote = remote };
 
 		IFileInfo Git(string path) => fileSystem.FileInfo.New(Path.Combine(Paths.Root.FullName, path));
 

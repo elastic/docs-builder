@@ -4,6 +4,8 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.IO;
@@ -56,7 +58,10 @@ public class DocumentationSet
 			.GroupBy(file => file.RelativeFolder)
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
-		Tree = new DocumentationFolder(Configuration.TableOfContents, FlatMappedFiles, folderFiles);
+		Tree = new DocumentationGroup(Configuration.TableOfContents, FlatMappedFiles, folderFiles)
+		{
+			Parent = null
+		};
 	}
 
 	public MarkdownFile? GetMarkdownFile(IFileInfo sourceFile)
@@ -89,7 +94,7 @@ public class DocumentationSet
 		return new ExcludedFile(file, SourcePath);
 	}
 
-	public DocumentationFolder Tree { get; }
+	public DocumentationGroup Tree { get; }
 
 	public List<DocumentationFile> Files { get; }
 

@@ -14,3 +14,28 @@ iconify-icon/dist/iconify-icon.mjs:
   * @version 2.1.0
   *)
 */
+
+/**
+ * Expands all collapsed parent sections in the navigation tree that contain the current page link.
+ * This ensures the current page is visible in the navigation by opening all ancestor collapsible sections.
+ * The function works by:
+ * 1. Finding the navigation link matching the current page URL
+ * 2. Walking up the DOM tree from that link
+ * 3. Expanding any collapsed parent sections by toggling their CSS classes
+ */
+function expandCurrentPage() {
+  const currentPathname = window.location.pathname;
+  const currentLink = document.querySelector(`a[href="${currentPathname}"]`);
+  if (currentLink) {
+    let parent = currentLink.parentElement;
+    while (parent) {
+      if (parent.classList && parent.classList.contains('_collapse')) {
+        parent.classList.remove('_collapse');
+        parent.classList.add('_expand');
+      }
+      parent = parent.parentElement;
+    }
+  }
+}
+
+expandCurrentPage();

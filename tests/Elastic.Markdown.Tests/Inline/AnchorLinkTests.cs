@@ -33,6 +33,10 @@ title: Special Requirements
 ## Sub Requirements
 
 To follow this tutorial you will need to install the following components:
+
+## New Requirements [#new-reqs]
+
+These are new requirements
 """;
 		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
@@ -68,6 +72,24 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 		// language=html
 		Html.Should().Contain(
 			"""<p><a href="testing/req.html#sub-requirements">Sub Requirements</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+
+public class ExternalPageCustomAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(output,
+"""
+[Sub Requirements](testing/req.md#new-reqs)
+"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="testing/req.html#new-reqs">Sub Requirements</a></p>"""
 		);
 
 	[Fact]

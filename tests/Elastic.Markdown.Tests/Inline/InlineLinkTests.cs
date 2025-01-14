@@ -65,6 +65,12 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(0);
+	}
 }
 
 public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
@@ -82,4 +88,88 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(0);
+	}
+}
+
+public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[test][test]
+
+	[test]: testing/req.md
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="testing/req.html">test</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(0);
+	}
+}
+
+public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[test][test]
+
+	[test]: kibana://index.md
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
+			"""<p><a href="kibana://index.html">test</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(1);
+		Collector.CrossLinks.Should().Contain("kibana://index.md");
+	}
+}
+
+public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+
+	Go to [test](kibana://index.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
+			"""<p>Go to <a href="kibana://index.html">test</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(1);
+		Collector.CrossLinks.Should().Contain("kibana://index.md");
+	}
 }

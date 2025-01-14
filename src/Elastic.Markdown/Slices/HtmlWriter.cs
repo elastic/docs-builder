@@ -44,6 +44,9 @@ public class HtmlWriter
 		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 		var navigationHtml = await RenderNavigation(markdown, ctx);
+
+		var previous = DocumentationSet;
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",

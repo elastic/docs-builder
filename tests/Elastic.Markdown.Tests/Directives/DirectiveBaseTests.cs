@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -31,17 +30,6 @@ public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [Langu
 
 	[Fact]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
-
-}
-
-public class TestDiagnosticsCollector(ILoggerFactory logger)
-	: DiagnosticsCollector(logger, [])
-{
-	private readonly List<Diagnostic> _diagnostics = new();
-
-	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
-
-	protected override void HandleItem(Diagnostic diagnostic) => _diagnostics.Add(diagnostic);
 }
 
 public abstract class DirectiveTest : IAsyncLifetime
@@ -52,7 +40,6 @@ public abstract class DirectiveTest : IAsyncLifetime
 	protected MockFileSystem FileSystem { get; }
 	protected TestDiagnosticsCollector Collector { get; }
 	protected DocumentationSet Set { get; set; }
-
 
 	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	{
@@ -80,7 +67,7 @@ title: Test Document
 		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
 		FileSystem.GenerateDocSetYaml(root);
 
-		Collector = new TestDiagnosticsCollector(logger);
+		Collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(FileSystem)
 		{
 			Collector = Collector

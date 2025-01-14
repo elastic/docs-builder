@@ -1,10 +1,28 @@
 ---
 title: Elastic Docs contribution guide
-navigation_title: Contribution guide
+navigation_title: Contribute
 ---
 
-Want to contribute to the Elastic documentation? You're in the right spot! Select an option below to get started:
+Welcome, **contributor**!
 
-* I just want to suggest a change --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
-* I want to make a small change to a single page --> [Update the docs in your _web browser_](change-browser.md).
-* I want to make a larger change or a change to multiple pages --> [Update the docs in your _code editor_](change-local.md).
+Whether you're a technical writer or you've only edited Elastic docs once or twice, you're a valued contributor. Every word matters!
+
+## Contribute to the docs [#contribute]
+
+* Simple bugs and enhancements --> [Contribute on the web](on-the-web.md)
+* Complex or multi-page updates --> [Contribute locally](locally.md)
+
+## Report a bug
+
+* It's a **documentation** problem --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md)
+* It's a **build tool (docs-builder)** problem --> [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
+* It's a **migration tooling** problem --> [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
+
+## Request an enhancement
+
+* Make the **documentation** better --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
+* Make our **build tool (docs-builder)** better --> [Open a docs-builder issue](https://github.com/elastic/docs-builder/issues/new?template=enhancement.yaml)
+
+## Work on docs-builder
+
+That sounds great! See [development](../development/index.md) to learn how to contribute to our documentation build system.

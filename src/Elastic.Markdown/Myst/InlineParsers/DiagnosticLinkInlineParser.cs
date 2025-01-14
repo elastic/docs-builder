@@ -2,15 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Immutable;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.Directives;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
-using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.InlineParsers;
@@ -34,6 +33,10 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 public class DiagnosticLinkInlineParser : LinkInlineParser
 {
+	// See https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml for a list of URI schemes
+	// We can add more schemes as needed
+	private static readonly ImmutableHashSet<string> ExcludedSchemes = ["http", "https", "tel", "jdbc"];
+
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
 		var match = base.Match(processor, ref slice);
@@ -48,6 +51,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var column = link.Column;
 		var length = url?.Length ?? 1;
 
+
 		var context = processor.GetContext();
 		if (processor.GetContext().SkipValidation)
 			return match;
@@ -58,9 +62,14 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 		}
 
-		if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
+		var uri = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u : null;
+
+		if (IsCrossLink(uri))
+			processor.GetContext().Build.Collector.EmitCrossLink(url!);
+
+		if (uri != null && uri.Scheme.StartsWith("http"))
 		{
-			var baseDomain = string.Join('.', uri.Host.Split('.')[^2..]);
+			var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);
 			if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
 			{
 				processor.EmitWarning(
@@ -82,15 +91,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var anchor = anchors.Length > 1 ? anchors[1].Trim() : null;
 		url = anchors[0];
 
-		if (!string.IsNullOrWhiteSpace(url))
+		if (!string.IsNullOrWhiteSpace(url) && uri != null)
 		{
 			var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
-			if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
+			if (uri.IsFile && !context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 				processor.EmitError(line, column, length, $"`{url}` does not exist. resolved to `{pathOnDisk}");
-			else
-			{
-
-			}
 		}
 		else
 			link.Url = "";
@@ -128,8 +133,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			link.Url += $"#{anchor}";
 
 		return match;
-
-
-
 	}
+
+	private static bool IsCrossLink(Uri? uri) =>
+		uri != null
+		&& !ExcludedSchemes.Contains(uri.Scheme)
+		&& !uri.IsFile
+		&& Path.GetExtension(uri.OriginalString) == ".md";
 }
