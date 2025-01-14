@@ -48,7 +48,7 @@ applies:
 Are equivalent, note `all` just means we won't be rendering the version portion in the html.
 
 
-## This section has its own applies annotations
+## This section has its own applies annotations [#sections]
 
 :::{applies}
 :stack: unavailable

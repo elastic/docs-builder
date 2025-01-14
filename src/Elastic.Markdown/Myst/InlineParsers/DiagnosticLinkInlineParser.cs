@@ -108,9 +108,20 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (link.FirstChild == null || !string.IsNullOrEmpty(anchor))
 		{
-			var file = string.IsNullOrWhiteSpace(url) ? context.Path
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')));
+			var file = string.IsNullOrWhiteSpace(url)
+				? context.Path
+				: url.StartsWith('/')
+					? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')))
+					: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Path.Directory!.FullName, url));
 			var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
+			if (markdown == null)
+			{
+				processor.EmitWarning(line,
+					column,
+					length,
+					$"Can not create an auto title link to '{file.FullName}' however this file can not be resolved.");
+			}
+
 			var title = markdown?.Title;
 
 			if (!string.IsNullOrEmpty(anchor))
