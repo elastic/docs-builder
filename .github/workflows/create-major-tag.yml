@@ -1,0 +1,26 @@
+---
+# This workflow creates a major tag in the format of vX when a release is published.
+# E.g. if a release is published with the tag v1.1.0, this workflow will create a tag v1.
+name: create-major-tag
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  create-major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get major version
+        run: |
+          MAJOR_VERSION=$(echo "${GITHUB_REF#refs/tags/v}" | awk -F. '{print $1}')
+          echo "MAJOR_VERSION=${MAJOR_VERSION}" >> "${GITHUB_ENV}"
+      - name: Create major tag
+        run: |
+          git tag "v${MAJOR_VERSION}"
+          git push -f origin "refs/tags/v${MAJOR_VERSION}"
