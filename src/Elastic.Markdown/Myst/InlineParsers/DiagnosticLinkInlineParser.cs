@@ -62,6 +62,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 		}
 
+		if (url.Contains("{{") || url.Contains("}}"))
+		{
+			processor.EmitWarning(line, column, length,"The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
+			return match;
+		}
+
 		var uri = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u : null;
 
 		if (IsCrossLink(uri))

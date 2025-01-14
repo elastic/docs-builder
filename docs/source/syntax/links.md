@@ -32,6 +32,16 @@ I link to the [Inline link](#inline-link) heading above.
 I link to the [Notes](tables.md#notes) heading on the [Tables](tables.md) page.
 ```
 
+## Cross Links
+
+Cross links are links that point to a different docset.
+
+```markdown
+[Cross link](kibana://cross-link.md)
+```
+
+The syntax is `<scheme>://<path>`, where <scheme> is the repository name and <path> is the path to the file.
+
 ## Heading anchors
 
 Headings will automatically create anchor links in the resulting html. 
