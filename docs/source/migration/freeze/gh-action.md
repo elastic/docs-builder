@@ -24,11 +24,10 @@ on:
       - master
       - "9.0"
 
-permissions:
-  contents: read
-  pull_request: write
-
 jobs:
   comment-on-asciidoc-change:
+    permissions:
+      contents: read
+      pull_request: write
     uses: elastic/docs-builder/.github/workflows/comment-on-asciidoc-changes.yml@main
 ```
