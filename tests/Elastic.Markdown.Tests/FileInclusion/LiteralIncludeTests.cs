@@ -13,9 +13,9 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 
 public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{include} _snippets/test.txt
+:::{include} _snippets/test.txt
 :literal: true
-```
+:::
 """
 )
 {
@@ -39,8 +39,8 @@ public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : Direct
 
 public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{literalinclude} _snippets/test.md
-```
+:::{literalinclude} _snippets/test.md
+:::
 """
 )
 {

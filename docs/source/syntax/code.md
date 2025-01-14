@@ -74,9 +74,9 @@ var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 
-```{note}
+:::{note}
 the comments have the follow code to be hoisted as a callout.
-```
+:::
 
 ````markdown
 ```csharp

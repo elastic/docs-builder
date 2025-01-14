@@ -14,8 +14,8 @@ namespace Elastic.Markdown.Tests.SettingsInclusion;
 
 public class IncludeTests(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
 $$"""
-```{settings} /{{SettingsPath.Replace("docs/source/", "")}}
-```
+:::{settings} /{{SettingsPath.Replace("docs/source/", "")}}
+:::
 """
 )
 {
@@ -43,8 +43,8 @@ $$"""
 }
 public class RandomFileEmitsAnError(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
 """
-```{settings} _snippets/test.md
-```
+:::{settings} _snippets/test.md
+:::
 """
 )
 {

@@ -39,9 +39,9 @@ This is a warning.
 :::
 ```
 
-```{warning}
+:::{warning}
 This is a warning.
-```
+:::
 
 ### Tip
 
@@ -53,9 +53,9 @@ This is a tip.
 :::
 ```
 
-```{tip}
+:::{tip}
 This is a tip.
-```
+:::
 
 ### Important
 
@@ -67,15 +67,15 @@ This is an important notice.
 :::
 ```
 
-```{important}
+:::{important}
 This is an important notice.
-```
+:::
 
 ## Collapsible admonitions
 
-```{tip}
+:::{tip}
 Also see [dropdowns](./dropdowns.md).
-```
+:::
 
 Use `:open: <bool>` to make an admonition collapsible.
 
@@ -89,13 +89,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 :::
 ```
 
-```{note}
+:::{note}
 :open:
 
 Longer content can be collapsed to take less space.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-```
+:::
 
 ---
 

@@ -12,9 +12,9 @@ namespace Elastic.Markdown.Tests.Directives;
 public class AppliesBlockTests(ITestOutputHelper output) : DirectiveTest<AppliesBlock>(output,
 """
 # heading
-```{applies}
+:::{applies}
 :eck: unavailable
-```
+:::
 """
 )
 {

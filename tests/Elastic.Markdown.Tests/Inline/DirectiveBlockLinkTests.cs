@@ -13,10 +13,10 @@ namespace Elastic.Markdown.Tests.Inline;
 public abstract class DirectiveBlockLinkTests(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
 	: InlineTest<LinkInline>(output,
 $$"""
-```{warning}
+:::{warning}
 :name: caution_ref
 This is a 'warning' admonition
-```
+:::
 
 {{content}}
 
@@ -31,10 +31,10 @@ This is a 'warning' admonition
 title: Special Requirements
 ---
 
-```{important}
+:::{important}
 :name: hint_ref
 This is a 'important' admonition
-```
+:::
 """;
 		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));

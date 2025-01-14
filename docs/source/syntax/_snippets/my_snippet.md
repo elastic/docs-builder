@@ -1,5 +1,5 @@
 This is a snippet included on "{{page_title}}".
 
-```{tip}
+:::{tip}
 This is a snippet
-```
+:::

@@ -14,8 +14,8 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 
 public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{include} _snippets/test.md
-```
+:::{include} _snippets/test.md
+:::
 """
 )
 {
@@ -45,8 +45,8 @@ title: My Document
 sub:
   foo: "bar"
 ---
-```{include} _snippets/test.md
-```
+:::{include} _snippets/test.md
+:::
 """
 )
 {
@@ -71,8 +71,8 @@ sub:
 
 public class IncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{include} _snippets/notfound.md
-```
+:::{include} _snippets/notfound.md
+:::
 """
 )
 {
@@ -94,8 +94,8 @@ public class IncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<Incl
 
 public class IncludeRequiresArgument(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-```{include}
-```
+:::{include}
+:::
 """
 )
 {

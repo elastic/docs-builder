@@ -10,22 +10,22 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class TabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
 """
-`````{tab-set}
+:::::{tab-set}
 
-````{tab-item} Admonition
-```{tip}
+::::{tab-item} Admonition
+:::{tip}
 Tabs are easy. You can even embed other directives like the admonition you see here.
-```
-````
+:::
+::::
 
-````{tab-item} Text
+::::{tab-item} Text
 
 # Markdown
 
 And of course you can use regular markdown
-````
+::::
 
-````{tab-item} Code
+::::{tab-item} Code
 # Getting started with SQL
 
 ```sql
@@ -35,8 +35,8 @@ sql> SELECT * FROM library WHERE release_date < '2000-01-01';
 Dan Simmons    |Hyperion       |482            |1989-05-26T00:00:00.000Z
 Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 ```
-````
-`````
+::::
+:::::
 """
 )
 {
@@ -58,14 +58,16 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 
 public class MultipleTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
 """
-`````{tab-set}
-````{tab-item} Admonition
-```{tip}
+:::::{tab-set}
+::::{tab-item} Admonition
+:::{tip}
 Tabs are easy. You can even embed other directives like the admonition you see here.
-```
-````
-`````
+:::
+::::
+:::::
+
 Paragraph
+
 :::::{tab-set}
 ::::{tab-item} Admonition
 :::{tip}
@@ -95,45 +97,45 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 }
 
 public class GroupTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-	"""
-	::::{tab-set}
-	:group: languages
-	:::{tab-item} Java
-	:sync: java
-	Content for Java tab
-	:::
+"""
+::::{tab-set}
+:group: languages
+:::{tab-item} Java
+:sync: java
+Content for Java tab
+:::
 
-	:::{tab-item} Golang
-	:sync: golang
-	Content for Golang tab
-	:::
+:::{tab-item} Golang
+:sync: golang
+Content for Golang tab
+:::
 
-	:::{tab-item} C#
-	:sync: csharp
-	Content for C# tab
-	:::
+:::{tab-item} C#
+:sync: csharp
+Content for C# tab
+:::
 
-	::::
+::::
 
-	::::{tab-set}
-	:group: languages
-	:::{tab-item} Java
-	:sync: java
-	Content for Java tab
-	:::
+::::{tab-set}
+:group: languages
+:::{tab-item} Java
+:sync: java
+Content for Java tab
+:::
 
-	:::{tab-item} Golang
-	:sync: golang
-	Content for Golang tab
-	:::
+:::{tab-item} Golang
+:sync: golang
+Content for Golang tab
+:::
 
-	:::{tab-item} C#
-	:sync: csharp
-	Content for C# tab
-	:::
+:::{tab-item} C#
+:sync: csharp
+Content for C# tab
+:::
 
-	::::
-	"""
+::::
+"""
 )
 {
 	[Fact]
