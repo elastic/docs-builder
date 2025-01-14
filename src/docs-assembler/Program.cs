@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+// See https://aka.ms/new-console-template for more information
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -47,10 +47,11 @@ app.Add("clone-all", async Task (CancellationToken ctx) =>
 		}, c);
 	}).ConfigureAwait(false);
 
-	foreach(var kv in dict.OrderBy(kv => kv.Value.Elapsed))
+	foreach (var kv in dict.OrderBy(kv => kv.Value.Elapsed))
 		Console.WriteLine($"-> {kv.Key}\ttook: {kv.Value.Elapsed}");
 });
-app.Add("list", async Task (CancellationToken ctx) =>{
+app.Add("list", async Task (CancellationToken ctx) =>
+{
 
 	var assemblyPath = Path.Combine(Paths.Root.FullName, $".artifacts/assembly");
 	var dir = new DirectoryInfo(assemblyPath);
@@ -67,7 +68,7 @@ app.Add("list", async Task (CancellationToken ctx) =>{
 		);
 		dictionary.Add(d.Name, capture.ConsoleOut.FirstOrDefault()?.Line ?? "unknown");
 	}
-	foreach(var kv in dictionary.OrderBy(kv => kv.Value))
+	foreach (var kv in dictionary.OrderBy(kv => kv.Value))
 		Console.WriteLine($"-> {kv.Key}\tbranch: {kv.Value}");
 
 	await Task.CompletedTask;
@@ -83,6 +84,6 @@ namespace Documentation.Assembler
 			r => Console.Write(prefix + ": " + r),
 			l => Console.WriteLine(prefix + ": " + l));
 
-		public void Handle(Exception e) {}
+		public void Handle(Exception e) { }
 	}
 }
