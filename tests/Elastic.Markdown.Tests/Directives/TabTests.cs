@@ -164,4 +164,15 @@ public class GroupTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock
 			t.GetGroupKey().Should().Be("languages");
 		}
 	}
+
+	[Fact]
+	public void ParsesSyncKey()
+	{
+		var set = Document.OfType<TabSetBlock>().First();
+		var items = set.OfType<TabItemBlock>().ToArray();
+		items.Should().HaveCount(3);
+		items[0].SyncKey.Should().Be("java");
+		items[1].SyncKey.Should().Be("golang");
+		items[2].SyncKey.Should().Be("csharp");
+	}
 }

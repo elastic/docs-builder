@@ -97,6 +97,8 @@ Content for C# tab
 
 #### Result
 
+##### Grouped Tabs
+
 ::::{tab-set}
 :group: languages
 :::{tab-item} Java
@@ -133,6 +135,8 @@ Other content for Golang tab
 Other content for C# tab
 :::
 ::::
+
+##### Ungrouped Tabs
 
 ::::{tab-set}
 :::{tab-item} Java
