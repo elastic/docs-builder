@@ -71,5 +71,23 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			Found = true;
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
+
+		// literal includes may point to locations other than `_snippets` since they do not
+		// participate in emitting links
+		if (Literal) return;
+
+		var file = FileSystem.FileInfo.New(IncludePath);
+
+		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
+		{
+			this.EmitError($"{{include}} only supports including snippets from `_snippet` folders. `{IncludePath}` is not a snippet");
+			Found = false;
+		}
+
+		if (file.FullName == context.Path.FullName)
+		{
+			this.EmitError($"{{include}} cyclical include detected `{IncludePath}` points to itself");
+			Found = false;
+		}
 	}
 }

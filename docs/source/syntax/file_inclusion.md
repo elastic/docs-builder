@@ -12,11 +12,11 @@ If there are portions of content that are relevant to multiple pages, you can in
 ### Syntax
 
 ```markdown
-:::{include} _snippets/my_snippet.md
+:::{include} _snippets/reusable-snippet.md
 :::
 ```
 
-:::{include} _snippets/my_snippet.md
+:::{include} _snippets/reusable-snippet.md
 :::
 
 ### Asciidoc syntax
