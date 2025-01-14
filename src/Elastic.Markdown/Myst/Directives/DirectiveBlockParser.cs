@@ -34,7 +34,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 	private readonly string[] _codeBlocks = ["code", "code-block", "sourcecode"];
 
-	private readonly FrozenDictionary<string, int> _unsupportedBlocks = new Dictionary<string, int>
+	private static readonly FrozenDictionary<string, int> UnsupportedBlocks = new Dictionary<string, int>
 	{
 		{ "bibliography", 5 },
 		{ "blockquote", 6 },
@@ -63,6 +63,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "seealso", 3 }
 	}.ToFrozenDictionary();
 
+	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
+		UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
+
 	protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
 	{
 		var info = processor.Line.AsSpan();
@@ -70,10 +73,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-		// TODO alternate lookup .NET 9
-		var directive = info.ToString().Trim(['{', '}', '`']);
-		if (_unsupportedBlocks.TryGetValue(directive, out var issueId))
-			return new UnsupportedDirectiveBlock(this, directive, issueId, context);
+		var directive = info.Trim(['{', '}', '`', ':']);
+		if (UnsupportedLookup.TryGetValue(directive, out var issueId))
+			return new UnsupportedDirectiveBlock(this, directive.ToString(), issueId, context);
 
 		if (info.IndexOf("{tab-set}") > 0)
 			return new TabSetBlock(this, context);
