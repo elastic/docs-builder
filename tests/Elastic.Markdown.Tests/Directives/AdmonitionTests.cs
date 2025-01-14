@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public abstract class AdmonitionTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(output,
 $$"""
-:::{directive}}}
+:::{{{directive}}}
 This is an attention block
 :::
 A regular paragraph.
