@@ -1,6 +1,6 @@
 ---
 title: Markdown Syntax Extensions
-title_navigation: Markdown Extensions
+title_navigation: Markdown Syntax
 ---
 
 ## Syntax
