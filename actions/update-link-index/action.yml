@@ -48,6 +48,8 @@ runs:
         aws-region: us-east-1
     - name: Upload Link Reference File to S3
       shell: bash
+      env:
+        LINK_REFERENCE_FILE: ${{ inputs.link_reference_file }}
       run: |
         repository_name=$(basename "${GITHUB_REPOSITORY}")
-        aws s3 cp ${{ inputs.link_reference_file }} "s3://${{ inputs.aws_s3_bucket_name }}/${repository_name}.json"
+        aws s3 cp "${LINK_REFERENCE_FILE}" "s3://${{ inputs.aws_s3_bucket_name }}/${repository_name}.json"
