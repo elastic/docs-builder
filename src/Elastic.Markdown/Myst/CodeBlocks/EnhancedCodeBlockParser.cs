@@ -101,7 +101,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (span.IndexOf("<") < 0 && span.IndexOf("//") < 0)
 				continue;
 
-			Console.WriteLine("Code subbing: " + context.Path.FullName);
 			CallOut? callOut = null;
 
 			if (span.IndexOf("<") > 0)
