@@ -39,6 +39,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish", "publish", "{CD2887E3-BDA9-434B-A5BF-9ED38DE20332}"
 	ProjectSection(SolutionItems) = preProject
 		actions\publish\action.yml = actions\publish\action.yml
+		actions\publish\github-pages.png = actions\publish\github-pages.png
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish-vercel", "publish-vercel", "{A2A34BBC-CB5E-4100-9529-A12B6ECB769C}"

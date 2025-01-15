@@ -19,21 +19,21 @@ This feature is not currently supported in Elastic Docs V3.
 ## Block-level images
 
 ```markdown
-![APM](/_static/img/apm.png)
+![APM](img/apm.png)
 ```
 
-![APM](/_static/img/apm.png)
+![APM](img/apm.png)
 
 Or, use the `image` directive.
 
 ```markdown
-:::{image} /_static/img/observability.png
+:::{image} img/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
 ```
 
-:::{image} /_static/img/observability.png
+:::{image} img/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
@@ -41,10 +41,10 @@ Or, use the `image` directive.
 ## Inline images
 
 ```markdown
-Here is the same image used inline ![Elasticsearch](/_static/img/observability.png)
+Here is the same image used inline ![Elasticsearch](img/observability.png)
 ```
 
-Here is the same image used inline ![Elasticsearch](/_static/img/observability.png)
+Here is the same image used inline ![Elasticsearch](img/observability.png)
 
 ## Asciidoc syntax
 
