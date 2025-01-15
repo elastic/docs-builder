@@ -6,3 +6,5 @@ The files in this directory are used for testing purposes. Do not edit these fil
 
 
 ###### [#synthetics-config-file]
+
+% [Non Existing Link](./non-existing.md)

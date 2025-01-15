@@ -195,3 +195,59 @@ public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestB
 		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
 	}
 }
+
+public class CommentedNonExistingLinks(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	% [Non Existing Link](/non-existing.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().BeNullOrWhiteSpace();
+
+	[Fact]
+	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	% Hello, this is a [Non Existing Link](/non-existing.md).
+	Links:
+	- [](/testing/req.md)
+	% - [Non Existing Link](/non-existing.md)
+	- [](/testing/req.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.TrimEnd().Should().Be("""
+		<p>Links:</p>
+		<ul>
+		<li> <a href="/testing/req.html">Special Requirements</a></li>
+		</ul>
+		<ul>
+		<li> <a href="/testing/req.html">Special Requirements</a></li>
+		</ul>
+		""");
+
+	[Fact]
+	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class NonExistingLinkShouldFail(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[Non Existing Link](/non-existing.md)
+	- [Non Existing Link](/non-existing.md)
+	This is another [Non Existing Link](/non-existing.md)
+	% This is a commented [Non Existing Link](/non-existing.md)
+	"""
+)
+{
+
+	[Fact]
+	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(3);
+}
