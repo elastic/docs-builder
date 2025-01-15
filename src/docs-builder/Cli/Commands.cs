@@ -39,6 +39,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
 	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
+	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -48,6 +49,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		string? output = null,
 		string? pathPrefix = null,
 		bool? force = null,
+		bool? strict = null,
 		Cancel ctx = default
 	)
 	{
@@ -62,7 +64,13 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		var set = new DocumentationSet(context);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
-		return context.Collector.Errors + context.Collector.Warnings;
+
+		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
+			strict ??= strictValue;
+
+		if (strict ?? false)
+			return context.Collector.Errors + context.Collector.Warnings;
+		return context.Collector.Errors;
 	}
 
 	/// <summary>
@@ -72,6 +80,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
 	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
+	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -81,7 +90,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		string? output = null,
 		string? pathPrefix = null,
 		bool? force = null,
+		bool? strict = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, ctx);
+		await Generate(path, output, pathPrefix, force, strict, ctx);
 }
