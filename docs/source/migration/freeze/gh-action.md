@@ -26,30 +26,8 @@ on:
 
 jobs:
   comment-on-asciidoc-change:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-
-      - name: Check for changes in .asciidoc files
-        id: check-files
-        run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '\.asciidoc$'; then
-            echo "asciidoc_changed=true" >> $GITHUB_ENV
-          else
-            echo "asciidoc_changed=false" >> $GITHUB_ENV
-          fi
-
-      - name: Add a comment if .asciidoc files changed
-        if: env.asciidoc_changed == 'true'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: 'It looks like this PR modifies one or more `.asciidoc` files. The documentation is currently under a documentation freeze. Please do not merge this PR. See [link](link) to learn more.'
-            });
+    permissions:
+      contents: read
+      pull_request: write
+    uses: elastic/docs-builder/.github/workflows/comment-on-asciidoc-changes.yml@main
 ```
