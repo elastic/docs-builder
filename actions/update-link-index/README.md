@@ -53,7 +53,7 @@ jobs:
       name: github-pages
       url: ${{steps.deployment.outputs.page_url}}
     steps:
-     - name: Publish Github
+      - name: Publish Github
         uses: elastic/docs-builder/actions/publish@main
         id: deployment 
 
