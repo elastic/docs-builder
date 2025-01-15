@@ -19,13 +19,24 @@ runs:
   using: "composite"
   steps:
     - id: repo-basename
+      if: ${{ github.repository.private == false }}
       shell: bash
       run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-    - name: Build documentation
+
+    - name: Build public documentation
+      if: ${{ github.repository.private == false }}
       uses: elastic/docs-builder@main
       with:
         prefix: '${{ steps.repo-basename.outputs.value }}'
         strict: ${{ inputs.strict }}
+
+    - name: Build private documentation
+      if: ${{ github.repository.private == true }}
+      uses: elastic/docs-builder@main
+      continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+      with:
+        strict: ${{ inputs.strict }}
+
     - name: Setup Pages
       id: pages
       uses: actions/configure-pages@v5.0.0
