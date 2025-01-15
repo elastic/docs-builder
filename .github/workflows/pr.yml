@@ -36,4 +36,4 @@ jobs:
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
-        run: .artifacts/publish/docs-builder/release/docs-builder
+        run: .artifacts/publish/docs-builder/release/docs-builder --strict

@@ -100,12 +100,6 @@ public record MarkdownFile : DocumentationFile
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
-		if (string.IsNullOrEmpty(Title))
-		{
-			Title = RelativePath;
-			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
-		}
-
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
@@ -114,7 +108,13 @@ public record MarkdownFile : DocumentationFile
 			// TODO remove when migration tool and our demo content sets are updated
 			var deprecatedTitle = YamlFrontMatter.Title;
 			if (!string.IsNullOrEmpty(deprecatedTitle))
+			{
 				Collector.EmitWarning(FilePath, "'title' is no longer supported in yaml frontmatter please use a level 1 header instead.");
+				// TODO remove fallback once migration is over and we fully deprecate front matter titles
+				if (string.IsNullOrEmpty(Title))
+					Title = deprecatedTitle;
+			}
+
 
 			// set title on yaml front matter manually.
 			// frontmatter gets passed around as page information throughout
@@ -142,6 +142,13 @@ public record MarkdownFile : DocumentationFile
 		}
 		else
 			YamlFrontMatter = new YamlFrontMatter { Title = Title };
+
+		if (string.IsNullOrEmpty(Title))
+		{
+			Title = RelativePath;
+			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
+		}
+
 
 
 		var contents = document

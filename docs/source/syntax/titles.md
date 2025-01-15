@@ -23,7 +23,7 @@ As well as when using the autolink naming feature e.g:
 [titles.md]()
 ```
 
-Generated link text: [](syntax/titles.md)
+Generated link text: [](titles.md)
 
 
 
