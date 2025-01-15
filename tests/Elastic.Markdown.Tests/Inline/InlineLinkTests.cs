@@ -171,3 +171,25 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 		Collector.CrossLinks.Should().Contain("kibana://index.md");
 	}
 }
+
+public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[global search field]({{kibana-ref}}/introduction.html#kibana-navigation-search)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="%7B%7Bkibana-ref%7D%7D/introduction.html#kibana-navigation-search">global search field</a></p>"""
+		);
+
+	[Fact]
+	public void HasWarnings()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.First().Severity.Should().Be(Diagnostics.Severity.Warning);
+		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
+	}
+}

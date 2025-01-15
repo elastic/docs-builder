@@ -9,9 +9,9 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public abstract class AdmonitionTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(output,
 $$"""
-```{{{directive}}}
+:::{{{directive}}}
 This is an attention block
-```
+:::
 A regular paragraph.
 """
 )
@@ -65,10 +65,10 @@ A regular paragraph.
 
 public class DropdownTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
 """
-```{dropdown} This is my custom dropdown
+:::{dropdown} This is my custom dropdown
 :open:
 This is an attention block
-```
+:::
 A regular paragraph.
 """
 )

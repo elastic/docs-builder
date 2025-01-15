@@ -12,10 +12,10 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
 """
-```{image} img/observability.png
+:::{image} img/observability.png
 :alt: Elasticsearch
 :width: 250px
-```
+:::
 """
 )
 {
@@ -43,13 +43,13 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 
 public class FigureTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
 """
-```{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true
+:::{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true
 :label: myFigure
 :alt: Sunset at the beach
 :align: center
 
 Relaxing at the beach 🏝 🌊 😎
-```
+:::
 """
 )
 {

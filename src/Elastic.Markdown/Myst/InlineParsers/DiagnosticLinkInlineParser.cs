@@ -62,6 +62,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 		}
 
+		if (url.Contains("{{") || url.Contains("}}"))
+		{
+			processor.EmitWarning(line, column, length, "The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
+			return match;
+		}
+
 		var uri = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u : null;
 
 		if (IsCrossLink(uri))
@@ -102,9 +108,20 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (link.FirstChild == null || !string.IsNullOrEmpty(anchor))
 		{
-			var file = string.IsNullOrWhiteSpace(url) ? context.Path
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')));
+			var file = string.IsNullOrWhiteSpace(url)
+				? context.Path
+				: url.StartsWith('/')
+					? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')))
+					: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Path.Directory!.FullName, url));
 			var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
+			if (markdown == null)
+			{
+				processor.EmitWarning(line,
+					column,
+					length,
+					$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
+			}
+
 			var title = markdown?.Title;
 
 			if (!string.IsNullOrEmpty(anchor))

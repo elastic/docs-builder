@@ -25,10 +25,10 @@ Dropdown content
 :::
 ```
 
-```{dropdown} Dropdown Title
+:::{dropdown} Dropdown Title
 :open:
 Dropdown content
-```
+:::
 
 ## Asciidoc syntax
 

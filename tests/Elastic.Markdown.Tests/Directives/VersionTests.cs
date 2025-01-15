@@ -12,9 +12,9 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public abstract class VersionTests(ITestOutputHelper output, string directive) : DirectiveTest<VersionBlock>(output,
 $$"""
-```{{{directive}}} 1.0.1-beta1 more information
+:::{{{directive}}} 1.0.1-beta1 more information
 Version brief summary
-```
+:::
 A regular paragraph.
 """
 )
@@ -53,9 +53,9 @@ public class VersionDeprectatedTests(ITestOutputHelper output) : VersionTests(ou
 
 public abstract class VersionValidationTests(ITestOutputHelper output, string version) : DirectiveTest<VersionBlock>(output,
 $$"""
-```{versionchanged} {{version}} more information
+:::{versionchanged} {{version}} more information
 Version brief summary
-```
+:::
 A regular paragraph.
 """
 );

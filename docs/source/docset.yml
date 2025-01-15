@@ -17,6 +17,7 @@ external_hosts:
   - palletsprojects.com
   - google.com
   - checkvist.com
+  - commonmark.org
 exclude:
   - '_*.md'
 subs:
@@ -64,6 +65,7 @@ toc:
   - folder: syntax
     children:
       - file: index.md
+      - file: md-extensions.md
       - file: admonitions.md
       - file: automated_settings.md
       - file: code.md

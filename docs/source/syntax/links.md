@@ -30,6 +30,42 @@ I link to the [Inline link](#inline-link) heading above.
 I link to the [Notes](tables.md#notes) heading on the [Tables](tables.md) page.
 ```
 
+## Cross Links
+
+Cross links are links that point to a different docset.
+
+```markdown
+[Cross link](kibana://cross-link.md)
+```
+
+The syntax is `<scheme>://<path>`, where <scheme> is the repository name and <path> is the path to the file.
+
+## Auto Text Links
+
+If you link to a local markdown file but omit any link text `docs-builder` will use the target's [title](titles.md).
+
+```markdown
+[](applies.md)
+```
+will output: [](applies.md)
+
+You can go one step further to auto generate link text for headings within files:
+
+```markdown
+[](applies.md#sections)
+```
+
+will output: [](applies.md#sections)
+
+This also applies to local anchors
+
+
+```markdown
+[](#anchor-link)
+```
+
+will output: [](#anchor-link)
+
 ## Heading anchors
 
 Headings will automatically create anchor links in the resulting html. 

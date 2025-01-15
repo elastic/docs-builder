@@ -30,5 +30,5 @@ groups:
 
 _Everything below this line is auto-generated._
 
-```{settings} /syntax/kibana-alerting-action-settings.yml
-```
+:::{settings} /syntax/kibana-alerting-action-settings.yml
+:::

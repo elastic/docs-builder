@@ -10,9 +10,9 @@ Images can be referenced from the top-level `_static` dir or a local image dir.
 
 Screenshots are images displayed with a box-shadow.
 
-```{warning}
+:::{warning}
 This feature is not currently supported in Elastic Docs V3.
-```
+:::
 
 ## Block-level images
 
@@ -31,10 +31,10 @@ Or, use the `image` directive.
 :::
 ```
 
-```{image} /_static/img/observability.png
+:::{image} /_static/img/observability.png
 :alt: Elasticsearch
 :width: 250px
-```
+:::
 
 ## Inline images
 

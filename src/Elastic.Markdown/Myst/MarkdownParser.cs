@@ -53,9 +53,11 @@ public class MarkdownParser(
 			.DisableHtml()
 			.Build();
 
+	public ConfigurationFile Configuration { get; } = configuration;
+
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context, configuration)
+		var context = new ParserContext(this, path, null, Context, Configuration)
 		{
 			SkipValidation = true,
 			GetDocumentationFile = getDocumentationFile
@@ -65,7 +67,7 @@ public class MarkdownParser(
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, matter, Context, configuration)
+		var context = new ParserContext(this, path, matter, Context, Configuration)
 		{
 			GetDocumentationFile = getDocumentationFile
 		};
@@ -96,7 +98,7 @@ public class MarkdownParser(
 
 	public MarkdownDocument Parse(string yaml, IFileInfo parent, YamlFrontMatter? matter)
 	{
-		var context = new ParserContext(this, parent, matter, Context, configuration)
+		var context = new ParserContext(this, parent, matter, Context, Configuration)
 		{
 			GetDocumentationFile = getDocumentationFile
 		};

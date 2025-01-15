@@ -12,6 +12,7 @@ Whether you're a technical writer or you've only edited Elastic docs once or twi
 
 * Simple bugs and enhancements --> [Contribute on the web](on-the-web.md)
 * Complex or multi-page updates --> [Contribute locally](locally.md)
+* Test migrated content --> [Migration guide](../migration/guide/index.md)
 
 ## Report a bug
 

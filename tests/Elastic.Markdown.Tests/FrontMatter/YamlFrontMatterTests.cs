@@ -49,3 +49,18 @@ public class EmptyFileWarnsNeedingATitle(ITestOutputHelper output) : DirectiveTe
 		Collector.Diagnostics.Should().NotBeEmpty()
 			.And.Contain(d => d.Message.Contains("Document has no title, using file name as title."));
 }
+
+public class NavigationTitleSupportReplacements(ITestOutputHelper output) : DirectiveTest(output,
+"""
+---
+title: Elastic Docs v3
+navigation_title: "Documentation Guide: {{key}}"
+sub:
+  key: "value"
+---
+"""
+)
+{
+	[Fact]
+	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
+}

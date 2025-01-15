@@ -10,7 +10,7 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class MermaidBlockTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
 """
-```{mermaid} /_static/img/observability.png
+:::{mermaid} /_static/img/observability.png
 flowchart LR
   A[Jupyter Notebook] --> C
   B[MyST Markdown] --> C
@@ -21,7 +21,7 @@ flowchart LR
   D --> H[React]
   D --> I[HTML]
   D <--> J[JATS]
-```
+:::
 """
 )
 {

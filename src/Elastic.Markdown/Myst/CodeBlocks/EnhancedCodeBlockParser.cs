@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -87,7 +88,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			var line = lines.Lines[index];
 			var span = line.Slice.AsSpan();
 
-			if (ReplaceSubstitutions(context, span, out var replacement))
+			if (span.ReplaceSubstitutions(context.FrontMatter?.Properties, out var replacement))
 			{
 				var s = new StringSlice(replacement);
 				lines.Lines[index] = new StringLine(ref s);
@@ -137,37 +138,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			codeBlock.InlineAnnotations = true;
 
 		return base.Close(processor, block);
-	}
-
-	private static bool ReplaceSubstitutions(ParserContext context, ReadOnlySpan<char> span, out string? replacement)
-	{
-		replacement = null;
-		var substitutions = context.FrontMatter?.Properties ?? new();
-		if (substitutions.Count == 0)
-			return false;
-
-		var matchSubs = CallOutParser.MatchSubstitutions().EnumerateMatches(span);
-
-		var replaced = false;
-		foreach (var match in matchSubs)
-		{
-			if (match.Length == 0)
-				continue;
-
-			var spanMatch = span.Slice(match.Index, match.Length);
-			var key = spanMatch.Trim(['{', '}']);
-
-			// TODO: alternate lookup using span in c# 9
-			if (substitutions.TryGetValue(key.ToString(), out var value))
-			{
-				replacement ??= span.ToString();
-				replacement = replacement.Replace(spanMatch.ToString(), value);
-				replaced = true;
-			}
-
-		}
-
-		return replaced;
 	}
 
 	private static CallOut? EnumerateAnnotations(Regex.ValueMatchEnumerator matches,
