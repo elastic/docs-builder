@@ -3,8 +3,8 @@ template: |
   $CHANGES
 
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
-name-template: 'docs-builder v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: 'docs-builder $RESOLVED_VERSION'
+tag-template: '$RESOLVED_VERSION'
 change-template: '- $TITLE by @$AUTHOR in #$NUMBER'
 categories:
   - title: '💥 Breaking Changes'
