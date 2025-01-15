@@ -162,4 +162,4 @@ To create a new release you need to publish the existing draft release created b
 > [!NOTE]
 > When a release is published, the [create-major-tag workflow](../.github/workflows/create-major-tag.yml)
 > will force push a new major tag in the format `vX` where `X` is the major version of the release.
-> For example, if the release is `v1.2.3` was published, the workflow will force push a new tag `v1` on the same commit.
+> For example, if the release is `1.2.3` was published, the workflow will force push a new tag `v1` on the same commit.
