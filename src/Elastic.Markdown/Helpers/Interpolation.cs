@@ -17,6 +17,9 @@ public static class Interpolation
 	public static bool ReplaceSubstitutions(this ReadOnlySpan<char> span, Dictionary<string, string>? properties, out string? replacement)
 	{
 		replacement = null;
+		if (span.IndexOf("}}") < 0)
+			return false;
+
 		var substitutions = properties ?? new();
 		if (substitutions.Count == 0)
 			return false;
