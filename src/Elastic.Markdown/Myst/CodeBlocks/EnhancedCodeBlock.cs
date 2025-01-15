@@ -22,6 +22,8 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 
 	public List<CallOut>? CallOuts { get; set; }
 
+	public IReadOnlyCollection<CallOut> UniqueCallOuts => CallOuts?.DistinctBy(c => c.Index).ToList() ?? [];
+
 	public bool InlineAnnotations { get; set; }
 
 	public string Language { get; set; } = "unknown";

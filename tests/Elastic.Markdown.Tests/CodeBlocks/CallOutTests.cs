@@ -117,6 +117,35 @@ var z = y - 2; <2>
 		.And.OnlyContain(c => c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
 }
 
+public class ClassicCallOutsReuseHighlights(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2; <2>
+var z = y - 2; <2>
+""",
+"""
+1. The first
+2. The second appears twice
+"""
+
+	)
+{
+	[Fact]
+	public void SeesTwoUniqueCallouts() => Block!.UniqueCallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2)
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
+
+	[Fact]
+	public void ParsesAllForLineInformation() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(3)
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
+
+	[Fact]
+	public void RequiresContentToFollow() => Collector.Diagnostics.Should().BeEmpty();
+}
+
 public class ClassicCallOutWithTheRightListItems(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
 var x = 1; <1>

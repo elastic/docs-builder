@@ -172,9 +172,14 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 			callOutIndex++;
 			var callout = span.Slice(match.Index + startIndex, match.Length - startIndex);
+			var index = callOutIndex;
+			if (!inlineCodeAnnotation && int.TryParse(callout.Trim(['<', '>']), out index))
+			{
+
+			}
 			return new CallOut
 			{
-				Index = callOutIndex,
+				Index = index,
 				Text = callout.TrimStart('/').TrimStart('#').TrimStart().ToString(),
 				InlineCodeAnnotation = inlineCodeAnnotation,
 				SliceStart = startIndex,
