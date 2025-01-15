@@ -1,7 +1,8 @@
 ---
-title: Markdown Syntax Extensions
 title_navigation: Markdown Syntax
 ---
+
+# Markdown Syntax Extensions
 
 ## Syntax
 
