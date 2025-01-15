@@ -53,24 +53,9 @@ jobs:
       name: github-pages
       url: ${{steps.deployment.outputs.page_url}}
     steps:
-      - id: repo-basename
-        run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-      - uses: actions/checkout@v4
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5.0.0
-      - name: Build documentation
-        uses: elastic/docs-builder@main
-        with:
-          prefix: '${{ steps.repo-basename.outputs.value }}'
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3.0.1
-        with:
-          path: .artifacts/docs/html
-          
-      - name: Deploy artifact
-        id: deployment
-        uses: actions/deploy-pages@v4.0.5 
+     - name: Publish Github
+        uses: elastic/docs-builder/actions/publish@main
+        id: deployment 
 
       - name: Update Link Index
         uses: elastic/docs-builder/actions/update-link-index@main
