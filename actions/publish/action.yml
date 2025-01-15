@@ -14,6 +14,10 @@ inputs:
   strict:
     description: 'Treat warnings as errors'
     required: false
+  continue-on-error:
+    description: 'Treat warnings as errors'
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -23,6 +27,7 @@ runs:
       run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
     - name: Build documentation
       uses: elastic/docs-builder@main
+      continue-on-error: ${{ inputs.continue-on-error == 'true' }}
       with:
         prefix: '${{ steps.repo-basename.outputs.value }}'
         strict: ${{ inputs.strict }}
