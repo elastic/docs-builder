@@ -142,7 +142,8 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider
 
 	private static T? Yield<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate, PhysicalFileProvider? provider)
 	{
-		if (provider is null) return default;
+		if (provider is null)
+			return default;
 		var result = predicate(arg, provider);
 		return result ?? default;
 	}
