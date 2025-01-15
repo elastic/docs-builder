@@ -124,6 +124,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public virtual async Task StopAsync(CancellationToken cancellationToken)
 	{
+		Console.WriteLine("Stopping diagnostics");
 		if (_started is not null)
 			await _started;
 		await Channel.Reader.Completion;

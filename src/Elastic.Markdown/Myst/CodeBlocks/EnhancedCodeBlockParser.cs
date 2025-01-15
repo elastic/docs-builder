@@ -87,6 +87,8 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			originatingLine++;
 			var line = lines.Lines[index];
 			var span = line.Slice.AsSpan();
+			if (span.IndexOf("{{") < 0)
+				continue;
 
 			if (span.ReplaceSubstitutions(context.FrontMatter?.Properties, out var replacement))
 			{

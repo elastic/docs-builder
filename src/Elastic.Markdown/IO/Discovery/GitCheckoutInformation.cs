@@ -40,9 +40,9 @@ public record GitCheckoutInformation
 	public static GitCheckoutInformation Create(IFileSystem fileSystem)
 	{
 		// filesystem is not real so return a dummy
+		var fakeRef = Guid.NewGuid().ToString().Substring(0, 16);
 		if (fileSystem is not FileSystem)
 		{
-			var fakeRef = Guid.NewGuid().ToString().Substring(0, 16);
 			return new GitCheckoutInformation
 			{
 				Branch = $"test-{fakeRef}",
@@ -56,14 +56,14 @@ public record GitCheckoutInformation
 		if (!gitConfig.Exists)
 			return Unavailable;
 
-		var head = Read(".git/HEAD");
+		var head = Read(".git/HEAD") ?? fakeRef;
 		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
 		//not detached HEAD
 		if (head.StartsWith("ref:"))
 		{
 			head = head.Replace("ref: ", string.Empty);
-			gitRef = Read(".git/" + head);
+			gitRef = Read(".git/" + head) ?? fakeRef;
 			branch = branch.Replace("ref: ", string.Empty);
 		}
 		else
@@ -94,8 +94,13 @@ public record GitCheckoutInformation
 
 		IFileInfo Git(string path) => fileSystem.FileInfo.New(Path.Combine(Paths.Root.FullName, path));
 
-		string Read(string path) =>
-			fileSystem.File.ReadAllText(Git(path).FullName).Trim(Environment.NewLine.ToCharArray());
+		string? Read(string path)
+		{
+			var gitPath = Git(path).FullName;
+			if (!fileSystem.File.Exists(gitPath))
+				return null;
+			return fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
+		}
 
 		string BranchTrackingRemote(string b, IniFile c)
 		{
