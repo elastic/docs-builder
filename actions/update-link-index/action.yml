@@ -1,0 +1,56 @@
+name: Update Link Index
+
+description: |
+  This action updates the link index for the given link reference file.
+
+inputs:
+  link_reference_file:
+    description: 'The path to the link reference file'
+    required: false
+    default: '.artifacts/docs/html/links.json'
+  aws_account_id:
+    description: 'The AWS account ID to generate the role ARN for'
+    required: false
+    default: '197730964718' # elastic-web
+  aws_region:
+    description: 'The AWS region to use'
+    required: false
+    default: 'us-east-1'
+  aws_s3_bucket_name:
+    description: 'The name of the S3 bucket to upload the link reference file to'
+    required: false
+    default: 'elastic-docs-link-index'
+
+runs:
+  using: composite
+  steps:
+    - name: Update Link Index
+      run: |
+        echo "Updating link index"
+    - name: Generate AWS Role ARN
+      id: role_arn
+      shell: python
+      env:
+        AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
+      run: |
+          import hashlib
+          import os
+
+          prefix = "elastic-docs-link-index-uploader-"
+          aws_account_id = os.environ["AWS_ACCOUNT_ID"]
+
+          m = hashlib.sha256()
+          m.update(os.environ["GITHUB_REPOSITORY"].encode('utf-8'))
+          hash = m.hexdigest()[:64-len(prefix)]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"result=arn:aws:iam::{aws_account_id}:role/{prefix}{hash}")
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      with:
+        role-to-assume: ${{ steps.role_arn.outputs.result }}
+        aws-region: us-east-1
+    - name: Upload Link Reference File to S3
+      bash: shell
+      run: |
+        repository_name=$(basename "${GITHUB_REPOSITORY}")
+        aws s3 cp ${{ inputs.link_reference_file }} "s3://${{ inputs.aws_s3_bucket_name }}/${repository_name}.json"
