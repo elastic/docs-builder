@@ -8,9 +8,9 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MermaidBlockTests(ITestOutputHelper output) : DirectiveTest<MermaidBlock>(output,
+public class MermaidBlockTests(ITestOutputHelper output) : DirectiveTest<UnsupportedDirectiveBlock>(output,
 """
-:::{mermaid} /_static/img/observability.png
+:::{mermaid} as
 flowchart LR
   A[Jupyter Notebook] --> C
   B[MyST Markdown] --> C
@@ -28,6 +28,7 @@ flowchart LR
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
+	// should still attempt to render contents as markdown
 	[Fact]
 	public void IncludesRawFlowChart() =>
 		Html.Should().Contain("D --&gt; I[HTML]");

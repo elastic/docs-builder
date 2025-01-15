@@ -97,14 +97,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var anchor = anchors.Length > 1 ? anchors[1].Trim() : null;
 		url = anchors[0];
 
-		if (!string.IsNullOrWhiteSpace(url) && uri != null)
+		if (!string.IsNullOrWhiteSpace(url))
 		{
 			var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
-			if (uri.IsFile && !context.Build.ReadFileSystem.File.Exists(pathOnDisk))
+			if ((uri is null || uri.IsFile) && !context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 				processor.EmitError(line, column, length, $"`{url}` does not exist. resolved to `{pathOnDisk}");
 		}
 		else
+		{
+			if (string.IsNullOrEmpty(anchor))
+				processor.EmitWarning(line, column, length, $"No url was specified for the link.");
 			link.Url = "";
+		}
 
 		if (link.FirstChild == null || !string.IsNullOrEmpty(anchor))
 		{

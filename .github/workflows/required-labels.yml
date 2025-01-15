@@ -1,0 +1,33 @@
+name: required-labels
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - labeled
+      - unlabeled
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  check-labels:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: get-labels
+        run: |
+          labels=$(yq '[.categories[].labels] + .exclude-labels | flatten | unique | sort | @tsv' .github/release-drafter.yml | tr '\t' ',')
+          echo "labels=$labels" >> "${GITHUB_OUTPUT}"
+      - id: check-labels
+        uses: mheap/github-action-required-labels@5847eef68201219cf0a4643ea7be61e77837bbce # v5.4.1
+        with:
+          mode: exactly
+          count: 1
+          use_regex: false
+          add_comment: true
+          labels: ${{ steps.get-labels.outputs.labels }}

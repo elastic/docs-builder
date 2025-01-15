@@ -113,7 +113,7 @@ Make sure your repository settings are set up to deploy from GitHub actions see:
 https://github.com/elastic/{your-repository}/settings/pages
 
 ---
-![docs/source/_static/img/github-pages.png](docs/source/_static/img/github-pages.png)
+![actions/publish/github-pages.png](actions/publish/github-pages.png)
 
 ---
 
@@ -136,3 +136,30 @@ To test performance it's best to build the binary and run outside of docker:
 
 For reference here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
 existing surveyed tools
+
+# Release Process
+
+This section outlines the process for releasing a new version of this project.
+
+## Versioning
+
+This project uses [Semantic Versioning](https://semver.org/) and its version is
+automatically determined by [release-drafter](https://github.com/release-drafter/release-drafter)
+based on the labels of the pull requests merged into the `main` branch.
+
+See the [release-drafter configuration](../.github/release-drafter.yml) for more details.
+
+## Creating a New Release
+
+Every time a pull request is merged into the `main` branch, release-drafter will
+create a draft release or update the existing draft release in the [Releases](https://github.com/elastic/docs-builder/releases) page.
+
+To create a new release you need to publish the existing draft release created by release-drafter.
+
+> [!IMPORTANT]
+> Make sure the [release-drafter workflow](../.github/workflows/release-drafter.yml) is finished before publishing the release.
+
+> [!NOTE]
+> When a release is published, the [create-major-tag workflow](../.github/workflows/create-major-tag.yml)
+> will force push a new major tag in the format `vX` where `X` is the major version of the release.
+> For example, if the release is `1.2.3` was published, the workflow will force push a new tag `v1` on the same commit.

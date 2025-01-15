@@ -1,0 +1,39 @@
+# https://github.com/release-drafter/release-drafter?tab=readme-ov-file#configuration-options
+template: |
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+name-template: 'docs-builder $RESOLVED_VERSION'
+tag-template: '$RESOLVED_VERSION'
+change-template: '- $TITLE by @$AUTHOR in #$NUMBER'
+categories:
+  - title: '💥 Breaking Changes'
+    labels:
+      - 'breaking' # When a breaking change is introduced
+  - title: '✨ Features'
+    labels:
+      - 'feature' # When a new feature is introduced
+      - 'enhancement' # When an existing feature is improved
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'bug' # When a bug is fixed
+      - 'fix' # When a bug is fixed
+  - title: '📝 Documentation'
+    labels:
+      - 'documentation' # When documentation is updated
+  - title: '🧰 Maintenance'
+    labels:
+      - 'chore' # When a chore is done
+      - 'ci' # When CI is updated
+      - 'dependencies' # When dependencies are updated
+exclude-labels:
+  - 'changelog:skip' # When a PR should be excluded from the changelog
+version-resolver:
+  major:
+    labels:
+      - 'breaking'
+  minor:
+    labels:
+      - 'feature'
+      - 'enhancement'
+  default: patch

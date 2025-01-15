@@ -9,6 +9,9 @@ inputs:
   prefix:
     description: 'Path prefix for all urls'
     required: false
+  strict:
+    description: 'Treat warnings as errors'
+    required: false
 
 runs:
   using: 'docker'

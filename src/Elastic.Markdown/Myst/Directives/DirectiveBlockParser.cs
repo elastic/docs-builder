@@ -73,7 +73,8 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-		var directive = info.Trim(['{', '}', '`', ':']);
+		var closingBracket = info.IndexOf('}');
+		var directive = info[..closingBracket].Trim(['{', '}', '`', ':']);
 		if (UnsupportedLookup.TryGetValue(directive, out var issueId))
 			return new UnsupportedDirectiveBlock(this, directive.ToString(), issueId, context);
 
@@ -154,6 +155,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		}
 
 		if (line.IndexOf("{") == -1)
+			return BlockState.None;
+
+		if (line.IndexOf("}") == -1)
 			return BlockState.None;
 
 		return base.TryOpen(processor);
