@@ -24,9 +24,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Update Link Index
-      run: |
-        echo "Updating link index"
     - name: Generate AWS Role ARN
       id: role_arn
       shell: python
@@ -50,7 +47,7 @@ runs:
         role-to-assume: ${{ steps.role_arn.outputs.result }}
         aws-region: us-east-1
     - name: Upload Link Reference File to S3
-      bash: shell
+      shell: bash
       run: |
         repository_name=$(basename "${GITHUB_REPOSITORY}")
         aws s3 cp ${{ inputs.link_reference_file }} "s3://${{ inputs.aws_s3_bucket_name }}/${repository_name}.json"
