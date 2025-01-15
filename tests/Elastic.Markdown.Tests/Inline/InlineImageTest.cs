@@ -23,3 +23,20 @@ public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
 			"""<p><img src="/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }
+
+public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
+"""
+![Elasticsearch](_static/img/observability.png)
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void GeneratesAttributesInHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><img src="_static/img/observability.png" alt="Elasticsearch" /></p>"""
+		);
+}

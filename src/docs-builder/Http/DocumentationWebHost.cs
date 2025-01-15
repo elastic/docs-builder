@@ -26,7 +26,6 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly string _staticFilesDirectory;
 	private readonly BuildContext _context;
 
 	public DocumentationWebHost(string? path, ILoggerFactory logger, IFileSystem fileSystem)
@@ -55,15 +54,6 @@ public class DocumentationWebHost
 
 		//builder.Services.AddSingleton(logger);
 
-		_staticFilesDirectory = Path.Combine(_context.SourcePath.FullName, "_static");
-#if DEBUG
-		// this attempts to serve files directly from their source rather than the embedded resourses during development.
-		// this allows us to change js/css files without restarting the webserver
-		var solutionRoot = Paths.GetSolutionDirectory();
-		if (solutionRoot != null)
-			_staticFilesDirectory = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
-#endif
-
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}
@@ -86,7 +76,7 @@ public class DocumentationWebHost
 		_webApplication.UseLiveReload();
 		_webApplication.UseStaticFiles(new StaticFileOptions
 		{
-			FileProvider = new EmbeddedOrPhysicalFileProvider(_staticFilesDirectory),
+			FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
 			RequestPath = "/_static"
 		});
 		_webApplication.UseRouting();
@@ -124,35 +114,60 @@ public class DocumentationWebHost
 
 public class EmbeddedOrPhysicalFileProvider : IFileProvider
 {
-	private readonly EmbeddedFileProvider _embeddedProvider;
-	private readonly PhysicalFileProvider _fileProvider;
+	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
+	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
 
-	public EmbeddedOrPhysicalFileProvider(string root)
+	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug = null;
+
+	public EmbeddedOrPhysicalFileProvider(BuildContext context)
 	{
-		_embeddedProvider = new EmbeddedFileProvider(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
-		_fileProvider = new PhysicalFileProvider(root);
+		var documentationStaticFiles = Path.Combine(context.SourcePath.FullName, "_static");
+#if DEBUG
+		// this attempts to serve files directly from their source rather than the embedded resources during development.
+		// this allows us to change js/css files without restarting the webserver
+		var solutionRoot = Paths.GetSolutionDirectory();
+		if (solutionRoot != null)
+		{
+
+			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
+			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
+		}
+#endif
+		if (context.ReadFileSystem.Directory.Exists(documentationStaticFiles))
+			_staticFilesInDocsFolder = new PhysicalFileProvider(documentationStaticFiles);
+	}
+
+	private T? FirstYielding<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate) =>
+		Yield(arg, predicate, _staticWebFilesDuringDebug) ?? Yield(arg, predicate, _staticFilesInDocsFolder);
+
+	private static T? Yield<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate, PhysicalFileProvider? provider)
+	{
+		if (provider is null) return default;
+		var result = predicate(arg, provider);
+		return result ?? default;
 	}
 
 	public IDirectoryContents GetDirectoryContents(string subpath)
 	{
-		var contents = _fileProvider.GetDirectoryContents(subpath);
-		if (!contents.Exists)
+		var contents = FirstYielding(subpath, static (a, p) => p.GetDirectoryContents(a));
+		if (contents is null || !contents.Exists)
 			contents = _embeddedProvider.GetDirectoryContents(subpath);
 		return contents;
 	}
 
 	public IFileInfo GetFileInfo(string subpath)
 	{
-		var fileInfo = _fileProvider.GetFileInfo(subpath.Replace("/_static", ""));
-		if (!fileInfo.Exists)
+		var path = subpath.Replace("/_static", "");
+		var fileInfo = FirstYielding(path, static (a, p) => p.GetFileInfo(a));
+		if (fileInfo is null || !fileInfo.Exists)
 			fileInfo = _embeddedProvider.GetFileInfo(subpath);
 		return fileInfo;
 	}
 
 	public IChangeToken Watch(string filter)
 	{
-		var changeToken = _fileProvider.Watch(filter);
-		if (changeToken is NullChangeToken)
+		var changeToken = FirstYielding(filter, static (f, p) => p.Watch(f));
+		if (changeToken is null or NullChangeToken)
 			changeToken = _embeddedProvider.Watch(filter);
 		return changeToken;
 	}
