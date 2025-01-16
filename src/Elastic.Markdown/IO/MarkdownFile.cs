@@ -61,8 +61,15 @@ public record MarkdownFile : DocumentationFile
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
+	public int NavigationIndex
+	{
+		get { return _navigationIndex; }
+		set { _navigationIndex = value; }
+	}
+
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
+	private int _navigationIndex;
 
 	public MarkdownFile[] YieldParents()
 	{

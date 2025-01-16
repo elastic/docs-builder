@@ -36,12 +36,13 @@ public class DocumentationGroup
 		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
+		ref int fileIndex,
 		int depth = 0,
 		MarkdownFile? index = null
 	)
 	{
 		Depth = depth;
-		Index = ProcessTocItems(index, toc, lookup, folderLookup, depth, out var groups, out var files, out var navigationItems);
+		Index = ProcessTocItems(index, toc, lookup, folderLookup, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
@@ -59,6 +60,7 @@ public class DocumentationGroup
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
 		int depth,
+		ref int fileIndex,
 		out List<DocumentationGroup> groups,
 		out List<MarkdownFile> files,
 		out List<INavigationItem> navigationItems)
@@ -75,10 +77,11 @@ public class DocumentationGroup
 					continue;
 
 				md.Parent = this;
+				md.NavigationIndex = ++fileIndex;
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
-					var group = new DocumentationGroup(file.Children, lookup, folderLookup, depth + 1, virtualIndex)
+					var group = new DocumentationGroup(file.Children, lookup, folderLookup, ref fileIndex, depth + 1, virtualIndex)
 					{
 						Parent = this
 					};
@@ -108,7 +111,7 @@ public class DocumentationGroup
 						.ToArray();
 				}
 
-				var group = new DocumentationGroup(children, lookup, folderLookup, depth + 1)
+				var group = new DocumentationGroup(children, lookup, folderLookup, ref fileIndex, depth + 1)
 				{
 					Parent = this
 				};

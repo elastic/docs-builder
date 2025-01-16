@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
@@ -56,16 +57,23 @@ public class DocumentationSet
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
-		FlatMappedFiles = Files.ToDictionary(file => file.RelativePath, file => file);
+		FlatMappedFiles = Files.ToDictionary(file => file.RelativePath, file => file).ToFrozenDictionary();
+
 		var folderFiles = Files
 			.GroupBy(file => file.RelativeFolder)
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
-		Tree = new DocumentationGroup(Configuration.TableOfContents, FlatMappedFiles, folderFiles)
+		var fileIndex = 0;
+		Tree = new DocumentationGroup(Configuration.TableOfContents, FlatMappedFiles, folderFiles, ref fileIndex)
 		{
 			Parent = null
 		};
+
+		MarkdownFiles = Files.OfType<MarkdownFile>().ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+
 	}
+
+	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; }
 
 	public MarkdownFile? GetMarkdownFile(IFileInfo sourceFile)
 	{
@@ -104,9 +112,9 @@ public class DocumentationSet
 
 	public DocumentationGroup Tree { get; }
 
-	public List<DocumentationFile> Files { get; }
+	public IReadOnlyCollection<DocumentationFile> Files { get; }
 
-	public Dictionary<string, DocumentationFile> FlatMappedFiles { get; }
+	public FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; }
 
 	public void ClearOutputDirectory()
 	{
