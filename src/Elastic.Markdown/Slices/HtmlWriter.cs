@@ -45,8 +45,8 @@ public class HtmlWriter
 		await DocumentationSet.Tree.Resolve(ctx);
 		var navigationHtml = await RenderNavigation(markdown, ctx);
 
-		var previous = DocumentationSet.MarkdownFiles.GetValueOrDefault(markdown.NavigationIndex -1);
-		var next = DocumentationSet.MarkdownFiles.GetValueOrDefault(markdown.NavigationIndex +1);
+		var previous = DocumentationSet.MarkdownFiles.GetValueOrDefault(markdown.NavigationIndex - 1);
+		var next = DocumentationSet.MarkdownFiles.GetValueOrDefault(markdown.NavigationIndex + 1);
 
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;
