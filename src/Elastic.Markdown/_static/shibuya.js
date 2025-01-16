@@ -15,27 +15,50 @@ iconify-icon/dist/iconify-icon.mjs:
   *)
 */
 
-/**
- * Expands all collapsed parent sections in the navigation tree that contain the current page link.
- * This ensures the current page is visible in the navigation by opening all ancestor collapsible sections.
- * The function works by:
- * 1. Finding the navigation link matching the current page URL
- * 2. Walking up the DOM tree from that link
- * 3. Expanding any collapsed parent sections by toggling their CSS classes
- */
-function expandCurrentPage() {
-  const currentPathname = window.location.pathname;
-  const currentLink = document.querySelector(`a[href="${currentPathname}"]`);
-  if (currentLink) {
-    let parent = currentLink.parentElement;
-    while (parent) {
-      if (parent.classList && parent.classList.contains('_collapse')) {
-        parent.classList.remove('_collapse');
-        parent.classList.add('_expand');
+(function() {
+  /**
+   * Keep the navigation scroll position when navigating between pages.
+   * This function saves the scroll position in the session storage when
+   * the page is unloaded and restores it when the page is loaded.
+   * This ensures the navigation scroll position is maintained when navigating
+   * between pages in the documentation.
+   */
+  function keepNavPosition() {
+    const nav = document.querySelector('.sy-scrollbar:has(> .globaltoc)');
+    const scrollPosition = sessionStorage.getItem('navScrollPosition');
+    if (scrollPosition) {
+      nav.scrollTop = scrollPosition;
+    }
+    window.addEventListener('beforeunload', () => {
+      sessionStorage.setItem('navScrollPosition', nav.scrollTop);
+    });
+  }
+
+  /**
+   * Expands all collapsed parent sections in the navigation tree that contain the current page link.
+   * This ensures the current page is visible in the navigation by opening all ancestor collapsible sections.
+   * The function works by:
+   * 1. Finding the navigation link matching the current page URL
+   * 2. Walking up the DOM tree from that link
+   * 3. Expanding any collapsed parent sections by toggling their CSS classes
+   */
+  function expandCurrentPage() {
+    const currentPathname = window.location.pathname;
+    const currentLink = document.querySelector(`a[href="${currentPathname}"]`);
+    if (currentLink) {
+      let parent = currentLink.parentElement;
+      while (parent) {
+        if (parent.classList && parent.classList.contains('_collapse')) {
+          parent.classList.remove('_collapse');
+          parent.classList.add('_expand');
+        }
+        parent = parent.parentElement;
       }
-      parent = parent.parentElement;
     }
   }
-}
 
-expandCurrentPage();
+  expandCurrentPage();
+  keepNavPosition();
+})();
+
+
