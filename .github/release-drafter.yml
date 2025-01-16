@@ -24,8 +24,11 @@ categories:
   - title: '🧰 Maintenance'
     labels:
       - 'chore' # When a chore is done
-      - 'ci' # When CI is updated
       - 'dependencies' # When dependencies are updated
+  - title: '⚙️ Automation'
+    labels:
+      - 'automation' # When automation is updated
+      - 'ci' # When automation is updated
 exclude-labels:
   - 'changelog:skip' # When a PR should be excluded from the changelog
 version-resolver:
