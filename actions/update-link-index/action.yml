@@ -51,5 +51,4 @@ runs:
       env:
         LINK_REFERENCE_FILE: ${{ inputs.link_reference_file }}
       run: |
-        repository_name=$(basename "${GITHUB_REPOSITORY}")
-        aws s3 cp "${LINK_REFERENCE_FILE}" "s3://${{ inputs.aws_s3_bucket_name }}/${repository_name}.json"
+        aws s3 cp "${LINK_REFERENCE_FILE}" "s3://${{ inputs.aws_s3_bucket_name }}/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/links.json"
