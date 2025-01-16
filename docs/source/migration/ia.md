@@ -9,8 +9,8 @@ The new IA design does the following:
 
 * Provides a clear narrative pathway for users to follow, including new topics that compare similar technologies and features.
 * Organizes content by user goal and role.
-* Consolidates content previously duplicated across our books, including serverless and stateful content, and many tasks that are common across deployment types and solutions.
-* Explains the context a topic applies to (deployment type, version) - see Consolidated versioning below for more information.
+* Consolidates content previously duplicated across our books, including cloud hosted, serverless, and stack content, and many tasks that are common across deployment types and solutions.
+* Explains the context a topic applies to (deployment type, version). Check out [Consolidated versioning](versioning.md) for more information.
 * Separates reference content into its own section for easy access.
 
 To learn more:
