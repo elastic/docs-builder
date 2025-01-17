@@ -10,6 +10,7 @@ using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -28,7 +29,7 @@ public class DocumentationWebHost
 
 	private readonly BuildContext _context;
 
-	public DocumentationWebHost(string? path, ILoggerFactory logger, IFileSystem fileSystem)
+	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
 	{
 		var builder = WebApplication.CreateSlimBuilder();
 
@@ -53,7 +54,7 @@ public class DocumentationWebHost
 		builder.Services.AddHostedService<ReloadGeneratorService>();
 
 		//builder.Services.AddSingleton(logger);
-
+		builder.WebHost.UseUrls($"http://localhost:{port}");
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}

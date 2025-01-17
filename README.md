@@ -25,7 +25,7 @@ Options:
 
 Commands:
   generate    Converts a source markdown folder or file to an output folder
-  serve       Continuously serve a documentation folder at http://localhost:5000.
+  serve       Continuously serve a documentation folder at http://localhost:3000.
     File systems changes will be reflected without having to restart the server.
 ```
 
