@@ -30,6 +30,9 @@ public record BuildContext
 		init => _urlPathPrefix = value;
 	}
 
+	// This property is used to determine if the site should be indexed by search engines
+	public bool AllowIndexing { get; init; }
+
 	private readonly string? _urlPathPrefix;
 
 	public BuildContext(IFileSystem fileSystem)
