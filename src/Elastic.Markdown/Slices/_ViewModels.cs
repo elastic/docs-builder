@@ -20,7 +20,6 @@ public class IndexViewModel
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required Deployment? Applies { get; init; }
-
 	public required bool AllowIndexing { get; init; }
 }
 
@@ -35,8 +34,7 @@ public class LayoutViewModel
 	public required string NavigationHtml { get; set; }
 	public required string? UrlPathPrefix { get; set; }
 	public required string? GithubEditUrl { get; set; }
-
-	public bool AllowIndexing { get; init; }
+	public required bool AllowIndexing { get; init; }
 
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents
