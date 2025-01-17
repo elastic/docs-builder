@@ -40,6 +40,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
+	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -50,6 +51,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		string? pathPrefix = null,
 		bool? force = null,
 		bool? strict = null,
+		bool? allowIndexing = null,
 		Cancel ctx = default
 	)
 	{
@@ -59,7 +61,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		{
 			UrlPathPrefix = pathPrefix,
 			Force = force ?? false,
-			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
+			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService),
+			AllowIndexing = allowIndexing != null
 		};
 		var set = new DocumentationSet(context);
 		var generator = new DocumentationGenerator(set, logger);
@@ -81,6 +84,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
+	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -91,7 +95,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		string? pathPrefix = null,
 		bool? force = null,
 		bool? strict = null,
+		bool? allowIndexing = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, strict, ctx);
+		await Generate(path, output, pathPrefix, force, strict, allowIndexing, ctx);
 }
