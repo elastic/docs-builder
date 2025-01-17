@@ -55,10 +55,7 @@ public class DocumentationWebHost
 
 		//builder.Services.AddSingleton(logger);
 
-		// See https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_running_in_container-and-dotnet_running_in_containers
-		// This way use the default port when running in a container
-		if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")) &&
-		    string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINERS")))
+		if (!_context.IsRunningInContainer)
 			builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		_webApplication = builder.Build();

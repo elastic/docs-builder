@@ -20,6 +20,8 @@ public record BuildContext
 
 	public GitCheckoutInformation Git { get; }
 
+	public bool IsRunningInContainer => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"));
+
 	public required DiagnosticsCollector Collector { get; init; }
 
 	public bool Force { get; init; }
