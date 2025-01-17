@@ -17,6 +17,6 @@ To improve consistency and maintain high-quality reference documentation, all AP
   * API descriptions
   * Request, response, parameter, and property descriptions
   * Valid examples
-* **Stylistically consistent content**: Refer to [API guidelines](https://elasticco.atlassian.net/wiki/spaces/DOC/pages/450494532/API+reference+docs) for consistency.
+* **Stylistically consistent content**: Refer to API guidelines for consistency (reach out to #docs team for the current internal link).
 Fix linting warnings: Address all new and existing linting warnings in OpenAPI files to maintain clean and consistent documentation.
 * **Automatically linted**: Use the shared linting rules and address all new and existing linting warnings to maintain clean and consistent documentation.
