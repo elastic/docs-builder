@@ -73,3 +73,56 @@ section:has(+ .product-availability) h2 {
 	text-align: left;
 	padding-left: 0;
 }
+
+/* 
+The following CSS is used to hack the cases where a 'code' tag is combined 
+with an 'a' tag that contains a 'code' tag as a child to make it appear as if it
+was a single entity.
+
+See https://github.com/elastic/docs-builder/issues/219 for further details
+*/
+
+/* select every 'a' tag with 'code' as child */
+.yue a:has(> code:only-child) {
+	border: 0 !important;
+	text-decoration: underline;
+	color: var(--yue-c-code-text);
+}
+
+/* select 'code' tag with 'a' tag as parent */
+.yue a > code:only-child {
+	color: var(--yue-c-code-text);
+	font-size: 0.875em;
+	padding: 2px 4px;
+	border-radius: 3px;
+	font-weight: 500;
+	background-color: var(--yue-c-code-background);
+}
+
+/* select 'code' tag with 'a' tag as parent if the next sibling is 'code' */
+.yue a:has(> code:only-child):has(+ code) > code:only-child {
+	padding-right: 0;
+	border-bottom-right-radius: 0;
+	border-top-right-radius: 0;
+}
+
+/* select 'code' tag with 'a' tag parent if previous sibling tag is 'code */
+.yue code + a > code:only-child {
+	padding-left: 0;
+	border-bottom-left-radius: 0;
+	border-top-left-radius: 0;
+}
+
+/* select 'code' tag if previous sibling is 'a' tag with 'code' tag child */
+.yue a:has(> code:only-child) + code {
+	padding-left: 0;
+	border-bottom-left-radius: 0;
+	border-top-left-radius: 0;
+}
+
+/* select 'code' tag if next sibling is 'a' tag with 'code' tag child */
+.yue code:has(+ a > code:only-child) {
+	padding-right: 0 !important;
+	border-bottom-right-radius: 0 !important;
+	border-top-right-radius: 0 !important;
+}
