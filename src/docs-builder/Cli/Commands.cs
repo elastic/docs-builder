@@ -22,7 +22,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="path">-p, Path to serve the documentation.
 	/// Defaults to the`{pwd}/docs` folder
 	/// </param>
-	/// <param name="port">Port to serve the documentation.
+	/// <param name="port">Port to serve the documentation.</param>
 	/// <param name="ctx"></param>
 	[Command("serve")]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
