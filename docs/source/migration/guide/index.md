@@ -57,3 +57,12 @@ unzip docs-builder-mac-arm64.zip
 # Build Kib Guide
 ./docs-builder serve -p ../kibana.md/docs
 ```
+
+## Pre-migrated content sets available for testing:
+
+* [elasticsearch.md](https://github.com/elastic/elasticsearch.md)
+* [integration-docs.md](https://github.com/elastic/integration-docs.md)
+* [kibana.md](https://github.com/elastic/kibana.md)
+* [logstash.md](https://github.com/elastic/logstash.md)
+* [machine-learning.md](https://github.com/elastic/machine-learning.md)
+* [observability-docs.md](https://github.com/elastic/observability-docs.md)
