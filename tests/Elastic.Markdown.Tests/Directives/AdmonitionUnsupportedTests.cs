@@ -32,5 +32,4 @@ public class HintTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(ou
 public class AttentionTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "attention");
 public class CautionTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "caution");
 public class SeeAlsoTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "seealso");
-public class AdmonitionTitleTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "admonition");
 // ReSharper restore UnusedType.Global

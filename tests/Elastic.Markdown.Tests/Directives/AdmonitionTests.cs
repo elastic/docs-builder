@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class AdmonitionTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(output,
+public abstract class AdmonitionBaseTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(output,
 $$"""
 :::{{{directive}}}
 This is an attention block
@@ -23,25 +23,25 @@ A regular paragraph.
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be(directive);
 }
 
-public class WarningTests(ITestOutputHelper output) : AdmonitionTests(output, "warning")
+public class WarningTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "warning")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Warning");
 }
 
-public class NoteTests(ITestOutputHelper output) : AdmonitionTests(output, "note")
+public class NoteTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "note")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Note");
 }
 
-public class TipTests(ITestOutputHelper output) : AdmonitionTests(output, "tip")
+public class TipTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "tip")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Tip");
 }
 
-public class ImportantTests(ITestOutputHelper output) : AdmonitionTests(output, "important")
+public class ImportantTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "important")
 {
 	[Fact]
 	public void SetsTitle() => Block!.Title.Should().Be("Important");
@@ -61,6 +61,23 @@ A regular paragraph.
 
 	[Fact]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Note This is my custom note");
+}
+
+
+public class AdmonitionTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+```{admonition} This is my custom title
+This is an attention block
+```
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("admonition");
+
+	[Fact]
+	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom title");
 }
 
 public class DropdownTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,

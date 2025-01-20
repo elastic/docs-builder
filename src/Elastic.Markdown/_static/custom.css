@@ -126,3 +126,12 @@ See https://github.com/elastic/docs-builder/issues/219 for further details
 	border-bottom-right-radius: 0 !important;
 	border-top-right-radius: 0 !important;
 }
+
+
+.admonition.plain {
+	--icon-url: var(--lucide-chevron-right-url);
+	--color-4: var(--gray-12);
+	--color-1: var(--gray-2);
+	--color-2: var(--gray-a4);
+	--color-3: var(--gray-10);
+}

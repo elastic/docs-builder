@@ -11,6 +11,27 @@ Available admonition types include:
 - Warning
 - Tip
 - Important
+- Plain
+
+### Plain
+
+A plain admonition is a callout with no further styling. Useful to create a callout that does not quite fit the mold of the stylized admonitions
+
+```markdown
+:::{admonition} This is my callout
+
+It can *span* multiple lines and supports inline formatting.
+
+:::
+```
+
+:::{admonition} This is my callout
+
+It can *span* multiple lines and supports inline formatting.
+
+:::
+
+
 
 ### Note
 

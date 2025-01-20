@@ -3,12 +3,20 @@
 // See the LICENSE file in the project root for more information
 namespace Elastic.Markdown.Myst.Directives;
 
-public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "admonition", context);
+public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "dropdown", context);
 
-public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class AdmonitionBlock : DirectiveBlock
 {
-	public string Admonition => admonition == "admonition" ? Classes?.Trim() ?? "note" : admonition;
+	private readonly string _admonition;
+
+	public AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context) : base(parser, context)
+	{
+		_admonition = admonition;
+		if (_admonition is "admonition")
+			Classes = "plain";
+	}
+
+	public string Admonition => _admonition;
 
 	public override string Directive => Admonition;
 
@@ -21,7 +29,7 @@ public class AdmonitionBlock(DirectiveBlockParser parser, string admonition, Par
 		{
 			var t = Admonition;
 			var title = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(t);
-			if (admonition is "admonition" && !string.IsNullOrEmpty(Arguments))
+			if (_admonition is "admonition" && !string.IsNullOrEmpty(Arguments))
 				title = Arguments;
 			else if (!string.IsNullOrEmpty(Arguments))
 				title += $" {Arguments}";
