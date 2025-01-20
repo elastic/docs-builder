@@ -29,7 +29,7 @@ public class AdmonitionBlock : DirectiveBlock
 		{
 			var t = Admonition;
 			var title = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(t);
-			if (_admonition is "admonition" && !string.IsNullOrEmpty(Arguments))
+			if (_admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
 				title = Arguments;
 			else if (!string.IsNullOrEmpty(Arguments))
 				title += $" {Arguments}";
