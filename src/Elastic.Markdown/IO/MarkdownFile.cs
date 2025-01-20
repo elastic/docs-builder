@@ -193,14 +193,12 @@ public record MarkdownFile : DocumentationFile
 	}
 
 
-	public string CreateHtml(MarkdownDocument document) =>
-		// var writer = new StringWriter();
-		// var renderer = new HtmlRenderer(writer);
-		// renderer.LinkRewriter = (s => s);
-		// MarkdownParser.Pipeline.Setup(renderer);
-		//
-		// var document = MarkdownParser.Parse(markdown, pipeline);
-		// renderer.Render(document);
-		// writer.Flush();
-		document.ToHtml(MarkdownParser.Pipeline);
+	public string CreateHtml(MarkdownDocument document)
+	{
+		//we manually render title and optionally append an applies block embedded in yaml front matter.
+		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+		if (h1 is not null)
+			document.Remove(h1);
+		return document.ToHtml(MarkdownParser.Pipeline);
+	}
 }
