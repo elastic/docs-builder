@@ -14,10 +14,13 @@ public class IndexViewModel
 	public required DocumentationGroup Tree { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
+	public required MarkdownFile? PreviousDocument { get; init; }
+	public required MarkdownFile? NextDocument { get; init; }
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required Deployment? Applies { get; init; }
+	public required bool AllowIndexing { get; init; }
 }
 
 public class LayoutViewModel
@@ -26,9 +29,12 @@ public class LayoutViewModel
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
+	public required MarkdownFile? Previous { get; init; }
+	public required MarkdownFile? Next { get; init; }
 	public required string NavigationHtml { get; set; }
 	public required string? UrlPathPrefix { get; set; }
 	public required string? GithubEditUrl { get; set; }
+	public required bool AllowIndexing { get; init; }
 
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents

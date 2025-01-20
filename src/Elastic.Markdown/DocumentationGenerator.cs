@@ -88,10 +88,11 @@ public class DocumentationGenerator
 					throw;
 			}
 
-			if (processedFiles % 1_000 == 0)
-				_logger.LogInformation($"Handled {processedFiles} files");
+			if (processedFiles % 100 == 0)
+				_logger.LogInformation($"-> Handled {processedFiles} files");
 		});
 
+		_logger.LogInformation($"Copying static files to output directory");
 		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
 			.GetManifestResourceNames()
 			.ToList();
@@ -112,12 +113,19 @@ public class DocumentationGenerator
 		}
 
 
+		_logger.LogInformation($"Completing diagnostics channel");
 		Context.Collector.Channel.TryComplete();
 
+		_logger.LogInformation($"Generating documentation compilation state");
 		await GenerateDocumentationState(ctx);
+		_logger.LogInformation($"Generating links.json");
 		await GenerateLinkReference(ctx);
 
+		_logger.LogInformation($"Completing diagnostics channel");
+
 		await Context.Collector.StopAsync(ctx);
+
+		_logger.LogInformation($"Completed diagnostics channel");
 	}
 
 	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CancellationToken token)

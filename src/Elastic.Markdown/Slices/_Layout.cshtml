@@ -64,15 +64,30 @@
 					<span>Back to top</span>
 				</button>
 				<div class="navigation flex print:hidden">
+					@if (Model.Previous != null)
+					{
+					<div class="navigation-previous">
+						<i class="i-lucide chevron-left"></i>
+						<a href="@Model.Previous.Url">
+							<div class="page-info">
+								<span>Previous</span>
+								<div class="title">@Model.Previous.NavigationTitle</div>
+							</div>
+						</a>
+					</div>
+					}
+					@if (Model.Next != null)
+					{
 					<div class="navigation-next">
-						<a href="elastic/index.html">
+						<a href="@Model.Next.Url">
 							<div class="page-info">
 								<span>Next</span>
-								<div class="title">Elastic content</div>
+								<div class="title">@Model.Next.NavigationTitle</div>
 							</div>
 							<i class="i-lucide chevron-right"></i>
 						</a>
 					</div>
+					}
 				</div>
 			</div>
 		</div>

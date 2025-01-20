@@ -24,8 +24,7 @@ public record LinkReference
 	public static LinkReference Create(DocumentationSet set)
 	{
 		var crossLinks = set.Context.Collector.CrossLinks.ToHashSet().ToArray();
-		var links = set.FlatMappedFiles.Values
-			.OfType<MarkdownFile>()
+		var links = set.MarkdownFiles.Values
 			.Select(m => m.RelativePath).ToArray();
 		return new LinkReference
 		{

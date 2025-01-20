@@ -61,6 +61,8 @@ public record MarkdownFile : DocumentationFile
 	public string FileName { get; }
 	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
 
+	public int NavigationIndex { get; set; }
+
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
 

@@ -22,10 +22,14 @@ public class ErrataFileSourceRepository : ISourceRepository
 		return true;
 	}
 
-	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> items)
+	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> errors, IReadOnlyCollection<Diagnostic> warnings)
 	{
 		var report = new Report(this);
-		foreach (var item in items)
+		var limttedErrors = errors.Take(100).ToArray();
+		var limittedWarnings = warnings.Take(100 - limttedErrors.Length);
+		var limitted = limittedWarnings.Concat(limttedErrors).ToArray();
+
+		foreach (var item in limitted)
 		{
 			var d = item.Severity switch
 			{
@@ -49,5 +53,15 @@ public class ErrataFileSourceRepository : ISourceRepository
 
 		// Render the report
 		report.Render(AnsiConsole.Console);
+
+		var totalErrorCount = errors.Count + warnings.Count;
+		if (limitted.Length >= totalErrorCount)
+			return;
+
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
+		AnsiConsole.Write(new Markup($"Displayed first [bold]{limitted.Length}[/] error/warnings out of [bold]{totalErrorCount}[/]"));
+
+		AnsiConsole.WriteLine();
 	}
 }

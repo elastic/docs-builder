@@ -45,7 +45,8 @@ public class HtmlWriter
 		await DocumentationSet.Tree.Resolve(ctx);
 		var navigationHtml = await RenderNavigation(markdown, ctx);
 
-		var previous = DocumentationSet;
+		var previous = DocumentationSet.MarkdownFiles.GetValueOrDefault(markdown.NavigationIndex - 1);
+		var next = DocumentationSet.MarkdownFiles.GetValueOrDefault(markdown.NavigationIndex + 1);
 
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;
@@ -59,10 +60,13 @@ public class HtmlWriter
 			PageTocItems = markdown.TableOfContents.Values.ToList(),
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
+			PreviousDocument = previous,
+			NextDocument = next,
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
-			GithubEditUrl = editUrl
+			GithubEditUrl = editUrl,
+			AllowIndexing = DocumentationSet.Context.AllowIndexing
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

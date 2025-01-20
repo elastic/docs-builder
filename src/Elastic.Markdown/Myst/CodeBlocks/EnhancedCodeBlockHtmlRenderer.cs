@@ -25,7 +25,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	}
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
-		var callOuts = block.CallOuts ?? [];
+		var callOuts = block.UniqueCallOuts;
 
 		var slice = Code.Create(new CodeViewModel
 		{
@@ -46,7 +46,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 				var siblingBlock = block.Parent[index + 1];
 				if (siblingBlock is not ListBlock)
 					block.EmitError("Code block with annotations is not followed by a list");
-				if (siblingBlock is ListBlock l && l.Count != callOuts.Count)
+				if (siblingBlock is ListBlock l && l.Count < callOuts.Count)
 				{
 					block.EmitError(
 						$"Code block has {callOuts.Count} callouts but the following list only has {l.Count}");
@@ -84,7 +84,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		else if (block.InlineAnnotations)
 		{
 			renderer.WriteLine("<ol class=\"code-callouts\">");
-			foreach (var c in block.CallOuts ?? [])
+			foreach (var c in block.UniqueCallOuts)
 			{
 				renderer.WriteLine("<li>");
 				renderer.WriteLine(c.Text);

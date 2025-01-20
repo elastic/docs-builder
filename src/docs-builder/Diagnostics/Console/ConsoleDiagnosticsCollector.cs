@@ -14,14 +14,21 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 	: DiagnosticsCollector([new Log(loggerFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)]
 	)
 {
-	private readonly List<Diagnostic> _items = new();
+	private readonly List<Diagnostic> _errors = new();
+	private readonly List<Diagnostic> _warnings = new();
 
-	protected override void HandleItem(Diagnostic diagnostic) => _items.Add(diagnostic);
+	protected override void HandleItem(Diagnostic diagnostic)
+	{
+		if (diagnostic.Severity == Severity.Warning)
+			_warnings.Add(diagnostic);
+		else
+			_errors.Add(diagnostic);
+	}
 
 	public override async Task StopAsync(Cancel ctx)
 	{
 		var repository = new ErrataFileSourceRepository();
-		repository.WriteDiagnosticsToConsole(_items);
+		repository.WriteDiagnosticsToConsole(_errors, _warnings);
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.Write(new Markup($"	[bold red]{Errors} Errors[/] / [bold blue]{Warnings} Warnings[/]"));

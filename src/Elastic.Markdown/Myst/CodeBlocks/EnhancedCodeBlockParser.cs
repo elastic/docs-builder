@@ -98,10 +98,19 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
 
-			var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
-			var callOut = EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false);
+			if (span.IndexOf("<") < 0 && span.IndexOf("//") < 0)
+				continue;
 
-			if (callOut is null)
+			CallOut? callOut = null;
+
+			if (span.IndexOf("<") > 0)
+			{
+				var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
+				callOut = EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false);
+			}
+
+			// only support magic callouts for smaller line lengths
+			if (callOut is null && span.Length < 200)
 			{
 				var matchInline = CallOutParser.MathInlineAnnotation().EnumerateMatches(span);
 				callOut = EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine,
@@ -163,9 +172,14 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 			callOutIndex++;
 			var callout = span.Slice(match.Index + startIndex, match.Length - startIndex);
+			var index = callOutIndex;
+			if (!inlineCodeAnnotation && int.TryParse(callout.Trim(['<', '>']), out index))
+			{
+
+			}
 			return new CallOut
 			{
-				Index = callOutIndex,
+				Index = index,
 				Text = callout.TrimStart('/').TrimStart('#').TrimStart().ToString(),
 				InlineCodeAnnotation = inlineCodeAnnotation,
 				SliceStart = startIndex,

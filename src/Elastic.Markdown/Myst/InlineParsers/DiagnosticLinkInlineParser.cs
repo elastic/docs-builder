@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Comments;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -46,11 +47,15 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (processor.Inline is not LinkInline link)
 			return match;
 
+		// Links in comments should not be validated
+		// This works for the current test cases, but we might need to revisit this in case it needs some traversal
+		if (link.Parent?.ParentBlock is CommentBlock)
+			return match;
+
 		var url = link.Url;
 		var line = link.Line + 1;
 		var column = link.Column;
 		var length = url?.Length ?? 1;
-
 
 		var context = processor.GetContext();
 		if (processor.GetContext().SkipValidation)

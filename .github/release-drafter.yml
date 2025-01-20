@@ -2,7 +2,7 @@
 template: |
   $CHANGES
 
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
 name-template: 'docs-builder $RESOLVED_VERSION'
 tag-template: '$RESOLVED_VERSION'
 change-template: '- $TITLE by @$AUTHOR in #$NUMBER'
@@ -24,8 +24,11 @@ categories:
   - title: '🧰 Maintenance'
     labels:
       - 'chore' # When a chore is done
-      - 'ci' # When CI is updated
       - 'dependencies' # When dependencies are updated
+  - title: '⚙️ Automation'
+    labels:
+      - 'automation' # When automation is updated
+      - 'ci' # When automation is updated
 exclude-labels:
   - 'changelog:skip' # When a PR should be excluded from the changelog
 version-resolver:
