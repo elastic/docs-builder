@@ -55,8 +55,7 @@ public class DocumentationWebHost
 
 		//builder.Services.AddSingleton(logger);
 
-		if (!_context.IsRunningInContainer)
-			builder.WebHost.UseUrls($"http://localhost:{port}");
+		builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
