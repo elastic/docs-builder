@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.IO.Navigation;
@@ -33,16 +34,16 @@ public class DocumentationGroup
 	public int Depth { get; }
 
 	public DocumentationGroup(
+		BuildContext context,
 		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
 		ref int fileIndex,
 		int depth = 0,
-		MarkdownFile? index = null
-	)
+		MarkdownFile? index = null)
 	{
 		Depth = depth;
-		Index = ProcessTocItems(index, toc, lookup, folderLookup, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
+		Index = ProcessTocItems(context, index, toc, lookup, folderLookup, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
@@ -55,6 +56,7 @@ public class DocumentationGroup
 	}
 
 	private MarkdownFile? ProcessTocItems(
+		BuildContext context,
 		MarkdownFile? configuredIndex,
 		IReadOnlyCollection<ITocItem> toc,
 		IDictionary<string, DocumentationFile> lookup,
@@ -73,15 +75,26 @@ public class DocumentationGroup
 		{
 			if (tocItem is FileReference file)
 			{
-				if (!lookup.TryGetValue(file.Path, out var d) || d is not MarkdownFile md)
+				if (!lookup.TryGetValue(file.Path, out var d))
+				{
+					context.EmitError(context.ConfigurationPath, $"The following file could not be located: {file.Path} it may be excluded from the build in docset.yml");
+					continue;
+				}
+				if (d is ExcludedFile excluded && excluded.RelativePath.EndsWith(".md"))
+				{
+					context.EmitError(context.ConfigurationPath, $"{excluded.RelativePath} matches exclusion glob from docset.yml yet appears in TOC");
+					continue;
+				}
+				if (d is not MarkdownFile md)
 					continue;
 
 				md.Parent = this;
-				md.NavigationIndex = ++fileIndex;
+				var navigationIndex = Interlocked.Increment(ref fileIndex);
+				md.NavigationIndex = navigationIndex;
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
-					var group = new DocumentationGroup(file.Children, lookup, folderLookup, ref fileIndex, depth + 1, virtualIndex)
+					var group = new DocumentationGroup(context, file.Children, lookup, folderLookup, ref fileIndex, depth + 1, virtualIndex)
 					{
 						Parent = this
 					};
@@ -111,7 +124,7 @@ public class DocumentationGroup
 						.ToArray();
 				}
 
-				var group = new DocumentationGroup(children, lookup, folderLookup, ref fileIndex, depth + 1)
+				var group = new DocumentationGroup(context, children, lookup, folderLookup, ref fileIndex, depth + 1)
 				{
 					Parent = this
 				};

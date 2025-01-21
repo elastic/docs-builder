@@ -64,12 +64,18 @@ public class DocumentationSet
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
 		var fileIndex = 0;
-		Tree = new DocumentationGroup(Configuration.TableOfContents, FlatMappedFiles, folderFiles, ref fileIndex)
+		Tree = new DocumentationGroup(Context, Configuration.TableOfContents, FlatMappedFiles, folderFiles, ref fileIndex)
 		{
 			Parent = null
 		};
 
-		MarkdownFiles = Files.OfType<MarkdownFile>().ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
+
+		var excludedChildren = markdownFiles.Where(f => f.NavigationIndex == -1).ToArray();
+		foreach (var excludedChild in excludedChildren)
+			Context.EmitError(Context.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
+
+		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
 
 	}
 

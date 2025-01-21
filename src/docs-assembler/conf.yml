@@ -1,4 +1,14 @@
+
 repos:
+  docs-content:
+    repo: "git@github.com:elastic/apm-aws-lambda.git"
+  docs-builder:
+    repo: "git@github.com:elastic/apm-aws-lambda.git"
+  docs-builder:
+    repo: "git@github.com:elastic/apm-aws-lambda.git"
+
+
+repos-old:
   apm-aws-lambda:
     repo: "git@github.com:elastic/apm-aws-lambda.git"
   apm-k8s-attacher:
