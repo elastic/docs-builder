@@ -20,7 +20,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 )
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/source/img/observability.png", "");
+		fileSystem.AddFile(@"docs/img/observability.png", "");
 
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();

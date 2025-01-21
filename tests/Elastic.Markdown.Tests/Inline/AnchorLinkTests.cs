@@ -36,8 +36,8 @@ To follow this tutorial you will need to install the following components:
 
 These are new requirements
 """;
-		fileSystem.AddFile(@"docs/source/testing/req.md", inclusion);
-		fileSystem.AddFile(@"docs/source/_static/img/observability.png", new MockFileData(""));
+		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
+		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
 	}
 
 }

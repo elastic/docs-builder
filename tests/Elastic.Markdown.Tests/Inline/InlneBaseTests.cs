@@ -97,7 +97,7 @@ $"""
 
 		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/source/index.md", new MockFileData(documentContents) }
+			{ "docs/index.md", new MockFileData(documentContents) }
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName
@@ -106,7 +106,7 @@ $"""
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
 
-		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/source"));
+		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/"));
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(output);
@@ -115,7 +115,7 @@ $"""
 			Collector = Collector
 		};
 		Set = new DocumentationSet(context);
-		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/source/index.md")) ?? throw new NullReferenceException();
+		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}

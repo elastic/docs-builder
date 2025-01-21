@@ -14,13 +14,13 @@ namespace Elastic.Markdown.Tests.SettingsInclusion;
 
 public class IncludeTests(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
 $$"""
-:::{settings} /{{SettingsPath.Replace("docs/source/", "")}}
+:::{settings} /{{SettingsPath.Replace("docs/", "")}}
 :::
 """
 )
 {
 	private static readonly string SettingsPath =
-		"docs/source/syntax/kibana-alerting-action-settings.yml";
+		"docs/syntax/kibana-alerting-action-settings.yml";
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -52,7 +52,7 @@ public class RandomFileEmitsAnError(ITestOutputHelper output) : DirectiveTest<Se
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]

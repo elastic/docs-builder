@@ -18,8 +18,8 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		var logger = new TestLoggerFactory(output);
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/source/docset.yml", new MockFileData("") },
-			{ "docs/source/index.md", new MockFileData("test") }
+			{ "docs/docset.yml", new MockFileData("") },
+			{ "docs/index.md", new MockFileData("test") }
 		}, new MockFileSystemOptions
 		{
 			CurrentDirectory = Paths.Root.FullName

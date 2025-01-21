@@ -23,7 +23,7 @@ public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : Direct
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		fileSystem.AddFile(@"docs/source/_snippets/test.txt", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.txt", inclusion);
 	}
 
 	[Fact]
@@ -48,7 +48,7 @@ public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<Inclu
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]

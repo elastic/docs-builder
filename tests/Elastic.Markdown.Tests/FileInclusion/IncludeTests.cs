@@ -23,7 +23,7 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -53,7 +53,7 @@ sub:
 	{
 		// language=markdown
 		var inclusion = "*Hello {{foo}}*";
-		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -126,7 +126,7 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 	{
 		// language=markdown
 		var inclusion = "*Hello world*";
-		fileSystem.AddFile(@"docs/source/test.md", inclusion);
+		fileSystem.AddFile(@"docs/test.md", inclusion);
 	}
 
 	[Fact]
@@ -162,7 +162,7 @@ public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<Inclu
 :::{include} test.md
 :::
 """;
-		fileSystem.AddFile(@"docs/source/_snippets/test.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
