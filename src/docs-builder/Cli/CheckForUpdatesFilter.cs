@@ -46,11 +46,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 		if (SemVersion.TryParse(assemblyVersion ?? "", out var currentSemVersion))
 		{
 			if (latestVersion <= currentSemVersion)
-			{
-
-				ConsoleApp.Log("`docs-builder` is up to date.");
 				return;
-			}
 			ConsoleApp.Log("");
 			ConsoleApp.Log($"A new version of docs-builder is available: {latestVersion} currently on version {currentSemVersion}");
 			ConsoleApp.Log("");
