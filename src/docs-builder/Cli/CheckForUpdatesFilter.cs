@@ -24,12 +24,12 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{
+		await Next.InvokeAsync(context, ctx);
 		var latestVersionUrl = await GetLatestVersion(ctx);
 		if (latestVersionUrl is null)
 			ConsoleApp.LogError("Unable to determine latest version");
 		else
 			CompareWithAssemblyVersion(latestVersionUrl);
-		await Next.InvokeAsync(context, ctx);
 	}
 
 	private void CompareWithAssemblyVersion(Uri latestVersionUrl)
@@ -46,7 +46,11 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 		if (SemVersion.TryParse(assemblyVersion ?? "", out var currentSemVersion))
 		{
 			if (latestVersion <= currentSemVersion)
+			{
+
+				ConsoleApp.Log("`docs-builder` is up to date.");
 				return;
+			}
 			ConsoleApp.Log("");
 			ConsoleApp.Log($"A new version of docs-builder is available: {latestVersion} currently on version {currentSemVersion}");
 			ConsoleApp.Log("");
