@@ -25,6 +25,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="port">Port to serve the documentation.</param>
 	/// <param name="ctx"></param>
 	[Command("serve")]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
 		var host = new DocumentationWebHost(path, port, logger, new FileSystem());
@@ -45,6 +46,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
 	[ConsoleAppFilter<CatchExceptionFilter>]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> Generate(
 		string? path = null,
 		string? output = null,
@@ -89,6 +91,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
 	[ConsoleAppFilter<CatchExceptionFilter>]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> GenerateDefault(
 		string? path = null,
 		string? output = null,
