@@ -1,4 +1,4 @@
-# Contribute locally
+# Contribute locally `This is a code block`
 
 Follow these steps to contribute to Elastic docs.
 * [Step 1: Install `docs-builder`](#step-one)

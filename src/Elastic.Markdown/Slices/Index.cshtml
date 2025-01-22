@@ -1,9 +1,10 @@
+@using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
 @implements IUsesLayout<Elastic.Markdown.Slices._Layout, LayoutViewModel>
 @functions {
 	public LayoutViewModel LayoutModel => new()
 	{
-		Title = $"Elastic Documentation: {Model.Title}",
+		Title = $"Elastic Documentation: {Model.Title ?? "Untitled"}",
 		PageTocItems = Model.PageTocItems,
 		Tree = Model.Tree,
 		CurrentDocument = Model.CurrentDocument,
@@ -16,7 +17,7 @@
 	};
 }
 <section id="elastic-docs-v3">
-	<h1>@(Model.Title)</h1>
+	@(new HtmlString(Markdown.ToHtml("# " + Model.Title)))
 	@if (Model.Applies is not null)
 	{
 		await RenderPartialAsync(Applies.Create(Model.Applies));
