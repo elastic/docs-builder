@@ -17,7 +17,7 @@
 	};
 }
 <section id="elastic-docs-v3">
-	<h1>@(new HtmlString(Markdown.ToHtml("#" + Model.Title)))</h1>
+	@(new HtmlString(Markdown.ToHtml("# " + Model.Title)))
 	@if (Model.Applies is not null)
 	{
 		await RenderPartialAsync(Applies.Create(Model.Applies));
