@@ -46,9 +46,10 @@ public record MarkdownFile : DocumentationFile
 	public string? Title { get; private set; }
 	public string? NavigationTitle
 	{
-		get {
+		get
+		{
 			var title = !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-			return string.IsNullOrEmpty(title) ? null : TitleSanitizer.Sanitize(title);
+			return string.IsNullOrEmpty(title) ? null : TitleNormalizer.Normalize(title);
 		}
 		private set => _navigationTitle = value;
 	}
@@ -162,7 +163,7 @@ public record MarkdownFile : DocumentationFile
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string))
 			.Select(h => new PageTocItem
 			{
-				Heading = TitleSanitizer.Sanitize(h.Item1!),
+				Heading = TitleNormalizer.Normalize(h.Item1!),
 				Slug = _slugHelper.GenerateSlug(h.Item2 ?? h.Item1)
 			})
 			.ToList();
