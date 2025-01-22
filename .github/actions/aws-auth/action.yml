@@ -1,0 +1,43 @@
+name: AWS Auth
+
+description: |
+  This is an opinionated action to authenticate with AWS.
+  It will generate a role ARN based on the repository name and the AWS account ID.
+
+inputs:
+  aws_account_id:
+    description: 'The AWS account ID to generate the role ARN for'
+    required: true
+    default: '197730964718' # elastic-web
+  aws_region:
+    description: 'The AWS region to use'
+    required: false
+    default: 'us-east-1'
+  aws_role_name_prefix:
+    description: 'The prefix for the role name'
+    required: false
+    default: 'elastic-docs-v3-preview-'
+
+runs:
+  using: composite
+  steps:
+    - name: Generate AWS Role ARN
+      id: role_arn
+      shell: python
+      env:
+        AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
+        ROLE_NAME_PREFIX: ${{ inputs.aws_role_name_prefix }}
+      run: |
+          import hashlib
+          import os
+          prefix = os.environ["ROLE_NAME_PREFIX"]
+          m = hashlib.sha256()
+          m.update(os.environ["GITHUB_REPOSITORY"].encode('utf-8'))
+          hash = m.hexdigest()[:64-len(prefix)]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"result=arn:aws:iam::{os.environ["AWS_ACCOUNT_ID"]}:role/{prefix}{hash}")
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      with:
+        role-to-assume: ${{ steps.role_arn.outputs.result }}
+        aws-region: ${{ inputs.aws_region }}
