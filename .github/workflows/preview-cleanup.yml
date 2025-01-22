@@ -1,0 +1,55 @@
+name: preview-cleanup
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  deployments: write
+  id-token: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    environment: preview-${{ github.event.pull_request.number }}
+    steps:
+      - uses: ./.github/actions/aws-auth
+      - name: Delete s3 objects
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+            aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
+
+      - name: Delete GitHub environment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const deployments = await github.rest.repos.listDeployments({
+              owner,
+              repo,
+              environment: `preview-${context.issue.number}`
+            });
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+                description: 'Marking deployment as inactive'
+              });
+              await github.rest.repos.deleteDeployment({
+                owner,
+                repo,
+                deployment_id: deployment.id
+              });
+            }
+
+            octokit.rest.repos.deleteAnEnvironment({
+              owner,
+              repo,
+              environment_name: `preview-${context.issue.number}`,
+            });
+
+    
+            
