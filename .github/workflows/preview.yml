@@ -1,0 +1,85 @@
+name: preview
+
+on:
+  workflow_call: ~
+
+permissions:
+  id-token: write
+  pull-requests: write
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Deployment
+        uses: actions/github-script@v7
+        id: deployment
+        with:
+          result-encoding: string
+          script: |
+            const { owner, repo } = context.repo;
+            const deployment = await github.rest.repos.createDeployment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                ref: context.payload.pull_request.head.ref,
+                environment: `preview-${context.issue.number}`,
+                description: `Preview deployment for PR ${context.issue.number}`,
+                auto_merge: false,
+                required_contexts: [],
+            })
+            await github.rest.repos.createDeploymentStatus({
+                deployment_id: deployment.data.id,
+                owner,
+                repo,
+                state: "in_progress",
+                description: "Deployment created",
+                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
+            })
+            return deployment.data.id
+
+      - uses: actions/checkout@v4
+        
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs
+          path: .artifacts/docs/html
+
+      - uses: ./.github/actions/aws-auth
+
+      - name: Upload to S3
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete
+          aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
+      
+      - name: Update deployment status
+        uses: actions/github-script@v7
+        if: steps.deployment.outputs.result
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: "success",
+              description: "Deployment completed",
+              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number}`,
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
+            })
+
+      - name: Update Deployment Status on Failure
+        if: failure() && steps.deployment.outputs.result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: "failure",
+              description: "Deployment failed",
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
+            })
