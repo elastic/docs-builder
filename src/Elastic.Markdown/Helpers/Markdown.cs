@@ -6,7 +6,6 @@ namespace Elastic.Markdown.Helpers;
 
 public static class Markdown
 {
-	// Removes markdown formatting from the title and returns only the text
 	public static string StripMarkdown(string markdown)
 	{
 		using var writer = new StringWriter();
