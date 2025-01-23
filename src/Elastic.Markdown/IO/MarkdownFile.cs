@@ -8,6 +8,7 @@ using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
+using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
@@ -149,8 +150,6 @@ public record MarkdownFile : DocumentationFile
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		}
 
-
-
 		var contents = document
 			.Where(block => block is HeadingBlock { Level: >= 2 })
 			.Cast<HeadingBlock>()
@@ -169,7 +168,9 @@ public record MarkdownFile : DocumentationFile
 			.Select(b => b.CrossReferenceName)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.Select(s => s.Slugify())
+			.Concat(document.Descendants<InlineAnchor>().Select(a=>a.Anchor))
 			.ToArray();
+		
 		foreach (var label in labels)
 		{
 			if (!string.IsNullOrEmpty(label))
