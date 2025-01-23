@@ -46,12 +46,8 @@ public record MarkdownFile : DocumentationFile
 	public string? Title { get; private set; }
 	public string? NavigationTitle
 	{
-		get
-		{
-			var title = !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-			return string.IsNullOrEmpty(title) ? null : Helpers.Markdown.StripMarkdown(title);
-		}
-		private set => _navigationTitle = value;
+		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
+		private set => _navigationTitle = value != null ? Helpers.Markdown.StripMarkdown(value) : null;
 	}
 
 	//indexed by slug
