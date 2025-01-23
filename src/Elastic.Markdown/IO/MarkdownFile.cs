@@ -168,7 +168,7 @@ public record MarkdownFile : DocumentationFile
 			.Select(b => b.CrossReferenceName)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.Select(s => s.Slugify())
-			.Concat(document.Descendants<InlineAnchor>().Select(a=>a.Anchor))
+			.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
 			.ToArray();
 
 		foreach (var label in labels)
