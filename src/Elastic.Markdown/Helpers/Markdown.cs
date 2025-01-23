@@ -3,9 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 namespace Elastic.Markdown.Helpers;
-public static class TitleNormalizer
+
+public static class Markdown
 {
 	// Removes markdown formatting from the title and returns only the text
-	// Currently, only support 'bold' and 'code' formatting
-	public static string Normalize(string title) => title.Replace("`", "").Replace("*", "");
+	public static string StripMarkdown(string markdown)
+	{
+		using var writer = new StringWriter();
+		Markdig.Markdown.ToPlainText(markdown, writer);
+		return writer.ToString();
+	}
 }
