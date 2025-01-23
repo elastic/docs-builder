@@ -35,35 +35,36 @@ public class InlineAnchorBuilderExtension : IMarkdownExtension
 
 public class InlineAnchorParser : InlineParser
 {
-    public InlineAnchorParser()
-    {
-        OpeningCharacters = ['$'];
-    }
+	public InlineAnchorParser()
+	{
+		OpeningCharacters = ['$'];
+	}
 
-    public override bool Match(InlineProcessor processor, ref StringSlice slice)
-    {
-        var startPosition = processor.GetSourcePosition(slice.Start, out var line, out var column);
-        var c = slice.CurrentChar;
+	public override bool Match(InlineProcessor processor, ref StringSlice slice)
+	{
+		var startPosition = processor.GetSourcePosition(slice.Start, out var line, out var column);
+		var c = slice.CurrentChar;
 
-        var span = slice.AsSpan();
-        if (!span.StartsWith("$$$")) return false;
+		var span = slice.AsSpan();
+		if (!span.StartsWith("$$$"))
+			return false;
 
-        var closingStart = span[3..].IndexOf('$');
-        if (closingStart <= 0)
-	        return false;
+		var closingStart = span[3..].IndexOf('$');
+		if (closingStart <= 0)
+			return false;
 
-        //not ending with three dollar signs
-        if (!span[(closingStart+3)..].StartsWith("$$$"))
-	        return false;
+		//not ending with three dollar signs
+		if (!span[(closingStart + 3)..].StartsWith("$$$"))
+			return false;
 
-        processor.Inline = new InlineAnchor { Anchor = span[3..(closingStart+3)].ToString().Slugify() };
+		processor.Inline = new InlineAnchor { Anchor = span[3..(closingStart + 3)].ToString().Slugify() };
 
-        var sliceEnd = slice.Start + closingStart + 6;
-        while (slice.Start != sliceEnd)
-	        slice.SkipChar();
+		var sliceEnd = slice.Start + closingStart + 6;
+		while (slice.Start != sliceEnd)
+			slice.SkipChar();
 
-        return true;
-    }
+		return true;
+	}
 
 
 }
