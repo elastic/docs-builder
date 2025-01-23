@@ -47,7 +47,7 @@ public record MarkdownFile : DocumentationFile
 	public string? NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-		private set => _navigationTitle = value != null ? Helpers.Markdown.StripMarkdown(value) : null;
+		private set => _navigationTitle = value?.StripMarkdown();
 	}
 
 	//indexed by slug
@@ -159,7 +159,7 @@ public record MarkdownFile : DocumentationFile
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string))
 			.Select(h => new PageTocItem
 			{
-				Heading = Helpers.Markdown.StripMarkdown(h.Item1!),
+				Heading = h.Item1!.StripMarkdown(),
 				Slug = _slugHelper.GenerateSlug(h.Item2 ?? h.Item1)
 			})
 			.ToList();

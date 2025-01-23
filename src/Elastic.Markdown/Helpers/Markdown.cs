@@ -4,9 +4,9 @@
 
 namespace Elastic.Markdown.Helpers;
 
-public static class Markdown
+public static class MarkdownStringExtensions
 {
-	public static string StripMarkdown(string markdown)
+	public static string StripMarkdown(this string markdown)
 	{
 		using var writer = new StringWriter();
 		Markdig.Markdown.ToPlainText(markdown, writer);
