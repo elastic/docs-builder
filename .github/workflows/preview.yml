@@ -43,8 +43,15 @@ jobs:
         
       - uses: actions/download-artifact@v4
         with:
-          name: docs
-          path: .artifacts/docs/html
+          name: docs-builder-binary
+
+      # we run our artifact directly please use the prebuild
+      # elastic/docs-builder@main GitHub Action for all other repositories!
+      - name: Build documentation
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: ./docs-builder --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+
 
       - uses: ./.github/actions/aws-auth
 
