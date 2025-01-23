@@ -50,7 +50,9 @@ jobs:
       - name: Build documentation
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: ./docs-builder --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+        run: |
+          chmod +x ./docs-builder
+          ./docs-builder --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
       - uses: ./.github/actions/aws-auth
 
