@@ -8,18 +8,17 @@ using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
+using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
-using Slugify;
 
 namespace Elastic.Markdown.IO;
 
 
 public record MarkdownFile : DocumentationFile
 {
-	private readonly SlugHelper _slugHelper = new();
 	private string? _navigationTitle;
 
 	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext context)
@@ -162,8 +161,6 @@ public record MarkdownFile : DocumentationFile
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		}
 
-
-
 		var contents = document
 			.Where(block => block is HeadingBlock { Level: >= 2 })
 			.Cast<HeadingBlock>()
@@ -171,7 +168,7 @@ public record MarkdownFile : DocumentationFile
 			.Select(h => new PageTocItem
 			{
 				Heading = h.Item1!.StripMarkdown(),
-				Slug = _slugHelper.GenerateSlug(h.Item2 ?? h.Item1)
+				Slug = (h.Item2 ?? h.Item1).Slugify()
 			})
 			.ToList();
 		_tableOfContent.Clear();
@@ -181,8 +178,10 @@ public record MarkdownFile : DocumentationFile
 		var labels = document.Descendants<DirectiveBlock>()
 			.Select(b => b.CrossReferenceName)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
-			.Select(_slugHelper.GenerateSlug)
+			.Select(s => s.Slugify())
+			.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
 			.ToArray();
+
 		foreach (var label in labels)
 		{
 			if (!string.IsNullOrEmpty(label))

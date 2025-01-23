@@ -92,3 +92,14 @@ Do note that these inline anchors will be normalized.
 ```
 
 Will result in the anchor `what-about-this-for-an-anchor`.
+
+
+## Inline anchors
+
+Docsbuilder temporary supports the abbility to create a linkable anchor anywhere on any document. 
+
+```markdown
+This is text and $$$this-is-an-inline-anchor$$$
+```
+
+This feature exists to aid with migration however is scheduled for removal and new content should **NOT** utilize this feature.

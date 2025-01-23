@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
   packages: read
+  id-token: write
+  pull-requests: write
+  deployments: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,8 +35,14 @@ jobs:
 
       - name: Publish AOT
         run: ./build.sh publishbinaries
+        
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-builder-binary
+          path: .artifacts/publish/docs-builder/release/docs-builder
+          if-no-files-found: error
+          retention-days: 1
 
-      # we run our artifact directly please use the prebuild
-      # elastic/docs-builder@main GitHub Action for all other repositories!
-      - name: Build documentation
-        run: .artifacts/publish/docs-builder/release/docs-builder --strict
+  preview:
+    needs: build
+    uses: ./.github/workflows/preview.yml
