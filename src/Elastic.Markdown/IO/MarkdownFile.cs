@@ -43,7 +43,17 @@ public record MarkdownFile : DocumentationFile
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
-	public string? Title { get; private set; }
+	public string? TitleRaw { get; private set; }
+
+	public string? Title
+	{
+		get => _title;
+		private set
+		{
+			_title = value?.StripMarkdown();
+			TitleRaw = value;
+		}
+	}
 	public string? NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
@@ -65,6 +75,7 @@ public record MarkdownFile : DocumentationFile
 
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
+	private string? _title;
 
 	public MarkdownFile[] YieldParents()
 	{

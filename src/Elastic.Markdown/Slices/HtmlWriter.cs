@@ -56,6 +56,7 @@ public class HtmlWriter
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
+			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
 			PageTocItems = markdown.TableOfContents.Values.ToList(),
 			Tree = DocumentationSet.Tree,
