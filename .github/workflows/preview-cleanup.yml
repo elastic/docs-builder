@@ -46,7 +46,7 @@ jobs:
               });
             }
 
-            octokit.rest.repos.deleteAnEnvironment({
+            await github.rest.repos.deleteAnEnvironment({
               owner,
               repo,
               environment_name: `preview-${context.issue.number}`,
