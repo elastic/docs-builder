@@ -12,14 +12,12 @@ using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
-using Slugify;
 
 namespace Elastic.Markdown.IO;
 
 
 public record MarkdownFile : DocumentationFile
 {
-	private readonly SlugHelper _slugHelper = new();
 	private string? _navigationTitle;
 
 	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext context)
@@ -160,7 +158,7 @@ public record MarkdownFile : DocumentationFile
 			.Select(h => new PageTocItem
 			{
 				Heading = h.Item1!.Replace("`", "").Replace("*", ""),
-				Slug = _slugHelper.GenerateSlug(h.Item2 ?? h.Item1)
+				Slug = (h.Item2 ?? h.Item1).Slugify()
 			})
 			.ToList();
 		_tableOfContent.Clear();
@@ -170,7 +168,7 @@ public record MarkdownFile : DocumentationFile
 		var labels = document.Descendants<DirectiveBlock>()
 			.Select(b => b.CrossReferenceName)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
-			.Select(_slugHelper.GenerateSlug)
+			.Select(s => s.Slugify())
 			.ToArray();
 		foreach (var label in labels)
 		{

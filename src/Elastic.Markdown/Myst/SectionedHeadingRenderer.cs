@@ -4,14 +4,13 @@
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
-using Slugify;
+using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.InlineParsers;
 
 namespace Elastic.Markdown.Myst;
 
 public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 {
-	private readonly SlugHelper _slugHelper = new();
 	private static readonly string[] HeadingTexts =
 	[
 		"h1",
@@ -33,7 +32,11 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 		var header = obj.GetData("header") as string;
 		var anchor = obj.GetData("anchor") as string;
 
-		var slug = _slugHelper.GenerateSlug(anchor ?? header);
+		var slugTarget = (anchor ?? header) ?? string.Empty;
+		if (slugTarget.IndexOf('$') >= 0)
+			slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
+
+		var slug = slugTarget.Slugify();
 
 		renderer.Write(@"<section id=""");
 		renderer.Write(slug);

@@ -51,6 +51,10 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 
 			var newSlice = new StringSlice(header.ToString());
 			headerBlock.Lines.Lines[0] = new StringLine(ref newSlice);
+
+			if (header.IndexOf('$') >= 0)
+				anchor = HeadingAnchorParser.MatchAnchor().Replace(anchor.ToString(), "");
+
 			headerBlock.SetData("anchor", anchor.ToString());
 			headerBlock.SetData("header", header.ToString());
 			return base.Close(processor, block);
@@ -67,4 +71,7 @@ public static partial class HeadingAnchorParser
 
 	[GeneratedRegex(@"(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchAnchor();
+
+	[GeneratedRegex(@"\$\$\$[^\$]+\$\$\$", RegexOptions.IgnoreCase, "en-US")]
+	public static partial Regex InlineAnchors();
 }

@@ -130,7 +130,7 @@ $"""
 
 		Document = await File.ParseFullAsync(default);
 		var html = File.CreateHtml(Document).AsSpan();
-		var find = "</section>";
+		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0 && !TestingFullDocument
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())

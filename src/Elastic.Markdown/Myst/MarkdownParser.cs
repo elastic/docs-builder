@@ -38,6 +38,7 @@ public class MarkdownParser(
 	public static MarkdownPipeline Pipeline { get; } =
 		new MarkdownPipelineBuilder()
 			.EnableTrackTrivia()
+			.UseInlineAnchors()
 			.UsePreciseSourceLocation()
 			.UseDiagnosticLinks()
 			.UseHeadingsWithSlugs()
