@@ -170,7 +170,7 @@ public record MarkdownFile : DocumentationFile
 			.Select(s => s.Slugify())
 			.Concat(document.Descendants<InlineAnchor>().Select(a=>a.Anchor))
 			.ToArray();
-		
+
 		foreach (var label in labels)
 		{
 			if (!string.IsNullOrEmpty(label))

@@ -2,9 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Myst.InlineParsers;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -134,4 +137,75 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 			</section>
 			""".TrimEnd()
 		);
+}
+
+
+public abstract class InlineAnchorLinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
+	: InlineTest<LinkInline>(output,
+$"""
+## Hello world
+
+A paragraph
+
+{content}
+
+$$$same-page-anchor$$$
+
+""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=markdown
+		var inclusion =
+"""
+# Special Requirements
+
+## Sub Requirements
+
+To follow this tutorial you will need to install the following components:
+
+## New Requirements [#new-reqs]
+
+These are new requirements
+
+With a custom anchor that exists temporarily. $$$custom-anchor$$$
+""";
+		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
+		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
+	}
+
+}
+
+public class InlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(output,
+"""
+[Hello](#same-page-anchor)
+"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="#same-page-anchor">Hello</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(output,
+"""
+[Sub Requirements](testing/req.md#custom-anchor)
+"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="testing/req.html#custom-anchor">Sub Requirements</a></p>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
