@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: preview-${{ github.event.pull_request.number }}
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/aws-auth
       - name: Delete s3 objects
         env:
