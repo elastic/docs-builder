@@ -11,6 +11,6 @@ public static class Markdown
 	{
 		using var writer = new StringWriter();
 		Markdig.Markdown.ToPlainText(markdown, writer);
-		return writer.ToString();
+		return writer.ToString().TrimEnd('\n');
 	}
 }
