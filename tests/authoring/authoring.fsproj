@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2"/>
+    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1"/>
+    <PackageReference Include="xunit" Version="2.9.2"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="21.0.29"/>
+    <PackageReference Include="FsUnit.xUnit" Version="7.0.1"/>
+    <PackageReference Include="AngleSharp.Diffing" Version="1.0.0"/>
+    <PackageReference Include="DiffPlex" Version="1.7.2"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Framework\TestValues.fs" />
+    <Compile Include="Framework\Setup.fs" />
+    <Compile Include="Framework\HtmlAssertions.fs" />
+    <Compile Include="Inline\Substitutions.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Inline\Comments.fs" />
+    <Compile Include="Inline\InlineImages.fs" />
+    <Compile Include="Inline\InlineAnchors.fs" />
+  </ItemGroup>
+
+</Project>

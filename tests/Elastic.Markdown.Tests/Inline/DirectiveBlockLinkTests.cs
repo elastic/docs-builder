@@ -31,7 +31,7 @@ This is a 'warning' admonition
 
 :::{important}
 :name: hint_ref
-This is a 'important' admonition
+This is an 'important' admonition
 :::
 """;
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
