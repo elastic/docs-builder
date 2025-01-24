@@ -50,7 +50,7 @@ public record MarkdownFile : DocumentationFile
 	}
 
 	//indexed by slug
-	private readonly Dictionary<string, PageTocItem> _tableOfContent = new();
+	private readonly Dictionary<string, PageTocItem> _tableOfContent = new Dictionary<string, PageTocItem>(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, PageTocItem> TableOfContents => _tableOfContent;
 
 	private readonly HashSet<string> _additionalLabels = new();
