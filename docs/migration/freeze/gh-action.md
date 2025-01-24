@@ -27,6 +27,6 @@ jobs:
   comment-on-asciidoc-change:
     permissions:
       contents: read
-      pull_request: write
+      pull-requests: write
     uses: elastic/docs-builder/.github/workflows/comment-on-asciidoc-changes.yml@main
 ```
