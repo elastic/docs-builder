@@ -136,7 +136,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			if (!string.IsNullOrEmpty(anchor))
 			{
 				if (markdown == null || (!markdown.TableOfContents.TryGetValue(anchor, out var heading)
-					&& !markdown.AdditionalLabels.Contains(anchor, StringComparer.OrdinalIgnoreCase)))
+					&& !markdown.AdditionalLabels.Contains(anchor)))
 					processor.EmitError(line, column, length, $"`{anchor}` does not exist in {markdown?.FileName}.");
 
 				else if (link.FirstChild == null && heading != null)
