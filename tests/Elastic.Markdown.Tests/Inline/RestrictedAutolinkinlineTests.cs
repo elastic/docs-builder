@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class AllowBRTagTest(ITestOutputHelper output)
+public class AllowBrTagTest(ITestOutputHelper output)
 	: InlineTest(output,
 		"Hello,<br>World!")
 {
@@ -15,6 +15,17 @@ public class AllowBRTagTest(ITestOutputHelper output)
 	public void GeneratesHtml() =>
 		Html.Should().Contain(
 			"<p>Hello,<br>World!</p>"
+		);
+}
+
+public class BrTagNeedsToBeExact(ITestOutputHelper output)
+	: InlineTest(output,
+		"Hello,<br >World<br />!")
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		Html.Should().Contain(
+			"<p>Hello,&lt;br &gt;World&lt;br /&gt;!</p>"
 		);
 }
 

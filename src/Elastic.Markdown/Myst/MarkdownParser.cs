@@ -9,7 +9,6 @@ using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
-using Elastic.Markdown.Myst.Extensions;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.Substitution;
@@ -53,7 +52,8 @@ public class MarkdownParser(
 			.UsePipeTables()
 			.UseDirectives()
 			.UseEnhancedCodeBlocks()
-			.DisableHtmlWithExceptions(["<br>"])
+			.DisableHtml()
+			.UseHardBreaks()
 			.Build();
 
 	public ConfigurationFile Configuration { get; } = configuration;
