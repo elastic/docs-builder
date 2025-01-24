@@ -9,6 +9,7 @@ using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Extensions;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.Substitution;
@@ -26,16 +27,6 @@ public class MarkdownParser(
 {
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 
-	private BuildContext Context { get; } = context;
-
-	public static MarkdownPipeline MinimalPipeline { get; } =
-		new MarkdownPipelineBuilder()
-			.UseYamlFrontMatter()
-			.UseInlineAnchors()
-			.UseHeadingsWithSlugs()
-			.UseDirectives()
-			.Build();
-
 	public static MarkdownPipeline Pipeline { get; } =
 		new MarkdownPipelineBuilder()
 			.EnableTrackTrivia()
@@ -52,7 +43,17 @@ public class MarkdownParser(
 			.UsePipeTables()
 			.UseDirectives()
 			.UseEnhancedCodeBlocks()
-			.DisableHtml()
+			.DisableHtmlWithExceptions(["<br>"])
+			.Build();
+
+	private BuildContext Context { get; } = context;
+
+	public static MarkdownPipeline MinimalPipeline { get; } =
+		new MarkdownPipelineBuilder()
+			.UseYamlFrontMatter()
+			.UseInlineAnchors()
+			.UseHeadingsWithSlugs()
+			.UseDirectives()
 			.Build();
 
 	public ConfigurationFile Configuration { get; } = configuration;
@@ -107,6 +108,4 @@ public class MarkdownParser(
 		var markdownDocument = Markdig.Markdown.Parse(yaml, Pipeline, context);
 		return markdownDocument;
 	}
-
-
 }
