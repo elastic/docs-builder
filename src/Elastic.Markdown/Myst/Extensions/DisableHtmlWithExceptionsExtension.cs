@@ -14,12 +14,12 @@ public static class MarkdownPipelineBuilderExtensions
 	public static MarkdownPipelineBuilder DisableHtmlWithExceptions(this MarkdownPipelineBuilder pipeline, HashSet<string> exceptions)
 	{
 		var parser = pipeline.BlockParsers.Find<HtmlBlockParser>();
-        if (parser != null)
-        {
-            pipeline.BlockParsers.Remove(parser);
-        }
+		if (parser != null)
+		{
+			pipeline.BlockParsers.Remove(parser);
+		}
 
-        pipeline.InlineParsers.ReplaceOrAdd<AutolinkInlineParser>(new RestrictedAutolinkInlineParser { AllowedTags = exceptions });
+		pipeline.InlineParsers.ReplaceOrAdd<AutolinkInlineParser>(new RestrictedAutolinkInlineParser { AllowedTags = exceptions });
 		return pipeline;
 	}
 }
