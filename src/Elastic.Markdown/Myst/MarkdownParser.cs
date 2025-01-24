@@ -27,6 +27,16 @@ public class MarkdownParser(
 {
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 
+	private BuildContext Context { get; } = context;
+
+	public static MarkdownPipeline MinimalPipeline { get; } =
+		new MarkdownPipelineBuilder()
+			.UseYamlFrontMatter()
+			.UseInlineAnchors()
+			.UseHeadingsWithSlugs()
+			.UseDirectives()
+			.Build();
+
 	public static MarkdownPipeline Pipeline { get; } =
 		new MarkdownPipelineBuilder()
 			.EnableTrackTrivia()
@@ -44,16 +54,6 @@ public class MarkdownParser(
 			.UseDirectives()
 			.UseEnhancedCodeBlocks()
 			.DisableHtmlWithExceptions(["<br>"])
-			.Build();
-
-	private BuildContext Context { get; } = context;
-
-	public static MarkdownPipeline MinimalPipeline { get; } =
-		new MarkdownPipelineBuilder()
-			.UseYamlFrontMatter()
-			.UseInlineAnchors()
-			.UseHeadingsWithSlugs()
-			.UseDirectives()
 			.Build();
 
 	public ConfigurationFile Configuration { get; } = configuration;
