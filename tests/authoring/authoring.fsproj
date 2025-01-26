@@ -16,6 +16,7 @@
     <PackageReference Include="AngleSharp.Diffing" Version="1.0.0"/>
     <PackageReference Include="DiffPlex" Version="1.7.2"/>
     <PackageReference Include="Unquote" Version="7.0.1" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
   </ItemGroup>
 
   <ItemGroup>
