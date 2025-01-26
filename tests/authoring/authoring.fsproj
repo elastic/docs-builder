@@ -10,12 +10,12 @@
     <PackageReference Include="coverlet.collector" Version="6.0.2"/>
     <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1"/>
-    <PackageReference Include="xunit" Version="2.9.2"/>
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
+    <PackageReference Include="xunit.v3" Version="1.0.1"/>
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="21.0.29"/>
     <PackageReference Include="FsUnit.xUnit" Version="7.0.1"/>
     <PackageReference Include="AngleSharp.Diffing" Version="1.0.0"/>
     <PackageReference Include="DiffPlex" Version="1.7.2"/>
+    <PackageReference Include="Unquote" Version="7.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,6 +26,7 @@
     <Compile Include="Framework\TestValues.fs" />
     <Compile Include="Framework\Setup.fs" />
     <Compile Include="Framework\HtmlAssertions.fs" />
+    <Compile Include="Framework\ErrorCollectorAssertions.fs" />
     <Compile Include="Inline\Substitutions.fs" />
   </ItemGroup>
 

@@ -5,7 +5,6 @@ open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open Elastic.Markdown
-open Elastic.Markdown.Diagnostics
 open Elastic.Markdown.IO
 open JetBrains.Annotations
 
@@ -34,7 +33,7 @@ type Setup =
 
         fileSystem.AddFile(Path.Combine(root.FullName, "docset.yml"), MockFileData(yaml.ToString()));
 
-    static let Generate ([<LanguageInjection("markdown")>]m: string) : Task<TestResult> =
+    static let Generate ([<LanguageInjection("markdown")>]m: string) : Task<GenerateResult> =
 
         let d = dict [ ("docs/index.md", MockFileData(m)) ]
         let opts = MockFileSystemOptions(CurrentDirectory=Paths.Root.FullName)
@@ -42,7 +41,7 @@ type Setup =
 
         GenerateDocSetYaml (fileSystem, None)
 
-        let collector = DiagnosticsCollector([]);
+        let collector = TestDiagnosticsCollector();
         let context = BuildContext(fileSystem, Collector=collector)
         let set = DocumentationSet(context);
         let file =

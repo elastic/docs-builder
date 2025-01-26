@@ -87,7 +87,7 @@ actual: {actual}
         sw.ToString()
 
     [<DebuggerStepThrough>]
-    let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: TestResult) =
+    let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: GenerateResult) =
         let diffs =
             DiffBuilder
                 .Compare(actual.Html)
