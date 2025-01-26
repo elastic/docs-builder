@@ -1,3 +1,7 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
 namespace authoring
 
 open System.Diagnostics
@@ -20,4 +24,5 @@ module DiagnosticsCollectorAssertions =
                                    .Where(fun d -> d.Severity = Severity.Error)
                                    .ToArray()
                                    |> List.ofArray
-        test <@ errorDiagnostics.FirstOrDefault().Message.Contains(expected) @>
+        let message = errorDiagnostics.FirstOrDefault().Message
+        test <@ message.Contains(expected) @>
