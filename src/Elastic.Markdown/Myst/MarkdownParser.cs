@@ -51,6 +51,7 @@ public class MarkdownParser(
 			.UseGridTables()
 			.UsePipeTables()
 			.UseDirectives()
+			.UseDefinitionLists()
 			.UseEnhancedCodeBlocks()
 			.DisableHtml()
 			.UseHardBreaks()
