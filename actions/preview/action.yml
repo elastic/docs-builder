@@ -11,10 +11,50 @@ inputs:
     default: true
     required: false
 
+env:
+  IS_DEPLOYMENT: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+  IS_CLEANUP: ${{ github.event_name == 'pull_request_target' && github.event.action == 'closed' }}
+
 runs:
   using: "composite"
   steps:
+
+    - name: Authenticate 
+      uses: elastic/docs-builder/.github/actions/aws-auth@main
+
+    - name: Cleanup
+      if: ${{ env.IS_CLEANUP }}
+      run: |
+        aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
+
+    - name: Delete GitHub environment
+      if: ${{ env.IS_CLEANUP }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const deployments = await github.rest.repos.listDeployments({
+            owner,
+            repo,
+            environment: `preview-${context.issue.number}`
+          });
+          for (const deployment of deployments.data) {
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deployment.id,
+              state: 'inactive',
+              description: 'Marking deployment as inactive'
+            });
+            await github.rest.repos.deleteDeployment({
+              owner,
+              repo,
+              deployment_id: deployment.id
+            });
+          }
+
     - name: Create Deployment
+      if: env.IS_DEPLOYMENT
       uses: actions/github-script@v7
       id: deployment
       with:
@@ -56,6 +96,7 @@ runs:
           return deployment.data.id
 
     - name: Generate Path Prefix
+      if: env.IS_DEPLOYMENT
       id: path-prefix
       shell: bash
       run: |
@@ -66,16 +107,15 @@ runs:
         fi
 
     - name: Build public documentation
+      if: env.IS_DEPLOYMENT
       uses: elastic/docs-builder@main
-      continue-on-error: ${{ inputs.strict != 'true' }}
+      continue-on-error: ${{ inputs.strict != 'true' }} # Will be removed after the migration phase
       with:
         prefix: ${{ steps.path-prefix.outputs.result }}
         strict: ${{ inputs.strict }}
 
-    - name: Authenticate 
-      uses: elastic/docs-builder/.github/actions/aws-auth@main
-
     - name: Upload artifact
+      if: env.IS_DEPLOYMENT
       shell: bash
       run: |
         aws s3 sync .artifacts/docs/html s3://elastic-docs-v3-website-preview${{steps.path-prefix.outputs.result}} --delete --quiet
@@ -83,7 +123,7 @@ runs:
 
     - name: Update deployment status
       uses: actions/github-script@v7
-      if: always()
+      if: always() && env.IS_DEPLOYMENT
       with:
         script: |
           await github.rest.repos.createDeploymentStatus({
