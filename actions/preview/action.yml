@@ -1,0 +1,97 @@
+name: 'Documentation Preview'
+description: 'Builds and publishes documentation to preview environment'
+
+branding:
+  icon: 'filter'
+  color: 'red'
+
+inputs:
+  strict:
+    description: 'Whether to fail the build if there are any warnings'
+    default: true
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create Deployment
+      uses: actions/github-script@v7
+      id: deployment
+      with:
+        result-encoding: string
+        script: |
+          const { owner, repo } = context.repo;
+          const branch = context.payload.pull_request
+            ? context.payload.pull_request.head.ref 
+            : context.ref.replace('refs/heads/', '');
+
+          const repoResponse = await github.rest.repos.get({
+            owner,
+            repo
+          })
+          const defaultBranch = repoResponse.data.default_branch;
+          const isDefaultBranch = branch === defaultBranch;
+
+          const environment = isDefaultBranch
+            ? `docs-preview-${defaultBranch}`
+            : `docs-preview-${context.issue.number}`;
+
+          const logUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+          const deployment = await github.rest.repos.createDeployment({
+              owner,
+              repo,
+              ref: branch,
+              environment,
+              auto_merge: false,
+              required_contexts: [],
+          })
+          await github.rest.repos.createDeploymentStatus({
+              deployment_id: deployment.data.id,
+              owner,
+              repo,
+              state: "in_progress",
+              log_url: logUrl,
+          })
+          return deployment.data.id
+
+    - name: Generate Path Prefix
+      id: path-prefix
+      shell: bash
+      run: |
+        if [[ -n "${{ github.event.pull_request }}" ]]; then
+          echo "result=/${GITHUB_REPOSITORY}/pull/${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+        else
+          echo "result=/${GITHUB_REPOSITORY}/${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build public documentation
+      uses: elastic/docs-builder@main
+      continue-on-error: ${{ inputs.strict != 'true' }}
+      with:
+        prefix: ${{ steps.path-prefix.outputs.result }}
+        strict: ${{ inputs.strict }}
+
+    - name: Authenticate 
+      uses: elastic/docs-builder/.github/actions/aws-auth@main
+
+    - name: Upload artifact
+      shell: bash
+      run: |
+        aws s3 sync .artifacts/docs/html s3://elastic-docs-v3-website-preview${{steps.path-prefix.outputs.result}} --delete --quiet
+        aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "${{steps.path-prefix.outputs.result}}/*"
+
+    - name: Update deployment status
+      uses: actions/github-script@v7
+      if: always()
+      with:
+        script: |
+          await github.rest.repos.createDeploymentStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            deployment_id: ${{ steps.deployment.outputs.result }},
+            state: '${{ job.status == 'success' && 'success' || 'failure' }}',
+            environment_url: `https://docs-v3-preview.elastic.dev${{steps.path-prefix.outputs.result}}`,
+            log_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+            description: "Deployment completed",
+          })
