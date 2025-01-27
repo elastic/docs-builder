@@ -5,6 +5,7 @@
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Slices.Directives;
+using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
@@ -14,15 +15,71 @@ namespace Elastic.Markdown.Myst.CodeBlocks;
 
 public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBlock>
 {
+	private const int TabWidth = 4;
 
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
 		renderer.Write(blocks[0]);
-		renderer.WriteLeafRawLines(block, true, true, false);
+		RenderCodeBlockLines(renderer, block);
 		renderer.Write(blocks[1]);
 	}
+
+	/// <summary>
+	/// Renders the code block lines while also removing the common indentation level.
+	/// Required because EnableTrackTrivia preserves extra indentation.
+	/// </summary>
+	private static void RenderCodeBlockLines(HtmlRenderer renderer, EnhancedCodeBlock block)
+	{
+		var commonIndent = GetCommonIndent(block);
+		for (var i = 0; i < block.Lines.Count; i++)
+		{
+			var line = block.Lines.Lines[i];
+			var slice = line.Slice;
+			var indent = CountIndentation(slice);
+			if (indent >= commonIndent)
+				slice.Start += commonIndent;
+			RenderCodeBlockLine(renderer, block, slice, i);
+		}
+	}
+
+	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int i)
+	{
+		renderer.WriteEscape(slice);
+		renderer.WriteLine();
+	}
+
+	private static int GetCommonIndent(EnhancedCodeBlock block)
+	{
+		var commonIndent = int.MaxValue;
+		for (var i = 0; i < block.Lines.Count; i++)
+		{
+			var line = block.Lines.Lines[i].Slice;
+			if (line.IsEmptyOrWhitespace()) continue;
+			var indent = CountIndentation(line);
+			commonIndent = Math.Min(commonIndent, indent);
+		}
+		return commonIndent;
+	}
+
+
+	private static int CountIndentation(StringSlice slice)
+	{
+		var indentCount = 0;
+		for (var i = slice.Start; i <= slice.End; i++)
+		{
+			var c = slice.Text[i];
+			if (c == ' ')
+				indentCount++;
+			else if (c == '\t')
+				indentCount += TabWidth;
+			else
+				break;
+		}
+		return indentCount;
+	}
+
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var callOuts = block.UniqueCallOuts;
