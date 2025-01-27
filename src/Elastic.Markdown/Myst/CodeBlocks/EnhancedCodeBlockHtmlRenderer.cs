@@ -56,7 +56,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		for (var i = 0; i < block.Lines.Count; i++)
 		{
 			var line = block.Lines.Lines[i].Slice;
-			if (line.IsEmptyOrWhitespace()) continue;
+			if (line.IsEmptyOrWhitespace())
+				continue;
 			var indent = CountIndentation(line);
 			commonIndent = Math.Min(commonIndent, indent);
 		}
