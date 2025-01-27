@@ -162,8 +162,8 @@ public record MarkdownFile : DocumentationFile
 		}
 
 		var contents = document
-			.Where(block => block is HeadingBlock { Level: >= 2 })
-			.Cast<HeadingBlock>()
+			.Descendants<HeadingBlock>()
+			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string))
 			.Select(h => new PageTocItem
 			{
