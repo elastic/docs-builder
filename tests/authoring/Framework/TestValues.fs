@@ -6,8 +6,6 @@ namespace authoring
 
 open System
 open System.IO.Abstractions
-open System.Threading
-open System.Threading.Tasks
 open Elastic.Markdown
 open Elastic.Markdown.Diagnostics
 open Elastic.Markdown.IO
