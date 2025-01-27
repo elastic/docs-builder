@@ -89,35 +89,36 @@ actual: {actual}
         |> Seq.iter _.ToHtml(sw, PrettyMarkupFormatter())
         sw.ToString()
 
-    [<DebuggerStepThrough>]
-    let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: GenerateResult) =
+    let private createDiff expected actual =
         let diffs =
             DiffBuilder
-                .Compare(actual.Html)
+                .Compare(actual)
                 .WithTest(expected)
                 .Build()
 
-        let diff = htmlDiffString diffs
-        match diff with
+        let deepComparision = htmlDiffString diffs
+        match deepComparision with
         | s when String.IsNullOrEmpty s -> ()
         | s ->
             let expectedHtml = prettyHtml expected
-            let actualHtml = prettyHtml actual.Html
-            let textDiff =
-                InlineDiffBuilder.Diff(expectedHtml, actualHtml).Lines
-                |> Seq.map(fun l ->
-                    match l.Type with
-                    | ChangeType.Deleted -> "- " + l.Text
-                    | ChangeType.Modified -> "+ " + l.Text
-                    | ChangeType.Inserted -> "+ " + l.Text
-                    | _ -> " " + l.Text
-                )
-                |> String.concat "\n"
+            let actualHtml = prettyHtml actual
+            let textDiff = diff expectedHtml actualHtml
             let msg = $"""Html was not equal
 {textDiff}
 
-{diff}
+{deepComparision}
 """
             raise (XunitException(msg))
+
+    [<DebuggerStepThrough>]
+    let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+
+        let defaultFile = actual.MarkdownResults |> Seq.head
+        createDiff expected defaultFile.Html
+
+    [<DebuggerStepThrough>]
+    let toHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
+        createDiff expected actual.Html
 
 

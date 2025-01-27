@@ -14,11 +14,13 @@ open Swensen.Unquote
 module DiagnosticsCollectorAssertions =
 
     [<DebuggerStepThrough>]
-    let hasNoErrors (actual: GenerateResult) =
+    let hasNoErrors (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
         test <@ actual.Context.Collector.Errors = 0 @>
 
     [<DebuggerStepThrough>]
-    let hasError (expected: string) (actual: GenerateResult) =
+    let hasError (expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
         actual.Context.Collector.Errors |> shouldBeGreaterThan 0
         let errorDiagnostics = actual.Context.Collector.Diagnostics
                                    .Where(fun d -> d.Severity = Severity.Error)

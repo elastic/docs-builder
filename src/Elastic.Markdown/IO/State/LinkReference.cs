@@ -15,8 +15,9 @@ public record LinkReference
 	[JsonPropertyName("url_path_prefix")]
 	public required string? UrlPathPrefix { get; init; }
 
+	/// Mapping of relative filepath and all the page's anchors for deeplinks
 	[JsonPropertyName("links")]
-	public required string[] Links { get; init; } = [];
+	public required Dictionary<string, string[]> Links { get; init; } = [];
 
 	[JsonPropertyName("cross_links")]
 	public required string[] CrossLinks { get; init; } = [];
@@ -25,7 +26,8 @@ public record LinkReference
 	{
 		var crossLinks = set.Context.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = set.MarkdownFiles.Values
-			.Select(m => m.RelativePath).ToArray();
+			.Select(m => (m.RelativePath, m.Anchors))
+			.ToDictionary(k => k.RelativePath, v => v.Anchors.ToArray());
 		return new LinkReference
 		{
 			UrlPathPrefix = set.Context.UrlPathPrefix,
