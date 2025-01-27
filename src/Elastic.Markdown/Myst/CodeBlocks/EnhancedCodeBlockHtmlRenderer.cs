@@ -44,11 +44,24 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		}
 	}
 
-	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int i)
+	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int lineNumber)
 	{
 		renderer.WriteEscape(slice);
+		RenderCallouts(renderer, block, lineNumber);
 		renderer.WriteLine();
 	}
+
+	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber)
+	{
+		var callOuts = FindCallouts(block.CallOuts ?? [], lineNumber + 1);
+		foreach (var callOut in callOuts)
+			renderer.Write($"<span class=\"code-callout\">{callOut.Index}</span>");
+	}
+
+	private static IEnumerable<CallOut> FindCallouts(
+		IEnumerable<CallOut> callOuts,
+		int lineNumber
+	) => callOuts.Where(callOut => callOut.Line == lineNumber);
 
 	private static int GetCommonIndent(EnhancedCodeBlock block)
 	{

@@ -135,3 +135,58 @@ See https://github.com/elastic/docs-builder/issues/219 for further details
 	--color-2: var(--gray-a4);
 	--color-3: var(--gray-10);
 }
+
+
+/* Code Callouts */
+
+.yue code span.code-callout {
+	display: inline-flex;
+	font-size: 0.75em;
+	border-radius: 99999px;
+	background-color: var(--accent-11);
+	width: 20px;
+	height: 20px;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+	transform: translateY(-2px);
+}
+
+.yue code span.code-callout > span {
+	color: white;
+}
+
+.yue ol.code-callouts {
+	margin-top: 0;
+	counter-reset: code-callout-counter;
+}
+
+.yue ol.code-callouts li::before {
+	content: counter(code-callout-counter);
+	position: absolute;
+	--size: 20px;
+	left: calc(-1 * var(--size) - 5px);
+	top: 5px;
+	color: white;
+	display: inline-flex;
+	font-size: 0.75em;
+	border-radius: 99999px;
+	background-color: var(--accent-11);
+	width: var(--size);
+	height: var(--size);
+	align-items: center;
+	justify-content: center;
+	margin: 0 0.25em;
+	transform: translateY(-2px);
+	font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+}
+
+.yue ol.code-callouts li {
+	margin: 0 0 0.5rem 0;
+	counter-increment: code-callout-counter;
+	position: relative;
+}
+
+.yue ol.code-callouts li::marker {
+	display: none;
+}
