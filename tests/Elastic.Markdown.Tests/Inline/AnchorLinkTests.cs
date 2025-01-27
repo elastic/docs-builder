@@ -34,6 +34,13 @@ To follow this tutorial you will need to install the following components:
 
 ## New Requirements [#new-reqs]
 
+
+:::{dropdown} Nested heading
+
+##### Heading inside dropdown [#heading-inside-dropdown]
+
+:::
+
 These are new requirements
 """;
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
@@ -146,4 +153,22 @@ public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTe
 	[Fact]
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
 		.And.Contain(d => d.Message.Contains("`sub-requirements2` does not exist"));
+}
+
+
+public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(output,
+	"""
+	[Heading inside dropdown](testing/req.md#heading-inside-dropdown)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<a href="testing/req.html#heading-inside-dropdown">Heading inside dropdown</a>"""
+		);
+
+	[Fact]
+	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);
 }
