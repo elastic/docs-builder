@@ -24,11 +24,11 @@ type TestFile =
     | File of name: string * contents: string
     | MarkdownFile of name: string * markdown: Markdown
 
-    static member IndexFile([<LanguageInjection("markdown")>] m) =
+    static member Index ([<LanguageInjection("markdown")>] m) =
         MarkdownFile("index.md" , m)
 
-    static member Markdown([<LanguageInjection("markdown")>] m) =
-        MarkdownFile("index.md" , m)
+    static member Markdown path ([<LanguageInjection("markdown")>] m) =
+        MarkdownFile(path , m)
 
 type Setup =
 
@@ -106,7 +106,7 @@ type Setup =
 
     /// Pass a full documentation page to the test setup
     static member Document ([<LanguageInjection("markdown")>]m: string) =
-        lazy (task { return! Setup.Generator [IndexFile m] } |> Async.AwaitTask |> Async.RunSynchronously)
+        lazy (task { return! Setup.Generator [Index m] } |> Async.AwaitTask |> Async.RunSynchronously)
 
     /// Pass a markdown fragment to the test setup
     static member Markdown ([<LanguageInjection("markdown")>]m: string) =
@@ -115,7 +115,7 @@ type Setup =
 {m}
 """
         lazy (
-            task { return! Setup.Generator [IndexFile m] }
+            task { return! Setup.Generator [Index m] }
             |> Async.AwaitTask |> Async.RunSynchronously
         )
 

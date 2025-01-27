@@ -10,7 +10,7 @@ open authoring
 type ``two pages with anchors end up in artifact`` () =
 
     static let generator = Setup.Generate [
-        IndexFile """
+        Index """
 # A Document that lives at the root
 
 *Welcome* to this documentation
@@ -21,7 +21,7 @@ type ``two pages with anchors end up in artifact`` () =
 
 Through various means $$$including-this-inline-syntax$$$
 """
-        MarkdownFile ("file.md", "*hello* world")
+        Markdown "file.md" "*hello* world"
     ]
 
     [<Fact>]
