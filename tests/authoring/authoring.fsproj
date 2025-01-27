@@ -37,4 +37,8 @@
     <Compile Include="Inline\InlineAnchors.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="Container\DefinitionLists.fs" />
+  </ItemGroup>
+
 </Project>
