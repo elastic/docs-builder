@@ -14,12 +14,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-
-    - name: group-start
-      shell: bash
-      run: |
-        echo ""::group::Determing the type of event"
-
     - name: Get types
       id: type
       shell: bash
@@ -38,31 +32,8 @@ runs:
         echo "IS_DEPLOYMENT: ${{ steps.type.outputs.IS_DEPLOYMENT }}"
         echo "IS_CLEANUP: ${{ steps.type.outputs.IS_CLEANUP }}"
 
-    - name: group-end
-      shell: bash
-      run: |
-        echo ""::endgroup::"
-
-
-    - name: group-start
-      shell: bash
-      run: |
-        echo ""::group::Authenticate to AWS"
-
-
     - name: Authenticate 
       uses: elastic/docs-builder/.github/actions/aws-auth@main
-
-    - name: group-end
-      shell: bash
-      run: |
-        echo ""::endgroup::"
-
-    - name: group-start
-      if: steps.type.outputs.IS_CLEANUP == 'true'
-      shell: bash
-      run: |
-        echo ""::group::Cleanup"
 
     - name: Cleanup
       if: steps.type.outputs.IS_CLEANUP == 'true'
@@ -95,18 +66,6 @@ runs:
               deployment_id: deployment.id
             });
           }
-
-    - name: group-end
-      shell: bash
-      if: steps.type.outputs.IS_CLEANUP == 'true'
-      run: |
-        echo ""::endgroup::"
-
-    - name: group-start
-      if: steps.type.outputs.IS_DEPLOYMENT == 'true'
-      shell: bash
-      run: |
-        echo ""::group::Deploy"
 
     - name: Create Deployment
       if: steps.type.outputs.IS_DEPLOYMENT == 'true'
@@ -190,8 +149,3 @@ runs:
             log_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
             description: "Deployment completed",
           })
-
-    - name: group-end
-      shell: bash
-      run: |
-        echo ""::endgroup::"
