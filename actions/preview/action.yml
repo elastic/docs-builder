@@ -19,6 +19,7 @@ runs:
 
     - name: Get types
       id: type
+      shell: bash
       env:
         IS_DEPLOYMENT: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
         IS_CLEANUP: ${{ github.event_name == 'pull_request_target' && github.event.action == 'closed' }}
@@ -31,6 +32,7 @@ runs:
 
     - name: Cleanup
       if: ${{ steps.type.outputs.IS_CLEANUP }}
+      shell: bash
       run: |
         aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
 
