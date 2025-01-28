@@ -14,6 +14,7 @@ open AngleSharp.Html.Parser
 open DiffPlex.DiffBuilder
 open DiffPlex.DiffBuilder.Model
 open JetBrains.Annotations
+open Swensen.Unquote
 open Xunit.Sdk
 
 [<AutoOpen>]
@@ -87,7 +88,7 @@ actual: {actual}
         use sw = new StringWriter()
         document.Body.Children
         |> Seq.iter _.ToHtml(sw, PrettyMarkupFormatter())
-        sw.ToString()
+        sw.ToString().TrimStart('\n')
 
     let private createDiff expected actual =
         let diffs =
@@ -111,14 +112,36 @@ actual: {actual}
             raise (XunitException(msg))
 
     [<DebuggerStepThrough>]
+    let toHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
+        createDiff expected actual.Html
+
+    [<DebuggerStepThrough>]
     let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
         let actual = actual.Value
 
         let defaultFile = actual.MarkdownResults |> Seq.head
-        createDiff expected defaultFile.Html
+        defaultFile |> toHtml expected
 
     [<DebuggerStepThrough>]
-    let toHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
-        createDiff expected actual.Html
+    let containsHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
+
+        let prettyExpected = prettyHtml expected
+        let prettyActual = prettyHtml actual.Html
+
+        if not <| prettyActual.Contains prettyExpected then
+            let msg = $"""Expected html to contain:
+{prettyExpected}
+
+But was not found in:
+
+{prettyActual}
+"""
+            raise (XunitException(msg))
 
 
+    [<DebuggerStepThrough>]
+    let convertsToContainingHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+
+        let defaultFile = actual.MarkdownResults |> Seq.head
+        defaultFile |> containsHtml expected

@@ -61,6 +61,7 @@ type TestLoggerFactory () =
 
 type MarkdownResult = {
     File: MarkdownFile
+    MinimalParse: MarkdownDocument
     Document: MarkdownDocument
     Html: string
     Context: MarkdownTestContext
@@ -89,8 +90,9 @@ and MarkdownTestContext =
             |> Seq.map (fun (f: MarkdownFile) -> task {
                 // technically we do this work twice since generate all also does it
                 let! document = f.ParseFullAsync(ctx)
+                let! minimal = f.MinimalParseAsync(ctx)
                 let html = f.CreateHtml(document)
-                return { File = f; Document = document; Html = html; Context = this  }
+                return { File = f; Document = document; MinimalParse = minimal; Html = html; Context = this  }
             })
             // this is not great code, refactor or depend on FSharp.Control.TaskSeq
             // for now this runs without issue
