@@ -176,8 +176,6 @@ public record MarkdownFile : DocumentationFile
 		foreach (var t in contents)
 			_tableOfContent[t.Slug] = t;
 
-		var inlineAnchros = document.Descendants<InlineAnchor>().ToList();
-
 		var anchors = document.Descendants<DirectiveBlock>()
 			.Select(b => b.CrossReferenceName)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
