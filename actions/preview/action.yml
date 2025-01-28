@@ -11,8 +11,6 @@ inputs:
     default: true
     required: false
 
-
-
 runs:
   using: "composite"
   steps:
@@ -37,13 +35,13 @@ runs:
         echo "IS_CLEANUP: ${{ steps.type.outputs.IS_CLEANUP }}"
 
     - name: Cleanup
-      if: ${{ steps.type.outputs.IS_CLEANUP }}
+      if: steps.type.outputs.IS_CLEANUP
       shell: bash
       run: |
         aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
 
     - name: Delete GitHub environment
-      if: ${{ steps.type.outputs.IS_CLEANUP }}
+      if: steps.type.outputs.IS_CLEANUP
       uses: actions/github-script@v7
       with:
         script: |
@@ -69,7 +67,7 @@ runs:
           }
 
     - name: Create Deployment
-      if: ${{ steps.type.outputs.IS_DEPLOYMENT }}
+      if: steps.type.outputs.IS_DEPLOYMENT
       uses: actions/github-script@v7
       id: deployment
       with:
@@ -111,7 +109,7 @@ runs:
           return deployment.data.id
 
     - name: Generate Path Prefix
-      if: ${{ steps.type.outputs.IS_DEPLOYMENT }}
+      if: steps.type.outputs.IS_DEPLOYMENT
       id: path-prefix
       shell: bash
       run: |
@@ -122,7 +120,7 @@ runs:
         fi
 
     - name: Build public documentation
-      if: ${{ steps.type.outputs.IS_DEPLOYMENT }}
+      if: steps.type.outputs.IS_DEPLOYMENT
       uses: elastic/docs-builder@main
       continue-on-error: ${{ inputs.strict != 'true' }} # Will be removed after the migration phase
       with:
@@ -130,7 +128,7 @@ runs:
         strict: ${{ inputs.strict }}
 
     - name: Upload artifact
-      if: ${{ steps.type.outputs.IS_DEPLOYMENT }}
+      if: steps.type.outputs.IS_DEPLOYMENT
       shell: bash
       run: |
         aws s3 sync .artifacts/docs/html s3://elastic-docs-v3-website-preview${{steps.path-prefix.outputs.result}} --delete --quiet
@@ -138,7 +136,7 @@ runs:
 
     - name: Update deployment status
       uses: actions/github-script@v7
-      if: always() && ${{ steps.type.outputs.IS_DEPLOYMENT }}
+      if: always() && steps.type.outputs.IS_DEPLOYMENT
       with:
         script: |
           await github.rest.repos.createDeploymentStatus({
