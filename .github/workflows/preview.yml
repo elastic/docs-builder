@@ -1,6 +1,9 @@
 name: preview
 
 on:
+  push:
+    branches:
+      - main
   workflow_call:
     inputs:
       strict:
@@ -24,12 +27,10 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const deployment = await github.rest.repos.createDeployment({
-                issue_number: context.issue.number,
                 owner,
                 repo,
                 ref: context.payload.pull_request.head.ref,
                 environment: `docs-preview-${context.issue.number}`,
-                description: `Preview deployment for PR ${context.issue.number}`,
                 auto_merge: false,
                 required_contexts: [],
             })
@@ -38,7 +39,6 @@ jobs:
                 owner,
                 repo,
                 state: "in_progress",
-                description: "Deployment created",
                 log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
             })
             return deployment.data.id
@@ -87,7 +87,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: "${{ job.status == 'success' && 'success' || 'failure' }}",
-              description: "Deployment completed",
               environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
             })
