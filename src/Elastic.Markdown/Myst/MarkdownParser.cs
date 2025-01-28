@@ -35,7 +35,8 @@ public class MarkdownParser(
 	{
 		get
 		{
-			if (_minimalPipeline is not null) return _minimalPipeline;
+			if (_minimalPipeline is not null)
+				return _minimalPipeline;
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseInlineAnchors()
@@ -51,10 +52,12 @@ public class MarkdownParser(
 
 	// ReSharper disable once InconsistentNaming
 	private static MarkdownPipeline? _pipeline;
-	public static MarkdownPipeline Pipeline {
+	public static MarkdownPipeline Pipeline
+	{
 		get
 		{
-			if (_pipeline is not null) return _pipeline;
+			if (_pipeline is not null)
+				return _pipeline;
 
 			var builder = new MarkdownPipelineBuilder()
 				.EnableTrackTrivia()
