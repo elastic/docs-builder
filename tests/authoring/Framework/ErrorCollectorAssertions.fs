@@ -16,7 +16,8 @@ module DiagnosticsCollectorAssertions =
     [<DebuggerStepThrough>]
     let hasNoErrors (actual: Lazy<GeneratorResults>) =
         let actual = actual.Value
-        test <@ actual.Context.Collector.Errors = 0 @>
+        let errors = actual.Context.Collector.Errors
+        test <@ errors = 0 @>
 
     [<DebuggerStepThrough>]
     let hasError (expected: string) (actual: Lazy<GeneratorResults>) =

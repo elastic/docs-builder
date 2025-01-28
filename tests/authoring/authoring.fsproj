@@ -29,6 +29,7 @@
     <Compile Include="Framework\MarkdownResultsAssertions.fs" />
     <Compile Include="Framework\HtmlAssertions.fs" />
     <Compile Include="Framework\ErrorCollectorAssertions.fs" />
+    <Compile Include="Framework\MarkdownDocumentAssertions.fs" />
     <Compile Include="Inline\Substitutions.fs" />
   </ItemGroup>
 

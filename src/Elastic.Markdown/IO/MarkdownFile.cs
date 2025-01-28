@@ -89,7 +89,7 @@ public record MarkdownFile : DocumentationFile
 		return parents.ToArray();
 	}
 
-	public async Task<MarkdownDocument> MinimalParse(Cancel ctx)
+	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
 	{
 		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
 		ReadDocumentInstructions(document);
@@ -99,7 +99,7 @@ public record MarkdownFile : DocumentationFile
 	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
 	{
 		if (!_instructionsParsed)
-			await MinimalParse(ctx);
+			await MinimalParseAsync(ctx);
 
 		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 		return document;
@@ -175,6 +175,8 @@ public record MarkdownFile : DocumentationFile
 		_tableOfContent.Clear();
 		foreach (var t in contents)
 			_tableOfContent[t.Slug] = t;
+
+		var inlineAnchros = document.Descendants<InlineAnchor>().ToList();
 
 		var anchors = document.Descendants<DirectiveBlock>()
 			.Select(b => b.CrossReferenceName)

@@ -14,6 +14,7 @@ using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
+using Markdig.Parsers;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
@@ -28,34 +29,56 @@ public class MarkdownParser(
 
 	private BuildContext Context { get; } = context;
 
-	public static MarkdownPipeline MinimalPipeline { get; } =
-		new MarkdownPipelineBuilder()
-			.UseYamlFrontMatter()
-			.UseInlineAnchors()
-			.UseHeadingsWithSlugs()
-			.UseDirectives()
-			.Build();
+	// ReSharper disable once InconsistentNaming
+	private static MarkdownPipeline? _minimalPipeline;
+	public static MarkdownPipeline MinimalPipeline
+	{
+		get
+		{
+			if (_minimalPipeline is not null) return _minimalPipeline;
+			var builder = new MarkdownPipelineBuilder()
+				.UseYamlFrontMatter()
+				.UseInlineAnchors()
+				.UseHeadingsWithSlugs()
+				.UseDirectives();
 
-	public static MarkdownPipeline Pipeline { get; } =
-		new MarkdownPipelineBuilder()
-			.EnableTrackTrivia()
-			.UseInlineAnchors()
-			.UsePreciseSourceLocation()
-			.UseDiagnosticLinks()
-			.UseHeadingsWithSlugs()
-			.UseEmphasisExtras(EmphasisExtraOptions.Default)
-			.UseSoftlineBreakAsHardlineBreak()
-			.UseSubstitution()
-			.UseComments()
-			.UseYamlFrontMatter()
-			.UseGridTables()
-			.UsePipeTables()
-			.UseDirectives()
-			.UseDefinitionLists()
-			.UseEnhancedCodeBlocks()
-			.DisableHtml()
-			.UseHardBreaks()
-			.Build();
+			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			_minimalPipeline = builder.Build();
+			return _minimalPipeline;
+
+		}
+	}
+
+	// ReSharper disable once InconsistentNaming
+	private static MarkdownPipeline? _pipeline;
+	public static MarkdownPipeline Pipeline {
+		get
+		{
+			if (_pipeline is not null) return _pipeline;
+
+			var builder = new MarkdownPipelineBuilder()
+				.EnableTrackTrivia()
+				.UseInlineAnchors()
+				.UsePreciseSourceLocation()
+				.UseDiagnosticLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UseSoftlineBreakAsHardlineBreak()
+				.UseSubstitution()
+				.UseComments()
+				.UseYamlFrontMatter()
+				.UseGridTables()
+				.UsePipeTables()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseEnhancedCodeBlocks()
+				.DisableHtml()
+				.UseHardBreaks();
+			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			_pipeline = builder.Build();
+			return _pipeline;
+		}
+	}
 
 	public ConfigurationFile Configuration { get; } = configuration;
 
