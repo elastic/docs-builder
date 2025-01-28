@@ -28,20 +28,14 @@ runs:
     - name: Authenticate 
       uses: elastic/docs-builder/.github/actions/aws-auth@main
 
-    - name: Debug
-      shell: bash
-      run: |
-        echo "IS_DEPLOYMENT: ${{ steps.type.outputs.IS_DEPLOYMENT }}"
-        echo "IS_CLEANUP: ${{ steps.type.outputs.IS_CLEANUP }}"
-
     - name: Cleanup
-      if: steps.type.outputs.IS_CLEANUP
+      if: steps.type.outputs.IS_CLEANUP == 'true'
       shell: bash
       run: |
         aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
 
     - name: Delete GitHub environment
-      if: steps.type.outputs.IS_CLEANUP
+      if: steps.type.outputs.IS_CLEANUP == 'true'
       uses: actions/github-script@v7
       with:
         script: |
@@ -67,7 +61,7 @@ runs:
           }
 
     - name: Create Deployment
-      if: steps.type.outputs.IS_DEPLOYMENT
+      if: steps.type.outputs.IS_DEPLOYMENT == 'true'
       uses: actions/github-script@v7
       id: deployment
       with:
@@ -109,7 +103,7 @@ runs:
           return deployment.data.id
 
     - name: Generate Path Prefix
-      if: steps.type.outputs.IS_DEPLOYMENT
+      if: steps.type.outputs.IS_DEPLOYMENT == 'true'
       id: path-prefix
       shell: bash
       run: |
@@ -120,7 +114,7 @@ runs:
         fi
 
     - name: Build public documentation
-      if: steps.type.outputs.IS_DEPLOYMENT
+      if: steps.type.outputs.IS_DEPLOYMENT == 'true'
       uses: elastic/docs-builder@main
       continue-on-error: ${{ inputs.strict != 'true' }} # Will be removed after the migration phase
       with:
@@ -128,7 +122,7 @@ runs:
         strict: ${{ inputs.strict }}
 
     - name: Upload artifact
-      if: steps.type.outputs.IS_DEPLOYMENT
+      if: steps.type.outputs.IS_DEPLOYMENT == 'true'
       shell: bash
       run: |
         aws s3 sync .artifacts/docs/html s3://elastic-docs-v3-website-preview${{steps.path-prefix.outputs.result}} --delete --quiet
@@ -136,7 +130,7 @@ runs:
 
     - name: Update deployment status
       uses: actions/github-script@v7
-      if: always() && steps.type.outputs.IS_DEPLOYMENT
+      if: always() && steps.type.outputs.IS_DEPLOYMENT == 'true'
       with:
         script: |
           await github.rest.repos.createDeploymentStatus({
