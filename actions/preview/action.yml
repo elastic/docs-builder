@@ -47,24 +47,35 @@ runs:
       with:
         script: |
           const { owner, repo } = context.repo;
-          const deployments = await github.rest.repos.listDeployments({
-            owner,
-            repo,
-            environment: `docs-preview-${context.issue.number}`
-          });
-          for (const deployment of deployments.data) {
-            await github.rest.repos.createDeploymentStatus({
+          let page = 1;
+          let hasMore = true;
+          
+          while (hasMore) {
+            const deployments = await github.rest.repos.listDeployments({
               owner,
               repo,
-              deployment_id: deployment.id,
-              state: 'inactive',
-              description: 'Marking deployment as inactive'
+              environment: `docs-preview-${context.issue.number}`,
+              per_page: 100,
+              page: page
             });
-            await github.rest.repos.deleteDeployment({
-              owner,
-              repo,
-              deployment_id: deployment.id
-            });
+            
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+                description: 'Marking deployment as inactive'
+              });
+              await github.rest.repos.deleteDeployment({
+                owner,
+                repo,
+                deployment_id: deployment.id
+              });
+            }
+            
+            hasMore = deployments.data.length === 100;
+            page++;
           }
 
     - name: Create Deployment
