@@ -50,7 +50,7 @@ runs:
           const deployments = await github.rest.repos.listDeployments({
             owner,
             repo,
-            environment: `preview-${context.issue.number}`
+            environment: `docs-preview-${context.issue.number}`
           });
           for (const deployment of deployments.data) {
             await github.rest.repos.createDeploymentStatus({
