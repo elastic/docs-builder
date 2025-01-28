@@ -21,7 +21,7 @@ runs:
         if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.action }}" == "closed" ]]; then
           echo "IS_CLEANUP=true" >> $GITHUB_OUTPUT
           echo "IS_DEPLOYMENT=false" >> $GITHUB_OUTPUT
-        elif [[ ${{ github.event_name }} == 'pull_request' || "${{ github.ref }}" == 'refs/heads/main' ]]; then
+        elif [[ ${{ github.event_name }} == 'pull_request' || ("${{ github.event_name }}" == 'push' && "${{ github.ref }}" == 'refs/heads/main') ]]; then
           echo "IS_CLEANUP=false" >> $GITHUB_OUTPUT
           echo "IS_DEPLOYMENT=true" >> $GITHUB_OUTPUT
         fi
@@ -118,7 +118,7 @@ runs:
         if [[ -n "${{ github.event.pull_request }}" ]]; then
           echo "result=/${GITHUB_REPOSITORY}/pull/${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
         else
-          echo "result=/${GITHUB_REPOSITORY}/${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "result=/${GITHUB_REPOSITORY}/tree/${{ github.ref_name }}" >> $GITHUB_OUTPUT
         fi
 
     - name: Build public documentation

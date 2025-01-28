@@ -1,7 +1,11 @@
 name: preview
 
 on:
-  workflow_call: ~
+  workflow_call:
+    inputs:
+      strict:
+        type: boolean
+        default: true
 
 permissions:
   id-token: write
@@ -24,7 +28,7 @@ jobs:
                 owner,
                 repo,
                 ref: context.payload.pull_request.head.ref,
-                environment: `preview-${context.issue.number}`,
+                environment: `docs-preview-${context.issue.number}`,
                 description: `Preview deployment for PR ${context.issue.number}`,
                 auto_merge: false,
                 required_contexts: [],
@@ -42,19 +46,33 @@ jobs:
       - uses: actions/checkout@v4
         
       - uses: actions/download-artifact@v4
+        if: github.repository == 'elastic/docs-builder'
         with:
           name: docs-builder-binary
 
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
+        if: github.repository == 'elastic/docs-builder'
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: 
         run: |
           chmod +x ./docs-builder
-          ./docs-builder --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+          ./docs-builder --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${{ github.event.pull_request.number }}"
+      
+      - name: Build documentation
+        if: github.repository != 'elastic/docs-builder'
+        run: |
+          echo "Building documentation for ${GITHUB_REPOSITORY}"
+      - name: Build public documentation
+        if: github.repository != 'elastic/docs-builder'
+        uses: elastic/docs-builder@main
+        continue-on-error: ${{ inputs.strict != 'true' }} # Will be removed after the migration phase
+        with:
+          prefix: "/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          strict: ${{ inputs.strict }}
 
-      - uses: ./.github/actions/aws-auth
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
 
       - name: Upload to S3
         env:
