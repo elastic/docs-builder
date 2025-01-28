@@ -150,6 +150,15 @@ See https://github.com/elastic/docs-builder/issues/219 for further details
 	justify-content: center;
 	margin: 0;
 	transform: translateY(-2px);
+	user-select: none; /* Standard */
+	-webkit-user-select: none; /* Safari */
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+/Edge */
+	user-select: none; /* Standard */
+}
+
+.yue code span.code-callout:not(:last-child) {
+	margin-right: 5px;
 }
 
 .yue code span.code-callout > span {

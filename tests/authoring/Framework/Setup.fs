@@ -4,6 +4,7 @@
 
 namespace authoring
 
+
 open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
@@ -11,6 +12,23 @@ open System.Threading.Tasks
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
+open Xunit
+
+[<assembly: CaptureConsole>]
+do()
+
+type Markdown = string
+
+[<AutoOpen>]
+type TestFile =
+    | File of name: string * contents: string
+    | MarkdownFile of name: string * markdown: Markdown
+
+    static member Index ([<LanguageInjection("markdown")>] m) =
+        MarkdownFile("index.md" , m)
+
+    static member Markdown path ([<LanguageInjection("markdown")>] m) =
+        MarkdownFile(path , m)
 
 type Setup =
 
@@ -37,9 +55,16 @@ type Setup =
 
         fileSystem.AddFile(Path.Combine(root.FullName, "docset.yml"), MockFileData(yaml.ToString()));
 
-    static let Generate ([<LanguageInjection("markdown")>]m: string) : Task<GenerateResult> =
+    static member Generator (files: TestFile seq) : Task<GeneratorResults> =
 
-        let d = dict [ ("docs/index.md", MockFileData(m)) ]
+        let d = files
+                |> Seq.map (fun f ->
+                    match f with
+                    | File(name, contents) -> ($"docs/{name}", MockFileData(contents))
+                    | MarkdownFile(name, markdown) -> ($"docs/{name}", MockFileData(markdown))
+                )
+                |> Map.ofSeq
+
         let opts = MockFileSystemOptions(CurrentDirectory=Paths.Root.FullName)
         let fileSystem = MockFileSystem(d, opts)
 
@@ -48,34 +73,49 @@ type Setup =
         let collector = TestDiagnosticsCollector();
         let context = BuildContext(fileSystem, Collector=collector)
         let set = DocumentationSet(context);
-        let file =
-            match set.GetMarkdownFile(fileSystem.FileInfo.New("docs/index.md")) with
-            | NonNull f -> f
-            | _ -> failwithf "docs/index.md could not be located"
+        let generator = DocumentationGenerator(set, new TestLoggerFactory())
+
+        let markdownFiles =
+            files
+            |> Seq.map (fun f ->
+                match f with
+                | File _ -> None
+                | MarkdownFile(name, _) -> Some $"docs/{name}"
+            )
+            |> Seq.choose id
+            |> Seq.map (fun f ->
+                match set.GetMarkdownFile(fileSystem.FileInfo.New(f)) with
+                | NonNull m -> Some m
+                | _ -> None
+             )
+            |> Seq.choose id
 
         let context = {
-            File = file
+            MarkdownFiles = markdownFiles
             Collector = collector
             Set = set
+            Generator = generator
             ReadFileSystem = fileSystem
             WriteFileSystem = fileSystem
         }
         context.Bootstrap()
 
+    /// Pass several files to the test setup
+    static member Generate files =
+        lazy (task { return! Setup.Generator files } |> Async.AwaitTask |> Async.RunSynchronously)
+
     /// Pass a full documentation page to the test setup
     static member Document ([<LanguageInjection("markdown")>]m: string) =
-        let g = task { return! Generate m }
-        g |> Async.AwaitTask |> Async.RunSynchronously
+        lazy (task { return! Setup.Generator [Index m] } |> Async.AwaitTask |> Async.RunSynchronously)
 
     /// Pass a markdown fragment to the test setup
     static member Markdown ([<LanguageInjection("markdown")>]m: string) =
         // language=markdown
-        let m = $"""
-# Test Document
+        let m = $"""# Test Document
 {m}
 """
-        let g = task {
-            return! Generate m
-        }
-        g |> Async.AwaitTask |> Async.RunSynchronously
+        lazy (
+            task { return! Setup.Generator [Index m] }
+            |> Async.AwaitTask |> Async.RunSynchronously
+        )
 

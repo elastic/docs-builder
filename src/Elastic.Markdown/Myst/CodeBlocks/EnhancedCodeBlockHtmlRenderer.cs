@@ -55,7 +55,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	{
 		var callOuts = FindCallouts(block.CallOuts ?? [], lineNumber + 1);
 		foreach (var callOut in callOuts)
-			renderer.Write($"<span class=\"code-callout\">{callOut.Index}</span>");
+			renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
 	}
 
 	private static IEnumerable<CallOut> FindCallouts(

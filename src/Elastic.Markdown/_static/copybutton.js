@@ -153,15 +153,14 @@ function escapeRegExp(string) {
  * Removes excluded text from a Node.
  *
  * @param {Node} target Node to filter.
- * @param {string} exclude CSS selector of nodes to exclude.
+ * @param {string[]} excludes CSS selector of nodes to exclude.
  * @returns {DOMString} Text from `target` with text removed.
  */
-function filterText(target, exclude) {
+function filterText(target, excludes) {
     const clone = target.cloneNode(true);  // clone as to not modify the live DOM
-    if (exclude) {
-        // remove excluded nodes
-        clone.querySelectorAll(exclude).forEach(node => node.remove());
-    }
+    excludes.forEach(exclude => {
+      clone.querySelectorAll(excludes).forEach(node => node.remove());
+    })
     return clone.innerText;
 }
 
@@ -222,11 +221,9 @@ function formatCopyText(textContent, copybuttonPromptText, isRegexp = false, onl
 
 var copyTargetText = (trigger) => {
   var target = document.querySelector(trigger.attributes['data-clipboard-target'].value);
-
   // get filtered text
-  let exclude = '.linenos';
-
-  let text = filterText(target, exclude);
+  let excludes = ['.code-callout', '.linenos'];
+  let text = filterText(target, excludes);
   return formatCopyText(text, '', false, true, true, true, '', '')
 }
 

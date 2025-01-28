@@ -48,7 +48,7 @@ public record BuildContext
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs"));
+			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName));
 		SourcePath = FindDocsFolderFromRoot(rootFolder);
 
 		OutputPath = !string.IsNullOrWhiteSpace(output)

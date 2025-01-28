@@ -50,8 +50,12 @@ public class DocumentationGenerator
 	}
 
 
-	public async Task ResolveDirectoryTree(Cancel ctx) =>
+	public async Task ResolveDirectoryTree(Cancel ctx)
+	{
+		_logger.LogInformation("Resolving tree");
 		await DocumentationSet.Tree.Resolve(ctx);
+		_logger.LogInformation("Resolved tree");
+	}
 
 	public async Task GenerateAll(Cancel ctx)
 	{
@@ -62,11 +66,30 @@ public class DocumentationGenerator
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return;
 
-		_logger.LogInformation("Resolving tree");
 		await ResolveDirectoryTree(ctx);
-		_logger.LogInformation("Resolved tree");
+
+		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
+
+		await ExtractEmbeddedStaticResources(ctx);
 
 
+		_logger.LogInformation($"Completing diagnostics channel");
+		Context.Collector.Channel.TryComplete();
+
+		_logger.LogInformation($"Generating documentation compilation state");
+		await GenerateDocumentationState(ctx);
+		_logger.LogInformation($"Generating links.json");
+		await GenerateLinkReference(ctx);
+
+		_logger.LogInformation($"Completing diagnostics channel");
+
+		await Context.Collector.StopAsync(ctx);
+
+		_logger.LogInformation($"Completed diagnostics channel");
+	}
+
+	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)
+	{
 		var processedFileCount = 0;
 		var exceptionCount = 0;
 		_ = Context.Collector.StartAsync(ctx);
@@ -91,7 +114,10 @@ public class DocumentationGenerator
 			if (processedFiles % 100 == 0)
 				_logger.LogInformation($"-> Handled {processedFiles} files");
 		});
+	}
 
+	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
+	{
 		_logger.LogInformation($"Copying static files to output directory");
 		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
 			.GetManifestResourceNames()
@@ -111,21 +137,6 @@ public class DocumentationGenerator
 			await resourceStream.CopyToAsync(stream, ctx);
 			_logger.LogInformation($"Copied static embedded resource {path}");
 		}
-
-
-		_logger.LogInformation($"Completing diagnostics channel");
-		Context.Collector.Channel.TryComplete();
-
-		_logger.LogInformation($"Generating documentation compilation state");
-		await GenerateDocumentationState(ctx);
-		_logger.LogInformation($"Generating links.json");
-		await GenerateLinkReference(ctx);
-
-		_logger.LogInformation($"Completing diagnostics channel");
-
-		await Context.Collector.StopAsync(ctx);
-
-		_logger.LogInformation($"Completed diagnostics channel");
 	}
 
 	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CancellationToken token)

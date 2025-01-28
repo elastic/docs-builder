@@ -41,7 +41,7 @@ This is my `definition`
 """
 
     [<Fact>]
-    let ``validate HTML`` () =
+    let ``validate HTML 2`` () =
         markdown |> convertsToHtml """
              <dl>
                 <dt>This is my <code>definition</code> </dt>
@@ -56,4 +56,4 @@ This is my `definition`
              </dl>
             """
     [<Fact>]
-    let ``has no errors`` () = markdown |> hasNoErrors
+    let ``has no errors 2`` () = markdown |> hasNoErrors

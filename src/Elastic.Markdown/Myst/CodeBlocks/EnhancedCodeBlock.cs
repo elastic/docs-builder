@@ -20,7 +20,7 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 
 	public int OpeningLength => Info?.Length ?? 0 + 3;
 
-	public List<CallOut>? CallOuts { get; set; }
+	public List<CallOut> CallOuts { get; set; } = [];
 
 	public IReadOnlyCollection<CallOut> UniqueCallOuts => CallOuts?.DistinctBy(c => c.Index).ToList() ?? [];
 

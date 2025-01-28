@@ -39,19 +39,18 @@ public record GitCheckoutInformation
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitCheckoutInformation Create(IFileSystem fileSystem)
 	{
-		// filesystem is not real so return a dummy
-		var fakeRef = Guid.NewGuid().ToString().Substring(0, 16);
 		if (fileSystem is not FileSystem)
 		{
 			return new GitCheckoutInformation
 			{
-				Branch = $"test-{fakeRef}",
+				Branch = $"test-e35fcb27-5f60-4e",
 				Remote = "elastic/docs-builder",
-				Ref = fakeRef,
+				Ref = "e35fcb27-5f60-4e",
 				RepositoryName = "docs-builder"
 			};
 		}
 
+		var fakeRef = Guid.NewGuid().ToString()[..16];
 		var gitConfig = Git(".git/config");
 		if (!gitConfig.Exists)
 			return Unavailable;

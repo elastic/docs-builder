@@ -26,7 +26,7 @@ public class LinkReferenceTests : NavigationTestsBase
 
 	[Fact]
 	public void ShouldNotIncludeSnippets() =>
-		Reference.Links.Should().NotContain(l => l.Contains("_snippets/"));
+		Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
 }
 
 public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)

@@ -146,10 +146,10 @@ public class DocumentationGroup
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParse(token));
+		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
-		await (Index?.MinimalParse(ctx) ?? Task.CompletedTask);
+		await (Index?.MinimalParseAsync(ctx) ?? Task.CompletedTask);
 
 		_resolved = true;
 	}
