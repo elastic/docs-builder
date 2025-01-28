@@ -83,29 +83,15 @@ jobs:
       
       - name: Update deployment status
         uses: actions/github-script@v7
-        if: steps.deployment.outputs.result
+        if: always() && steps.deployment.outputs.result
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "success",
+              state: "${{ job.status == 'success' && 'success' || 'failure' }}",
               description: "Deployment completed",
               environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number}`,
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
-            })
-
-      - name: Update Deployment Status on Failure
-        if: failure() && steps.deployment.outputs.result
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "failure",
-              description: "Deployment failed",
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}?pr=${context.issue.number}`,
             })
