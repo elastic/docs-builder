@@ -62,10 +62,6 @@ jobs:
       
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder'
-        run: |
-          echo "Building documentation for ${GITHUB_REPOSITORY}"
-      - name: Build public documentation
-        if: github.repository != 'elastic/docs-builder'
         uses: elastic/docs-builder@main
         continue-on-error: ${{ inputs.strict != 'true' }} # Will be removed after the migration phase
         with:
