@@ -19,17 +19,12 @@ runs:
       id: type
       shell: bash
       run: |
-        if [[ "${{ github.event_name}}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "IS_DEPLOYMENT=true" >> $GITHUB_OUTPUT
-          echo "IS_CLEANUP=false" >> $GITHUB_OUTPUT
-        else
         if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.action }}" == "closed" ]]; then
           echo "IS_CLEANUP=true" >> $GITHUB_OUTPUT
           echo "IS_DEPLOYMENT=false" >> $GITHUB_OUTPUT
-        else
-          is_deployment=${{ toJSON(github.event_name == 'pull_request' || github.ref == 'refs/heads/main') }}
+        elif [[ ${{ github.event_name }} == 'pull_request' || "${{ github.ref }}" == 'refs/heads/main' ]]; then
           echo "IS_CLEANUP=false" >> $GITHUB_OUTPUT
-          echo "IS_DEPLOYMENT=${is_deployment}" >> $GITHUB_OUTPUT
+          echo "IS_DEPLOYMENT=true" >> $GITHUB_OUTPUT
         fi
 
     - name: Debug
