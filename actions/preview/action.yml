@@ -44,7 +44,7 @@ runs:
         echo ""::endgroup::"
 
 
-        - name: group-start
+    - name: group-start
       shell: bash
       run: |
         echo ""::group::Authenticate to AWS"
