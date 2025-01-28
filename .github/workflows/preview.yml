@@ -9,8 +9,8 @@ on:
 
 permissions:
   id-token: write
-  pull-requests: write
   deployments: write
+  contents: read
 
 jobs:
   deploy:
