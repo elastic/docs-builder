@@ -257,8 +257,17 @@ public record ConfigurationFile : DocumentationFile
 		var rootPath = _context.ReadFileSystem.DirectoryInfo.New(Path.Combine(_rootPath.FullName, tocPath));
 		var path = Path.Combine(rootPath.FullName, "toc.yml");
 		var source = _context.ReadFileSystem.FileInfo.New(path);
+
+		var errorMessage = $"Nested toc: '{source.Directory}' directory has no toc.yml or _toc.yml file";
+
 		if (!source.Exists)
-			EmitError($"Nested toc: '{source.FullName}' does not exist", entry.Key);
+		{
+			path = Path.Combine(rootPath.FullName, "_toc.yml");
+			source = _context.ReadFileSystem.FileInfo.New(path);
+		}
+
+		if (!source.Exists)
+			EmitError(errorMessage, entry.Key);
 		else
 			found = true;
 
