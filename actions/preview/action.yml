@@ -30,6 +30,12 @@ runs:
     - name: Authenticate 
       uses: elastic/docs-builder/.github/actions/aws-auth@main
 
+    - name: Debug
+      shell: bash
+      run: |
+        echo "IS_DEPLOYMENT: ${{ steps.type.outputs.IS_DEPLOYMENT }}"
+        echo "IS_CLEANUP: ${{ steps.type.outputs.IS_CLEANUP }}"
+
     - name: Cleanup
       if: ${{ steps.type.outputs.IS_CLEANUP }}
       shell: bash
