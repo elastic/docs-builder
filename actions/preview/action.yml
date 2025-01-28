@@ -21,8 +21,8 @@ runs:
       id: type
       shell: bash
       env:
-        IS_DEPLOYMENT: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
-        IS_CLEANUP: ${{ github.event_name == 'pull_request_target' && github.event.action == 'closed' }}
+        IS_DEPLOYMENT: ${{ toJSON(github.event_name == 'pull_request' || github.ref == 'refs/heads/main') }}
+        IS_CLEANUP: ${{ toJSON(github.event_name == 'pull_request_target' && github.event.action == 'closed') }}
       run: |
         echo "IS_DEPLOYMENT=${IS_DEPLOYMENT}" >> $GITHUB_OUTPUT
         echo "IS_CLEANUP=${IS_CLEANUP}" >> $GITHUB_OUTPUT
