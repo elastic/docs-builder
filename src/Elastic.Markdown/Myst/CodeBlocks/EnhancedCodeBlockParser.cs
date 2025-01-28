@@ -88,10 +88,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			var line = lines.Lines[index];
 			var span = line.Slice.AsSpan();
 
-			var startIndex = Math.Max(span.IndexOf("//"), span.IndexOf('#'));
-			if (startIndex <= 0)
-				continue;
-
 			if (span.ReplaceSubstitutions(context.FrontMatter?.Properties, out var replacement))
 			{
 				var s = new StringSlice(replacement);
