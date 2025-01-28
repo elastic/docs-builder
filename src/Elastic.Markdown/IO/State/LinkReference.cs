@@ -7,6 +7,13 @@ using Elastic.Markdown.IO.Discovery;
 
 namespace Elastic.Markdown.IO.State;
 
+public record LinkMetadata
+{
+	[JsonPropertyName("anchors")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public required string[]? Anchors { get; init; } = [];
+}
+
 public record LinkReference
 {
 	[JsonPropertyName("origin")]
@@ -17,7 +24,7 @@ public record LinkReference
 
 	/// Mapping of relative filepath and all the page's anchors for deeplinks
 	[JsonPropertyName("links")]
-	public required Dictionary<string, string[]> Links { get; init; } = [];
+	public required Dictionary<string, LinkMetadata> Links { get; init; } = [];
 
 	[JsonPropertyName("cross_links")]
 	public required string[] CrossLinks { get; init; } = [];
@@ -27,7 +34,11 @@ public record LinkReference
 		var crossLinks = set.Context.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = set.MarkdownFiles.Values
 			.Select(m => (m.RelativePath, m.Anchors))
-			.ToDictionary(k => k.RelativePath, v => v.Anchors.ToArray());
+			.ToDictionary(k => k.RelativePath, v =>
+			{
+				var anchors = v.Anchors.Count == 0 ? null : v.Anchors.ToArray();
+				return new LinkMetadata { Anchors =  anchors };
+			});
 		return new LinkReference
 		{
 			UrlPathPrefix = set.Context.UrlPathPrefix,
