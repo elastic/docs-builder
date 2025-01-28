@@ -37,7 +37,7 @@ public record LinkReference
 			.ToDictionary(k => k.RelativePath, v =>
 			{
 				var anchors = v.Anchors.Count == 0 ? null : v.Anchors.ToArray();
-				return new LinkMetadata { Anchors =  anchors };
+				return new LinkMetadata { Anchors = anchors };
 			});
 		return new LinkReference
 		{
