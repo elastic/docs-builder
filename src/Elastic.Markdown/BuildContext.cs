@@ -75,8 +75,7 @@ public record BuildContext
 			return (rootPath, configurationPath);
 
 		configurationPath = rootPath
-			.EnumerateFiles("docset.yml", SearchOption.AllDirectories)
-			.OrderByDescending(f => f.Name switch { "docset.yml" => 2, "_docset.yml" => 1, _ => 0 })
+			.EnumerateFiles("*docset.yml", SearchOption.AllDirectories)
 			.FirstOrDefault()
 			?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 

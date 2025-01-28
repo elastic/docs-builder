@@ -5,6 +5,7 @@
 namespace authoring
 
 
+open System
 open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
@@ -53,7 +54,8 @@ type Setup =
             )
         | _ -> ()
 
-        fileSystem.AddFile(Path.Combine(root.FullName, "docset.yml"), MockFileData(yaml.ToString()));
+        let name = if Random().Next(0, 10) % 2 = 0 then "_docset.yml" else "docset.yml"
+        fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()));
 
     static member Generator (files: TestFile seq) : Task<GeneratorResults> =
 
