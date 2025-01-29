@@ -48,6 +48,8 @@ public class DocumentationSet
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
 			{
+				".jpg" => new ImageFile(file, SourcePath, "image/jpeg"),
+				".jpeg" => new ImageFile(file, SourcePath, "image/jpeg"),
 				".gif" => new ImageFile(file, SourcePath, "image/gif"),
 				".svg" => new ImageFile(file, SourcePath, "image/svg+xml"),
 				".png" => new ImageFile(file, SourcePath),
