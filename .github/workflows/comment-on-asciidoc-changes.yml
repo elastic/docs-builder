@@ -17,6 +17,7 @@ jobs:
         with:
           # This is considered a security risk when used in conjunction with pull_request_target
           # However, we are not running any code from the PR, so it's safe
+          # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Get changed files
