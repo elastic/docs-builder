@@ -19,6 +19,9 @@ jobs:
           # However, we are not running any code from the PR, so it's safe
           # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
           ref: ${{ github.event.pull_request.head.sha }}
+          # This is needed when the action is run in a fork PR
+          # according to https://github.com/tj-actions/changed-files/blob/065e671731666959f9ea1bbbb7ddb8363a8ae9cd/src/commitSha.ts#L612-L621
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Get changed files
         id: check-files
