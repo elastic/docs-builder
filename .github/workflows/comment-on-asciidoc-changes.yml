@@ -38,6 +38,7 @@ jobs:
               issue_number: context.payload.pull_request.number,
               body: 'It looks like this PR modifies one or more `.asciidoc` files. These files are being migrated to Markdown, and any changes merged now will be lost. See the [migration guide](https://elastic.github.io/docs-builder/migration/freeze/index.html) for details.'
             })
+
       - name: Error if .asciidoc files changed
-        if: steps.check-files.outputs.asciidoc_changed == 'true'
+        if: steps.check-files.outputs.any_changed == 'true'
         run: exit 1
