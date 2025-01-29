@@ -64,15 +64,17 @@ public record BuildContext
 
 	private (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IDirectoryInfo rootPath)
 	{
-		var configurationPath = ReadFileSystem.FileInfo.New(Path.Combine(rootPath.FullName, "docset.yml"));
-		if (rootPath.Exists &&
-			ReadFileSystem.File.Exists(Path.Combine(rootPath.FullName, "docset.yml")))
-			return (rootPath, configurationPath);
+		string[] files = ["docset.yml", "_docset.yml"];
+		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
+		var mostLikelyTargets =
+			from file in files
+			from folder in knownFolders
+			select Path.Combine(folder, file);
 
-		configurationPath = ReadFileSystem.FileInfo.New(Path.Combine(rootPath.FullName, "_docset.yml"));
-		if (rootPath.Exists &&
-			ReadFileSystem.File.Exists(Path.Combine(rootPath.FullName, "_docset.yml")))
-			return (rootPath, configurationPath);
+		var knownConfigPath = mostLikelyTargets.FirstOrDefault(ReadFileSystem.File.Exists);
+		var configurationPath = knownConfigPath is null ? null : ReadFileSystem.FileInfo.New(knownConfigPath);
+		if (configurationPath is not null)
+			return (configurationPath.Directory!, configurationPath);
 
 		configurationPath = rootPath
 			.EnumerateFiles("*docset.yml", SearchOption.AllDirectories)
