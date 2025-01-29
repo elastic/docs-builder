@@ -1,9 +1,6 @@
 name: preview
 
 on:
-  push:
-    branches:
-      - main
   workflow_call:
     inputs:
       strict:
