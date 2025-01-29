@@ -27,15 +27,26 @@ name: docs
 on:
   pull_request_target:
     types:
-      - closed
+      - synchronize
+      - opened
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml@main
-    permissions: # this is needed
+    uses: elastic/docs-builder/.github/workflows/preview.yml@feature/consumer-preview-action
+    permissions:
       contents: read
       id-token: write
       deployments: write
+    with:
+      strict: false
 ```
 
 :::
@@ -52,7 +63,7 @@ on:
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml@feature/consumer-preview-action
+    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml@main
     permissions:
       contents: read
       id-token: write

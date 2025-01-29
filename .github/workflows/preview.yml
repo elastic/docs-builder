@@ -44,6 +44,8 @@ jobs:
             return deployment.data.id
 
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
         
       - uses: actions/download-artifact@v4
         if: github.repository == 'elastic/docs-builder'
