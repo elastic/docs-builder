@@ -48,6 +48,7 @@ public class DocumentationSet
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
 			{
+				".gif" => new ImageFile(file, SourcePath, "image/gif"),
 				".svg" => new ImageFile(file, SourcePath, "image/svg+xml"),
 				".png" => new ImageFile(file, SourcePath),
 				".md" => CreateMarkDownFile(file, context),

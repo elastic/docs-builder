@@ -44,6 +44,21 @@ Here is the same image used inline ![Elasticsearch](img/observability.png)
 
 Here is the same image used inline ![Elasticsearch](img/observability.png)
 
+### SVG 
+
+```markdown
+![Elasticsearch](img/alerts.svg)
+```
+![Elasticsearch](img/alerts.svg)
+
+### GIF
+
+```markdown
+![Elasticsearch](img/timeslider.gif)
+```
+![Elasticsearch](img/timeslider.gif)
+
+
 ## Asciidoc syntax
 
 ```asciidoc
