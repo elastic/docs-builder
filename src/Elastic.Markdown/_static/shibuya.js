@@ -57,7 +57,7 @@ iconify-icon/dist/iconify-icon.mjs:
     }
   }
 
-  // expandCurrentPage();
+  expandCurrentPage();
   keepNavPosition();
 })();
 
