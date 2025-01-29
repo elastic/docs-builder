@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+        with:
+          # This is considered a security risk when used in conjunction with pull_request_target
+          # However, we are not running any code from the PR, so it's safe
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Get changed files
         id: check-files
