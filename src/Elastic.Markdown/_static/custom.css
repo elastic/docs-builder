@@ -199,3 +199,10 @@ See https://github.com/elastic/docs-builder/issues/219 for further details
 .yue ol.code-callouts li::marker {
 	display: none;
 }
+
+
+/* Just a quick change to be able to click on also on the whitespace within the navigation items */
+.globaltoc a.reference.internal {
+	display: inline-block;
+	width: 100%
+}
