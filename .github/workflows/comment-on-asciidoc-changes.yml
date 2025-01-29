@@ -12,17 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-        with:
-          # This is considered a security risk when used in conjunction with pull_request_target
-          # However, we are not running any code from the PR, so it's safe
-          # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
-          ref: ${{ github.event.pull_request.head.sha }}
-          # This is needed when the action is run in a fork PR
-          # according to https://github.com/tj-actions/changed-files/blob/065e671731666959f9ea1bbbb7ddb8363a8ae9cd/src/commitSha.ts#L612-L621
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-
+        # Without a checkout action, the tj-actions/changes-files action
+        # will use the GitHub API to to determine the diff.
+        # This way we can avoid checking ot the forked PR and
+        # minimize the risk of using `pull_request_target` together
+        # with `actions/checkout`.
+        # Refs:
+        #  - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+        #  - https://github.com/tj-actions/changed-files?tab=readme-ov-file#using-githubs-api-octocat
       - name: Get changed files
         id: check-files
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
