@@ -27,4 +27,8 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 	public bool InlineAnnotations { get; set; }
 
 	public string Language { get; set; } = "unknown";
+
+	public string? Caption { get; set; }
+
+	public string? ApiCallHeader { get; set; }
 }

@@ -206,3 +206,18 @@ See https://github.com/elastic/docs-builder/issues/219 for further details
 	display: inline-block;
 	width: 100%
 }
+
+
+.code-block-caption .caption-text {
+	color: var(--yue-c-code-text);
+	font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+	line-height: 1.48;
+	font-size: .96rem;
+	font-weight: 400;
+}
+
+code.language-apiheader:has(+ code) {
+	padding-bottom: 0.4em;
+	margin-bottom: 0.4em;
+	border-bottom: 1px solid #dfdfdf;
+}

@@ -78,6 +78,18 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				: codeBlock.Info
 		) ?? "unknown";
 
+		var language = codeBlock.Language;
+		codeBlock.Language = language switch
+		{
+			"console" => "json",
+			"console-response" => "json",
+			"console-result" => "json",
+			"sh" => "bash",
+			"yml" => "yaml",
+			"terminal" => "bash",
+			_ => codeBlock.Language
+		};
+
 		var lines = codeBlock.Lines;
 		var callOutIndex = 0;
 
@@ -86,6 +98,14 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		{
 			originatingLine++;
 			var line = lines.Lines[index];
+			if (index == 0 && language == "console")
+			{
+				codeBlock.ApiCallHeader = line.ToString();
+				var s = new StringSlice("");
+				lines.Lines[index] = new StringLine(ref s);
+				continue;
+			}
+
 			var span = line.Slice.AsSpan();
 
 			if (span.ReplaceSubstitutions(context.FrontMatter?.Properties, out var replacement))

@@ -33,15 +33,27 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static void RenderCodeBlockLines(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var commonIndent = GetCommonIndent(block);
+		var hasCode = false;
 		for (var i = 0; i < block.Lines.Count; i++)
 		{
 			var line = block.Lines.Lines[i];
 			var slice = line.Slice;
+			//ensure we never emit an empty line at beginning or start
+			if ((i == 0 || i == block.Lines.Count - 1) && line.Slice.IsEmptyOrWhitespace())
+				continue;
 			var indent = CountIndentation(slice);
 			if (indent >= commonIndent)
 				slice.Start += commonIndent;
+
+			if (!hasCode)
+			{
+				renderer.Write($"<code class=\"language-{block.Language}\">");
+				hasCode = true;
+			}
 			RenderCodeBlockLine(renderer, block, slice, i);
 		}
+		if (hasCode)
+			renderer.Write($"</code>");
 	}
 
 	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int lineNumber)
@@ -102,7 +114,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			CrossReferenceName = string.Empty,// block.CrossReferenceName,
 			Language = block.Language,
-			Caption = string.Empty
+			Caption = block.Caption,
+			ApiCallHeader = block.ApiCallHeader
 		});
 
 		RenderRazorSlice(slice, renderer, block);
