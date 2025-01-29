@@ -24,6 +24,7 @@ subs:
   a-global-variable: "This was defined in docset.yml"
 toc:
   - file: index.md
+  - file: quickstart/index.md
   - folder: contribute
     children:
       - file: index.md
