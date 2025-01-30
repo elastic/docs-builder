@@ -94,6 +94,64 @@ var z = y - 2; <2>
 		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
 }
 
+
+public class ClassicCallOutsFollowedByAListWithOneParagraph(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+
+**OUTPUT:**
+
+1. Marking the first callout
+2. Marking the second callout
+"""
+
+	)
+{
+	[Fact]
+	public void ParsesMagicCallOuts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2)
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
+
+	[Fact]
+	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class ClassicCallOutsFollowedByListButWithTwoParagraphs(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+
+**OUTPUT:**
+
+BLOCK TWO
+
+1. Marking the first callout
+2. Marking the second callout
+"""
+
+	)
+{
+	[Fact]
+	public void ParsesMagicCallOuts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2)
+		.And.OnlyContain(c => c.Text.StartsWith("<"));
+
+	[Fact]
+	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+}
+
+
+
 public class ClassicCallOutsFollowedByListWithWrongCoung(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
 var x = 1; <1>

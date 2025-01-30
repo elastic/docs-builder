@@ -129,7 +129,13 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			{
 				var siblingBlock = block.Parent[index + 1];
 				if (siblingBlock is not ListBlock)
-					block.EmitError("Code block with annotations is not followed by a list");
+				{
+					//allow one block of content in between
+					if (index + 2 <= (block.Parent!.Count - 1))
+						siblingBlock = block.Parent[index + 2];
+					if (siblingBlock is not ListBlock)
+						block.EmitError("Code block with annotations is not followed by a list");
+				}
 				if (siblingBlock is ListBlock l && l.Count < callOuts.Count)
 				{
 					block.EmitError(
