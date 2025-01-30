@@ -87,7 +87,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			"terminal" => "bash",
 			_ => codeBlock.Language
 		};
-		if (!CodeBlock.Languages.Contains(codeBlock.Language))
+		if (!string.IsNullOrEmpty(codeBlock.Language) && !CodeBlock.Languages.Contains(codeBlock.Language))
 			codeBlock.EmitWarning($"Unknown language: {codeBlock.Language}");
 
 		var lines = codeBlock.Lines;

@@ -182,7 +182,7 @@ public static class CodeBlock
 	};
 
 
-	public static HashSet<string> Languages => new HashSet<string>(
+	public static HashSet<string> Languages => new(
 		LanguageMapping.Keys
 			.Concat(LanguageMapping.Values
 				.SelectMany(v => v.Split(',').Select(a => a.Trim()))
