@@ -39,6 +39,7 @@ public record MarkdownFile : DocumentationFile
 		set => _parent = value;
 	}
 
+	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }

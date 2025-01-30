@@ -12,6 +12,10 @@ public record LinkMetadata
 	[JsonPropertyName("anchors")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public required string[]? Anchors { get; init; } = [];
+
+	[JsonPropertyName("hidden")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public required bool Hidden { get; init; }
 }
 
 public record LinkReference
@@ -33,11 +37,11 @@ public record LinkReference
 	{
 		var crossLinks = set.Context.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = set.MarkdownFiles.Values
-			.Select(m => (m.RelativePath, m.Anchors))
+			.Select(m => (m.RelativePath, File: m))
 			.ToDictionary(k => k.RelativePath, v =>
 			{
-				var anchors = v.Anchors.Count == 0 ? null : v.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors };
+				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
+				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
 			});
 		return new LinkReference
 		{

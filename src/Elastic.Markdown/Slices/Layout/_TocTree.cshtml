@@ -6,7 +6,7 @@
 				<p class="caption" role="heading" aria-level="3">
 					<span class="caption-text">Elastic Docs Guide</span>
 				</p>
-				<ul class="current">@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TocTreeNav.Create(new NavigationTreeItem
+				<ul class="current">@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						Level = Model.Tree.Depth,
 						SubTree = Model.Tree,
