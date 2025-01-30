@@ -88,7 +88,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				ChangeFormatString,
 				oldLink,
 				newLink,
-				sourceFile,
+				sourceFile == sourceMarkdownFile.SourceFile.FullName && !isDryRun ? targetPath : sourceFile,
 				lineNumber,
 				columnNumber
 			));
@@ -97,19 +97,21 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		if (isDryRun)
 			return 0;
 
-		var targetDirectory = Path.GetDirectoryName(targetPath);
-		readFileSystem.Directory.CreateDirectory(targetDirectory!);
-		readFileSystem.File.Move(sourcePath, targetPath);
+
 		try
 		{
 			foreach (var (filePath, _, newContent) in _changes)
 				await writeFileSystem.File.WriteAllTextAsync(filePath, newContent, ctx);
+			var targetDirectory = Path.GetDirectoryName(targetPath);
+			readFileSystem.Directory.CreateDirectory(targetDirectory!);
+			readFileSystem.File.Move(sourcePath, targetPath);
 		}
 		catch (Exception)
 		{
 			foreach (var (filePath, originalContent, _) in _changes)
 				await writeFileSystem.File.WriteAllTextAsync(filePath, originalContent, ctx);
 			writeFileSystem.File.Move(targetPath, sourcePath);
+			_logger.LogError("An error occurred while moving files. Reverting changes");
 			throw;
 		}
 		return 0;
