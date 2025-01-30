@@ -87,7 +87,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 			return newLink;
 		});
 
-		_changes[changeSet] = [ new Change(changeSet.From, sourceContent, change) ];
+		_changes[changeSet] = [new Change(changeSet.From, sourceContent, change)];
 
 		foreach (var (_, markdownFile) in documentationSet.MarkdownFiles)
 		{
