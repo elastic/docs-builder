@@ -185,7 +185,7 @@ public static class CodeBlock
 	public static HashSet<string> Languages => new HashSet<string>(
 		LanguageMapping.Keys
 			.Concat(LanguageMapping.Values
-				.SelectMany(v=>v.Split(',').Select(a => a.Trim()))
+				.SelectMany(v => v.Split(',').Select(a => a.Trim()))
 				.Where(v => !string.IsNullOrWhiteSpace(v))
 			)
 		, StringComparer.OrdinalIgnoreCase
