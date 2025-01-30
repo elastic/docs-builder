@@ -3,16 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 
 namespace Documentation.Builder.Cli;
 
 internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
 {
 	private readonly ILogger _logger = loggerFactory.CreateLogger<Move>();
-	private readonly List<(string filePath, string originalContent,string newContent)> _changes = [];
+	private readonly List<(string filePath, string originalContent, string newContent)> _changes = [];
 	private const string ChangeFormatString = "Change \e[31m{0}\e[0m to \e[32m{1}\e[0m at \e[34m{2}:{3}:{4}\e[0m";
 
 	public async Task<int> Execute(string? source, string? target, bool isDryRun, Cancel ctx = default)
@@ -30,23 +30,18 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 
 		var (_, sourceMarkdownFile) = documentationSet.MarkdownFiles.Single(i => i.Value.FilePath == sourcePath);
 
-		var soureContent = await fileSystem.File.ReadAllTextAsync(sourceMarkdownFile.FilePath, ctx);
+		var sourceContent = await fileSystem.File.ReadAllTextAsync(sourceMarkdownFile.FilePath, ctx);
 
 		var markdownLinkRegex = new Regex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled);
-		var matches = markdownLinkRegex.Matches(soureContent);
 
-		var change = Regex.Replace(soureContent, markdownLinkRegex.ToString(), match =>
+		var change = Regex.Replace(sourceContent, markdownLinkRegex.ToString(), match =>
 		{
 			var originalPath = match.Value.Substring(match.Value.IndexOf('(') + 1, match.Value.LastIndexOf(')') - match.Value.IndexOf('(') - 1);
-			// var anchor = originalPath.Contains('#') ? originalPath[originalPath.IndexOf('#')..] : "";
 
-			string newPath;
-
+			var newPath = originalPath;
 			var isAbsoluteStylePath = originalPath.StartsWith('/');
-			if (isAbsoluteStylePath)
+			if (!isAbsoluteStylePath)
 			{
-				newPath = originalPath;
-			} else {
 				var targetDirectory = Path.GetDirectoryName(targetPath)!;
 				var sourceDirectory = Path.GetDirectoryName(sourceMarkdownFile.FilePath)!;
 				var fullPath = Path.GetFullPath(Path.Combine(sourceDirectory, originalPath));
@@ -54,22 +49,28 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 				newPath = relativePath;
 			}
 			var newLink = $"[{match.Groups[1].Value}]({newPath})";
-			var lineNumber = soureContent.Substring(0, match.Index).Count(c => c == '\n') + 1;
-			var columnNumber = match.Index - soureContent.LastIndexOf('\n', match.Index);
-			_logger.LogInformation(string.Format(ChangeFormatString, match.Value, newLink,
-				sourceMarkdownFile.SourceFile.FullName, lineNumber, columnNumber));
-
+			var lineNumber = sourceContent.Substring(0, match.Index).Count(c => c == '\n') + 1;
+			var columnNumber = match.Index - sourceContent.LastIndexOf('\n', match.Index);
+			_logger.LogInformation(
+				string.Format(
+					ChangeFormatString,
+					match.Value,
+					newLink,
+					sourceMarkdownFile.SourceFile.FullName,
+					lineNumber,
+					columnNumber
+				)
+			);
 			return newLink;
 		});
 
-		_changes.Add((sourceMarkdownFile.FilePath, soureContent, change));
+		_changes.Add((sourceMarkdownFile.FilePath, sourceContent, change));
 
 		foreach (var (_, markdownFile) in documentationSet.MarkdownFiles)
 		{
 			await ProcessMarkdownFile(
 				sourcePath,
 				targetPath,
-				isDryRun,
 				markdownFile,
 				ctx
 			);
@@ -79,19 +80,20 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 			return 0;
 
 		var targetDirectory = Path.GetDirectoryName(targetPath);
-		fileSystem.Directory.CreateDirectory(targetDirectory!); // CreateDirectory automatically creates all necessary parent directories
+		fileSystem.Directory.CreateDirectory(targetDirectory!);
 		fileSystem.File.Move(sourcePath, targetPath);
-		// Write changes to disk
-        try {
-            foreach (var (filePath, _, newContent) in _changes)
-                await fileSystem.File.WriteAllTextAsync(filePath, newContent, ctx);
-        } catch (Exception) {
-            foreach (var (filePath, originalContent, _) in _changes)
-                await fileSystem.File.WriteAllTextAsync(filePath, originalContent, ctx);
-            fileSystem.File.Move(targetPath, sourcePath);
-            throw;
-        }
-
+		try
+		{
+			foreach (var (filePath, _, newContent) in _changes)
+				await fileSystem.File.WriteAllTextAsync(filePath, newContent, ctx);
+		}
+		catch (Exception)
+		{
+			foreach (var (filePath, originalContent, _) in _changes)
+				await fileSystem.File.WriteAllTextAsync(filePath, originalContent, ctx);
+			fileSystem.File.Move(targetPath, sourcePath);
+			throw;
+		}
 		return 0;
 	}
 
@@ -140,7 +142,6 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 	private async Task ProcessMarkdownFile(
 		string source,
 		string target,
-		bool isDryRun,
 		MarkdownFile value,
 		Cancel ctx)
 	{
@@ -149,9 +150,9 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 		var pathInfo = GetPathInfo(currentDir, source, target);
 		var linkPattern = BuildLinkPattern(pathInfo);
 
-		if (System.Text.RegularExpressions.Regex.IsMatch(content, linkPattern))
+		if (Regex.IsMatch(content, linkPattern))
 		{
-			var newContent = ReplaceLinks(content, linkPattern, pathInfo.absoluteStyleTarget, target,value);
+			var newContent = ReplaceLinks(content, linkPattern, pathInfo.absoluteStyleTarget, target, value);
 			_changes.Add((value.FilePath, content, newContent));
 		}
 	}
@@ -162,12 +163,12 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 		string targetPath
 	)
 	{
-		var relativeSource = Path.GetRelativePath(currentDir, sourcePath).Replace('\\', '/');
-		var relativeSourceWithDotSlash = Path.Combine(".", relativeSource).Replace('\\', '/');
-		var relativeToDocsFolder = Path.GetRelativePath(documentationSet.SourcePath.FullName, sourcePath).Replace('\\', '/');
-		var absolutStyleSource = $"/{relativeToDocsFolder}".Replace('\\', '/');
+		var relativeSource = Path.GetRelativePath(currentDir, sourcePath);
+		var relativeSourceWithDotSlash = Path.Combine(".", relativeSource);
+		var relativeToDocsFolder = Path.GetRelativePath(documentationSet.SourcePath.FullName, sourcePath);
+		var absolutStyleSource = $"/{relativeToDocsFolder}";
 		var relativeToDocsFolderTarget = Path.GetRelativePath(documentationSet.SourcePath.FullName, targetPath);
-		var absoluteStyleTarget = $"/{relativeToDocsFolderTarget}".Replace('\\', '/');
+		var absoluteStyleTarget = $"/{relativeToDocsFolderTarget}";
 		return (
 			relativeSource,
 			relativeSourceWithDotSlash,
@@ -186,9 +187,8 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 		string absoluteStyleTarget,
 		string target,
 		MarkdownFile value
-	)
-	{
-		return System.Text.RegularExpressions.Regex.Replace(
+	) =>
+		Regex.Replace(
 			content,
 			linkPattern,
 			match =>
@@ -207,15 +207,22 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 				else
 				{
 					// Relative link
-					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target).Replace('\\', '/');
+					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);
 					newLink = $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
 				}
 
 				var lineNumber = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
 				var columnNumber = match.Index - content.LastIndexOf('\n', match.Index);
-				_logger.LogInformation(string.Format(ChangeFormatString, match.Value, newLink, value.SourceFile.FullName,
-					lineNumber, columnNumber));
+				_logger.LogInformation(
+					string.Format(
+						ChangeFormatString,
+						match.Value,
+						newLink,
+						value.SourceFile.FullName,
+						lineNumber,
+						columnNumber
+						)
+					);
 				return newLink;
 			});
-	}
 }
