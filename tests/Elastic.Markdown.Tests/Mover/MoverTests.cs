@@ -1,14 +1,12 @@
-using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
 using Documentation.Mover;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Tests.DocSet;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
+
 using Xunit.Abstractions;
-using Xunit;
 
 namespace Elastic.Markdown.Tests.Mover;
 
