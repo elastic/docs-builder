@@ -21,19 +21,25 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 
 		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
 		await mover.Execute("testing/mover/first-page.md", "new-folder/hello-world.md", true);
-		mover.LinkModifications.Should().HaveCount(3);
 
-		Path.GetRelativePath(".", mover.LinkModifications[0].SourceFile).Should().Be("testing/mover/first-page.md");
-		mover.LinkModifications[0].OldLink.Should().Be("[Link to second page](second-page.md)");
-		mover.LinkModifications[0].NewLink.Should().Be("[Link to second page](../testing/mover/second-page.md)");
+		mover.Changes.Should().HaveCount(1);
+		var changeSet = mover.Changes.First();
 
-		Path.GetRelativePath(".", mover.LinkModifications[1].SourceFile).Should().Be("testing/mover/second-page.md");
-		mover.LinkModifications[1].OldLink.Should().Be("[Link to first page](first-page.md)");
-		mover.LinkModifications[1].NewLink.Should().Be("[Link to first page](../../new-folder/hello-world.md)");
+		var linkModifications = mover.LinkModifications[changeSet];
+		linkModifications.Should().HaveCount(3);
 
-		Path.GetRelativePath(".", mover.LinkModifications[2].SourceFile).Should().Be("testing/mover/second-page.md");
-		mover.LinkModifications[2].OldLink.Should().Be("[Absolut link to first page](/testing/mover/first-page.md)");
-		mover.LinkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/hello-world.md)");
+
+		Path.GetRelativePath(".", linkModifications[0].SourceFile).Should().Be("testing/mover/first-page.md");
+		linkModifications[0].OldLink.Should().Be("[Link to second page](second-page.md)");
+		linkModifications[0].NewLink.Should().Be("[Link to second page](../testing/mover/second-page.md)");
+
+		Path.GetRelativePath(".", linkModifications[1].SourceFile).Should().Be("testing/mover/second-page.md");
+		linkModifications[1].OldLink.Should().Be("[Link to first page](first-page.md)");
+		linkModifications[1].NewLink.Should().Be("[Link to first page](../../new-folder/hello-world.md)");
+
+		Path.GetRelativePath(".", linkModifications[2].SourceFile).Should().Be("testing/mover/second-page.md");
+		linkModifications[2].OldLink.Should().Be("[Absolut link to first page](/testing/mover/first-page.md)");
+		linkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/hello-world.md)");
 	}
 
 	[Fact]
@@ -44,18 +50,52 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 
 		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
 		await mover.Execute("testing/mover/first-page.md", "new-folder", true);
-		mover.LinkModifications.Should().HaveCount(3);
 
-		Path.GetRelativePath(".", mover.LinkModifications[0].SourceFile).Should().Be("testing/mover/first-page.md");
-		mover.LinkModifications[0].OldLink.Should().Be("[Link to second page](second-page.md)");
-		mover.LinkModifications[0].NewLink.Should().Be("[Link to second page](../testing/mover/second-page.md)");
+		mover.Changes.Should().HaveCount(1);
+		var changeSet = mover.Changes.First();
 
-		Path.GetRelativePath(".", mover.LinkModifications[1].SourceFile).Should().Be("testing/mover/second-page.md");
-		mover.LinkModifications[1].OldLink.Should().Be("[Link to first page](first-page.md)");
-		mover.LinkModifications[1].NewLink.Should().Be("[Link to first page](../../new-folder/first-page.md)");
+		var linkModifications = mover.LinkModifications[changeSet];
+		linkModifications.Should().HaveCount(3);
 
-		Path.GetRelativePath(".", mover.LinkModifications[2].SourceFile).Should().Be("testing/mover/second-page.md");
-		mover.LinkModifications[2].OldLink.Should().Be("[Absolut link to first page](/testing/mover/first-page.md)");
-		mover.LinkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/first-page.md)");
+		Path.GetRelativePath(".", linkModifications[0].SourceFile).Should().Be("testing/mover/first-page.md");
+		linkModifications[0].OldLink.Should().Be("[Link to second page](second-page.md)");
+		linkModifications[0].NewLink.Should().Be("[Link to second page](../testing/mover/second-page.md)");
+
+		Path.GetRelativePath(".", linkModifications[1].SourceFile).Should().Be("testing/mover/second-page.md");
+		linkModifications[1].OldLink.Should().Be("[Link to first page](first-page.md)");
+		linkModifications[1].NewLink.Should().Be("[Link to first page](../../new-folder/first-page.md)");
+
+		Path.GetRelativePath(".", linkModifications[2].SourceFile).Should().Be("testing/mover/second-page.md");
+		linkModifications[2].OldLink.Should().Be("[Absolut link to first page](/testing/mover/first-page.md)");
+		linkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/first-page.md)");
+	}
+
+	[Fact]
+	public async Task MoveFolderToFolder()
+	{
+		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
+		Directory.SetCurrentDirectory(workingDirectory!);
+
+		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
+		await mover.Execute("testing/mover", "new-folder", true);
+
+		mover.Changes.Should().HaveCount(2);
+
+		var changeSet = mover.LinkModifications.First().Key;
+
+		var linkModifications = mover.LinkModifications[changeSet];
+		linkModifications.Should().HaveCount(3);
+
+		Path.GetRelativePath(".", linkModifications[0].SourceFile).Should().Be("testing/mover/first-page.md");
+		linkModifications[0].OldLink.Should().Be("[Link to second page](second-page.md)");
+		linkModifications[0].NewLink.Should().Be("[Link to second page](../testing/mover/second-page.md)");
+
+		Path.GetRelativePath(".", linkModifications[1].SourceFile).Should().Be("testing/mover/second-page.md");
+		linkModifications[1].OldLink.Should().Be("[Link to first page](first-page.md)");
+		linkModifications[1].NewLink.Should().Be("[Link to first page](../../new-folder/first-page.md)");
+
+		Path.GetRelativePath(".", linkModifications[2].SourceFile).Should().Be("testing/mover/second-page.md");
+		linkModifications[2].OldLink.Should().Be("[Absolut link to first page](/testing/mover/first-page.md)");
+		linkModifications[2].NewLink.Should().Be("[Absolut link to first page](/new-folder/first-page.md)");
 	}
 }
