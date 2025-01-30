@@ -73,15 +73,18 @@ toc:
   - file: index.md
 ```
 
-The table of contents can be created independent of the directory structure of the files it defines. You can use directories to define nesting in the TOC, but you don't have to. For example, both of the following create the same nav structure:
+The TOC in principle follows the directory structure on disk.
+
+#### `folder:`
 
 ```yaml
   ...
-  - file: subsection/index.md
-    children:
-      - file: subsection/page-one.md
-      - file: subsection/page-two.md
+  - folder: subsection
 ```
+
+If a folder does not explicitly define `children` all markdown files within that folder are included automatically 
+
+If a folder does define `children` all markdown files within that folder have to be included. `docs-builder` will error if it detects dangling documentation files.
 
 ```yaml
   ...
@@ -92,7 +95,33 @@ The table of contents can be created independent of the directory structure of t
       - file: page-two.md
 ```
 
-#### Nest `toc`
+#### Virtual grouping
+
+A `file` element may include children to create a virtual grouping that 
+does not match the directory structure. 
+
+```yaml
+  ...
+  - file: subsection/index.md
+    children:
+      - file: subsection/page-one.md
+      - file: subsection/page-two.md
+```
+
+A `file` may only select siblings and more deeply nested files as its children. It may not select files outside its own subtree on disk.
+
+#### Hidden files
+
+A hidden file can be declared in the TOC. 
+```yaml
+  - hidden: developer-pages.md
+```
+
+It may not have any children and won't show up in the navigation.
+
+It [may be linked to locally however](../../developer-notes.md)
+
+#### Nesting `toc`
 
 The `toc` key can include nested `toc.yml` files.
 
@@ -122,4 +151,6 @@ See [Attributes](./attributes.md) to learn more.
 
 As a rule, each `docset.yml` file can only be included once in the assembler. This prevents us from accidentally duplicating pages in the docs. However, there are times when you want to split content sets and include them partially in different areas of the TOC. That's what `toc.yml` files are for. These files split one documentation set into multiple “sub-TOCs,” each mapped to a different navigation node.
 
-All configuration options that `docset.yml` supports are supported by `toc.yml`.
+A `toc.yml` file may only declare a nested [TOC](#toc), other options are ignored. 
+
+A `toc.yml` may not link to further nested `toc.yml` files. Doing so will result in an error

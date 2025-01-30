@@ -137,7 +137,7 @@ public class SubstitutionParser : InlineParser
 		startPosition -= openSticks;
 		startPosition = Math.Max(startPosition, 0);
 
-		var key = content.ToString().Trim(['{', '}']);
+		var key = content.ToString().Trim(['{', '}']).ToLowerInvariant();
 		var found = false;
 		var replacement = string.Empty;
 		if (processor.Context?.Properties.TryGetValue(key, out var value) ?? false)

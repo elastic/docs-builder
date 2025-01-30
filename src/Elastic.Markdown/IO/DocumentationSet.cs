@@ -92,6 +92,39 @@ public class DocumentationSet
 		return null;
 	}
 
+	public MarkdownFile? GetPrevious(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+				return previous;
+			index--;
+		} while (index > 0);
+
+		return null;
+	}
+
+	public MarkdownFile? GetNext(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+				return previous;
+			index++;
+		} while (index <= MarkdownFiles.Count - 1);
+
+		return null;
+	}
+
+
 	public async Task ResolveDirectoryTree(Cancel ctx) =>
 		await Tree.Resolve(ctx);
 
