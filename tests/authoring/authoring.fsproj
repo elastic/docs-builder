@@ -44,4 +44,8 @@
     <Compile Include="Generator\LinkReferenceFile.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="Blocks\CodeBlocks\CodeBlocks.fs" />
+  </ItemGroup>
+
 </Project>

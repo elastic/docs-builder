@@ -29,3 +29,14 @@ module DiagnosticsCollectorAssertions =
                                    |> List.ofArray
         let message = errorDiagnostics.FirstOrDefault().Message
         test <@ message.Contains(expected) @>
+
+    [<DebuggerStepThrough>]
+    let hasWarning (expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+        actual.Context.Collector.Warnings |> shouldBeGreaterThan 0
+        let errorDiagnostics = actual.Context.Collector.Diagnostics
+                                   .Where(fun d -> d.Severity = Severity.Warning)
+                                   .ToArray()
+                                   |> List.ofArray
+        let message = errorDiagnostics.FirstOrDefault().Message
+        test <@ message.Contains(expected) @>

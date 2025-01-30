@@ -84,11 +84,11 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			"console" => "json",
 			"console-response" => "json",
 			"console-result" => "json",
-			"sh" => "bash",
-			"yml" => "yaml",
 			"terminal" => "bash",
 			_ => codeBlock.Language
 		};
+		if (!CodeBlock.Languages.Contains(codeBlock.Language))
+			codeBlock.EmitWarning($"Unknown language: {codeBlock.Language}");
 
 		var lines = codeBlock.Lines;
 		var callOutIndex = 0;
