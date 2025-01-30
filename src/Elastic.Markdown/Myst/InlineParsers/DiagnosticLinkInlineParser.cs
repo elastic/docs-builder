@@ -151,7 +151,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		// rooted links might need the configured path prefix to properly link
 		var prefix = processor.GetBuildContext().UrlPathPrefix;
 		if (url.StartsWith("/") && !string.IsNullOrWhiteSpace(prefix))
-			link.Url = $"{prefix.TrimEnd('/')}/{link.Url}";
+			link.Url = $"{prefix.TrimEnd('/')}{link.Url}";
 
 		if (!string.IsNullOrEmpty(anchor))
 			link.Url += $"#{anchor}";
