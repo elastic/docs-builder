@@ -106,7 +106,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 
 
 	/// <summary>
-	/// Move a file or folder from one location to another and update all links in the documentation
+	/// Move a file from one location to another and update all links in the documentation
 	/// </summary>
 	/// <param name="source">The source file or folder path to move from</param>
 	/// <param name="target">The target file or folder path to move to</param>
