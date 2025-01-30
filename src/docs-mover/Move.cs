@@ -1,22 +1,30 @@
-// Licensed to Elasticsearch B.V under one or more agreements.
+﻿// Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.ObjectModel;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Builder.Cli;
+namespace Documentation.Mover;
 
-internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
+public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
 {
 	private readonly ILogger _logger = loggerFactory.CreateLogger<Move>();
 	private readonly List<(string filePath, string originalContent, string newContent)> _changes = [];
+	private readonly List<LinkModification> _linkModifications = [];
 	private const string ChangeFormatString = "Change \e[31m{0}\e[0m to \e[32m{1}\e[0m at \e[34m{2}:{3}:{4}\e[0m";
+
+	public record LinkModification(string OldLink, string NewLink, string SourceFile, int LineNumber, int ColumnNumber);
+
+
+	public ReadOnlyCollection<LinkModification> LinkModifications => _linkModifications.AsReadOnly();
 
 	public async Task<int> Execute(string? source, string? target, bool isDryRun, Cancel ctx = default)
 	{
+		_linkModifications.Clear();
 		if (isDryRun)
 			_logger.LogInformation("Running in dry-run mode");
 
@@ -25,12 +33,13 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 			return 1;
 		}
 
+
 		var sourcePath = Path.GetFullPath(source!);
 		var targetPath = Path.GetFullPath(target!);
 
 		var (_, sourceMarkdownFile) = documentationSet.MarkdownFiles.Single(i => i.Value.FilePath == sourcePath);
 
-		var sourceContent = await fileSystem.File.ReadAllTextAsync(sourceMarkdownFile.FilePath, ctx);
+		var sourceContent = await readFileSystem.File.ReadAllTextAsync(sourceMarkdownFile.FilePath, ctx);
 
 		var markdownLinkRegex = new Regex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled);
 
@@ -51,16 +60,13 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 			var newLink = $"[{match.Groups[1].Value}]({newPath})";
 			var lineNumber = sourceContent.Substring(0, match.Index).Count(c => c == '\n') + 1;
 			var columnNumber = match.Index - sourceContent.LastIndexOf('\n', match.Index);
-			_logger.LogInformation(
-				string.Format(
-					ChangeFormatString,
-					match.Value,
-					newLink,
-					sourceMarkdownFile.SourceFile.FullName,
-					lineNumber,
-					columnNumber
-				)
-			);
+			_linkModifications.Add(new LinkModification(
+				match.Value,
+				newLink,
+				sourceMarkdownFile.SourceFile.FullName,
+				lineNumber,
+				columnNumber
+			));
 			return newLink;
 		});
 
@@ -76,22 +82,34 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 			);
 		}
 
+		foreach (var (oldLink, newLink, sourceFile, lineNumber, columnNumber) in LinkModifications)
+		{
+			_logger.LogInformation(string.Format(
+				ChangeFormatString,
+				oldLink,
+				newLink,
+				sourceFile,
+				lineNumber,
+				columnNumber
+			));
+		}
+
 		if (isDryRun)
 			return 0;
 
 		var targetDirectory = Path.GetDirectoryName(targetPath);
-		fileSystem.Directory.CreateDirectory(targetDirectory!);
-		fileSystem.File.Move(sourcePath, targetPath);
+		readFileSystem.Directory.CreateDirectory(targetDirectory!);
+		readFileSystem.File.Move(sourcePath, targetPath);
 		try
 		{
 			foreach (var (filePath, _, newContent) in _changes)
-				await fileSystem.File.WriteAllTextAsync(filePath, newContent, ctx);
+				await writeFileSystem.File.WriteAllTextAsync(filePath, newContent, ctx);
 		}
 		catch (Exception)
 		{
 			foreach (var (filePath, originalContent, _) in _changes)
-				await fileSystem.File.WriteAllTextAsync(filePath, originalContent, ctx);
-			fileSystem.File.Move(targetPath, sourcePath);
+				await writeFileSystem.File.WriteAllTextAsync(filePath, originalContent, ctx);
+			writeFileSystem.File.Move(targetPath, sourcePath);
 			throw;
 		}
 		return 0;
@@ -124,13 +142,13 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 			return false;
 		}
 
-		if (!fileSystem.File.Exists(source))
+		if (!readFileSystem.File.Exists(source))
 		{
 			_logger.LogError($"Source file {source} does not exist");
 			return false;
 		}
 
-		if (fileSystem.File.Exists(target))
+		if (readFileSystem.File.Exists(target))
 		{
 			_logger.LogError($"Target file {target} already exists");
 			return false;
@@ -145,7 +163,7 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 		MarkdownFile value,
 		Cancel ctx)
 	{
-		var content = await fileSystem.File.ReadAllTextAsync(value.FilePath, ctx);
+		var content = await readFileSystem.File.ReadAllTextAsync(value.FilePath, ctx);
 		var currentDir = Path.GetDirectoryName(value.FilePath)!;
 		var pathInfo = GetPathInfo(currentDir, source, target);
 		var linkPattern = BuildLinkPattern(pathInfo);
@@ -199,30 +217,25 @@ internal class Move(IFileSystem fileSystem, DocumentationSet documentationSet, I
 					: "";
 
 				string newLink;
-				if (originalPath.StartsWith("/"))
+				if (originalPath.StartsWith('/'))
 				{
-					// Absolute style link
 					newLink = $"[{match.Groups[1].Value}]({absoluteStyleTarget}{anchor})";
 				}
 				else
 				{
-					// Relative link
 					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);
 					newLink = $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
 				}
 
 				var lineNumber = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
 				var columnNumber = match.Index - content.LastIndexOf('\n', match.Index);
-				_logger.LogInformation(
-					string.Format(
-						ChangeFormatString,
-						match.Value,
-						newLink,
-						value.SourceFile.FullName,
-						lineNumber,
-						columnNumber
-						)
-					);
+				_linkModifications.Add(new LinkModification(
+					match.Value,
+					newLink,
+					value.SourceFile.FullName,
+					lineNumber,
+					columnNumber
+				));
 				return newLink;
 			});
 }

@@ -7,6 +7,7 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
+using Documentation.Mover;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -128,7 +129,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		};
 		var set = new DocumentationSet(context);
 
-		var moveCommand = new Move(fileSystem, set, logger);
+		var moveCommand = new Move(fileSystem, fileSystem, set, logger);
 		return await moveCommand.Execute(source, target, dryRun ?? false, ctx);
 	}
 }
