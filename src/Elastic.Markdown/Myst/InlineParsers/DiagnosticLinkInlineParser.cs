@@ -149,7 +149,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url.EndsWith(".md"))
 			link.Url = Path.ChangeExtension(url, ".html");
 		// rooted links might need the configured path prefix to properly link
-		var prefix = processor.GetBuildContext().UrlPathPrefix;
+		var prefix = processor.GetBuildContext().UrlPathPrefix.TrimEnd('/');
 		if (url.StartsWith("/") && !string.IsNullOrWhiteSpace(prefix))
 			link.Url = $"{prefix}/{link.Url}";
 
