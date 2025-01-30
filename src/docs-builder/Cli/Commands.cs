@@ -16,6 +16,13 @@ namespace Documentation.Builder.Cli;
 
 internal class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	private void AssignOutputLogger()
+	{
+		var log = logger.CreateLogger<Program>();
+		ConsoleApp.Log = msg => log.LogInformation(msg);
+		ConsoleApp.LogError = msg => log.LogError(msg);
+	}
+
 	/// <summary>
 	///	Continuously serve a documentation folder at http://localhost:3000.
 	/// File systems changes will be reflected without having to restart the server.
@@ -29,6 +36,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
+		AssignOutputLogger();
 		var host = new DocumentationWebHost(path, port, logger, new FileSystem());
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
@@ -58,6 +66,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		Cancel ctx = default
 	)
 	{
+		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
 		var context = new BuildContext(fileSystem, fileSystem, path, output)
@@ -115,13 +124,14 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="ctx"></param>
 	[Command("mv")]
 	public async Task<int> Move(
-		[Argument] string? source = null,
-		[Argument] string? target = null,
+		[Argument] string source,
+		[Argument] string target,
 		bool? dryRun = null,
 		string? path = null,
 		Cancel ctx = default
 	)
 	{
+		AssignOutputLogger();
 		var fileSystem = new FileSystem();
 		var context = new BuildContext(fileSystem, fileSystem, path, null)
 		{

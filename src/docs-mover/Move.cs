@@ -23,19 +23,18 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 
 	public ReadOnlyCollection<LinkModification> LinkModifications => _linkModifications.AsReadOnly();
 
-	public async Task<int> Execute(string? source, string? target, bool isDryRun, Cancel ctx = default)
+	public async Task<int> Execute(string source, string target, bool isDryRun, Cancel ctx = default)
 	{
 		if (isDryRun)
 			_logger.LogInformation("Running in dry-run mode");
 
-		if (!ValidateInputs(source, target))
-		{
+		if (!ValidateInputs(source, target, out var from, out var to))
 			return 1;
-		}
 
+		var sourcePath = from.FullName;
+		var targetPath = to.FullName;
 
-		var sourcePath = Path.GetFullPath(source!);
-		var targetPath = Path.GetFullPath(target!);
+		_logger.LogInformation($"Requested to move from '{from}' to '{to}");
 
 		var sourceContent = await readFileSystem.File.ReadAllTextAsync(sourcePath, ctx);
 
@@ -119,40 +118,33 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		return 0;
 	}
 
-	private bool ValidateInputs(string? source, string? target)
+	private bool ValidateInputs(string source, string target, out IFileInfo from, out IFileInfo to)
 	{
+		from = readFileSystem.FileInfo.New(source);
+		to = readFileSystem.FileInfo.New(target);
 
-		if (string.IsNullOrEmpty(source))
-		{
-			_logger.LogError("Source path is required");
-			return false;
-		}
-
-		if (string.IsNullOrEmpty(target))
-		{
-			_logger.LogError("Target path is required");
-			return false;
-		}
-
-		if (!Path.GetExtension(source).Equals(".md", StringComparison.OrdinalIgnoreCase))
+		if (!from.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
 		{
 			_logger.LogError("Source path must be a markdown file. Directory paths are not supported yet");
 			return false;
 		}
 
-		if (!Path.GetExtension(target).Equals(".md", StringComparison.OrdinalIgnoreCase))
+		if (to.Extension == string.Empty)
+			to = readFileSystem.FileInfo.New(Path.Combine(to.FullName, from.Name));
+
+		if (!to.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
 		{
-			_logger.LogError("Target path must be a markdown file. Directory paths are not supported yet");
+			_logger.LogError($"Target path '{to.FullName}' must be a markdown file.");
 			return false;
 		}
 
-		if (!readFileSystem.File.Exists(source))
+		if (!from.Exists)
 		{
 			_logger.LogError($"Source file {source} does not exist");
 			return false;
 		}
 
-		if (readFileSystem.File.Exists(target))
+		if (to.Exists)
 		{
 			_logger.LogError($"Target file {target} already exists");
 			return false;
