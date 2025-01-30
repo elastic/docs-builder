@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
@@ -102,4 +103,33 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		Cancel ctx = default
 	) =>
 		await Generate(path, output, pathPrefix, force, strict, allowIndexing, ctx);
+
+
+	/// <summary>
+	/// Move a file or folder from one location to another and update all links in the documentation
+	/// </summary>
+	/// <param name="source">The source file or folder path to move from</param>
+	/// <param name="target">The target file or folder path to move to</param>
+	/// <param name="path"> -p, Defaults to the`{pwd}` folder</param>
+	/// <param name="dryRun">Dry run the move operation</param>
+	/// <param name="ctx"></param>
+	[Command("mv")]
+	public async Task<int> Move(
+		[Argument] string? source = null,
+		[Argument] string? target = null,
+		bool? dryRun = null,
+		string? path = null,
+		Cancel ctx = default
+	)
+	{
+		var fileSystem = new FileSystem();
+		var context = new BuildContext(fileSystem, fileSystem, path, null)
+		{
+			Collector = new ConsoleDiagnosticsCollector(logger, null),
+		};
+		var set = new DocumentationSet(context);
+
+		var moveCommand = new MoveCommand(fileSystem, set, logger);
+		return await moveCommand.Execute(source, target, dryRun ?? false, ctx);
+	}
 }
