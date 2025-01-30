@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Mover;
@@ -24,7 +25,6 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 
 	public async Task<int> Execute(string? source, string? target, bool isDryRun, Cancel ctx = default)
 	{
-		_linkModifications.Clear();
 		if (isDryRun)
 			_logger.LogInformation("Running in dry-run mode");
 
@@ -37,9 +37,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		var sourcePath = Path.GetFullPath(source!);
 		var targetPath = Path.GetFullPath(target!);
 
-		var (_, sourceMarkdownFile) = documentationSet.MarkdownFiles.Single(i => i.Value.FilePath == sourcePath);
-
-		var sourceContent = await readFileSystem.File.ReadAllTextAsync(sourceMarkdownFile.FilePath, ctx);
+		var sourceContent = await readFileSystem.File.ReadAllTextAsync(sourcePath, ctx);
 
 		var markdownLinkRegex = new Regex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled);
 
@@ -52,10 +50,14 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 			if (!isAbsoluteStylePath)
 			{
 				var targetDirectory = Path.GetDirectoryName(targetPath)!;
-				var sourceDirectory = Path.GetDirectoryName(sourceMarkdownFile.FilePath)!;
+				var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
 				var fullPath = Path.GetFullPath(Path.Combine(sourceDirectory, originalPath));
 				var relativePath = Path.GetRelativePath(targetDirectory, fullPath);
-				newPath = relativePath;
+
+				if (originalPath.StartsWith("./") && !relativePath.StartsWith("./"))
+					newPath = "./" + relativePath;
+				else
+					newPath = relativePath;
 			}
 			var newLink = $"[{match.Groups[1].Value}]({newPath})";
 			var lineNumber = sourceContent.Substring(0, match.Index).Count(c => c == '\n') + 1;
@@ -63,14 +65,14 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 			_linkModifications.Add(new LinkModification(
 				match.Value,
 				newLink,
-				sourceMarkdownFile.SourceFile.FullName,
+				sourcePath,
 				lineNumber,
 				columnNumber
 			));
 			return newLink;
 		});
 
-		_changes.Add((sourceMarkdownFile.FilePath, sourceContent, change));
+		_changes.Add((sourcePath, sourceContent, change));
 
 		foreach (var (_, markdownFile) in documentationSet.MarkdownFiles)
 		{
@@ -88,7 +90,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				ChangeFormatString,
 				oldLink,
 				newLink,
-				sourceFile == sourceMarkdownFile.SourceFile.FullName && !isDryRun ? targetPath : sourceFile,
+				sourceFile == sourcePath && !isDryRun ? targetPath : sourceFile,
 				lineNumber,
 				columnNumber
 			));
@@ -226,7 +228,9 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				else
 				{
 					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);
-					newLink = $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
+					newLink = originalPath.StartsWith("./") && !relativeTarget.StartsWith("./")
+						? $"[{match.Groups[1].Value}](./{relativeTarget}{anchor})"
+						: $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
 				}
 
 				var lineNumber = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
