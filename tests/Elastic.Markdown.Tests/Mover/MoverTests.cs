@@ -80,8 +80,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		await mover.Execute("testing/mover", "new-folder", true);
 
 		mover.Changes.Should().HaveCount(2);
-
-		var changeSet = mover.LinkModifications.First().Key;
+		var changeSet = mover.LinkModifications.FirstOrDefault(k=>k.Key.From.Name == "first-page.md").Key;
 
 		var linkModifications = mover.LinkModifications[changeSet];
 		linkModifications.Should().HaveCount(3);
