@@ -132,7 +132,8 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 		// language=html
 		Html.Should().Contain(
 			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
-			"""<p><a href="kibana://index">test</a></p>"""
+
+			"""<p><a href="kibana://index.md">test</a></p>"""
 		);
 
 	[Fact]
@@ -158,7 +159,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 		// language=html
 		Html.Should().Contain(
 			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
-			"""<p>Go to <a href="kibana://index">test</a></p>"""
+			"""<p>Go to <a href="kibana://index.md">test</a></p>"""
 		);
 
 	[Fact]

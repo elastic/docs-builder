@@ -130,10 +130,10 @@ public class DocumentationSet
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{
-		if (Configuration.Exclude.Any(g => g.IsMatch(file.Name)))
+		var relativePath = Path.GetRelativePath(SourcePath.FullName, file.FullName);
+		if (Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
 			return new ExcludedFile(file, SourcePath);
 
-		var relativePath = Path.GetRelativePath(SourcePath.FullName, file.FullName);
 		if (Configuration.Files.Contains(relativePath))
 			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
 
