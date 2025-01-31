@@ -166,7 +166,7 @@ public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(ou
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<a href="testing/req.html#heading-inside-dropdown">Heading inside dropdown</a>"""
+			"""<a href="testing/req#heading-inside-dropdown">Heading inside dropdown</a>"""
 		);
 
 	[Fact]
