@@ -49,8 +49,10 @@
     <PackageReference Include="System.IO.Abstractions" Version="21.0.29" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="_static/*.js.map" />
     <EmbeddedResource Include="_static/*.js" />
     <EmbeddedResource Include="_static/*.css" />
+    <EmbeddedResource Include="_static/*.css.map" />
     <EmbeddedResource Include="_static/*.svg" />
   </ItemGroup>
 </Project>
