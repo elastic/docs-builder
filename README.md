@@ -144,17 +144,21 @@ existing surveyed tools
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 - [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
 
-## Live Reload Markdown files in the `docs` folder:
+
+## Continuously build all assets during development.
+
 ```shell
-dotnet run --project src/docs-builder -- serve
+./build.sh watch
 ```
 
-## Automatically rebuild changes to `src/Elastic.Markdown/Assets` JS and CSS files:
-```shell
-cd src/Elastic.Markdown
-npm ci
-npm run watch
-```
+This will monitor code, cshtml template files & static files and reload the application
+if any changes.
+
+Web assets are reloaded through `parcel watch` and don't require a recompilation.
+
+Markdown files are refreshed automatically through livereload
+
+Code or layout changes will relaunch the server automatically
 
 # Release Process
 
