@@ -1,12 +1,13 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Documentation.Builder.Diagnostics;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
+using Documentation.Mover;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,13 @@ namespace Documentation.Builder.Cli;
 
 internal class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	private void AssignOutputLogger()
+	{
+		var log = logger.CreateLogger<Program>();
+		ConsoleApp.Log = msg => log.LogInformation(msg);
+		ConsoleApp.LogError = msg => log.LogError(msg);
+	}
+
 	/// <summary>
 	///	Continuously serve a documentation folder at http://localhost:3000.
 	/// File systems changes will be reflected without having to restart the server.
@@ -28,6 +36,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
+		AssignOutputLogger();
 		var host = new DocumentationWebHost(path, port, logger, new FileSystem());
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
@@ -57,6 +66,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		Cancel ctx = default
 	)
 	{
+		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
 		var context = new BuildContext(fileSystem, fileSystem, path, output)
@@ -102,4 +112,34 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		Cancel ctx = default
 	) =>
 		await Generate(path, output, pathPrefix, force, strict, allowIndexing, ctx);
+
+
+	/// <summary>
+	/// Move a file from one location to another and update all links in the documentation
+	/// </summary>
+	/// <param name="source">The source file or folder path to move from</param>
+	/// <param name="target">The target file or folder path to move to</param>
+	/// <param name="path"> -p, Defaults to the`{pwd}` folder</param>
+	/// <param name="dryRun">Dry run the move operation</param>
+	/// <param name="ctx"></param>
+	[Command("mv")]
+	public async Task<int> Move(
+		[Argument] string source,
+		[Argument] string target,
+		bool? dryRun = null,
+		string? path = null,
+		Cancel ctx = default
+	)
+	{
+		AssignOutputLogger();
+		var fileSystem = new FileSystem();
+		var context = new BuildContext(fileSystem, fileSystem, path, null)
+		{
+			Collector = new ConsoleDiagnosticsCollector(logger, null),
+		};
+		var set = new DocumentationSet(context);
+
+		var moveCommand = new Move(fileSystem, fileSystem, set, logger);
+		return await moveCommand.Execute(source, target, dryRun ?? false, ctx);
+	}
 }

@@ -6,6 +6,5 @@ Supported frontmatter includes:
 
 | Frontmatter         | Learn more                  |
 | ------------------- | --------------------------- |
-| `title`             | See [title](./titles.md)    |
 | `navigation_title`  | See [title](./titles.md)    |
 | `applies`           | See [product availability](./applies.md) |

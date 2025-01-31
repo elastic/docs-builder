@@ -24,6 +24,7 @@ subs:
   a-global-variable: "This was defined in docset.yml"
 toc:
   - file: index.md
+  - hidden: developer-notes.md
   - folder: contribute
     children:
       - file: index.md
@@ -43,6 +44,9 @@ toc:
       - folder: guide
         children:
           - file: index.md
+          - file: automated.md
+          - file: tooling.md
+          - file: bug-bash.md
           - file: file-structure.md
           - file: mapping.md
   - folder: configure
@@ -52,7 +56,6 @@ toc:
         children:
           - file: index.md
           - file: content.md
-          - file: shared-attributes.md
           - file: landing-page.md
           - file: redirects.md
       - folder: content-set
@@ -75,6 +78,7 @@ toc:
       - file: file_inclusion.md
       - file: frontmatter.md
       - file: images.md
+      - file: line_breaks.md
       - file: links.md
       - file: passthrough.md
       - file: applies.md
@@ -94,3 +98,7 @@ toc:
       - file: req.md
       - folder: nested
       - file: cross-links.md
+      - folder: mover
+        children:
+          - file: first-page.md
+          - file: second-page.md

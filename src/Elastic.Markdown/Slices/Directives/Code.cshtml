@@ -8,6 +8,12 @@
 				<a class="headerlink" href="@Model.CrossReferenceName" title="Link to this code">¶</a>
 			</div>
 		}
-		<pre><code class="language-@Model.Language">[CONTENT]</code></pre>
+		<pre>
+		@if (!string.IsNullOrEmpty(Model.ApiCallHeader))
+		{
+			<code class="language-apiheader">@Model.ApiCallHeader</code>
+		}
+			[CONTENT]
+		</pre>
 	</div>
 </div>

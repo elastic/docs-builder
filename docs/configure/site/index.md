@@ -1,25 +1,42 @@
 ---
-navigation_title: Site
+navigation_title: Site-level
 ---
 
-# Site configuration
+# Site-level configuration
 
-Start by understanding how the new V3 system works at the site level compared to how our custom AsciiDoctor system works. The system consists of:
-
+Start by understanding how the new V3 system works at the site level compared to how our custom AsciiDoctor system works. At the site-level, we have:
 
 | System property | Asciidoc | V3 |
 | -------------------- | -------------------- | -------------------- |
 | **Content sources** --> Collections of markup files containing doc content. These are split up across many docs repos. | _Books_ | _Content sets_ |
-| **Content configuration** --> A way to specify where to find those content sources, and in what order they should be added to the site. | Configuration file ([`conf.yml`](https://github.com/elastic/docs/blob/master/conf.yaml) in elastic/docs) | Config file location TBD |
-| **Cross-site values** --> Key-value pairs that should be substituted across all sources as web pages are built. | Shared attributes ([`shared/`](https://github.com/elastic/docs/tree/master/shared) in elastic/docs) | Shared attrs file TBD |
-| **Docs build tool** --> An engine used to take the markup in the content sources and transform it into web pages. | Customized version of AsciiDoctor (lives in [**elastic/docs**](https://github.com/elastic/docs)) | Customized doc builder using open source tools (lives in [**elastic/docs-builder**](https://github.com/elastic/docs-builder)) |
+| **Content configuration** --> A way to specify where to find those content sources, and in what order they should be added to the site. | Configuration file ([`conf.yml`](https://github.com/elastic/docs/blob/master/conf.yaml) in elastic/docs) | Config file `assembler.yml` |
 
 Where these pieces live and what format they are in varies between the two systems, but they generally achieve the same goal.
 
-## Asciidoc
+## Content sources
 
-![site-level config in the asciidoc system](./img/site-level-asciidoctor.png)
+TBD
 
-## V3
+## Content configuration
+
+In both the AsciiDoctor- and V3-based system, there is site-wide configuration where you list all content sources, where to find those sources, and in what order they should be added to the site.
+
+In the AsciiDoctor system, this all happens in one YAML file in the `/docs` repo. In the V3 system, this happens in the `assembler.yml` file in `docs-content`.
+
+[assembler.yml](./content.md)
+
+## Landing page
+
+See [landing page](./landing-page.md)
+
+## Redirects
+
+Plan still needed
+
+## V3 site-level diagram
 
 DIAGRAM NEEDED
+
+## Asciidoc site-level diagram
+
+![site-level config in the asciidoc system](./img/site-level-asciidoctor.png)

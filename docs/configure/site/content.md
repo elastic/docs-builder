@@ -1,8 +1,26 @@
-# Content config
+# `assembler.yml`
 
-In both the AsciiDoctor- and V3-based system, there is site-wide configuration where you list all content sources, where to find those sources, and in what order they should be added to the site.
+The global navigation is defined in the `assembler.yml` file. This file can roughly be thought of as the V3 equivalent of conf.yaml in the asciidoc build system. This file, which writers own, allows for arbitrary nesting of `docset.yml` and `toc.yml` references. This file will live in the `elastic/docs-content` repository, but will not build or have any influence over the `docs-builder` builds in that repo.
 
-In the AsciiDoctor system, this all happens in one YAML file in the /docs repo. In the V3 system, this ...
+The global navigation that is defined in `assembler.yml` can be composed of three main resources:
+1. Local TOC files: toc.yml files that live in the docs-content repository.
+2. External TOC files: A subset of a content set (represented by a toc.yml file) that is external to the docs-content repository.
+3. External content set declarations: An entire docset.yml file that is external to the docs-content repository.
+
+The `assembler.yml` file might look something like this:
+
+```yaml
+
+```
+
+## Assembler constraints
+
+To maintain each docset’s immutability and self-containment, resources in the global navigation (assembler.yml) must follow specific rules.
+1. A link resource can appear only once in the global navigation, and it must nest directly under another resource (not under individual pages from a different content set). In other words:
+    1. Each docset.yml or toc.yml file can appear only once in the overall navigation.
+    1. Any TOC declarations—whether in docset.yml or toc.yml—must be placed either at the top level or directly under another TOC entry, with no individual files in between.
+1. Nested resources must appear either before or after (default) the parent’s TOC, and they cannot be placed arbitrarily among the parent’s pages (e.g., between two files of the parent).
+1. If an external TOC is linked, all of its child TOCs must also be included in the global navigation.
 
 ## AsciiDoctor conf.yml
 
@@ -35,7 +53,3 @@ In the AsciiDoctor-powered site, content configuration at the site level is done
       repo:   docs
       path:   shared/settings.asciidoc
 ```
-
-## V3 configuration
-
-TO DO

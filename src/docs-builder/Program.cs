@@ -28,13 +28,7 @@ services.AddSingleton<DiagnosticsChannel>();
 services.AddSingleton<DiagnosticsCollector>();
 
 await using var serviceProvider = services.BuildServiceProvider();
-var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 ConsoleApp.ServiceProvider = serviceProvider;
-
-var isHelp = args.Contains("-h") || args.Contains("--help");
-if (!isHelp)
-	ConsoleApp.Log = msg => logger.LogInformation(msg);
-ConsoleApp.LogError = msg => logger.LogError(msg);
 
 var app = ConsoleApp.Create();
 app.Add<Commands>();

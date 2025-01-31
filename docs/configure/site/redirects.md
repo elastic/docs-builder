@@ -18,7 +18,7 @@ STRATEGY TBD
 
 ## Migration redirects
 
-Docs inventory script: https://github.com/elastic/docs-helpers/tree/main/docs-inventory
-Docs inventory sheet: https://docs.google.com/spreadsheets/d/1LfPI3TZqdpONGxOmL8B8V-Feo1flLwObz9_ibCEMkIQ/edit?gid=605983744#gid=605983744
+* Docs inventory script: https://github.com/elastic/docs-helpers/tree/main/docs-inventory
+* Docs inventory sheet: https://docs.google.com/spreadsheets/d/1LfPI3TZqdpONGxOmL8B8V-Feo1flLwObz9_ibCEMkIQ/edit?gid=605983744#gid=605983744
 
 This sheet will be used to request redirects after migration from 8.current to 9.current.

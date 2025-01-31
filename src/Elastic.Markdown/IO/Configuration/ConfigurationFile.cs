@@ -39,7 +39,6 @@ public record ConfigurationFile : DocumentationFile
 		if (!sourceFile.Exists)
 		{
 			Project = "unknown";
-			TableOfContents = [];
 			context.EmitWarning(sourceFile, "No configuration file found");
 			return;
 		}
@@ -138,6 +137,7 @@ public record ConfigurationFile : DocumentationFile
 		ConfigurationFile? toc = null;
 		var fileFound = false;
 		var folderFound = false;
+		var hiddenFile = false;
 		IReadOnlyCollection<ITocItem>? children = null;
 		foreach (var entry in tocEntry.Children)
 		{
@@ -147,8 +147,10 @@ public record ConfigurationFile : DocumentationFile
 				case "toc":
 					toc = ReadNestedToc(entry, parentPath, out fileFound);
 					break;
+				case "hidden":
 				case "file":
-					file = ReadFile(entry, parentPath, out fileFound);
+					hiddenFile = key == "hidden";
+					file = ReadFile(entry, parentPath, key, out fileFound);
 					break;
 				case "folder":
 					folder = ReadFolder(entry, parentPath, out folderFound);
@@ -169,7 +171,7 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		if (file is not null)
-			return [new FileReference($"{parentPath}/{file}".TrimStart('/'), fileFound, children ?? [])];
+			return [new FileReference($"{parentPath}/{file}".TrimStart('/'), fileFound, hiddenFile, children ?? [])];
 
 		if (folder is not null)
 		{
@@ -227,7 +229,7 @@ public record ConfigurationFile : DocumentationFile
 		return folder;
 	}
 
-	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, string key, out bool found)
 	{
 		found = false;
 		var file = ReadString(entry);
@@ -257,8 +259,17 @@ public record ConfigurationFile : DocumentationFile
 		var rootPath = _context.ReadFileSystem.DirectoryInfo.New(Path.Combine(_rootPath.FullName, tocPath));
 		var path = Path.Combine(rootPath.FullName, "toc.yml");
 		var source = _context.ReadFileSystem.FileInfo.New(path);
+
+		var errorMessage = $"Nested toc: '{source.Directory}' directory has no toc.yml or _toc.yml file";
+
 		if (!source.Exists)
-			EmitError($"Nested toc: '{source.FullName}' does not exist", entry.Key);
+		{
+			path = Path.Combine(rootPath.FullName, "_toc.yml");
+			source = _context.ReadFileSystem.FileInfo.New(path);
+		}
+
+		if (!source.Exists)
+			EmitError(errorMessage, entry.Key);
 		else
 			found = true;
 

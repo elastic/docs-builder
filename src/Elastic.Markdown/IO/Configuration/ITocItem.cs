@@ -6,6 +6,6 @@ namespace Elastic.Markdown.IO.Configuration;
 
 public interface ITocItem;
 
-public record FileReference(string Path, bool Found, IReadOnlyCollection<ITocItem> Children) : ITocItem;
+public record FileReference(string Path, bool Found, bool Hidden, IReadOnlyCollection<ITocItem> Children) : ITocItem;
 
 public record FolderReference(string Path, bool Found, IReadOnlyCollection<ITocItem> Children) : ITocItem;

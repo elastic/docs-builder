@@ -48,6 +48,9 @@ public class DocumentationSet
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
 			{
+				".jpg" => new ImageFile(file, SourcePath, "image/jpeg"),
+				".jpeg" => new ImageFile(file, SourcePath, "image/jpeg"),
+				".gif" => new ImageFile(file, SourcePath, "image/gif"),
 				".svg" => new ImageFile(file, SourcePath, "image/svg+xml"),
 				".png" => new ImageFile(file, SourcePath),
 				".md" => CreateMarkDownFile(file, context),
@@ -88,6 +91,39 @@ public class DocumentationSet
 			return markdownFile;
 		return null;
 	}
+
+	public MarkdownFile? GetPrevious(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+				return previous;
+			index--;
+		} while (index > 0);
+
+		return null;
+	}
+
+	public MarkdownFile? GetNext(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+				return previous;
+			index++;
+		} while (index <= MarkdownFiles.Count - 1);
+
+		return null;
+	}
+
 
 	public async Task ResolveDirectoryTree(Cancel ctx) =>
 		await Tree.Resolve(ctx);

@@ -8,6 +8,7 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -16,14 +17,14 @@ public class NavigationTestsBase : IAsyncLifetime
 {
 	protected NavigationTestsBase(ITestOutputHelper output)
 	{
-		var logger = new TestLoggerFactory(output);
+		LoggerFactory = new TestLoggerFactory(output);
 		ReadFileSystem = new FileSystem(); //use real IO to read docs.
-		var writeFs = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
+		WriteFileSystem = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
 		var collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(ReadFileSystem, writeFs)
+		var context = new BuildContext(ReadFileSystem, WriteFileSystem)
 		{
 			Force = false,
 			UrlPathPrefix = null,
@@ -33,11 +34,13 @@ public class NavigationTestsBase : IAsyncLifetime
 		Set = new DocumentationSet(context);
 
 		Set.Files.Should().HaveCountGreaterThan(10);
-		Generator = new DocumentationGenerator(Set, logger);
-
+		Generator = new DocumentationGenerator(Set, LoggerFactory);
 	}
 
+	protected ILoggerFactory LoggerFactory { get; }
+
 	protected FileSystem ReadFileSystem { get; set; }
+	protected IFileSystem WriteFileSystem { get; set; }
 	protected DocumentationSet Set { get; }
 	protected DocumentationGenerator Generator { get; }
 	protected ConfigurationFile Configuration { get; set; } = default!;

@@ -39,6 +39,7 @@ public record MarkdownFile : DocumentationFile
 		set => _parent = value;
 	}
 
+	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	private MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
@@ -63,8 +64,8 @@ public record MarkdownFile : DocumentationFile
 	private readonly Dictionary<string, PageTocItem> _tableOfContent = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, PageTocItem> TableOfContents => _tableOfContent;
 
-	private readonly HashSet<string> _additionalLabels = new(StringComparer.OrdinalIgnoreCase);
-	public IReadOnlySet<string> AdditionalLabels => _additionalLabels;
+	private readonly HashSet<string> _anchors = new(StringComparer.OrdinalIgnoreCase);
+	public IReadOnlySet<string> Anchors => _anchors;
 
 	public string FilePath { get; }
 	public string FileName { get; }
@@ -91,7 +92,7 @@ public record MarkdownFile : DocumentationFile
 		return parents.ToArray();
 	}
 
-	public async Task<MarkdownDocument> MinimalParse(Cancel ctx)
+	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
 	{
 		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
 		ReadDocumentInstructions(document);
@@ -101,7 +102,7 @@ public record MarkdownFile : DocumentationFile
 	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
 	{
 		if (!_instructionsParsed)
-			await MinimalParse(ctx);
+			await MinimalParseAsync(ctx);
 
 		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 		return document;
@@ -173,22 +174,22 @@ public record MarkdownFile : DocumentationFile
 				Slug = (h.Item2 ?? h.Item1).Slugify()
 			})
 			.ToList();
+
 		_tableOfContent.Clear();
 		foreach (var t in contents)
 			_tableOfContent[t.Slug] = t;
 
-		var labels = document.Descendants<DirectiveBlock>()
+		var anchors = document.Descendants<DirectiveBlock>()
 			.Select(b => b.CrossReferenceName)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.Select(s => s.Slugify())
 			.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
+			.Concat(_tableOfContent.Values.Select(t => t.Slug))
+			.Where(anchor => !string.IsNullOrEmpty(anchor))
 			.ToArray();
 
-		foreach (var label in labels)
-		{
-			if (!string.IsNullOrEmpty(label))
-				_additionalLabels.Add(label);
-		}
+		foreach (var label in anchors)
+			_anchors.Add(label);
 
 		_instructionsParsed = true;
 	}

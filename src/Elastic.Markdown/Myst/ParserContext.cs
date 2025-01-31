@@ -45,18 +45,18 @@ public class ParserContext : MarkdownParserContext
 		Configuration = configuration;
 
 		foreach (var (key, value) in configuration.Substitutions)
-			Properties[key] = value;
+			Properties[key.ToLowerInvariant()] = value;
 
 		if (frontMatter?.Properties is { } props)
 		{
-			foreach (var (key, value) in props)
+			foreach (var (k, value) in props)
 			{
+				var key = k.ToLowerInvariant();
 				if (configuration.Substitutions.TryGetValue(key, out _))
 					this.EmitError($"{{{key}}} can not be redeclared in front matter as its a global substitution");
 				else
 					Properties[key] = value;
 			}
-
 		}
 
 		if (frontMatter?.Title is { } title)

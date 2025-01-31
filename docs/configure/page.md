@@ -1,11 +1,7 @@
 ---
-navigation_title: Page
+navigation_title: Page-level
 ---
 
-# Page configuration
+# Page-level configuration
 
-tbd
-
-go into frontmatter here?
-
-for now, see [frontmatter](../syntax/frontmatter.md).
+For now, page configuration is minimal. See [frontmatter](../syntax/frontmatter.md) for supported options.

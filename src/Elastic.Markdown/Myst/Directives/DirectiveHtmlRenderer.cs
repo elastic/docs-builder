@@ -213,7 +213,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			{
 				CrossReferenceName = null,
 				Language = block.Language,
-				Caption = null
+				Caption = null,
+				ApiCallHeader = null
 			});
 			RenderRazorSlice(slice, renderer, content);
 		}

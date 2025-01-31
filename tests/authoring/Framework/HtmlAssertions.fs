@@ -14,6 +14,7 @@ open AngleSharp.Html.Parser
 open DiffPlex.DiffBuilder
 open DiffPlex.DiffBuilder.Model
 open JetBrains.Annotations
+open Swensen.Unquote
 open Xunit.Sdk
 
 [<AutoOpen>]
@@ -87,37 +88,60 @@ actual: {actual}
         use sw = new StringWriter()
         document.Body.Children
         |> Seq.iter _.ToHtml(sw, PrettyMarkupFormatter())
-        sw.ToString()
+        sw.ToString().TrimStart('\n')
 
-    [<DebuggerStepThrough>]
-    let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: GenerateResult) =
+    let private createDiff expected actual =
         let diffs =
             DiffBuilder
-                .Compare(actual.Html)
+                .Compare(actual)
                 .WithTest(expected)
                 .Build()
 
-        let diff = htmlDiffString diffs
-        match diff with
+        let deepComparision = htmlDiffString diffs
+        match deepComparision with
         | s when String.IsNullOrEmpty s -> ()
         | s ->
             let expectedHtml = prettyHtml expected
-            let actualHtml = prettyHtml actual.Html
-            let textDiff =
-                InlineDiffBuilder.Diff(expectedHtml, actualHtml).Lines
-                |> Seq.map(fun l ->
-                    match l.Type with
-                    | ChangeType.Deleted -> "- " + l.Text
-                    | ChangeType.Modified -> "+ " + l.Text
-                    | ChangeType.Inserted -> "+ " + l.Text
-                    | _ -> " " + l.Text
-                )
-                |> String.concat "\n"
+            let actualHtml = prettyHtml actual
+            let textDiff = diff expectedHtml actualHtml
             let msg = $"""Html was not equal
 {textDiff}
 
-{diff}
+{deepComparision}
+"""
+            raise (XunitException(msg))
+
+    [<DebuggerStepThrough>]
+    let toHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
+        createDiff expected actual.Html
+
+    [<DebuggerStepThrough>]
+    let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+
+        let defaultFile = actual.MarkdownResults |> Seq.head
+        defaultFile |> toHtml expected
+
+    [<DebuggerStepThrough>]
+    let containsHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
+
+        let prettyExpected = prettyHtml expected
+        let prettyActual = prettyHtml actual.Html
+
+        if not <| prettyActual.Contains prettyExpected then
+            let msg = $"""Expected html to contain:
+{prettyExpected}
+
+But was not found in:
+
+{prettyActual}
 """
             raise (XunitException(msg))
 
 
+    [<DebuggerStepThrough>]
+    let convertsToContainingHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+
+        let defaultFile = actual.MarkdownResults |> Seq.head
+        defaultFile |> containsHtml expected

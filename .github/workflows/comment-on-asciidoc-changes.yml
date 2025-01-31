@@ -3,27 +3,32 @@ name: Comment on PR for .asciidoc changes
 on:
   workflow_call: ~
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   comment-on-asciidoc-change:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # This is important to fetch all history
-
-      - name: Check for changes in .asciidoc files
+        # Without a checkout action, the tj-actions/changes-files action
+        # will use the GitHub API to to determine the diff.
+        # This way we can avoid checking ot the forked PR and
+        # minimize the risk of using `pull_request_target` together
+        # with `actions/checkout`.
+        # Refs:
+        #  - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+        #  - https://github.com/tj-actions/changed-files?tab=readme-ov-file#using-githubs-api-octocat
+      - name: Get changed files
         id: check-files
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          if git diff --name-only origin/${{ github.base_ref }}..HEAD | grep -E '\.asciidoc$'; then
-            echo "asciidoc_changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "asciidoc_changed=false" >> $GITHUB_OUTPUT
-          fi
+        uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
+        with:
+          files: |
+            **/*.asciidoc
+
       - name: Add a comment if .asciidoc files changed
-        if: steps.check-files.outputs.asciidoc_changed == 'true'
+        if: steps.check-files.outputs.any_changed == 'true'
         uses: actions/github-script@v6
         with:
           script: |
@@ -31,5 +36,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: 'It looks like this PR modifies one or more `.asciidoc` files. The documentation is currently under a documentation freeze. Please do not merge this PR. See the [migration guide](https://elastic.github.io/docs-builder/migration/index.html) to learn more.'
+              body: 'It looks like this PR modifies one or more `.asciidoc` files. These files are being migrated to Markdown, and any changes merged now will be lost. See the [migration guide](https://elastic.github.io/docs-builder/migration/freeze/index.html) for details.'
             })
+
+      - name: Error if .asciidoc files changed
+        if: steps.check-files.outputs.any_changed == 'true'
+        run: exit 1

@@ -33,15 +33,27 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static void RenderCodeBlockLines(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var commonIndent = GetCommonIndent(block);
+		var hasCode = false;
 		for (var i = 0; i < block.Lines.Count; i++)
 		{
 			var line = block.Lines.Lines[i];
 			var slice = line.Slice;
+			//ensure we never emit an empty line at beginning or start
+			if ((i == 0 || i == block.Lines.Count - 1) && line.Slice.IsEmptyOrWhitespace())
+				continue;
 			var indent = CountIndentation(slice);
 			if (indent >= commonIndent)
 				slice.Start += commonIndent;
+
+			if (!hasCode)
+			{
+				renderer.Write($"<code class=\"language-{block.Language}\">");
+				hasCode = true;
+			}
 			RenderCodeBlockLine(renderer, block, slice, i);
 		}
+		if (hasCode)
+			renderer.Write($"</code>");
 	}
 
 	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int lineNumber)
@@ -55,7 +67,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	{
 		var callOuts = FindCallouts(block.CallOuts ?? [], lineNumber + 1);
 		foreach (var callOut in callOuts)
-			renderer.Write($"<span class=\"code-callout\">{callOut.Index}</span>");
+			renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
 	}
 
 	private static IEnumerable<CallOut> FindCallouts(
@@ -102,7 +114,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			CrossReferenceName = string.Empty,// block.CrossReferenceName,
 			Language = block.Language,
-			Caption = string.Empty
+			Caption = block.Caption,
+			ApiCallHeader = block.ApiCallHeader
 		});
 
 		RenderRazorSlice(slice, renderer, block);
@@ -116,7 +129,13 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			{
 				var siblingBlock = block.Parent[index + 1];
 				if (siblingBlock is not ListBlock)
-					block.EmitError("Code block with annotations is not followed by a list");
+				{
+					//allow one block of content in between
+					if (index + 2 <= (block.Parent!.Count - 1))
+						siblingBlock = block.Parent[index + 2];
+					if (siblingBlock is not ListBlock)
+						block.EmitError("Code block with annotations is not followed by a list");
+				}
 				if (siblingBlock is ListBlock l && l.Count < callOuts.Count)
 				{
 					block.EmitError(

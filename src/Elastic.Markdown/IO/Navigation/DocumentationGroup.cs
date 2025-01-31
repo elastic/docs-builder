@@ -89,11 +89,15 @@ public class DocumentationGroup
 					continue;
 
 				md.Parent = this;
+				md.Hidden = file.Hidden;
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
 				md.NavigationIndex = navigationIndex;
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
+					if (file.Hidden)
+						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.Path}");
+
 					var group = new DocumentationGroup(context, file.Children, lookup, folderLookup, ref fileIndex, depth + 1, virtualIndex)
 					{
 						Parent = this
@@ -110,7 +114,8 @@ public class DocumentationGroup
 				// add the page to navigation items unless it's the index file
 				// the index file can either be the discovered `index.md` or the parent group's
 				// explicit index page. E.g. when grouping related files together.
-				if (indexFile != md)
+				// if the page is referenced as hidden in the TOC do not include it in the navigation
+				if (indexFile != md && !md.Hidden)
 					navigationItems.Add(new FileNavigation(index, depth, md));
 			}
 			else if (tocItem is FolderReference folder)
@@ -120,7 +125,7 @@ public class DocumentationGroup
 					&& folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
 					children = documentationFiles
-						.Select(d => new FileReference(d.RelativePath, true, []))
+						.Select(d => new FileReference(d.RelativePath, true, false, []))
 						.ToArray();
 				}
 
@@ -146,10 +151,10 @@ public class DocumentationGroup
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParse(token));
+		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
-		await (Index?.MinimalParse(ctx) ?? Task.CompletedTask);
+		await (Index?.MinimalParseAsync(ctx) ?? Task.CompletedTask);
 
 		_resolved = true;
 	}

@@ -14,13 +14,13 @@ Each page is required to at least define a level one heading.
 
 This title is used both by the documentation navigation
 
-* Left hand site 
+* Left hand site
 * Navigational elements such as breadcrumbs and previous/next links.
 
-As well as when using the autolink naming feature e.g:
+As well as when using the [auto text links](./links.md#auto-text-links), e.g:
 
 ```markdown
-[titles.md]()
+[](titles.md)
 ```
 
 Generated link text: [](titles.md)

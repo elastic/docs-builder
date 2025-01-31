@@ -91,3 +91,38 @@ will output:
 var apiKey = new ApiKey("<API_KEY>"); // However this is
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
+
+
+## Console output
+
+We document alot of API endpoints at Elastic for this you can use `console` as language. The term console relates to the dev console in kibana which users can link to directly from these code snippets.
+
+:::{note}
+We are still actively developing this special block and it's features
+:::
+
+````markdown
+```console
+GET /mydocuments/_search
+{
+    "from": 1,
+    "query": {
+        "match_all" {}
+    }
+}
+```
+````
+
+Will render as:
+
+```console
+GET /mydocuments/_search
+{
+    "from": 1,
+    "query": {
+        "match_all" {}
+    }
+}
+```
+
+The first line is highlighted as a dev console string and the remainder as json.

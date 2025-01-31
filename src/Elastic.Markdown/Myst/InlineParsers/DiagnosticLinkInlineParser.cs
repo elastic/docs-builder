@@ -135,11 +135,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 			if (!string.IsNullOrEmpty(anchor))
 			{
-				if (markdown == null || (!markdown.TableOfContents.TryGetValue(anchor, out var heading)
-					&& !markdown.AdditionalLabels.Contains(anchor)))
+				if (markdown == null || !markdown.Anchors.Contains(anchor))
 					processor.EmitError(line, column, length, $"`{anchor}` does not exist in {markdown?.FileName}.");
-
-				else if (link.FirstChild == null && heading != null)
+				else if (link.FirstChild == null && markdown.TableOfContents.TryGetValue(anchor, out var heading))
 					title += " > " + heading.Heading;
 
 			}
@@ -153,7 +151,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		// rooted links might need the configured path prefix to properly link
 		var prefix = processor.GetBuildContext().UrlPathPrefix;
 		if (url.StartsWith("/") && !string.IsNullOrWhiteSpace(prefix))
-			link.Url = $"{prefix}/{link.Url}";
+			link.Url = $"{prefix.TrimEnd('/')}{link.Url}";
 
 		if (!string.IsNullOrEmpty(anchor))
 			link.Url += $"#{anchor}";

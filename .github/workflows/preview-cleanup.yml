@@ -1,19 +1,21 @@
 name: preview-cleanup
 
 on:
+  workflow_call: ~
   pull_request_target:
     types: [closed]
 
 permissions:
   deployments: write
   id-token: write
+  contents: read
 
 jobs:
-  cleanup:
+  destroy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/aws-auth
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
       - name: Delete s3 objects
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -28,7 +30,7 @@ jobs:
             const deployments = await github.rest.repos.listDeployments({
               owner,
               repo,
-              environment: `preview-${context.issue.number}`
+              environment: `docs-preview-${context.issue.number}`
             });
             for (const deployment of deployments.data) {
               await github.rest.repos.createDeploymentStatus({

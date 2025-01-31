@@ -26,8 +26,10 @@
   <ItemGroup>
     <Compile Include="Framework\TestValues.fs" />
     <Compile Include="Framework\Setup.fs" />
+    <Compile Include="Framework\MarkdownResultsAssertions.fs" />
     <Compile Include="Framework\HtmlAssertions.fs" />
     <Compile Include="Framework\ErrorCollectorAssertions.fs" />
+    <Compile Include="Framework\MarkdownDocumentAssertions.fs" />
     <Compile Include="Inline\Substitutions.fs" />
   </ItemGroup>
 
@@ -39,6 +41,11 @@
 
   <ItemGroup>
     <Compile Include="Container\DefinitionLists.fs" />
+    <Compile Include="Generator\LinkReferenceFile.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Blocks\CodeBlocks\CodeBlocks.fs" />
   </ItemGroup>
 
 </Project>
