@@ -1,0 +1,6 @@
+.parcel-cache/
+node_modules/
+_static/main.js
+_static/main.js.map
+_static/styles.css
+_static/styles.css.map

@@ -137,6 +137,25 @@ To test performance it's best to build the binary and run outside of docker:
 For reference here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
 existing surveyed tools
 
+# Local Development
+
+## Preqrequisites
+
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
+
+## Live Reload Markdown files in the `docs` folder:
+```shell
+dotnet run --project src/docs-builder -- serve
+```
+
+## Automatically rebuild changes to `src/Elastic.Markdown/Assets` JS and CSS files:
+```shell
+cd src/Elastic.Markdown
+npm ci
+npm run watch
+```
+
 # Release Process
 
 This section outlines the process for releasing a new version of this project.
