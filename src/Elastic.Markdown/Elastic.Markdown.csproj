@@ -36,7 +36,7 @@
     <Exec Command="npm run build" />
   </Target>
 
-  <Target Name="EmbedGeneratedJavascript" AfterTargets="NpmRunBuild">
+  <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
     <ItemGroup>
       <EmbeddedResource Include="_static/*.js.map" />
       <EmbeddedResource Include="_static/*.js" />
