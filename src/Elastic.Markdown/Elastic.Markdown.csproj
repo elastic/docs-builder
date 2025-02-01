@@ -38,6 +38,16 @@
     </Exec>
   </Target>
 
+  <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
+    <ItemGroup>
+      <EmbeddedResource Include="_static/*.js" Watch="false" />
+      <EmbeddedResource Include="_static/*.js.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.css" Watch="false" />
+      <EmbeddedResource Include="_static/*.css.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.svg" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" Version="3.1.3" />
     <PackageReference Include="SoftCircuits.IniFileParser" Version="2.6.0" />
@@ -50,9 +60,5 @@
     <PackageReference Include="YamlDotNet" Version="16.1.3" />
     <PackageReference Include="System.IO.Abstractions" Version="21.0.29" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="_static/*.js"  Watch="false" />
-    <EmbeddedResource Include="_static/*.css" Watch="false" />
-    <EmbeddedResource Include="_static/*.svg" />
-  </ItemGroup>
+
 </Project>
