@@ -1,8 +1,10 @@
-@import "legacy/pygments.css";
-@import "legacy/shibuya.css";
-@import "legacy/mystnb.css";
-@import "legacy/copybutton.css";
-@import "legacy/togglebutton.css";
-@import "legacy/sphinx-design.min.css";
-@import "legacy/custom.css";
-@import "legacy/atom-one-light.css";
+@import "./legacy/pygments.css";
+@import "./legacy/shibuya.css";
+@import "./legacy/mystnb.css";
+@import "./legacy/copybutton.css";
+@import "./legacy/togglebutton.css";
+@import "./legacy/sphinx-design.min.css";
+@import "./legacy/custom.css";
+@import "./legacy/atom-one-light.css";
+
+@import "tailwindcss";

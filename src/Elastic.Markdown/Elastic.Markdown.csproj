@@ -33,7 +33,7 @@
       MSBuild runs NpmInstall before this task because of the DependsOnTargets attribute.
    -->
   <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild">
-    <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true">
+    <Exec Condition="DotNetWatchBuild == false" Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>
