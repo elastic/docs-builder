@@ -35,6 +35,8 @@ let private version _ =
 
 let private format _ = exec { run "dotnet" "format" "--verbosity" "quiet" }
 
+let private watch _ = exec { run "dotnet" "watch" "--project" "src/docs-builder" "--no-hot-reload" "--" "serve" }
+
 let private lint _ =
     match exec {
         exit_code_of "dotnet" "format" "--verify-no-changes"
@@ -167,6 +169,7 @@ let Setup (parsed:ParseResults<Build>) =
                 release
 
         | Format -> Build.Step format
+        | Watch -> Build.Step watch
 
         // steps
         | Lint -> Build.Step lint

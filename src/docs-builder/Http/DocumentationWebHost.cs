@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Reflection;
 using Documentation.Builder.Diagnostics;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Diagnostics.LiveMode;
@@ -28,9 +29,11 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly BuildContext _context;
+	private readonly ILogger<DocumentationWebHost> _logger;
 
 	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
 	{
+		_logger = logger.CreateLogger<DocumentationWebHost>();
 		var builder = WebApplication.CreateSlimBuilder();
 
 		builder.Logging.ClearProviders();
@@ -52,8 +55,8 @@ public class DocumentationWebHost
 		});
 		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(_context.SourcePath, null, _context, logger));
 		builder.Services.AddHostedService<ReloadGeneratorService>();
-
-		//builder.Services.AddSingleton(logger);
+		if (IsDotNetWatchBuild())
+			builder.Services.AddHostedService<ParcelWatchService>();
 
 		builder.WebHost.UseUrls($"http://localhost:{port}");
 
@@ -61,6 +64,8 @@ public class DocumentationWebHost
 		SetUpRoutes();
 	}
 
+	private bool IsDotNetWatchBuild() =>
+		Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
 
 	public async Task RunAsync(Cancel ctx)
 	{
