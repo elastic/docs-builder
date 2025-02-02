@@ -4,8 +4,14 @@ on:
   workflow_call:
     inputs:
       strict:
+        description: 'Treat warnings as errors'
         type: boolean
         default: true
+      continue-on-error:
+        description: 'Do not fail to publish if build fails'
+        type: boolean
+        required: false
+        default: true  # default for will be false after migration
 
 permissions:
   id-token: write
@@ -62,7 +68,7 @@ jobs:
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder'
         uses: elastic/docs-builder@main
-        continue-on-error: ${{ inputs.strict != 'true' }} # Will be removed after the migration phase
+        continue-on-error: ${{ inputs.continue-on-error == 'true' }} # Will be removed after the migration phase
         with:
           prefix: "/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
           strict: ${{ inputs.strict }}

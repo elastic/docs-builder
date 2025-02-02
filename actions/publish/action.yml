@@ -15,7 +15,7 @@ inputs:
     description: 'Treat warnings as errors'
     required: false
   continue-on-error:
-    description: 'Treat warnings as errors'
+    description: 'Do not fail to publish if build fails'
     required: false
     default: "false"
   private:
