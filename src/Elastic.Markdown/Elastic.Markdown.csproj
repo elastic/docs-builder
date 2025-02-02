@@ -32,8 +32,13 @@
       2. Run npm run build before building the .NET project.
       MSBuild runs NpmInstall before this task because of the DependsOnTargets attribute.
    -->
-  <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild">
-    <Exec Condition="DotNetWatchBuild == false" Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true">
+  <Target 
+    Name="NpmRunBuild" 
+    Condition="'$(DotNetWatchBuild)'=='false'"
+    DependsOnTargets="NpmInstall"
+    BeforeTargets="BeforeBuild"
+  >
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>
