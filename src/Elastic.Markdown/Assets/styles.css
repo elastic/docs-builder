@@ -8,3 +8,47 @@
 @import "./legacy/atom-one-light.css";
 
 @import "tailwindcss";
+
+@theme {
+    --color-*: initial;
+
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+
+    --color-ink: #343741;
+    --color-ink-light: #535966;
+    --color-ink-dark: #1C1E23;
+    
+    --color-gray: #E6EBF2;
+    --color-gray-light: #F5F7FA;
+    --color-gray-dark: #D4DAE5;
+
+    --color-elastic-blue: #0077CC;
+    --color-sky-blue: #36B9FF;
+    --color-midnight: #20377D;
+
+    --color-red-dark: #D93333;
+    --color-red-light: #FB6363;
+
+    --color-green-dark: #148742;
+    --color-green-light: #3CD278;
+    
+    
+    --color-teal: #00BFB3;
+    --color-teal-light: #48EFCF;
+    --color-teal-dark: #00857F;
+    
+    --color-poppy: #FA744E;
+    --color-poppy-light: #FF957D;
+    --color-poppy-dark: #E2543D;
+    
+    --color-pink: #F04E98;
+    --color-pink-light: #F990C6;
+    --color-pink-dark: #DD0A73;
+    
+    --color-yellow: #FEC514;
+    --color-yellow-light: #FFD836;
+    --color-yellow-dark: #F9B110;
+    
+    --spacing: 4px;
+}
