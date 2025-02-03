@@ -24,16 +24,15 @@
   },
   "private": true,
   "devDependencies": {
-    "cssnano": "^7.0.6",
     "parcel": "2.13.3",
     "postcss": "^8.5.1",
-    "postcss-import": "^16.1.0"
+    "postcss-import": "^16.1.0",
+    "@tailwindcss/postcss": "^4.0.3"
   },
   "browserslist": [
     "defaults"
   ],
   "dependencies": {
-    "@tailwindcss/postcss": "^4.0.3",
     "highlight.js": "^11.11.1",
     "tailwindcss": "^4.0.3"
   }
