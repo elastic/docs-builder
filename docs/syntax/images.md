@@ -39,10 +39,49 @@ Or, use the `image` directive.
 ## Inline images
 
 ```markdown
-Here is the same image used inline ![Elasticsearch](img/observability.png)
+Here is the same image used inline ![Elasticsearch](img/observability.png "elasticsearch =50%x50%")
 ```
 
-Here is the same image used inline ![Elasticsearch](img/observability.png)
+Here is the same image used inline ![Elasticsearch](img/observability.png "elasticsearch =50%x50%")
+
+
+### Inline image titles
+
+Titles are optional making this the minimal syntax required
+
+```markdown
+![Elasticsearch](img/observability.png)
+```
+
+Including a title can be done by supplying it as an optional argument.
+
+```markdown
+![Elasticsearch](img/observability.png "elasticsearch")
+```
+
+### Inline image sizing
+
+Inline images are supplied at the end through the title argument.
+
+This is done to maintain maximum compatibility with markdown parsers
+and previewers. 
+
+```markdown
+![alt](img.png "title =WxH")
+![alt](img.png "title =W")
+```
+
+`W` and `H` can be either an absolute number in pixels or a number followed by `%` to indicate relative sizing.
+
+If `H` is omitted `W` is used as the height as well.
+
+```markdown
+![alt](img.png "title =250x330")
+![alt](img.png "title =50%x40%")
+![alt](img.png "title =50%")
+```
+
+
 
 ### SVG 
 
