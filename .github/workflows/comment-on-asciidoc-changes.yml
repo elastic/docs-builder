@@ -41,4 +41,6 @@ jobs:
 
       - name: Error if .asciidoc files changed
         if: steps.check-files.outputs.any_changed == 'true'
-        run: exit 1
+        run: |
+          echo '::error::It looks like this PR modifies one or more .asciidoc files. These files are being migrated to Markdown, and any changes merged now will be lost. See the https://elastic.github.io/docs-builder/migration/freeze/index.html for details.'
+          exit 1
