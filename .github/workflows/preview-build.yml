@@ -1,0 +1,57 @@
+name: preview-build
+
+on:
+  pull_request: ~
+  workflow_call:
+    inputs:
+      strict:
+        description: 'Treat warnings as errors'
+        type: boolean
+        default: true
+      continue-on-error:
+        description: 'Do not fail to publish if build fails'
+        type: boolean
+        required: false
+        default: true
+
+permissions: 
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bootstrap Action Workspace
+        if: github.repository == 'elastic/docs-builder'
+        uses: ./.github/actions/bootstrap
+
+      # we run our artifact directly please use the prebuild
+      # elastic/docs-builder@main GitHub Action for all other repositories!
+      - name: Build documentation
+        if: github.repository == 'elastic/docs-builder'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          dotnet run --project src/docs-builder -- --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+
+      - name: Build documentation
+        if: github.repository != 'elastic/docs-builder'
+        uses: elastic/docs-builder@main
+        continue-on-error: true
+        with:
+          prefix: "/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          strict: true
+      - name: Add pull request number to build
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_REF: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo "${PR_NUMBER}" >> .artifacts/docs/html/pull_request_number.txt
+          echo "${PR_REF}" >> .artifacts/docs/html/pull_request_ref.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: .artifacts/docs/html/
