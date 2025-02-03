@@ -1,4 +1,31 @@
 @inherits RazorLayoutSlice<LayoutViewModel>
+@if (Model.IsRedesign)
+{
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<title>@Model.Title</title>
+			<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
+		</head>
+		<body class="text-ink flex flex-col min-h-screen">
+		<div id="elastic-nav"></div>
+		<script src='https://www.elastic.co/elastic-nav.js'></script>
+
+		<main class="markdown-content max-w-7xl mx-auto p-6 flex-1">
+			@await RenderBodyAsync()
+		</main>
+		
+		<div id="elastic-footer"></div>
+		<script src='https://www.elastic.co/elastic-footer.js'></script>
+		<script src="@Model.Static("main.js")"></script>
+		</body>
+	</html>
+}
+else
+{
 <!DOCTYPE html>
 <html lang="en" data-accent-color="blue" data-content_root="./">
 @(await RenderPartialAsync(_Head.Create(Model)))
@@ -99,3 +126,4 @@
 
 </body>
 </html>
+}
