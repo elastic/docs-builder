@@ -15,8 +15,8 @@ Once you have these files, follow the [Contribute Locally guide](../../contribut
 
 Elastic docs V3 fully supports [CommonMark](https://commonmark.org/) Markdown syntax. In addition, we support:
 
-* Custom directives — our main extension point over markdown (learn more [here](../../syntax/md-extensions.md#directives))
-* A few GitHub flavored markdown extensions (see the list [here](../../syntax/md-extensions.md#github-flavored-markdown))
+* Custom directives — our main extension point over markdown (learn more [here](../../syntax/index.md))
+* A few GitHub flavored markdown extensions (see the list [here](../../syntax/index.md))
 
 In most cases, plain Markdown covers basic needs, and directives add extra functionality as needed.
 
