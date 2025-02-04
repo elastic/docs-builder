@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Comments;
@@ -12,6 +13,7 @@ using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
+using Markdig.Renderers.Html;
 using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.InlineParsers;
@@ -33,6 +35,14 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) { }
 }
 
+internal partial class LinkRegexExtensions
+{
+
+	[GeneratedRegex(@"\s\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
+	public static partial Regex MatchTitleStylingInstructions();
+
+}
+
 public class DiagnosticLinkInlineParser : LinkInlineParser
 {
 	// See https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml for a list of URI schemes
@@ -41,6 +51,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
 		var match = base.Match(processor, ref slice);
+
 		if (!match || processor.Inline is not LinkInline link)
 			return match;
 
@@ -49,7 +60,36 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 
 		ValidateAndProcessLink(processor, link, context);
+
+		ParseStylingInstructions(processor, link, context);
+
 		return match;
+	}
+
+
+	private void ParseStylingInstructions(InlineProcessor processor, LinkInline link, ParserContext context)
+	{
+		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
+			return;
+
+		var matches = LinkRegexExtensions.MatchTitleStylingInstructions().Match(link.Title);
+		if (!matches.Success)
+			return;
+
+		var width = matches.Groups["width"].Value;
+		if (!width.EndsWith("%"))
+			width += "px";
+		var height = matches.Groups["height"].Value;
+		if (string.IsNullOrEmpty(height))
+			height = width;
+		else if (!height.EndsWith("%"))
+			height += "px";
+		var title = link.Title[..matches.Index];
+
+		link.Title = title;
+		var attributes = link.GetAttributes();
+		attributes.AddProperty("width", width);
+		attributes.AddProperty("height", height);
 	}
 
 	private static bool IsInCommentBlock(LinkInline link) =>
