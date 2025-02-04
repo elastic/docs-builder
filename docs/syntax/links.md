@@ -48,9 +48,10 @@ Headings will automatically create anchor links in the resulting HTML. The are a
 
 For example:
 
-`## Remote clusters: Cross-cluster setup!` 
-<br>becomes<br>
-`#remote-clusters-cross-cluster-setup` 
+```markdown
+### Same-page links (anchors)
+<!-- Creates anchor #same-page-links-anchors -->
+```
 
 #### Custom anchors
 You can specify custom anchors for headings inline:
