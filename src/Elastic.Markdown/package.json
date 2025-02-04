@@ -1,0 +1,39 @@
+{
+  "name": "elastic-markdown",
+  "version": "1.0.0",
+  "description": "",
+  "main": "_static/main.js",
+  "source": "Assets/index.js",
+  "scripts": {
+    "watch": "parcel watch",
+    "build": "parcel build"
+  },
+  "targets": {
+    "js": {
+      "distDir": "_static",
+      "source": "Assets/main.js"
+    },
+    "css": {
+      "distDir": "_static",
+      "source": "Assets/styles.css"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elastic/docs-builder.git"
+  },
+  "private": true,
+  "devDependencies": {
+    "parcel": "2.13.3",
+    "postcss": "^8.5.1",
+    "postcss-import": "^16.1.0",
+    "@tailwindcss/postcss": "^4.0.3"
+  },
+  "browserslist": [
+    "defaults"
+  ],
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "tailwindcss": "^4.0.3"
+  }
+}

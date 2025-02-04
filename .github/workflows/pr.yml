@@ -42,7 +42,3 @@ jobs:
           path: .artifacts/publish/docs-builder/release/docs-builder
           if-no-files-found: error
           retention-days: 1
-
-  preview:
-    needs: build
-    uses: ./.github/workflows/preview.yml

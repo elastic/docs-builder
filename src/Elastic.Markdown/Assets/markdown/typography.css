@@ -1,0 +1,29 @@
+#elastic-docs-v3 {
+	h1 {
+		@apply text-4xl text-ink font-semibold mb-6;
+		line-height: 1.2em;
+		letter-spacing: -0.04em;
+	}
+	
+	h2 {
+		@apply text-2xl text-ink font-bold mb-6;
+		line-height: 1.2em;
+		letter-spacing: -0.02em;
+	}
+	
+	h3 {
+		@apply text-xl text-ink font-bold mb-6;
+		line-height: 1.2em;
+		letter-spacing: -0.02em;
+	}
+	
+	p {
+		@apply text-base text-body mb-6;
+		line-height: 1.5em;
+		letter-spacing: 0;
+	}
+	
+	a {
+		@apply text-blue-elastic hover:underline underline-offset-4;
+	}
+}

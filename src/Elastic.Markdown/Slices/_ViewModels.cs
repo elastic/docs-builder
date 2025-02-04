@@ -38,6 +38,8 @@ public class LayoutViewModel
 	public required string? GithubEditUrl { get; set; }
 	public required bool AllowIndexing { get; init; }
 
+	public bool IsRedesign => Environment.GetEnvironmentVariable("REDESIGN") == "true";
+
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents
 	{

@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "highlight.js/styles/atom-one-dark.css";
+@import "./theme.css";
+@import "./markdown/typography.css";
+
+main.markdown-content {
+    max-width: 80ch;
+}

@@ -17,7 +17,8 @@ type Build =
     | [<CliPrefix(CliPrefix.None);SubCommand>] Test
     
     | [<CliPrefix(CliPrefix.None);SubCommand>] Format
-    
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Watch
+
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Lint
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PristineCheck
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] ValidateLicenses
@@ -46,7 +47,9 @@ with
             | Release -> "runs build, tests, and create and validates the packages shy of publishing them"
             | Publish -> "Publishes artifacts"
             | Format -> "runs dotnet format"
-            
+
+            | Watch -> "runs dotnet watch to continuous build code/templates and web assets on the fly"
+
             // steps
             | Lint
             | PristineCheck
