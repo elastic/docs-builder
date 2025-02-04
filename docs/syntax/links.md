@@ -3,7 +3,7 @@
 A markdown link looks like this:
 
 ```markdown
-[Link text](#destination)
+[Link text](destination.md)
 ```
 It has two components:
 - Link **text** enclosed in square brackets `[ ]`
