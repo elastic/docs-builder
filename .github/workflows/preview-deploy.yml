@@ -65,7 +65,8 @@ jobs:
         run: |
           gh run download ${{ github.event.workflow_run.id }} \
             --repo "${GITHUB_REPOSITORY}" \
-            --name docs
+            --name docs \
+            --dir html
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
 
@@ -73,7 +74,7 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.pull_request.outputs.number }}
         run: |
-          aws s3 sync . "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete --exclude "pull_request.json"
+          aws s3 sync ./html "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete
           aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
 
       - name: Update deployment status
