@@ -26,7 +26,7 @@ Navigate relative to the current file's location:
 
 #### Absolute paths
 
-You can also use absolute paths to link to pages:
+You can also use absolute paths to link to pages within the same repository:
 
 ```markdown
 [API Keys](/deploy-manage/api-keys.md)
