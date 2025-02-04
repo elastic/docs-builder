@@ -1,4 +1,4 @@
-# Reference docs guidelines
+# New reference guidelines
 
 ## Engineering ownership of reference documentation
 

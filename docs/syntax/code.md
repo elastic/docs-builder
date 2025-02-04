@@ -2,7 +2,9 @@
 
 Code blocks can be used to display multiple lines of code. They preserve formatting and provide syntax highlighting when possible.
 
-### Syntax
+## Syntax
+
+Start and end a code block with a code fence. A code fence is a sequence of at least three consecutive backtick characters (~```~). You can optionally add a language identifier to enable syntax highlighting.
 
 ````markdown
 ```yaml
@@ -18,45 +20,38 @@ project:
   github: https://github.com/jupyter-book/mystmd
 ```
 
-### Asciidoc syntax
+### Code callouts
 
-```markdown
-[source,sh]
---------------------------------------------------
-GET _tasks
-GET _tasks?nodes=nodeId1,nodeId2
-GET _tasks?nodes=nodeId1,nodeId2&actions=cluster:*
---------------------------------------------------
-```
+There are two ways to add callouts to a code block. When using callouts, you must use one callout format. You cannot combine explicit and magic callouts.
 
-### Code blocks with callouts
+#### Explicit callouts
 
-A code block can include `<\d+>` at the end to indicate code callouts.
-A code block with this style of callouts **needs** to be followed by an ordered list with an equal amount of items as called out.
-Otherwise, the docs-builder will throw an error.
+Add `<\d+>` to the end of a line to explicitly create a code callout.
 
-This syntax mimics what was implemented for our asciidoc system
+An ordered list with the same number of items as callouts must follow the code block. If the number of list items doesn’t match the callouts, docs-builder will throw an error.
 
 ````markdown
 ```yaml
 project:
-  title: MyST Markdown
-  github: https://github.com/jupyter-book/mystmd
   license:
-    code: MIT
     content: CC-BY-4.0 <1>
-  subject: MyST Markdown
 ```
 
 1. The license
 ````
 
+```yaml
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
 
-### Magic Callout
+1. The license
 
-You can include the callouts also directly as code using either `//` or `#` comments.
 
-These will then be listed and numbered automatically
+#### Magic Callouts
+
+If a code block contains code comments in the form of `//` or `#`, callouts will be magically created 🪄.
 
 ````markdown
 ```csharp
@@ -65,41 +60,37 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 ````
 
-Will output:
-
 ```csharp
 var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 
-:::{note}
-the comments have the follow code to be hoisted as a callout.
-:::
+Code comments must follow code to be hoisted as a callout. For example:
 
 ````markdown
 ```csharp
 // THIS IS NOT A CALLOUT
-var apiKey = new ApiKey("<API_KEY>"); // However this is
+var apiKey = new ApiKey("<API_KEY>"); // This is a callout
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 ````
 
-will output:
-
 ```csharp
 // THIS IS NOT A CALLOUT
-var apiKey = new ApiKey("<API_KEY>"); // However this is
+var apiKey = new ApiKey("<API_KEY>"); // This is a callout
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 
 
-## Console output
-
-We document alot of API endpoints at Elastic for this you can use `console` as language. The term console relates to the dev console in kibana which users can link to directly from these code snippets.
+## Console code blocks
 
 :::{note}
-We are still actively developing this special block and it's features
+This feature is still being developed.
 :::
+
+We document a lot of API endpoints at Elastic. For these endpoints, we support `console` as a language. The term console relates to the dev console in kibana which users can link to directly from these code snippets.
+
+In a console code block, the first line is highlighted as a dev console string and the remainder as json:
 
 ````markdown
 ```console
@@ -113,8 +104,6 @@ GET /mydocuments/_search
 ```
 ````
 
-Will render as:
-
 ```console
 GET /mydocuments/_search
 {
@@ -124,5 +113,3 @@ GET /mydocuments/_search
     }
 }
 ```
-
-The first line is highlighted as a dev console string and the remainder as json.

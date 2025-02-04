@@ -2,19 +2,17 @@
 navigation_title: Migration
 ---
 
-# "Migration to docs-builder"
-
-We are ready to migrate our documentation to our new build system, [elastic/docs-builder](https://github.com/elastic/docs-builder)!
+# Migration to docs-builder
 
 :::{important}
-We will enforce a [Documentation Freeze](./freeze/index.md) while we migrate docs between our two build systems.
+We are enforcing a [Documentation Freeze](./freeze/index.md) while we migrate docs between our two build systems.
 :::
 
-Migrating to Elastic Docs V3 is more than just moving to a new documentation build system. This migration also includes:
+Migrating to Elastic Docs V3 is more than just moving to a new documentation build system. This migration includes:
 
-* [Transition from AsciiDoc to Markdown](./syntax.md)
-* [Improved information architecture](./ia.md)
-* [Consolidated versioning](./versioning.md)
-* [Engineering ownership of reference documentation & New API guidelines](./engineering.md)
+* [New syntax](./syntax.md): from AsciiDoc to Markdown
+* [New information architecture (IA)](./ia.md): aligning docs around user goals, not internal org structure
+* [New versioning](./versioning.md): consolidation from many to one
+* [New reference guidelines](./engineering.md): Engineering ownership of reference documentation & New API guidelines
 
 View the [migration guide](./guide/index.md) to learn more about migration tooling, what content sets are migrating, how to migrate content, and more.
