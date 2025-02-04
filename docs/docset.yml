@@ -30,6 +30,7 @@ toc:
       - file: index.md
       - file: locally.md
       - file: on-the-web.md
+      - file: move.md
   - folder: migration
     children:
       - file: index.md
