@@ -17,16 +17,20 @@ jobs:
   docs-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Download docs
+      - name: Download PR data
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download ${{ github.event.workflow_run.id }} --name docs --repo "${GITHUB_REPOSITORY}"
+          gh run download ${{ github.event.workflow_run.id }} \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name pull-request-data
       - name: Get PR data
         id: pull_request
         run: |
-          echo "number=$(cat pull_request_number.txt)" >> "${GITHUB_OUTPUT}"
-          echo "ref=$(cat pull_request_ref.txt)" >> "${GITHUB_OUTPUT}"
+          {
+            echo "number=$(jq -r '.number' pull_request.json)"
+            echo "ref=$(jq -r '.ref' pull_request.json)"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Create Deployment
         uses: actions/github-script@v7
@@ -54,6 +58,14 @@ jobs:
                 log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
             return deployment.data.id
+            
+      - name: Download docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download ${{ github.event.workflow_run.id }} \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name docs
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
 
@@ -61,7 +73,7 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.pull_request.outputs.number }}
         run: |
-          aws s3 sync . "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete --exclude "pull_request_number.txt"
+          aws s3 sync . "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete --exclude "pull_request.json"
           aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
 
       - name: Update deployment status
