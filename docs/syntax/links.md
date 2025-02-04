@@ -16,6 +16,17 @@ A link contains link text (the visible text) and a link destination (the URI tha
 
 [**Hi**, _I'm md_](links.md)
 
+## Link to another page
+
+You can link to another page by pointing to the markdown file.
+This applies to files within the same repo.
+
+```markdown
+[Link text](/solutions/search.md)
+```
+
+Note that they must be prefixed with `/`.
+
 ## Anchor link
 
 You can link to a heading on a page with an anchor link. The link destination should be a `#` followed by the header text. Convert spaces to dashes (`-`).
