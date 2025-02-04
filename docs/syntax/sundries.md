@@ -32,9 +32,3 @@ using `\` at the end of a line.
 
 Same as using `<hr>` HTML tag:
 ***
-
-## Comments
-
-% Here is a comment
-
-You can use `%` to add comments in the markdown. Those comment will not be rendered in the HTML output. Look at the markdown source to see the comment above this paragraph.
