@@ -1,4 +1,4 @@
-# Markdown links guide
+# Links
 
 A markdown link looks like this:
 
