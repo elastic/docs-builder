@@ -18,6 +18,7 @@ external_hosts:
   - google.com
   - checkvist.com
   - commonmark.org
+  - github.io
 exclude:
   - '_*.md'
 subs:
