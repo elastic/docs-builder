@@ -19,7 +19,7 @@ external_hosts:
   - checkvist.com
   - commonmark.org
   - github.io
-  - github.blog
+  - github.com
 exclude:
   - '_*.md'
 subs:
