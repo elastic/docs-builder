@@ -32,7 +32,6 @@ jobs:
         id: check-files
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         with:
-          since_last_remote_commit: true
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
             
       - name: Checkout
