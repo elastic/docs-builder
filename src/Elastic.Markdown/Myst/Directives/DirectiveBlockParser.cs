@@ -172,6 +172,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
+		if (line.StartsWith(":::"))
+			return base.TryContinue(processor, block);
+
 		var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
 		if (tokens.Length < 1)
 			return base.TryContinue(processor, block);
