@@ -13,7 +13,9 @@ on:
         type: string
         required: false
         default: 'true'
-
+      compression-level:
+        default: 0
+        type: number
 permissions: 
   contents: read
 
@@ -75,4 +77,4 @@ jobs:
           retention-days: 1
           # The lower the compression-level, the faster the artifact will be uploaded.
           # But the size of the artifact will be larger.
-          compression-level: 1
+          compression-level: ${{ inputs.compression-level || 1 }}
