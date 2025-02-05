@@ -5,9 +5,9 @@ This guide will help you set up docs previews for your GitHub repository.
 ## GitHub Workflows
 
 The docs preview system consists of three GitHub Workflows:
-- `docs-build.yml`: Build the docs on a PR
-- `docs-deploy.yml`: Deploy the docs to our preview environment
-- `docs-cleanup.yml`: Cleanup the docs after a PR is merged or closed
+- [`docs-build.yml`](#build): **Build** the docs on a PR
+- [`docs-deploy.yml`](#deploy): **Deploy** the docs to our preview environment
+- [`docs-cleanup.yml`](#cleanup): **Cleanup** the docs after a PR is merged or closed
 
 
 ### Build
@@ -37,7 +37,7 @@ jobs:
       pull-requests: read
 ```
 
-1. The naming is important, don't change it
+1. The naming is important so that the `docs-deploy` workflow is triggered.
 2. This should be the path to your docs folder.
 3. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
 
@@ -58,7 +58,8 @@ name: docs-deploy
 
 on:
   workflow_run:
-    workflows: [docs-build] <1>
+    workflows: 
+      - docs-build <1>
     types:
       - completed
 
@@ -71,7 +72,7 @@ jobs:
       deployments: write
       actions: read
 ```
-1. The name of the previous workflow.
+1. The name of the previously mentioned `docs-build` workflow.
 2. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
 3. No need to read the code.
 
