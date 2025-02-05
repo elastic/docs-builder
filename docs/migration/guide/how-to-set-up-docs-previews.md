@@ -28,18 +28,18 @@ on:
   pull_request: ~
 
 jobs:
-docs-preview:
-  uses: elastic/docs-builder/.github/workflows/preview-build.yml <2>
-  with:
-    path-pattern: docs/** <3>
-  permissions:
-    contents: read
-    pull-requests: read
+  docs-preview:
+    uses: elastic/docs-builder/.github/workflows/preview-build.yml <2>
+    with:
+      path-pattern: docs/** <3>
+    permissions:
+      contents: read
+      pull-requests: read
 ```
 
 1. The naming is important, don't change it
 2. This should be the path to your docs folder.
-3. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+3. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
 
 
 ::::
@@ -72,7 +72,7 @@ jobs:
       actions: read
 ```
 1. The name of the previous workflow.
-2. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
+2. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
 3. No need to read the code.
 
 ::::
@@ -106,7 +106,7 @@ jobs:
       deployments: write
 ```
 
-1. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-cleanup.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-cleanup.yml)
+1. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-cleanup.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-cleanup.yml)
 2. No permissions to read content
 
 ::::
