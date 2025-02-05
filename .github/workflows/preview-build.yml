@@ -49,7 +49,7 @@ jobs:
           {
             "number": ${PR_NUMBER},
             "ref": "${PR_REF}",
-            "any_changed": ${ANY_CHANGED}"
+            "any_changed": ${ANY_CHANGED}
           }
           EOF
       
