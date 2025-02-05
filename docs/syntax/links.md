@@ -57,14 +57,14 @@ For example:
 You can specify custom anchors for headings inline:
 
 ```markdown
-## License management [#manage-license]
+## License management [manage-license]
 <!-- Creates anchor #manage-license instead of #license-management -->
 ```
 
 Custom anchors are also cleaned up to remove special characters and spaces, and converted to lowercase:
 
 ```markdown
-## API Setup [#First Time Setup!]
+## API Setup [First Time Setup!]
 <!-- Creates anchor #first-time-setup -->
 ```
 
