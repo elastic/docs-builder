@@ -185,3 +185,29 @@ public class NestedDirectiveWithListTests3(ITestOutputHelper output) : Directive
 	                                              </li>
 	                                              """);
 }
+
+
+public class DirectiveInList(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+	"""
+	# heading
+
+	- List Item 1
+	  :::::{note}
+	  Hello, World!
+	  :::::
+	"""
+)
+{
+	[Fact]
+	public void Type() => Block!.Admonition.Should().Be("note");
+
+	[Fact]
+	public void Render() => Html.Should().Contain("""
+	                                              <li> List Item 1
+	                                              <div class="admonition note">
+	                                              	<p class="admonition-title">Note</p>
+	                                              	  Hello, World!
+	                                              </div>
+	                                              </li>
+	                                              """);
+}

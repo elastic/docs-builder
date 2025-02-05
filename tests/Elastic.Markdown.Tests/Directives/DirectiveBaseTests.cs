@@ -23,8 +23,7 @@ public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [Langu
 	{
 		await base.InitializeAsync();
 		Block = Document
-			.Where(block => block is TDirective)
-			.Cast<TDirective>()
+			.Descendants<TDirective>()
 			.FirstOrDefault();
 	}
 
