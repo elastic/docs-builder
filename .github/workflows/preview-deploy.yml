@@ -94,6 +94,8 @@ jobs:
       - name: Update deployment status
         uses: actions/github-script@v7
         if: always() && steps.deployment.outputs.result
+        env:
+          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -101,6 +103,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: "${{ job.status == 'success' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${{  needs.pull-request-data.outputs.number}}`,
+              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${process.env.PR_NUMBER}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
