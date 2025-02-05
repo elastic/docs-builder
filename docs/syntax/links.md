@@ -26,11 +26,14 @@ Navigate relative to the current file's location:
 
 #### Absolute paths
 
-You can also use absolute paths to link to pages within the same repository:
+You can also use absolute paths to link to pages within the same repository.
+Say you're working on a random page somewhere in the `docs-content` repo. You can link to a page in the `deploy-manage` section like this:
 
 ```markdown
 [API Keys](/deploy-manage/api-keys.md)
 ```
+
+Note the leading `/` before the path.
 
 ### Same-page links (anchors)
 
