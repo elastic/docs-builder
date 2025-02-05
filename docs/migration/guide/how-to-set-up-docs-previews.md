@@ -72,8 +72,8 @@ jobs:
       actions: read
 ```
 1. The name of the previous workflow.
-2. No need to read the code.
-3. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
+2. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
+3. No need to read the code.
 
 ::::
 
