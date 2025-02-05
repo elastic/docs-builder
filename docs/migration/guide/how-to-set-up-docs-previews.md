@@ -22,20 +22,25 @@ This way you only build and deploy the docs when there are changes to the docs a
 
 ```yaml
 ---
-name: docs-build # The naming is important, don't change it
+name: docs-build <1>
 
 on:
   pull_request: ~
 
 jobs:
 docs-preview:
-  uses: elastic/docs-builder/.github/workflows/preview-build.yml
+  uses: elastic/docs-builder/.github/workflows/preview-build.yml <2>
   with:
-    path-pattern: docs/** # The path to your docs folder.
-  permissions: # Only needs read permissions.
+    path-pattern: docs/** <3>
+  permissions:
     contents: read
     pull-requests: read
 ```
+
+1. The naming is important, don't change it
+2. This should be the path to your docs folder.
+3. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+
 
 ::::
 
@@ -53,19 +58,22 @@ name: docs-deploy
 
 on:
   workflow_run:
-    workflows: [docs-build] # The name of the docs-build workflow.
+    workflows: [docs-build] <1>
     types:
       - completed
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-deploy.yml
+    uses: elastic/docs-builder/.github/workflows/preview-deploy.yml <2>
     permissions:
-      contents: none # No need to read the code.
+      contents: none <3>
       id-token: write
       deployments: write
       actions: read
 ```
+1. The name of the previous workflow.
+2. No need to read the code.
+3. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
 
 ::::
 
@@ -73,26 +81,33 @@ jobs:
 
 This workflow is triggered when a PR is either merged or closed. The underlying reusable workflow, deletes the docs from the preview environment.
 
+:::{note}
+We are awarey of the security implications of using `pull_request_target` as described in [this blog post](https://github.blog/2020-08-03-github-actions-improvements-for-fork-and-pull-request-workflows/).
+The workflow never checks out the code and doesn't use any user modifiable inputs (e.g. PR title). 
+:::
+
 ::::{dropdown} .github/workflows/docs-cleanup.yml
 :open:
-
 ```yaml
 ---
 name: docs-cleanup
 
 on:
-  pull_request_target: # We are using the pull_request_target event, but the code is never checked out.
+  pull_request_target:
     types:
       - closed
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml
+    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml <1>
     permissions:
-      contents: none # We don't even grant read permissions, because the code is never checked out.
+      contents: none <2>
       id-token: write
       deployments: write
 ```
+
+1. Resuable workflow: [elastic/docs-builder/.github/workflows/preview-cleanup.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-cleanup.yml)
+2. No permissions to read content
 
 ::::
 
