@@ -13,7 +13,7 @@ The docs preview system consists of three GitHub Workflows:
 ### Build
 
 This workflow is triggered when a PR is opened. The underlying reusable workflow, builds the documentation and uploads it as an artifact.
-If the `path-pattern` intput does not match any changes in the PR, the workflow will skip the build, but still set a green status check.
+If the `path-pattern` input does not match any changes in the PR, the workflow will skip the build, but still set a green status check.
 This way you only build and deploy the docs when there are changes to the docs and you can still set it as a required status check.
 
 
