@@ -40,13 +40,13 @@ jobs:
     
   deploy:
     needs: pull-request-data
+    if: needs.pull-request-data.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     concurrency: 
       group: ${{ github.workflow }}-${{ needs.pull-request-data.outputs.number }}
       cancel-in-progress: true
     steps:
       - name: Create Deployment
-        if: needs.pull-request-data.outputs.any_changed == 'true'
         uses: actions/github-script@v7
         id: deployment
         env:
@@ -74,7 +74,6 @@ jobs:
             return deployment.data.id
             
       - name: Download docs
-        if:  needs.pull-request-data.outputs.any_changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -84,10 +83,8 @@ jobs:
             --dir html
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: needs.pull-request-data.outputs.any_changed == 'true'
 
       - name: Upload to S3
-        if: needs.pull-request-data.outputs.any_changed == 'true'
         env:
           PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
         run: |
