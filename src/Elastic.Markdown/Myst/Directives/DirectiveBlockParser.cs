@@ -172,7 +172,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (line.StartsWith(":::"))
 			return base.TryContinue(processor, block);
 
-
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
