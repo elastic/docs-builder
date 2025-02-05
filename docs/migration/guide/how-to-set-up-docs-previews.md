@@ -82,7 +82,7 @@ jobs:
 This workflow is triggered when a PR is either merged or closed. The underlying reusable workflow, deletes the docs from the preview environment.
 
 :::{note}
-We are awarey of the security implications of using `pull_request_target` as described in [this blog post](https://github.blog/2020-08-03-github-actions-improvements-for-fork-and-pull-request-workflows/).
+We are aware of the security implications of using `pull_request_target` as described in [this blog post](https://github.blog/2020-08-03-github-actions-improvements-for-fork-and-pull-request-workflows/).
 The workflow never checks out the code and doesn't use any user modifiable inputs (e.g. PR title). 
 :::
 
