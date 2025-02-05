@@ -77,4 +77,4 @@ jobs:
           retention-days: 1
           # The lower the compression-level, the faster the artifact will be uploaded.
           # But the size of the artifact will be larger.
-          compression-level: ${{ inputs.compression-level == '' && '1' || inputs.compression-level }}
+          compression-level: 0
