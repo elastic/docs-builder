@@ -58,7 +58,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/testing/req">Requirements</a></p>"""
+			"""<p><a href="/testing/req.html">Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -81,7 +81,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/testing/req">Special Requirements</a></p>"""
+			"""<p><a href="/testing/req.html">Special Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -106,7 +106,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/testing/req">test</a></p>"""
+			"""<p><a href="/testing/req.html">test</a></p>"""
 		);
 
 	[Fact]

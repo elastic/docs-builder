@@ -239,11 +239,14 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		var newUrl = url;
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+
+		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
+		{
+			newUrl = GetRootRelativePath(context, file);
+		}
+
 		if (url.EndsWith(".md"))
 			newUrl = Path.ChangeExtension(newUrl, ".html");
-
-		if (!url.StartsWith('/'))
-			newUrl = GetRootRelativePath(context, file);
 
 		if (!string.IsNullOrWhiteSpace(urlPathPrefix))
 			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
