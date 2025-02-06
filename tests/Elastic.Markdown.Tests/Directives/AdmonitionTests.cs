@@ -203,10 +203,10 @@ public class DirectiveInList(ITestOutputHelper output) : DirectiveTest<Admonitio
 
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
