@@ -1,7 +1,11 @@
 # Migration Guide
 
-Migrate content from Asciidoc to V3
+How do I migrate content? How do I work with migrated content? What's actually moving?
 
-* [Migrate automated documentation](./automated.md) — for developers
-* [Migrate narrative content manually](./tooling.md) — handled by the docs team
-* [Build pre-migrated content sets](./bug-bash.md) — for the docs team bug bash
+_For writers_ --> [**How to work in `elastic/docs-content`**](./working-in-docs-content.md)
+
+_For developers_ --> [**How to migrate automated documentation**](./automated.md)
+
+_For the migration team_ --> [**How to migrate narrative content**](./tooling.md)
+
+_For the generally curious_ --> [**What books were migrated?**](./mapping.md)

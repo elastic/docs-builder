@@ -13,26 +13,6 @@ Available admonition types include:
 - Important
 - Plain
 
-### Plain
-
-A plain admonition is a callout with no further styling. Useful to create a callout that does not quite fit the mold of the stylized admonitions
-
-```markdown
-:::{admonition} This is my callout
-
-It can *span* multiple lines and supports inline formatting.
-
-:::
-```
-
-:::{admonition} This is my callout
-
-It can *span* multiple lines and supports inline formatting.
-
-:::
-
-
-
 ### Note
 
 A relevant piece of information with no serious repercussions if ignored.
@@ -90,10 +70,24 @@ This is an important notice.
 This is an important notice.
 :::
 
+### Plain
+
+A plain admonition is a callout with no further styling. Useful to create a callout that does not quite fit the mold of the stylized admonitions.
+
+```markdown
+:::{admonition} This is my callout
+It can *span* multiple lines and supports inline formatting.
+:::
+```
+
+:::{admonition} This is my callout
+It can *span* multiple lines and supports inline formatting.
+:::
+
 ## Collapsible admonitions
 
-:::{tip}
-Also see [dropdowns](./dropdowns.md).
+:::{warning}
+Collapsible admonitions are deprecated. Do not use them. Use [dropdowns](./dropdowns.md) instead.
 :::
 
 Use `:open: <bool>` to make an admonition collapsible.
@@ -115,26 +109,3 @@ Longer content can be collapsed to take less space.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 :::
-
----
-
-## Asciidoc Syntax
-
-### Inline Admonition
-
-```markdown
-NOTE: This is a note.
-It can be multiple lines, but not multiple paragraphs.
-```
-
-### Block Admonition
-
-```markdown
-[WARNING]
-=======
-This is a warning.
-
-It can contain multiple paragraphs.
-=======
-:::
-```

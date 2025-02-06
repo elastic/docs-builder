@@ -7,7 +7,7 @@ applies:
   ece: unavailable
 ---
 
-# Product Availability
+# Applies to
 
 
 Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status

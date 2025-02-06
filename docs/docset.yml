@@ -18,6 +18,8 @@ external_hosts:
   - google.com
   - checkvist.com
   - commonmark.org
+  - github.io
+  - github.com
 exclude:
   - '_*.md'
 subs:
@@ -30,6 +32,7 @@ toc:
       - file: index.md
       - file: locally.md
       - file: on-the-web.md
+      - file: move.md
   - folder: migration
     children:
       - file: index.md
@@ -44,11 +47,11 @@ toc:
       - folder: guide
         children:
           - file: index.md
+          - file: working-in-docs-content.md
           - file: automated.md
           - file: tooling.md
-          - file: bug-bash.md
-          - file: file-structure.md
           - file: mapping.md
+          - file: how-to-set-up-docs-previews.md
   - folder: configure
     children:
       - file: index.md
@@ -68,10 +71,11 @@ toc:
   - folder: syntax
     children:
       - file: index.md
-      - file: md-extensions.md
       - file: admonitions.md
+      - file: applies.md
       - file: automated_settings.md
       - file: code.md
+      - file: comments.md
       - file: conditionals.md
       - file: dropdowns.md
       - file: example_blocks.md
@@ -81,7 +85,6 @@ toc:
       - file: line_breaks.md
       - file: links.md
       - file: passthrough.md
-      - file: applies.md
       - file: sidebars.md
       - file: substitutions.md
       - file: sundries.md

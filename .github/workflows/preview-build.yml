@@ -13,15 +13,29 @@ on:
         type: string
         required: false
         default: 'true'
+      path-pattern:
+        description: 'Path pattern to filter files. Only if changed files match the pattern, the workflow will continue.'
+        type: string
+        default: '**'
+        required: false
 
 permissions: 
   contents: read
+  pull-requests: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+
+      - name: Get changed files
+        id: check-files
+        uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
+        with:
+          files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
+            
       - name: Checkout
+        if: steps.check-files.outputs.any_changed == 'true'
         uses: actions/checkout@v4
         with: 
           persist-credentials: false
@@ -30,11 +44,13 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_REF: ${{ github.event.pull_request.head.sha }}
+          ANY_CHANGED: ${{ steps.check-files.outputs.any_changed }}
         run: |
           cat << EOF > pull_request.json
           {
             "number": ${PR_NUMBER},
-            "ref": "${PR_REF}"
+            "ref": "${PR_REF}",
+            "any_changed": ${ANY_CHANGED}
           }
           EOF
       
@@ -48,26 +64,28 @@ jobs:
           compression-level: 1
 
       - name: Bootstrap Action Workspace
-        if: github.repository == 'elastic/docs-builder'
+        if: github.repository == 'elastic/docs-builder' && steps.check-files.outputs.any_changed == 'true'
         uses: ./.github/actions/bootstrap
 
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
-        if: github.repository == 'elastic/docs-builder'
+        if: github.repository == 'elastic/docs-builder' && steps.check-files.outputs.any_changed == 'true'
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           dotnet run --project src/docs-builder -- --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder'
+        if: github.repository != 'elastic/docs-builder' && steps.check-files.outputs.any_changed == 'true'
         uses: elastic/docs-builder@main
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
           prefix: "/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
+
       - uses: actions/upload-artifact@v4
+        if: steps.check-files.outputs.any_changed == 'true'
         with:
           name: docs
           path: .artifacts/docs/html/

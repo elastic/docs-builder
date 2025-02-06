@@ -1,5 +1,5 @@
 # Sidebars
 
 :::{warning}
-This feature is not currently supported in Elastic Docs V3.
+This feature will not be supported in Elastic Docs V3.
 :::

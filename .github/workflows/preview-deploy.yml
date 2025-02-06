@@ -14,8 +14,13 @@ permissions:
   actions: read
 
 jobs:
-  docs-deploy:
+  pull-request-data:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    outputs: 
+      number: ${{ steps.pull_request.outputs.number }}
+      ref: ${{ steps.pull_request.outputs.ref }}
+      any_changed: ${{ steps.pull_request.outputs.any_changed }}
     steps:
       - name: Download PR data
         env:
@@ -30,14 +35,23 @@ jobs:
           {
             echo "number=$(jq -r '.number' pull_request.json)"
             echo "ref=$(jq -r '.ref' pull_request.json)"
+            echo "any_changed=$(jq -r '.any_changed' pull_request.json)"
           } >> "${GITHUB_OUTPUT}"
-
+    
+  deploy:
+    needs: pull-request-data
+    if: needs.pull-request-data.outputs.any_changed == 'true'
+    runs-on: ubuntu-latest
+    concurrency: 
+      group: ${{ github.workflow }}-${{ needs.pull-request-data.outputs.number }}
+      cancel-in-progress: true
+    steps:
       - name: Create Deployment
         uses: actions/github-script@v7
         id: deployment
         env:
-          PR_NUMBER: ${{ steps.pull_request.outputs.number }}
-          PR_REF: ${{ steps.pull_request.outputs.ref }}
+          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
+          PR_REF: ${{ needs.pull-request-data.outputs.ref }}
         with:
           result-encoding: string
           script: |
@@ -72,7 +86,7 @@ jobs:
 
       - name: Upload to S3
         env:
-          PR_NUMBER: ${{ steps.pull_request.outputs.number }}
+          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
         run: |
           aws s3 sync ./html "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete
           aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
@@ -80,6 +94,8 @@ jobs:
       - name: Update deployment status
         uses: actions/github-script@v7
         if: always() && steps.deployment.outputs.result
+        env:
+          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -87,6 +103,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: "${{ job.status == 'success' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${{ steps.pull_request.outputs.number}}`,
+              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${process.env.PR_NUMBER}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
