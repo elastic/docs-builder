@@ -203,7 +203,7 @@ public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : 
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/testing/req.html#custom-anchor">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req.html#custom-anchor">Sub Requirements</a></p>"""
 		);
 
 	[Fact]

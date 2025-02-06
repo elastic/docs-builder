@@ -248,7 +248,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url.EndsWith(".md"))
 			newUrl = Path.ChangeExtension(newUrl, ".html");
 
-		if (!string.IsNullOrWhiteSpace(urlPathPrefix))
+		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
 		link.Url = !string.IsNullOrEmpty(anchor) ? $"{newUrl}#{anchor}" : newUrl;
