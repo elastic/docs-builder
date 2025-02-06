@@ -58,11 +58,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-<<<<<<< Updated upstream
-			"""<p><a href="testing/req.html">Requirements</a></p>"""
-=======
 			"""<p><a href="/testing/req">Requirements</a></p>"""
->>>>>>> Stashed changes
 		);
 
 	[Fact]
@@ -110,11 +106,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-<<<<<<< Updated upstream
-			"""<p><a href="testing/req.html">test</a></p>"""
-=======
 			"""<p><a href="/testing/req">test</a></p>"""
->>>>>>> Stashed changes
 		);
 
 	[Fact]
