@@ -239,7 +239,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static void UpdateLinkUrl(LinkInline link, string url, string? anchor, string urlPathPrefix)
 	{
 		if (url.EndsWith(".md"))
-			url = url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), 3);
+		{
+			url = url.EndsWith("index.md")
+				? url.Remove(url.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
+				: url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
+		}
 
 		if (url.StartsWith("/") && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
