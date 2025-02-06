@@ -237,21 +237,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static void UpdateLinkUrl(LinkInline link, string url, ParserContext context, string? anchor, IFileInfo file)
 	{
-		var newUrl = url;
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
 
 		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
-		{
-			newUrl = GetRootRelativePath(context, file);
-		}
+			url = GetRootRelativePath(context, file);
 
 		if (url.EndsWith(".md"))
-			newUrl = Path.ChangeExtension(newUrl, ".html");
+			url = Path.ChangeExtension(url, ".html");
 
-		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
-			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
+			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
 
-		link.Url = !string.IsNullOrEmpty(anchor) ? $"{newUrl}#{anchor}" : newUrl;
+		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
 	}
 
 	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
