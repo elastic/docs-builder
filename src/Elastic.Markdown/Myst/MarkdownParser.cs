@@ -60,7 +60,6 @@ public class MarkdownParser(
 				return _pipeline;
 
 			var builder = new MarkdownPipelineBuilder()
-				.EnableTrackTrivia()
 				.UseInlineAnchors()
 				.UsePreciseSourceLocation()
 				.UseDiagnosticLinks()
