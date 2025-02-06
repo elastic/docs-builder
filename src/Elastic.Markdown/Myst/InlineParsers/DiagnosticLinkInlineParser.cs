@@ -241,15 +241,20 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url.EndsWith(".md"))
 			url = Path.ChangeExtension(url, ".html");
 
-		if (url.StartsWith("/") && !string.IsNullOrWhiteSpace(urlPathPrefix))
+
+		if (!url.StartsWith('/'))
+			url = GetRootRelativePath(context, file);
+
+		if (!string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
-		else
-		{
-			var docsetDirectory = context.Configuration.SourceFile.Directory;
-			url = file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
-		}
 
 		link.Url = !string.IsNullOrEmpty(anchor) ? $"{url}#{anchor}" : url;
+	}
+
+	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
+	{
+		var docsetDirectory = context.Configuration.SourceFile.Directory;
+		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
 	}
 
 	private static bool IsCrossLink(Uri? uri) =>
