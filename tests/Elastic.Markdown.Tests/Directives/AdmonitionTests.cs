@@ -123,7 +123,7 @@ public class NestedDirectiveWithListTests(ITestOutputHelper output) : DirectiveT
 	                                              <li> List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
@@ -152,7 +152,7 @@ public class NestedDirectiveWithListTests2(ITestOutputHelper output) : Directive
 	                                              <li> List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
@@ -180,7 +180,7 @@ public class NestedDirectiveWithListTests3(ITestOutputHelper output) : Directive
 	                                              <li> List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
