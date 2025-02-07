@@ -37,9 +37,13 @@
 			</div>
 		</div>
 	</header>
-	<main class="container mx-auto">
-		
-		<div class="markdown-content w-[100ch] max-w-screen mx-auto pt-6 pb-6 px-6">
+	<div class="container mx-auto flex">
+		<aside>
+			<nav id="pages-nav" class="sticky top-22 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
+				@(new HtmlString(Model.NavigationHtml))
+			</nav>
+		</aside>
+		<main class="markdown-content w-[100ch] max-w-screen pt-6 pb-6 px-6">
 			<ol class="flex-1 mb-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
 				<li class="inline text-gray-500" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 					<a itemprop="item" href="/">
@@ -60,8 +64,8 @@
 				}
 			</ol>
 			@await RenderBodyAsync()
-		</div>
-	</main>
+		</main>
+	</div>
 	<script src="@Model.Static("main.js")"></script>
 	</body>
 	</html>

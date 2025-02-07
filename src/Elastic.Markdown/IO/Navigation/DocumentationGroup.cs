@@ -33,6 +33,13 @@ public class DocumentationGroup
 
 	public int Depth { get; }
 
+	public bool ContainsCurrentPage(MarkdownFile current) => NavigationItems.Any(n => n switch
+		{
+			FileNavigation f => f.File == current,
+			GroupNavigation g => g.Group.ContainsCurrentPage(current),
+			_ => false
+		});
+
 	public DocumentationGroup(
 		BuildContext context,
 		IReadOnlyCollection<ITocItem> toc,

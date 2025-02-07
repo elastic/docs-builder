@@ -105,3 +105,11 @@ toc:
         children:
           - file: first-page.md
           - file: second-page.md
+      - folder: deeply-nested
+        children:
+          - file: index.md
+          - file: foo.md 
+          - file: bar.md
+          - folder: baz
+            children:
+              - file: qux.md

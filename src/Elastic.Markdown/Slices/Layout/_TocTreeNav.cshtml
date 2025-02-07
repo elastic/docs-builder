@@ -1,27 +1,95 @@
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
-@foreach (var item in Model.SubTree.NavigationItems)
+@if (Model.IsRedesign)
 {
-	if (item is FileNavigation file)
+	@foreach (var item in Model.SubTree.NavigationItems)
 	{
-		var f = file.File;
-		var current = f == Model.CurrentDocument ? " current" : string.Empty;
-		<li class="toctree-l@(Model.SubTree.Depth + 1)@current"><a class="@(current.Trim()) reference internal" href="@f.Url">@f.NavigationTitle</a></li>
+		if (item is FileNavigation file)
+		{
+			var f = file.File;
+			var isCurrent = f == Model.CurrentDocument;
+			<li class="block pl-6 pb-2 w-full @(isCurrent ? "current" : string.Empty)">
+				<div class="flex">
+					<div class="w-6">
+					</div>
+					<a
+						class="block w-full hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) "
+						href="@f.Url">
+						@f.NavigationTitle
+					</a>
+				</div>
+				
+			</li>
+		}
+		else if (item is GroupNavigation folder)
+		{
+			var g = folder.Group;
+			var isCurrent = g.Index == Model.CurrentDocument;
+			const int initialExpandLevel = 1;
+			var shouldExpand = g.HoldsCurrent(Model.CurrentDocument) || g.Depth <= initialExpandLevel || g.ContainsCurrentPage(Model.CurrentDocument);
+			<li class="block pl-6 pb-2">
+				<div class="flex items-center">
+					<div class="w-6">
+						@if (g.NavigationItems.Count > 0)
+						{
+							<label for="@g.Index?.Title">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 cursor-pointer">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+								</svg>
+							</label>
+						}
+					</div>
+					<a
+						href="@g.Index?.Url"
+						class="block w-full hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) ">
+						@g.Index?.NavigationTitle
+					</a>
+				</div>
+				<input 
+					id="@g.Index?.Title" 
+					type="checkbox"
+					class="peer hidden" 
+					@(shouldExpand ? "checked" : string.Empty)>
+				@if (g.NavigationItems.Count > 0)
+				{
+					<ul class="h-0 peer-checked:h-auto w-full overflow-hidden mt-2" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
+						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+						{
+							Level = g.Depth,
+							CurrentDocument = Model.CurrentDocument,
+							SubTree = g
+						}))
+					</ul>
+				}
+			</li>
+		}
 	}
-	else if (item is GroupNavigation folder)
+}
+else
+{
+	@foreach (var item in Model.SubTree.NavigationItems)
 	{
-		var g = folder.Group;
-		var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
-		var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
-		<li class="toctree-l@(g.Depth)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.NavigationItems.Count > 0) {<ul class="@(current.Trim())">
-				                                                                                                                                      @await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-				                                                                                                                                      {
-					                                                                                                                                      Level = g.Depth,
-					                                                                                                                                      CurrentDocument = Model.CurrentDocument,
-					                                                                                                                                      SubTree = g
-				                                                                                                                                      }))
-			                                                                                                                                      </ul>
-			}
-		</li>
+		if (item is FileNavigation file)
+		{
+			var f = file.File;
+			var current = f == Model.CurrentDocument ? " current" : string.Empty;
+			<li class="toctree-l@(Model.SubTree.Depth + 1)@current"><a class="@(current.Trim()) reference internal" href="@f.Url">@f.NavigationTitle</a></li>
+		}
+		else if (item is GroupNavigation folder)
+		{
+			var g = folder.Group;
+			var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
+			var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
+			<li class="toctree-l@(g.Depth)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.NavigationItems.Count > 0) {<ul class="@(current.Trim())">
+					                                                                                                                                      @await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+					                                                                                                                                      {
+						                                                                                                                                      Level = g.Depth,
+						                                                                                                                                      CurrentDocument = Model.CurrentDocument,
+						                                                                                                                                      SubTree = g
+					                                                                                                                                      }))
+				                                                                                                                                      </ul>
+			                                                                                                                                      }
+			</li>
+		}
 	}
 }

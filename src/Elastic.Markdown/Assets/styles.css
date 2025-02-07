@@ -15,3 +15,20 @@
 	cursor: pointer;
 	background-repeat: no-repeat;
 }
+
+#pages-nav {
+	scrollbar-gutter: stable;
+	&::-webkit-scrollbar-track {
+		background-color: transparent;
+	}
+	&:hover::-webkit-scrollbar-thumb {
+		background-color: var(--color-gray-light);
+	}
+	&::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+	&::-webkit-scrollbar-thumb {
+		border-radius: 4px;
+	}
+}
