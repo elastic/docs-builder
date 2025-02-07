@@ -92,6 +92,7 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
+  - file: versions-types.md
   # nested TOCs are only allowed from docset.yml
   # to prevent them from being nested deeply arbitrarily
   - toc: development
