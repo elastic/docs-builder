@@ -29,7 +29,7 @@ categories:
     labels:
       - 'automation' # When automation is updated
       - 'ci' # When automation is updated
-  - title: '🎨 Redesign'
+  - title: '🎨 Redesign' # Temporary category while we're redesigning the docs
     labels:
       - 'redesign' # When it's a redesign feature
 exclude-labels:
