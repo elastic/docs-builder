@@ -89,7 +89,9 @@ jobs:
           PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
         run: |
           aws s3 sync ./html "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete
-          aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}*"
+          aws cloudfront create-invalidation \
+            --distribution-id EKT7LT5PM8RKS \
+            --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
 
       - name: Update deployment status
         uses: actions/github-script@v7
