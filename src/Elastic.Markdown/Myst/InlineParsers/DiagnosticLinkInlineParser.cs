@@ -240,7 +240,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		if (url.EndsWith(".md"))
 		{
-			url = url.EndsWith("index.md")
+			url = url.EndsWith("/index.md")
 				? url.Remove(url.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
 				: url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
