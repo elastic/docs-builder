@@ -1,8 +1,17 @@
 @import "tailwindcss";
-@import "highlight.js/styles/atom-one-dark.css";
+@import "./fonts.css";
+@import "./plugins.css";
 @import "./theme.css";
+@import "highlight.js/styles/atom-one-dark.css";
 @import "./markdown/typography.css";
 
-main.markdown-content {
-    max-width: 80ch;
+#default-search::-webkit-search-cancel-button {
+	@apply pr-2;
+	-webkit-appearance: none;
+	height: 16px;
+	width: 16px;
+	margin-left: .4em;
+	background-image: url("data:image/svg+xml;utf8,<svg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'><path stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18 17.94 6M18 18 6.06 6'/></svg>");
+	cursor: pointer;
+	background-repeat: no-repeat;
 }
