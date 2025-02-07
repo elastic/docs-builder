@@ -36,7 +36,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: '> [!WARNING]\n> It looks like this PR modifies one or more `.asciidoc` files. These files are being migrated to Markdown, and any changes merged now will be lost. See the [migration guide](https://elastic.github.io/docs-builder/migration/freeze/index.html) for details.
+              body: '> [!WARNING]\n> It looks like this PR modifies one or more `.asciidoc` files. These files are being migrated to Markdown, and any changes merged now will be lost. See the [migration guide](https://elastic.github.io/docs-builder/migration/freeze/index.html) for details.'
             })
 
       - name: Error if .asciidoc files changed
