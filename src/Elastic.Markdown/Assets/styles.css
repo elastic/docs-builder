@@ -21,7 +21,6 @@
 }
 
 #pages-nav {
-	scrollbar-gutter: stable;
 	&::-webkit-scrollbar-track {
 		background-color: transparent;
 	}
@@ -35,4 +34,6 @@
 	&::-webkit-scrollbar-thumb {
 		border-radius: 4px;
 	}
+
+	scrollbar-gutter: stable;
 }

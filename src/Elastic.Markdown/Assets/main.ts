@@ -22,8 +22,8 @@ type NavState = { [key: string]: boolean };
 const PAGE_NAV_STATE_KEY = 'pagesNavState';
 const sessionState = JSON.parse(sessionStorage.getItem(PAGE_NAV_STATE_KEY)) as NavState
 
-function keepNavState(element: HTMLElement) {
-    const inputs = $$('input[type="checkbox"]', element);
+function keepNavState(nav: HTMLElement) {
+    const inputs = $$('input[type="checkbox"]', nav);
     if (sessionState) {
         inputs.forEach(input => {
             const key = input.id;
@@ -35,7 +35,7 @@ function keepNavState(element: HTMLElement) {
         });
     }
     window.addEventListener('beforeunload', () => {
-		const inputs = $$('input[type="checkbox"]', element);
+		const inputs = $$('input[type="checkbox"]', nav);
 		const state: NavState = inputs.reduce((state: NavState, input) => {
             const key = input.id;
             const value = input.checked;
@@ -48,15 +48,35 @@ function keepNavState(element: HTMLElement) {
 const PAGE_NAV_SCROLL_POSITION_KEY = 'pagesNavScrollPosition';
 const scrollPosition = sessionStorage.getItem(PAGE_NAV_SCROLL_POSITION_KEY);
 
-function keepNavPosition(element: HTMLElement) {
+function keepNavPosition(nav: HTMLElement) {
     if (scrollPosition) {
-        element.scrollTop = parseInt(scrollPosition);
+        nav.scrollTop = parseInt(scrollPosition);
     }
     window.addEventListener('beforeunload', () => {
-        sessionStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, element.scrollTop.toString());
+        sessionStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, nav.scrollTop.toString());
     });
 }
+
+function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
+	setTimeout(() => {
+		const currentNavItem = $('.current');
+		if (currentNavItem && !isElementInViewport(currentNavItem)) {
+			currentNavItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+	}, delay);
+}
+function isElementInViewport(el: HTMLElement): boolean {
+	const rect = el.getBoundingClientRect();
+	return (
+		rect.top >= 0 &&
+		rect.left >= 0 &&
+		rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+		rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+	);
+}
+
 
 const pagesNav = $('#pages-nav');
 keepNavPosition(pagesNav);
 keepNavState(pagesNav);
+scrollCurrentNaviItemIntoView(pagesNav, 100);

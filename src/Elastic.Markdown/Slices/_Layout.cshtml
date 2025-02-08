@@ -16,7 +16,7 @@
 	<header class="sticky top-0 bg-blue-developer max-w-screen px-6 pb-6 flex items-center justify-center">
 		<div class="container flex flex-wrap lg:flex-nowrap">
 			<div class="h-10 mt-6 basis-full lg:basis-auto">
-				<a href="/">
+				<a href="@Model.UrlPathPrefix/">
 					<img src="@Model.Static("logo-elastic-horizontal-color-reverse.svg")" alt="Elastic" class="h-10">
 				</a>
 			</div>
@@ -40,33 +40,37 @@
 		</div>
 	</header>
 	<div class="container mx-auto flex">
-		<aside>
-			<nav id="pages-nav" class="sticky top-22 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
+		<aside class="hidden lg:block">
+			<nav id="pages-nav" class="sticky top-22 w-80 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
 				@(new HtmlString(Model.NavigationHtml))
 			</nav>
 		</aside>
-		<main class="markdown-content w-[100ch] max-w-screen pt-6 pb-6 px-6">
+		<main class="markdown-content w-full max-w-screen pt-6 pb-6 px-6">
 			<ol class="flex-1 mb-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-				<li class="inline text-gray-500" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-					<a itemprop="item" href="/">
-						<span itemprop="name">Elastic</span>
+				<li class="inline text-ink text-sm hover:text-ink leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+					<a itemprop="item" href="@Model.UrlPathPrefix/">
+						<span itemprop="name" class="hover:text-ink">Elastic</span>
 					</a>
-					<span>/</span>
 					<meta itemprop="position" content="1">
 				</li>
-				@foreach (var item in Model.Parents.Reverse())
+				@foreach (var item in Model.Parents.Reverse().Skip(1))
 				{
-					<li class="inline text-gray-500" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+					<li class="inline text-gray-500 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+						<span class="px-1">/</span>
 						<a itemprop="item" href="@item.Url">
-							<span itemprop="name">@item.NavigationTitle</span>
+							<span itemprop="name" class="hover:text-ink">@item.NavigationTitle</span>
 						</a>
-						<span>/</span>
 						<meta itemprop="position" content="2">
 					</li>
 				}
 			</ol>
 			@await RenderBodyAsync()
 		</main>
+		<aside>
+			@* <nav id="pages-nav-2" class="sticky top-22 w-60 overflow-x-hidden z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto"> *@
+			@* 	@(new HtmlString(Model.NavigationHtml)) *@
+			@* </nav> *@
+		</aside>
 	</div>
 	<script src="@Model.Static("main.js")"></script>
 	</body>

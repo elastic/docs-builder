@@ -9,12 +9,12 @@
 		{
 			var f = file.File;
 			var isCurrent = f == Model.CurrentDocument;
-			<li class="block pl-4 w-full @(isCurrent ? "current" : string.Empty)">
+			<li class="block ml-2 pl-2 w-full border-l-1 @(isCurrent ? "current border-l-gray-400" : "border-l-gray")">
 				<div class="flex">
-					<div class="w-6">
+					<div class="w-5">
 					</div>
 					<a
-						class="block py-1 w-full hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) "
+						class="block w-full py-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:font-semibold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty)"
 						href="@f.Url">
 						@f.NavigationTitle
 					</a>
@@ -27,8 +27,9 @@
 			var isCurrent = g.Index == Model.CurrentDocument;
 			var slug = g.Index?.Title.Slugify();
 			const int initialExpandLevel = 1;
-			var shouldExpand = g.HoldsCurrent(Model.CurrentDocument) || g.Depth <= initialExpandLevel || g.ContainsCurrentPage(Model.CurrentDocument);
-			<li class="flex flex-wrap pl-4">
+			var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
+			var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
+			<li class="flex flex-wrap ml-2 pl-2 @(g.Depth > 1 ? "border-l-1 border-l-gray" : string.Empty)">
 				<label for="@slug" class="peer group flex items-center mr-1">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -44,12 +45,12 @@
 						type="checkbox"
 						class="hidden"
 						aria-hidden="true"
-						data-should-expand="@shouldExpand.ToLowerString()"
-						@(shouldExpand ? "checked" : string.Empty)>
+						data-should-expand="@containsCurrent.ToLowerString()"
+						@(shouldInitiallyExpand ? "checked" : string.Empty)>
 				</label>
 				<a
 					href="@g.Index?.Url"
-					class="block py-1 grow hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) ">
+					class="block py-1 grow text-sm leading-[1.2em] tracking-[-0.02em] hover:font-semibold @(isCurrent ? "current font-bold text-blue-elastic" : string.Empty) ">
 					@g.Index?.NavigationTitle
 				</a>
 				@if (g.NavigationItems.Count > 0)
