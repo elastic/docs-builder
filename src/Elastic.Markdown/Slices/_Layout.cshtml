@@ -12,11 +12,13 @@
 	</head>
 	
 	<body class="text-ink">
-	<section class="h-9 bg-black"></section>
+	@* <section class="h-9 bg-black"></section> *@
 	<header class="sticky top-0 bg-blue-developer max-w-screen px-6 pb-6 flex items-center justify-center">
 		<div class="container flex flex-wrap lg:flex-nowrap">
 			<div class="h-10 mt-6 basis-full lg:basis-auto">
-				<img src="@Model.Static("logo-elastic-horizontal-color-reverse.svg")" alt="Elastic" class="h-10">
+				<a href="/">
+					<img src="@Model.Static("logo-elastic-horizontal-color-reverse.svg")" alt="Elastic" class="h-10">
+				</a>
 			</div>
 			<form role="search" class="hidden lg:block grow basis-full lg:basis-auto shrink-0 mt-6 lg:mx-10 h-10" autocomplete="off">
 				<label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>

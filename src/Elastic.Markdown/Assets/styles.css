@@ -5,6 +5,10 @@
 @import "highlight.js/styles/atom-one-dark.css";
 @import "./markdown/typography.css";
 
+:root {
+	interpolate-size: allow-keywords;
+}
+
 #default-search::-webkit-search-cancel-button {
 	@apply pr-2;
 	-webkit-appearance: none;

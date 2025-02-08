@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @if (Model.IsRedesign)
@@ -8,51 +9,52 @@
 		{
 			var f = file.File;
 			var isCurrent = f == Model.CurrentDocument;
-			<li class="block pl-6 pb-2 w-full @(isCurrent ? "current" : string.Empty)">
+			<li class="block pl-4 w-full @(isCurrent ? "current" : string.Empty)">
 				<div class="flex">
 					<div class="w-6">
 					</div>
 					<a
-						class="block w-full hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) "
+						class="block py-1 w-full hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) "
 						href="@f.Url">
 						@f.NavigationTitle
 					</a>
 				</div>
-				
 			</li>
 		}
 		else if (item is GroupNavigation folder)
 		{
 			var g = folder.Group;
 			var isCurrent = g.Index == Model.CurrentDocument;
+			var slug = g.Index?.Title.Slugify();
 			const int initialExpandLevel = 1;
 			var shouldExpand = g.HoldsCurrent(Model.CurrentDocument) || g.Depth <= initialExpandLevel || g.ContainsCurrentPage(Model.CurrentDocument);
-			<li class="block pl-6 pb-2">
-				<div class="flex items-center">
-					<div class="w-6">
-						@if (g.NavigationItems.Count > 0)
-						{
-							<label for="@g.Index?.Title">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 cursor-pointer">
-									<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-								</svg>
-							</label>
-						}
-					</div>
-					<a
-						href="@g.Index?.Url"
-						class="block w-full hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) ">
-						@g.Index?.NavigationTitle
-					</a>
-				</div>
-				<input 
-					id="@g.Index?.Title" 
-					type="checkbox"
-					class="peer hidden" 
-					@(shouldExpand ? "checked" : string.Empty)>
+			<li class="flex flex-wrap pl-4">
+				<label for="@slug" class="peer group flex items-center mr-1">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="w-4 shrink -rotate-90 group-has-checked:rotate-0 cursor-pointer">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+					</svg>
+					<input
+						id="@slug"
+						type="checkbox"
+						class="hidden"
+						aria-hidden="true"
+						data-should-expand="@shouldExpand.ToLowerString()"
+						@(shouldExpand ? "checked" : string.Empty)>
+				</label>
+				<a
+					href="@g.Index?.Url"
+					class="block py-1 grow hover:font-bold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty) ">
+					@g.Index?.NavigationTitle
+				</a>
 				@if (g.NavigationItems.Count > 0)
 				{
-					<ul class="h-0 peer-checked:h-auto w-full overflow-hidden mt-2" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
+					<ul class="h-0 grow overflow-hidden peer-has-checked:h-auto w-full overflow-hidden" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
 						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 						{
 							Level = g.Depth,
