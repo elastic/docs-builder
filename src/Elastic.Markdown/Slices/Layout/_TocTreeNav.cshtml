@@ -9,7 +9,7 @@
 		{
 			var f = file.File;
 			var isCurrent = f == Model.CurrentDocument;
-			<li class="block ml-2 pl-2 w-full border-l-1 group @(isCurrent ? "current border-l-gray-300" : "border-l-gray-300")">
+			<li class="block ml-2 pl-2 w-full border-l-1 group @(isCurrent ? "current border-l-gray-200" : "border-l-gray-200")">
 				<div class="flex">
 					<div class="w-5">
 					</div>
@@ -29,7 +29,7 @@
 			const int initialExpandLevel = 1;
 			var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
 			var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
-			<li class="flex flex-wrap ml-2 pl-2 @(g.Depth > 1 ? "border-l-1 border-l-gray-300" : string.Empty)">
+			<li class="flex flex-wrap ml-2 pl-2 @(g.Depth > 1 ? "border-l-1 border-l-gray-200" : string.Empty)">
 				<label for="@slug" class="peer group flex items-center mr-1">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

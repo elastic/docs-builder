@@ -83,3 +83,4 @@ keepNavState(pagesNav);
 keepNavPosition(pagesNav);
 pagesNav.style.opacity = '1';
 scrollCurrentNaviItemIntoView(pagesNav, 100);
+// $('.current a', pagesNav).focus();

@@ -48,6 +48,6 @@
 		left: -1px;
 		width: calc(var(--spacing) * 6);
 		height: 1px;
-		background-color: var(--color-gray-300);
+		background-color: var(--color-gray-200);
 	}
 }
