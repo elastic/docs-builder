@@ -18,42 +18,45 @@ hljs.registerLanguage('apiheader', function() {
 hljs.addPlugin(mergeHTMLPlugin);
 hljs.highlightAll();
 
-type NavState = { [key: string]: boolean };
-const PAGE_NAV_STATE_KEY = 'pagesNavState';
-const sessionState = JSON.parse(sessionStorage.getItem(PAGE_NAV_STATE_KEY)) as NavState
+type NavExpandState = { [key: string]: boolean };
+const PAGE_NAV_EXPAND_STATE_KEY = 'pagesNavState';
+const navState = JSON.parse(localStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY)) as NavExpandState
 
 function keepNavState(nav: HTMLElement) {
     const inputs = $$('input[type="checkbox"]', nav);
-    if (sessionState) {
+    if (navState) {
         inputs.forEach(input => {
             const key = input.id;
 			if (input.dataset['shouldExpand'] === 'true') {
 				input.checked = true;
 			} else {
-				input.checked = sessionState[key];
+				input.checked = navState[key];
 			}
         });
     }
     window.addEventListener('beforeunload', () => {
 		const inputs = $$('input[type="checkbox"]', nav);
-		const state: NavState = inputs.reduce((state: NavState, input) => {
+		const state: NavExpandState = inputs.reduce((state: NavExpandState, input) => {
             const key = input.id;
             const value = input.checked;
             return { ...state, [key]: value};
         }, {});
-        sessionStorage.setItem(PAGE_NAV_STATE_KEY, JSON.stringify(state));
+		localStorage.setItem(PAGE_NAV_EXPAND_STATE_KEY, JSON.stringify(state));
     });
 }
 
+type NavScrollPosition = number;
 const PAGE_NAV_SCROLL_POSITION_KEY = 'pagesNavScrollPosition';
-const scrollPosition = sessionStorage.getItem(PAGE_NAV_SCROLL_POSITION_KEY);
+const pagesNavScrollPosition: NavScrollPosition = parseInt(
+	localStorage.getItem(PAGE_NAV_SCROLL_POSITION_KEY)
+);
 
 function keepNavPosition(nav: HTMLElement) {
-    if (scrollPosition) {
-        nav.scrollTop = parseInt(scrollPosition);
+	if (pagesNavScrollPosition) {
+        nav.scrollTop = pagesNavScrollPosition;
     }
     window.addEventListener('beforeunload', () => {
-        sessionStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, nav.scrollTop.toString());
+		localStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, nav.scrollTop.toString());
     });
 }
 
@@ -75,8 +78,8 @@ function isElementInViewport(el: HTMLElement): boolean {
 	);
 }
 
-
 const pagesNav = $('#pages-nav');
-keepNavPosition(pagesNav);
 keepNavState(pagesNav);
+keepNavPosition(pagesNav);
+pagesNav.style.opacity = '1';
 scrollCurrentNaviItemIntoView(pagesNav, 100);

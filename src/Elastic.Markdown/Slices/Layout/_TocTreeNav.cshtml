@@ -14,7 +14,7 @@
 					<div class="w-5">
 					</div>
 					<a
-						class="block w-full py-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:font-semibold @(isCurrent ? "font-bold text-blue-elastic" : string.Empty)"
+						class="block py-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-ink-dark @(isCurrent ? "text-blue-elastic!" : string.Empty)"
 						href="@f.Url">
 						@f.NavigationTitle
 					</a>
@@ -50,7 +50,7 @@
 				</label>
 				<a
 					href="@g.Index?.Url"
-					class="block py-1 grow text-sm leading-[1.2em] tracking-[-0.02em] hover:font-semibold @(isCurrent ? "current font-bold text-blue-elastic" : string.Empty) ">
+					class="block py-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-ink-dark @(containsCurrent && g.Depth == 1 ? "font-bold" : string.Empty) @(isCurrent ? "current text-blue-elastic!" : string.Empty) ">
 					@g.Index?.NavigationTitle
 				</a>
 				@if (g.NavigationItems.Count > 0)
