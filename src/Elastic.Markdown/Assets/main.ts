@@ -20,7 +20,7 @@ hljs.highlightAll();
 
 type NavExpandState = { [key: string]: boolean };
 const PAGE_NAV_EXPAND_STATE_KEY = 'pagesNavState';
-const navState = JSON.parse(localStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY)) as NavExpandState
+const navState = JSON.parse(sessionStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY)) as NavExpandState
 
 function keepNavState(nav: HTMLElement) {
     const inputs = $$('input[type="checkbox"]', nav);
@@ -41,14 +41,14 @@ function keepNavState(nav: HTMLElement) {
             const value = input.checked;
             return { ...state, [key]: value};
         }, {});
-		localStorage.setItem(PAGE_NAV_EXPAND_STATE_KEY, JSON.stringify(state));
+		sessionStorage.setItem(PAGE_NAV_EXPAND_STATE_KEY, JSON.stringify(state));
     });
 }
 
 type NavScrollPosition = number;
 const PAGE_NAV_SCROLL_POSITION_KEY = 'pagesNavScrollPosition';
 const pagesNavScrollPosition: NavScrollPosition = parseInt(
-	localStorage.getItem(PAGE_NAV_SCROLL_POSITION_KEY)
+	sessionStorage.getItem(PAGE_NAV_SCROLL_POSITION_KEY)
 );
 
 function keepNavPosition(nav: HTMLElement) {
@@ -56,7 +56,7 @@ function keepNavPosition(nav: HTMLElement) {
         nav.scrollTop = pagesNavScrollPosition;
     }
     window.addEventListener('beforeunload', () => {
-		localStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, nav.scrollTop.toString());
+		sessionStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, nav.scrollTop.toString());
     });
 }
 
