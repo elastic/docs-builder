@@ -168,10 +168,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		var (url, anchor) = SplitUrlAndAnchor(link.Url ?? string.Empty);
 		var includeFrom = GetIncludeFromPath(url, context);
-
+		var file = ResolveFile(context, url);
 		ValidateInternalUrl(processor, url, includeFrom, line, column, length, context);
-		ProcessLinkText(processor, link, context, url, anchor, line, column, length);
-		UpdateLinkUrl(link, url, anchor, context.Build.UrlPathPrefix ?? string.Empty);
+		ProcessLinkText(processor, link, context, url, anchor, line, column, length, file);
+		UpdateLinkUrl(link, url, context, anchor, file);
 	}
 
 	private static (string url, string? anchor) SplitUrlAndAnchor(string fullUrl)
@@ -195,12 +195,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			processor.EmitError(line, column, length, $"`{url}` does not exist. resolved to `{pathOnDisk}");
 	}
 
-	private static void ProcessLinkText(InlineProcessor processor, LinkInline link, ParserContext context, string url, string? anchor, int line, int column, int length)
+	private static void ProcessLinkText(InlineProcessor processor, LinkInline link, ParserContext context, string url, string? anchor, int line, int column, int length, IFileInfo file)
 	{
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
-		var file = ResolveFile(context, url);
 		var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
 
 		if (markdown == null)
@@ -236,8 +235,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			processor.EmitError(line, column, length, $"`{anchor}` does not exist in {markdown.FileName}.");
 	}
 
-	private static void UpdateLinkUrl(LinkInline link, string url, string? anchor, string urlPathPrefix)
+	private static void UpdateLinkUrl(LinkInline link, string url, ParserContext context, string? anchor, IFileInfo file)
 	{
+		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+
+		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
+			url = GetRootRelativePath(context, file);
+
 		if (url.EndsWith(".md"))
 		{
 			url = url.EndsWith("/index.md")
@@ -245,10 +249,16 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				: url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
 
-		if (url.StartsWith("/") && !string.IsNullOrWhiteSpace(urlPathPrefix))
+		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
 
-		link.Url = !string.IsNullOrEmpty(anchor) ? $"{url}#{anchor}" : url;
+		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
+	}
+
+	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
+	{
+		var docsetDirectory = context.Configuration.SourceFile.Directory;
+		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
 	}
 
 	private static bool IsCrossLink(Uri? uri) =>

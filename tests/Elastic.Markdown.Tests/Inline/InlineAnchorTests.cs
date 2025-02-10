@@ -132,7 +132,7 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 		// language=html
 		Html.Should().Be(
 			"""
-			<section id="my-anchor"><h2>Hello world <a class="headerlink" href="#my-anchor" title="Link to this heading">¶</a>
+			<section id="my-anchor"><h2>Hello world<a class="headerlink" href="#my-anchor" title="Link to this heading">¶</a>
 			</h2>
 			</section>
 			""".TrimEnd()
@@ -203,7 +203,7 @@ public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : 
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="testing/req#custom-anchor">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#custom-anchor">Sub Requirements</a></p>"""
 		);
 
 	[Fact]

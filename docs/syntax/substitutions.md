@@ -24,6 +24,8 @@ subs:
 If a substitution is defined globally it may not be redefined (shaded) in a files `frontmatter`. 
 Doing so will result in a build error.
 
+To use the variables in your files, surround them in curly brackets (`{{variable}}`).
+
 ## Example
 
 Here are some variable substitutions:
