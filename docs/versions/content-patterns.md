@@ -1,5 +1,11 @@
 ---
 navigation_title: "Content patterns"
+applies:
+  stack: all
+  serverless: all
+  hosted: all
+  eck: all
+  ece: all
 ---
 # Version content patterns
 
@@ -19,6 +25,8 @@ Choose from:
 * [Sibling pages](#sibling-pages)
 
 ## Page-level `applies` tags
+
+*see [`applies`](/syntax/applies.md)*
 
 **Use case:** Provide signals that a page applies to the reader
 
@@ -41,6 +49,7 @@ See **Versions and lifecycle states** to learn when to specify versions in these
 :stack: all
 :::
 
+*see [`applies`](/syntax/applies.md#section)*
 
 **Use case:** Provide signals about a section’s scope so a user can choose to read or skip it as needed
 
@@ -226,7 +235,7 @@ If there’s a terminology change or other minor change (especially where x equa
   Elastic Cloud manages TLS certificates for you.
   :::
 
-* *In a **Spaces** overview*
+* *In a **Spaces** overview*:
 
   :::{note}
   In Stack versions 9.0 and lower, **Spaces** are referred to as **Places**.
