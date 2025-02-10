@@ -30,7 +30,7 @@ Choose from:
 
 **Use case:** Provide signals that a page applies to the reader
 
-**Number to use:** Minimum to add clarity. See [basic concepts and principles](/versions/index.html#basic-concepts-and-principles). 
+**Number to use:** Minimum to add clarity. See [basic concepts and principles](/versions/index.md#basic-concepts-and-principles). 
 
 **Approach:**
 
@@ -53,7 +53,7 @@ See **Versions and lifecycle states** to learn when to specify versions in these
 
 **Use case:** Provide signals about a section’s scope so a user can choose to read or skip it as needed
 
-**Number to use:** Minimum to add clarity. See [basic concepts and principles](/versions/index.html#basic-concepts-and-principles).  
+**Number to use:** Minimum to add clarity. See [basic concepts and principles](/versions/index.md#basic-concepts-and-principles).  
 
 **When to use:** When the section-level scope differs from the page-level scope
 

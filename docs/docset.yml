@@ -95,7 +95,7 @@ toc:
   - folder: versions
   - children:
       - file: index.md
-      - file: version-components.md
+      - file: content-patterns.md
   # nested TOCs are only allowed from docset.yml
   # to prevent them from being nested deeply arbitrarily
   - toc: development
