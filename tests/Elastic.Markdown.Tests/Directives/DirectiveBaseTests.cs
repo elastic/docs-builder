@@ -9,7 +9,6 @@ using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -19,7 +18,7 @@ public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [Langu
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -82,7 +81,7 @@ $"""
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
 
-	public virtual async Task InitializeAsync()
+	public virtual async ValueTask InitializeAsync()
 	{
 		_ = Collector.StartAsync(default);
 
@@ -98,6 +97,6 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public Task DisposeAsync() => Task.CompletedTask;
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
 }

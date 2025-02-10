@@ -6,7 +6,6 @@ using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
 using FluentAssertions;
 using JetBrains.Annotations;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 

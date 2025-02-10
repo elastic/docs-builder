@@ -6,7 +6,6 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests;
 
@@ -31,7 +30,7 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		var set = new DocumentationSet(context);
 		var generator = new DocumentationGenerator(set, logger);
 
-		await generator.GenerateAll(default);
+		await generator.GenerateAll(TestContext.Current.CancellationToken);
 
 		fileSystem.Directory.Exists(".artifacts").Should().BeTrue();
 

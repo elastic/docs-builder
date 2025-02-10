@@ -7,7 +7,6 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 

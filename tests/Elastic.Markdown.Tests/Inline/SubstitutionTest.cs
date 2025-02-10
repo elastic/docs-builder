@@ -5,7 +5,6 @@
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Substitution;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
