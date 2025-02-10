@@ -35,7 +35,6 @@
   "dependencies": {
     "highlight.js": "^11.11.1",
     "select-dom": "^9.3.0",
-    "tailwind-scrollbar-hide": "^2.0.0",
     "tailwindcss": "^4.0.3"
   }
 }

@@ -1,16 +1,11 @@
 @import "tailwindcss";
 @import "./fonts.css";
-@import "./plugins.css";
 @import "./theme.css";
 @import "highlight.js/styles/atom-one-dark.css";
 @import "./markdown/typography.css";
 
-:root {
-	interpolate-size: allow-keywords;
-}
-
 #default-search::-webkit-search-cancel-button {
-	@apply pr-2;
+	padding-right: calc(var(--spacing) * 2);
 	-webkit-appearance: none;
 	height: 16px;
 	width: 16px;
@@ -28,11 +23,11 @@
 		background-color: var(--color-gray-light);
 	}
 	&::-webkit-scrollbar {
-		width: 8px;
-		height: 8px;
+		width: calc(var(--spacing) * 2);
+		height: calc(var(--spacing) * 2);
 	}
 	&::-webkit-scrollbar-thumb {
-		border-radius: 4px;
+		border-radius: var(--spacing);
 	}
 
 	scrollbar-gutter: stable;
