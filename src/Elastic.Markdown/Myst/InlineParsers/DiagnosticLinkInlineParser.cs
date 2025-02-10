@@ -138,7 +138,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private bool ValidateExternalUri(InlineProcessor processor, Uri? uri, ParserContext context, int line, int column, int length)
 	{
-		if (uri == null || !uri.Scheme.StartsWith("http"))
+		if (uri == null)
+			return false;
+
+		if (!uri.Scheme.StartsWith("http") && !uri.Scheme.StartsWith("mailto"))
 			return false;
 
 		var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);

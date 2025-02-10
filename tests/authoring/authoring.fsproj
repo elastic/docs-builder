@@ -47,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Inline\InlineLinks.fs" />
     <Compile Include="Container\DefinitionLists.fs"/>
     <Compile Include="Generator\LinkReferenceFile.fs"/>
   </ItemGroup>
