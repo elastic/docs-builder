@@ -132,7 +132,7 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 		// language=html
 		Html.Should().Be(
 			"""
-			<section id="my-anchor"><h2>Hello world <a class="headerlink" href="#my-anchor" title="Link to this heading">¶</a>
+			<section id="my-anchor"><h2>Hello world<a class="headerlink" href="#my-anchor" title="Link to this heading">¶</a>
 			</h2>
 			</section>
 			""".TrimEnd()
