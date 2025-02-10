@@ -111,7 +111,7 @@ Spaces let you organize your content and users according to your needs.
 
 **Use case:** When one or more steps in a process differs, put the steps into tabs - one for each process.
 
-**Number to use:** Max 4 or 5
+**Number to use:** Max 4 or 5 (in a deployment type / versioning context - might be different for other situations)
 
 Try to minimize the number of tabs where you can - try to work around small differences by rewording or adding context in prose or in `note` style admonitions:
 
