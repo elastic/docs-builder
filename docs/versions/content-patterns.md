@@ -49,7 +49,7 @@ See **Versions and lifecycle states** to learn when to specify versions in these
 :stack: all
 :::
 
-*see [`applies`](/syntax/applies.md#section)*
+*see [`applies`](/syntax/applies.md#sections)*
 
 **Use case:** Provide signals about a section’s scope so a user can choose to read or skip it as needed
 
