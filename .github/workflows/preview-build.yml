@@ -8,6 +8,9 @@ on:
       - reopened
       - labeled
       - unlabeled
+  push:
+    branches:
+      - main
   workflow_call:
     inputs:
       strict:
@@ -38,42 +41,67 @@ jobs:
     steps:
 
       - name: Get changed files
+        if: github.event_name == 'pull_request'
         id: check-files
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
             
       - name: Checkout
-        if: steps.check-files.outputs.any_changed == 'true'
+        if: github.event_name != 'pull_request' || steps.check-files.outputs.any_changed == 'true'
         uses: actions/checkout@v4
         with: 
           persist-credentials: false
           
-      - name: Store PR data
+      - name: Generate path prefix
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_REF: ${{ github.event.pull_request.head.sha }}
-          ANY_CHANGED: ${{ steps.check-files.outputs.any_changed }}
         run: |
-          cat << EOF > pull_request.json
+          case "${GITHUB_EVENT_NAME}" in
+            "pull_request")
+              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
+              ;;
+            "push")
+              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}" >> $GITHUB_ENV
+              if [[ ! "${GITHUB_REF_NAME}" =~ ^(main|master|16\.x)$ ]]; then
+                echo "Unsupported ref name: ${GITHUB_REF_NAME}";
+                exit 1;
+              fi
+              ;;
+            *)
+              echo "Unsupported event: ${GITHUB_EVENT_NAME}";
+              exit 1;
+              ;;
+          esac
+          
+      - name: Store deployment metadata
+        id: metadata
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REF: ${{ github.sha }}
+          SHOULD_DEPLOY: ${{ github.event_name == 'pull_request' && steps.check-files.outputs.any_changed || 'true' }}
+        run: |
+          cat << EOF > deployment_metadata.json
           {
-            "number": ${PR_NUMBER},
-            "ref": "${PR_REF}",
-            "any_changed": ${ANY_CHANGED}
+            "pr_number": "${PR_NUMBER}",
+            "ref": "${REF}",
+            "should_deploy": "${SHOULD_DEPLOY}",
+            "path_prefix": "${PATH_PREFIX}"
           }
           EOF
+          echo "should_deploy=${SHOULD_DEPLOY}" >> "${GITHUB_OUTPUT}"
       
-      - name: Upload PR data
+      - name: Upload deployment metadata
         uses: actions/upload-artifact@v4
         with:
-          name: pull-request-data
-          path: pull_request.json
+          name: deployment_metadata
+          path: deployment_metadata.json
           if-no-files-found: error
           retention-days: 1
           compression-level: 1
 
       - name: Bootstrap Action Workspace
-        if: github.repository == 'elastic/docs-builder' && steps.check-files.outputs.any_changed == 'true'
+        if: github.repository == 'elastic/docs-builder' && steps.metadata.outputs.should_deploy == 'true'
         uses: ./.github/actions/bootstrap
         
       - name: Set REDESIGN feature flag
@@ -83,22 +111,20 @@ jobs:
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
-        if: github.repository == 'elastic/docs-builder' && steps.check-files.outputs.any_changed == 'true'
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+        if: github.repository == 'elastic/docs-builder' && steps.metadata.outputs.should_deploy == 'true'
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder' && steps.check-files.outputs.any_changed == 'true'
+        if: github.repository != 'elastic/docs-builder' && steps.metadata.outputs.should_deploy == 'true'
         uses: elastic/docs-builder@main
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
-          prefix: "/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
       - uses: actions/upload-artifact@v4
-        if: steps.check-files.outputs.any_changed == 'true'
+        if: steps.metadata.outputs.should_deploy == 'true'
         with:
           name: docs
           path: .artifacts/docs/html/

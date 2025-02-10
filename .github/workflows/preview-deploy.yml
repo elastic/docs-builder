@@ -14,53 +14,57 @@ permissions:
   actions: read
 
 jobs:
-  pull-request-data:
+  deployment-metadata:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs: 
-      number: ${{ steps.pull_request.outputs.number }}
-      ref: ${{ steps.pull_request.outputs.ref }}
-      any_changed: ${{ steps.pull_request.outputs.any_changed }}
+      pr_number: ${{ steps.metadata.outputs.pr_number }}
+      ref: ${{ steps.metadata.outputs.ref }}
+      should_deploy: ${{ steps.metadata.outputs.should_deploy }}
+      path_prefix: ${{ steps.metadata.outputs.path_prefix }}
     steps:
-      - name: Download PR data
+      - name: Download deployment metadata
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download ${{ github.event.workflow_run.id }} \
             --repo "${GITHUB_REPOSITORY}" \
-            --name pull-request-data
-      - name: Get PR data
-        id: pull_request
+            --name deployment_metadata
+      - name: Get deployment metadata
+        id: metadata
         run: |
           {
-            echo "number=$(jq -r '.number' pull_request.json)"
-            echo "ref=$(jq -r '.ref' pull_request.json)"
-            echo "any_changed=$(jq -r '.any_changed' pull_request.json)"
+            echo "pr_number=$(jq -r '.pr_number' deployment_metadata.json)"
+            echo "ref=$(jq -r '.ref' deployment_metadata.json)"
+            echo "path_prefix=$(jq -r '.path_prefix' deployment_metadata.json)"
+            echo "should_deploy=$(jq -r '.should_deploy' deployment_metadata.json)"
           } >> "${GITHUB_OUTPUT}"
     
   deploy:
-    needs: pull-request-data
-    if: needs.pull-request-data.outputs.any_changed == 'true'
+    needs: deployment-metadata
+    if: needs.deployment-metadata.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     concurrency: 
-      group: ${{ github.workflow }}-${{ needs.pull-request-data.outputs.number }}
+      group: ${{ github.workflow }}-${{ needs.deployment-metadata.outputs.pr_number }}
       cancel-in-progress: true
     steps:
       - name: Create Deployment
         uses: actions/github-script@v7
         id: deployment
         env:
-          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
-          PR_REF: ${{ needs.pull-request-data.outputs.ref }}
+          PR_NUMBER: ${{ needs.deployment-metadata.outputs.pr_number }}
+          REF: ${{ needs.deployment-metadata.outputs.ref }}
         with:
           result-encoding: string
           script: |
             const { owner, repo } = context.repo;
+            const prNumber = process.env.PR_NUMBER;
+            const environment = prNumber ? `docs-preview-${prNumber}` : 'docs-preview';
             const deployment = await github.rest.repos.createDeployment({
                 owner,
                 repo,
-                ref: process.env.PR_REF,
-                environment: `docs-preview-${process.env.PR_NUMBER}`,
+                environment,
+                ref: process.env.REF,
                 auto_merge: false,
                 required_contexts: [],
             })
@@ -86,18 +90,20 @@ jobs:
 
       - name: Upload to S3
         env:
-          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
+          PR_NUMBER: ${{ needs.deployment-metadata.outputs.pr_number }}
+          PATH_PREFIX: ${{ needs.deployment-metadata.outputs.path_prefix }}
         run: |
-          aws s3 sync ./html "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete
+          aws s3 sync ./html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
-            --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
+            --paths "${PATH_PREFIX}" "/${PATH_PREFIX}/*"
 
       - name: Update deployment status
         uses: actions/github-script@v7
         if: always() && steps.deployment.outputs.result
         env:
-          PR_NUMBER: ${{ needs.pull-request-data.outputs.number }}
+          PR_NUMBER: ${{ needs.deployment-metadata.outputs.pr_number }}
+          PATH_PREFIX: ${{ needs.deployment-metadata.outputs.path_prefix }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -105,6 +111,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: "${{ job.status == 'success' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${process.env.PR_NUMBER}`,
+              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
