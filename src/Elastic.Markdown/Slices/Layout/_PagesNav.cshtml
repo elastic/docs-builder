@@ -1,0 +1,6 @@
+@inherits RazorSlice<LayoutViewModel>
+<aside class="hidden lg:block">
+	<nav id="pages-nav" class="sticky top-22 w-80 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
+		@(new HtmlString(Model.NavigationHtml))
+	</nav>
+</aside>
