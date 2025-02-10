@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net.Mime;
 using System.Runtime.CompilerServices;
 using Elastic.Markdown.Diagnostics;
+using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Renderers;
@@ -98,6 +99,9 @@ public class SubstitutionParser : InlineParser
 		if (slice.PeekCharExtra(1) != match)
 			return false;
 
+		if (processor.Context is not ParserContext context)
+			return false;
+
 		Debug.Assert(match is not ('\r' or '\n'));
 
 		// Match the opened sticks
@@ -140,10 +144,15 @@ public class SubstitutionParser : InlineParser
 		var key = content.ToString().Trim(['{', '}']).ToLowerInvariant();
 		var found = false;
 		var replacement = string.Empty;
-		if (processor.Context?.Properties.TryGetValue(key, out var value) ?? false)
+		if (context.Substitutions.TryGetValue(key, out var value))
 		{
 			found = true;
-			replacement = value.ToString() ?? string.Empty;
+			replacement = value;
+		}
+		else if (context.ContextSubstitutions.TryGetValue(key, out value))
+		{
+			found = true;
+			replacement = value;
 		}
 
 		var start = processor.GetSourcePosition(startPosition, out var line, out var column);

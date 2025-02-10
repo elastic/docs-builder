@@ -44,7 +44,8 @@ internal class CatchExceptionFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
 				return;
 			}
 
-			ConsoleApp.LogError(ex.ToString());
+			throw;
+
 		}
 	}
 }

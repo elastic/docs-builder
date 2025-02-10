@@ -1,5 +1,7 @@
 @theme {
-	--color-*: initial;
+	/*--color-*: initial;*/
+
+	--font-sans: "Mier B", "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
 	--color-white: #FFFFFF;
 	--color-black: #000000;
@@ -14,9 +16,10 @@
 	--color-gray-light: #F5F7FA;
 	--color-gray-dark: #D4DAE5;
 
-	--color-blue-elastic: #0077CC;
+	--color-blue-elastic: #0B64DD;
 	--color-blue-sky: #36B9FF;
 	--color-blue-midnight: #20377D;
+	--color-blue-developer: #101C3F;
 
 	--color-red-light: #FB6363;
 	--color-red-dark: #D93333;

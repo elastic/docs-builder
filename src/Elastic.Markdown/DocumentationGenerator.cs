@@ -72,7 +72,6 @@ public class DocumentationGenerator
 
 		await ExtractEmbeddedStaticResources(ctx);
 
-
 		_logger.LogInformation($"Completing diagnostics channel");
 		Context.Collector.Channel.TryComplete();
 
@@ -92,6 +91,7 @@ public class DocumentationGenerator
 	{
 		var processedFileCount = 0;
 		var exceptionCount = 0;
+		var totalFileCount = DocumentationSet.Files.Count;
 		_ = Context.Collector.StartAsync(ctx);
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
@@ -112,8 +112,9 @@ public class DocumentationGenerator
 			}
 
 			if (processedFiles % 100 == 0)
-				_logger.LogInformation($"-> Handled {processedFiles} files");
+				_logger.LogInformation($"-> Processed {processedFiles}/{totalFileCount} files");
 		});
+		_logger.LogInformation($"-> Processed {processedFileCount}/{totalFileCount} files");
 	}
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
@@ -149,7 +150,7 @@ public class DocumentationGenerator
 				return;
 		}
 
-		_logger.LogTrace($"{file.SourceFile.FullName}");
+		_logger.LogTrace($"--> {file.SourceFile.FullName}");
 		var outputFile = OutputFile(file.RelativePath);
 		if (file is MarkdownFile markdown)
 			await HtmlWriter.WriteAsync(outputFile, markdown, token);

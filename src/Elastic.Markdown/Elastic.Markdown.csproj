@@ -44,7 +44,8 @@
       <EmbeddedResource Include="_static/*.js.map" Watch="false" />
       <EmbeddedResource Include="_static/*.css" Watch="false" />
       <EmbeddedResource Include="_static/*.css.map" Watch="false" />
-      <EmbeddedResource Include="_static/*.svg" />
+      <EmbeddedResource Include="_static/*.svg" Watch="false" />
+      <EmbeddedResource Include="_static/*.woff2" Watch="false" />
     </ItemGroup>
   </Target>
 
