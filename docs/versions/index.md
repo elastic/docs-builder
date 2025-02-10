@@ -19,6 +19,10 @@ Our approach might change as additional documentation features become available.
 
 ## Basic concepts and principles
 
+* [Versioning facets](#versioning-facets)
+* [Defaults and hierarchy](#defaults-and-hierarchy)
+* [Versions and lifecycle states](#versions-and-lifecycle-states)
+
 ### Versioning facets
 There are multiple facets to versioning that we need to consider: 
 
