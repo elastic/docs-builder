@@ -9,7 +9,7 @@
 		{
 			var f = file.File;
 			var isCurrent = f == Model.CurrentDocument;
-			<li class="block ml-2 pl-2 w-full border-l-1 border-l-gray-200 group/li @(isCurrent ? "current" : string.Empty)">
+			<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li @(isCurrent ? "current" : string.Empty)">
 				<div class="flex">
 					<div class="w-5">
 					</div>
@@ -32,7 +32,7 @@
 			var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
 			var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
 			<li class="flex flex-wrap ml-2 pl-2 @(g.Depth > 1 ? "border-l-1 border-l-gray-200" : string.Empty)">
-				<label for="@slug" class="peer group/label flex items-center mr-1">
+				<label for="@slug" class="peer group/label flex items-center mr-1 overflow-hidden">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -58,7 +58,7 @@
 				</label>
 				@if (g.NavigationItems.Count > 0)
 				{
-					<ul class="h-0 grow overflow-hidden peer-has-checked:h-auto w-full overflow-hidden" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
+					<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
 						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 						{
 							Level = g.Depth,
