@@ -14,13 +14,17 @@ internal static partial class InterpolationRegex
 
 public static class Interpolation
 {
-	public static bool ReplaceSubstitutions(this ReadOnlySpan<char> span, Dictionary<string, string>? properties, out string? replacement)
+	public static bool ReplaceSubstitutions(this ReadOnlySpan<char> span, IReadOnlyDictionary<string, string>? properties, out string? replacement)
 	{
 		replacement = null;
 		if (span.IndexOf("}}") < 0)
 			return false;
 
-		var substitutions = properties ?? new();
+		if (properties is null || properties.Count == 0)
+			return false;
+
+		var substitutions = properties as Dictionary<string, string>
+		                    ?? new Dictionary<string, string>(properties, StringComparer.OrdinalIgnoreCase);
 		if (substitutions.Count == 0)
 			return false;
 
