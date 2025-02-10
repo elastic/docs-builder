@@ -20,6 +20,7 @@ external_hosts:
   - commonmark.org
   - github.io
   - github.com
+  - elastic.dev
 exclude:
   - '_*.md'
 subs:
