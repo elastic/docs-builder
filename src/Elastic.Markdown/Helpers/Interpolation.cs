@@ -54,7 +54,7 @@ public static class Interpolation
 	public static bool ReplaceSubstitutions(
 		this ReadOnlySpan<char> span,
 		IReadOnlyDictionary<string, string>[] properties,
-		[NotNullWhen(true)]out string? replacement
+		[NotNullWhen(true)] out string? replacement
 	)
 	{
 		replacement = null;

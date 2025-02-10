@@ -1,8 +1,9 @@
 ---
 sub:
   x: "Variable"
+navigation_title: "Testing nesting and {{x}}"
 ---
-# Testing Nesting
+# Testing Nesting and {{x}}
 
 The files in this directory are used for testing purposes. Do not edit these files unless you are working on tests.
 
