@@ -42,8 +42,8 @@ jobs:
 
 1. The naming is important so that the `docs-deploy` workflow is triggered.
 2. You can omit the `push` event if you only want to build the docs on PRs.
-3. This should be the path to your docs folder.
-4. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+3. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+4. This should be the path to your docs folder.
 
 
 ::::
