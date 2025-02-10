@@ -24,7 +24,7 @@ public static class Interpolation
 			return false;
 
 		var substitutions = properties as Dictionary<string, string>
-		                    ?? new Dictionary<string, string>(properties, StringComparer.OrdinalIgnoreCase);
+							?? new Dictionary<string, string>(properties, StringComparer.OrdinalIgnoreCase);
 		if (substitutions.Count == 0)
 			return false;
 
