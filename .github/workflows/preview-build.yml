@@ -78,7 +78,7 @@ jobs:
         id: metadata
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha ||github.sha }}
+          REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           SHOULD_DEPLOY: ${{ github.event_name == 'pull_request' && steps.check-files.outputs.any_changed || 'true' }}
         run: |
           cat << EOF > deployment_metadata.json
