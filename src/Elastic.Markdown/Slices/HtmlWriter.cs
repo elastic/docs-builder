@@ -28,6 +28,9 @@ public class HtmlWriter
 	public ILoggerFactory LoggerFactory { get; }
 	public ServiceProvider ServiceProvider { get; }
 
+	private Task<string> RenderEmptyString(MarkdownFile markdown, Cancel ctx = default) =>
+		Task.FromResult(string.Empty);
+
 	private async Task<string> RenderNavigation(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var slice = Layout._TocTree.Create(new NavigationViewModel

@@ -25,21 +25,25 @@ This way you only build and deploy the docs when there are changes to the docs a
 name: docs-build <1>
 
 on:
+  push: <2>
+    branches: 
+        - main 
   pull_request: ~
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-build.yml <2>
+    uses: elastic/docs-builder/.github/workflows/preview-build.yml <3>
     with:
-      path-pattern: docs/** <3>
+      path-pattern: docs/** <4>
     permissions:
       contents: read
       pull-requests: read
 ```
 
 1. The naming is important so that the `docs-deploy` workflow is triggered.
-2. This should be the path to your docs folder.
+2. You can omit the `push` event if you only want to build the docs on PRs.
 3. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+4. This should be the path to your docs folder.
 
 
 ::::

@@ -100,7 +100,7 @@ $"""
 			{ "docs/index.md", new MockFileData(documentContents) }
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Paths.Root.FullName
+			CurrentDirectory = Paths.Root.FullName,
 		});
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
@@ -112,7 +112,8 @@ $"""
 		Collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(FileSystem)
 		{
-			Collector = Collector
+			Collector = Collector,
+			UrlPathPrefix = "/docs"
 		};
 		Set = new DocumentationSet(context);
 		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();

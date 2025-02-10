@@ -29,6 +29,9 @@ categories:
     labels:
       - 'automation' # When automation is updated
       - 'ci' # When automation is updated
+  - title: '🎨 Redesign' # Temporary category while we're redesigning the docs
+    labels:
+      - 'redesign' # When it's a redesign feature
 exclude-labels:
   - 'changelog:skip' # When a PR should be excluded from the changelog
 version-resolver:

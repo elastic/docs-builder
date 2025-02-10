@@ -155,7 +155,7 @@ public class CommentBlockParser : BlockParser
 	{
 		if (!processor.TrackTrivia)
 		{
-			var heading = (HeadingBlock)block;
+			var heading = (CommentBlock)block;
 			heading.Lines.Trim();
 		}
 

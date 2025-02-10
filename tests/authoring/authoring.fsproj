@@ -46,6 +46,7 @@
 
   <ItemGroup>
     <Compile Include="Blocks\CodeBlocks\CodeBlocks.fs" />
+    <Compile Include="Blocks\Lists.fs" />
   </ItemGroup>
 
 </Project>
