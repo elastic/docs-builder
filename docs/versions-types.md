@@ -29,6 +29,8 @@ There are multiple facets to versioning that we need to consider:
 
   All deployment types other than **Serverless** use the **Stack <version>** flavor of Elasticsearch / Kibana.
 
+* **Project type:** The Serverless project types where a feature can be used.
+
 % TODO: Final term for "Self-managed"
 * **Other versioning schemes:** Elastic products or tools with a versioned component, where stack versioning is not followed. 
   
