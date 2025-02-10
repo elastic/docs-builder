@@ -120,7 +120,7 @@ public class NestedDirectiveWithListTests(ITestOutputHelper output) : DirectiveT
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
 	                                              	Hello, World!
