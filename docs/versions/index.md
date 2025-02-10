@@ -26,11 +26,11 @@ Our approach might change as additional documentation features become available.
 ### Versioning facets
 There are multiple facets to versioning that we need to consider: 
 
-* **Elasticsearch / Kibana flavor:** The feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Stack Serverless") or **Stack <version>**
+* **Elasticsearch / Kibana flavor:** The feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Cloud Serverless") or **Stack <version>**
 
 % TODO: Final term for "Stack"
 * **Deployment type:** The way Elastic is deployed: 
-  * **Serverless** (sometimes "Elastic Stack Serverless")
+  * **Serverless** (sometimes "Elastic Cloud Serverless")
   * **Elastic Cloud Hosted**
   * **Elastic Cloud on Kubernetes**
   * **Elastic Cloud Enterprise**
