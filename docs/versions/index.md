@@ -108,8 +108,8 @@ Choose from:
 * [Inline `applies` tags](/versions/content-patterns.md#inline-applies-tags) (currently just prose)
 * [Tabs](/versions/content-patterns.md#tabs)
 * [Sibling bullets](/versions/content-patterns.md#sibling-bullets)
-* [Prose (inline)](/versions/content-patterns.md#prose-inline)
 * [Callouts](/versions/content-patterns.md#callouts)
+* [Prose (inline)](/versions/content-patterns.md#prose-inline)
 * [Prose (explanatory paragraphs and sections)](/versions/content-patterns.md#prose-explanatory-paragraphs-and-sections)
 * [Sibling pages](/versions/content-patterns.md#sibling-pages)
 

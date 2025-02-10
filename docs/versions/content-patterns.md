@@ -19,8 +19,8 @@ Choose from:
 * [Inline `applies` tags](#inline-applies-tags) (currently just prose)
 * [Tabs](#tabs)
 * [Sibling bullets](#sibling-bullets)
-* [Prose (inline)](#prose-inline)
 * [Callouts](#callouts)
+* [Prose (inline)](#prose-inline)
 * [Prose (explanatory paragraphs and sections)](#prose-explanatory-paragraphs-and-sections)
 * [Sibling pages](#sibling-pages)
 
@@ -202,23 +202,6 @@ The maximum number of spaces that you can have differs by [what do we call this]
 :::
 ::::
 
-## Prose (inline)
-
-**Use case:** Clarifying or secondary information
-
-**Number to use:** ~ once per section (use your judgement)
-
-**When to use:** Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
-
-Sometimes, you can just preface a paragraph with version info. 
-
-### Example
-
-If you're managing a Stack v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
-
-When a role is assigned to *All Spaces*, you can’t remove its access from the space settings. You must instead edit the role to give it more granular access to individual spaces.
-
-
 ## Callouts
 
 **Use case:** Happy differences, clarifications
@@ -239,6 +222,22 @@ If there’s a terminology change or other minor change (especially where x equa
 
   :::{note}
   In Stack versions 9.0 and lower, **Spaces** are referred to as **Places**.
+
+## Prose (inline)
+
+**Use case:** Clarifying or secondary information
+
+**Number to use:** ~ once per section (use your judgement)
+
+**When to use:** Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
+
+Sometimes, you can just preface a paragraph with version info. 
+
+### Example
+
+If you're managing a Stack v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
+
+When a role is assigned to *All Spaces*, you can’t remove its access from the space settings. You must instead edit the role to give it more granular access to individual spaces.
 
 ## Prose (explanatory paragraphs and sections)
 
