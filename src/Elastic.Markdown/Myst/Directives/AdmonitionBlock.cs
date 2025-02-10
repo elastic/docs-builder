@@ -20,10 +20,6 @@ public class AdmonitionBlock : DirectiveBlock
 
 		var t = Admonition;
 		var title = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(t);
-		if (_admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
-			title = Arguments;
-		else if (!string.IsNullOrEmpty(Arguments))
-			title += $" {Arguments}";
 		Title = title;
 
 	}
@@ -44,6 +40,10 @@ public class AdmonitionBlock : DirectiveBlock
 		if (DropdownOpen.HasValue)
 			Classes = "dropdown";
 
+		if (_admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
+			Title = Arguments;
+		else if (!string.IsNullOrEmpty(Arguments))
+			Title += $" {Arguments}";
 		Title = Title.ReplaceSubstitutions(context);
 	}
 }
