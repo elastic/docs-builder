@@ -13,6 +13,7 @@ using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.IO;
 
@@ -108,70 +109,54 @@ public record MarkdownFile : DocumentationFile
 		return document;
 	}
 
+	private IReadOnlyDictionary<string, string> GetSubstitutions()
+	{
+		var globalSubstitutions = MarkdownParser.Configuration.Substitutions;
+		var fileSubstitutions = YamlFrontMatter?.Properties;
+		if (fileSubstitutions is not { Count: >= 0 })
+			return globalSubstitutions;
+
+		var allProperties = new Dictionary<string, string>(fileSubstitutions);
+		foreach (var (key, value) in globalSubstitutions)
+			allProperties[key] = value;
+		return allProperties;
+	}
+
 	private void ReadDocumentInstructions(MarkdownDocument document)
 	{
-
 		Title = document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
-		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
+		YamlFrontMatter = ProcessYamlFrontMatter(document);
+		NavigationTitle = YamlFrontMatter.NavigationTitle;
+
+		var subs = GetSubstitutions();
+
+		if (!string.IsNullOrEmpty(NavigationTitle))
 		{
-			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			YamlFrontMatter = ReadYamlFrontMatter(raw);
-
-			// TODO remove when migration tool and our demo content sets are updated
-			var deprecatedTitle = YamlFrontMatter.Title;
-			if (!string.IsNullOrEmpty(deprecatedTitle))
-			{
-				Collector.EmitWarning(FilePath, "'title' is no longer supported in yaml frontmatter please use a level 1 header instead.");
-				// TODO remove fallback once migration is over and we fully deprecate front matter titles
-				if (string.IsNullOrEmpty(Title))
-					Title = deprecatedTitle;
-			}
-
-
-			// set title on yaml front matter manually.
-			// frontmatter gets passed around as page information throughout
-			YamlFrontMatter.Title = Title;
-
-			NavigationTitle = YamlFrontMatter.NavigationTitle;
-			if (!string.IsNullOrEmpty(NavigationTitle))
-			{
-				var props = MarkdownParser.Configuration.Substitutions;
-				var properties = YamlFrontMatter.Properties;
-				if (properties is { Count: >= 0 } local)
-				{
-					var allProperties = new Dictionary<string, string>(local);
-					foreach (var (key, value) in props)
-						allProperties[key] = value;
-					if (NavigationTitle.AsSpan().ReplaceSubstitutions(allProperties, out var replacement))
-						NavigationTitle = replacement;
-				}
-				else
-				{
-					if (NavigationTitle.AsSpan().ReplaceSubstitutions(properties, out var replacement))
-						NavigationTitle = replacement;
-				}
-			}
+			if (NavigationTitle.AsSpan().ReplaceSubstitutions(subs, out var replacement))
+				NavigationTitle = replacement;
 		}
-		else
-			YamlFrontMatter = new YamlFrontMatter { Title = Title };
 
 		if (string.IsNullOrEmpty(Title))
 		{
 			Title = RelativePath;
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		}
+		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
+			Title = replacement;
 
 		var contents = document
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string))
-			.Select(h => new PageTocItem
+			.Select(h =>
 			{
-				Heading = h.Item1!.StripMarkdown(),
-				Slug = (h.Item2 ?? h.Item1).Slugify()
+				var header = h.Item1!.StripMarkdown();
+				if (header.AsSpan().ReplaceSubstitutions(subs, out var replacement))
+					header = replacement;
+				return new PageTocItem { Heading = header!, Slug = (h.Item2 ?? header).Slugify() };
 			})
 			.ToList();
 
@@ -192,6 +177,29 @@ public record MarkdownFile : DocumentationFile
 			_anchors.Add(label);
 
 		_instructionsParsed = true;
+	}
+
+	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
+	{
+		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
+			return new YamlFrontMatter { Title = Title };
+
+		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+		var fm = ReadYamlFrontMatter(raw);
+
+		// TODO remove when migration tool and our demo content sets are updated
+		var deprecatedTitle = fm.Title;
+		if (!string.IsNullOrEmpty(deprecatedTitle))
+		{
+			Collector.EmitWarning(FilePath, "'title' is no longer supported in yaml frontmatter please use a level 1 header instead.");
+			// TODO remove fallback once migration is over and we fully deprecate front matter titles
+			if (string.IsNullOrEmpty(Title))
+				Title = deprecatedTitle;
+		}
+		// set title on yaml front matter manually.
+		// frontmatter gets passed around as page information throughout
+		fm.Title = Title;
+		return fm;
 	}
 
 	private YamlFrontMatter ReadYamlFrontMatter(string raw)

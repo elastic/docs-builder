@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Slices.Directives;
 
 namespace Elastic.Markdown.Myst.Directives;
@@ -44,7 +45,7 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 		if (string.IsNullOrWhiteSpace(Arguments))
 			this.EmitError("{tab-item} requires an argument to name the tab.");
 
-		Title = Arguments ?? "{undefined}";
+		Title = (Arguments ?? "{undefined}").ReplaceSubstitutions(context);
 		Index = Parent!.IndexOf(this);
 
 		var tabSet = Parent as TabSetBlock;

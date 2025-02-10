@@ -1,4 +1,4 @@
-This is a snippet included on "{{page_title}}".
+This is a snippet included on "{{context.page_title}}".
 
 :::{tip}
 This is a snippet
