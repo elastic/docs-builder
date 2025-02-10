@@ -26,7 +26,7 @@ name: docs-build <1>
 
 on:
   push: <2>
-    - branches: 
+    branches: 
         - main 
   pull_request: ~
 
