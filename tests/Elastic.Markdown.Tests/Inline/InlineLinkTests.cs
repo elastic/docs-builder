@@ -226,10 +226,10 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 		Html.TrimEnd().Should().Be("""
 		<p>Links:</p>
 		<ul>
-		<li> <a href="/docs/testing/req">Special Requirements</a></li>
+		<li><a href="/docs/testing/req">Special Requirements</a></li>
 		</ul>
 		<ul>
-		<li> <a href="/docs//testing/req">Special Requirements</a></li>
+		<li><a href="/docs/testing/req">Special Requirements</a></li>
 		</ul>
 		""");
 
