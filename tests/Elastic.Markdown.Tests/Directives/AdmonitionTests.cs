@@ -149,7 +149,7 @@ public class NestedDirectiveWithListTests2(ITestOutputHelper output) : Directive
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
 	                                              	Hello, World!
@@ -177,7 +177,7 @@ public class NestedDirectiveWithListTests3(ITestOutputHelper output) : Directive
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
 	                                              	Hello, World!
