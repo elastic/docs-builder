@@ -51,7 +51,7 @@ jobs:
         if: github.event_name != 'pull_request' || steps.check-files.outputs.any_changed == 'true'
         uses: actions/checkout@v4
         with: 
-          persist-credentials: false
+          persist-credentials: false # test
           
       - name: Generate path prefix
         env:
