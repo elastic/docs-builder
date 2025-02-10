@@ -93,7 +93,7 @@ toc:
       - file: tagged_regions.md
       - file: titles.md
   - folder: versions
-  - children:
+    children:
       - file: index.md
       - file: content-patterns.md
   # nested TOCs are only allowed from docset.yml
