@@ -142,6 +142,8 @@ public record MarkdownFile : DocumentationFile
 			Title = RelativePath;
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		}
+		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
+			Title = replacement;
 
 		var contents = document
 			.Descendants<HeadingBlock>()
