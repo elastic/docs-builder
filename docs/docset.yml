@@ -25,6 +25,8 @@ exclude:
   - '_*.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
+  stack-short: Stack
+  serverless-short: Serverless
 toc:
   - file: index.md
   - hidden: developer-notes.md

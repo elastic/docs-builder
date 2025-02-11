@@ -253,7 +253,7 @@ service:
 5. Hostname and port of the APM Server endpoint. For example, elastic-apm-server:8200.
 6. Credential for Elastic APM secret token authorization (Authorization: "Bearer a_secret_token") or API key authorization (Authorization: "ApiKey an_api_key").
 7. Environment-specific configuration parameters can be conveniently passed in as environment variables documented here (e.g. ELASTIC_APM_SERVER_ENDPOINT and ELASTIC_APM_SECRET_TOKEN).
-8. [preview] To send OpenTelemetry logs to {stack} version 8.0+, declare a logs pipeline.
+8. [preview] To send OpenTelemetry logs to {stack-short} version 8.0+, declare a logs pipeline.
 """
 
 	)
