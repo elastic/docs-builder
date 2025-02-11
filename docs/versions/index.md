@@ -27,29 +27,19 @@ Our approach might change as additional documentation features become available.
 ### Versioning facets
 There are multiple facets to versioning that we need to consider: 
 
-* **Stack flavor:** The Elasticsearch or Kibana feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Cloud Serverless") or **{{stack-short}} <version>**
-
-% TODO: Final term for "Stack"
-* **Deployment type:** The way Elastic is deployed: 
-  * **Serverless** (sometimes "Elastic Cloud Serverless")
-  * **Elastic Cloud Hosted**
-  * **Elastic Cloud on Kubernetes**
-  * **Elastic Cloud Enterprise**
-  * **Self-managed**
-
-  All deployment types other than **Serverless** are used to run a **{{stack-short}} <version>** flavor of Elasticsearch / Kibana. ECK and ECE also have their own versioning. For example, one can run a v9.0.0 deployment on ECE 4.0.
-
-% TODO: Final term for "Self-managed"
-
-* **Project type:** The Serverless project types where a feature can be used - either **Elasticsearch**, **Security**, or **Observability**.
-
-* **Other versioning schemes:** Elastic products or tools with a versioned component, where stack versioning is not followed. 
-  
-  E.g. clients, Elastic Common Schema
+| Facet | Description |
+| --- | --- |
+| **Stack flavor** | The Elasticsearch or Kibana feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Cloud Serverless") or **{{stack-short}} <version>** |
+| **Deployment type** | The way Elastic is deployed:<br><br>* **Serverless** (sometimes "Elastic Cloud Serverless")<br>* **Elastic Cloud Hosted**<br>* **Elastic Cloud on Kubernetes**<br>* **Elastic Cloud Enterprise**<br>* **Self-managed**<br><br>All deployment types other than **Serverless** are used to run a **{{stack-short}} <version>** flavor of Elasticsearch / Kibana. ECK and ECE also have their own versioning. For example, one can run a v9.0.0 deployment on ECE 4.0.
+| **Project type** | The Serverless project types where a feature can be used - either **Elasticsearch**, **Security**, or **Observability** |
+| **Other versioning schemes** | Elastic products or tools with a versioned component, where stack versioning is not followed.<br><br>E.g. clients, Elastic Common Schema |
 
 :::{warning}
 The self-managed deployment type and support for products or platforms other than {{stack-short}} does not exist yet. Contribute to the discussion in [#452](https://github.com/elastic/docs-builder/discussions/452)
 :::
+
+% TODO: Final term for "Stack"
+% TODO: Final term for "Self-managed"
 
 **How many facets do I need to use?**
 
