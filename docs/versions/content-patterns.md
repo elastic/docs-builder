@@ -225,7 +225,7 @@ If there’s a terminology change or other minor change (especially where x equa
 * *In a **Spaces** overview*:
 
   :::{note}
-  In Stack versions 9.0 and lower, **Spaces** are referred to as **Places**.
+  In {{stack}} versions 9.0 and earlier, **Spaces** are referred to as **Places**.
 
 ## Prose (inline)
 
