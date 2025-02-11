@@ -58,7 +58,7 @@ The role of these labels is providing a trust signal that the reader is viewing 
 
 * Depending on what you're documenting, you might need to include information from multiple facets. For example, when relevant features exist at both the stack and the deployment level, both of these groups might be used together (e.g. security, user management, and trust features differ both at the deployment level and at the stack version level).
 
-* In some sections, such as **Explore and analyze**, features generally only differ by Elasticsearch flavor. In these cases, you can choose to include only this facet on the page.
+* In some sections, such as **Explore and analyze**, features generally only differ by stack flavor. In these cases, you can choose to include only this facet on the page.
 
 ### Defaults and hierarchy 
 
