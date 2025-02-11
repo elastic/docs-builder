@@ -36,6 +36,11 @@ There are multiple facets to versioning that we need to consider:
   * **Elastic Cloud Enterprise**
   * **Self-managed**
 
+:::{warning}
+The self-managed deployment type and support for products or platforms other than Elastic Stack does not exist yet. Contribute to the discussion in [#452](https://github.com/elastic/docs-builder/discussions/452)
+:::
+
+
   All deployment types other than **Serverless** use the **Stack <version>** flavor of Elasticsearch / Kibana.
 
 % TODO: Final term for "Self-managed"
