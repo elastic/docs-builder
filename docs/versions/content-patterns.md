@@ -241,8 +241,6 @@ Sometimes, you can just preface a paragraph with version info.
 
 If you're managing a Stack v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
 
-When a role is assigned to *All Spaces*, you can’t remove its access from the space settings. You must instead edit the role to give it more granular access to individual spaces.
-
 ## Prose (explanatory paragraphs and sections)
 
 **Use case**: Differences with a "why"
