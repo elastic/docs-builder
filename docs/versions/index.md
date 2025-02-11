@@ -41,7 +41,7 @@ The self-managed deployment type and support for products or platforms other tha
 :::
 
 
-  All deployment types other than **Serverless** use the **Stack <version>** flavor of Elasticsearch / Kibana.
+  All deployment types other than **Serverless** are used to run a **Stack <version>** flavor of Elasticsearch / Kibana. ECK and ECE also have their own versioning. For example, one can run a v9.0.0 deployment on ECE 4.0.
 
 % TODO: Final term for "Self-managed"
 
