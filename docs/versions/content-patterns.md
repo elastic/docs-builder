@@ -6,6 +6,10 @@ applies:
   hosted: all
   eck: all
   ece: all
+subs:
+  stack: "Elastic Stack"
+  serverless-tab: "Elastic Cloud Serverless"
+  stack-all-tab: "All Elastic Stack"
 ---
 # Version content patterns
 
@@ -132,7 +136,7 @@ To create a space:
 :::::{tab-set}
 :group: stack-serverless
 
-::::{tab-item} Serverless
+::::{tab-item} {{serverless-tab}}
 :sync: serverless
 
 1. Click **Create space** or select the space you want to edit.
@@ -145,7 +149,7 @@ To create a space:
 4. Save the space.
 ::::
 
-::::{tab-item} Stack v9
+::::{tab-item} {{stack-all-tab}}
 :sync: stack
 
 1. Select **Create space** and provide a name, description, and URL identifier.
