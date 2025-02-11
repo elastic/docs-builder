@@ -4,9 +4,8 @@ This guide will help you set up docs previews for your GitHub repository.
 
 ## GitHub Workflows
 
-The docs preview system consists of three GitHub Workflows:
+The docs preview system consists of two GitHub Workflows:
 - [`docs-build.yml`](#build): **Build** the docs on a PR
-- [`docs-deploy.yml`](#deploy): **Deploy** the docs to our preview environment
 - [`docs-cleanup.yml`](#cleanup): **Cleanup** the docs after a PR is merged or closed
 
 
@@ -22,65 +21,31 @@ This way you only build and deploy the docs when there are changes to the docs a
 
 ```yaml
 ---
-name: docs-build <1>
+name: docs-build
 
 on:
-  push: <2>
+  push:
     branches: 
         - main 
-  pull_request: ~
+  pull_request_target: ~
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-build.yml <3>
+    uses: elastic/docs-builder/.github/workflows/preview-build.yml <2>
     with:
-      path-pattern: docs/** <4>
+      path-pattern: docs/** <3>
     permissions:
+      id-token: write
+      deployments: write
       contents: read
       pull-requests: read
 ```
 
-1. The naming is important so that the `docs-deploy` workflow is triggered.
-2. You can omit the `push` event if you only want to build the docs on PRs.
-3. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
-4. This should be the path to your docs folder.
-
+1. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+2. This should be the path to your docs folder.
 
 ::::
 
-### Deploy
-
-This workflow is triggered when the `docs-build` workflow is completed. The underlying reusable workflow, downloads the artifact and deploys the docs to our preview environment.
-
-
-::::{dropdown} .github/workflows/docs-deploy.yml
-:open:
-
-```yaml
----
-name: docs-deploy
-
-on:
-  workflow_run:
-    workflows: 
-      - docs-build <1>
-    types:
-      - completed
-
-jobs:
-  docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-deploy.yml <2>
-    permissions:
-      contents: none <3>
-      id-token: write
-      deployments: write
-      actions: read
-```
-1. The name of the previously mentioned `docs-build` workflow.
-2. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-deploy.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-deploy.yml)
-3. No need to read the code.
-
-::::
 
 ### Cleanup
 

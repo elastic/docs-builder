@@ -23,7 +23,8 @@ jobs:
             const deployments = await github.rest.repos.listDeployments({
               owner,
               repo,
-              environment: `docs-preview-${context.issue.number}`
+              environment: 'docs-preview',
+              ref: context.payload.pull_request.head.ref,
             });
             core.setOutput('is-empty', deployments.data.length === 0)
             for (const deployment of deployments.data) {
