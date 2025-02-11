@@ -129,6 +129,9 @@ Try not to include information surrounding a procedure in the tabs. Make the tab
 
 Consider breaking up procedures into sets of procedures if only one section differs between contexts.
 
+:::{tip}
+For consistency, use [substitutions](/syntax/substitutions.md) for the tab labels.
+:::
 ### Example
 
 To create a space: 
