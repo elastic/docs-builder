@@ -60,7 +60,7 @@ However, we should all display our flavors and versions in the same order for co
 **Flavors:**
 
 1. Serverless
-2. Stack
+2. Stack <version>
 
 **Deployment types:**
 
