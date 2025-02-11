@@ -26,7 +26,7 @@ name: docs-build
 on:
   push:
     branches: 
-        - main 
+        - main <1>
   pull_request_target: ~
 
 jobs:
@@ -41,8 +41,9 @@ jobs:
       pull-requests: read
 ```
 
-1. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
-2. This should be the path to your docs folder.
+1. You need to adjust this to your default branch. E.g `main`, `master`, etc.
+2. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+3. his should be the path to your docs folder.
 
 ::::
 
