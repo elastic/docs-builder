@@ -43,7 +43,7 @@ Add tags for all **versioning facets** relevant to the page.
 See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-states) to learn when to specify versions in these tags.
 
 ### Example
-[Manage your Cloud organization](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/cloud-organization.html)
+[Manage your Cloud organization](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/cloud-organization)
 
 ### Section/heading-level `applies` tags
 :::{applies}
