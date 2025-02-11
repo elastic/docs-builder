@@ -6,7 +6,6 @@ using System.IO.Abstractions.TestingHelpers;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -67,7 +66,7 @@ public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlo
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req.html#hint_ref">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#hint_ref">Sub Requirements</a></p>"""
 		);
 
 	[Fact]

@@ -6,7 +6,6 @@ using Documentation.Mover;
 using Elastic.Markdown.Tests.DocSet;
 using FluentAssertions;
 
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Mover;
 
@@ -20,7 +19,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		Directory.SetCurrentDirectory(workingDirectory!);
 
 		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
-		await mover.Execute("testing/mover/first-page.md", "new-folder/hello-world.md", true);
+		await mover.Execute("testing/mover/first-page.md", "new-folder/hello-world.md", true, TestContext.Current.CancellationToken);
 
 		mover.Changes.Should().HaveCount(1);
 		var changeSet = mover.Changes.First();
@@ -49,7 +48,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		Directory.SetCurrentDirectory(workingDirectory!);
 
 		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
-		await mover.Execute("testing/mover/first-page.md", "new-folder", true);
+		await mover.Execute("testing/mover/first-page.md", "new-folder", true, TestContext.Current.CancellationToken);
 
 		mover.Changes.Should().HaveCount(1);
 		var changeSet = mover.Changes.First();
@@ -77,7 +76,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		Directory.SetCurrentDirectory(workingDirectory!);
 
 		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
-		await mover.Execute("testing/mover", "new-folder", true);
+		await mover.Execute("testing/mover", "new-folder", true, TestContext.Current.CancellationToken);
 
 		mover.Changes.Should().HaveCount(2);
 		var changeSet = mover.LinkModifications.FirstOrDefault(k => k.Key.From.Name == "first-page.md").Key;

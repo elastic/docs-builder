@@ -243,7 +243,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			url = GetRootRelativePath(context, file);
 
 		if (url.EndsWith(".md"))
-			url = Path.ChangeExtension(url, ".html");
+		{
+			url = url.EndsWith("/index.md")
+				? url.Remove(url.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
+				: url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
+		}
 
 		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";

@@ -70,7 +70,9 @@ public record MarkdownFile : DocumentationFile
 
 	public string FilePath { get; }
 	public string FileName { get; }
-	public string Url => $"{UrlPathPrefix}/{RelativePath.Replace(".md", ".html")}";
+	public string Url => Path.GetFileName(RelativePath) == "index.md"
+		? $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
+		: $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf(".md", StringComparison.Ordinal), 3)}";
 
 	public int NavigationIndex { get; internal set; } = -1;
 

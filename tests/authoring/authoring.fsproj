@@ -2,21 +2,28 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+
     <IsPackable>false</IsPackable>
-    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+
+    <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
+    <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0"/>
+    <PackageReference Include="xunit.v3" Version="1.1.0"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2"/>
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1"/>
+
     <PackageReference Include="coverlet.collector" Version="6.0.2"/>
     <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1"/>
-    <PackageReference Include="xunit.v3" Version="1.0.1"/>
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="21.0.29"/>
     <PackageReference Include="FsUnit.xUnit" Version="7.0.1"/>
     <PackageReference Include="AngleSharp.Diffing" Version="1.0.0"/>
     <PackageReference Include="DiffPlex" Version="1.7.2"/>
-    <PackageReference Include="Unquote" Version="7.0.1" />
-    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
+    <PackageReference Include="Unquote" Version="7.0.1"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -24,29 +31,29 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Framework\TestValues.fs" />
-    <Compile Include="Framework\Setup.fs" />
-    <Compile Include="Framework\MarkdownResultsAssertions.fs" />
-    <Compile Include="Framework\HtmlAssertions.fs" />
-    <Compile Include="Framework\ErrorCollectorAssertions.fs" />
-    <Compile Include="Framework\MarkdownDocumentAssertions.fs" />
-    <Compile Include="Inline\Substitutions.fs" />
+    <Compile Include="Framework\TestValues.fs"/>
+    <Compile Include="Framework\Setup.fs"/>
+    <Compile Include="Framework\MarkdownResultsAssertions.fs"/>
+    <Compile Include="Framework\HtmlAssertions.fs"/>
+    <Compile Include="Framework\ErrorCollectorAssertions.fs"/>
+    <Compile Include="Framework\MarkdownDocumentAssertions.fs"/>
+    <Compile Include="Inline\Substitutions.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Inline\Comments.fs" />
-    <Compile Include="Inline\InlineImages.fs" />
-    <Compile Include="Inline\InlineAnchors.fs" />
+    <Compile Include="Inline\Comments.fs"/>
+    <Compile Include="Inline\InlineImages.fs"/>
+    <Compile Include="Inline\InlineAnchors.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Container\DefinitionLists.fs" />
-    <Compile Include="Generator\LinkReferenceFile.fs" />
+    <Compile Include="Container\DefinitionLists.fs"/>
+    <Compile Include="Generator\LinkReferenceFile.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Blocks\CodeBlocks\CodeBlocks.fs" />
-    <Compile Include="Blocks\Lists.fs" />
+    <Compile Include="Blocks\CodeBlocks\CodeBlocks.fs"/>
+    <Compile Include="Blocks\Lists.fs"/>
   </ItemGroup>
 
 </Project>

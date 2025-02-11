@@ -8,7 +8,6 @@ using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -18,7 +17,7 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -37,7 +36,7 @@ public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageI
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -56,7 +55,7 @@ public abstract class InlineTest<TDirective>(ITestOutputHelper output, [Language
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -123,7 +122,7 @@ $"""
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
 
-	public virtual async Task InitializeAsync()
+	public virtual async ValueTask InitializeAsync()
 	{
 		_ = Collector.StartAsync(default);
 
@@ -140,6 +139,6 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public Task DisposeAsync() => Task.CompletedTask;
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
 }
