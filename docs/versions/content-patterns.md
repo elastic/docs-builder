@@ -48,11 +48,7 @@ See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-st
 **Example**
 See above
 
-## Inline `applies` tags
-
-::::{warning}
-This feature doesn't currently work - we're working around it by using prose.
-::::
+## List item suffixes
 
 **Use case:** When features in a **list of features** are exclusive to a specific context, or were introduced in a specific version
 
@@ -61,9 +57,9 @@ This feature doesn't currently work - we're working around it by using prose.
 *  Breaking up the list by facet
 *  Using labels that don't have version / lifecycle information and deferring that information to the page or section for the feature
   
-Currently, we don't have inline `applies` tags. Instead, append the information to the bullet item in bolded square brackets `**[]**`. Add all information within a single set of square brackets. The brackets should appear after any final punctuation. 
+**Approach:** 
 
-Because this approach is less clear, consider using words like `only` to help people to understand that this information indicates the applicability of a feature.
+Append the information to the bullet item in bolded square brackets `**[]**`. Add all information within a single set of square brackets. The brackets should appear after any final punctuation. Consider using words like `only` to help people to understand that this information indicates the applicability of a feature.
 
 ### Example
 
@@ -214,34 +210,24 @@ If there’s a terminology change or other minor change (especially where x equa
   :::{note}
   In {{stack-short}} versions 9.0 and earlier, **Spaces** are referred to as **Places**.
 
-## Prose (inline)
+## Prose
 
-**Use case:** Clarifying or secondary information
+**Use case**: Clarifying or secondary information, differences with a "why"
 
-**Number to use:** ~ once per section (use your judgement)
+**When to use:** 
+* Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
+* Comparative overviews
 
-**When to use:** Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
+In some cases, you might want to add a paragraph specific to one version or another in prose to clarify behavior or terminology. 
 
-Sometimes, you can just preface a paragraph with version info. 
-
-### Example
-
-If you're managing a {{stack-short}} v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
-
-## Prose (explanatory paragraphs and sections)
-
-**Use case**: Differences with a "why"
-
-**When to use:** Comparative overviews
-
-Sometimes, a close explanation of the differences between things helps people to understand how something works, or why something behaves the way it does. Compare and contrast differences in paragraphs when the explanation helps people to use our features effectively.
+In cases where there are significant differences between contexts, close explanation of the differences helps people to understand how something works, or why something behaves the way it does. Compare and contrast differences in paragraphs when the explanation helps people to use our features effectively.
 
 You also might do this to compare approaches between deployment types, when [sibling bullets](#sibling-bullets) aren't enough.
 
 ### Example
 
 ::::{tab-set}
-:group: one-two
+:group: one-two-three
 
 :::{tab-item} One
 :sync: one
@@ -257,6 +243,11 @@ In **Elastic Cloud Enterprise**, you can use one or more proxy certificates to s
 
 :::{tab-item} Two
 :sync: two
+If you're managing a {{stack-short}} v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
+:::
+
+:::{tab-item} Three
+:sync: three
 
 **Managed security in Elastic Cloud**
 
@@ -273,8 +264,6 @@ You can augment Elastic Cloud security features in the following ways:
 
 :::
 ::::
-
-You also might do this to compare approaches between deployment types, when [sibling bullets](#sibling-bullets) aren't enough.
 
 ## Sibling pages
 
