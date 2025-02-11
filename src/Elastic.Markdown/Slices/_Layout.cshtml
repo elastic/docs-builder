@@ -10,58 +10,20 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
 	</head>
-	
 	<body class="text-ink">
-	<section class="h-9 bg-black"></section>
-	<header class="sticky top-0 bg-blue-developer max-w-screen px-6 pb-6 flex items-center justify-center">
-		<div class="container flex flex-wrap lg:flex-nowrap">
-			<div class="h-10 mt-6 basis-full lg:basis-auto">
-				<img src="@Model.Static("logo-elastic-horizontal-color-reverse.svg")" alt="Elastic" class="h-10">
-			</div>
-			<form role="search" class="hidden lg:block grow basis-full lg:basis-auto shrink-0 mt-6 lg:mx-10 h-10" autocomplete="off">
-				<label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-				<div class="relative h-10">
-					<div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none ml-2">
-						<svg class="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-							<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-						</svg>
-					</div>
-					<div class="rounded-full bg-linear-65 from-pink/[.4] to-teal/[.4] p-[2px] h-10">
-						<input type="search" id="default-search" class="flex items-center h-full w-full p-2 ps-10 text-center bg-[#081335] rounded-full focus-visible:outline-[blue]/[.3] focus-visible:outline-2 truncate text-ellipsis text-white" placeholder="Try searching a document here..." required/>
-					</div>
-				</div>
-			</form>
-			<div class="flex grow lg:flex-none h-10 mt-6">
-				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 me-3 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
-				<a href="https://elastic.co/contact" class="grow cursor-pointer text-white text-nowrap border-2 border-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">Contact Sales</a>
-			</div>
-		</div>
-	</header>
-	<main class="container mx-auto">
-		
-		<div class="markdown-content w-[100ch] max-w-screen mx-auto pt-6 pb-6 px-6">
-			<ol class="flex-1 mb-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-				<li class="inline text-gray-500" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-					<a itemprop="item" href="/">
-						<span itemprop="name">Elastic</span>
-					</a>
-					<span>/</span>
-					<meta itemprop="position" content="1">
-				</li>
-				@foreach (var item in Model.Parents.Reverse())
-				{
-					<li class="inline text-gray-500" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-						<a itemprop="item" href="@item.Url">
-							<span itemprop="name">@item.NavigationTitle</span>
-						</a>
-						<span>/</span>
-						<meta itemprop="position" content="2">
-					</li>
-				}
-			</ol>
+	@(await RenderPartialAsync(_Header.Create(Model)))
+	<div class="container mx-auto flex">
+		@await RenderPartialAsync(_PagesNav.Create(Model))
+		<main class="markdown-content w-full max-w-screen pt-6 pb-6 px-6">
+			@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 			@await RenderBodyAsync()
-		</div>
-	</main>
+		</main>
+		<aside>
+			<nav id="toc-nav" class="sticky top-22 w-80 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
+				TODO
+			</nav>
+		</aside>
+	</div>
 	<script src="@Model.Static("main.js")"></script>
 	</body>
 	</html>

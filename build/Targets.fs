@@ -20,7 +20,6 @@ let private clean _ =
     removeArtifacts "release-notes"
     removeArtifacts "tests"
     removeArtifacts "docs-builder"
-    removeArtifacts "docs-generator"
 
 let private compile _ = exec { run "dotnet" "build" "-c" "release" }
 
@@ -58,7 +57,6 @@ let private pristineCheck (arguments:ParseResults<Build>) =
 
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
-    exec { run "dotnet" "publish" "src/docs-generator/docs-generator.csproj" }
     exec { run "dotnet" "publish" "src/docs-assembler/docs-assembler.csproj" }
     Zip.zip
         ".artifacts/publish/docs-builder/release"
@@ -105,7 +103,6 @@ let private publishContainers _ =
             ]
         exec { run "dotnet" (args @ registry) }
     createImage "docs-builder"
-    createImage "docs-generator"
     createImage "docs-assembler"
 
 let private runTests _ =
