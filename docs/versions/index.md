@@ -37,11 +37,6 @@ There are multiple facets to versioning that we need to consider:
   * **Elastic Cloud Enterprise**
   * **Self-managed**
 
-  :::{warning}
-  The self-managed deployment type and support for products or platforms other than {{stack-short}} does not exist yet. Contribute to the discussion in [#452](https://github.com/elastic/docs-builder/discussions/452)
-  :::
-
-
   All deployment types other than **Serverless** are used to run a **{{stack-short}} <version>** flavor of Elasticsearch / Kibana. ECK and ECE also have their own versioning. For example, one can run a v9.0.0 deployment on ECE 4.0.
 
 % TODO: Final term for "Self-managed"
@@ -51,6 +46,10 @@ There are multiple facets to versioning that we need to consider:
 * **Other versioning schemes:** Elastic products or tools with a versioned component, where stack versioning is not followed. 
   
   E.g. clients, Elastic Common Schema
+
+:::{warning}
+The self-managed deployment type and support for products or platforms other than {{stack-short}} does not exist yet. Contribute to the discussion in [#452](https://github.com/elastic/docs-builder/discussions/452)
+:::
 
 **How many facets do I need to use?**
 
