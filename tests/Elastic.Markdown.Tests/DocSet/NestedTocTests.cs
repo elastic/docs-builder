@@ -4,7 +4,6 @@
 
 using Elastic.Markdown.IO;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 

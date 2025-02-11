@@ -8,7 +8,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 

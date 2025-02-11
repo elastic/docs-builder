@@ -4,7 +4,6 @@
 
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.FrontMatter;
 

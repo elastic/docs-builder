@@ -5,7 +5,6 @@
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 

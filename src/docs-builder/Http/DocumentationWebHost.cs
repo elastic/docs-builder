@@ -99,9 +99,18 @@ public class DocumentationWebHost
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
 		var generator = holder.Generator;
-		slug = slug.Replace(".html", ".md");
-		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(slug, out var documentationFile))
-			return Results.NotFound();
+
+		// For now, the logic is backwards compatible.
+		// Hence, both http://localhost:5000/migration/versioning.html and http://localhost:5000/migration/versioning works,
+		// so it's easier to copy links from issues created during the bug bounty.
+		// However, we can remove this logic in the future and only support links without the .html extension.
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug.Replace(".html", ".md");
+		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
+		{
+			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace("/index.md", ".md");
+			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
+				return Results.NotFound();
+		}
 
 		switch (documentationFile)
 		{

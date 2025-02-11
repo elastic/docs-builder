@@ -4,7 +4,6 @@
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using Markdig;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 

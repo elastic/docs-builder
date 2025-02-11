@@ -120,4 +120,3 @@ type Setup =
             task { return! Setup.Generator [Index m] }
             |> Async.AwaitTask |> Async.RunSynchronously
         )
-

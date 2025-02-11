@@ -9,7 +9,7 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Mover;
+namespace Elastic.Markdown.Refactor;
 
 public record ChangeSet(IFileInfo From, IFileInfo To);
 public record Change(IFileInfo Source, string OriginalContent, string NewContent);

@@ -44,23 +44,29 @@ public class ParserContext : MarkdownParserContext
 		Build = context;
 		Configuration = configuration;
 
-		foreach (var (key, value) in configuration.Substitutions)
-			Properties[key.ToLowerInvariant()] = value;
-
-		if (frontMatter?.Properties is { } props)
+		if (frontMatter?.Properties is not { Count: > 0 })
+			Substitutions = configuration.Substitutions;
+		else
 		{
-			foreach (var (k, value) in props)
+			var subs = new Dictionary<string, string>(configuration.Substitutions);
+			foreach (var (k, value) in frontMatter.Properties)
 			{
 				var key = k.ToLowerInvariant();
 				if (configuration.Substitutions.TryGetValue(key, out _))
 					this.EmitError($"{{{key}}} can not be redeclared in front matter as its a global substitution");
 				else
-					Properties[key] = value;
+					subs[key] = value;
 			}
+
+			Substitutions = subs;
 		}
 
+		var contextSubs = new Dictionary<string, string>();
+
 		if (frontMatter?.Title is { } title)
-			Properties["page_title"] = title;
+			contextSubs["context.page_title"] = title;
+
+		ContextSubstitutions = contextSubs;
 	}
 
 	public ConfigurationFile Configuration { get; }
@@ -70,4 +76,7 @@ public class ParserContext : MarkdownParserContext
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; init; }
 	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; init; }
+	public IReadOnlyDictionary<string, string> Substitutions { get; }
+	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
+
 }

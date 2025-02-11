@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests;
 

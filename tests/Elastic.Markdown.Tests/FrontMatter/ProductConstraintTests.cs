@@ -5,7 +5,6 @@
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
-using Xunit.Abstractions;
 using static Elastic.Markdown.Myst.FrontMatter.ProductLifecycle;
 
 namespace Elastic.Markdown.Tests.FrontMatter;

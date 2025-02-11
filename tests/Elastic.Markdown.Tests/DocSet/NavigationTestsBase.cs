@@ -9,7 +9,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -45,11 +44,11 @@ public class NavigationTestsBase : IAsyncLifetime
 	protected DocumentationGenerator Generator { get; }
 	protected ConfigurationFile Configuration { get; set; } = default!;
 
-	public async Task InitializeAsync()
+	public async ValueTask InitializeAsync()
 	{
 		await Generator.ResolveDirectoryTree(default);
 		Configuration = Generator.DocumentationSet.Configuration;
 	}
 
-	public Task DisposeAsync() => Task.CompletedTask;
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
