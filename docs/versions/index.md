@@ -50,7 +50,7 @@ There are multiple facets to versioning that we need to consider:
 
 The role of these labels is providing a trust signal that the reader is viewing content that’s applicable to them. This means that the relevant labels should appear on all pages. However, we can choose to expose only one versioning plane on pages where only one plane is relevant:
 
-* Depending on what you're documenting, you might need to include information from multiple facets. For example, when relevant features exist at both the stack and the deployment level, both of these groups might be used together (e.g. security, user management, trust).
+* Depending on what you're documenting, you might need to include information from multiple facets. For example, when relevant features exist at both the stack and the deployment level, both of these groups might be used together (e.g. security, user management, and trust features differ both at the deployment level and at the stack version level).
 
 * In some sections, such as **Explore and analyze**, features generally only differ by Elasticsearch flavor. In these cases, you can choose to include only this facet on the page.
 
