@@ -26,7 +26,7 @@ Our approach might change as additional documentation features become available.
 ### Versioning facets
 There are multiple facets to versioning that we need to consider: 
 
-* **Elasticsearch / Kibana flavor:** The feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Cloud Serverless") or **Stack <version>**
+* **Stack flavor:** The Elasticsearch or Kibana feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Cloud Serverless") or **Stack <version>**
 
 % TODO: Final term for "Stack"
 * **Deployment type:** The way Elastic is deployed: 
@@ -61,7 +61,7 @@ The role of these labels is providing a trust signal that the reader is viewing 
 
 ### Defaults and hierarchy 
 
-You should not assume a default deployment type or Elasticsearch / Kibana flavor.
+Do not assume a default deployment type, stack flavor, product version, or project type.
 
 Treat all flavors and deployment types equally. Don't treat one as the "base" and the other as the "exception".
 
