@@ -127,3 +127,4 @@ Follow these principles to use screenshots in our unversioned documentation syst
 * Reduce screenshots when they don’t explicitly add value.
 * When adding a screenshot, determine the minimum viable screenshot and whether it can apply to all relevant versions.
 * Take and maintain screenshots for only the most recent version, with very few exceptions that should be considered on a case-by-case basis.
+* In case of doubt, prioritize serverless.
