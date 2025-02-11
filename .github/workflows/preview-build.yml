@@ -1,7 +1,7 @@
 name: preview-build
 
 on:
-  pull_request: 
+  pull_request_target: 
     types:
       - opened
       - synchronize
@@ -28,7 +28,9 @@ on:
         default: '**'
         required: false
 
-permissions: 
+permissions:
+  id-token: write
+  deployments: write
   contents: read
   pull-requests: read
 
@@ -36,100 +38,130 @@ jobs:
   build:
     concurrency: 
       group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
+      cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
     runs-on: ubuntu-latest
     steps:
 
       - name: Get changed files
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         id: check-files
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
             
       - name: Checkout
-        if: github.event_name != 'pull_request' || steps.check-files.outputs.any_changed == 'true'
+        if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
         uses: actions/checkout@v4
         with: 
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-          
-      - name: Generate path prefix
+        
+      - name: Create Deployment
+        if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          REF: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || github.ref_name }}
+        with:
+          result-encoding: string
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = process.env.PR_NUMBER;
+            const environment = 'docs-preview';
+            const deployment = await github.rest.repos.createDeployment({
+                owner,
+                repo,
+                environment,
+                ref: process.env.REF,
+                auto_merge: false,
+                transient_environment: true,
+                required_contexts: [],
+            })
+            await github.rest.repos.createDeploymentStatus({
+                deployment_id: deployment.data.id,
+                owner,
+                repo,
+                state: "in_progress",
+                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            })
+            return deployment.data.id
+            
+      - name: Generate env.PATH_PREFIX
+        if: steps.deployment.outputs.result
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           case "${GITHUB_EVENT_NAME}" in
-            "pull_request")
+            "pull_request_target")
               echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
               ;;
             "push")
               echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}" >> $GITHUB_ENV
               if [[ ! "${GITHUB_REF_NAME}" =~ ^(main|master|16\.x)$ ]]; then
-                echo "Unsupported ref name: ${GITHUB_REF_NAME}";
+                echo "Unsupported ref name: '${GITHUB_REF_NAME}'";
                 exit 1;
               fi
               ;;
             *)
-              echo "Unsupported event: ${GITHUB_EVENT_NAME}";
+              echo "Unsupported event: '${GITHUB_EVENT_NAME}'";
               exit 1;
               ;;
           esac
-          
-      - name: Store deployment metadata
-        id: metadata
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          SHOULD_DEPLOY: ${{ github.event_name == 'pull_request' && steps.check-files.outputs.any_changed || 'true' }}
-        run: |
-          cat << EOF > deployment_metadata.json
-          {
-            "pr_number": "${PR_NUMBER}",
-            "ref": "${REF}",
-            "should_deploy": "${SHOULD_DEPLOY}",
-            "path_prefix": "${PATH_PREFIX}"
-          }
-          EOF
-          echo "should_deploy=${SHOULD_DEPLOY}" >> "${GITHUB_OUTPUT}"
-      
-      - name: Upload deployment metadata
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment_metadata
-          path: deployment_metadata.json
-          if-no-files-found: error
-          retention-days: 1
-          compression-level: 1
 
       - name: Bootstrap Action Workspace
-        if: github.repository == 'elastic/docs-builder' && steps.metadata.outputs.should_deploy == 'true'
+        if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
+
         uses: ./.github/actions/bootstrap
         
       - name: Set REDESIGN feature flag
-        if: contains(github.event.pull_request.labels.*.name, 'redesign')
+        if: contains(github.event.pull_request.labels.*.name, 'redesign') && steps.deployment.outputs.result
         run: echo "REDESIGN=true" >> $GITHUB_ENV
 
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
-        if: github.repository == 'elastic/docs-builder' && steps.metadata.outputs.should_deploy == 'true'
+        if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
         run: |
           dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder' && steps.metadata.outputs.should_deploy == 'true'
+        if: github.repository != 'elastic/docs-builder' && steps.deployment.outputs.result
         uses: elastic/docs-builder@main
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
-      - uses: actions/upload-artifact@v4
-        if: steps.metadata.outputs.should_deploy == 'true'
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
+        if: steps.deployment.outputs.result
+
+      - name: Upload to S3
+        id: s3-upload
+        if: steps.deployment.outputs.result
+        run: |
+          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
+          aws cloudfront create-invalidation \
+            --distribution-id EKT7LT5PM8RKS \
+            --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
+
+      - name: Update Link Index
+        if: steps.s3-upload.outcome == 'success'
+        uses: elastic/docs-builder/actions/update-link-index@main
+
+      - name: Update deployment status
+        uses: actions/github-script@v7
+        if: always() && steps.deployment.outputs.result
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         with:
-          name: docs
-          path: .artifacts/docs/html/
-          if-no-files-found: error
-          retention-days: 1
-          # The lower the compression-level, the faster the artifact will be uploaded.
-          # But the size of the artifact will be larger.
-          compression-level: 1
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: "${{ job.status == 'success' && 'success' || 'failure' }}",
+              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`,
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            })
