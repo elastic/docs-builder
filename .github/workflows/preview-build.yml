@@ -68,7 +68,6 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const prNumber = process.env.PR_NUMBER;
-            // const environment = prNumber ? `docs-preview-${prNumber}` : 'docs-preview';
             const environment = 'docs-preview';
             const deployment = await github.rest.repos.createDeployment({
                 owner,
