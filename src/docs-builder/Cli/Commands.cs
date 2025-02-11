@@ -6,9 +6,9 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
-using Elastic.Markdown.Refactor;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Refactor;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
