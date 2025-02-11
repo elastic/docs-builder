@@ -1,0 +1,6 @@
+#elastic-docs-v3 {
+	code {
+		margin-bottom: calc(var(--spacing) * 6);
+		border-radius: var(--radius-md);
+	}
+}

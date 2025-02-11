@@ -14,7 +14,7 @@
 					<div class="w-5">
 					</div>
 					<a
-						class="block py-1 text-sm leading-[1.2em] tracking-[-0.02em] group-[.current]/li:text-blue-elastic! hover:text-ink-dark @(isCurrent ? "pointer-events-none" : string.Empty)"
+						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] group-[.current]/li:text-blue-elastic! hover:text-black @(isCurrent ? "pointer-events-none" : string.Empty)"
 						href="@f.Url"
 						@(isCurrent ? "aria-current=page" : string.Empty)
 					>
@@ -52,7 +52,7 @@
 					>
 					<a
 						href="@g.Index?.Url"
-						class="block py-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-ink-dark @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current pointer-events-none text-blue-elastic!" : string.Empty)">
+						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-black @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current pointer-events-none text-blue-elastic!" : string.Empty)">
 						@g.Index?.NavigationTitle
 					</a>
 				</label>

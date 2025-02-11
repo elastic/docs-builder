@@ -1,21 +1,53 @@
 @inherits RazorSlice<LayoutViewModel>
-<aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
-	<button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
-		<i class="i-lucide close"></i>
-	</button>
-	<div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4">
-		<div class="localtoc">
-			<h3>On this page</h3>
-			<ul>
+@if (Model.IsRedesign)
+{
+	<div class="pt-6 pb-20">
+		@if (Model.PageTocItems.Count > 0)
+		{
+		<div class="font-bold mb-2">On this page</div>
+		<ul class="block w-full">
 			@foreach (var item in Model.PageTocItems)
 			{
-				<li><a class="reference internal" href="#@item.Slug">@item.Heading</a></li>
+				<li class="flex has-[:hover]:border-l-gray-500 items-center ml-2 pl-4 border-l-1 border-l-gray-200 has-[.current]:border-l-blue-elastic">
+					<a
+						class="inline-block text-sm leading-[1.2em] tracking-[-0.02em] my-1 hover:text-black @(item.Level == 3 ? "ml-4" : string.Empty)"
+						href="#@item.Slug">
+						@item.Heading
+					</a>
+				</li>
 			}
-			</ul>
-		</div>
-		<div class="edit-this-page">
-			<a href="@Model.GithubEditUrl">Edit this page</a>
+		</ul>
+		}
+		<div class="mt-4">
+			<button id="scroll-to-top-button" class="cursor-pointer flex items-center hidden">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-1">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+				</svg>
+				Scroll to top
+			</button>
 		</div>
 	</div>
-</aside>
-<div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+}
+else
+{
+	<aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+		<button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+			<i class="i-lucide close"></i>
+		</button>
+		<div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4">
+			<div class="localtoc">
+				<h3>On this page</h3>
+				<ul>
+					@foreach (var item in Model.PageTocItems)
+					{
+						<li class="py-1"><a class="text-sm leading-[1.2em] tracking-[-0.02em]" href="#@item.Slug">@item.Level - @item.Heading</a></li>
+					}
+				</ul>
+			</div>
+			<div class="edit-this-page">
+				<a href="@Model.GithubEditUrl">Edit this page</a>
+			</div>
+		</div>
+	</aside>
+	<div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+}

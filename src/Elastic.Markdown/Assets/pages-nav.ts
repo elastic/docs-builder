@@ -1,4 +1,4 @@
-import {$, $$} from "select-dom/strict";
+import {$, $$} from "select-dom";
 
 type NavExpandState = { [key: string]: boolean };
 const PAGE_NAV_EXPAND_STATE_KEY = 'pagesNavState';
