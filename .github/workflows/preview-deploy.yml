@@ -96,7 +96,7 @@ jobs:
           aws s3 sync ./html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
-            --paths "${PATH_PREFIX}" "/${PATH_PREFIX}/*"
+            --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update deployment status
         uses: actions/github-script@v7
