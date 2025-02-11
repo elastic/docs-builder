@@ -30,7 +30,7 @@ There are multiple facets to versioning that we need to consider:
 | Facet | Description |
 | --- | --- |
 | **Stack flavor** | The Elasticsearch or Kibana feature base used for basic functionality. Either **Serverless** (sometimes "Elastic Cloud Serverless") or **{{stack-short}} <version>** |
-| **Deployment type** | The way Elastic is deployed:<br><br>* **Serverless** (sometimes "Elastic Cloud Serverless")<br>* **Elastic Cloud Hosted**<br>* **Elastic Cloud on Kubernetes**<br>* **Elastic Cloud Enterprise**<br>* **Self-managed**<br><br>All deployment types other than **Serverless** are used to run a **{{stack-short}} <version>** flavor of Elasticsearch / Kibana. ECK and ECE also have their own versioning. For example, one can run a v9.0.0 deployment on ECE 4.0.
+| **Deployment type** | The way Elastic is deployed:<br><br>- **Serverless** (sometimes "Elastic Cloud Serverless")<br>- **Elastic Cloud Hosted**<br>- **Elastic Cloud on Kubernetes**<br>- **Elastic Cloud Enterprise**<br>- **Self-managed**<br><br>All deployment types other than **Serverless** are used to run a **{{stack-short}} <version>** flavor of Elasticsearch / Kibana. ECK and ECE also have their own versioning. For example, one can run a v9.0.0 deployment on ECE 4.0.
 | **Project type** | The Serverless project types where a feature can be used - either **Elasticsearch**, **Security**, or **Observability** |
 | **Other versioning schemes** | Elastic products or tools with a versioned component, where stack versioning is not followed.<br><br>E.g. clients, Elastic Common Schema |
 
