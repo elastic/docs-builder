@@ -53,7 +53,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-assembler", "src\docs-
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "authoring", "tests\authoring\authoring.fsproj", "{018F959E-824B-4664-B345-066784478D24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-mover", "src\docs-mover\docs-mover.csproj", "{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Markdown.Refactor", "src\Elastic.Markdown.Refactor\Elastic.Markdown.Refactor.csproj", "{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
