@@ -66,13 +66,18 @@ function findCurrentTocLink(elements: TocElements): HTMLAnchorElement | undefine
 function getVisibleHeadings(elements: TocElements) {
 	return elements.headings.filter(heading => {
 		const rect = heading.getBoundingClientRect();
-		return rect.top - HEADING_OFFSET >= 0 && rect.bottom <= window.innerHeight;
+		return rect.top - HEADING_OFFSET + 64 >= 0 && rect.top <= window.innerHeight;
 	});
 }
 
 // Handle bottom of page scroll behavior
 function handleBottomScroll(elements: TocElements) {
 	const visibleHeadings = getVisibleHeadings(elements);
+	
+	visibleHeadings.forEach(heading => {
+		console.log(heading.textContent.trim());
+	})
+	
 	if (visibleHeadings.length === 0) return;
 
 	const firstHeading = visibleHeadings[0];
