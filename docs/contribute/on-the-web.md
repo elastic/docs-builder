@@ -8,7 +8,7 @@ Due to recent changes, we are migrating our documentation for 9.0 and forward to
 
 ## **Updating Documentation**
 
-### **Update content for Version 8.x and earlier** {#update-content-for-version-8.x-and-earlier}
+### **Update content for Version 8.x and earlier** [update-content-for-version-8.x-and-earlier]
 
 For content that is related to 8.x, these changes should be done in the original source folders in their respective repositories. Here’s how you can do it:
 
@@ -21,7 +21,7 @@ For content that is related to 8.x, these changes should be done in the original
 
 Note: If you are working in a repo like Kibana or the cloud repo where backports can be complicated. You can use the [backport tool](https://github.com/sorenlouv/backport) to manage your backport.
 
-### **Update content for Version 9.0 and later** {#update-content-for-version-9.0-and-later}
+### **Update content for Version 9.0 and later** [update-content-for-version-9.0-and-later]
 
 For content related to version 9.0 and future versions, updates should be made in the [`docs-content`](https://github.com/elastic/docs-content)  repository. Follow these steps to ensure your contributions are correctly made:
 
@@ -51,8 +51,6 @@ If you need to merge changes that relate to version 8.x to the 9.0 and later doc
 4. Follow the steps in [Update content for Version 8.x and earlier](#update-content-for-version-8.x-and-earlier) to publish your changes.   
 5. If the change is too large or complicated, create a new issue in the [`docs-content`](https://github.com/elastic/docs-content) repository detailing the changes made for the team to triage.  
 6. Merge the changes and close the issue once the updates are reflected in the [`docs-content`](https://github.com/elastic/docs-content) repository.
-
-## 
 
 ## **Additional Resources**
 
