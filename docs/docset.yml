@@ -27,6 +27,8 @@ subs:
   a-global-variable: "This was defined in docset.yml"
   stack: Elastic Stack
   serverless-short: Serverless
+  ece:   "Elastic Cloud Enterprise"
+  eck:   "Elastic Cloud on Kubernetes"
 toc:
   - file: index.md
   - hidden: developer-notes.md
