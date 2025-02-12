@@ -74,7 +74,9 @@ with
         seq {
              for c in cases do
                  if c.GetFields().Length = 0 then
-                     FSharpValue.MakeUnion(c, [| |]) :?> Build
+                     match FSharpValue.MakeUnion(c, [| |]) with
+                     | NonNull u -> u :?> Build
+                     | _ -> failwithf $"%s{c.Name} can not be cast to Build enum"
         }
         
     static member Ignore (_: Build) _ = ()
