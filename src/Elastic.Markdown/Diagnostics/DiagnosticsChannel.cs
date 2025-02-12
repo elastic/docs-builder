@@ -56,7 +56,7 @@ public readonly record struct Diagnostic
 
 public interface IDiagnosticsOutput
 {
-	public void Write(Diagnostic diagnostic);
+	void Write(Diagnostic diagnostic);
 }
 
 public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
