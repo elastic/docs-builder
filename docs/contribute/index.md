@@ -10,13 +10,11 @@ Whether you're a technical writer or you've only edited Elastic docs once or twi
 
 ## Contribute to the docs [#contribute]
 
-:::{tip}
-Starting with Elastic Stack version 9.0, Elastic documentation uses `docs-builder` to build documentation. Elastic Stack versions prior to 9.0 use our [legacy documentation build system](https://github.com/elastic/docs). The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs.
-:::
+The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs.
 
 ### Contribute to Elastic Stack version 8.x docs and earlier
 
-To contribute to earlier versions of the Elastic Stack, you must work with our [legacy documentation build system](https://github.com/elastic/docs). This system using AsciiDoc as it's authoring format.
+To contribute to earlier versions of the Elastic Stack, you must work with our [legacy documentation build system](https://github.com/elastic/docs). This system uses AsciiDoc as it's authoring format.
 
 * For **simple bugfixes and enhancements** --> [Contribute on the web](on-the-web.md)
 * For **complex or multi-page updates** --> See the [legacy documentation build guide](https://github.com/elastic/docs?tab=readme-ov-file#building-documentation)
