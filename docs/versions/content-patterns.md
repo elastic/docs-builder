@@ -99,10 +99,10 @@ Spaces let you organize your content and users according to your needs.
 
 Try to minimize the number of tabs where you can - try to work around small differences by rewording or adding context in prose or in `note` style admonitions:
 
-* In {{stack-short}} v9.1 and earlier, **Spaces** were referred to as **Places**. 
+* In {{stack-short}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
 * 
   ::::{note}
-  In {{stack-short}} v9.1 and earlier, click the **Permissions** tab.
+  In {{stack-short}} 9.1.0 and earlier, click the **Permissions** tab.
   ::::
 
 Try not to include information surrounding a procedure in the tabs. Make the tab content as small as possible apart from the procedure itself.
@@ -208,7 +208,7 @@ If there’s a terminology change or other minor change (especially where x equa
 * *In a **Spaces** overview*:
 
   :::{note}
-  In {{stack-short}} versions 9.0 and earlier, **Spaces** are referred to as **Places**.
+  In {{stack-short}} 9.0.0 and earlier, **Spaces** are referred to as **Places**.
 
 ## Prose
 

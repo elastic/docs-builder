@@ -4,8 +4,8 @@ navigation_title: "Versions and types"
 
 # Documenting versions and deployment types
 
-In the new documentation system, we document features in a centralized place, regardless of the software version or deployment type it applies to. 
-For example, we might document the serverless and v9 implementations of a feature on a single page, and then use content patterns to highlight where prerequisites, options, or behaviors differ between these implementations.
+In Elastic Docs v3, we document features in a centralized place, regardless of the software version or deployment type it applies to. 
+For example, we might document the Serverless and Elastic Stack 9.0.0 implementations of a feature on a single page, and then use content patterns to highlight where prerequisites, options, or behaviors differ between these implementations.
 
 This approach improves our documentation in several ways: 
 
@@ -76,7 +76,7 @@ When it comes to hierarchy of versions, always put the newest version first.
 
 In the V3 docs system, we currently document only our latest major versions (Stack 9.0+, ECE 4.0+, ECK 3.0+).
 
-Add version labels only when a feature was added as part of the major version release, or added in subsequent dot releases. Do not add version information to features added before these releases. For example, features added in 8.16 don't need an 8.16 label or a 9.0 label, but features added in 9.0 need a 9.0 label.
+Add version labels only when a feature was added as part of the major version release (e.g. 9.0.0), or added in subsequent minor releases (e.g. 9.1.0). Do not add version information to features added before these releases. For example, features added in 8.16.0 don't need an 8.16.0 label or a 9.0.0 label, but features added in 9.0.0 need a 9.0.0 label.
 
 From the latest major onward, the entire feature lifecycle should be represented. This means that you need to add separate labels for the following states:
 
