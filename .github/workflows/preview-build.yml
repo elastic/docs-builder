@@ -147,7 +147,7 @@ jobs:
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update Link Index
-        if: steps.s3-upload.outcome == 'success'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success' 
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
