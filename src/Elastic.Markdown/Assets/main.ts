@@ -5,8 +5,6 @@ import {$, $$} from "select-dom";
 initNav();
 initHighlight();
 
-// const markdownContent = $('#markdown-content');
-
 // Get all headings in the markdown content
 const headings = $$('h1, h2, h3, h4, h5, h6');
 const tocLinks = $$('#toc-nav a');
@@ -20,26 +18,48 @@ const headingObserver = new IntersectionObserver((entries) => {
       if (!curr.isIntersecting && curr.boundingClientRect.top < 0) {
         return !prev || curr.boundingClientRect.top > prev.boundingClientRect.top ? curr : prev;
       }
+	  //
       return prev;
     }, null as IntersectionObserverEntry | null);
 
   // Set current class on the TOC link for this heading
   if (currentEntry) {
-    tocLinks.forEach(link => link.classList.remove('current'));
-
+    // Only remove current class from other links if we found a new heading
     const heading = currentEntry.target;
     const id = heading.parentElement?.id;
     if (id) {
       const matchingLink = $(`#toc-nav a[href="#${id}"]`);
-      matchingLink?.classList.add('current');
+      if (matchingLink) {
+        // Remove current class from all other links first
+        tocLinks.forEach(link => {
+          if (link !== matchingLink) {
+            link.classList.remove('current');
+          }
+        });
+        matchingLink.classList.add('current');
+      }
     }
   }
 }, {
-  rootMargin: "-5% 0px -70% 0px"
+  rootMargin: "-10% 0px -70% 0px"
+});
+
+headings.forEach(heading => headingObserver.observe(heading));
+
+$$('#toc-nav li>a').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = link.getAttribute('href');
+        if (href) {
+            const target = document.querySelector(href);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });  
+            }
+        }
+    })
 });
 
 // Observe all headings
-headings.forEach(heading => headingObserver.observe(heading));
 
 const scrollTopButton = $('#scroll-to-top-button');
 if (scrollTopButton) {

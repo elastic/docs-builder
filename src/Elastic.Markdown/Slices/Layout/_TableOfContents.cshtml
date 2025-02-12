@@ -1,32 +1,45 @@
 @inherits RazorSlice<LayoutViewModel>
 @if (Model.IsRedesign)
 {
-	<div class="pt-6 pb-20">
-		@if (Model.PageTocItems.Count > 0)
-		{
-		<div class="font-bold mb-2">On this page</div>
-		<ul class="block w-full">
-			@foreach (var item in Model.PageTocItems)
-			{
-				<li class="flex has-[:hover]:border-l-gray-500 items-center ml-2 pl-4 border-l-1 border-l-gray-200 has-[.current]:border-l-blue-elastic">
-					<a
-						class="inline-block text-sm leading-[1.2em] tracking-[-0.02em] my-1 hover:text-black @(item.Level == 3 ? "ml-4" : string.Empty)"
-						href="#@item.Slug">
-						@item.Heading
+	<aside class="hidden lg:block order-3 border-l-1 border-l-gray-200 w-80">
+		<nav id="toc-nav" class="sticky top-22 z-30 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto px-4">
+			<div class="pt-6 pb-20">
+				@if (Model.PageTocItems.Count > 0)
+				{
+					<div class="font-bold mb-2">On this page</div>
+					<ul class="block w-full">
+						@foreach (var item in Model.PageTocItems)
+						{
+							<li class="flex has-[:hover]:border-l-gray-500 items-center ml-2 pl-4 border-l-1 border-l-gray-200 has-[.current]:border-l-blue-elastic!">
+								<a
+									class="inline-block text-sm leading-[1.2em] tracking-[-0.02em] my-1 hover:text-black @(item.Level == 3 ? "ml-4" : string.Empty)"
+									href="#@item.Slug">
+									@item.Heading
+								</a>
+							</li>
+						}
+					</ul>
+				}
+				<div class="mt-4">
+					<button id="scroll-to-top-button" class="cursor-pointer flex items-center hidden">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+						</svg>
+						<span class="leading-0 text-sm text-ink">Scroll to top</span>
+					</button>
+				</div>
+				<div class="edit-this-page mt-4 pt-2 border-t-1 border-t-gray-200">
+					<a href="@Model.GithubEditUrl" class="flex flex-nowrap items-center text-blue-elastic hover:text-blue-800">
+						<span class="leading-0 mr-2">Edit this page</span>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
+						</svg>
 					</a>
-				</li>
-			}
-		</ul>
-		}
-		<div class="mt-4">
-			<button id="scroll-to-top-button" class="cursor-pointer flex items-center hidden">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-1">
-					<path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-				</svg>
-				Scroll to top
-			</button>
-		</div>
-	</div>
+				</div>
+			</div>
+
+		</nav>
+	</aside>
 }
 else
 {
