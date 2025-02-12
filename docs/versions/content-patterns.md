@@ -73,7 +73,7 @@ Spaces let you organize your content and users according to your needs.
 
 * Each space has its own saved objects.
 * Users can only access the spaces that they have been granted access to. This access is based on user roles, and a given role can have different permissions per space.
-* Each space has its own navigation. **[{{stack-short}} v9 only]**
+* Each space has its own navigation. **[{{stack}} v9 only]**
 
 :::
 :::{tab-item} Two
@@ -99,10 +99,10 @@ Spaces let you organize your content and users according to your needs.
 
 Try to minimize the number of tabs where you can - try to work around small differences by rewording or adding context in prose or in `note` style admonitions:
 
-* In {{stack-short}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
+* In {{stack}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
 * 
   ::::{note}
-  In {{stack-short}} 9.1.0 and earlier, click the **Permissions** tab.
+  In {{stack}} 9.1.0 and earlier, click the **Permissions** tab.
   ::::
 
 Try not to include information surrounding a procedure in the tabs. Make the tab content as small as possible apart from the procedure itself.
@@ -132,7 +132,7 @@ To create a space:
 4. Save the space.
 ::::
 
-::::{tab-item} {{stack-short}} v9
+::::{tab-item} {{stack}} v9
 :sync: stack
 
 1. Select **Create space** and provide a name, description, and URL identifier.
@@ -174,7 +174,7 @@ You can edit all of the space settings you just defined at any time, except for 
 #### Required permissions
 
 * **{{serverless-short}}**: `Admin` or equivalent
-* **{{stack-short}} v9**: `kibana_admin` or equivalent
+* **{{stack}} v9**: `kibana_admin` or equivalent
 
 :::
 :::{tab-item} Two
@@ -185,7 +185,7 @@ You can edit all of the space settings you just defined at any time, except for 
 The maximum number of spaces that you can have differs by [what do we call this]: 
 
 * **{{serverless-short}}**: Maximum of 100 spaces.
-* **{{stack-short}} v9**: Controlled by the `xpack.spaces.maxSpaces` setting. Default is 1000.
+* **{{stack}} v9**: Controlled by the `xpack.spaces.maxSpaces` setting. Default is 1000.
 :::
 ::::
 
@@ -208,7 +208,7 @@ If there’s a terminology change or other minor change (especially where x equa
 * *In a **Spaces** overview*:
 
   :::{note}
-  In {{stack-short}} 9.0.0 and earlier, **Spaces** are referred to as **Places**.
+  In {{stack}} 9.0.0 and earlier, **Spaces** are referred to as **Places**.
 
 ## Prose
 
@@ -243,7 +243,7 @@ In **Elastic Cloud Enterprise**, you can use one or more proxy certificates to s
 
 :::{tab-item} Two
 :sync: two
-If you're managing a {{stack-short}} v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
+If you're managing a {{stack}} v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
 :::
 
 :::{tab-item} Three
