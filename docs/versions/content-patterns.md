@@ -25,7 +25,8 @@ Add tags for all **versioning facets** relevant to the page.
 
 See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-states) to learn when to specify versions in these tags.
 
-### Example
+### Examples
+
 [Manage your Cloud organization](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/cloud-organization)
 
 ## Section/heading-level `applies` tags
@@ -48,47 +49,47 @@ See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-st
 **Example**
 See above
 
-## List item suffixes
-
-**Use case:** When features in a **list of features** are exclusive to a specific context, or were introduced in a specific version
-
-**Number to use:** Three max. If the number of tags is longer than that, consider: 
-
-*  Breaking up the list by facet
-*  Using labels that don't have version / lifecycle information and deferring that information to the page or section for the feature
-  
-**Approach:** 
-
-Append the information to the bullet item in bolded square brackets `**[]**`. Add all information within a single set of square brackets. The brackets should appear after any final punctuation. Consider using words like `only` to help people to understand that this information indicates the applicability of a feature.
-
-### Example
-
-Spaces let you organize your content and users according to your needs.
-
-::::{tab-set}
-:group: one-two
-
-:::{tab-item} One
-:sync: one
-
-* Each space has its own saved objects.
-* Users can only access the spaces that they have been granted access to. This access is based on user roles, and a given role can have different permissions per space.
-* Each space has its own navigation. **[{{stack}} v9 only]**
-
-:::
-:::{tab-item} Two
-:sync: two
-
-
-* Learn about internal users, which are responsible for the operations that take place inside an Elasticsearch cluster
-* Learn about service accounts, which are used for integration with external services that connect to Elasticsearch
-* Learn about the services used for token-based authentication
-* Learn about the services used by orchestrators **[Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes]**
-* Learn about user lookup technologies
-* Manage the user cache
-
-:::
-::::
+% ## List item suffixes
+% 
+% **Use case:** When features in a **list of features** are exclusive to a specific context, or were introduced in a specific version
+% 
+% **Number to use:** Three max. If the number of tags is longer than that, consider: 
+% 
+% *  Breaking up the list by facet
+% *  Using labels that don't have version / lifecycle information and deferring that information to the page or section for the feature
+%   
+% **Approach:** 
+% 
+% Append the information to the bullet item in bolded square brackets `**[]**`. Add all information within a single set of square brackets. The brackets should appear after any final punctuation. Consider using words like `only` to help people to understand that this information indicates the applicability of a feature.
+% 
+% ### Examples
+% 
+% Spaces let you organize your content and users according to your needs.
+% 
+% ::::{tab-set}
+% :group: one-two
+% 
+% :::{tab-item} One
+% :sync: one
+% 
+% * Each space has its own saved objects.
+% * Users can only access the spaces that they have been granted access to. This access is based on user roles, and a given role can have different permissions per space.
+% * Each space has its own navigation. **[{{stack}} v9 only]**
+% 
+% :::
+% :::{tab-item} Two
+% :sync: two
+% 
+% 
+% * Learn about internal users, which are responsible for the operations that take place inside an Elasticsearch cluster
+% * Learn about service accounts, which are used for integration with external services that connect to Elasticsearch
+% * Learn about the services used for token-based authentication
+% * Learn about the services used by orchestrators **[Elastic Cloud Hosted, {{ece}}, {{eck}}]**
+% * Learn about user lookup technologies
+% * Manage the user cache
+% 
+% :::
+% ::::
 
 
 ## Tabs
@@ -97,13 +98,7 @@ Spaces let you organize your content and users according to your needs.
 
 **Number to use:** Max 4 or 5 (in a deployment type / versioning context - might be different for other situations)
 
-Try to minimize the number of tabs where you can - try to work around small differences by rewording or adding context in prose or in `note` style admonitions:
-
-* In {{stack}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
-* 
-  ::::{note}
-  In {{stack}} 9.1.0 and earlier, click the **Permissions** tab.
-  ::::
+Try to minimize the number of tabs where you can - try to work around small differences by rewording or adding context in prose or in `note` style admonitions. Check out the [prose](#prose) guidelines.
 
 Try not to include information surrounding a procedure in the tabs. Make the tab content as small as possible apart from the procedure itself.
 
@@ -112,7 +107,8 @@ Consider breaking up procedures into sets of procedures if only one section diff
 :::{tip}
 For consistency, use [substitutions](/syntax/substitutions.md) for the tab labels.
 :::
-### Example
+
+### Examples
 
 To create a space: 
 
@@ -157,37 +153,37 @@ To create a space:
 
 You can edit all of the space settings you just defined at any time, except for the URL identifier.
 
-## Sibling bullets 
-
-**Use case:** Requirements, limits, other simple, mirrored facts.
-
-**Number to use:** Ideal is one per option (e.g. one per deployment type). You might consider nested bullets in limited cases.
-
-### Examples
-
-::::{tab-set}
-:group: one-two
-
-:::{tab-item} One
-:sync: one
-
-#### Required permissions
-
-* **{{serverless-short}}**: `Admin` or equivalent
-* **{{stack}} v9**: `kibana_admin` or equivalent
-
-:::
-:::{tab-item} Two
-:sync: two
-
-#### Create a space
-
-The maximum number of spaces that you can have differs by [what do we call this]: 
-
-* **{{serverless-short}}**: Maximum of 100 spaces.
-* **{{stack}} v9**: Controlled by the `xpack.spaces.maxSpaces` setting. Default is 1000.
-:::
-::::
+% ## Sibling bullets 
+% 
+% **Use case:** Requirements, limits, other simple, mirrored facts.
+% 
+% **Number to use:** Ideal is one per option (e.g. one per deployment type). You might consider nested bullets in limited cases.
+% 
+% ### Examples
+% 
+% ::::{tab-set}
+% :group: one-two
+% 
+% :::{tab-item} One
+% :sync: one
+% 
+% #### Required permissions
+% 
+% * **{{serverless-short}}**: `Admin` or equivalent
+% * **{{stack}} v9**: `kibana_admin` or equivalent
+% 
+% :::
+% :::{tab-item} Two
+% :sync: two
+% 
+% #### Create a space
+% 
+% The maximum number of spaces that you can have differs by [what do we call this]: 
+% 
+% * **{{serverless-short}}**: Maximum of 100 spaces.
+% * **{{stack}} v9**: Controlled by the `xpack.spaces.maxSpaces` setting. Default is 1000.
+% :::
+% ::::
 
 ## Callouts
 
@@ -217,14 +213,17 @@ If there’s a terminology change or other minor change (especially where x equa
 **When to use:** 
 * Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
 * Comparative overviews
+* Differences that are small enough or not significant enough to warrant an admonition or tabs or separate sections with frontmatter.
 
 In some cases, you might want to add a paragraph specific to one version or another in prose to clarify behavior or terminology. 
 
 In cases where there are significant differences between contexts, close explanation of the differences helps people to understand how something works, or why something behaves the way it does. Compare and contrast differences in paragraphs when the explanation helps people to use our features effectively.
 
-You also might do this to compare approaches between deployment types, when [sibling bullets](#sibling-bullets) aren't enough.
+% You also might do this to compare approaches between deployment types, when [sibling bullets](#sibling-bullets) aren't enough.
 
-### Example
+### Examples
+
+* In {{stack}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
 
 ::::{tab-set}
 :group: one-two-three
@@ -234,11 +233,11 @@ You also might do this to compare approaches between deployment types, when [sib
 
 The way that TLS certificates are managed depends on your deployment type:
 
-In **self-managed Elasticsearch**, you manage both of these certificates yourself. 
+In self-managed Elasticsearch, you manage both of these certificates yourself. 
 
-In **Elastic Cloud on Kubernetes**, you can manage certificates for the HTTP layer. Certificates for the transport layer are managed by ECK and can’t be changed. However, you can set your own certificate authority, customize certificate contents, and provide your own certificate generation tools using transport settings.
+In {{eck}}, you can manage certificates for the HTTP layer. Certificates for the transport layer are managed by ECK and can’t be changed. However, you can set your own certificate authority, customize certificate contents, and provide your own certificate generation tools using transport settings.
 
-In **Elastic Cloud Enterprise**, you can use one or more proxy certificates to secure the HTTP layer. These certificates are managed at the ECE installation level. Transport-level encryption is managed by ECE and certificates can’t be changed.
+In {{ece}}, you can use one or more proxy certificates to secure the HTTP layer. These certificates are managed at the ECE installation level. Transport-level encryption is managed by ECE and certificates can’t be changed.
 :::
 
 :::{tab-item} Two
@@ -282,7 +281,7 @@ When version differences are just too large to be handled with any of our other 
 
 % Down the line, if we need to, we could easily convert version-sensitive sibling pages into “picker” pages
 
-### Example
+### Examples
 
 [Cloud Hosted deployment billing dimensions](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/cloud-organization/billing/cloud-hosted-deployment-billing-dimensions.html)
 
