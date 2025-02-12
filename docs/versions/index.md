@@ -43,7 +43,7 @@ The self-managed deployment type and support for products or platforms other tha
 
 **How many facets do I need to use?**
 
-The role of these labels is providing a trust signal that the reader is viewing content that’s applicable to them. This means that the relevant labels should appear on all pages. However, we can choose to expose only one versioning plane on pages where only one plane is relevant:
+The role of these labels is providing a trust signal that the reader is viewing content that’s applicable to them. This means that the relevant labels should appear on all pages. However, we can choose to expose only one versioning facet on pages where only one facet is relevant:
 
 * Depending on what you're documenting, you might need to include information from multiple facets. For example, when relevant features exist at both the stack and the deployment level, both of these groups might be used together (e.g. security, user management, and trust features differ both at the deployment level and at the stack version level).
 
@@ -74,7 +74,7 @@ When it comes to hierarchy of versions, always put the newest version first.
 
 ### Versions and lifecycle states
 
-In the V3 docs system, we currently document only our latest major versions (Stack 9.0+, ECE 4.0+, ECK 3.0+).
+In Elastic Docs v3, we currently document only our latest major versions (Elastic Stack 9.0.0, ECE 4.0.0 and later, ECK 3.0.0 and later).
 
 Add version labels only when a feature was added as part of the major version release (e.g. 9.0.0), or added in subsequent minor releases (e.g. 9.1.0). Do not add version information to features added before these releases. For example, features added in 8.16.0 don't need an 8.16.0 label or a 9.0.0 label, but features added in 9.0.0 need a 9.0.0 label.
 
