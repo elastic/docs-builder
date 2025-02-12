@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ ubuntu-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
 
@@ -47,3 +47,24 @@ jobs:
           path: .artifacts/publish/docs-builder/release/docs-builder
           if-no-files-found: error
           retention-days: 1
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap Action Workspace
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+
+      - name: Test
+        shell: cmd
+        run: build.bat test
+
+      - name: Publish AOT
+        shell: cmd
+        run: build.bat publishbinaries
