@@ -47,7 +47,8 @@
 						class="hidden"
 						aria-hidden="true"
 						data-should-expand="@((containsCurrent).ToLowerString())"
-						@(shouldInitiallyExpand ? "checked" : string.Empty)>
+						@(shouldInitiallyExpand ? "checked" : string.Empty)
+					>
 					<a
 						href="@g.Index?.Url"
 						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-black @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current text-blue-elastic!" : string.Empty)">
