@@ -78,7 +78,7 @@ In Elastic Docs v3, we currently document only our latest major versions (Elasti
 
 Add version labels only when a feature was added as part of the major version release (e.g. 9.0.0), or added in subsequent minor releases (e.g. 9.1.0). Do not add version information to features added before these releases. For example, features added in 8.16.0 don't need an 8.16.0 label or a 9.0.0 label, but features added in 9.0.0 need a 9.0.0 label.
 
-From the latest major onward, the entire feature lifecycle should be represented. This means that you need to add separate labels for the following states:
+From the latest major version release onward, the entire feature lifecycle should be represented. This means that you need to add separate labels for the following states:
 
 * beta or technical preview
 * GA
