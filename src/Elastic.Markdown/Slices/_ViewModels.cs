@@ -24,7 +24,12 @@ public class IndexViewModel
 	public required bool AllowIndexing { get; init; }
 }
 
-public class LayoutViewModel
+public abstract class RedsignViewModel
+{
+	public bool IsRedesign => Environment.GetEnvironmentVariable("REDESIGN") == "true";
+}
+
+public class LayoutViewModel : RedsignViewModel
 {
 	public string Title { get; set; } = "Elastic Documentation";
 	public string RawTitle { get; set; } = "Elastic Documentation";
@@ -37,8 +42,6 @@ public class LayoutViewModel
 	public required string? UrlPathPrefix { get; set; }
 	public required string? GithubEditUrl { get; set; }
 	public required bool AllowIndexing { get; init; }
-
-	public bool IsRedesign => Environment.GetEnvironmentVariable("REDESIGN") == "true";
 
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents
@@ -73,13 +76,13 @@ public class PageTocItem
 }
 
 
-public class NavigationViewModel
+public class NavigationViewModel : RedsignViewModel
 {
 	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 }
 
-public class NavigationTreeItem
+public class NavigationTreeItem : RedsignViewModel
 {
 	public required int Level { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }

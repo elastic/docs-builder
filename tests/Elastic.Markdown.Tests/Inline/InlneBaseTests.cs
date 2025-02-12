@@ -8,7 +8,6 @@ using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -18,7 +17,7 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -37,7 +36,7 @@ public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageI
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -56,7 +55,7 @@ public abstract class InlineTest<TDirective>(ITestOutputHelper output, [Language
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async Task InitializeAsync()
+	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
 		Block = Document
@@ -100,7 +99,7 @@ $"""
 			{ "docs/index.md", new MockFileData(documentContents) }
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Paths.Root.FullName
+			CurrentDirectory = Paths.Root.FullName,
 		});
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
@@ -112,7 +111,8 @@ $"""
 		Collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(FileSystem)
 		{
-			Collector = Collector
+			Collector = Collector,
+			UrlPathPrefix = "/docs"
 		};
 		Set = new DocumentationSet(context);
 		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
@@ -122,7 +122,7 @@ $"""
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
 
-	public virtual async Task InitializeAsync()
+	public virtual async ValueTask InitializeAsync()
 	{
 		_ = Collector.StartAsync(default);
 
@@ -139,6 +139,6 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public Task DisposeAsync() => Task.CompletedTask;
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
 }

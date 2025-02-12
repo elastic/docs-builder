@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -120,10 +119,10 @@ public class NestedDirectiveWithListTests(ITestOutputHelper output) : DirectiveT
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
@@ -149,10 +148,10 @@ public class NestedDirectiveWithListTests2(ITestOutputHelper output) : Directive
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
@@ -177,10 +176,10 @@ public class NestedDirectiveWithListTests3(ITestOutputHelper output) : Directive
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);
@@ -203,10 +202,10 @@ public class DirectiveInList(ITestOutputHelper output) : DirectiveTest<Admonitio
 
 	[Fact]
 	public void Render() => Html.Should().Contain("""
-	                                              <li> List Item 1
+	                                              <li>List Item 1
 	                                              <div class="admonition note">
 	                                              	<p class="admonition-title">Note</p>
-	                                              	  Hello, World!
+	                                              	Hello, World!
 	                                              </div>
 	                                              </li>
 	                                              """);

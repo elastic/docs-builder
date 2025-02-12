@@ -27,8 +27,19 @@ module DiagnosticsCollectorAssertions =
                                    .Where(fun d -> d.Severity = Severity.Error)
                                    .ToArray()
                                    |> List.ofArray
-        let message = errorDiagnostics.FirstOrDefault().Message
-        test <@ message.Contains(expected) @>
+                                   |> List.tryHead
+
+        match errorDiagnostics with
+        | Some e ->
+            let message = e.Message
+            test <@ message.Contains(expected) @>
+        | None -> failwithf "Expected errors but no errors were logged"
+
+        
+    let hasNoWarnings (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+        let warnings = actual.Context.Collector.Warnings
+        test <@ warnings = 0 @>
 
     [<DebuggerStepThrough>]
     let hasWarning (expected: string) (actual: Lazy<GeneratorResults>) =
@@ -38,5 +49,9 @@ module DiagnosticsCollectorAssertions =
                                    .Where(fun d -> d.Severity = Severity.Warning)
                                    .ToArray()
                                    |> List.ofArray
-        let message = errorDiagnostics.FirstOrDefault().Message
-        test <@ message.Contains(expected) @>
+                                   |> List.tryHead
+        match errorDiagnostics with
+        | Some e ->
+            let message = e.Message
+            test <@ message.Contains(expected) @>
+        | None -> failwithf "Expected errors but no errors were logged"

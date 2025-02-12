@@ -7,7 +7,6 @@ This repository is host to:
 * *`docs-builder`* command line tool to generate single doc-sets (13mb native code, no dependencies)
 * *`docs-assembler`* command line tool to assemble all the doc sets. (IN PROGRESS)
 * `elastic/docs-builder@main` Github Action to build and validate a repositories documentation
-* *`docs-generator`* command line tool to deterministically generate a docset and incremental updates to generated content
 
 ## Command line interface
 

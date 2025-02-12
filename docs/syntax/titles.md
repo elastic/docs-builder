@@ -17,7 +17,7 @@ This title is used both by the documentation navigation
 * Left hand site
 * Navigational elements such as breadcrumbs and previous/next links.
 
-As well as when using the [auto text links](./links.md#auto-text-links), e.g:
+As well as when using the [auto text links](./links.md#same-page-links-anchors), e.g:
 
 ```markdown
 [](titles.md)

@@ -6,7 +6,6 @@ using System.IO.Abstractions.TestingHelpers;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -41,7 +40,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/_static/img/observability.png">Elasticsearch</a></p>"""
+			"""<p><a href="/docs/_static/img/observability.png">Elasticsearch</a></p>"""
 		);
 
 	[Fact]
@@ -58,7 +57,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="testing/req.html">Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req">Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -81,7 +80,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="testing/req.html">Special Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req">Special Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -106,7 +105,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="testing/req.html">test</a></p>"""
+			"""<p><a href="/docs/testing/req">test</a></p>"""
 		);
 
 	[Fact]
@@ -132,6 +131,7 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 		// language=html
 		Html.Should().Contain(
 			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
+
 			"""<p><a href="kibana://index.md">test</a></p>"""
 		);
 
@@ -225,10 +225,10 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 		Html.TrimEnd().Should().Be("""
 		<p>Links:</p>
 		<ul>
-		<li> <a href="/testing/req.html">Special Requirements</a></li>
+		<li><a href="/docs/testing/req">Special Requirements</a></li>
 		</ul>
 		<ul>
-		<li> <a href="/testing/req.html">Special Requirements</a></li>
+		<li><a href="/docs/testing/req">Special Requirements</a></li>
 		</ul>
 		""");
 

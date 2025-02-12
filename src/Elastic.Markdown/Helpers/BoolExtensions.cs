@@ -2,14 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Documentation.Generator.Domain;
+namespace Elastic.Markdown.Helpers;
 
-public record Section
+public static class BoolExtensions
 {
-	public required string Header { get; init; }
-
-	public required int Level { get; init; }
-
-	public required string Paragraphs { get; set; }
-
+	public static string ToLowerString(this bool @bool) => @bool.ToString().ToLowerInvariant();
 }

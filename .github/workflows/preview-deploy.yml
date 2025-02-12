@@ -14,79 +14,8 @@ permissions:
   actions: read
 
 jobs:
-  docs-deploy:
+  do-nothing:
     runs-on: ubuntu-latest
     steps:
-      - name: Download PR data
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download ${{ github.event.workflow_run.id }} \
-            --repo "${GITHUB_REPOSITORY}" \
-            --name pull-request-data
-      - name: Get PR data
-        id: pull_request
-        run: |
-          {
-            echo "number=$(jq -r '.number' pull_request.json)"
-            echo "ref=$(jq -r '.ref' pull_request.json)"
-          } >> "${GITHUB_OUTPUT}"
-
-      - name: Create Deployment
-        uses: actions/github-script@v7
-        id: deployment
-        env:
-          PR_NUMBER: ${{ steps.pull_request.outputs.number }}
-          PR_REF: ${{ steps.pull_request.outputs.ref }}
-        with:
-          result-encoding: string
-          script: |
-            const { owner, repo } = context.repo;
-            const deployment = await github.rest.repos.createDeployment({
-                owner,
-                repo,
-                ref: process.env.PR_REF,
-                environment: `docs-preview-${process.env.PR_NUMBER}`,
-                auto_merge: false,
-                required_contexts: [],
-            })
-            await github.rest.repos.createDeploymentStatus({
-                deployment_id: deployment.data.id,
-                owner,
-                repo,
-                state: "in_progress",
-                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
-            return deployment.data.id
-            
-      - name: Download docs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download ${{ github.event.workflow_run.id }} \
-            --repo "${GITHUB_REPOSITORY}" \
-            --name docs \
-            --dir html
-
-      - uses: elastic/docs-builder/.github/actions/aws-auth@main
-
-      - name: Upload to S3
-        env:
-          PR_NUMBER: ${{ steps.pull_request.outputs.number }}
-        run: |
-          aws s3 sync ./html "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --delete
-          aws cloudfront create-invalidation --distribution-id EKT7LT5PM8RKS --paths "/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
-
-      - name: Update deployment status
-        uses: actions/github-script@v7
-        if: always() && steps.deployment.outputs.result
-        with:
-          script: |
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ job.status == 'success' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev/${context.repo.owner}/${context.repo.repo}/pull/${{ steps.pull_request.outputs.number}}`,
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
+      - name: Do nothing
+        run: echo "This is here for backwards compatibility. After validating that the preview-build workflow is working as expected, you can remove this workflow file."

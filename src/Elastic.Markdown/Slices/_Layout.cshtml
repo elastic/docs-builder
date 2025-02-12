@@ -2,26 +2,30 @@
 @if (Model.IsRedesign)
 {
 	<!DOCTYPE html>
-	<html lang="en">
-		<head>
-			<title>@Model.Title</title>
-			<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
-		</head>
-		<body class="text-ink flex flex-col min-h-screen">
-		<div id="elastic-nav"></div>
-		<script src='https://www.elastic.co/elastic-nav.js'></script>
-
-		<main class="markdown-content max-w-7xl mx-auto p-6 flex-1">
+	<html lang="en" class="h-screen">
+	<head>
+		<title>@Model.Title</title>
+		<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
+	</head>
+	<body class="text-ink">
+	@(await RenderPartialAsync(_Header.Create(Model)))
+	<div class="container mx-auto flex">
+		@await RenderPartialAsync(_PagesNav.Create(Model))
+		<main class="markdown-content w-full max-w-screen pt-6 pb-6 px-6">
+			@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 			@await RenderBodyAsync()
 		</main>
-		
-		<div id="elastic-footer"></div>
-		<script src='https://www.elastic.co/elastic-footer.js'></script>
-		<script src="@Model.Static("main.js")"></script>
-		</body>
+		<aside>
+			<nav id="toc-nav" class="sticky top-22 w-80 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
+				TODO
+			</nav>
+		</aside>
+	</div>
+	<script src="@Model.Static("main.js")"></script>
+	</body>
 	</html>
 }
 else

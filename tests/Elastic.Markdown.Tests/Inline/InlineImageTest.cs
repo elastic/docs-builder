@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 using FluentAssertions;
 using Markdig.Syntax.Inlines;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -20,7 +19,7 @@ public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><img src="/_static/img/observability.png" alt="Elasticsearch" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }
 
@@ -37,6 +36,6 @@ public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<Link
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><img src="_static/img/observability.png" alt="Elasticsearch" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }
