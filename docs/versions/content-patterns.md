@@ -225,7 +225,7 @@ In cases where there are significant differences between contexts, close explana
 
 
 ::::{tab-set}
-:group: one-three-four-five-six
+:group: five-six-four-one-three
 
 :::{tab-item} Unique features
 :sync: five
