@@ -54,3 +54,10 @@
 		color: var(--color-blue-elastic);
 	}
 }
+
+
+@layer components {
+	.btn {
+		@apply px-4 py-2 rounded-md bg-blue-elastic text-white;
+	}
+}
