@@ -3,6 +3,8 @@
 @import "./theme.css";
 @import "highlight.js/styles/atom-one-dark.css";
 @import "./markdown/typography.css";
+@import "./markdown/codeblock.css";
+@import "./markdown/list.css";
 
 #default-search::-webkit-search-cancel-button {
 	padding-right: calc(var(--spacing) * 2);
@@ -15,12 +17,12 @@
 	background-repeat: no-repeat;
 }
 
-#pages-nav {
+#pages-nav, #toc-nav {
 	&::-webkit-scrollbar-track {
 		background-color: transparent;
 	}
 	&:hover::-webkit-scrollbar-thumb {
-		background-color: var(--color-gray-light);
+		background-color: var(--color-gray-300);
 	}
 	&::-webkit-scrollbar {
 		width: calc(var(--spacing) * 2);
@@ -33,7 +35,6 @@
 	scrollbar-gutter: stable;
 }
 
-
 #pages-nav li.current {
 	position: relative;
 	&::before {
@@ -44,5 +45,29 @@
 		width: calc(var(--spacing) * 6);
 		height: 1px;
 		background-color: var(--color-gray-200);
+	}
+}
+
+#toc-nav a.current {
+	color: var(--color-blue-elastic);
+	&:hover {
+		color: var(--color-blue-elastic);
+	}
+}
+
+
+@layer components {
+	.btn {
+		@apply px-4 py-2 rounded-md bg-blue-elastic text-white;
+	}
+}
+
+
+.sd-tab-set {
+	@apply flex overflow-x-scroll;
+
+
+	input {
+		@apply hidden;
 	}
 }
