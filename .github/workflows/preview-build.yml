@@ -37,7 +37,7 @@ permissions:
 jobs:
   build:
     concurrency: 
-      group: ${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
       cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
     runs-on: ubuntu-latest
     steps:
@@ -53,6 +53,7 @@ jobs:
         if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
         uses: actions/checkout@v4
         with: 
+          repository: '${{ github.event.pull_request.head.repo.full_name || github.repository }}'
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
         
@@ -62,7 +63,7 @@ jobs:
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.ref || github.ref_name }}
+          REF: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref_name }}
         with:
           result-encoding: string
           script: |
