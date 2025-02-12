@@ -8,7 +8,8 @@
 				{
 					<div class="mb-4">
 						<div class="font-bold mb-2">On this page</div>
-						<ul class="block w-full">
+						<ul class="block w-full relative">
+							<div class="toc-progress-indicator absolute top-0 h-0 left-2 w-[1px] bg-blue-elastic transition-all duration-200 ease-out "></div>
 							@foreach (var item in Model.PageTocItems)
 							{
 								<li class="flex has-[:hover]:border-l-gray-500 items-center ml-2 pl-4 border-l-1 border-l-gray-200 has-[.current]:border-l-blue-elastic!">

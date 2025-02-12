@@ -3,8 +3,7 @@ import { $$, $ } from 'select-dom';
 interface TocElements {
 	headings: Element[];
 	tocLinks: HTMLAnchorElement[];
-	tocNav: HTMLUListElement | null;
-	markdownContent: Element | null;
+	tocContainer: HTMLUListElement | null;
 	progressIndicator: HTMLDivElement;
 }
 
@@ -14,51 +13,23 @@ const HEADING_OFFSET = 28 * 4 + 6 * 4;
 function initializeTocElements(): TocElements {
 	const headings = $$('h2, h3');
 	const tocLinks = $$('#toc-nav li>a') as HTMLAnchorElement[];
-	const tocNav = $('#toc-nav ul') as HTMLUListElement;
-	const markdownContent = $('.markdown-content') || null;
-	
-	// Create progress indicator
-	const progressIndicator = document.createElement('div');
-	progressIndicator.className = 'toc-progress-indicator';
-	tocNav?.appendChild(progressIndicator);
-
-	return { headings, tocLinks, tocNav, markdownContent, progressIndicator };
-}
-
-// Add required styles for the progress indicator
-function addProgressIndicatorStyles() {
-	const style = document.createElement('style');
-	style.textContent = `
-		#toc-nav ul {
-			position: relative;
-		}
-		.toc-progress-indicator {
-			position: absolute;
-			left: calc(var(--spacing) * 2);
-			width: 1px;
-			background: var(--color-blue-elastic);
-			transition: top 250ms ease-out, height 250ms ease-out;
-		}
-	`;
-	document.head.appendChild(style);
+	const tocContainer = $('#toc-nav ul') as HTMLUListElement;
+	const progressIndicator = $('.toc-progress-indicator', tocContainer) as HTMLDivElement;
+	return { headings, tocLinks, tocContainer,progressIndicator };
 }
 
 // Find the current TOC links based on visible headings
+// It can return multiple links because headings in a tab can have the same position
 function findCurrentTocLinks(elements: TocElements): HTMLAnchorElement[] {
 	let currentTocLinks: HTMLAnchorElement[] = [];
 	let currentTop: number | null = null;
-	
 	for (const heading of elements.headings) {
 		const rect = heading.getBoundingClientRect();
-		const headingText = heading.textContent?.trim() ?? '';
-		
 		if (rect.top <= HEADING_OFFSET) {
-			// If we find a heading at a new height, clear previous links
 			if (currentTop !== null && Math.abs(rect.top - currentTop) > 1) {
 				currentTocLinks = [];
 			}
 			currentTop = rect.top;
-			
 			const foundLink = elements.tocLinks.find(link => 
 				link.getAttribute('href') === `#${heading.closest('section')?.id}`
 			);
@@ -67,7 +38,6 @@ function findCurrentTocLinks(elements: TocElements): HTMLAnchorElement[] {
 			}
 		}
 	}
-	
 	return currentTocLinks;
 }
 
@@ -82,29 +52,19 @@ function getVisibleHeadings(elements: TocElements) {
 // Handle bottom of page scroll behavior
 function handleBottomScroll(elements: TocElements) {
 	const visibleHeadings = getVisibleHeadings(elements);
-	
-	visibleHeadings.forEach(heading => {
-		console.log(heading.textContent.trim());
-	})
-	
 	if (visibleHeadings.length === 0) return;
-
 	const firstHeading = visibleHeadings[0];
 	const lastHeading = visibleHeadings[visibleHeadings.length - 1];
-	
 	const firstLink = elements.tocLinks.find(link => 
-		link.getAttribute('href') === `#${firstHeading.closest('section')?.id}`
+		link.getAttribute('href') === `#${firstHeading.parentElement?.id}`
 	)?.closest('li');
-	
 	const lastLink = elements.tocLinks.find(link => 
-		link.getAttribute('href') === `#${lastHeading.closest('section')?.id}`
+		link.getAttribute('href') === `#${lastHeading.parentElement?.id}`
 	)?.closest('li');
-
-	if (firstLink && lastLink && elements.tocNav) {
-		const tocRect = elements.tocNav.getBoundingClientRect();
+	if (firstLink && lastLink && elements.tocContainer) {
+		const tocRect = elements.tocContainer.getBoundingClientRect();
 		const firstRect = firstLink.getBoundingClientRect();
 		const lastRect = lastLink.getBoundingClientRect();
-
 		updateProgressIndicatorPosition(
 			elements.progressIndicator,
 			firstRect.top - tocRect.top,
@@ -113,7 +73,6 @@ function handleBottomScroll(elements: TocElements) {
 	}
 }
 
-// Update progress indicator position and height
 function updateProgressIndicatorPosition(
 	indicator: HTMLDivElement,
 	top: number,
@@ -123,9 +82,8 @@ function updateProgressIndicatorPosition(
 	indicator.style.height = `${height}px`;
 }
 
-// Main update function for the indicator
 function updateIndicator(elements: TocElements) {
-	if (!elements.markdownContent || !elements.tocNav) return;
+	if (!elements.tocContainer) return;
 
 	const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
 	const currentTocLinks = findCurrentTocLinks(elements);
@@ -133,18 +91,13 @@ function updateIndicator(elements: TocElements) {
 	if (isAtBottom) {
 		handleBottomScroll(elements);
 	} else if (currentTocLinks.length > 0) {
-		const tocRect = elements.tocNav.getBoundingClientRect();
-		
-		// Find the topmost and bottommost link positions
+		const tocRect = elements.tocContainer.getBoundingClientRect();
 		const linkElements = currentTocLinks
 			.map(link => link.closest('li'))
 			.filter((li): li is HTMLLIElement => li !== null);
-			
 		if (linkElements.length === 0) return;
-		
 		const firstLinkRect = linkElements[0].getBoundingClientRect();
 		const lastLinkRect = linkElements[linkElements.length - 1].getBoundingClientRect();
-		
 		updateProgressIndicatorPosition(
 			elements.progressIndicator,
 			firstLinkRect.top - tocRect.top,
@@ -153,8 +106,7 @@ function updateIndicator(elements: TocElements) {
 	}
 }
 
-// Handle smooth scrolling for TOC links
-function setupTocLinkHandlers(elements: TocElements) {
+function setupSmoothScrolling(elements: TocElements) {
 	elements.tocLinks.forEach(link => {
 		link.addEventListener('click', (e) => {
 			const href = link.getAttribute('href');
@@ -172,17 +124,11 @@ function setupTocLinkHandlers(elements: TocElements) {
 
 export function initTocNav() {
 	const elements = initializeTocElements();
-	addProgressIndicatorStyles();
-	
-	// Initialize indicator position
 	elements.progressIndicator.style.height = '0';
 	elements.progressIndicator.style.top = '0';
-	
-	// Set up event listeners
-	const boundUpdateIndicator = () => updateIndicator(elements);
-	window.addEventListener('scroll', boundUpdateIndicator);
-	window.addEventListener('resize', boundUpdateIndicator);
-	
-	setupTocLinkHandlers(elements);
-	boundUpdateIndicator();
+	const update = () => updateIndicator(elements)
+	window.addEventListener('scroll', update);
+	window.addEventListener('resize', update);
+	setupSmoothScrolling(elements);
+	update();
 }
