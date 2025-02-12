@@ -60,7 +60,7 @@ const updateIndicator = () => {
     if (isAtBottom) {
         const visibleHeadings = headings.filter(heading => {
             const rect = heading.getBoundingClientRect();
-            return rect.top >= 0 && rect.bottom <= window.innerHeight;
+            return rect.top - 28 * 4 + 6 * 4 >= 0 && rect.bottom <= window.innerHeight;
         });
 		visibleHeadings.forEach(heading => {
 			console.log(heading.textContent?.trim());
@@ -109,6 +109,7 @@ const updateIndicator = () => {
 export function initTocNav() {
 	updateIndicator();
 	window.addEventListener('scroll', updateIndicator);
+	window.addEventListener('resize', updateIndicator);
 	$$('#toc-nav li>a').forEach(link => {
 		link.addEventListener('click', (e) => {
 			const href = link.getAttribute('href');
