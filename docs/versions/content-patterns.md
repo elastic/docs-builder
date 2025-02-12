@@ -235,7 +235,6 @@ In cases where there are significant differences between contexts, close explana
 * In {{stack}} 9.0.0+, each space has its own navigation.
 
 :::
-::::
 
 :::{tab-item} Unique reqs / limits
 :sync: six
