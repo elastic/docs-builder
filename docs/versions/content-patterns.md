@@ -208,7 +208,7 @@ If there’s a terminology change or other minor change (especially where x equa
 
 ## Prose
 
-**Use case:**
+**Use cases:**
 * When features in a list of features are exclusive to a specific context, or were introduced in a specific version
 * Requirements, limits, other simple, mirrored facts
 * Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
