@@ -43,23 +43,32 @@ function addProgressIndicatorStyles() {
 	document.head.appendChild(style);
 }
 
-// Find the current TOC link based on visible headings
-function findCurrentTocLink(elements: TocElements): HTMLAnchorElement | undefined {
-	let currentTocLink: HTMLAnchorElement | undefined;
+// Find the current TOC links based on visible headings
+function findCurrentTocLinks(elements: TocElements): HTMLAnchorElement[] {
+	let currentTocLinks: HTMLAnchorElement[] = [];
+	let currentTop: number | null = null;
 	
 	for (const heading of elements.headings) {
 		const rect = heading.getBoundingClientRect();
+		const headingText = heading.textContent?.trim() ?? '';
+		
 		if (rect.top <= HEADING_OFFSET) {
+			// If we find a heading at a new height, clear previous links
+			if (currentTop !== null && Math.abs(rect.top - currentTop) > 1) {
+				currentTocLinks = [];
+			}
+			currentTop = rect.top;
+			
 			const foundLink = elements.tocLinks.find(link => 
 				link.getAttribute('href') === `#${heading.closest('section')?.id}`
 			);
 			if (foundLink) {
-				currentTocLink = foundLink;
+				currentTocLinks.push(foundLink);
 			}
 		}
 	}
 	
-	return currentTocLink;
+	return currentTocLinks;
 }
 
 // Get visible headings in viewport
@@ -119,21 +128,27 @@ function updateIndicator(elements: TocElements) {
 	if (!elements.markdownContent || !elements.tocNav) return;
 
 	const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
-	const currentTocLink = findCurrentTocLink(elements);
+	const currentTocLinks = findCurrentTocLinks(elements);
 
 	if (isAtBottom) {
 		handleBottomScroll(elements);
-	} else if (currentTocLink) {
-		const link = currentTocLink.closest('li');
-		if (!link) return;
-
+	} else if (currentTocLinks.length > 0) {
 		const tocRect = elements.tocNav.getBoundingClientRect();
-		const linkRect = link.getBoundingClientRect();
+		
+		// Find the topmost and bottommost link positions
+		const linkElements = currentTocLinks
+			.map(link => link.closest('li'))
+			.filter((li): li is HTMLLIElement => li !== null);
+			
+		if (linkElements.length === 0) return;
+		
+		const firstLinkRect = linkElements[0].getBoundingClientRect();
+		const lastLinkRect = linkElements[linkElements.length - 1].getBoundingClientRect();
 		
 		updateProgressIndicatorPosition(
 			elements.progressIndicator,
-			linkRect.top - tocRect.top,
-			linkRect.height
+			firstLinkRect.top - tocRect.top,
+			(lastLinkRect.top + lastLinkRect.height) - firstLinkRect.top
 		);
 	}
 }

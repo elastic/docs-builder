@@ -1,6 +1,7 @@
 import {initNav} from "./pages-nav";
-import {initHighlight} from "./hljs";
 import {initTocNav} from "./toc-nav";
+
+import {initHighlight} from "./hljs";
 
 initNav();
 initTocNav();
