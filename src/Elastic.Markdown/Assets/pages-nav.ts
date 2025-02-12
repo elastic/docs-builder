@@ -14,7 +14,9 @@ function keepNavState(nav: HTMLElement): () => void {
 			if ('shouldExpand' in input.dataset && input.dataset['shouldExpand'] === 'true') {
 				input.checked = true;
 			} else {
-				input.checked = navState[key];
+				if (key in navState) {
+					input.checked = navState[key];
+				}
 			}
 		});
 	}

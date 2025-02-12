@@ -14,7 +14,7 @@
 					<div class="w-5">
 					</div>
 					<a
-						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] group-[.current]/li:text-blue-elastic! hover:text-black @(isCurrent ? "pointer-events-none" : string.Empty)"
+						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] group-[.current]/li:text-blue-elastic! hover:text-black @(isCurrent ? "" : string.Empty)"
 						href="@f.Url"
 						@(isCurrent ? "aria-current=page" : string.Empty)>
 						@f.NavigationTitle
@@ -46,11 +46,11 @@
 						type="checkbox"
 						class="hidden"
 						aria-hidden="true"
-						data-should-expand="@containsCurrent.ToLowerString()"
+						data-should-expand="@((containsCurrent).ToLowerString())"
 						@(shouldInitiallyExpand ? "checked" : string.Empty)>
 					<a
 						href="@g.Index?.Url"
-						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-black @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current pointer-events-none text-blue-elastic!" : string.Empty)">
+						class="block my-1 text-sm leading-[1.2em] tracking-[-0.02em] hover:text-black @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current text-blue-elastic!" : string.Empty)">
 						@g.Index?.NavigationTitle
 					</a>
 				</label>
