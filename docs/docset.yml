@@ -20,6 +20,8 @@ external_hosts:
   - commonmark.org
   - github.io
   - github.com
+  - pandoc.org
+  - atlassian.net
 exclude:
   - '_*.md'
 subs:
