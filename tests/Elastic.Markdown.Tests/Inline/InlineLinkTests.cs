@@ -132,7 +132,7 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 		Html.Should().Contain(
 			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
 
-			"""<p><a href="kibana://index.md">test</a></p>"""
+			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
 		);
 
 	[Fact]
