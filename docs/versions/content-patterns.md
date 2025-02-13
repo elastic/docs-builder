@@ -208,12 +208,12 @@ If there’s a terminology change or other minor change (especially where x equa
 
 ## Prose
 
-**Use case**: Clarifying or secondary information, differences with a "why"
-
-**When to use:** 
+**Use cases:**
+* When features in a list of features are exclusive to a specific context, or were introduced in a specific version
+* Requirements, limits, other simple, mirrored facts
 * Cases where the information isn’t wildly important, but nice to know, or to add basic terminology change info to overviews
 * Comparative overviews
-* Differences that are small enough or not significant enough to warrant an admonition or tabs or separate sections with frontmatter.
+* Differences that are small enough or not significant enough to warrant an admonition or tabs or separate sections with front matter
 
 In some cases, you might want to add a paragraph specific to one version or another in prose to clarify behavior or terminology. 
 
@@ -223,12 +223,44 @@ In cases where there are significant differences between contexts, close explana
 
 ### Examples
 
-* In {{stack}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
 
 ::::{tab-set}
-:group: one-two-three
+:group: five-six-four-one-three
 
-:::{tab-item} One
+:::{tab-item} Unique features
+:sync: five
+
+* Each space has its own saved objects.
+* Users can only access the spaces that they have been granted access to. This access is based on user roles, and a given role can have different permissions per space.
+* In {{stack}} 9.0.0+, each space has its own navigation.
+
+:::
+
+:::{tab-item} Unique reqs / limits
+:sync: six
+
+* In serverless, use `Admin` or equivalent
+* In {{stack}} 9.0.0+, use `kibana_admin` or equivalent
+
+OR 
+
+The maximum number of spaces that you can have differs by [what do we call this]: 
+
+* In serverless, you can have a maximum of 100 spaces.
+* In {{stack}} 9.0.0+, the maximum is controlled by the `xpack.spaces.maxSpaces` setting. Default is 1000.
+:::
+
+:::{tab-item} Nice-to-know
+:sync: four
+
+In {{stack}} 9.1.0 and earlier, **Spaces** were referred to as **Places**. 
+
+OR
+
+If you're managing a {{stack}} v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
+:::
+
+:::{tab-item} Comparative overviews
 :sync: one
 
 The way that TLS certificates are managed depends on your deployment type:
@@ -240,12 +272,7 @@ In {{eck}}, you can manage certificates for the HTTP layer. Certificates for the
 In {{ece}}, you can use one or more proxy certificates to secure the HTTP layer. These certificates are managed at the ECE installation level. Transport-level encryption is managed by ECE and certificates can’t be changed.
 :::
 
-:::{tab-item} Two
-:sync: two
-If you're managing a {{stack}} v9 deployment, then you can also assign roles and define permissions for a space from the **Permissions** tab of the space settings. 
-:::
-
-:::{tab-item} Three
+:::{tab-item} Comparative overviews II
 :sync: three
 
 **Managed security in Elastic Cloud**
@@ -263,6 +290,7 @@ You can augment Elastic Cloud security features in the following ways:
 
 :::
 ::::
+
 
 ## Sibling pages
 
