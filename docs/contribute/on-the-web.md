@@ -52,14 +52,6 @@ If you need to merge changes that relate to version 8.x to the 9.0 and later doc
 5. If the change is too large or complicated, create a new issue in the [`docs-content`](https://github.com/elastic/docs-content) repository detailing the changes made for the team to triage.  
 6. Merge the changes and close the issue once the updates are reflected in the [`docs-content`](https://github.com/elastic/docs-content) repository.
 
-## **Additional Resources**
+% To be added “Kibana and Cloud repository instructions. You need to target main to backport. Changes in main will be lost and you need to recreate it in the new architecture after the freeze is over.
 
-For more details on contributing to our documentation, refer to our README.
-
-Thank you for your contributions\! Your efforts help us maintain accurate and up-to-date documentation for our users.
-
-## Things to be added
-
-To be added “Kibana and Cloud repository instructions. You need to target main to backport. Changes in main will be lost and you need to recreate it in the new architecture after the freeze is over.
-
-Need a good category mapping across the content .. not to the file level for area level
+% Need a good category mapping across the content .. not to the file level for area level
