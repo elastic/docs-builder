@@ -74,7 +74,7 @@ public record ConfigurationFile : DocumentationFile
 							.Select(Glob.Parse)
 							.ToArray();
 						break;
-					case "cross_link":
+					case "cross_links":
 						CrossLinkRepositories = ReadStringArray(entry).ToArray();
 						break;
 					case "subs":

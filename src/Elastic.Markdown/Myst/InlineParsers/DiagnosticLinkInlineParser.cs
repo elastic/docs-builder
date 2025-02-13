@@ -166,8 +166,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			processor.EmitWarning(
 				link,
-				$"Cross link URI{uri}' is not allowed. Add '{scheme}' to the " +
-				$"'cross_link' list in the configuration file '{context.Configuration.SourceFile}' " +
+				$"Cross link '{uri}' is not allowed. Add '{scheme}' to the " +
+				$"'cross_links' list in the configuration file '{context.Configuration.SourceFile}' " +
 				"to allow cross links to this external documentation set."
 			);
 			return;

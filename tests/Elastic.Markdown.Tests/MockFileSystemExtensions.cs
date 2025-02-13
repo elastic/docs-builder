@@ -13,7 +13,7 @@ public static class MockFileSystemExtensions
 	{
 		// language=yaml
 		var yaml = new StringWriter();
-		yaml.WriteLine("cross_link:");
+		yaml.WriteLine("cross_links:");
         yaml.WriteLine("  - docs-content");
         yaml.WriteLine("  - kibana");
 		yaml.WriteLine("toc:");

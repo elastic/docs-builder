@@ -40,7 +40,7 @@ type Setup =
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/"));
         let yaml = new StringWriter();
-        yaml.WriteLine("cross_link:");
+        yaml.WriteLine("cross_links:");
         yaml.WriteLine("  - docs-content");
         yaml.WriteLine("toc:");
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
