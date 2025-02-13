@@ -22,10 +22,16 @@ external_hosts:
   - github.com
   - pandoc.org
   - atlassian.net
+  - elastic.dev
+  - visualstudio.com
 exclude:
   - '_*.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
+  stack: Elastic Stack
+  serverless-short: Serverless
+  ece:   "Elastic Cloud Enterprise"
+  eck:   "Elastic Cloud on Kubernetes"
 toc:
   - file: index.md
   - hidden: developer-notes.md
@@ -94,6 +100,10 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
+  - folder: versions
+    children:
+      - file: index.md
+      - file: content-patterns.md
   # nested TOCs are only allowed from docset.yml
   # to prevent them from being nested deeply arbitrarily
   - toc: development

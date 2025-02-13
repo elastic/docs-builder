@@ -1,34 +1,35 @@
 #elastic-docs-v3 {
+
 	h1 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-4xl text-ink font-bold mb-6;
+		@apply text-4xl text-black mb-6 mt-4;
 		line-height: 1.2em;
 		letter-spacing: -0.04em;
 	}
 	
 	h2 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-2xl text-ink mb-6;
+		@apply text-2xl text-black mb-6 mt-4;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
 	
 	h3 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-xl text-ink font-bold mb-6;
+		@apply text-xl text-black font-bold mb-6 mt-4;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
 	
 	p {
 		font-family: "Inter", sans-serif;
-		@apply text-base text-body mb-6;
+		@apply text-base text-ink text-body mb-6;
 		line-height: 1.5em;
 		letter-spacing: 0;
 	}
 	
 	a {
 		font-family: "Inter", sans-serif;
-		@apply text-blue-elastic hover:underline underline-offset-4;
+		@apply text-blue-elastic underline hover:text-blue-800;
 	}
 }

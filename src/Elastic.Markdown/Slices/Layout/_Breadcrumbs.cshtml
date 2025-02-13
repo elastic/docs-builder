@@ -1,5 +1,5 @@
 @inherits RazorSlice<LayoutViewModel>
-<ol class="flex-1 mb-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
+<ol class="block w-full" itemscope="" itemtype="https://schema.org/BreadcrumbList">
 	<li class="inline text-ink text-sm hover:text-ink leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 		<a itemprop="item" href="@Model.UrlPathPrefix/">
 			<span itemprop="name" class="hover:text-ink">Elastic</span>
@@ -16,4 +16,11 @@
 			<meta itemprop="position" content="2">
 		</li>
 	}
+	<li class="inline text-gray-500 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<span class="px-1">/</span>
+		<a itemprop="item" href="@Model.CurrentDocument.Url" class="pointer-events-none">
+			<span itemprop="name" class="hover:text-ink">@Model.CurrentDocument.NavigationTitle</span>
+		</a>
+		<meta itemprop="position" content="1">
+	</li>
 </ol>
