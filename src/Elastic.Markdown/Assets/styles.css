@@ -80,6 +80,10 @@
 			    tracking-[-0.02em];
 		}
 	}
+	
+	.content-container {
+		@apply w-full max-w-[80ch];
+	}
 }
 
 * {
