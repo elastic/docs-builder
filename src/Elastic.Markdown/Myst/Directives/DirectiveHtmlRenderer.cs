@@ -286,11 +286,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		if (!html.Contains("[CONTENT]"))
-		{
-			renderer.Write(html);
-			return;
-		}
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
 		renderer.Write(blocks[0]);
 		renderer.WriteChildren(obj);
