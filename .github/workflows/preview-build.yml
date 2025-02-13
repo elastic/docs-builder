@@ -53,6 +53,7 @@ jobs:
         if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
         uses: actions/checkout@v4
         with: 
+          repository: '${{ github.event.pull_request.head.repo.full_name || github.repository }}'
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
         
@@ -147,7 +148,7 @@ jobs:
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update Link Index
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success' 
+        if: steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status

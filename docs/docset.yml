@@ -21,7 +21,6 @@ external_hosts:
   - github.io
   - github.com
   - elastic.dev
-  - visualstudio.com
 exclude:
   - '_*.md'
 subs:

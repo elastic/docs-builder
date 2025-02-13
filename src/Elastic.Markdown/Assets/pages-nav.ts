@@ -1,8 +1,8 @@
-import {$, $$} from "select-dom/strict";
+import {$, $$} from "select-dom";
 
 type NavExpandState = { [key: string]: boolean };
 const PAGE_NAV_EXPAND_STATE_KEY = 'pagesNavState';
-const navState = JSON.parse(sessionStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY)) as NavExpandState
+const navState = JSON.parse(sessionStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY) ?? "{}") as NavExpandState
 
 // Initialize the nav state from the session storage
 // Return a function to keep the nav state in the session storage that should be called before the page is unloaded
@@ -14,7 +14,9 @@ function keepNavState(nav: HTMLElement): () => void {
 			if ('shouldExpand' in input.dataset && input.dataset['shouldExpand'] === 'true') {
 				input.checked = true;
 			} else {
-				input.checked = navState[key];
+				if (key in navState) {
+					input.checked = navState[key];
+				}
 			}
 		});
 	}
@@ -68,6 +70,9 @@ function isElementInViewport(el: HTMLElement): boolean {
 
 export function initNav() {
 	const pagesNav = $('#pages-nav');
+	if (!pagesNav) {
+		return;
+	}
 	const keepNavStateCallback = keepNavState(pagesNav);
 	const keepNavPositionCallback = keepNavPosition(pagesNav);
 	scrollCurrentNaviItemIntoView(pagesNav, 100);

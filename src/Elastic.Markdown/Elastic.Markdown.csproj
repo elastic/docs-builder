@@ -40,10 +40,10 @@
 
   <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
     <ItemGroup>
-      <EmbeddedResource Include="_static/*.js" Watch="false" />
-      <EmbeddedResource Include="_static/*.js.map" Watch="false" />
-      <EmbeddedResource Include="_static/*.css" Watch="false" />
-      <EmbeddedResource Include="_static/*.css.map" Watch="false" />
+      <EmbeddedResource Include="_static/*.js" />
+      <EmbeddedResource Include="_static/*.js.map" />
+      <EmbeddedResource Include="_static/*.css" />
+      <EmbeddedResource Include="_static/*.css.map" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.woff2" Watch="false" />
     </ItemGroup>

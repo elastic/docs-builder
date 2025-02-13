@@ -7,23 +7,48 @@
 		<title>@Model.Title</title>
 		<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		@* <meta name="viewport" content="width=device-width, initial-scale=1.0"> *@
 		<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
 	</head>
 	<body class="text-ink">
 	@(await RenderPartialAsync(_Header.Create(Model)))
-	<div class="container mx-auto flex">
+	<div class="flex flex-col items-center px-6">
+	<div class="container flex">
 		@await RenderPartialAsync(_PagesNav.Create(Model))
-		<main class="markdown-content w-full max-w-screen pt-6 pb-6 px-6">
+		@await RenderPartialAsync(_TableOfContents.Create(Model))
+		<main class="w-full pt-6 pb-30 px-6 order-2">
 			@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-			@await RenderBodyAsync()
+			<article class="markdown-content w-full max-w-[80ch]">
+				@await RenderBodyAsync()
+			</article>
+			<div class="flex justify-between mt-12">
+				<div class="grow flex justify-start flex-nowrap">
+					@if (Model.Previous != null)
+					{
+						<a href="@Model.Previous.Url" class="flex items-center text-blue-elastic leading-0">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18"/>
+							</svg>
+							<div class="title ml-2">@Model.Previous.NavigationTitle</div>
+						</a>
+					}
+				</div>
+				<div class="grow flex justify-end flex-nowrap">
+					@if (Model.Next != null)
+					{
+						<a href="@Model.Next.Url" class="flex items-center text-blue-elastic leading-0">
+							<div class="title mr-2">@Model.Next.NavigationTitle</div>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+							</svg>
+						</a>
+					}
+				</div>
+			</div>
 		</main>
-		<aside>
-			<nav id="toc-nav" class="sticky top-22 w-80 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
-				TODO
-			</nav>
-		</aside>
 	</div>
+	</div>
+	@(await RenderPartialAsync(_Footer.Create(Model)))
 	<script src="@Model.Static("main.js")"></script>
 	</body>
 	</html>
@@ -124,7 +149,7 @@ else
 		</div>
 	</main>
 </div>
-@(await RenderPartialAsync<_Footer>())
+@(await RenderPartialAsync(_Footer.Create(Model)))
 @(await RenderPartialAsync(_Scripts.Create(Model)))
 @await RenderSectionAsync("scripts")
 
