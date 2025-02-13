@@ -14,7 +14,7 @@ namespace Elastic.Markdown.CrossLinks;
 public interface ICrossLinkResolver
 {
 	Task FetchLinks();
-	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)]out Uri? resolvedUri);
+	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 }
 
 public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory logger) : ICrossLinkResolver
@@ -41,7 +41,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 		_linkReferences = dictionary.ToFrozenDictionary();
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)]out Uri? resolvedUri) =>
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _linkReferences, crossLinkUri, out resolvedUri);
 
 	private static Uri BaseUri { get; } = new Uri("https://docs-v3-preview.elastic.dev");

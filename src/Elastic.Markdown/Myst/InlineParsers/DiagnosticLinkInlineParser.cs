@@ -38,10 +38,8 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 internal partial class LinkRegexExtensions
 {
-
 	[GeneratedRegex(@"\s\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchTitleStylingInstructions();
-
 }
 
 public class DiagnosticLinkInlineParser : LinkInlineParser
@@ -124,6 +122,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			processor.EmitWarning(link, "Found empty url");
 			return false;
 		}
+
 		if (url.Contains("{{") || url.Contains("}}"))
 		{
 			processor.EmitWarning(link,
@@ -131,6 +130,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				"See https://github.com/elastic/docs-builder/issues/182 for further information.");
 			return false;
 		}
+
 		return true;
 	}
 
@@ -152,6 +152,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				"to allow links to this domain."
 			);
 		}
+
 		return true;
 	}
 
@@ -205,7 +206,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (markdown == null)
 		{
-			processor.EmitWarning(link, $"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
+			processor.EmitWarning(link,
+				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
 			return;
 		}
 
@@ -261,7 +263,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
 	}
 
-	private static bool IsCrossLink([NotNullWhen(true)]Uri? uri) =>
+	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		uri != null // This means it's not a local
 		&& !ExcludedSchemes.Contains(uri.Scheme)
 		&& !uri.IsFile
