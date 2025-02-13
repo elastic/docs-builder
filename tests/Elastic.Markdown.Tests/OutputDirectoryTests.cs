@@ -27,7 +27,8 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		{
 			Collector = new DiagnosticsCollector([])
 		};
-		var set = new DocumentationSet(context);
+		var linkResolver = new TestCrossLinkResolver();
+		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(TestContext.Current.CancellationToken);

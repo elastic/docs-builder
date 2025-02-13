@@ -11,6 +11,7 @@ open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open Elastic.Markdown
+open Elastic.Markdown.CrossLinks
 open Elastic.Markdown.IO
 open JetBrains.Annotations
 open Xunit
@@ -39,6 +40,8 @@ type Setup =
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/"));
         let yaml = new StringWriter();
+        yaml.WriteLine("cross_link:");
+        yaml.WriteLine("  - docs-content");
         yaml.WriteLine("toc:");
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
@@ -74,8 +77,10 @@ type Setup =
 
         let collector = TestDiagnosticsCollector();
         let context = BuildContext(fileSystem, Collector=collector)
-        let set = DocumentationSet(context);
-        let generator = DocumentationGenerator(set, new TestLoggerFactory())
+        let logger = new TestLoggerFactory()
+        let linkResolver = TestCrossLinkResolver()
+        let set = DocumentationSet(context, logger, linkResolver);
+        let generator = DocumentationGenerator(set, logger)
 
         let markdownFiles =
             files

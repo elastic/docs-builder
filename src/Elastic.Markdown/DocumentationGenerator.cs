@@ -1,9 +1,11 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Slices;
@@ -20,6 +22,7 @@ public class DocumentationGenerator
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
+	public ICrossLinkResolver Resolver { get; }
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
@@ -32,6 +35,7 @@ public class DocumentationGenerator
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;
+		Resolver = docSet.LinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
 
 		_logger.LogInformation($"Created documentation set for: {DocumentationSet.Name}");
@@ -66,6 +70,9 @@ public class DocumentationGenerator
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return;
 
+		_logger.LogInformation($"Fetching external links");
+		await Resolver.FetchLinks();
+
 		await ResolveDirectoryTree(ctx);
 
 		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
@@ -77,6 +84,7 @@ public class DocumentationGenerator
 
 		_logger.LogInformation($"Generating documentation compilation state");
 		await GenerateDocumentationState(ctx);
+
 		_logger.LogInformation($"Generating links.json");
 		await GenerateLinkReference(ctx);
 

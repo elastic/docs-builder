@@ -13,6 +13,9 @@ public static class MockFileSystemExtensions
 	{
 		// language=yaml
 		var yaml = new StringWriter();
+		yaml.WriteLine("cross_link:");
+        yaml.WriteLine("  - docs-content");
+        yaml.WriteLine("  - kibana");
 		yaml.WriteLine("toc:");
 		var markdownFiles = fileSystem.Directory
 			.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories);

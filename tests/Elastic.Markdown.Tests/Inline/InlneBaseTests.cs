@@ -114,7 +114,8 @@ $"""
 			Collector = Collector,
 			UrlPathPrefix = "/docs"
 		};
-		Set = new DocumentationSet(context);
+		var linkResolver = new TestCrossLinkResolver();
+		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
