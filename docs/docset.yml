@@ -1,6 +1,6 @@
 project: 'doc-builder'
 cross_links:
-  - elasticsearch
+  - docs-content
 # docs-builder will warn for links to external hosts not declared here
 external_hosts:
   - slack.com
