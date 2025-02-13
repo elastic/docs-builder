@@ -73,7 +73,6 @@ public class PageTocItem
 {
 	public required string Heading { get; init; }
 	public required string Slug { get; init; }
-
 	public required int Level { get; init; }
 }
 
