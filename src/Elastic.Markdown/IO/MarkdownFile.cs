@@ -149,7 +149,7 @@ public record MarkdownFile : DocumentationFile
 
 		var contents = document
 			.Descendants<HeadingBlock>()
-			.Where(block => block is { Level: 2 or 3 })
+			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
 			.Select(h =>
 			{
