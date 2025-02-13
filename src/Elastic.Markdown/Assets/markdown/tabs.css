@@ -1,0 +1,36 @@
+@layer components {
+	.tabs {
+		@apply flex flex-wrap relative overflow-hidden;
+		
+		.tabs-label {
+			@apply cursor-pointer px-6 py-2 z-20 text-ink-light flex items-center;
+			
+			&:hover {
+				@apply border-b-1 border-b-black text-black bg-gray-100;
+			}
+		}
+		
+		.tabs-input {
+			@apply opacity-0 absolute;
+		}
+		
+		.tabs-content {
+			@apply w-full order-99 border-t-1 border-gray-300 pl-6 pt-4 z-0 hidden;
+			transform: translateY(-1px);
+		}
+		
+		.tabs-input:checked+.tabs-label+.tabs-content {
+			@apply block;
+		}
+
+		.tabs-input:checked+.tabs-label, 
+		.tabs-label:active {
+			@apply border-b-1 border-b-blue-elastic text-blue-elastic;
+		}
+
+		.tabs-input:focus-visible+.tabs-label {
+			outline: var(--outline-size) var(--outline-style) var(--outline-color);
+			outline-offset: var(--outline-offset, var(--outline-size));
+		}
+	}
+}

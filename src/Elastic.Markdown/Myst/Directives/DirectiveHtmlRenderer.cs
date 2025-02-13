@@ -170,6 +170,19 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
+	private void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
+	{
+		var slice = TabItem.Create(new TabItemViewModel
+		{
+			Index = block.Index,
+			Title = block.Title,
+			TabSetIndex = block.TabSetIndex,
+			SyncKey = block.SyncKey,
+			TabSetGroupKey = block.TabSetGroupKey
+		});
+		RenderRazorSlice(slice, renderer, block);
+	}
+
 	private void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
 	{
 		var slice = Mermaid.Create(new MermaidViewModel());
@@ -183,19 +196,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		var slice = Applies.Create(block.Deployment);
 		RenderRazorSliceNoContent(slice, renderer);
-	}
-
-	private void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
-	{
-		var slice = TabItem.Create(new TabItemViewModel
-		{
-			Index = block.Index,
-			Title = block.Title,
-			TabSetIndex = block.TabSetIndex,
-			SyncKey = block.SyncKey,
-			TabSetGroupKey = block.TabSetGroupKey
-		});
-		RenderRazorSlice(slice, renderer, block);
 	}
 
 	private void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
@@ -286,6 +286,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
+		if (!html.Contains("[CONTENT]"))
+		{
+			renderer.Write(html);
+			return;
+		}
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
 		renderer.Write(blocks[0]);
 		renderer.WriteChildren(obj);

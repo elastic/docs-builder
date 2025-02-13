@@ -30,8 +30,6 @@ This guide uses option one. If you'd like to clone the repository and build from
 
 :::{tab-item} macOS
 
-### macOS
-
 1. **Download the Binary:**
    Download the latest macOS binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
    ```sh
@@ -54,8 +52,6 @@ This guide uses option one. If you'd like to clone the repository and build from
 
 :::{tab-item} Windows
 
-### Windows
-
 1. **Download the Binary:**
    Download the latest Windows binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
    ```sh
@@ -77,8 +73,6 @@ This guide uses option one. If you'd like to clone the repository and build from
 :::
 
 :::{tab-item} Linux
-
-### Linux
 
 1. **Download the Binary:**
    Download the latest Linux binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
