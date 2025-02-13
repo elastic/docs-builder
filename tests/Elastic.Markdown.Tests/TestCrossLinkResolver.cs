@@ -43,6 +43,6 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		return Task.CompletedTask;
 	}
 
-	public bool TryResolve(Uri crosslinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(LinkReferences, crosslinkUri, out resolvedUri);
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		CrossLinkResolver.TryResolve(errorEmitter, LinkReferences, crossLinkUri, out resolvedUri);
 }

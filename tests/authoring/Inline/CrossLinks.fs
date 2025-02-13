@@ -28,3 +28,53 @@ type ``cross-link makes it into html`` () =
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``error when using wrong scheme`` () =
+
+    static let markdown = Setup.Markdown """
+[APM Server binary](docs-x:/solutions/observability/apps/apm-server-binary.md)
+"""
+
+    [<Fact>]
+    let ``error on bad scheme`` () =
+        markdown
+        |> hasError "'docs-x' is not declared as valid cross link repository in docset.yml under cross_links"
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``error when bad anchor is used`` () =
+
+    static let markdown = Setup.Markdown """
+[APM Server binary](docs-content:/solutions/observability/apps/apm-server-binary.md#apm-deb-x)
+"""
+
+    [<Fact>]
+    let ``error when linking to unknown anchor`` () =
+        markdown
+        |> hasError "'solutions/observability/apps/apm-server-binary.md' has no anchor named: '#apm-deb-x"
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``link to valid anchor`` () =
+
+    static let markdown = Setup.Markdown """
+[APM Server binary](docs-content:/solutions/observability/apps/apm-server-binary.md#apm-deb)
+"""
+
+    [<Fact>]
+    let ``validate HTML`` () =
+        markdown |> convertsToHtml """
+            <p><a
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb">
+                APM Server binary
+                </a>
+            </p>
+        """
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings

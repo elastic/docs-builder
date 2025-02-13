@@ -47,7 +47,7 @@ internal partial class LinkRegexExtensions
 public class DiagnosticLinkInlineParser : LinkInlineParser
 {
 	// See https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml for a list of URI schemes
-	private static readonly ImmutableHashSet<string> ExcludedSchemes = ["http", "https", "tel", "jdbc"];
+	private static readonly ImmutableHashSet<string> ExcludedSchemes = ["http", "https", "tel", "jdbc", "mailto"];
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
@@ -161,18 +161,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		var scheme = uri.Scheme;
-		if (!context.Configuration.CrossLinkRepositories.Contains(scheme))
-		{
-			processor.EmitWarning(
-				link,
-				$"Cross link '{uri}' is not allowed. Add '{scheme}' to the " +
-				$"'cross_links' list in the configuration file '{context.Configuration.SourceFile}' " +
-				"to allow cross links to this external documentation set."
-			);
-			return;
-		}
-		if (context.LinksResolver.TryResolve(uri, out var resolvedUri))
+		if (context.LinksResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
 			link.Url = resolvedUri.ToString();
 	}
 
@@ -276,5 +265,5 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		uri != null // This means it's not a local
 		&& !ExcludedSchemes.Contains(uri.Scheme)
 		&& !uri.IsFile
-		&& Path.GetExtension(uri.OriginalString) == ".md";
+		&& !string.IsNullOrEmpty(uri.Scheme);
 }

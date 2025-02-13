@@ -46,7 +46,7 @@ type TestCrossLinkResolver () =
             this.LinkReferences.Add("kibana", reference)
             Task.CompletedTask
 
-        member this.TryResolve(crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
-            CrossLinkResolver.TryResolve(this.LinkReferences, crossLinkUri, &resolvedUri);
+        member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
+            CrossLinkResolver.TryResolve(errorEmitter, this.LinkReferences, crossLinkUri, &resolvedUri);
 
 

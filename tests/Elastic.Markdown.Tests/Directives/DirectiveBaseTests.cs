@@ -86,6 +86,7 @@ $"""
 	{
 		_ = Collector.StartAsync(default);
 
+		await Set.LinkResolver.FetchLinks();
 		Document = await File.ParseFullAsync(default);
 		var html = File.CreateHtml(Document).AsSpan();
 		var find = "</section>";
