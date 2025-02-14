@@ -5,6 +5,7 @@
 @import "./markdown/typography.css";
 @import "./markdown/list.css";
 @import "./markdown/tabs.css";
+@import "./markdown/code.css";
 
 #default-search::-webkit-search-cancel-button {
 	padding-right: calc(var(--spacing) * 2);

@@ -1,0 +1,57 @@
+@layer components {
+	.markdown-content {
+		
+		pre {
+			@apply grid mb-6;
+			code {
+				@apply text-sm;
+			}
+			code:first-child {
+				@apply rounded-t-sm;
+			}
+			code:last-child {
+				@apply rounded-b-sm;
+			}
+			code.language-apiheader {
+				@apply border-b-1 border-b-gray-700;
+			}
+		}
+		
+		pre code .code-callout {
+			&>.hljs-number {
+				@apply text-white!;
+			}
+			transform: translateY(-1px);
+			user-select: none;
+		}
+	}
+	
+	ol.code-callouts {
+		li {
+			@apply relative pl-1;
+			counter-increment: code-callout-counter;
+			list-style-type: none;
+		}
+		
+		li::before {
+			content: counter(code-callout-counter);
+			position: absolute;
+			top: 1px;
+			left: calc(-1 * var(--spacing) * 6);
+		}
+	}
+
+	pre code .code-callout,
+	ol.code-callouts li::before {
+		@apply text-xs!
+			text-white
+			font-mono
+			bg-blue-elastic
+			rounded-full
+			size-5
+			inline-flex
+			justify-center
+			items-center
+		;
+	}
+}
