@@ -57,32 +57,69 @@ public class MarkdownParser(
 	}
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? _pipeline;
-	public static MarkdownPipeline Pipeline
+	private static MarkdownPipeline? _pipelineSoft;
+	private static MarkdownPipeline PipelineSoft
+	{
+		get
+		{
+			if (_pipelineSoft is not null)
+				return _pipelineSoft;
+
+			var builder = CreateDefaultBuilder()
+				.UseSoftlineBreakAsHardlineBreak();
+
+			_pipelineSoft = builder.Build();
+			return _pipelineSoft;
+		}
+	}
+	// ReSharper disable once InconsistentNaming
+	private static MarkdownPipeline? _pipelineHard;
+	private static MarkdownPipeline PipelineHard
+	{
+		get
+		{
+			if (_pipelineHard is not null)
+				return _pipelineHard;
+
+			var builder = CreateDefaultBuilder();
+
+			_pipelineHard = builder.Build();
+			return _pipelineHard;
+		}
+	}
+
+	private static MarkdownPipelineBuilder CreateDefaultBuilder()
+	{
+		var builder = new MarkdownPipelineBuilder()
+			.UseInlineAnchors()
+			.UsePreciseSourceLocation()
+			.UseDiagnosticLinks()
+			.UseHeadingsWithSlugs()
+			.UseEmphasisExtras(EmphasisExtraOptions.Default)
+			.UseSubstitution()
+			.UseComments()
+			.UseYamlFrontMatter()
+			.UseGridTables()
+			.UsePipeTables()
+			.UseDirectives()
+			.UseDefinitionLists()
+			.UseEnhancedCodeBlocks()
+			.DisableHtml()
+			.UseHardBreaks();
+		builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+		return builder;
+	}
+
+	// ReSharper disable once InconsistentNaming
+	private MarkdownPipeline? _pipeline;
+	public MarkdownPipeline Pipeline
 	{
 		get
 		{
 			if (_pipeline is not null)
 				return _pipeline;
 
-			var builder = new MarkdownPipelineBuilder()
-				.UseInlineAnchors()
-				.UsePreciseSourceLocation()
-				.UseDiagnosticLinks()
-				.UseHeadingsWithSlugs()
-				.UseEmphasisExtras(EmphasisExtraOptions.Default)
-				.UseSubstitution()
-				.UseComments()
-				.UseYamlFrontMatter()
-				.UseGridTables()
-				.UsePipeTables()
-				.UseDirectives()
-				.UseDefinitionLists()
-				.UseEnhancedCodeBlocks()
-				.DisableHtml()
-				.UseHardBreaks();
-			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			_pipeline = builder.Build();
+			_pipeline = Configuration.SoftLineEndings ? PipelineSoft : PipelineHard;
 			return _pipeline;
 		}
 	}
