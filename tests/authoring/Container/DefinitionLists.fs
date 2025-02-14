@@ -42,12 +42,12 @@ This is my `definition`
 """
 
     [<Fact>]
-    let ``validate HTML 2`` () =
+    let ``validate HTML`` () =
         markdown |> convertsToHtml """
              <dl>
                 <dt>This is my <code>definition</code> </dt>
                 <dd>
-                    <p> And this is the definition <strong>body</strong> <br>
+                    <p> And this is the definition <strong>body</strong>
                         Which may contain multiple lines</p>
                         <div class="admonition note">
  			                <p class="admonition-title">Note</p>

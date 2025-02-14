@@ -230,7 +230,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			block.Configuration, block.LinksResolver);
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(parser.Pipeline);
 		renderer.Write(html);
 		//var slice = Include.Create(new IncludeViewModel { Html = html });
 		//RenderRazorSlice(slice, renderer, block);
@@ -271,7 +271,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			RenderMarkdown = s =>
 			{
 				var document = parser.Parse(s, block.IncludeFrom, block.FrontMatter);
-				var html = document.ToHtml(MarkdownParser.Pipeline);
+				var html = document.ToHtml(parser.Pipeline);
 				return html;
 			}
 		});
