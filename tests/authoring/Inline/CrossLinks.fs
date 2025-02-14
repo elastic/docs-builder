@@ -100,3 +100,47 @@ type ``link to repository that does not resolve yet`` () =
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``Using double forward slashes`` () =
+
+    static let markdown = Setup.Markdown """
+[APM Server binary](docs-content://solutions/observability/apps/apm-server-binary.md#apm-deb)
+"""
+
+    [<Fact>]
+    let ``validate HTML`` () =
+        markdown |> convertsToHtml """
+            <p><a
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb">
+                APM Server binary
+                </a>
+            </p>
+        """
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``link to repository that does not resolve yet using double slashes`` () =
+
+    static let markdown = Setup.Markdown """
+[Elasticsearch Documentation](elasticsearch://index.md)
+"""
+
+    [<Fact>]
+    let ``validate HTML`` () =
+        markdown |> convertsToHtml """
+            <p><a
+                href="https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/">
+                Elasticsearch Documentation
+                </a>
+            </p>
+        """
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
