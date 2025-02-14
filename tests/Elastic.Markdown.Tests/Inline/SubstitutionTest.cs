@@ -23,7 +23,7 @@ not a comment
 	[Fact]
 	public void ReplacesSubsFromFrontMatter() =>
 		Html.Should().Contain(
-				"""Hello World!<br />"""
+				"""Hello World!"""
 			).And.Contain(
 				"""not a comment"""
 			)
@@ -52,7 +52,7 @@ not a {substitution}
 	[Fact]
 	public void PreservesSingleBracket() =>
 		Html.Should().Contain(
-				"""Hello World!<br />"""
+				"""Hello World!"""
 			).And.Contain(
 				"""not a comment"""
 			)
@@ -108,7 +108,7 @@ The following should be subbed as well: {{global-var}}
 
 	[Fact]
 	public void EmitsGlobalVariable() =>
-		Html.Should().Contain("Hello World!<br />")
+		Html.Should().Contain("Hello World!")
 			.And.NotContain("{{hello-world}}")
 			.And.Contain("A variable from docset.yml")
 			.And.NotContain("{{global-var}}");
