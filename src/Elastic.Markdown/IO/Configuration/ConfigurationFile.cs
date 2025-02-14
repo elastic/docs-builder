@@ -18,7 +18,7 @@ public record ConfigurationFile : DocumentationFile
 	private readonly int _depth;
 	public string? Project { get; }
 	public Glob[] Exclude { get; } = [];
-	public bool SoftLineEndings { get;  }
+	public bool SoftLineEndings { get; }
 
 	public string[] CrossLinkRepositories { get; } = [];
 
