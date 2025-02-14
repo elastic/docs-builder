@@ -1,6 +1,6 @@
 # Headings
 
-You can have up to 6 levels of headings. But only levels 2 and 3 are displayed in table of contents sidebar.
+You create a heading by adding number signs `#` in front of a word or phrase. The number of number signs you use should correspond to the heading level. For example, to create a heading level three `<h3>`, use three number signs (e.g., `### My Header`).
 
 ## Basics
 
@@ -16,18 +16,6 @@ You can have up to 6 levels of headings. But only levels 2 and 3 are displayed i
 ##### Heading 5
 ###### Heading 6
 
-```
-
-:::
-
-:::{tab-item} HTML
-
-```html
-<div class="heading-wrapper" id="heading-1">
-    <h1>
-        <a class="headerlink" href="#heading-1">Heading 1</a>
-    </h1>
-</div>
 ```
 
 :::
@@ -61,9 +49,10 @@ You can have up to 6 levels of headings. But only levels 2 and 3 are displayed i
 
 ## Anchor Links
 
-By default, the anchor links are generated based on the heading text. You can also specify a custom anchor link using the following syntax:
+By default, the anchor links are generated based on the heading text.
+You will get a hyphened, lowercase, alphanumeric version of any string you please, with any [diacritics](https://en.wikipedia.org/wiki/Diacritic) removed, whitespace and dashes collapsed, and whitespace trimmed.
 
-### Default Anchor Link
+### Default Anchor Links
 
 ::::{tab-set}
 
@@ -71,7 +60,7 @@ By default, the anchor links are generated based on the heading text. You can al
 
 ```markdown
 
-## Hello-World
+#### Hello-World
 
 ```
 
@@ -79,14 +68,16 @@ By default, the anchor links are generated based on the heading text. You can al
 
 :::{tab-item} Output
 
-## Hello-World
+#### Hello-World
 
 :::
 
 ::::
 
 
-### Custom Anchor Link
+### Custom Anchor Links
+
+You can also specify a custom anchor link using the following syntax.
 
 ::::{tab-set}
 
@@ -94,7 +85,7 @@ By default, the anchor links are generated based on the heading text. You can al
 
 ```markdown
 
-## Heading [#custom-anchor]
+#### Heading [#custom-anchor]
 
 ```
 
@@ -102,7 +93,7 @@ By default, the anchor links are generated based on the heading text. You can al
 
 :::{tab-item} Output
 
-## Heading [#custom-anchor]
+#### Heading [#custom-anchor]
 
 :::
 
