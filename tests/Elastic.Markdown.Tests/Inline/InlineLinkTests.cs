@@ -130,9 +130,7 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
-
-			"""<p><a href="kibana://index.md">test</a></p>"""
+			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
 		);
 
 	[Fact]
@@ -157,8 +155,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			// TODO: The link is not rendered correctly yet, will be fixed in a follow-up
-			"""<p>Go to <a href="kibana://index.md">test</a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
 		);
 
 	[Fact]

@@ -4,10 +4,12 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.IO;
 
@@ -29,15 +31,18 @@ public class DocumentationSet
 
 	public MarkdownParser MarkdownParser { get; }
 
-	public DocumentationSet(BuildContext context)
+	public ICrossLinkResolver LinkResolver { get; }
+
+	public DocumentationSet(BuildContext context, ILoggerFactory logger, ICrossLinkResolver? linkResolver = null)
 	{
 		Context = context;
 		SourcePath = context.SourcePath;
 		OutputPath = context.OutputPath;
 		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
 		Configuration = new ConfigurationFile(context.ConfigurationPath, SourcePath, context);
+		LinkResolver = linkResolver ?? new CrossLinkResolver(Configuration, logger);
 
-		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration);
+		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration, LinkResolver);
 
 		Name = SourcePath.FullName;
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));

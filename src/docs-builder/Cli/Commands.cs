@@ -75,7 +75,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService),
 			AllowIndexing = allowIndexing != null
 		};
-		var set = new DocumentationSet(context);
+		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
 
@@ -136,7 +136,7 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		{
 			Collector = new ConsoleDiagnosticsCollector(logger, null),
 		};
-		var set = new DocumentationSet(context);
+		var set = new DocumentationSet(context, logger);
 
 		var moveCommand = new Move(fileSystem, fileSystem, set, logger);
 		return await moveCommand.Execute(source, target, dryRun ?? false, ctx);

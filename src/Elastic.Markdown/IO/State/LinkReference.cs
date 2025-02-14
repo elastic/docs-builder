@@ -11,11 +11,11 @@ public record LinkMetadata
 {
 	[JsonPropertyName("anchors")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public required string[]? Anchors { get; init; } = [];
+	public string[]? Anchors { get; init; } = [];
 
 	[JsonPropertyName("hidden")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-	public required bool Hidden { get; init; }
+	public bool Hidden { get; init; }
 }
 
 public record LinkReference
@@ -26,7 +26,7 @@ public record LinkReference
 	[JsonPropertyName("url_path_prefix")]
 	public required string? UrlPathPrefix { get; init; }
 
-	/// Mapping of relative filepath and all the page's anchors for deeplinks
+	/// Mapping of relative filepath and all the page's anchors for deep links
 	[JsonPropertyName("links")]
 	public required Dictionary<string, LinkMetadata> Links { get; init; } = [];
 

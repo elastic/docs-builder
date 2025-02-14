@@ -12,8 +12,9 @@ type ``simple multiline definition with markup`` () =
     static let markdown = Setup.Markdown """
 This is my `definition`
 :   And this is the definition **body**
+
     Which may contain multiple lines
-"""
+    """
 
     [<Fact>]
     let ``validate HTML`` () =
@@ -21,8 +22,8 @@ This is my `definition`
              <dl>
                 <dt>This is my <code>definition</code> </dt>
                 <dd>
-                    <p> And this is the definition <strong>body</strong> <br>
-                        Which may contain multiple lines</p>
+                    <p> And this is the definition <strong>body</strong></p>
+                    <p>Which may contain multiple lines</p>
                 </dd>
              </dl>
             """

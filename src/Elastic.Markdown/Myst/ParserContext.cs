@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
@@ -14,12 +15,6 @@ namespace Elastic.Markdown.Myst;
 
 public static class ParserContextExtensions
 {
-	public static BuildContext GetBuildContext(this InlineProcessor processor) =>
-		processor.GetContext().Build;
-
-	public static BuildContext GetBuildContext(this BlockProcessor processor) =>
-		processor.GetContext().Build;
-
 	public static ParserContext GetContext(this InlineProcessor processor) =>
 		processor.Context as ParserContext
 		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
@@ -36,13 +31,15 @@ public class ParserContext : MarkdownParserContext
 		IFileInfo path,
 		YamlFrontMatter? frontMatter,
 		BuildContext context,
-		ConfigurationFile configuration)
+		ConfigurationFile configuration,
+		ICrossLinkResolver linksResolver)
 	{
 		Parser = markdownParser;
 		Path = path;
 		FrontMatter = frontMatter;
 		Build = context;
 		Configuration = configuration;
+		LinksResolver = linksResolver;
 
 		if (frontMatter?.Properties is not { Count: > 0 })
 			Substitutions = configuration.Substitutions;
@@ -70,6 +67,7 @@ public class ParserContext : MarkdownParserContext
 	}
 
 	public ConfigurationFile Configuration { get; }
+	public ICrossLinkResolver LinksResolver { get; }
 	public MarkdownParser Parser { get; }
 	public IFileInfo Path { get; }
 	public YamlFrontMatter? FrontMatter { get; }

@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <Compile Include="Framework\TestValues.fs"/>
+    <Compile Include="Framework\TestCrossLinkResolver.fs" />
     <Compile Include="Framework\Setup.fs"/>
     <Compile Include="Framework\MarkdownResultsAssertions.fs"/>
     <Compile Include="Framework\HtmlAssertions.fs"/>
@@ -48,6 +49,7 @@
 
   <ItemGroup>
     <Compile Include="Inline\InlineLinks.fs" />
+    <Compile Include="Inline\CrossLinks.fs" />
     <Compile Include="Container\DefinitionLists.fs"/>
     <Compile Include="Generator\LinkReferenceFile.fs"/>
   </ItemGroup>

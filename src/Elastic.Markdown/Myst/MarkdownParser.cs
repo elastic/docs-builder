@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -23,11 +25,15 @@ public class MarkdownParser(
 	IDirectoryInfo sourcePath,
 	BuildContext context,
 	Func<IFileInfo, DocumentationFile?>? getDocumentationFile,
-	ConfigurationFile configuration)
+	ConfigurationFile configuration,
+	ICrossLinkResolver linksResolver
+	)
 {
 	public IDirectoryInfo SourcePath { get; } = sourcePath;
 
 	private BuildContext Context { get; } = context;
+
+	private ICrossLinkResolver LinksResolver { get; } = linksResolver;
 
 	// ReSharper disable once InconsistentNaming
 	private static MarkdownPipeline? _minimalPipeline;
@@ -86,7 +92,7 @@ public class MarkdownParser(
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context, Configuration)
+		var context = new ParserContext(this, path, null, Context, Configuration, LinksResolver)
 		{
 			SkipValidation = true,
 			GetDocumentationFile = getDocumentationFile
@@ -96,7 +102,7 @@ public class MarkdownParser(
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, matter, Context, Configuration)
+		var context = new ParserContext(this, path, matter, Context, Configuration, LinksResolver)
 		{
 			GetDocumentationFile = getDocumentationFile
 		};
@@ -127,7 +133,7 @@ public class MarkdownParser(
 
 	public MarkdownDocument Parse(string yaml, IFileInfo parent, YamlFrontMatter? matter)
 	{
-		var context = new ParserContext(this, parent, matter, Context, Configuration)
+		var context = new ParserContext(this, parent, matter, Context, Configuration, LinksResolver)
 		{
 			GetDocumentationFile = getDocumentationFile
 		};

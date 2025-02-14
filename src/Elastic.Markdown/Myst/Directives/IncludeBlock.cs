@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
@@ -25,6 +26,8 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	public ConfigurationFile Configuration { get; } = context.Configuration;
 
+	public ICrossLinkResolver LinksResolver { get; } = context.LinksResolver;
+
 	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
 
 	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;
@@ -39,7 +42,6 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? Language { get; private set; }
 	public string? Caption { get; private set; }
 	public string? Label { get; private set; }
-
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include

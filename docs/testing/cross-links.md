@@ -1,7 +1,7 @@
 # Cross Links
 
-[Elasticsearch](elasticsearch://index.md)
+[Elasticsearch](docs-content://index.md)
 
 [Kibana][1]
 
-[1]: kibana://index.md
+[1]: docs-content://index.md

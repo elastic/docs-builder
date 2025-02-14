@@ -19,6 +19,8 @@ public record ConfigurationFile : DocumentationFile
 	public string? Project { get; }
 	public Glob[] Exclude { get; } = [];
 
+	public string[] CrossLinkRepositories { get; } = [];
+
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
 
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -71,6 +73,9 @@ public record ConfigurationFile : DocumentationFile
 						Exclude = ReadStringArray(entry)
 							.Select(Glob.Parse)
 							.ToArray();
+						break;
+					case "cross_links":
+						CrossLinkRepositories = ReadStringArray(entry).ToArray();
 						break;
 					case "subs":
 						_substitutions = ReadDictionary(entry);

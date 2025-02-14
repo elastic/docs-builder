@@ -30,7 +30,8 @@ public class NavigationTestsBase : IAsyncLifetime
 			Collector = collector
 		};
 
-		Set = new DocumentationSet(context);
+		var linkResolver = new TestCrossLinkResolver();
+		Set = new DocumentationSet(context, LoggerFactory, linkResolver);
 
 		Set.Files.Should().HaveCountGreaterThan(10);
 		Generator = new DocumentationGenerator(Set, LoggerFactory);
