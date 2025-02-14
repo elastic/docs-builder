@@ -16,9 +16,6 @@ using Microsoft.Extensions.Logging;
 using ProcNet;
 using ProcNet.Std;
 
-var configFile = Path.Combine(Paths.Root.FullName, "src/docs-assembler/conf.yml");
-var config = AssemblyConfiguration.Deserialize(File.ReadAllText(configFile));
-
 var services = new ServiceCollection();
 services.AddGitHubActionsCore();
 services.AddLogging(x =>
@@ -47,7 +44,7 @@ app.Add<LinkCommands>("link");
 app.Add<RepositoryCommands>("repo");
 
 var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
-var command = githubActions?.GetInput("command");
+var command = githubActions?.GetInput("COMMAND");
 if (!string.IsNullOrEmpty(command))
 	args = command.Split(' ');
 
