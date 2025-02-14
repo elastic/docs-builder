@@ -79,6 +79,7 @@ toc:
   - folder: syntax
     children:
       - file: index.md
+      - file: headings.md
       - file: admonitions.md
       - file: applies.md
       - file: automated_settings.md

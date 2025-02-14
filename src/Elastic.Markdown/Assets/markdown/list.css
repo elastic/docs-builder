@@ -1,4 +1,4 @@
-#elastic-docs-v3 {
+.markdown-content {
 	ol,ul {
 		font-family: "Inter", sans-serif;
 		@apply text-base text-body mb-6;

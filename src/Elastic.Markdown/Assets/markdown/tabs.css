@@ -15,7 +15,7 @@
 		}
 		
 		.tabs-content {
-			@apply w-full order-99 border-t-1 border-gray-300 pl-6 pt-4 z-0 hidden;
+			@apply w-full order-99 border-t-1 border-gray-300 px-6 pt-4 z-0 hidden;
 			transform: translateY(-1px);
 		}
 		

@@ -32,7 +32,7 @@ function findCurrentTocLinks(elements: TocElements): HTMLAnchorElement[] {
 			}
 			currentTop = rect.top;
 			const foundLink = elements.tocLinks.find(link => 
-				link.getAttribute('href') === `#${heading.closest('section')?.id}`
+				link.getAttribute('href') === `#${heading.closest('.heading-wrapper')?.id}`
 			);
 			if (foundLink) {
 				currentTocLinks.push(foundLink);

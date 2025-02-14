@@ -1,24 +1,54 @@
-#elastic-docs-v3 {
+.markdown-content {
+	
+	font-size: 16px;
 
 	h1 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-4xl text-black mb-6 mt-4;
+		@apply text-5xl text-black mb-6 mt-5;
 		line-height: 1.2em;
 		letter-spacing: -0.04em;
 	}
 	
 	h2 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-2xl text-black mb-6 mt-4;
+		@apply text-4xl text-black mb-6 mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 	
 	h3 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-xl text-black font-bold mb-6 mt-4;
+		@apply text-2xl text-black mb-6 mt-6;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
+	}
+
+	h4 {
+		font-family: "Mier B", "Inter", sans-serif;
+		@apply text-base text-black font-bold mb-5 mt-5;
+		line-height: 1.2em;
+		letter-spacing: -0.02em;
+	}
+
+	h5 {
+		font-family: "Mier B", "Inter", sans-serif;
+		@apply text-sm text-black font-bold mb-4 mt-5;
+		line-height: 1.2em;
+		letter-spacing: -0.02em;
+	}
+
+	h6 {
+		font-family: "Mier B", "Inter", sans-serif;
+		@apply text-xs text-black font-bold mb-3 mt-3;
+		line-height: 1.2em;
+		letter-spacing: -0.02em;
+	}
+	
+	h1, h2, h3, h4, h5, h6 {
+		a {
+			font-family: "Mier B", "Inter", sans-serif;
+			@apply text-black hover:text-black no-underline;
+		}
 	}
 	
 	p {
@@ -30,6 +60,6 @@
 	
 	a {
 		font-family: "Inter", sans-serif;
-		@apply text-blue-elastic underline hover:text-blue-800;
+		@apply text-blue-elastic hover:text-blue-800 underline;
 	}
 }

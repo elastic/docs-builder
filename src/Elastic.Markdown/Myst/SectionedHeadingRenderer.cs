@@ -38,27 +38,43 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 
 		var slug = slugTarget.Slugify();
 
-		renderer.Write(@"<section id=""");
-		renderer.Write(slug);
-		renderer.Write(@""">");
+		var isRedesign = Environment.GetEnvironmentVariable("REDESIGN") == "true";
 
-		renderer.Write('<');
-		renderer.Write(headingText);
-		renderer.WriteAttributes(obj);
-		renderer.Write('>');
-
-		renderer.WriteLeafInline(obj);
-
-
-		// language=html
-		renderer.WriteLine($@"<a class=""headerlink"" href=""#{slug}"" title=""Link to this heading"">¶</a>");
-
-		renderer.Write("</");
-		renderer.Write(headingText);
-		renderer.WriteLine('>');
-
-		renderer.Write("</section>");
-
-		renderer.EnsureLine();
+		if (isRedesign)
+		{
+			renderer.Write(@"<div class=""heading-wrapper"" id=""");
+			renderer.Write(slug);
+			renderer.Write(@""">");
+			renderer.Write('<');
+			renderer.Write(headingText);
+			renderer.WriteAttributes(obj);
+			renderer.Write('>');
+			renderer.Write($"""<a class="headerlink" href="#{slug}">""");
+			renderer.WriteLeafInline(obj);
+			renderer.Write("</a>");
+			renderer.Write("</");
+			renderer.Write(headingText);
+			renderer.WriteLine('>');
+			renderer.Write("</div>");
+			renderer.EnsureLine();
+		}
+		else
+		{
+			renderer.Write(@"<section id=""");
+			renderer.Write(slug);
+			renderer.Write(@""">");
+			renderer.Write('<');
+			renderer.Write(headingText);
+			renderer.WriteAttributes(obj);
+			renderer.Write('>');
+			renderer.WriteLeafInline(obj);
+			// language=html
+			renderer.WriteLine($@"<a class=""headerlink"" href=""#{slug}"" title=""Link to this heading"">¶</a>");
+			renderer.Write("</");
+			renderer.Write(headingText);
+			renderer.WriteLine('>');
+			renderer.Write("</section>");
+			renderer.EnsureLine();
+		}
 	}
 }
