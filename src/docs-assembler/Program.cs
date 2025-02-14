@@ -4,19 +4,46 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Actions.Core.Extensions;
 using ConsoleAppFramework;
 using Documentation.Assembler;
 using Documentation.Assembler.Cli;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ProcNet;
 using ProcNet.Std;
 
 var configFile = Path.Combine(Paths.Root.FullName, "src/docs-assembler/conf.yml");
 var config = AssemblyConfiguration.Deserialize(File.ReadAllText(configFile));
 
+var services = new ServiceCollection();
+services.AddGitHubActionsCore();
+services.AddLogging(x =>
+{
+	x.ClearProviders();
+	x.SetMinimumLevel(LogLevel.Information);
+	x.AddSimpleConsole(c =>
+	{
+		c.SingleLine = true;
+		c.IncludeScopes = true;
+		c.UseUtcTimestamp = true;
+		c.TimestampFormat = Environment.UserInteractive ? ":: " : "[yyyy-MM-ddTHH:mm:ss] ";
+	});
+});
+services.AddSingleton<DiagnosticsChannel>();
+services.AddSingleton<DiagnosticsCollector>();
+
+await using var serviceProvider = services.BuildServiceProvider();
+ConsoleApp.ServiceProvider = serviceProvider;
+
+
 var app = ConsoleApp.Create();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
+
+app.Add<LinkCommands>();
 
 // would love to use libgit2 so there is no git dependency but
 // libgit2 is magnitudes slower to clone repositories https://github.com/libgit2/libgit2/issues/4674
