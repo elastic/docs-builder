@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.State;
@@ -15,4 +16,6 @@ namespace Elastic.Markdown;
 [JsonSerializable(typeof(GenerationState))]
 [JsonSerializable(typeof(LinkReference))]
 [JsonSerializable(typeof(GitCheckoutInformation))]
+[JsonSerializable(typeof(LinkIndex))]
+[JsonSerializable(typeof(LinkIndexEntry))]
 internal partial class SourceGenerationContext : JsonSerializerContext;
