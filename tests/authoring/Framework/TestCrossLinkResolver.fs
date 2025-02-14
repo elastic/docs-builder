@@ -14,7 +14,10 @@ open Elastic.Markdown.IO.State
 type TestCrossLinkResolver () =
 
     let references = Dictionary<string, LinkReference>()
+    let declared = HashSet<string>()
+
     member this.LinkReferences = references
+    member this.DeclaredRepositories = declared
 
     interface ICrossLinkResolver with
         member this.FetchLinks() =
@@ -44,9 +47,12 @@ type TestCrossLinkResolver () =
             let reference = CrossLinkResolver.Deserialize json
             this.LinkReferences.Add("docs-content", reference)
             this.LinkReferences.Add("kibana", reference)
+            this.DeclaredRepositories.Add("docs-content") |> ignore;
+            this.DeclaredRepositories.Add("kibana") |> ignore;
+            this.DeclaredRepositories.Add("elasticsearch") |> ignore;
             Task.CompletedTask
 
         member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
-            CrossLinkResolver.TryResolve(errorEmitter, this.LinkReferences, crossLinkUri, &resolvedUri);
+            CrossLinkResolver.TryResolve(errorEmitter, this.DeclaredRepositories, this.LinkReferences, crossLinkUri, &resolvedUri);
 
 

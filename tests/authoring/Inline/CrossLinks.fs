@@ -78,3 +78,25 @@ type ``link to valid anchor`` () =
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``link to repository that does not resolve yet`` () =
+
+    static let markdown = Setup.Markdown """
+[Elasticsearch Documentation](elasticsearch:/index.md)
+"""
+
+    [<Fact>]
+    let ``validate HTML`` () =
+        markdown |> convertsToHtml """
+            <p><a
+                href="https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/">
+                Elasticsearch Documentation
+                </a>
+            </p>
+        """
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings

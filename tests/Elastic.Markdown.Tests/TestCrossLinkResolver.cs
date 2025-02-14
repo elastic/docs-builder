@@ -5,12 +5,14 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
+using Xunit.Internal;
 
 namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
 	public Dictionary<string, LinkReference> LinkReferences { get; } = new();
+	public HashSet<string> DeclaredRepositories { get; } = new();
 
 	public Task FetchLinks()
 	{
@@ -40,9 +42,10 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		var reference = CrossLinkResolver.Deserialize(json);
 		LinkReferences.Add("docs-content", reference);
 		LinkReferences.Add("kibana", reference);
+		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
 		return Task.CompletedTask;
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, LinkReferences, crossLinkUri, out resolvedUri);
+		CrossLinkResolver.TryResolve(errorEmitter, DeclaredRepositories, LinkReferences, crossLinkUri, out resolvedUri);
 }

@@ -42,6 +42,8 @@ type Setup =
         let yaml = new StringWriter();
         yaml.WriteLine("cross_links:");
         yaml.WriteLine("  - docs-content");
+        yaml.WriteLine("  - elasticsearch");
+        yaml.WriteLine("  - kibana");
         yaml.WriteLine("toc:");
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
