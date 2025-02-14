@@ -25,7 +25,7 @@ internal class LinkCommands(ILoggerFactory logger)
 	/// Create an index.json file from all discovered links.json files in our S3 bucket
 	/// </summary>
 	/// <param name="ctx"></param>
-	[Command("links create-index")]
+	[Command("create-index")]
 	public async Task CreateLinkIndex(Cancel ctx = default)
 	{
 		AssignOutputLogger();
