@@ -71,7 +71,6 @@ public class MarkdownParser(
 				.UseDiagnosticLinks()
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
-				.UseSoftlineBreakAsHardlineBreak()
 				.UseSubstitution()
 				.UseComments()
 				.UseYamlFrontMatter()
