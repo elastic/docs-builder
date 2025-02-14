@@ -26,6 +26,7 @@ external_hosts:
   - atlassian.net
   - elastic.dev
   - visualstudio.com
+  - wikipedia.org
 exclude:
   - '_*.md'
 subs:
