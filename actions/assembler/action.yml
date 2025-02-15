@@ -1,0 +1,15 @@
+name: 'Documentation Assembler'
+description: 'Run the documenation assembler commands'
+
+branding:
+  icon: 'filter'
+  color: 'red'
+
+inputs:
+  command:
+    description: 'The assembler command to run'
+    required: true
+
+runs:
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-assembler:edge"

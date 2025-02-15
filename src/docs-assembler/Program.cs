@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Actions.Core.Extensions;
+using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler;
 using Documentation.Assembler.Cli;
@@ -14,9 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProcNet;
 using ProcNet.Std;
-
-var configFile = Path.Combine(Paths.Root.FullName, "src/docs-assembler/conf.yml");
-var config = AssemblyConfiguration.Deserialize(File.ReadAllText(configFile));
 
 var services = new ServiceCollection();
 services.AddGitHubActionsCore();
@@ -38,81 +36,16 @@ services.AddSingleton<DiagnosticsCollector>();
 await using var serviceProvider = services.BuildServiceProvider();
 ConsoleApp.ServiceProvider = serviceProvider;
 
-
 var app = ConsoleApp.Create();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 
-app.Add<LinkCommands>();
+app.Add<LinkCommands>("link");
+app.Add<RepositoryCommands>("repo");
 
-// would love to use libgit2 so there is no git dependency but
-// libgit2 is magnitudes slower to clone repositories https://github.com/libgit2/libgit2/issues/4674
-app.Add("clone-all", async Task (CancellationToken ctx) =>
-{
-	Console.WriteLine(config.Repositories.Count);
-	var dict = new ConcurrentDictionary<string, Stopwatch>();
-	await Parallel.ForEachAsync(config.Repositories, new ParallelOptions
-	{
-		CancellationToken = ctx,
-		MaxDegreeOfParallelism = Environment.ProcessorCount / 4
-	}, async (kv, c) =>
-	{
-		await Task.Run(() =>
-		{
-			var name = kv.Key;
-			var repository = kv.Value;
-			var checkoutFolder = Path.Combine(Paths.Root.FullName, $".artifacts/assembly/{name}");
-
-			var sw = Stopwatch.StartNew();
-			dict.AddOrUpdate(name, sw, (_, _) => sw);
-			Console.WriteLine($"Checkout: {name}\t{repository}\t{checkoutFolder}");
-			var branch = repository.Branch ?? "main";
-			var args = new StartArguments(
-				"git", "clone", repository.Origin, checkoutFolder, "--depth", "1"
-				, "--single-branch", "--branch", branch
-			);
-			Proc.StartRedirected(args, new ConsoleLineHandler(name));
-			sw.Stop();
-		}, c);
-	}).ConfigureAwait(false);
-
-	foreach (var kv in dict.OrderBy(kv => kv.Value.Elapsed))
-		Console.WriteLine($"-> {kv.Key}\ttook: {kv.Value.Elapsed}");
-});
-app.Add("list", async Task (CancellationToken ctx) =>
-{
-
-	var assemblyPath = Path.Combine(Paths.Root.FullName, $".artifacts/assembly");
-	var dir = new DirectoryInfo(assemblyPath);
-	var dictionary = new Dictionary<string, string>();
-	foreach (var d in dir.GetDirectories())
-	{
-		var checkoutFolder = Path.Combine(assemblyPath, d.Name);
-
-		var capture = Proc.Start(
-			new StartArguments("git", "rev-parse", "--abbrev-ref", "HEAD")
-			{
-				WorkingDirectory = checkoutFolder
-			}
-		);
-		dictionary.Add(d.Name, capture.ConsoleOut.FirstOrDefault()?.Line ?? "unknown");
-	}
-	foreach (var kv in dictionary.OrderBy(kv => kv.Value))
-		Console.WriteLine($"-> {kv.Key}\tbranch: {kv.Value}");
-
-	await Task.CompletedTask;
-});
+var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
+var command = githubActions?.GetInput("COMMAND");
+if (!string.IsNullOrEmpty(command))
+	args = command.Split(' ');
 
 await app.RunAsync(args);
-
-namespace Documentation.Assembler
-{
-	public class ConsoleLineHandler(string prefix) : IConsoleLineHandler
-	{
-		public void Handle(LineOut lineOut) => lineOut.CharsOrString(
-			r => Console.Write(prefix + ": " + r),
-			l => Console.WriteLine(prefix + ": " + l));
-
-		public void Handle(Exception e) { }
-	}
-}

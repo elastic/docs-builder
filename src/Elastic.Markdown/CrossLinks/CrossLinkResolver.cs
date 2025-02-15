@@ -108,7 +108,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 			return false;
 		}
 
-		var lookupPath = crossLinkUri.AbsolutePath.TrimStart('/');
+		var lookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
 		var path = ToTargetUrlPath(lookupPath);
 		if (!string.IsNullOrEmpty(crossLinkUri.Fragment))
 			path += crossLinkUri.Fragment;
@@ -121,7 +121,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 	private static bool TryFullyValidate(Action<string> errorEmitter, LinkReference linkReference, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
 	{
 		resolvedUri = null;
-		var lookupPath = crossLinkUri.AbsolutePath.TrimStart('/');
+		var lookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
 		if (string.IsNullOrEmpty(lookupPath) && crossLinkUri.Host.EndsWith(".md"))
 			lookupPath = crossLinkUri.Host;
 
