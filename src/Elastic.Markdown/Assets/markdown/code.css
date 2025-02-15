@@ -1,10 +1,21 @@
 @layer components {
 	.markdown-content {
 		
+		
+		.highlight {
+			@apply mt-6;
+		}
+		
 		pre {
-			@apply grid mb-6;
+			@apply grid;
 			code {
-				@apply text-sm;
+				@apply text-sm
+					text-gray-100
+					bg-blue-developer
+					rounded-none 
+					border-0 
+					p-6!
+				;
 			}
 			code:first-child {
 				@apply rounded-t-sm;
@@ -17,10 +28,7 @@
 			}
 		}
 		
-		pre code .code-callout {
-			&>.hljs-number {
-				@apply text-white!;
-			}
+		pre code .code-callout .hljs-number {
 			transform: translateY(-1px);
 			user-select: none;
 		}
@@ -41,10 +49,10 @@
 		}
 	}
 
-	pre code .code-callout,
+	pre code .code-callout .hljs-number,
 	ol.code-callouts li::before {
 		@apply text-xs!
-			text-white
+			text-white!
 			font-mono
 			bg-blue-elastic
 			rounded-full
@@ -53,5 +61,22 @@
 			justify-center
 			items-center
 		;
+	}
+
+	code {
+		@apply font-mono
+		bg-gray-100
+		rounded-xs
+		border-1
+		border-gray-200
+		inline-block
+		;
+		font-size: 0.875em;
+		line-height: 1.4em;
+		padding-left: 0.2em;
+		padding-right: 0.2em;
+		letter-spacing: 0.02em;
+		text-decoration: inherit;
+		font-weight: inherit;
 	}
 }

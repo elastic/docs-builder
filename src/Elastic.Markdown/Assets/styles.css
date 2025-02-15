@@ -1,11 +1,12 @@
 @import "tailwindcss";
 @import "./fonts.css";
 @import "./theme.css";
-@import "highlight.js/styles/atom-one-dark.css";
+@import "highlight.js/styles/base16/material-palenight.css";
 @import "./markdown/typography.css";
 @import "./markdown/list.css";
 @import "./markdown/tabs.css";
 @import "./markdown/code.css";
+@import "./copybutton.css";
 
 #default-search::-webkit-search-cancel-button {
 	padding-right: calc(var(--spacing) * 2);

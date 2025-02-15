@@ -1,6 +1,6 @@
 @layer components {
 	.tabs {
-		@apply flex flex-wrap relative overflow-hidden;
+		@apply flex flex-wrap relative overflow-hidden mt-6;
 		
 		.tabs-label {
 			@apply cursor-pointer px-6 py-2 z-20 text-ink-light flex items-center;
@@ -15,7 +15,7 @@
 		}
 		
 		.tabs-content {
-			@apply w-full order-99 border-t-1 border-gray-300 px-6 pt-4 z-0 hidden;
+			@apply w-full order-99 border-t-1 border-gray-300 px-6 z-0 hidden;
 			transform: translateY(-1px);
 		}
 		

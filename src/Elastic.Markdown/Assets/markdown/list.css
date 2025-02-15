@@ -1,7 +1,7 @@
 .markdown-content {
 	ol,ul {
 		font-family: "Inter", sans-serif;
-		@apply text-base text-body mb-6;
+		@apply text-base text-body mt-6;
 		line-height: 1.5em;
 		letter-spacing: 0;
 		margin-left: 1.5em;
@@ -16,7 +16,7 @@
 	}
 
 	li {
-		margin-bottom: calc(var(--spacing) * 3);
+		@apply first:mt-0  mt-2;
 
 		p {
 			margin-bottom: 0;

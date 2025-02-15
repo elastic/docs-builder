@@ -6,7 +6,7 @@ When you move a source file or folder, you must also update all inbound and outb
 
 Move a file or folder from one location to another and update all links in the documentation. For example:
 
-```
+```bash
 docs-builder mv ./old-location/ia.md ./new-location/ia.md
 ```
 
@@ -16,7 +16,7 @@ The `docset.yml` and `toc.yml` files are not automatically updated when using th
 
 ## `docs-builder mv --help`
 
-```
+```bash
 Usage: mv [arguments...] [options...] [-h|--help] [--version]
 
 Move a file or folder from one location to another and update all links in the documentation
