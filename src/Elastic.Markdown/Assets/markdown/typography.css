@@ -4,42 +4,42 @@
 
 	h1 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-4xl text-black font-semibold;
+		@apply text-4xl text-ink-dark font-semibold;
 		line-height: 1.2em;
 		letter-spacing: -0.04em;
 	}
 	
 	h2 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-2xl text-black font-bold mt-10;
+		@apply text-2xl text-ink-dark font-bold mt-10;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
 	
 	h3 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-xl text-black font-bold mt-6;
+		@apply text-xl text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
 
 	h4 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-base text-black font-bold mt-4;
+		@apply text-base text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
 
 	h5 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-sm text-black font-bold mt-4;
+		@apply text-sm text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
 
 	h6 {
 		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-xs text-black font-bold mt-4;
+		@apply text-xs text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
 		letter-spacing: -0.02em;
 	}
@@ -47,7 +47,7 @@
 	h1, h2, h3, h4, h5, h6 {
 		a {
 			font-family: "Mier B", "Inter", sans-serif;
-			@apply text-black hover:text-black no-underline;
+			@apply text-ink-dark hover:text-ink-dark no-underline;
 		}
 	}
 	
@@ -56,10 +56,12 @@
 		@apply text-base text-ink mt-4;
 		letter-spacing: 0;
 		line-height: 1.5em;
+		text-wrap: pretty;
 	}
 	
 	a {
 		font-family: "Inter", sans-serif;
+		text-wrap: nowrap;
 		@apply text-blue-elastic hover:text-blue-800 underline;
 	}
 }

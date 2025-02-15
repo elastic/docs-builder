@@ -1,6 +1,6 @@
 @layer components {
 	.tabs {
-		@apply flex flex-wrap relative overflow-hidden mt-6;
+		@apply flex flex-wrap relative overflow-hidden mt-4;
 		
 		.tabs-label {
 			@apply cursor-pointer px-6 py-2 z-20 text-ink-light flex items-center;

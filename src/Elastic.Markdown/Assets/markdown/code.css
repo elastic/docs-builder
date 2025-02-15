@@ -3,7 +3,7 @@
 		
 		
 		.highlight {
-			@apply mt-6;
+			@apply mt-4;
 		}
 		
 		pre {
@@ -11,11 +11,11 @@
 			code {
 				@apply text-sm
 					text-gray-100
-					bg-blue-developer
 					rounded-none 
 					border-0 
 					p-6!
 				;
+				background-color: #22272e;
 			}
 			code:first-child {
 				@apply rounded-t-sm;
@@ -78,5 +78,6 @@
 		letter-spacing: 0.02em;
 		text-decoration: inherit;
 		font-weight: inherit;
+		text-wrap: nowrap;
 	}
 }
