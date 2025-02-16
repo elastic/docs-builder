@@ -1,0 +1,59 @@
+@layer components {
+	.admonition {
+		@apply mt-4 border-l-4;
+		
+		.admonition-title {
+			@apply px-4 py-2 font-bold flex items-center gap-4	;
+			svg {
+				@apply size-5;
+			}
+		}
+		.admonition-content {
+			@apply px-4 pb-1;
+		}
+		
+		&.note {
+			border-color: #61A2FF;
+			background-color: #E8F1FF;
+			.admonition-title {
+				background-color: #BFDBFF;
+			}
+		}
+		
+		&.tip {
+			@apply border-teal;
+			background-color: #E2F9F7;
+			
+			.admonition-title {
+				background-color: #C9F3F0;
+			}
+		}
+
+		&.warning {
+			@apply border-pink;
+			background-color: #FFEBF5;
+
+			.admonition-title {
+				background-color: #FDDDE9;
+			}
+		}
+		
+		&.important {
+			border-color: #B386F9;
+			background-color: #F3ECFE;
+			
+			.admonition-title {
+				background-color: #E2D3FE;
+			}
+		}
+		
+		&.plain {
+			border-color: #989FAA;
+			background-color: #F6F9FC;
+
+			.admonition-title {
+				background-color: #D9DDE3;
+			}
+		}
+	}
+}

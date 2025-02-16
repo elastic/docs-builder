@@ -21,11 +21,17 @@ A relevant piece of information with no serious repercussions if ignored.
 :::{note}
 This is a note.
 It can span multiple lines and supports inline formatting.
+
+- List item 1
+- List item 2
+- List item 3
+
 :::
 ```
 
 :::{note}
-This is a note.
+This is a note. 
+It can span multiple lines and supports inline formatting.
 :::
 
 ### Warning
