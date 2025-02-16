@@ -69,10 +69,12 @@ jobs:
             const { owner, repo } = context.repo;
             const prNumber = process.env.PR_NUMBER;
             const environment = 'docs-preview';
+            const task = prNumber ? `docs-preview-${prNumber}` : undefined;
             const deployment = await github.rest.repos.createDeployment({
                 owner,
                 repo,
                 environment,
+                task,
                 ref: process.env.REF,
                 auto_merge: false,
                 transient_environment: true,

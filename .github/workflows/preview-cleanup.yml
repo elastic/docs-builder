@@ -24,7 +24,7 @@ jobs:
               owner,
               repo,
               environment: 'docs-preview',
-              ref: context.payload.pull_request.head.ref,
+              task: `docs-preview-${context.issue.number}`,
             });
             core.setOutput('is-empty', deployments.data.length === 0)
             for (const deployment of deployments.data) {
