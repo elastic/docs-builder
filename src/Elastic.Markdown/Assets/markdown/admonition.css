@@ -1,22 +1,23 @@
 @layer components {
 	.admonition {
-		@apply mt-4 border-l-4;
+		@apply mt-4 pb-4 rounded-sm border-1;
 		
 		.admonition-title {
-			@apply px-4 py-2 font-bold flex items-center gap-4	;
+			@apply px-4 pt-4 font-bold flex items-center gap-2 rounded-t-sm;
 			svg {
-				@apply size-5;
+				@apply size-6;
 			}
 		}
 		.admonition-content {
-			@apply px-4 pb-1;
+			@apply px-4;
 		}
 		
 		&.note {
 			border-color: #61A2FF;
 			background-color: #E8F1FF;
 			.admonition-title {
-				background-color: #BFDBFF;
+				color: #1750BA;
+				/*background-color: #BFDBFF;*/
 			}
 		}
 		
@@ -25,16 +26,18 @@
 			background-color: #E2F9F7;
 			
 			.admonition-title {
-				background-color: #C9F3F0;
+				@apply text-teal-dark;
+				/*background-color: #C9F3F0;*/
 			}
 		}
 
 		&.warning {
-			@apply border-pink;
-			background-color: #FFEBF5;
-
+			border-color: #FACB3D;
+			background-color: #FDF3D8;
+			
 			.admonition-title {
-				background-color: #FDDDE9;
+				color: #825803;
+				/*background-color: #FDDDE9;*/
 			}
 		}
 		
@@ -43,7 +46,8 @@
 			background-color: #F3ECFE;
 			
 			.admonition-title {
-				background-color: #E2D3FE;
+				color: #6B3C9F;
+				/*background-color: #E2D3FE;*/
 			}
 		}
 		
@@ -52,7 +56,7 @@
 			background-color: #F6F9FC;
 
 			.admonition-title {
-				background-color: #D9DDE3;
+				/*background-color: #D9DDE3;*/
 			}
 		}
 	}
