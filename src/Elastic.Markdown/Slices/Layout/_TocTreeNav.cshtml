@@ -1,98 +1,67 @@
 @using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
-@if (Model.IsRedesign)
+@foreach (var item in Model.SubTree.NavigationItems)
 {
-	@foreach (var item in Model.SubTree.NavigationItems)
+	if (item is FileNavigation file)
 	{
-		if (item is FileNavigation file)
-		{
-			var f = file.File;
-			var isCurrent = f == Model.CurrentDocument;
-			<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li @(isCurrent ? "current" : string.Empty)">
-				<div class="flex">
-					<a
-						class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic! @(isCurrent ? "" : string.Empty)"
-						href="@f.Url"
-						@(isCurrent ? "aria-current=page" : string.Empty)>
-						@f.NavigationTitle
-					</a>
-				</div>
-			</li>
-		}
-		else if (item is GroupNavigation folder)
-		{
-			var g = folder.Group;
-			var isCurrent = g.Index == Model.CurrentDocument;
-			var slug = g.Index?.Title.Slugify();
-			const int initialExpandLevel = 1;
-			var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
-			var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
-			<li class="flex flex-wrap @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
-				<label for="@slug" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
-						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-					</svg>
-					<input
-						id="@slug"
-						type="checkbox"
-						class="hidden"
-						aria-hidden="true"
-						data-should-expand="@((containsCurrent).ToLowerString())"
-						@(shouldInitiallyExpand ? "checked" : string.Empty)
-					>
-					<a
-						href="@g.Index?.Url"
-						class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current text-blue-elastic!" : string.Empty)">
-						@g.Index?.NavigationTitle
-					</a>
-				</label>
-				@if (g.NavigationItems.Count > 0)
-				{
-					<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto peer-has-checked:my-1" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
-						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-						{
-							Level = g.Depth,
-							CurrentDocument = Model.CurrentDocument,
-							SubTree = g
-						}))
-					</ul>
-				}
-			</li>
-		}
+		var f = file.File;
+		var isCurrent = f == Model.CurrentDocument;
+		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li @(isCurrent ? "current" : string.Empty)">
+			<div class="flex">
+				<a
+					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic! @(isCurrent ? "" : string.Empty)"
+					href="@f.Url"
+					@(isCurrent ? "aria-current=page" : string.Empty)>
+					@f.NavigationTitle
+				</a>
+			</div>
+		</li>
 	}
-}
-else
-{
-	@foreach (var item in Model.SubTree.NavigationItems)
+	else if (item is GroupNavigation folder)
 	{
-		if (item is FileNavigation file)
-		{
-			var f = file.File;
-			var current = f == Model.CurrentDocument ? " current" : string.Empty;
-			<li class="toctree-l@(Model.SubTree.Depth + 1)@current"><a class="@(current.Trim()) reference internal" href="@f.Url">@f.NavigationTitle</a></li>
-		}
-		else if (item is GroupNavigation folder)
-		{
-			var g = folder.Group;
-			var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
-			var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
-			<li class="toctree-l@(g.Depth)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.NavigationItems.Count > 0) {<ul class="@(current.Trim())">
-					                                                                                                                                      @await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-					                                                                                                                                      {
-						                                                                                                                                      Level = g.Depth,
-						                                                                                                                                      CurrentDocument = Model.CurrentDocument,
-						                                                                                                                                      SubTree = g
-					                                                                                                                                      }))
-				                                                                                                                                      </ul>
-			                                                                                                                                      }
-			</li>
-		}
+		var g = folder.Group;
+		var isCurrent = g.Index == Model.CurrentDocument;
+		var slug = g.Index?.Title.Slugify();
+		const int initialExpandLevel = 1;
+		var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
+		var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
+		<li class="flex flex-wrap @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
+			<label for="@slug" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke-width="1.5"
+					stroke="currentColor"
+					class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+				</svg>
+				<input
+					id="@slug"
+					type="checkbox"
+					class="hidden"
+					aria-hidden="true"
+					data-should-expand="@((containsCurrent).ToLowerString())"
+					@(shouldInitiallyExpand ? "checked" : string.Empty)
+				>
+				<a
+					href="@g.Index?.Url"
+					class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current text-blue-elastic!" : string.Empty)">
+					@g.Index?.NavigationTitle
+				</a>
+			</label>
+			@if (g.NavigationItems.Count > 0)
+			{
+				<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto peer-has-checked:my-1" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
+					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+					{
+						Level = g.Depth,
+						CurrentDocument = Model.CurrentDocument,
+						SubTree = g
+					}))
+				</ul>
+			}
+		</li>
 	}
 }
