@@ -45,4 +45,4 @@ type ``inline link with mailto not allowed external host`` () =
     let ``has no errors`` () = markdown |> hasNoErrors
 
     [<Fact>]
-    let ``has warning`` () = markdown |> hasWarning "External URI 'mailto:fake-email@somehost.co' is not allowed."
+    let ``has warning`` () = markdown |> hasWarning "mailto links should be to elastic.co domains."

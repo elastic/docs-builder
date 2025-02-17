@@ -26,7 +26,6 @@ public record ConfigurationFile : DocumentationFile
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public Glob[] Globs { get; } = [];
-	public HashSet<string> ExternalLinkHosts { get; } = new(StringComparer.OrdinalIgnoreCase) { "elastic.co", "github.com", "localhost", };
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
@@ -80,12 +79,6 @@ public record ConfigurationFile : DocumentationFile
 					case "subs":
 						_substitutions = ReadDictionary(entry);
 						break;
-					case "external_hosts":
-						var hosts = ReadStringArray(entry)
-							.ToArray();
-						foreach (var host in hosts)
-							ExternalLinkHosts.Add(host);
-						break;
 					case "toc":
 						if (depth > 1)
 						{
@@ -96,6 +89,9 @@ public record ConfigurationFile : DocumentationFile
 						var entries = ReadChildren(entry, parentPath);
 
 						TableOfContents = entries;
+						break;
+					case "external_hosts":
+						EmitWarning($"{key} has been deprecated and will be removed", entry.Key);
 						break;
 					default:
 						EmitWarning($"{key} is not a known configuration", entry.Key);

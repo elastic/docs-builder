@@ -143,13 +143,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return false;
 
 		var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);
-		if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
+		if (uri.Scheme == "mailto" && baseDomain != "elastic.co")
 		{
 			processor.EmitWarning(
 				link,
-				$"External URI '{uri}' is not allowed. Add '{baseDomain}' to the " +
-				$"'external_hosts' list in the configuration file '{context.Configuration.SourceFile}' " +
-				"to allow links to this domain."
+				$"mailto links should be to elastic.co domains. Found {uri.Host} in {link.Url}. "
 			);
 		}
 
