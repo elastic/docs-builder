@@ -85,6 +85,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			"console-response" => "json",
 			"console-result" => "json",
 			"terminal" => "bash",
+			"painless" => "java",
 			_ => codeBlock.Language
 		};
 		if (!string.IsNullOrEmpty(codeBlock.Language) && !CodeBlock.Languages.Contains(codeBlock.Language))

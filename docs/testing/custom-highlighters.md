@@ -112,3 +112,40 @@ FROM books
 | SORT book_no
 | LIMIT 5;
 ```
+
+## Painless
+
+```painless
+int i = (int)5L;
+Map m = new HashMap();
+HashMap hm = (HashMap)m;
+```
+
+```painless
+ZonedDateTime zdt1 =
+        ZonedDateTime.of(1983, 10, 13, 22, 15, 30, 0, ZoneId.of('Z'));
+ZonedDateTime zdt2 =
+        ZonedDateTime.of(1983, 10, 17, 22, 15, 35, 0, ZoneId.of('Z'));
+
+if (zdt1.isAfter(zdt2)) {
+    // handle condition
+}
+```
+
+```painless
+if (doc.containsKey('start') && doc.containsKey('end')) {
+
+    if (doc['start'].size() > 0 && doc['end'].size() > 0) {
+
+        ZonedDateTime start = doc['start'].value;
+        ZonedDateTime end = doc['end'].value;
+        long differenceInMillis = ChronoUnit.MILLIS.between(start, end);
+
+        // handle difference in times
+    } else {
+        // handle fields without values
+    }
+} else {
+    // handle index with missing fields
+}
+```
