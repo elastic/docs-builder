@@ -3,7 +3,7 @@
 		@apply mt-4 pb-4 rounded-sm border-1;
 		
 		.admonition-title {
-			@apply px-4 pt-4 font-bold flex items-center gap-2 rounded-t-sm;
+			@apply px-4 py-2 font-bold flex items-center gap-2 rounded-t-sm;
 			svg {
 				@apply size-6;
 			}
@@ -17,50 +17,40 @@
 		}
 		
 		&.note {
-			border-color: #61A2FF;
-			background-color: #E8F1FF;
+			@apply border-blue-elastic-40 bg-blue-elastic-10;
 			.admonition-title {
-				color: #1750BA;
-				/*background-color: #BFDBFF;*/
+				@apply text-blue-elastic-90 bg-blue-elastic-20;
 			}
 		}
 		
 		&.tip {
-			@apply border-teal;
-			background-color: #E2F9F7;
-			
+			@apply border-teal-40 bg-teal-10;
 			.admonition-title {
-				@apply text-teal-dark;
-				/*background-color: #C9F3F0;*/
+				@apply text-teal-90 bg-teal-20;
 			}
 		}
 
 		&.warning {
-			border-color: #FACB3D;
-			background-color: #FDF3D8;
+			@apply border-yellow-40 bg-yellow-10;
 			
 			.admonition-title {
-				color: #825803;
-				/*background-color: #FDDDE9;*/
+				@apply text-yellow-90 bg-yellow-20;
 			}
 		}
 		
 		&.important {
-			border-color: #B386F9;
-			background-color: #F3ECFE;
+			@apply border-purple-40 bg-purple-10;
 			
 			.admonition-title {
-				color: #6B3C9F;
-				/*background-color: #E2D3FE;*/
+				@apply text-purple-90 bg-purple-20;
 			}
 		}
 		
 		&.plain {
-			border-color: #989FAA;
-			background-color: #F6F9FC;
+			@apply border-grey-40 bg-grey-10;
 
 			.admonition-title {
-				/*background-color: #D9DDE3;*/
+				@apply text-grey-90 bg-grey-20;
 			}
 		}
 	}
