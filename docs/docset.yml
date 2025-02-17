@@ -1,32 +1,6 @@
 project: 'doc-builder'
 cross_links:
   - docs-content
-# docs-builder will warn for links to external hosts not declared here
-external_hosts:
-  - slack.com
-  - mystmd.org
-  - microsoft.com
-  - azure.com
-  - mistral.ai
-  - amazon.com
-  - python.org
-  - cohere.com
-  - docker.com
-  - langchain.com
-  - nodejs.org
-  - yarnpkg.com
-  - react.dev
-  - palletsprojects.com
-  - google.com
-  - checkvist.com
-  - commonmark.org
-  - github.io
-  - github.com
-  - pandoc.org
-  - atlassian.net
-  - elastic.dev
-  - visualstudio.com
-  - wikipedia.org
 exclude:
   - '_*.md'
 subs:
