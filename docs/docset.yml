@@ -91,6 +91,7 @@ toc:
       - file: req.md
       - folder: nested
       - file: cross-links.md
+      - file: custom-highlighters.md
       - folder: mover
         children:
           - file: first-page.md

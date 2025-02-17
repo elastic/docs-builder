@@ -1,7 +1,5 @@
 @layer components {
 	.markdown-content {
-		
-		
 		.highlight {
 			@apply mt-4;
 		}
@@ -69,7 +67,7 @@
 		bg-gray-100
 		rounded-xs
 		border-1
-		border-gray-200
+		border-gray-300
 		inline-block
 		text-nowrap
 		;

@@ -27,4 +27,3 @@ type ``supports loose lists`` () =
             </li>
         </ul>
         """
-

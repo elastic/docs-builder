@@ -24,12 +24,7 @@ public class IndexViewModel
 	public required bool AllowIndexing { get; init; }
 }
 
-public abstract class RedsignViewModel
-{
-	public bool IsRedesign => Environment.GetEnvironmentVariable("REDESIGN") == "true";
-}
-
-public class LayoutViewModel : RedsignViewModel
+public class LayoutViewModel
 {
 	public string Title { get; set; } = "Elastic Documentation";
 	public string RawTitle { get; set; } = "Elastic Documentation";
@@ -77,13 +72,13 @@ public class PageTocItem
 }
 
 
-public class NavigationViewModel : RedsignViewModel
+public class NavigationViewModel
 {
 	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 }
 
-public class NavigationTreeItem : RedsignViewModel
+public class NavigationTreeItem
 {
 	public required int Level { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
