@@ -1,6 +1,5 @@
 @layer components {
 	.markdown-content {
-		
 		.highlight {
 			@apply mt-4;
 		}
@@ -9,9 +8,10 @@
 			@apply grid;
 			code {
 				@apply text-sm
-					text-gray-100
+					text-gray-300
 					rounded-none 
 					border-0 
+					overflow-x-auto
 					p-6!
 				;
 				background-color: #22272e;
@@ -69,6 +69,7 @@
 		border-1
 		border-gray-300
 		inline-block
+		text-nowrap
 		;
 		font-size: 0.875em;
 		line-height: 1.4em;
@@ -77,6 +78,5 @@
 		letter-spacing: 0.02em;
 		text-decoration: inherit;
 		font-weight: inherit;
-		text-wrap: nowrap;
 	}
 }
