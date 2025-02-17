@@ -6,8 +6,6 @@ on:
       - opened
       - synchronize
       - reopened
-      - labeled
-      - unlabeled
   push:
     branches:
       - main
@@ -114,13 +112,8 @@ jobs:
 
       - name: Bootstrap Action Workspace
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
-
         uses: ./.github/actions/bootstrap
         
-      - name: Set REDESIGN feature flag
-        if: contains(github.event.pull_request.labels.*.name, 'redesign') && steps.deployment.outputs.result
-        run: echo "REDESIGN=true" >> $GITHUB_ENV
-
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
