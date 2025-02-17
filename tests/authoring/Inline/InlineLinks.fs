@@ -45,7 +45,7 @@ type ``inline link with mailto not allowed external host`` () =
     let ``has no errors`` () = markdown |> hasNoErrors
 
     [<Fact>]
-    let ``has warning`` () = markdown |> hasWarning "mailto links should be to elastic.co domains."
+    let ``has error`` () = markdown |> hasWarning "External URI 'mailto:fake-email@somehost.co' is not allowed."
 
 type ``empty link should result in an error`` () =
 
@@ -54,7 +54,7 @@ type ``empty link should result in an error`` () =
 """
 
     [<Fact>]
-    let ``should warn`` () = markdown |> hasWarning "Found empty url"
+    let ``has error`` () = markdown |> hasError "Found empty url"
 
     [<Fact>]
-    let ``has no erros`` () = markdown |> hasNoErrors
+    let ``has no warnings`` () = markdown |> hasNoWarnings
