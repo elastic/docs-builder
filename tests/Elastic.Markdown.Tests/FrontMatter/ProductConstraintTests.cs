@@ -7,6 +7,9 @@ using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
 using static Elastic.Markdown.Myst.FrontMatter.ProductLifecycle;
 
+//TODO remove 'applies', Deployment and associated types when all content sets have moved over to `apply`
+#pragma warning disable CS0618 // Type or member is obsolete
+
 namespace Elastic.Markdown.Tests.FrontMatter;
 
 public class ProductConstraintTests(ITestOutputHelper output) : DirectiveTest(output,
@@ -30,16 +33,16 @@ applies:
 		var appliesTo = File.YamlFrontMatter!.AppliesTo;
 		appliesTo.Should().NotBeNull();
 		appliesTo!.Cloud.Should().NotBeNull();
-		appliesTo.Cloud!.Serverless.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = TechnicalPreview });
-		appliesTo.Cloud!.Hosted.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Beta, Version = new(8, 1, 1) });
+		appliesTo.Cloud!.Serverless.Should().BeEquivalentTo(new Applicability { Lifecycle = TechnicalPreview });
+		appliesTo.Cloud!.Hosted.Should().BeEquivalentTo(new Applicability { Lifecycle = Beta, Version = new(8, 1, 1) });
 		appliesTo.SelfManaged.Should().NotBeNull();
-		appliesTo.SelfManaged!.Eck.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Beta, Version = new(3, 0, 2) });
-		appliesTo.SelfManaged!.Ece.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = Unavailable });
-		appliesTo.SelfManaged!.Stack.Should().BeEquivalentTo(new ProductAvailability { Lifecycle = GenerallyAvailable, Version = new(8, 1, 0) });
+		appliesTo.SelfManaged!.Eck.Should().BeEquivalentTo(new Applicability { Lifecycle = Beta, Version = new(3, 0, 2) });
+		appliesTo.SelfManaged!.Ece.Should().BeEquivalentTo(new Applicability { Lifecycle = Unavailable });
+		appliesTo.SelfManaged!.Stack.Should().BeEquivalentTo(new Applicability { Lifecycle = GenerallyAvailable, Version = new(8, 1, 0) });
 	}
 }
 
-public abstract class ParsingTests(ITestOutputHelper output, string moniker, ProductAvailability? expected)
+public abstract class ParsingTests(ITestOutputHelper output, string moniker, Applicability? expected)
 	: DirectiveTest(output,
 $"""
 ---
@@ -71,8 +74,8 @@ public class ParsesDiscontinued(ITestOutputHelper output) : ParsingTests(output,
 public class ParsesUnavailable(ITestOutputHelper output) : ParsingTests(output, "unavailable", new() { Lifecycle = Unavailable });
 public class ParsesTechnicalPreview(ITestOutputHelper output) : ParsingTests(output, "tech-preview", new() { Lifecycle = TechnicalPreview });
 public class ParsesPreview(ITestOutputHelper output) : ParsingTests(output, "preview", new() { Lifecycle = TechnicalPreview });
-public class ParsesEmpty(ITestOutputHelper output) : ParsingTests(output, "", ProductAvailability.GenerallyAvailable);
-public class ParsesAll(ITestOutputHelper output) : ParsingTests(output, "all", ProductAvailability.GenerallyAvailable);
+public class ParsesEmpty(ITestOutputHelper output) : ParsingTests(output, "", Applicability.GenerallyAvailable);
+public class ParsesAll(ITestOutputHelper output) : ParsingTests(output, "all", Applicability.GenerallyAvailable);
 public class ParsesWithVersion(ITestOutputHelper output) : ParsingTests(output, "ga 7.7.0", new() { Lifecycle = GenerallyAvailable, Version = new(7, 7, 0) });
 public class ParsesWithAllVersion(ITestOutputHelper output) : ParsingTests(output, "ga all", new() { Lifecycle = GenerallyAvailable, Version = AllVersions.Instance });
 
@@ -88,7 +91,7 @@ applies:
 {
 	[Fact]
 	public void Assert() =>
-		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(Applicability.GenerallyAvailable);
 }
 
 public class EmptyProductVersionMeansAll(ITestOutputHelper output) : DirectiveTest(output,
@@ -103,7 +106,7 @@ applies:
 {
 	[Fact]
 	public void Assert() =>
-		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should().BeEquivalentTo(Applicability.GenerallyAvailable);
 }
 
 public class EmptyCloudSetsAllCloudProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
@@ -118,7 +121,7 @@ applies:
 {
 	[Fact]
 	public void Assert() =>
-		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(Applicability.GenerallyAvailable);
 }
 
 public class EmptySelfSetsAllSelfManagedProductsToAll(ITestOutputHelper output) : DirectiveTest(output,
@@ -136,9 +139,9 @@ applies:
 	public void Assert()
 	{
 		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Eck.Should()
-			.BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+			.BeEquivalentTo(Applicability.GenerallyAvailable);
 		File.YamlFrontMatter!.AppliesTo!.SelfManaged!.Stack.Should()
-			.BeEquivalentTo(new ProductAvailability { Lifecycle = Deprecated, Version = new(9, 0, 0) });
+			.BeEquivalentTo(new Applicability { Lifecycle = Deprecated, Version = new(9, 0, 0) });
 	}
 }
 
@@ -154,6 +157,6 @@ applies:
 {
 	[Fact]
 	public void Assert() =>
-		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(ProductAvailability.GenerallyAvailable);
+		File.YamlFrontMatter!.AppliesTo!.Cloud!.Hosted.Should().BeEquivalentTo(Applicability.GenerallyAvailable);
 }
 

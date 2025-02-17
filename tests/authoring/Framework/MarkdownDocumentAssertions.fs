@@ -5,7 +5,9 @@
 namespace authoring
 
 open System.Diagnostics
+open Elastic.Markdown.Myst.FrontMatter
 open Markdig.Syntax
+open Swensen.Unquote
 open Xunit.Sdk
 
 module MarkdownDocumentAssertions =
@@ -22,4 +24,17 @@ module MarkdownDocumentAssertions =
         let unsupportedBlocks = actual.MinimalParse.Descendants<'element>() |> Array.ofSeq
         if unsupportedBlocks.Length = 0 then
             raise (XunitException($"Could not find {typedefof<'element>.Name} in minimally parsed document"))
-        unsupportedBlocks;
+        unsupportedBlocks
+
+    [<DebuggerStepThrough>]
+    let appliesTo (expectedAvailability: ApplicableTo) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+        let result = actual.MarkdownResults |> Seq.head
+        let matter = result.File.YamlFrontMatter
+        match matter with
+        | NonNull m ->
+            let apply = m.Apply
+            test <@ apply = expectedAvailability @>
+        | _ -> failwithf "%s has no yamlfront matter" result.File.RelativePath
+
+

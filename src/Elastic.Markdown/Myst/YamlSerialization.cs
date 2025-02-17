@@ -17,7 +17,10 @@ public static class YamlSerialization
 		var deserializer = new StaticDeserializerBuilder(new DocsBuilderYamlStaticContext())
 			.IgnoreUnmatchedProperties()
 			.WithTypeConverter(new SemVersionConverter())
+#pragma warning disable CS0618 // Type or member is obsolete
 			.WithTypeConverter(new DeploymentConverter())
+			.WithTypeConverter(new ApplicableToConverter())
+#pragma warning restore CS0618 // Type or member is obsolete
 			.Build();
 
 		var frontMatter = deserializer.Deserialize<T>(input);

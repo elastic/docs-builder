@@ -18,6 +18,10 @@ public class YamlFrontMatter
 	[YamlMember(Alias = "sub")]
 	public Dictionary<string, string>? Properties { get; set; }
 
-	[YamlMember(Alias = "applies")]
+	[YamlIgnore]
+	[Obsolete("Use applies_to instead")]
 	public Deployment? AppliesTo { get; set; }
+
+	[YamlMember(Alias = "applies_to")]
+	public ApplicableTo? Apply { get; set; }
 }

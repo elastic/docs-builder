@@ -1,10 +1,16 @@
 ---
-applies:
-  stack: ga 8.1
-  serverless: tech-preview
-  hosted: beta 8.1.1
-  eck: beta 3.0.2
-  ece: unavailable
+applies_to:
+  stack: ga 9.1
+  deployment:
+    eck: ga 9.0
+    ess: beta 9.1
+    ece: discontinued 9.2.0
+    self: unavailable 9.3.0
+  serverless:
+    security: ga 9.0.0
+    elasticsearch: beta 9.1.0
+    observability: discontinued 9.2.0
+  product: coming 9.5, discontinued 9.7
 ---
 
 # Applies to
@@ -14,12 +20,18 @@ Using yaml frontmatter pages can explicitly indicate to each deployment targets 
 
 
 ```yaml
-applies:
-  stack: ga 8.1
-  serverless: tech-preview
-  hosted: beta 8.1.1
-  eck: beta 3.0.2
-  ece: unavailable
+applies_to:
+  stack: ga 9.1
+  deployment:
+    eck: ga 9.0
+    ess: beta 9.1
+    ece: discontinued 9.2.0
+    self: unavailable 9.3.0
+  serverless:
+    security: ga 9.0.0
+    elasticsearch: beta 9.1.0
+    observability: discontinued 9.2.0
+  product: coming 9.5, discontinued 9.7
 ```
 
 Its syntax is

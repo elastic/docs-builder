@@ -36,8 +36,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MermaidBlock mermaidBlock:
 				WriteMermaid(renderer, mermaidBlock);
 				return;
-			case AppliesBlock appliesBlock:
-				WriteApplies(renderer, appliesBlock);
+			case AppliesBlock: //deprecated scheduled for removal
 				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
@@ -187,15 +186,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var slice = Mermaid.Create(new MermaidViewModel());
 		RenderRazorSliceRawContent(slice, renderer, block);
-	}
-
-	private void WriteApplies(HtmlRenderer renderer, AppliesBlock block)
-	{
-		if (block.Deployment is null || block.Deployment == Deployment.All)
-			return;
-
-		var slice = Applies.Create(block.Deployment);
-		RenderRazorSliceNoContent(slice, renderer);
 	}
 
 	private void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)

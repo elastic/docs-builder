@@ -9,6 +9,7 @@ using YamlDotNet.Serialization;
 namespace Elastic.Markdown.Myst.FrontMatter;
 
 [YamlSerializable]
+[Obsolete( "Use YamlFrontMatter.Apply instead see also DeploymentMode")]
 public record Deployment
 {
 	[YamlMember(Alias = "self")]
@@ -25,42 +26,46 @@ public record Deployment
 }
 
 [YamlSerializable]
+[Obsolete( "Use YamlFrontMatter.Apply instead")]
 public record SelfManagedDeployment
 {
 	[YamlMember(Alias = "stack")]
-	public ProductAvailability? Stack { get; set; }
+	public Applicability? Stack { get; set; }
 
 	[YamlMember(Alias = "ece")]
-	public ProductAvailability? Ece { get; set; }
+	public Applicability? Ece { get; set; }
 
 	[YamlMember(Alias = "eck")]
-	public ProductAvailability? Eck { get; set; }
+	public Applicability? Eck { get; set; }
 
 	public static SelfManagedDeployment All { get; } = new()
 	{
-		Stack = ProductAvailability.GenerallyAvailable,
-		Ece = ProductAvailability.GenerallyAvailable,
-		Eck = ProductAvailability.GenerallyAvailable
+		Stack = Applicability.GenerallyAvailable,
+		Ece = Applicability.GenerallyAvailable,
+		Eck = Applicability.GenerallyAvailable
 	};
 }
 
 [YamlSerializable]
+[Obsolete( "Use YamlFrontMatter.Apply instead")]
 public record CloudManagedDeployment
 {
 	[YamlMember(Alias = "hosted")]
-	public ProductAvailability? Hosted { get; set; }
+	public Applicability? Hosted { get; set; }
 
 	[YamlMember(Alias = "serverless")]
-	public ProductAvailability? Serverless { get; set; }
+	public Applicability? Serverless { get; set; }
 
 	public static CloudManagedDeployment All { get; } = new()
 	{
-		Hosted = ProductAvailability.GenerallyAvailable,
-		Serverless = ProductAvailability.GenerallyAvailable
+		Hosted = Applicability.GenerallyAvailable,
+		Serverless = Applicability.GenerallyAvailable
 	};
 
 }
 
+#pragma warning disable CS0618 // Type or member is obsolete
+[Obsolete( "Use DeploymentAvailability instead" )]
 public class DeploymentConverter : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(Deployment);
@@ -121,10 +126,10 @@ public class DeploymentConverter : IYamlTypeConverter
 		}
 		return deployment;
 
-		bool TryGetAvailability(string key, out ProductAvailability? semVersion)
+		bool TryGetAvailability(string key, out Applicability? semVersion)
 		{
 			semVersion = null;
-			return dictionary.TryGetValue(key, out var v) && ProductAvailability.TryParse(v, out semVersion);
+			return dictionary.TryGetValue(key, out var v) && Applicability.TryParse(v, out semVersion);
 		}
 
 	}
@@ -132,3 +137,4 @@ public class DeploymentConverter : IYamlTypeConverter
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
 		serializer.Invoke(value, type);
 }
+#pragma warning restore CS0618 // Type or member is obsolete

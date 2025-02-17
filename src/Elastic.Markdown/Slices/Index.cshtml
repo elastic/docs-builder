@@ -21,7 +21,7 @@
 	@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
 	@if (Model.Applies is not null)
 	{
-		await RenderPartialAsync(Applies.Create(Model.Applies));
+		await RenderPartialAsync(ApplicableTo.Create(Model.Applies));
 	}
 	@(new HtmlString(Model.MarkdownHtml))
 </section>

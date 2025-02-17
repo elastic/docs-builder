@@ -60,4 +60,8 @@
     <Compile Include="Blocks\Admonitions.fs"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="Availability\ApplyYaml.fs" />
+  </ItemGroup>
+
 </Project>
