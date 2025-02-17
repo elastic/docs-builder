@@ -119,7 +119,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		if (string.IsNullOrEmpty(url))
 		{
-			processor.EmitError(link, "Found empty url");
+			processor.EmitWarning(link, "Found empty url");
 			return false;
 		}
 

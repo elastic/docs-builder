@@ -54,7 +54,7 @@ type ``empty link should result in an error`` () =
 """
 
     [<Fact>]
-    let ``has no errors`` () = markdown |> hasError "Found empty url"
+    let ``should warn`` () = markdown |> hasWarning "Found empty url"
 
     [<Fact>]
-    let ``has warning`` () = markdown |> hasNoWarnings
+    let ``has no erros`` () = markdown |> hasNoErrors
