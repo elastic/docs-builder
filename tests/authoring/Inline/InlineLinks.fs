@@ -46,3 +46,15 @@ type ``inline link with mailto not allowed external host`` () =
 
     [<Fact>]
     let ``has warning`` () = markdown |> hasWarning "External URI 'mailto:fake-email@somehost.co' is not allowed."
+
+type ``empty link should result in an error`` () =
+
+    static let markdown = Setup.Markdown """
+[email me]()
+"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasError "Found empty url"
+
+    [<Fact>]
+    let ``has warning`` () = markdown |> hasNoWarnings
