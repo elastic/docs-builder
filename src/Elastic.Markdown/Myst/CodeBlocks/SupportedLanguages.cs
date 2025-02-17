@@ -179,6 +179,9 @@ public static class CodeBlock
 		{ "xquery", "xpath, xq, xqm" }, // XQuery
 		{ "yml", "yaml" }, // YAML
 		{ "zephir", "zep" }, // Zephir
+
+		//CUSTOM, Elastic language we wrote highlighters for
+		{ "eql", "" }
 	};
 
 

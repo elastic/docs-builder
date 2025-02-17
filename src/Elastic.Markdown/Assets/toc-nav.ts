@@ -128,8 +128,10 @@ function setupSmoothScrolling(elements: TocElements) {
 
 export function initTocNav() {
 	const elements = initializeTocElements();
-	elements.progressIndicator.style.height = '0';
-	elements.progressIndicator.style.top = '0';
+	if (elements.progressIndicator != null) {
+		elements.progressIndicator.style.height = '0';
+		elements.progressIndicator.style.top = '0';
+	}
 	const update = () => updateIndicator(elements)
 	update();
 	window.addEventListener('scroll', update);
