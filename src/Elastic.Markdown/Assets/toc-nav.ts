@@ -116,7 +116,7 @@ function setupSmoothScrolling(elements: TocElements) {
 			const href = link.getAttribute('href');
 			if (href?.charAt(0) === '#') {
 				e.preventDefault();
-				const target = $(href.replace('.', '\\.'));
+				const target = document.getElementById(href.slice(1));
 				if (target) {
 					target.scrollIntoView({ behavior: 'smooth' });
 					history.pushState(null, '', href);
