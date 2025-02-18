@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Markdown", "src\Elastic.Markdown\Elastic.Markdown.csproj", "{4D198E25-C211-41DC-9E84-B15E89BD7048}"
 EndProject

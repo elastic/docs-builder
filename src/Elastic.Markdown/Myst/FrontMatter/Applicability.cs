@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
 {
 	private readonly IReadOnlyCollection<Applicability> _items;
-	public ApplicabilityOverTime(Applicability[] items) => _items = items;
+	private ApplicabilityOverTime(Applicability[] items) => _items = items;
 
 	// <lifecycle> [version]
 	public static bool TryParse(string? value, out ApplicabilityOverTime? availability)
@@ -56,14 +56,15 @@ public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
 	public override int GetHashCode()
 	{
 		var comparer = StructuralComparisons.StructuralEqualityComparer;
-		return (EqualityComparer<Type>.Default.GetHashCode(EqualityContract) * -1521134295)
-		       + comparer.GetHashCode(_items);
+		return
+			EqualityComparer<Type>.Default.GetHashCode(EqualityContract) * -1521134295
+			+ comparer.GetHashCode(_items);
 	}
 
 
 	public static explicit operator ApplicabilityOverTime(string b)
 	{
-		var productAvailability = TryParse(b, out var version) ? version  : null;
+		var productAvailability = TryParse(b, out var version) ? version : null;
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string array.");
 	}
 
@@ -128,7 +129,6 @@ public record Applicability
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string.");
 	}
 
-	// <lifecycle> [version]
 	public static bool TryParse(string? value, [NotNullWhen(true)] out Applicability? availability)
 	{
 		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
@@ -143,6 +143,7 @@ public record Applicability
 			availability = null;
 			return false;
 		}
+
 		var lifecycle = tokens[0].ToLowerInvariant() switch
 		{
 			"preview" => ProductLifecycle.TechnicalPreview,
@@ -158,13 +159,15 @@ public record Applicability
 			_ => throw new ArgumentOutOfRangeException(nameof(tokens), tokens, $"Unknown product lifecycle: {tokens[0]}")
 		};
 
-		var version = tokens.Length < 2 ? null : tokens[1] switch
-		{
-			null => AllVersions.Instance,
-			"all" => AllVersions.Instance,
-			"" => AllVersions.Instance,
-			var t => SemVersionConverter.TryParse(t, out var v) ? v : null
-		};
+		var version = tokens.Length < 2
+			? null
+			: tokens[1] switch
+			{
+				null => AllVersions.Instance,
+				"all" => AllVersions.Instance,
+				"" => AllVersions.Instance,
+				var t => SemVersionConverter.TryParse(t, out var v) ? v : null
+			};
 		availability = new Applicability { Version = version, Lifecycle = lifecycle };
 		return true;
 	}

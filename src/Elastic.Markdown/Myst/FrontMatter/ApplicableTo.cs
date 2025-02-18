@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -85,6 +84,7 @@ public record ServerlessProjectApplicability
 		Security = ApplicabilityOverTime.GenerallyAvailable
 	};
 }
+
 public class ApplicableToConverter : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(ApplicableTo);
@@ -137,7 +137,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 				Ece = av,
 				Eck = av,
 				Ess = av,
-				Self = av,
+				Self = av
 			};
 		}
 		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
@@ -210,7 +210,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 
 	private static bool TryGetProjectApplicability(
 		Dictionary<object, object?> dictionary,
-		[NotNullWhen(true)]out ServerlessProjectApplicability? applicability
+		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability
 	)
 	{
 		applicability = null;

@@ -31,7 +31,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-        var lineSpan = processor.Line.AsSpan();
+		var lineSpan = processor.Line.AsSpan();
 		var codeBlock = lineSpan.IndexOf("{applies_to}") > -1
 			? new AppliesToDirective(this, context) { IndentCount = processor.Indent }
 			: new EnhancedCodeBlock(this, context) { IndentCount = processor.Indent };
@@ -116,7 +116,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
 			appliesToDirective.AppliesTo = applicableTo;
-
 		}
 		catch (Exception e)
 		{
@@ -162,6 +161,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 					EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
 				);
 			}
+
 			// only support magic callouts for smaller line lengths
 			if (callOuts.Count == 0 && span.Length < 200)
 			{
@@ -170,6 +170,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 					EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
 				);
 			}
+
 			codeBlock.CallOuts.AddRange(callOuts);
 		}
 
@@ -191,7 +192,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				var newSpan = line.Slice.AsSpan()[..callout.SliceStart];
 				var s = new StringSlice(newSpan.ToString());
 				lines.Lines[callout.Line - 1] = new StringLine(ref s);
-
 			}
 		}
 
@@ -263,6 +263,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (span[i] == '<')
 				allStartIndices.Add(i);
 		}
+
 		var callOuts = new List<CallOut>();
 		foreach (var individualStartIndex in allStartIndices)
 		{
@@ -281,6 +282,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				});
 			}
 		}
+
 		return callOuts;
 	}
 }
