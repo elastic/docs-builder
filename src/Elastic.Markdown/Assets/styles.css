@@ -85,7 +85,7 @@
 	}
 	
 	.content-container {
-		@apply w-full max-w-[80ch];
+		@apply w-full max-w-[80ch] lg:w-[80ch];
 	}
 
 	.applies {
