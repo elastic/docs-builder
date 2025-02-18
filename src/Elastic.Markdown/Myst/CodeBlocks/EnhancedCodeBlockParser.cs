@@ -103,12 +103,12 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		if (codeBlock is not AppliesToDirective appliesToDirective)
 			ProcessCallOuts(lines, language, codeBlock, context);
 		else
-			ProcessAppliesToDirective(appliesToDirective, lines, context);
+			ProcessAppliesToDirective(appliesToDirective, lines);
 
 		return base.Close(processor, block);
 	}
 
-	private static void ProcessAppliesToDirective(AppliesToDirective appliesToDirective, StringLineGroup lines, ParserContext context)
+	private static void ProcessAppliesToDirective(AppliesToDirective appliesToDirective, StringLineGroup lines)
 	{
 		var yaml = lines.ToSlice().AsSpan().ToString();
 
@@ -195,8 +195,8 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			}
 		}
 
-		var inlineAnnotations = codeBlock.CallOuts?.Where(c => c.InlineCodeAnnotation).Count() ?? 0;
-		var classicAnnotations = codeBlock.CallOuts?.Count - inlineAnnotations ?? 0;
+		var inlineAnnotations = codeBlock.CallOuts.Count(c => c.InlineCodeAnnotation);
+		var classicAnnotations = codeBlock.CallOuts.Count - inlineAnnotations;
 		if (inlineAnnotations > 0 && classicAnnotations > 0)
 			codeBlock.EmitError("Both inline and classic callouts are not supported");
 

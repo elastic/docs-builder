@@ -5,7 +5,6 @@ using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Markdown.Tests;
 

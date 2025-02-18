@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Slices.Directives;
 using Markdig.Helpers;
 using Markdig.Renderers;
@@ -65,7 +64,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber)
 	{
-		var callOuts = FindCallouts(block.CallOuts ?? [], lineNumber + 1);
+		var callOuts = FindCallouts(block.CallOuts, lineNumber + 1);
 		foreach (var callOut in callOuts)
 			renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
 	}

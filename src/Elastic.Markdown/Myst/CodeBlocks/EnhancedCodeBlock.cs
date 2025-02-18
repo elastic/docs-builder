@@ -29,7 +29,7 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 
 	public List<CallOut> CallOuts { get; set; } = [];
 
-	public IReadOnlyCollection<CallOut> UniqueCallOuts => CallOuts?.DistinctBy(c => c.Index).ToList() ?? [];
+	public IReadOnlyCollection<CallOut> UniqueCallOuts => [.. CallOuts.DistinctBy(c => c.Index)];
 
 	public bool InlineAnnotations { get; set; }
 

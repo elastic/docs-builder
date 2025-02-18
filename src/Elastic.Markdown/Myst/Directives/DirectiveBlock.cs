@@ -6,7 +6,6 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO.Abstractions;
-using Elastic.Markdown.Diagnostics;
 using Markdig.Helpers;
 using Markdig.Syntax;
 

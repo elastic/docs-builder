@@ -37,6 +37,7 @@ internal class RepositoryCommands(ILoggerFactory logger)
 	[Command("clone-all")]
 	public async Task CloneAll(Cancel ctx = default)
 	{
+		AssignOutputLogger();
 		var configFile = Path.Combine(Paths.Root.FullName, "src/docs-assembler/conf.yml");
 		var config = AssemblyConfiguration.Deserialize(File.ReadAllText(configFile));
 
@@ -73,6 +74,7 @@ internal class RepositoryCommands(ILoggerFactory logger)
 	[Command("list")]
 	public async Task ListRepositories(Cancel ctx = default)
 	{
+		AssignOutputLogger();
 		var assemblyPath = Path.Combine(Paths.Root.FullName, $".artifacts/assembly");
 		var dir = new DirectoryInfo(assemblyPath);
 		var dictionary = new Dictionary<string, string>();

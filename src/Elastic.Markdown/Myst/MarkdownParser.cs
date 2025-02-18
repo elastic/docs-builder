@@ -7,7 +7,6 @@ using Cysharp.IO;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;

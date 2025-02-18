@@ -13,7 +13,6 @@ using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.IO;
 
@@ -156,7 +155,7 @@ public record MarkdownFile : DocumentationFile
 				var header = h.Item1!.StripMarkdown();
 				if (header.AsSpan().ReplaceSubstitutions(subs, out var replacement))
 					header = replacement;
-				return new PageTocItem { Heading = header!, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
+				return new PageTocItem { Heading = header, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
 			})
 			.ToList();
 

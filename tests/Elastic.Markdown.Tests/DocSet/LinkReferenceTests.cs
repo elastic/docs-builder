@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.State;
 using FluentAssertions;
@@ -36,7 +35,7 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 		var git = GitCheckoutInformation.Create(ReadFileSystem);
 
 		git.Should().NotBeNull();
-		git!.Branch.Should().NotBeNullOrWhiteSpace();
+		git.Branch.Should().NotBeNullOrWhiteSpace();
 		// this validates we are not returning the test instance as were doing a real read
 		git.Branch.Should().NotContain(git.Ref);
 		git.Ref.Should().NotBeNullOrWhiteSpace();

@@ -4,7 +4,6 @@
 
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Slices.Directives;
 
 namespace Elastic.Markdown.Myst.Directives;
 

@@ -2,19 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using Actions.Core.Extensions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Documentation.Assembler;
 using Documentation.Assembler.Cli;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using ProcNet;
-using ProcNet.Std;
 
 var services = new ServiceCollection();
 services.AddGitHubActionsCore();

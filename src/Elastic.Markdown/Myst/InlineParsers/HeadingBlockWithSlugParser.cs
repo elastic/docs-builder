@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
-using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
 using Markdig.Syntax;
 

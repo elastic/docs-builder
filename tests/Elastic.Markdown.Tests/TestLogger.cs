@@ -13,7 +13,7 @@ public class TestLogger(ITestOutputHelper output) : ILogger
 		public void Dispose() { }
 	}
 
-	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => new NullScope();
+	public IDisposable BeginScope<TState>(TState state) where TState : notnull => new NullScope();
 
 	public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Trace;
 

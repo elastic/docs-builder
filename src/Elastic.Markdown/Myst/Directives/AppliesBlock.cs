@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.FrontMatter;
-using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 

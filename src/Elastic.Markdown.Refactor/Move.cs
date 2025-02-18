@@ -2,11 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.ObjectModel;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Refactor;
@@ -291,9 +289,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 
 				string newLink;
 				if (originalPath.StartsWith('/'))
-				{
 					newLink = $"[{match.Groups[1].Value}]({absoluteStyleTarget}{anchor})";
-				}
 				else
 				{
 					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);

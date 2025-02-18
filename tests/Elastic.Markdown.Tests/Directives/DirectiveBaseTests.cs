@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Tests.Directives;
 

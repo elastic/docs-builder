@@ -146,12 +146,12 @@ public record ConfigurationFile : DocumentationFile
 			switch (key)
 			{
 				case "toc":
-					toc = ReadNestedToc(entry, parentPath, out fileFound);
+					toc = ReadNestedToc(entry, out fileFound);
 					break;
 				case "hidden":
 				case "file":
 					hiddenFile = key == "hidden";
-					file = ReadFile(entry, parentPath, key, out fileFound);
+					file = ReadFile(entry, parentPath, out fileFound);
 					break;
 				case "folder":
 					folder = ReadFolder(entry, parentPath, out folderFound);
@@ -230,7 +230,7 @@ public record ConfigurationFile : DocumentationFile
 		return folder;
 	}
 
-	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, string key, out bool found)
+	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
 	{
 		found = false;
 		var file = ReadString(entry);
@@ -247,7 +247,7 @@ public record ConfigurationFile : DocumentationFile
 		return file;
 	}
 
-	private ConfigurationFile? ReadNestedToc(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private ConfigurationFile? ReadNestedToc(KeyValuePair<YamlNode, YamlNode> entry, out bool found)
 	{
 		found = false;
 		var tocPath = ReadString(entry);

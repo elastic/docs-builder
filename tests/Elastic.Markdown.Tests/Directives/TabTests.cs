@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
-using Markdig;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -161,9 +160,7 @@ Content for C# tab
 		sets.Length.Should().Be(2);
 
 		foreach (var t in sets)
-		{
 			t.GetGroupKey().Should().Be("languages");
-		}
 	}
 
 	[Fact]

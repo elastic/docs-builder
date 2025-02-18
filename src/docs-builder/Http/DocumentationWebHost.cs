@@ -1,21 +1,16 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-using System.Diagnostics.CodeAnalysis;
+
 using System.IO.Abstractions;
-using System.Reflection;
-using Documentation.Builder.Diagnostics;
-using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -29,11 +24,9 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly BuildContext _context;
-	private readonly ILogger<DocumentationWebHost> _logger;
 
 	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
 	{
-		_logger = logger.CreateLogger<DocumentationWebHost>();
 		var builder = WebApplication.CreateSlimBuilder();
 
 		builder.Logging.ClearProviders();
@@ -134,7 +127,7 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider
 	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
 	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
 
-	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug = null;
+	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
 
 	public EmbeddedOrPhysicalFileProvider(BuildContext context)
 	{

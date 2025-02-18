@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
-using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax.Inlines;
 

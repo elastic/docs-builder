@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
 using ConsoleAppFramework;

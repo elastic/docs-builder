@@ -4,7 +4,6 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Markdown.CrossLinks;
-using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.State;
 

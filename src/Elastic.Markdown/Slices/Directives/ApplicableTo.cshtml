@@ -57,25 +57,7 @@
 
 @functions {
 
-	private string GetLifeCycleClass(ProductLifecycle cycle)
-	{
-		switch (cycle)
-		{
-			case ProductLifecycle.Deprecated:
-			case ProductLifecycle.Coming:
-			case ProductLifecycle.Discontinued:
-			case ProductLifecycle.Unavailable:
-				return "muted";
-			case ProductLifecycle.GenerallyAvailable:
-			case ProductLifecycle.TechnicalPreview:
-			case ProductLifecycle.Beta:
-			case ProductLifecycle.Development:
-				return "primary";
-			default:
-				throw new ArgumentOutOfRangeException(nameof(cycle), cycle, null);
-		}
-	}
-	private string GetLifeCycleName(ProductLifecycle cycle)
+	private static string GetLifeCycleName(ProductLifecycle cycle)
 	{
 		switch (cycle)
 		{
@@ -104,7 +86,6 @@
 	{
 		foreach (var applicability in applications)
 		{
-			var c = GetLifeCycleClass(applicability.Lifecycle);
 			<span class="applicable-info">
 				@name
 				@if (applicability.Lifecycle != ProductLifecycle.GenerallyAvailable)

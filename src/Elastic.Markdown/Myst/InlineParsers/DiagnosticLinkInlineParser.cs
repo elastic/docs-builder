@@ -109,7 +109,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 		}
 
-		if (ValidateExternalUri(link, processor, context, uri))
+		if (ValidateExternalUri(link, processor, uri))
 			return;
 
 		ProcessInternalLink(link, processor, context);
@@ -134,7 +134,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return true;
 	}
 
-	private bool ValidateExternalUri(LinkInline link, InlineProcessor processor, ParserContext context, Uri? uri)
+	private bool ValidateExternalUri(LinkInline link, InlineProcessor processor, Uri? uri)
 	{
 		if (uri == null)
 			return false;

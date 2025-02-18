@@ -4,7 +4,6 @@
 
 using Elastic.Markdown.Helpers;
 using Markdig;
-using Markdig.Extensions.SmartyPants;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;
@@ -35,16 +34,10 @@ public class InlineAnchorBuilderExtension : IMarkdownExtension
 
 public class InlineAnchorParser : InlineParser
 {
-	public InlineAnchorParser()
-	{
-		OpeningCharacters = ['$'];
-	}
+	public InlineAnchorParser() => OpeningCharacters = ['$'];
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
-		var startPosition = processor.GetSourcePosition(slice.Start, out var line, out var column);
-		var c = slice.CurrentChar;
-
 		var span = slice.AsSpan();
 		if (!span.StartsWith("$$$"))
 			return false;
