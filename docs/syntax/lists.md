@@ -1,9 +1,6 @@
 # Lists
 
 You can organize items into ordered and unordered lists.
-- because this
-- is a list
-- of items
 
 ## Basic Lists
 
