@@ -31,7 +31,7 @@ jobs:
         run: |
           dotnet format analyzers --severity info -v diag --verify-no-changes --report .artifacts/report.json || true && \
           cat .artifacts/report.json | \
-          jq -r '.[] | "::warning file=\\(.FilePath),line=\\(.FileChanges[].LineNumber),endLine=\\(.FileChanges[].LineNumber),title=\\(.FileChanges[].DiagnosticId)::\\(.FileChanges[].FormatDescription)  \\(.FilePath)"' | sort | uniq
+          jq -r '.[] | "::warning file=\(.FilePath),line=\(.FileChanges[].LineNumber),endLine=\(.FileChanges[].LineNumber),title=\(.FileChanges[].DiagnosticId)::\(.FileChanges[].FormatDescription)  \(.FilePath)"' | sort | uniq
 
       - name: Build
         run: ./build.sh
