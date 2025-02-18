@@ -4,8 +4,6 @@
 
 module ``product availability``.``yaml frontmatter``
 
-open System.Collections
-open Elastic.Markdown.Helpers
 open Elastic.Markdown.Myst.FrontMatter
 open JetBrains.Annotations
 open Xunit

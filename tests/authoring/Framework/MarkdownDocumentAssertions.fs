@@ -5,6 +5,7 @@
 namespace authoring
 
 open System.Diagnostics
+open Elastic.Markdown.Myst.CodeBlocks
 open Elastic.Markdown.Myst.FrontMatter
 open Markdig.Syntax
 open Swensen.Unquote
@@ -37,4 +38,13 @@ module MarkdownDocumentAssertions =
             test <@ apply = expectedAvailability @>
         | _ -> failwithf "%s has no yamlfront matter" result.File.RelativePath
 
+
+    [<DebuggerStepThrough>]
+    let appliesToDirective (expectedAvailability: ApplicableTo) (actual: AppliesToDirective array) =
+        let actual = actual |> Array.tryHead
+        match actual with
+        | Some d ->
+            let apply = d.AppliesTo
+            test <@ apply = expectedAvailability @>
+        | _ -> failwithf "Could not locate an AppliesToDirective"
 

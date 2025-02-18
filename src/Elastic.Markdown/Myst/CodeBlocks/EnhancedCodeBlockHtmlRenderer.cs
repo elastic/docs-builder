@@ -108,6 +108,12 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
+		if (block is AppliesToDirective appliesToDirective)
+		{
+			RenderAppliesToHtml(renderer, appliesToDirective);
+			return;
+		}
+
 		var callOuts = block.UniqueCallOuts;
 
 		var slice = Code.Create(new CodeViewModel
@@ -183,5 +189,15 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 			renderer.WriteLine("</ol>");
 		}
+	}
+
+	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
+	{
+		var appliesTo = appliesToDirective.AppliesTo;
+		var slice2 = ApplicableTo.Create(appliesTo);
+		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
+			return;
+		var html = slice2.RenderAsync().GetAwaiter().GetResult();
+		renderer.Write(html);
 	}
 }

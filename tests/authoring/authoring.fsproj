@@ -61,7 +61,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Availability\ApplyYaml.fs" />
+    <Compile Include="Applicability\AppliesToFrontMatter.fs" />
+    <Compile Include="Applicability\AppliesToDirective.fs" />
   </ItemGroup>
 
 </Project>

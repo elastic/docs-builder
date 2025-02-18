@@ -153,10 +153,17 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 				return BlockState.None;
 		}
 
-		if (line.IndexOf("{") == -1)
+		if (line.IndexOf("{") <= -1)
 			return BlockState.None;
 
 		if (line.IndexOf("}") == -1)
+			return BlockState.None;
+
+		var span = line.AsSpan();
+		var lastIndent = span.LastIndexOf(":");
+		var startApplies = span.IndexOf("{applies_to}");
+		var startOpen = span.IndexOf("{");
+		if (startOpen > lastIndent + 1 || startApplies != -1)
 			return BlockState.None;
 
 		return base.TryOpen(processor);

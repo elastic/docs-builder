@@ -15,11 +15,87 @@ applies_to:
 
 # Applies to
 
+Allows you to annotate a page or section's applicability.
+
+### Syntax
+
+```
+<life-cycle> [version], <life-cycle> [version]
+```
+
+Taking a mandatory [life-cycle](#life-cycle) with an optional version.
+
+#### Life cycle:
+  * `preview`
+  * `beta`
+  * `development`
+  * `deprecated`
+  * `coming`
+  * `discontinued`
+  * `unavailable`
+  * `ga`
+
+#### Version
+
+Can be in either `major.minor` or `major.minor.patch` format
+
+#### Examples
+
+```
+coming 9.5, discontinued 9.7
+discontinued 9.2.0
+all
+```
+
+`all` and empty string mean generally available for all active versions
+
+```yaml
+applies:
+  serverless: all
+```
+
+`all` and empty string can also be specified at a version level
+
+```yaml
+applies:
+  stack: beta all
+  serverless: beta
+```
+
+Both are equivalent, note `all` just means we won't be rendering the version portion in the html.
+
+
+## Structured model
+
+![Applies To Model](img/applies.png)
+
+The above model is projected to the following structured yaml.
+
+```yaml
+---
+applies_to:
+  stack: 
+  deployment:
+    eck: 
+    ess: 
+    ece: 
+    self: 
+  serverless:
+    security: 
+    elasticsearch: 
+    observability: 
+  product: 
+---
+```
+This allows you to annotate various facets as defined in [](../migration/versioning.md)
+
+## Page annotations
 
 Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status
 
 
 ```yaml
+---
 applies_to:
   stack: ga 9.1
   deployment:
@@ -32,45 +108,48 @@ applies_to:
     elasticsearch: beta 9.1.0
     observability: discontinued 9.2.0
   product: coming 9.5, discontinued 9.7
+---
 ```
 
-Its syntax is
 
-```
- <product>: <lifecycle> [version]
-```
+## Section annotation [#sections]
 
-Where version is optional.
-
-`all` and empty string mean generally available for all active versions
-
-```yaml
-applies:
-  stack:
-  serverless: all
-```
-
-`all` and empty string can also be specified at a version level
-
-```yaml
-applies:
-  stack: beta all
-  serverless: beta
+```yaml {applies_to}
+stack: ga 9.1
+deployment:
+  eck: ga 9.0
+  ess: beta 9.1
+  ece: discontinued 9.2.0
+  self: unavailable 9.3.0
+serverless:
+  security: ga 9.0.0
+  elasticsearch: beta 9.1.0
+  observability: discontinued 9.2.0
+product: coming 9.5, discontinued 9.7
 ```
 
-Are equivalent, note `all` just means we won't be rendering the version portion in the html.
-
-
-## This section has its own applies annotations [#sections]
-
-:::{applies}
-:serverless: unavailable
-:::
+A header may be followed by an `{applies_to}` directive which will contextualize the applicability 
+of the section further.
 
 :::{note}
-the `{applies}` directive **MUST** be preceded by a heading.
+the `{applies_to}` directive **MUST** be preceded by a heading directly.
 :::
 
 
-This section describes a feature that's unavailable in `stack` and `ga` in all cloud products
-however its tech preview on `serverless` since it overrides what `cloud` specified.
+Note that this directive needs triple backticks since its content is literal. See also [](index.md#literal-directives)
+
+````markdown
+```{applies_to}
+stack: ga 9.1
+```
+````
+
+In order to play even better with markdown editors the following is also supported:
+
+````markdown
+```yaml {applies_to}
+stack: ga 9.1
+```
+````
+
+This will allow the yaml inside the `{applies-to}` directive to be fully highlighted.
