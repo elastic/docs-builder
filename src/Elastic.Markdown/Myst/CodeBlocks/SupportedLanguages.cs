@@ -181,7 +181,8 @@ public static class CodeBlock
 		{ "zephir", "zep" }, // Zephir
 
 		//CUSTOM, Elastic language we wrote highlighters for
-		{ "eql", "" }
+		{ "eql", "" },
+		{ "esql", "" }
 	};
 
 
