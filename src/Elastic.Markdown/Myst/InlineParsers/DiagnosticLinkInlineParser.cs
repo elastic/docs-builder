@@ -258,7 +258,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
 	{
 		var docsetDirectory = context.Configuration.SourceFile.Directory;
-		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
+		return "/" + Path.GetRelativePath(docsetDirectory!.FullName, file.FullName);
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
