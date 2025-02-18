@@ -81,3 +81,5 @@ export function initNav() {
 		keepNavPositionCallback();
 	}, true);
 }
+
+initNav();
