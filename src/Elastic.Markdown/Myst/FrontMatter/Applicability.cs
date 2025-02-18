@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
 {
 	private readonly IReadOnlyCollection<Applicability> _items;
-	private ApplicabilityOverTime(Applicability[] items) => _items = items;
+	public ApplicabilityOverTime(Applicability[] items) => _items = items;
 
 	// <lifecycle> [version]
 	public static bool TryParse(string? value, out ApplicabilityOverTime? availability)
