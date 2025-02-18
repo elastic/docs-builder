@@ -111,8 +111,16 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	{
 		var yaml = lines.ToSlice().AsSpan().ToString();
 
-		var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
-		appliesToDirective.AppliesTo = applicableTo;
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			appliesToDirective.AppliesTo = applicableTo;
+
+		}
+		catch (Exception e)
+		{
+			appliesToDirective.EmitError($"Unable to parse applies_to directive: {yaml}", e);
+		}
 	}
 
 	private static void ProcessCallOuts(StringLineGroup lines, string language, EnhancedCodeBlock codeBlock,

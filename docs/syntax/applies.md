@@ -153,3 +153,43 @@ stack: ga 9.1
 ````
 
 This will allow the yaml inside the `{applies-to}` directive to be fully highlighted.
+
+
+## Examples
+
+#### Stack only
+```yaml {applies_to}
+stack: ga 9.1
+```
+
+#### Stack with deployment
+```yaml {applies_to}
+stack: ga 9.1
+deployment:
+  eck: ga 9.0
+  ess: beta 9.1
+```
+
+#### Deployment only
+```yaml {applies_to}
+deployment:
+  ece: discontinued 9.2.0
+  self: unavailable 9.3.0
+```
+
+#### Serverless only
+```yaml {applies_to}
+serverless: ga 9.0.0
+```
+
+#### Serverless with project differences
+```yaml {applies_to}
+serverless:
+  security: ga 9.0.0
+  elasticsearch: beta 9.1.0
+  observability: discontinued 9.2.0
+```
+#### Stack with product
+```yaml {applies_to}
+stack: ga 9.1
+```

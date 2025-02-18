@@ -87,6 +87,30 @@
 	.content-container {
 		@apply w-full max-w-[80ch];
 	}
+
+	.applies {
+		border-bottom: 1px solid var(--color-gray-300);
+		padding-bottom: calc(var(--spacing) * 3);
+		font-family: "Mier B", "Inter", sans-serif;
+
+		.applies-to-label {
+			display: block;
+			font-size: 1.5em;
+			font-weight: var(--font-weight-extrabold);
+			padding-bottom: calc(var(--spacing) * 3);
+		}
+		.applicable-info {
+			padding: calc(var(--spacing) * 0.5);
+			padding-left: calc(var(--spacing) * 2);
+			padding-right: calc(var(--spacing) * 2);
+			margin: calc(var(--spacing) * 0.5);
+			display: inline-block;
+			font-size: 0.8em;
+			border-radius: 0.4em;
+			background-color: var(--color-white);
+			border: 1px solid var(--color-gray-300);
+		}
+	}
 }
 
 * {

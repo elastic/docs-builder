@@ -1,14 +1,11 @@
 @using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorSlice<Elastic.Markdown.Myst.FrontMatter.ApplicableTo>
-<p class="product-availability">
-	<span class="applies-to-label sd-badge sd-outline-transparent sd-text-black">
-		Applies To:
-	</span>
+<p class="applies">
+	<span class="applies-to-label"></span>
 	@if (Model.Stack is not null)
 	{
 		@RenderProduct("Elastic Stack", Model.Stack)
 	}
-
 	@if (Model.Deployment is not null)
 	{
 		if (Model.Deployment.Ece is not null)
@@ -108,15 +105,15 @@
 		foreach (var applicability in applications)
 		{
 			var c = GetLifeCycleClass(applicability.Lifecycle);
-			<span class="sd-badge sd-outline-@c sd-text-@c applies-badge">
+			<span class="applicable-info">
 				@name
 				@if (applicability.Lifecycle != ProductLifecycle.GenerallyAvailable)
 				{
-					<span class="sd-text-secondary">@GetLifeCycleName(applicability.Lifecycle)</span>
+					<span class="text-emerald-500">@GetLifeCycleName(applicability.Lifecycle)</span>
 				}
 				@if (applicability.Version is not null and not AllVersions)
 				{
-					<span class="sd-text-success">(@applicability.Version)</span>
+					<span class="text-red-70">(@applicability.Version)</span>
 				}
 			</span>
 		}
