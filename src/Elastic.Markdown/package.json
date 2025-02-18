@@ -13,6 +13,10 @@
       "distDir": "_static",
       "source": "Assets/main.ts"
     },
+    "navigation": {
+      "distDir": "_static",
+      "source": "Assets/pages-nav.ts"
+    },
     "css": {
       "distDir": "_static",
       "source": "Assets/styles.css"
