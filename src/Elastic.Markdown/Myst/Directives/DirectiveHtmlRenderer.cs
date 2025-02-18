@@ -90,7 +90,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			if (block.ImageUrl.StartsWith('/') || block.ImageUrl.StartsWith("_static"))
 				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
 			else
-				imageUrl =  block.Build.UrlPathPrefix + '/' + Path.GetRelativePath(block.Build.ConfigurationPath.DirectoryName!, block.CurrentFile.DirectoryName!) + "/" + block.ImageUrl;
+				imageUrl = block.Build.UrlPathPrefix + '/' + Path.GetRelativePath(block.Build.ConfigurationPath.DirectoryName!, block.CurrentFile.DirectoryName!) + "/" + block.ImageUrl;
 		}
 		var slice = Image.Create(new ImageViewModel
 		{
