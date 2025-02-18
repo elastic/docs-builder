@@ -41,12 +41,14 @@ public class HtmlWriter
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
+	private string? _renderedNavigation;
+
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
 		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
-		var navigationHtml = await RenderNavigation(markdown, ctx);
+		_renderedNavigation ??= await RenderNavigation(markdown, ctx);
 
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);
@@ -66,7 +68,7 @@ public class HtmlWriter
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
-			NavigationHtml = navigationHtml,
+			NavigationHtml = _renderedNavigation,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
