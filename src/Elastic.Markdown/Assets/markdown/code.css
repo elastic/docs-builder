@@ -118,14 +118,19 @@
 
 	.hljs-meta,
 	.hljs-name,
-	.hljs-type,
-	.hljs-symbol,
 	.hljs-bullet,
 	.hljs-addition,
-	.hljs-variable,
 	.hljs-template-tag,
 	.hljs-template-variable {
 		color: var(--color-yellow-50)
+	}
+
+	.hljs-type,
+	.hljs-symbol {
+		color: var(--color-teal-50)
+	}
+	.hljs-variable {
+		color: var(--color-purple-50)
 	}
 
 	.hljs-comment,
@@ -155,7 +160,7 @@
 		color: var(--color-pink-50)
 	}
 	.hljs-number {
-		color: var(--color-teal-50)
+		color: var(--color-red-50)
 	}
 
 	.hljs-emphasis {

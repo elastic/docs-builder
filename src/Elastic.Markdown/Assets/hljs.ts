@@ -68,6 +68,32 @@ hljs.registerLanguage('eql', function() {
 	}
 })
 
+hljs.registerLanguage('painless', function() {
+	return {
+		case_insensitive: true, // language is case-insensitive
+		keywords: {
+			keyword: 'where sequence sample untill and or not in in~',
+			literal: ['false','true','null'],
+			'subst': 'add between cidrMatch concat divide endsWith indexOf length modulo multiply number startsWith string stringContains substring subtract'
+		},
+		contains: [
+			hljs.QUOTE_STRING_MODE,
+			hljs.C_LINE_COMMENT_MODE,
+			{
+				scope: "operator", // (pathname: path1/path2/dothis) color #ab5656
+				match: /(?:<|<=|==|:|!=|>=|>|like~?|regex~?)/,
+			},
+			{
+				scope: "punctuation", // (pathname: path1/path2/dothis) color #ab5656
+				match: /(?:!?\[|\]|\|)/,
+			},
+			NUMBER,
+
+		]
+	}
+})
+
+
 hljs.registerLanguage('esql', function() {
 	return {
 		case_insensitive: true, // language is case-insensitive
