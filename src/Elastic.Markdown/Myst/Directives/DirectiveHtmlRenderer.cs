@@ -93,20 +93,14 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private void WriteImage(HtmlRenderer renderer, ImageBlock block)
 	{
-		string imageUrl;
-
-		if (block.ImageUrl != null)
+		var imageUrl = block.ImageUrl;
+		if (!string.IsNullOrEmpty(block.ImageUrl))
 		{
-			if (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
-				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
-			else if (block.ImageUrl.StartsWith('/'))
+			if (block.ImageUrl.StartsWith('/') || block.ImageUrl.StartsWith("_static"))
 				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
 			else
 				imageUrl =  block.Build.UrlPathPrefix + block.CurrentFile.DirectoryName!.Replace(block.Build.ConfigurationPath.DirectoryName!, "") + "/" + block.ImageUrl;
 		}
-		else
-			imageUrl = block.ImageUrl!;
-
 		var slice = Image.Create(new ImageViewModel
 		{
 			Label = block.Label,
