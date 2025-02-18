@@ -160,7 +160,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			return BlockState.None;
 
 		var span = line.AsSpan();
-		var lastIndent = span.LastIndexOf(":");
+		var lastIndent = Math.Max(span.LastIndexOf("`"), span.LastIndexOf(":"));
 		var startApplies = span.IndexOf("{applies_to}");
 		var startOpen = span.IndexOf("{");
 		if (startOpen > lastIndent + 1 || startApplies != -1)

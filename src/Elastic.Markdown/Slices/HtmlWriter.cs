@@ -68,7 +68,7 @@ public class HtmlWriter
 			NextDocument = next,
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
-			Applies = markdown.YamlFrontMatter?.Apply,
+			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && !markdown.Hidden
 		});
