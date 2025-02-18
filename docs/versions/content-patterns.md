@@ -31,12 +31,13 @@ See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-st
 
 ## Section/heading-level `applies` tags
 
-:::{applies}
-:ece: all
-:hosted: all
-:eck: all
-:stack: all
-:::
+```yaml {applies_to}
+stack: ga 9.1
+deployment:
+  eck: ga 9.0
+  ece: discontinued 9.2.0
+  self: unavailable 9.3.0
+```
 
 *see [`applies`](/syntax/applies.md#sections)*
 
