@@ -5,15 +5,12 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Myst.Substitution;
 using Elastic.Markdown.Slices.Directives;
 using Markdig;
-using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
@@ -83,12 +80,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				WriteChildren(renderer, directiveBlock);
 				break;
 		}
-	}
-
-	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
-	{
-		var docsetDirectory = context.Configuration.SourceFile.Directory;
-		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
 	}
 
 	private void WriteImage(HtmlRenderer renderer, ImageBlock block)
