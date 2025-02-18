@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.IO.Navigation;
@@ -11,14 +12,24 @@ public interface INavigationItem
 {
 	int Order { get; }
 	int Depth { get; }
+	string Id { get; }
 }
 
-public record GroupNavigation(int Order, int Depth, DocumentationGroup Group) : INavigationItem;
-public record FileNavigation(int Order, int Depth, MarkdownFile File) : INavigationItem;
+public record GroupNavigation(int Order, int Depth, DocumentationGroup Group) : INavigationItem
+{
+	public string Id { get; } = Group.Id;
+}
+
+public record FileNavigation(int Order, int Depth, MarkdownFile File) : INavigationItem
+{
+	public string Id { get; } = File.Id;
+}
 
 
 public class DocumentationGroup
 {
+	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
+
 	public MarkdownFile? Index { get; set; }
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
@@ -51,6 +62,9 @@ public class DocumentationGroup
 	{
 		Depth = depth;
 		Index = ProcessTocItems(context, index, toc, lookup, folderLookup, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
+		if (Index is not null)
+			Index.GroupId = Id;
+
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;

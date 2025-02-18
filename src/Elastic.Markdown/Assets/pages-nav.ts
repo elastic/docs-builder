@@ -1,33 +1,62 @@
 import {$, $$} from "select-dom";
 
-type NavExpandState = { [key: string]: boolean };
+type NavExpandState = {
+	current:string,
+	selected: Record<string, boolean>
+};
 const PAGE_NAV_EXPAND_STATE_KEY = 'pagesNavState';
-const navState = JSON.parse(sessionStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY) ?? "{}") as NavExpandState
 
 // Initialize the nav state from the session storage
 // Return a function to keep the nav state in the session storage that should be called before the page is unloaded
 function keepNavState(nav: HTMLElement): () => void {
-	const inputs = $$('input[type="checkbox"]', nav);
-	if (navState) {
-		inputs.forEach(input => {
-			const key = input.id;
-			if ('shouldExpand' in input.dataset && input.dataset['shouldExpand'] === 'true') {
-				input.checked = true;
-			} else {
-				if (key in navState) {
-					input.checked = navState[key];
-				}
-			}
-		});
+
+	const currentNavigation = nav.dataset.currentNavigation;
+	const currentPageId = nav.dataset.currentPageId;
+
+	let navState = JSON.parse(sessionStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY) ?? "{}") as NavExpandState
+	if (navState.current !== currentNavigation)
+	{
+		sessionStorage.removeItem(PAGE_NAV_EXPAND_STATE_KEY);
+		navState = { current: currentNavigation } as NavExpandState;
 	}
-	
+	if (currentPageId)
+	{
+		const currentPageLink = $('a[id="page-' + currentPageId + '"]', nav);
+		currentPageLink.classList.add('current');
+		currentPageLink.classList.add('pointer-events-none');
+		currentPageLink.classList.add('text-blue-elastic!');
+		currentPageLink.classList.add('font-semibold');
+
+		const parentIds = nav.dataset.currentPageParentIds?.split(',') ?? [];
+		for (const parentId of parentIds)
+		{
+			const input = $('input[type="checkbox"][id=\"'+parentId+'\"]', nav) as HTMLInputElement;
+			if (input) {
+				input.checked = true;
+				const link = input.nextElementSibling as HTMLAnchorElement;
+				link.classList.add('font-semibold');
+			}
+		}
+	}
+
+	// expand items previously selected
+	for (const groupId in navState.selected)
+	{
+		const input = $('input[type="checkbox"][id=\"'+groupId+'\"]', nav) as HTMLInputElement;
+		input.checked = navState.selected[groupId];
+	}
+
 	return () => {
-		const inputs = $$('input[type="checkbox"]', nav);
-		const state: NavExpandState = inputs.reduce((state: NavExpandState, input) => {
+		// store all expanded groups
+		const inputs = $$('input[type="checkbox"]:checked', nav);
+		const selectedMap: Record<string, boolean> = inputs
+			.filter(input => input.checked)
+			.reduce((state: Record<string, boolean>, input) => {
 			const key = input.id;
 			const value = input.checked;
 			return { ...state, [key]: value};
 		}, {});
+		const state = { current: currentNavigation, selected: selectedMap };
 		sessionStorage.setItem(PAGE_NAV_EXPAND_STATE_KEY, JSON.stringify(state));
 	}
 }

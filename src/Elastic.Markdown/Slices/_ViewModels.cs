@@ -26,10 +26,15 @@ public class IndexViewModel
 
 public class LayoutViewModel
 {
+	/// Used to identify the navigation for the current compilation
+	/// We want to reset users sessionStorage every time this changes to invalidate
+	/// the guids that no longer exist
+	public static string CurrentNavigationId { get; } = Guid.NewGuid().ToString("N")[..8];
 	public string Title { get; set; } = "Elastic Documentation";
 	public string RawTitle { get; set; } = "Elastic Documentation";
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required DocumentationGroup Tree { get; init; }
+	public string[] ParentIds => [.. CurrentDocument.YieldParentGroups()];
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required MarkdownFile? Previous { get; init; }
 	public required MarkdownFile? Next { get; init; }

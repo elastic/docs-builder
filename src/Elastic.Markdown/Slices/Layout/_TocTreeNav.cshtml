@@ -3,16 +3,16 @@
 @inherits RazorSlice<NavigationTreeItem>
 @foreach (var item in Model.SubTree.NavigationItems)
 {
+	var id = item.Id;
 	if (item is FileNavigation file)
 	{
 		var f = file.File;
-		var isCurrent = f == Model.CurrentDocument;
-		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li @(isCurrent ? "current" : string.Empty)">
+		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li">
 			<div class="flex">
 				<a
-					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic! @(isCurrent ? "pointer-events-none" : string.Empty)"
-					href="@f.Url"
-					@(isCurrent ? "aria-current=page" : string.Empty)>
+					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
+					id="page-@id"
+					href="@f.Url">
 					@f.NavigationTitle
 				</a>
 			</div>
@@ -21,13 +21,10 @@
 	else if (item is GroupNavigation folder)
 	{
 		var g = folder.Group;
-		var isCurrent = g.Index == Model.CurrentDocument;
 		const int initialExpandLevel = 1;
-		var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
-		var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
-		var uuid = Guid.NewGuid().ToString();
-		<li class="flex flex-wrap @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
-			<label for="@uuid" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
+		var shouldInitiallyExpand = g.Depth <= initialExpandLevel;
+		<li class="flex flex-wrap group-navigation @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
+			<label for="@id" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
@@ -38,16 +35,16 @@
 					<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 				</svg>
 				<input
-					id="@uuid"
+					id="@id"
 					type="checkbox"
 					class="hidden"
 					aria-hidden="true"
-					data-should-expand="@((containsCurrent).ToLowerString())"
 					@(shouldInitiallyExpand ? "checked" : string.Empty)
 				>
 				<a
 					href="@g.Index?.Url"
-					class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current pointer-events-none text-blue-elastic!" : string.Empty)">
+					id="page-@g.Index?.Id"
+					class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty)">
 					@g.Index?.NavigationTitle
 				</a>
 			</label>

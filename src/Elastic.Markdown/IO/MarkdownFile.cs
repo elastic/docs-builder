@@ -13,7 +13,6 @@ using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.IO;
 
@@ -31,6 +30,8 @@ public record MarkdownFile : DocumentationFile
 		MarkdownParser = parser;
 		Collector = context.Collector;
 	}
+
+	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
 	private DiagnosticsCollector Collector { get; }
 
@@ -76,10 +77,11 @@ public record MarkdownFile : DocumentationFile
 
 	public int NavigationIndex { get; internal set; } = -1;
 
+	public string? GroupId { get; set; }
+
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
 	private string? _title;
-
 	public MarkdownFile[] YieldParents()
 	{
 		var parents = new List<MarkdownFile>();
@@ -91,6 +93,20 @@ public record MarkdownFile : DocumentationFile
 			parent = parent?.Parent;
 		} while (parent != null);
 		return parents.ToArray();
+	}
+	public string[] YieldParentGroups()
+	{
+		var parents = new List<string>();
+		if (GroupId is not null)
+			parents.Add(GroupId);
+		var parent = Parent;
+		do
+		{
+			if (parent is not null)
+				parents.Add(parent.Id);
+			parent = parent?.Parent;
+		} while (parent != null);
+		return [.. parents];
 	}
 
 	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
