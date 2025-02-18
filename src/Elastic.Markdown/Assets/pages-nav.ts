@@ -1,4 +1,8 @@
 import {$, $$} from "select-dom";
+import {initHighlight} from "./hljs";
+import {initCopyButton} from "./copybutton";
+import {initTabs} from "./tabs";
+import {initTocNav} from "./toc-nav";
 
 type NavExpandState = {
 	current:string,
@@ -109,6 +113,36 @@ export function initNav() {
 		keepNavStateCallback();
 		keepNavPositionCallback();
 	}, true);
+	
+	
+	$$('a', pagesNav).forEach(a => {
+		a.addEventListener('click', (e) => {
+			e.preventDefault();
+			history.pushState(null, '', a.href);
+			
+			// download .markdown-content from the href
+			const url = a.href;
+			fetch(url)
+				.then(response => response.text())
+				.then(text => {
+					const doc = new DOMParser().parseFromString(text, 'text/html')
+					const markdownContent = $('.markdown-content', doc);
+					const markdownContentContainer = $('.markdown-content');
+					const toc = $('#toc-nav', doc);
+					const tocContainer = $('#toc-nav');
+					if (toc && tocContainer) {
+						tocContainer.innerHTML = toc.innerHTML;
+					}
+					if (markdownContent && markdownContentContainer) {
+						markdownContentContainer.innerHTML = markdownContent.innerHTML;
+						initHighlight();
+						initCopyButton();
+						initTabs();
+						initTocNav();
+					}
+				});
+		});
+	});
 }
 
 initNav();

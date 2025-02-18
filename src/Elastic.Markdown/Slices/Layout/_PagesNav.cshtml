@@ -5,7 +5,6 @@
 	     data-current-page-parent-ids="@(string.Join(",",Model.ParentIds))"
 	     @* used to invalidate session storage *@
 	     data-current-navigation="@LayoutViewModel.CurrentNavigationId">
-
 		@(new HtmlString(Model.NavigationHtml))
 	</nav>
 	<script src="@Model.Static("pages-nav.js")"></script>
