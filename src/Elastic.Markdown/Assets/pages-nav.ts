@@ -114,14 +114,12 @@ export function initNav() {
 		keepNavPositionCallback();
 	}, true);
 	
-	
 	$$('a', pagesNav).forEach(a => {
 		a.addEventListener('click', (e) => {
 			e.preventDefault();
 			history.pushState(null, '', a.href);
 			const markdownContentContainer = $('.markdown-content');
 			markdownContentContainer.innerHTML = 'loading...';
-			// download .markdown-content from the href
 			const url = a.href;
 			fetch(url)
 				.then(response => response.text())
