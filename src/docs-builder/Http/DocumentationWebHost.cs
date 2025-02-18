@@ -142,6 +142,8 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider
 			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
 			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
 		}
+#else
+		_staticWebFilesDuringDebug = null;
 #endif
 		if (context.ReadFileSystem.Directory.Exists(documentationStaticFiles))
 			_staticFilesInDocsFolder = new PhysicalFileProvider(documentationStaticFiles);
