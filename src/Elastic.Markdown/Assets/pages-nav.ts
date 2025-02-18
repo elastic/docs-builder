@@ -119,7 +119,8 @@ export function initNav() {
 		a.addEventListener('click', (e) => {
 			e.preventDefault();
 			history.pushState(null, '', a.href);
-			
+			const markdownContentContainer = $('.markdown-content');
+			markdownContentContainer.innerHTML = 'loading...';
 			// download .markdown-content from the href
 			const url = a.href;
 			fetch(url)
@@ -127,7 +128,6 @@ export function initNav() {
 				.then(text => {
 					const doc = new DOMParser().parseFromString(text, 'text/html')
 					const markdownContent = $('.markdown-content', doc);
-					const markdownContentContainer = $('.markdown-content');
 					const toc = $('#toc-nav', doc);
 					const tocContainer = $('#toc-nav');
 					if (toc && tocContainer) {
