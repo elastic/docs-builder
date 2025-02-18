@@ -5,6 +5,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -12,6 +13,7 @@ using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Myst.Substitution;
 using Elastic.Markdown.Slices.Directives;
 using Markdig;
+using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
@@ -83,13 +85,28 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 	}
 
+	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
+	{
+		var docsetDirectory = context.Configuration.SourceFile.Directory;
+		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
+	}
+
 	private void WriteImage(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl =
-			block.ImageUrl != null &&
-			(block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
-				? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
-				: block.ImageUrl;
+		string imageUrl;
+
+		if (block.ImageUrl != null)
+		{
+			if (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
+			else if (block.ImageUrl.StartsWith('/'))
+				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
+			else
+				imageUrl =  block.Build.UrlPathPrefix + block.CurrentFile.DirectoryName!.Replace(block.Build.ConfigurationPath.DirectoryName!, "") + "/" + block.ImageUrl;
+		}
+		else
+			imageUrl = block.ImageUrl!;
+
 		var slice = Image.Create(new ImageViewModel
 		{
 			Label = block.Label,
