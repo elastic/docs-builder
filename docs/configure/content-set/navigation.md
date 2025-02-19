@@ -73,6 +73,10 @@ toc:
   - file: index.md
 ```
 
+:::{important}
+The first file must always be named `index.md`.
+:::
+
 The TOC in principle follows the directory structure on disk.
 
 #### `folder:`
@@ -151,6 +155,10 @@ See [Attributes](./attributes.md) to learn more.
 
 As a rule, each `docset.yml` file can only be included once in the assembler. This prevents us from accidentally duplicating pages in the docs. However, there are times when you want to split content sets and include them partially in different areas of the TOC. That's what `toc.yml` files are for. These files split one documentation set into multiple “sub-TOCs,” each mapped to a different navigation node.
 
-A `toc.yml` file may only declare a nested [TOC](#toc), other options are ignored. 
+A `toc.yml` file may only declare a nested [TOC](#toc), other options are ignored.
+
+:::{important}
+The first file must always be named `index.md`.
+:::
 
 A `toc.yml` may not link to further nested `toc.yml` files. Doing so will result in an error
