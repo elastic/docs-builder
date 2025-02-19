@@ -18,7 +18,12 @@
 <div class="container flex">
 	@await RenderPartialAsync(_PagesNav.Create(Model))
 	<main class="w-full order-2">
-		<div class="content-container">
+		<div class="content-container relative">
+			<div class="w-full htmx-indicator absolute top-0 left-0 right-0" id="indicator">
+				<div class="h-1.5 w-full bg-pink-10 overflow-hidden">
+					<div class="progress w-full h-full bg-pink-50 left-right"></div>
+				</div>
+			</div>
 		</div>
 		<div id="content" class="w-full flex justify-between">
 			@await RenderPartialAsync(_TableOfContents.Create(Model))

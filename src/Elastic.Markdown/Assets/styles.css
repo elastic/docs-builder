@@ -137,3 +137,30 @@
 :is(a, button, input, textarea, summary):focus:not(:focus-visible) {
 	outline: none;
 }
+
+.htmx-indicator {
+	display:none;
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator{
+	display:block;
+}
+
+.progress {
+	animation: progress 1s infinite linear;
+}
+
+.left-right {
+	transform-origin: 0% 50%;
+}
+@keyframes progress {
+	0% {
+		transform:  translateX(0) scaleX(0);
+	}
+	40% {
+		transform:  translateX(0) scaleX(0.4);
+	}
+	100% {
+		transform:  translateX(100%) scaleX(0.5);
+	}
+}
