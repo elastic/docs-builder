@@ -1,11 +1,13 @@
 @inherits RazorSlice<LayoutViewModel>
-<aside class="sidebar hidden lg:block order-1 w-100 border-r-1 border-r-gray-200">
-	<nav id="pages-nav" class="sidebar-nav pr-6"
+<aside class="sidebar hidden lg:block order-1 w-100 border-r-1 border-r-gray-200" 		hx-swap="morphdom"
+>
+	<nav
+		id="pages-nav" 
+	     class="sidebar-nav pr-6"
 	     data-current-page-id="@Model.CurrentDocument.Id"
 	     data-current-page-parent-ids="@(string.Join(",",Model.ParentIds))"
 	     @* used to invalidate session storage *@
 	     data-current-navigation="@LayoutViewModel.CurrentNavigationId">
 		@(new HtmlString(Model.NavigationHtml))
 	</nav>
-	<script src="@Model.Static("pages-nav.js")"></script>
 </aside>

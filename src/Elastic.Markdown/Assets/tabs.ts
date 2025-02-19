@@ -57,12 +57,6 @@ function ready() {
             group
           );
           if (tabParam) {
-            console.log(
-              "sphinx-design: Selecting tab id for group '" +
-                group +
-                "' from URL parameter: " +
-                tabParam
-            );
             window.sessionStorage.setItem(storageKeyPrefix + group, tabParam);
           }
         }
@@ -72,9 +66,6 @@ function ready() {
           storageKeyPrefix + group
         );
         if (previousId === id) {
-          // console.log(
-          //   "sphinx-design: Selecting tab from session storage: " + id
-          // );
           // @ts-ignore
           label.previousElementSibling.checked = true;
         }
@@ -101,6 +92,5 @@ function onSDLabelClick() {
 }
 
 export function initTabs() {
-	console.log("inittabs");
-  document.addEventListener("DOMContentLoaded", ready, false);
+  document.addEventListener("DOMContentLoaded", ready, { once: true });
 }

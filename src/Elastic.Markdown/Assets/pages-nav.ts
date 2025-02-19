@@ -114,33 +114,33 @@ export function initNav() {
 		keepNavPositionCallback();
 	}, true);
 	
-	$$('a', pagesNav).forEach(a => {
-		a.addEventListener('click', (e) => {
-			e.preventDefault();
-			history.pushState(null, '', a.href);
-			const markdownContentContainer = $('.markdown-content');
-			markdownContentContainer.innerHTML = 'loading...';
-			const url = a.href;
-			fetch(url)
-				.then(response => response.text())
-				.then(text => {
-					const doc = new DOMParser().parseFromString(text, 'text/html')
-					const markdownContent = $('.markdown-content', doc);
-					const toc = $('#toc-nav', doc);
-					const tocContainer = $('#toc-nav');
-					if (toc && tocContainer) {
-						tocContainer.innerHTML = toc.innerHTML;
-					}
-					if (markdownContent && markdownContentContainer) {
-						markdownContentContainer.innerHTML = markdownContent.innerHTML;
-						initHighlight();
-						initCopyButton();
-						initTabs();
-						initTocNav();
-					}
-				});
-		});
-	});
+	// $$('a', pagesNav).forEach(a => {
+	// 	a.addEventListener('click', (e) => {
+	// 		e.preventDefault();
+	// 		history.pushState(null, '', a.href);
+	// 		const markdownContentContainer = $('.markdown-content');
+	// 		markdownContentContainer.innerHTML = 'loading...';
+	// 		const url = a.href;
+	// 		fetch(url)
+	// 			.then(response => response.text())
+	// 			.then(text => {
+	// 				const doc = new DOMParser().parseFromString(text, 'text/html')
+	// 				const markdownContent = $('.markdown-content', doc);
+	// 				const toc = $('#toc-nav', doc);
+	// 				const tocContainer = $('#toc-nav');
+	// 				if (toc && tocContainer) {
+	// 					tocContainer.innerHTML = toc.innerHTML;
+	// 				}
+	// 				if (markdownContent && markdownContentContainer) {
+	// 					markdownContentContainer.innerHTML = markdownContent.innerHTML;
+	// 					initHighlight();
+	// 					initCopyButton();
+	// 					initTabs();
+	// 					initTocNav();
+	// 				}
+	// 			});
+	// 	});
+	// });
 }
 
-initNav();
+// initNav();
