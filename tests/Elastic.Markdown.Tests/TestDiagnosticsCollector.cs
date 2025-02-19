@@ -20,7 +20,7 @@ public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutpu
 public class TestDiagnosticsCollector(ITestOutputHelper output)
 	: DiagnosticsCollector([new TestDiagnosticsOutput(output)])
 {
-	private readonly List<Diagnostic> _diagnostics = new();
+	private readonly List<Diagnostic> _diagnostics = [];
 
 	public IReadOnlyCollection<Diagnostic> Diagnostics => _diagnostics;
 

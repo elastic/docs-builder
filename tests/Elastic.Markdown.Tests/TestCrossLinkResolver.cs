@@ -11,11 +11,12 @@ namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
-	public Dictionary<string, LinkReference> LinkReferences { get; } = new();
-	public HashSet<string> DeclaredRepositories { get; } = new();
+	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
+	private HashSet<string> DeclaredRepositories { get; } = [];
 
 	public Task FetchLinks()
 	{
+		// language=json
 		var json = """
 		           {
 		           	  "origin": {

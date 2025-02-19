@@ -64,10 +64,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(0);
-	}
+	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
 public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
@@ -87,10 +84,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(0);
-	}
+	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
 public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
@@ -112,10 +106,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(0);
-	}
+	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
 public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,

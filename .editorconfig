@@ -222,6 +222,14 @@ dotnet_diagnostic.IDE0005.severity = none
 
 dotnet_diagnostic.IDE0001.severity = none
 
+dotnet_diagnostic.IDE0057.severity = none
+
+[DocumentationWebHost.cs]
+dotnet_diagnostic.IL3050.severity = none
+dotnet_diagnostic.IL2026.severity = none
+
+[tests/**/*.cs]
+dotnet_diagnostic.IDE0058.severity = none
 
 
 [*.{sh,bat,ps1}]
