@@ -29,7 +29,7 @@ public sealed class DiagnosticsChannel : IDisposable
 		_ctxSource.Cancel();
 	}
 
-	public ValueTask<bool> WaitToWrite() => _channel.Writer.WaitToWriteAsync(CancellationToken);
+	public ValueTask<bool> WaitToWrite(Cancel ctx) => _channel.Writer.WaitToWriteAsync(ctx);
 
 	public void Write(Diagnostic diagnostic)
 	{
@@ -82,7 +82,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			return _started;
 		_started = Task.Run(async () =>
 		{
-			_ = await Channel.WaitToWrite();
+			_ = await Channel.WaitToWrite(cancellationToken);
 			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
 				try
