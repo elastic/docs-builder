@@ -18,6 +18,17 @@ public record LinkMetadata
 	public bool Hidden { get; init; }
 }
 
+public record LinkRedirect
+{
+	[JsonPropertyName("anchors")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public Dictionary<string, string>? Anchors { get; init; } = [];
+
+	[JsonPropertyName("to")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public string To { get; init; } = string.Empty;
+}
+
 public record LinkReference
 {
 	[JsonPropertyName("origin")]
@@ -33,8 +44,13 @@ public record LinkReference
 	[JsonPropertyName("cross_links")]
 	public required string[] CrossLinks { get; init; } = [];
 
+	/// Mapping of relative filepath and all the page's anchors for deep links
+	[JsonPropertyName("redirects")]
+	public required Dictionary<string, LinkRedirect>? Redirects { get; init; } = [];
+
 	public static LinkReference Create(DocumentationSet set)
 	{
+		var redirects = set.Configuration.Redirects;
 		var crossLinks = set.Context.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = set.MarkdownFiles.Values
 			.Select(m => (m.RelativePath, File: m))
@@ -43,8 +59,10 @@ public record LinkReference
 				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
 				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
 			});
+
 		return new LinkReference
 		{
+			Redirects = redirects,
 			UrlPathPrefix = set.Context.UrlPathPrefix,
 			Origin = set.Context.Git,
 			Links = links,

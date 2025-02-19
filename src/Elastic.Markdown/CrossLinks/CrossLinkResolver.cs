@@ -12,11 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.CrossLinks;
 
-
 public record LinkIndex
 {
-	[JsonPropertyName("repositories")]
-	public required Dictionary<string, Dictionary<string, LinkIndexEntry>> Repositories { get; init; }
+	[JsonPropertyName("repositories")] public required Dictionary<string, Dictionary<string, LinkIndexEntry>> Repositories { get; init; }
 
 	public static LinkIndex Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
@@ -27,17 +25,13 @@ public record LinkIndex
 
 public record LinkIndexEntry
 {
-	[JsonPropertyName("repository")]
-	public required string Repository { get; init; }
+	[JsonPropertyName("repository")] public required string Repository { get; init; }
 
-	[JsonPropertyName("path")]
-	public required string Path { get; init; }
+	[JsonPropertyName("path")] public required string Path { get; init; }
 
-	[JsonPropertyName("branch")]
-	public required string Branch { get; init; }
+	[JsonPropertyName("branch")] public required string Branch { get; init; }
 
-	[JsonPropertyName("etag")]
-	public required string ETag { get; init; }
+	[JsonPropertyName("etag")] public required string ETag { get; init; }
 }
 
 public interface ICrossLinkResolver
@@ -80,6 +74,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 				// TODO: ignored for now while we wait for all links.json files to populate
 			}
 		}
+
 		_linkReferences = dictionary.ToFrozenDictionary();
 	}
 
@@ -88,7 +83,13 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 
 	private static Uri BaseUri { get; } = new Uri("https://docs-v3-preview.elastic.dev");
 
-	public static bool TryResolve(Action<string> errorEmitter, HashSet<string> declaredRepositories, IDictionary<string, LinkReference> lookup, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
+	public static bool TryResolve(
+		Action<string> errorEmitter,
+		HashSet<string> declaredRepositories,
+		IDictionary<string, LinkReference> lookup,
+		Uri crossLinkUri,
+		[NotNullWhen(true)] out Uri? resolvedUri
+	)
 	{
 		resolvedUri = null;
 		if (crossLinkUri.Scheme == "docs-content")
@@ -98,6 +99,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 				errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links");
 				return false;
 			}
+
 			return TryFullyValidate(errorEmitter, linkReference, crossLinkUri, out resolvedUri);
 		}
 
@@ -118,22 +120,24 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 		return true;
 	}
 
-	private static bool TryFullyValidate(Action<string> errorEmitter, LinkReference linkReference, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
+	private static bool TryFullyValidate(
+		Action<string> errorEmitter,
+		LinkReference linkReference,
+		Uri crossLinkUri,
+		[NotNullWhen(true)] out Uri? resolvedUri
+	)
 	{
 		resolvedUri = null;
 		var lookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
 		if (string.IsNullOrEmpty(lookupPath) && crossLinkUri.Host.EndsWith(".md"))
 			lookupPath = crossLinkUri.Host;
 
-		if (!linkReference.Links.TryGetValue(lookupPath, out var link))
-		{
-			errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link repository.");
+		if (!LookupLink(errorEmitter, linkReference, crossLinkUri, ref lookupPath, out var link, out var lookupFragment))
 			return false;
-		}
 
 		var path = ToTargetUrlPath(lookupPath);
 
-		if (!string.IsNullOrEmpty(crossLinkUri.Fragment))
+		if (!string.IsNullOrEmpty(lookupFragment))
 		{
 			if (link.Anchors is null)
 			{
@@ -141,17 +145,53 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 				return false;
 			}
 
-			if (!link.Anchors.Contains(crossLinkUri.Fragment.TrimStart('#')))
+			if (!link.Anchors.Contains(lookupFragment.TrimStart('#')))
 			{
-				errorEmitter($"'{lookupPath}' has no anchor named: '{crossLinkUri.Fragment}'.");
+				errorEmitter($"'{lookupPath}' has no anchor named: '{lookupFragment}'.");
 				return false;
 			}
-			path += crossLinkUri.Fragment;
+
+			path += "#" + lookupFragment.TrimStart('#');
 		}
 
 		var branch = GetBranch(crossLinkUri);
 		resolvedUri = new Uri(BaseUri, $"elastic/{crossLinkUri.Scheme}/tree/{branch}/{path}");
 		return true;
+	}
+
+	private static bool LookupLink(
+		Action<string> errorEmitter,
+		LinkReference linkReference,
+		Uri crossLinkUri,
+		ref string lookupPath,
+		[NotNullWhen(true)] out LinkMetadata? link,
+		[NotNullWhen(true)] out string? lookupFragment
+	)
+	{
+		lookupFragment = null;
+		if (linkReference.Links.TryGetValue(lookupPath, out link))
+		{
+			lookupFragment = crossLinkUri.Fragment;
+			return true;
+		}
+		if (linkReference.Redirects is not null && linkReference.Redirects.TryGetValue(lookupPath, out var redirect))
+		{
+			if (linkReference.Links.TryGetValue(redirect.To, out link))
+			{
+				lookupPath = redirect.To;
+				lookupFragment =
+					redirect.Anchors is not null
+						&& redirect.Anchors.TryGetValue(crossLinkUri.Fragment.TrimStart('#'), out var fragment)
+					? fragment
+					: crossLinkUri.Fragment;
+				return true;
+			}
+			errorEmitter($"'{lookupPath}' is set a redirect but the redirect '{redirect.To}' does not exists.");
+			return false;
+		}
+
+		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link repository.");
+		return false;
 	}
 
 	/// Hardcoding these for now, we'll have an index.json pointing to all links.json files

@@ -19,9 +19,25 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 		Configuration.ImplicitFolders.Should()
 			.Contain("testing/nested");
 	}
+
 	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>
 		Configuration.Files.Should()
 			.Contain("index.md")
 			.And.Contain("syntax/index.md");
+
+	[Fact]
+	public void ParsesRedirects()
+	{
+		Configuration.Redirects.Should()
+			.NotBeNullOrEmpty()
+			.And.ContainKey("testing/redirects/first-page.md")
+			.And.ContainKey("testing/redirects/second-page.md");
+
+		var redirect1 = Configuration.Redirects!["testing/redirects/first-page.md"];
+		redirect1.To.Should().Be("testing/redirects/second-page.md");
+
+		var redirect2 = Configuration.Redirects!["testing/redirects/second-page.md"];
+		redirect2.To.Should().Be("testing/redirects/first-page.md");
+	}
 }

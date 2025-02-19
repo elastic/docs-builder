@@ -230,7 +230,7 @@ dotnet_diagnostic.IL2026.severity = none
 
 [tests/**/*.cs]
 dotnet_diagnostic.IDE0058.severity = none
-
+dotnet_diagnostic.IDE0022.severity = none
 
 [*.{sh,bat,ps1}]
 trim_trailing_whitespace=true

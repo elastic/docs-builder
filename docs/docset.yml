@@ -9,6 +9,11 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+redirects:
+  'testing/redirects/first-page-old.md':
+    to: 'testing/redirects/second-page.md'
+  'testing/redirects/second-page-old.md':
+    to: 'testing/redirects/first-page.md'
 toc:
   - file: index.md
   - hidden: developer-notes.md

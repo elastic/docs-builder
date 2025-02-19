@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO.State;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
@@ -29,6 +31,8 @@ public record ConfigurationFile : DocumentationFile
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
+
+	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
 
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context, int depth = 0, string parentPath = "")
 		: base(sourceFile, rootPath)
@@ -77,6 +81,9 @@ public record ConfigurationFile : DocumentationFile
 					case "subs":
 						_substitutions = ReadDictionary(entry);
 						break;
+					case "redirects":
+						Redirects = ReadRedirects(entry);
+						break;
 					case "toc":
 						if (depth > 1)
 						{
@@ -103,6 +110,73 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
+	}
+
+	private Dictionary<string, LinkRedirect>? ReadRedirects(KeyValuePair<YamlNode, YamlNode> entry)
+	{
+		if (!ReadObjectDictionary(entry, out var mapping))
+			return null;
+
+		var dictionary = new Dictionary<string, LinkRedirect>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var entryValue in mapping.Children)
+		{
+			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+				continue;
+			var key = scalar.Value;
+			if (!ReadObjectDictionary(entryValue, out var valueMapping))
+				continue;
+
+			var linkRedirect = ReadLinkRedirect(valueMapping);
+			if (linkRedirect is not null)
+				dictionary.Add(key, linkRedirect);
+		}
+
+		return dictionary;
+	}
+
+	private LinkRedirect? ReadLinkRedirect(YamlMappingNode mapping)
+	{
+		var redirect = new LinkRedirect();
+		foreach (var entryValue in mapping.Children)
+		{
+			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+				continue;
+			var key = scalar.Value;
+			switch (key)
+			{
+				case "anchors":
+					redirect = redirect with { Anchors = ReadDictionary(entryValue) };
+					continue;
+				case "to":
+					var to = ReadString(entryValue);
+					if (to is not null)
+						redirect = redirect with { To = to };
+					continue;
+			}
+		}
+		return string.IsNullOrEmpty(redirect.To) ? null : redirect;
+	}
+
+	private bool ReadObjectDictionary(KeyValuePair<YamlNode, YamlNode> entry, [NotNullWhen(true)] out YamlMappingNode? mapping)
+	{
+		mapping = null;
+		if (entry.Value is not YamlMappingNode m)
+		{
+			if (entry.Key is YamlScalarNode scalarKey)
+			{
+				var key = scalarKey.Value;
+				EmitWarning($"'{key}' is not a dictionary");
+			}
+			else
+				EmitWarning($"'{entry.Key}' is not a dictionary");
+
+			return false;
+		}
+
+		mapping = m;
+
+		return true;
 	}
 
 	private List<ITocItem> ReadChildren(KeyValuePair<YamlNode, YamlNode> entry, string parentPath)

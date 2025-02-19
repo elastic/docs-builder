@@ -30,6 +30,17 @@ type TestCrossLinkResolver () =
   },
   "url_path_prefix": "/elastic/docs-content/tree/main",
   "cross_links": [],
+  "redirects" : {
+    "testing/redirects/first-page-old.md": {
+      "to": "testing/redirects/second-page.md",
+      "anchors": {
+        "old-anchor" : "active-anchor"
+      }
+    },
+    "testing/redirects/second-page-old.md": {
+      "to": "testing/redirects/second-page.md"
+    }
+  },
   "links": {
     "index.md": {},
     "get-started/index.md": {
@@ -40,6 +51,12 @@ type TestCrossLinkResolver () =
     },
     "solutions/observability/apps/apm-server-binary.md": {
       "anchors": [ "apm-deb" ]
+    },
+    "testing/redirects/first-page.md": {
+      "anchors": [ "current-anchor", "another-anchor" ]
+    },
+    "testing/redirects/second-page.md": {
+      "anchors": [ "active-anchor" ]
     }
   }
 }
