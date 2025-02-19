@@ -5,6 +5,7 @@
 using Actions.Core.Extensions;
 using Elastic.Documentation.Tooling.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 
@@ -19,11 +20,11 @@ public static class DocumentationTooling
 
 		var services = new ServiceCollection()
 			.AddGitHubActionsCore();
+		services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
 		_ = services.AddLogging(x => x
 			.ClearProviders()
 			.SetMinimumLevel(defaultLogLevel)
 			.AddConsole(c => c.FormatterName = "condensed")
-			.AddConsoleFormatter<CondensedConsoleFormatter, ConsoleFormatterOptions>()
 		);
 
 
