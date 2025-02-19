@@ -27,11 +27,6 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
-      - name: Run Analyzers
-        run: |
-          dotnet format analyzers --severity info -v diag --verify-no-changes --report .artifacts/report.json || true && \
-             cat .artifacts/report.json | jq -r '.[] | "::warning file=\(.FilePath),line=\(.FileChanges[].LineNumber),endLine=\(.FileChanges[].LineNumber),title=\(.FileChanges[].DiagnosticId)::\(.FileChanges[].FormatDescription)"' | sort | uniq
-
       - name: Build
         run: ./build.sh
 
