@@ -27,7 +27,6 @@ public static class DocumentationTooling
 			.AddConsole(c => c.FormatterName = "condensed")
 		);
 
-
 		configure?.Invoke(services);
 
 		return services.BuildServiceProvider();

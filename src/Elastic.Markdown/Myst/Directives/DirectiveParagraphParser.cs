@@ -26,13 +26,15 @@ public class DirectiveParagraphParser : ParagraphBlockParser
 		if (block is not ParagraphBlock paragraphBlock)
 			return base.TryContinue(processor, block);
 
-		var line = paragraphBlock.Lines.ToString();
-
 		if (block.Parent is not DirectiveBlock)
 			return base.TryContinue(processor, block);
 
-		// TODO only parse this if no content proceeds it (and not in a code fence)
-		return line.StartsWith(':')
+		var lines = paragraphBlock.Lines.Lines;
+		if (lines.Length < 1)
+			return base.TryContinue(processor, block);
+
+		var line = lines[0];
+		return line.Slice.AsSpan().StartsWith(':')
 			? BlockState.BreakDiscard
 			: base.TryContinue(processor, block);
 	}
