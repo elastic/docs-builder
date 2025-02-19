@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Documentation.Builder.Diagnostics.LiveMode;
+using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
@@ -28,14 +29,12 @@ public class DocumentationWebHost
 	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
 	{
 		var builder = WebApplication.CreateSlimBuilder();
+		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
 
 		_ = builder.Logging
-			.ClearProviders()
-			.SetMinimumLevel(LogLevel.Warning)
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
-			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information)
-			.AddSimpleConsole(o => o.SingleLine = true);
+			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
 		_context = new BuildContext(fileSystem, fileSystem, path, null)
 		{
