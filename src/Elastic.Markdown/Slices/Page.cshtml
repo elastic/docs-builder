@@ -1,17 +1,6 @@
 @using Elastic.Markdown.Helpers
-@inherits RazorLayoutSlice<LayoutViewModel>
-<!DOCTYPE html>
-<html lang="en" class="h-screen">
-<head>
-	<title>@Model.Title</title>
-	<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
-	<meta name="htmx-config" content='{"scrollIntoViewOnBoost": false, "selfRequestsOnly": true}'>
-</head>
-<body class="text-ink" hx-ext="preload,head-support">
-@(await RenderPartialAsync(_Header.Create(Model)))
+@using Markdig
+@inherits RazorSliceHttpResult<MainViewModel>
 <div class="flex flex-col items-center px-6">
 	<div class="container flex">
 		@await RenderPartialAsync(_PagesNav.Create(Model))
@@ -27,16 +16,22 @@
 				@await RenderPartialAsync(_Breadcrumbs.Create<IBreadCrumbModel>(Model))
 			</div>
 			<article id="markdown-content" class="content-container markdown-content">
-				@await RenderBodyAsync()
+				@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@
+				@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
+				@if (Model.Applies is not null)
+				{
+					await RenderPartialAsync(ApplicableTo.Create(Model.Applies));
+				}
+				@(new HtmlString(Model.MarkdownHtml))
 			</article>
 			<footer id="prev-next-nav" class="content-container mt-20">
 				<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
 					<div class="w-full">
-						@if (Model.Previous != null)
+						@if (Model.PreviousDocument != null)
 						{
 							<a
-								href="@Model.Previous.Url"
-								hx-get="@Model.Previous.Url"
+								href="@Model.PreviousDocument.Url"
+								hx-get="@Model.PreviousDocument.Url"
 								hx-select-oob="@Htmx.GetHxSelectOob()"
 								hx-swap="none"
 								hx-push-url="true"
@@ -49,17 +44,17 @@
 								</svg>
 								<div>
 									<div class="text-xs lg:text-sm">Previous</div>
-									<div class="text-base lg:text-xl text-black">@Model.Previous.NavigationTitle</div>
+									<div class="text-base lg:text-xl text-black">@Model.PreviousDocument.NavigationTitle</div>
 								</div>
 							</a>
 						}
 					</div>
 					<div class="w-full">
-						@if (Model.Next != null)
+						@if (Model.NextDocument != null)
 						{
 							<a
-								href="@Model.Next.Url"
-								hx-get="@Model.Next.Url"
+								href="@Model.NextDocument.Url"
+								hx-get="@Model.NextDocument.Url"
 								hx-select-oob="@Htmx.GetHxSelectOob()"
 								hx-swap="none"
 								hx-push-url="true"
@@ -69,7 +64,7 @@
 							>
 								<div>
 									<div class="text-xs lg:text-sm">Next</div>
-									<div class="text-base lg:text-xl text-black">@Model.Next.NavigationTitle</div>
+									<div class="text-base lg:text-xl text-black">@Model.NextDocument.NavigationTitle</div>
 								</div>
 								<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
@@ -82,7 +77,3 @@
 		</main>
 	</div>
 </div>
-@(await RenderPartialAsync(_Footer.Create(Model)))
-<script src="@Model.Static("main.js")"></script>
-</body>
-</html>

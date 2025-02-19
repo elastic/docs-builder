@@ -23,10 +23,15 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 
 	private string? _renderedNavigation;
 
-	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
+	public static async Task<string> RenderPageHtml(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
 		var html = MarkdownFile.CreateHtml(document);
+		return html;
+	}
+
+	public async Task<string> RenderLayout(MarkdownFile markdown, string markdownHtml, Cancel ctx = default)
+	{
 		await DocumentationSet.Tree.Resolve(ctx);
 		_renderedNavigation ??= await RenderNavigation(markdown, ctx);
 
@@ -42,13 +47,41 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
-			MarkdownHtml = html,
+			MarkdownHtml = markdownHtml,
 			PageTocItems = [.. markdown.TableOfContents.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
 			NavigationHtml = _renderedNavigation,
+			UrlPathPrefix = markdown.UrlPathPrefix,
+			Applies = markdown.YamlFrontMatter?.AppliesTo,
+			GithubEditUrl = editUrl,
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && !markdown.Hidden
+		});
+		return await slice.RenderAsync(cancellationToken: ctx);
+	}
+
+
+	public async Task<string> RenderPage(MarkdownFile markdown, string markdownHtml, Cancel ctx = default)
+	{
+		var previous = DocumentationSet.GetPrevious(markdown);
+		var next = DocumentationSet.GetNext(markdown);
+
+		var remote = DocumentationSet.Context.Git.RepositoryName;
+		var branch = DocumentationSet.Context.Git.Branch;
+		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
+		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
+
+		var slice = Page.Create(new MainViewModel
+		{
+			Title = markdown.Title ?? "[TITLE NOT SET]",
+			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
+			MarkdownHtml = markdownHtml,
+			PageTocItems = [.. markdown.TableOfContents.Values],
+			CurrentDocument = markdown,
+			PreviousDocument = previous,
+			NextDocument = next,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
@@ -78,9 +111,15 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
 				: Path.Combine(dir, "index.html");
 		}
+		var mainPath = Path.ChangeExtension(path, ".main.html");
 
-		var rendered = await RenderLayout(markdown, ctx);
+		var pageHtml = await RenderPageHtml(markdown, ctx);
+
+		var rendered = await RenderLayout(markdown, pageHtml, ctx);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+
+		var renderedPage = await RenderPage(markdown, pageHtml, ctx);
+		await writeFileSystem.File.WriteAllTextAsync(mainPath, renderedPage, ctx);
 	}
 
 }
