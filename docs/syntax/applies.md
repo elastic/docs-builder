@@ -50,14 +50,14 @@ all
 `all` and empty string mean generally available for all active versions
 
 ```yaml
-applies:
+applies_to:
   serverless: all
 ```
 
 `all` and empty string can also be specified at a version level
 
 ```yaml
-applies:
+applies_to:
   stack: beta all
   serverless: beta
 ```
