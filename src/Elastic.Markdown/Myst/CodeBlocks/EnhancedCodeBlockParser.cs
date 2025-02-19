@@ -116,6 +116,11 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
 			appliesToDirective.AppliesTo = applicableTo;
+			if (appliesToDirective.AppliesTo.Warnings is null)
+				return;
+			foreach (var warning in appliesToDirective.AppliesTo.Warnings)
+				appliesToDirective.EmitWarning(warning);
+			applicableTo.Warnings = null;
 		}
 		catch (Exception e)
 		{

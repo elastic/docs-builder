@@ -24,6 +24,8 @@ public record ApplicableTo
 	[YamlMember(Alias = "product")]
 	public AppliesCollection? Product { get; set; }
 
+	public string[]? Warnings { get; set; }
+
 	public static ApplicableTo All { get; } = new()
 	{
 		Stack = AppliesCollection.GenerallyAvailable,
@@ -87,6 +89,11 @@ public record ServerlessProjectApplicability
 
 public class ApplicableToConverter : IYamlTypeConverter
 {
+	private static readonly string[] KnownKeys =
+		["stack", "deployment", "serverless", "product", "ece",
+			"eck", "ess", "self", "elasticsearch", "observability","security"
+		];
+
 	public bool Accepts(Type type) => type == typeof(ApplicableTo);
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
@@ -103,7 +110,18 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
 			return null;
 
+
 		var applicableTo = new ApplicableTo();
+		var warnings = new List<string>();
+
+		var keys = dictionary.Keys.OfType<string>().ToArray();
+		var oldStyleKeys = keys.Where(k => k.StartsWith(":")).ToList();
+		if (oldStyleKeys.Count > 0)
+			warnings.Add($"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}");
+		var unknownKeys = keys.Except(KnownKeys).Except(oldStyleKeys).ToList();
+		if (unknownKeys.Count > 0)
+			warnings.Add($"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}");
+
 		if (TryGetApplicabilityOverTime(dictionary, "stack", out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
 
@@ -119,6 +137,8 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (TryGetProjectApplicability(dictionary, out var serverless))
 			applicableTo.Serverless = serverless;
 
+		if (warnings.Count > 0)
+			applicableTo.Warnings = warnings.ToArray();
 		return applicableTo;
 	}
 
