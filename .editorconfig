@@ -203,6 +203,8 @@ resharper_explicit_caller_info_argument_highlighting=hint
 csharp_style_namespace_declarations = file_scoped
 
 dotnet_analyzer_diagnostic.severity = warning
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+
 # https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1848
 dotnet_diagnostic.CA1848.severity = suggestion
 # https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2201
@@ -217,6 +219,10 @@ dotnet_diagnostic.IDE0200.severity = none
 
 # TODO enable GenerateDocumentationFile to properly document our code
 dotnet_diagnostic.IDE0005.severity = none
+
+dotnet_diagnostic.IDE0001.severity = none
+
+
 
 [*.{sh,bat,ps1}]
 trim_trailing_whitespace=true

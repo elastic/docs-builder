@@ -61,7 +61,7 @@ internal sealed class CheckForUpdatesFilter : ConsoleAppFilter
 		ConsoleApp.LogError($"Unable to parse current version from docs-builder binary");
 	}
 
-	private async ValueTask<Uri?> GetLatestVersion(CancellationToken ctx)
+	private async ValueTask<Uri?> GetLatestVersion(Cancel ctx)
 	{
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
 			return null;

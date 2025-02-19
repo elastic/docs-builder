@@ -30,7 +30,7 @@ internal sealed class StopwatchFilter(ConsoleAppFilter next) : ConsoleAppFilter(
 
 internal sealed class CatchExceptionFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {
-	public override async Task InvokeAsync(ConsoleAppContext context, CancellationToken cancellationToken)
+	public override async Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
 	{
 		try
 		{

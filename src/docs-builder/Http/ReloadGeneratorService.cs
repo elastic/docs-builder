@@ -54,7 +54,7 @@ public sealed class ReloadGeneratorService(
 			Logger.LogInformation("Reload complete!");
 		}, default);
 
-	public Task StopAsync(CancellationToken cancellationToken)
+	public Task StopAsync(Cancel cancellationToken)
 	{
 		_watcher?.Dispose();
 		return Task.CompletedTask;
@@ -121,7 +121,7 @@ public sealed class ReloadGeneratorService(
 		private readonly long _windowInTicks = window.Ticks;
 		private long _nextRun;
 
-		public async Task ExecuteAsync(Func<CancellationToken, Task> innerAction, CancellationToken cancellationToken)
+		public async Task ExecuteAsync(Func<Cancel, Task> innerAction, Cancel cancellationToken)
 		{
 			var requestStart = DateTime.UtcNow.Ticks;
 

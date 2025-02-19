@@ -148,7 +148,7 @@ public class DocumentationGenerator
 		}
 	}
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CancellationToken token)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel token)
 	{
 		if (!Context.Force)
 		{

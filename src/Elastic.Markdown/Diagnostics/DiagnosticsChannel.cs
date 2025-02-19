@@ -14,7 +14,7 @@ public sealed class DiagnosticsChannel : IDisposable
 	private readonly CancellationTokenSource _ctxSource;
 	public ChannelReader<Diagnostic> Reader => _channel.Reader;
 
-	public CancellationToken CancellationToken => _ctxSource.Token;
+	public Cancel CancellationToken => _ctxSource.Token;
 
 	public DiagnosticsChannel()
 	{
@@ -29,7 +29,7 @@ public sealed class DiagnosticsChannel : IDisposable
 		_ctxSource.Cancel();
 	}
 
-	public ValueTask<bool> WaitToWrite() => _channel.Writer.WaitToWriteAsync();
+	public ValueTask<bool> WaitToWrite() => _channel.Writer.WaitToWriteAsync(CancellationToken);
 
 	public void Write(Diagnostic diagnostic)
 	{
@@ -123,7 +123,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	protected virtual void HandleItem(Diagnostic diagnostic) { }
 
-	public virtual async Task StopAsync(CancellationToken cancellationToken)
+	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		if (_started is not null)
 			await _started;

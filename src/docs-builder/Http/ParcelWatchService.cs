@@ -12,7 +12,7 @@ public class ParcelWatchService : IHostedService
 {
 	private Process? _process;
 
-	public Task StartAsync(CancellationToken cancellationToken)
+	public Task StartAsync(Cancel cancellationToken)
 	{
 		_process = Process.Start(new ProcessStartInfo
 		{
@@ -35,7 +35,7 @@ public class ParcelWatchService : IHostedService
 		return Task.CompletedTask;
 	}
 
-	public Task StopAsync(CancellationToken cancellationToken)
+	public Task StopAsync(Cancel cancellationToken)
 	{
 		_process?.Kill(entireProcessTree: true);
 		_process?.Kill();
