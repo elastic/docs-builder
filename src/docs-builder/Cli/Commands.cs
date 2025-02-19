@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal class Commands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private void AssignOutputLogger()
 	{

@@ -5,8 +5,7 @@
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-// ReSharper disable once CheckNamespace
-namespace Documentation.Builder;
+namespace Documentation.Builder.Diagnostics;
 
 // named Log for terseness on console output
 public class Log(ILogger logger) : IDiagnosticsOutput

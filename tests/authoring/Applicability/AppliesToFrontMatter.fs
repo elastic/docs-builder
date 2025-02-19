@@ -45,7 +45,7 @@ applies_to:
 """
     [<Fact>]
     let ``apply matches expected`` () =
-        let expectedAvailability = ApplicabilityOverTime.op_Explicit "ga 9.0.0"
+        let expectedAvailability = AppliesCollection.op_Explicit "ga 9.0.0"
         markdown |> appliesTo (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
                 Elasticsearch=expectedAvailability,
@@ -66,9 +66,9 @@ applies_to:
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
-                Security=ApplicabilityOverTime.op_Explicit "ga 9.0.0",
-                Elasticsearch=ApplicabilityOverTime.op_Explicit "beta 9.1.0",
-                Observability=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0",
+                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
+                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
             )
         ))
 
@@ -80,7 +80,7 @@ applies_to:
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
-            Stack=ApplicabilityOverTime.op_Explicit "ga 9.1.0"
+            Stack=AppliesCollection.op_Explicit "ga 9.1.0"
         ))
 
 type ``parses deployment as string to set all deployment targets`` () =
@@ -90,7 +90,7 @@ applies_to:
 """
     [<Fact>]
     let ``apply matches expected`` () =
-        let expectedAvailability = ApplicabilityOverTime.op_Explicit "ga 9.0.0"
+        let expectedAvailability = AppliesCollection.op_Explicit "ga 9.0.0"
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
                 Eck=expectedAvailability,
@@ -113,10 +113,10 @@ applies_to:
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Eck=ApplicabilityOverTime.op_Explicit "ga 9.0",
-                Ess=ApplicabilityOverTime.op_Explicit "beta 9.1",
-                Ece=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0",
-                Self=ApplicabilityOverTime.op_Explicit "unavailable 9.3.0"
+                Eck=AppliesCollection.op_Explicit "ga 9.0",
+                Ess=AppliesCollection.op_Explicit "beta 9.1",
+                Ece=AppliesCollection.op_Explicit "discontinued 9.2.0",
+                Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
             )
         ))
 
@@ -128,7 +128,7 @@ applies_to:
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
-            Product=ApplicabilityOverTime.op_Explicit "coming 9.5.0"
+            Product=AppliesCollection.op_Explicit "coming 9.5.0"
         ))
 
 type ``parses product multiple`` () =
@@ -139,7 +139,7 @@ applies_to:
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
-            Product=ApplicabilityOverTime([
+            Product=AppliesCollection([
                 Applicability.op_Explicit "coming 9.5";
                 Applicability.op_Explicit "discontinued 9.7"
             ] |> Array.ofList)
@@ -162,16 +162,16 @@ applies_to:
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Eck=ApplicabilityOverTime.op_Explicit "ga 9.0",
-                Ess=ApplicabilityOverTime.op_Explicit "beta 9.1",
-                Ece=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0",
-                Self=ApplicabilityOverTime.op_Explicit "unavailable 9.3.0"
+                Eck=AppliesCollection.op_Explicit "ga 9.0",
+                Ess=AppliesCollection.op_Explicit "beta 9.1",
+                Ece=AppliesCollection.op_Explicit "discontinued 9.2.0",
+                Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
             ),
             Serverless=ServerlessProjectApplicability(
-                Security=ApplicabilityOverTime.op_Explicit "ga 9.0.0",
-                Elasticsearch=ApplicabilityOverTime.op_Explicit "beta 9.1.0",
-                Observability=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0",
+                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
+                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
             ),
-            Stack=ApplicabilityOverTime.op_Explicit "ga 9.1.0",
-            Product=ApplicabilityOverTime.op_Explicit "coming 9.5, discontinued 9.7"
+            Stack=AppliesCollection.op_Explicit "ga 9.1.0",
+            Product=AppliesCollection.op_Explicit "coming 9.5, discontinued 9.7"
         ))

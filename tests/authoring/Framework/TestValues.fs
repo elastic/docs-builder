@@ -91,7 +91,7 @@ and MarkdownTestContext =
                 // technically we do this work twice since generate all also does it
                 let! document = f.ParseFullAsync(ctx)
                 let! minimal = f.MinimalParseAsync(ctx)
-                let html = f.CreateHtml(document)
+                let html = MarkdownFile.CreateHtml(document)
                 return { File = f; Document = document; MinimalParse = minimal; Html = html; Context = this  }
             })
             // this is not great code, refactor or depend on FSharp.Control.TaskSeq

@@ -28,9 +28,9 @@ serverless:
 
         directives |> appliesToDirective (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
-                Security=ApplicabilityOverTime.op_Explicit "ga 9.0.0",
-                Elasticsearch=ApplicabilityOverTime.op_Explicit "beta 9.1.0",
-                Observability=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0",
+                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
+                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
             )
         ))
 
@@ -51,8 +51,8 @@ serverless:
 
         directives |> appliesToDirective (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
-                Security=ApplicabilityOverTime.op_Explicit "ga 9.0.0",
-                Elasticsearch=ApplicabilityOverTime.op_Explicit "beta 9.1.0",
-                Observability=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0",
+                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
+                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
             )
         ))

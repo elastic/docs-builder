@@ -83,7 +83,7 @@ public abstract class InlineTest : IAsyncLifetime
 		Dictionary<string, string>? globalVariables = null)
 	{
 		var logger = new TestLoggerFactory(output);
-		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---");
+		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 
 		var documentContents = TestingFullDocument ? content :
 // language=markdown
@@ -130,7 +130,7 @@ $"""
 		await Set.LinkResolver.FetchLinks();
 
 		Document = await File.ParseFullAsync(default);
-		var html = File.CreateHtml(Document).AsSpan();
+		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0 && !TestingFullDocument
@@ -140,6 +140,9 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 }

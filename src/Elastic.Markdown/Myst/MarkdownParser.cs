@@ -36,7 +36,8 @@ public class MarkdownParser(
 
 	// ReSharper disable once InconsistentNaming
 	private static MarkdownPipeline? MinimalPipelineCached;
-	public static MarkdownPipeline MinimalPipeline
+
+	private static MarkdownPipeline MinimalPipeline
 	{
 		get
 		{
@@ -48,7 +49,7 @@ public class MarkdownParser(
 				.UseHeadingsWithSlugs()
 				.UseDirectives();
 
-			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			MinimalPipelineCached = builder.Build();
 			return MinimalPipelineCached;
 
@@ -81,7 +82,7 @@ public class MarkdownParser(
 				.UseEnhancedCodeBlocks()
 				.DisableHtml()
 				.UseHardBreaks();
-			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			PipelineCached = builder.Build();
 			return PipelineCached;
 		}
@@ -108,7 +109,7 @@ public class MarkdownParser(
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-	private async Task<MarkdownDocument> ParseAsync(
+	private static async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,
 		MarkdownParserContext context,
 		MarkdownPipeline pipeline,

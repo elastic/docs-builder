@@ -36,7 +36,7 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) { }
 }
 
-internal partial class LinkRegexExtensions
+internal sealed partial class LinkRegexExtensions
 {
 	[GeneratedRegex(@"\s\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchTitleStylingInstructions();
@@ -66,7 +66,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	}
 
 
-	private void ParseStylingInstructions(LinkInline link)
+	private static void ParseStylingInstructions(LinkInline link)
 	{
 		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
 			return;
@@ -76,12 +76,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 
 		var width = matches.Groups["width"].Value;
-		if (!width.EndsWith("%"))
+		if (!width.EndsWith('%'))
 			width += "px";
 		var height = matches.Groups["height"].Value;
 		if (string.IsNullOrEmpty(height))
 			height = width;
-		else if (!height.EndsWith("%"))
+		else if (!height.EndsWith('%'))
 			height += "px";
 		var title = link.Title[..matches.Index];
 
@@ -94,7 +94,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static bool IsInCommentBlock(LinkInline link) =>
 		link.Parent?.ParentBlock is CommentBlock;
 
-	private void ValidateAndProcessLink(LinkInline link, InlineProcessor processor, ParserContext context)
+	private static void ValidateAndProcessLink(LinkInline link, InlineProcessor processor, ParserContext context)
 	{
 		var url = link.Url;
 
@@ -115,7 +115,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		ProcessInternalLink(link, processor, context);
 	}
 
-	private bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)
+	private static bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)
 	{
 		if (string.IsNullOrEmpty(url))
 		{
@@ -134,7 +134,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return true;
 	}
 
-	private bool ValidateExternalUri(LinkInline link, InlineProcessor processor, Uri? uri)
+	private static bool ValidateExternalUri(LinkInline link, InlineProcessor processor, Uri? uri)
 	{
 		if (uri == null)
 			return false;
@@ -219,7 +219,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 		if (link.FirstChild == null && !string.IsNullOrEmpty(title))
-			link.AppendChild(new LiteralInline(title));
+			_ = link.AppendChild(new LiteralInline(title));
 	}
 
 	private static IFileInfo ResolveFile(ParserContext context, string url) =>

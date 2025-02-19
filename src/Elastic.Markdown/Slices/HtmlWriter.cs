@@ -17,7 +17,7 @@ public class HtmlWriter
 	{
 		_writeFileSystem = writeFileSystem;
 		var services = new ServiceCollection();
-		services.AddLogging();
+		_ = services.AddLogging();
 
 		ServiceProvider = services.BuildServiceProvider();
 		LoggerFactory = ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -43,7 +43,7 @@ public class HtmlWriter
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
-		var html = markdown.CreateHtml(document);
+		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 		_renderedNavigation ??= await RenderNavigation(markdown, ctx);
 
@@ -60,7 +60,7 @@ public class HtmlWriter
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
-			PageTocItems = markdown.TableOfContents.Values.ToList(),
+			PageTocItems = [.. markdown.TableOfContents.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
@@ -90,7 +90,7 @@ public class HtmlWriter
 				: Path.Combine(outputFile.Directory.FullName, Path.GetFileNameWithoutExtension(outputFile.Name));
 
 			if (dir is not null && !_writeFileSystem.Directory.Exists(dir))
-				_writeFileSystem.Directory.CreateDirectory(dir);
+				_ = _writeFileSystem.Directory.CreateDirectory(dir);
 
 			path = dir is null
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"

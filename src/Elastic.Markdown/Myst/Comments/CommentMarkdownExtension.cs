@@ -21,12 +21,12 @@ public class CommentMarkdownExtension : IMarkdownExtension
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{
 		if (!pipeline.BlockParsers.Contains<CommentBlockParser>())
-			pipeline.BlockParsers.InsertBefore<ThematicBreakParser>(new CommentBlockParser());
+			_ = pipeline.BlockParsers.InsertBefore<ThematicBreakParser>(new CommentBlockParser());
 	}
 
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
 	{
 		if (!renderer.ObjectRenderers.Contains<CommentRenderer>())
-			renderer.ObjectRenderers.InsertBefore<SectionedHeadingRenderer>(new CommentRenderer());
+			_ = renderer.ObjectRenderers.InsertBefore<SectionedHeadingRenderer>(new CommentRenderer());
 	}
 }

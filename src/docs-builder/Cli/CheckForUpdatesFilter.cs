@@ -8,7 +8,7 @@ using Elastic.Markdown.Helpers;
 
 namespace Documentation.Builder.Cli;
 
-internal class CheckForUpdatesFilter : ConsoleAppFilter
+internal sealed class CheckForUpdatesFilter : ConsoleAppFilter
 {
 	private readonly FileInfo _stateFile;
 
@@ -32,7 +32,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 			CompareWithAssemblyVersion(latestVersionUrl);
 	}
 
-	private void CompareWithAssemblyVersion(Uri latestVersionUrl)
+	private static void CompareWithAssemblyVersion(Uri latestVersionUrl)
 	{
 		var versionPath = latestVersionUrl.AbsolutePath.Split('/').Last();
 		if (!SemVersion.TryParse(versionPath, out var latestVersion))
@@ -83,7 +83,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 			{
 				// ensure the 'elastic' folder exists.
 				if (!Directory.Exists(_stateFile.Directory.FullName))
-					Directory.CreateDirectory(_stateFile.Directory.FullName);
+					_ = Directory.CreateDirectory(_stateFile.Directory.FullName);
 				await File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ctx);
 			}
 			return redirectUrl;

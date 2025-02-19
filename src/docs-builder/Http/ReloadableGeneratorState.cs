@@ -30,6 +30,6 @@ public class ReloadableGeneratorState(
 		var docSet = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(docSet, logger);
 		await generator.ResolveDirectoryTree(ctx);
-		Interlocked.Exchange(ref _generator, generator);
+		_ = Interlocked.Exchange(ref _generator, generator);
 	}
 }

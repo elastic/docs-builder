@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Slices.Directives;
 using Markdig.Helpers;
@@ -16,13 +17,14 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 {
 	private const int TabWidth = 4;
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		renderer.Write(blocks[0]);
+		_ = renderer.Write(blocks[0]);
 		RenderCodeBlockLines(renderer, block);
-		renderer.Write(blocks[1]);
+		_ = renderer.Write(blocks[1]);
 	}
 
 	/// <summary>
@@ -46,27 +48,27 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 			if (!hasCode)
 			{
-				renderer.Write($"<code class=\"language-{block.Language}\">");
+				_ = renderer.Write($"<code class=\"language-{block.Language}\">");
 				hasCode = true;
 			}
 			RenderCodeBlockLine(renderer, block, slice, i);
 		}
 		if (hasCode)
-			renderer.Write($"</code>");
+			_ = renderer.Write($"</code>");
 	}
 
 	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int lineNumber)
 	{
-		renderer.WriteEscape(slice);
+		_ = renderer.WriteEscape(slice);
 		RenderCallouts(renderer, block, lineNumber);
-		renderer.WriteLine();
+		_ = renderer.WriteLine();
 	}
 
 	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber)
 	{
 		var callOuts = FindCallouts(block.CallOuts, lineNumber + 1);
 		foreach (var callOut in callOuts)
-			renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
+			_ = renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
 	}
 
 	private static IEnumerable<CallOut> FindCallouts(
@@ -148,48 +150,49 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 				}
 				else if (siblingBlock is ListBlock listBlock)
 				{
-					block.Parent.Remove(listBlock);
-					renderer.WriteLine("<ol class=\"code-callouts\">");
+					_ = block.Parent.Remove(listBlock);
+					_ = renderer.WriteLine("<ol class=\"code-callouts\">");
 					foreach (var child in listBlock)
 					{
 						var listItem = (ListItemBlock)child;
 						var previousImplicit = renderer.ImplicitParagraph;
 						renderer.ImplicitParagraph = !listBlock.IsLoose;
 
-						renderer.EnsureLine();
+						_ = renderer.EnsureLine();
 						if (renderer.EnableHtmlForBlock)
 						{
-							renderer.Write("<li");
-							renderer.WriteAttributes(listItem);
-							renderer.Write('>');
+							_ = renderer.Write("<li");
+							_ = renderer.WriteAttributes(listItem);
+							_ = renderer.Write('>');
 						}
 
 						renderer.WriteChildren(listItem);
 
 						if (renderer.EnableHtmlForBlock)
-							renderer.WriteLine("</li>");
+							_ = renderer.WriteLine("</li>");
 
-						renderer.EnsureLine();
+						_ = renderer.EnsureLine();
 						renderer.ImplicitParagraph = previousImplicit;
 					}
-					renderer.WriteLine("</ol>");
+					_ = renderer.WriteLine("</ol>");
 				}
 			}
 		}
 		else if (block.InlineAnnotations)
 		{
-			renderer.WriteLine("<ol class=\"code-callouts\">");
+			_ = renderer.WriteLine("<ol class=\"code-callouts\">");
 			foreach (var c in block.UniqueCallOuts)
 			{
-				renderer.WriteLine("<li>");
-				renderer.WriteLine(c.Text);
-				renderer.WriteLine("</li>");
+				_ = renderer.WriteLine("<li>");
+				_ = renderer.WriteLine(c.Text);
+				_ = renderer.WriteLine("</li>");
 			}
 
-			renderer.WriteLine("</ol>");
+			_ = renderer.WriteLine("</ol>");
 		}
 	}
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
 	{
 		var appliesTo = appliesToDirective.AppliesTo;
@@ -197,6 +200,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
 			return;
 		var html = slice2.RenderAsync().GetAwaiter().GetResult();
-		renderer.Write(html);
+		_ = renderer.Write(html);
 	}
 }

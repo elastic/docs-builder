@@ -53,7 +53,7 @@ internal struct LazySubstring
 		Length = length;
 	}
 
-	public ReadOnlySpan<char> AsSpan() => _text.AsSpan(Offset, Length);
+	public readonly ReadOnlySpan<char> AsSpan() => _text.AsSpan(Offset, Length);
 
 	public override string ToString()
 	{
@@ -123,7 +123,7 @@ public class SubstitutionParser : InlineParser
 		if (closeSticks != 2)
 			return false;
 
-		var rawContent = slice.AsSpan().Slice(0, slice.Length - span.Length);
+		var rawContent = slice.AsSpan()[..(slice.Length - span.Length)];
 
 		var content = new LazySubstring(slice.Text, slice.Start, rawContent.Length);
 

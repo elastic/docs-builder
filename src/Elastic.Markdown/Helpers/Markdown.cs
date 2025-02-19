@@ -9,7 +9,7 @@ public static class MarkdownStringExtensions
 	public static string StripMarkdown(this string markdown)
 	{
 		using var writer = new StringWriter();
-		Markdig.Markdown.ToPlainText(markdown, writer);
+		_ = Markdig.Markdown.ToPlainText(markdown, writer);
 		return writer.ToString().TrimEnd('\n');
 	}
 }

@@ -122,7 +122,7 @@ public partial class SemVersion :
 	/// <param name="left"></param>
 	/// <param name="right"></param>
 	/// <returns></returns>
-	public static bool operator >(SemVersion left, SemVersion right) => (left.CompareTo(right) > 0);
+	public static bool operator >(SemVersion left, SemVersion right) => left.CompareTo(right) > 0;
 
 	/// <summary>
 	///
@@ -130,7 +130,7 @@ public partial class SemVersion :
 	/// <param name="left"></param>
 	/// <param name="right"></param>
 	/// <returns></returns>
-	public static bool operator >=(SemVersion left, SemVersion right) => (left == right) || (left > right);
+	public static bool operator >=(SemVersion left, SemVersion right) => left == right || left > right;
 
 	/// <summary>
 	///
@@ -138,7 +138,7 @@ public partial class SemVersion :
 	/// <param name="left"></param>
 	/// <param name="right"></param>
 	/// <returns></returns>
-	public static bool operator <(SemVersion left, SemVersion right) => (left.CompareTo(right) < 0);
+	public static bool operator <(SemVersion left, SemVersion right) => left.CompareTo(right) < 0;
 
 	/// <summary>
 	///
@@ -146,7 +146,7 @@ public partial class SemVersion :
 	/// <param name="left"></param>
 	/// <param name="right"></param>
 	/// <returns></returns>
-	public static bool operator <=(SemVersion left, SemVersion right) => (left == right) || (left < right);
+	public static bool operator <=(SemVersion left, SemVersion right) => left == right || left < right;
 
 	/// <summary>
 	/// Tries to initialize a new <see cref="SemVersion"/> instance from the given string.
@@ -195,9 +195,9 @@ public partial class SemVersion :
 	/// </summary>
 	/// <param name="other">The <see cref="SemVersion"/> to compare to.</param>
 	/// <returns><c>0</c> if both versions are equal, a positive number, if the other version is lower or a negative number if the other version is higher.</returns>
-	public int CompareByPrecedence(SemVersion? other)
+	private int CompareByPrecedence(SemVersion? other)
 	{
-		if (ReferenceEquals(other, null))
+		if (other is null)
 			return 1;
 
 		var result = Major.CompareTo(other.Major);
@@ -213,53 +213,28 @@ public partial class SemVersion :
 			return result;
 
 		result = CompareComponent(Prerelease, other.Prerelease, true);
-		if (result != 0)
-			return result;
-
-		return CompareComponent(Prerelease, other.Metadata, true);
+		return result != 0 ? result : CompareComponent(Prerelease, other.Metadata, true);
 	}
 
 	/// <inheritdoc cref="IComparable{T}.CompareTo"/>
-	public int CompareTo(SemVersion? other)
-	{
-		if (ReferenceEquals(other, null))
-			return 1;
-
-		return CompareByPrecedence(other);
-	}
+	public int CompareTo(SemVersion? other) => other is null ? 1 : CompareByPrecedence(other);
 
 	/// <inheritdoc cref="IComparable.CompareTo"/>
 	public int CompareTo(object? obj) => CompareTo(obj as SemVersion);
 
 	/// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
-	public bool Equals(SemVersion? other)
-	{
-		if (ReferenceEquals(null, other))
-			return false;
-
-		if (ReferenceEquals(this, other))
-			return true;
-
-		return (Major == other.Major) && (Minor == other.Minor) && (Patch == other.Patch) &&
-			(Prerelease == other.Prerelease) && (Metadata == other.Metadata);
-	}
+	public bool Equals(SemVersion? other) =>
+		other is not null && (
+			ReferenceEquals(this, other)
+			|| (Major == other.Major && Minor == other.Minor && Patch == other.Patch
+				&& Prerelease == other.Prerelease && Metadata == other.Metadata)
+		);
 
 	/// <inheritdoc cref="object.Equals(object)"/>
-	public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is SemVersion other && Equals(other);
+	public override bool Equals(object? obj) => ReferenceEquals(this, obj) || (obj is SemVersion other && Equals(other));
 
 	/// <inheritdoc cref="object.GetHashCode"/>
-	public override int GetHashCode()
-	{
-		unchecked
-		{
-			var hashCode = Major;
-			hashCode = (hashCode * 397) ^ Minor;
-			hashCode = (hashCode * 397) ^ Patch;
-			hashCode = (hashCode * 397) ^ Prerelease.GetHashCode();
-			hashCode = (hashCode * 397) ^ Metadata.GetHashCode();
-			return hashCode;
-		}
-	}
+	public override int GetHashCode() => HashCode.Combine(Major, Minor, Patch, Prerelease, Metadata);
 
 	/// <inheritdoc cref="object.ToString"/>
 	public override string ToString()

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using static System.StringComparison;
 
 namespace Elastic.Markdown.Refactor;
 
@@ -13,7 +14,7 @@ public record ChangeSet(IFileInfo From, IFileInfo To);
 public record Change(IFileInfo Source, string OriginalContent, string NewContent);
 public record LinkModification(string OldLink, string NewLink, string SourceFile, int LineNumber, int ColumnNumber);
 
-public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
+public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
 {
 
 	private readonly ILogger _logger = loggerFactory.CreateLogger<Move>();
@@ -48,7 +49,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 
 		var sourceContent = await readFileSystem.File.ReadAllTextAsync(sourcePath, ctx);
 
-		var markdownLinkRegex = new Regex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled);
+		var markdownLinkRegex = MarkdownLinkRegex();
 
 		var change = Regex.Replace(sourceContent, markdownLinkRegex.ToString(), match =>
 		{
@@ -63,13 +64,12 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				var fullPath = Path.GetFullPath(Path.Combine(sourceDirectory, originalPath));
 				var relativePath = Path.GetRelativePath(targetDirectory, fullPath);
 
-				if (originalPath.StartsWith("./") && !relativePath.StartsWith("./"))
-					newPath = "./" + relativePath;
-				else
-					newPath = relativePath;
+				newPath = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativePath.StartsWith("./", OrdinalIgnoreCase)
+					? "./" + relativePath
+					: relativePath;
 			}
 			var newLink = $"[{match.Groups[1].Value}]({newPath})";
-			var lineNumber = sourceContent.Substring(0, match.Index).Count(c => c == '\n') + 1;
+			var lineNumber = sourceContent[..match.Index].Count(c => c == '\n') + 1;
 			var columnNumber = match.Index - sourceContent.LastIndexOf('\n', match.Index);
 			if (!_linkModifications.ContainsKey(changeSet))
 				_linkModifications[changeSet] = [];
@@ -104,7 +104,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 			foreach (var (oldLink, newLink, sourceFile, lineNumber, columnNumber) in linkModifications)
 			{
 				_logger.LogInformation(
-					"Change \e[31m{0}\e[0m to \e[32m{1}\e[0m at \e[34m{2}:{3}:{4}\e[0m",
+					"Change \e[31m{OldLink}\e[0m to \e[32m{NewLink}\e[0m at \e[34m{SourceFile}:{LineNumber}:{Column}\e[0m",
 					oldLink,
 					newLink,
 					sourceFile == changeSet.From.FullName && !isDryRun ? changeSet.To.FullName : sourceFile,
@@ -124,13 +124,13 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				foreach (var (filePath, _, newContent) in changes)
 				{
 					if (!filePath.Directory!.Exists)
-						writeFileSystem.Directory.CreateDirectory(filePath.Directory.FullName);
+						_ = writeFileSystem.Directory.CreateDirectory(filePath.Directory.FullName);
 					await writeFileSystem.File.WriteAllTextAsync(filePath.FullName, newContent, ctx);
 
 				}
 
 				var targetDirectory = Path.GetDirectoryName(changeSet.To.FullName);
-				readFileSystem.Directory.CreateDirectory(targetDirectory!);
+				_ = readFileSystem.Directory.CreateDirectory(targetDirectory!);
 				readFileSystem.File.Move(changeSet.From.FullName, changeSet.To.FullName);
 			}
 		}
@@ -180,7 +180,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		//moving file
 		if (fromFile.Exists)
 		{
-			if (!fromFile.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
+			if (!fromFile.Extension.Equals(".md", OrdinalIgnoreCase))
 			{
 				_logger.LogError("Source path must be a markdown file. Directory paths are not supported yet");
 				return false;
@@ -190,7 +190,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 			if (toFile.Extension == string.Empty)
 				toFile = readFileSystem.FileInfo.New(Path.Combine(toDirectory.FullName, fromFile.Name));
 
-			if (!toFile.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
+			if (!toFile.Extension.Equals(".md", OrdinalIgnoreCase))
 			{
 				_logger.LogError("Target path '{FullName}' must be a markdown file.", toFile.FullName);
 				return false;
@@ -212,18 +212,18 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				return false;
 			}
 
-			if (toDirectory.FullName.StartsWith(fromDirectory.FullName))
+			if (toDirectory.FullName.StartsWith(fromDirectory.FullName, OrdinalIgnoreCase))
 			{
 				_logger.LogError("Can not move source directory '{SourceDirectory}' to a '{TargetFile}'", toDirectory.FullName, toFile.FullName);
 				return false;
 			}
 
 			fromFiles = fromDirectory.GetFiles("*.md", SearchOption.AllDirectories);
-			toFiles = fromFiles.Select(f =>
+			toFiles = [.. fromFiles.Select(f =>
 			{
 				var relative = Path.GetRelativePath(fromDirectory.FullName, f.FullName);
 				return readFileSystem.FileInfo.New(Path.Combine(toDirectory.FullName, relative));
-			}).ToArray();
+			})];
 		}
 
 		return true;
@@ -293,12 +293,12 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				else
 				{
 					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);
-					newLink = originalPath.StartsWith("./") && !relativeTarget.StartsWith("./")
+					newLink = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativeTarget.StartsWith("./", OrdinalIgnoreCase)
 						? $"[{match.Groups[1].Value}](./{relativeTarget}{anchor})"
 						: $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
 				}
 
-				var lineNumber = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
+				var lineNumber = content[..match.Index].Count(c => c == '\n') + 1;
 				var columnNumber = match.Index - content.LastIndexOf('\n', match.Index);
 				if (!_linkModifications.ContainsKey(changeSet))
 					_linkModifications[changeSet] = [];
@@ -311,4 +311,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 				));
 				return newLink;
 			});
+
+	[GeneratedRegex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled)]
+	private static partial Regex MarkdownLinkRegex();
 }

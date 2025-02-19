@@ -8,7 +8,8 @@ namespace Documentation.Builder.Http;
 
 public class ReloadGeneratorService(
 	ReloadableGeneratorState reloadableGenerator,
-	ILogger<ReloadGeneratorService> logger) : IHostedService
+	ILogger<ReloadGeneratorService> logger) : IHostedService,
+	IDisposable
 {
 	private FileSystemWatcher? _watcher;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
@@ -17,9 +18,9 @@ public class ReloadGeneratorService(
 	//debounce reload requests due to many file changes
 	private readonly Debouncer _debouncer = new(TimeSpan.FromMilliseconds(200));
 
-	public async Task StartAsync(Cancel ctx)
+	public async Task StartAsync(Cancel cancellationToken)
 	{
-		await ReloadableGenerator.ReloadAsync(ctx);
+		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
 		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourcePath.FullName)
 		{
@@ -69,7 +70,7 @@ public class ReloadGeneratorService(
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
 
-        Logger.LogInformation("Changed: {FullPath}", e.FullPath);
+		Logger.LogInformation("Changed: {FullPath}", e.FullPath);
 	}
 
 	private void OnCreated(object sender, FileSystemEventArgs e)
@@ -108,7 +109,14 @@ public class ReloadGeneratorService(
 		PrintException(ex.InnerException);
 	}
 
-	private class Debouncer(TimeSpan window)
+	public void Dispose()
+	{
+		_watcher?.Dispose();
+		_debouncer.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
+	private sealed class Debouncer(TimeSpan window) : IDisposable
 	{
 		private readonly SemaphoreSlim _semaphore = new(1, 1);
 		private readonly long _windowInTicks = window.Ticks;
@@ -131,8 +139,15 @@ public class ReloadGeneratorService(
 			}
 			finally
 			{
-				_semaphore.Release();
+				_ = _semaphore.Release();
 			}
 		}
+
+		public void Dispose()
+		{
+			_semaphore.Dispose();
+			GC.SuppressFinalize(this);
+		}
 	}
+
 }

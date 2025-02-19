@@ -96,9 +96,9 @@ public record GitCheckoutInformation
 		string? Read(string path)
 		{
 			var gitPath = Git(path).FullName;
-			if (!fileSystem.File.Exists(gitPath))
-				return null;
-			return fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
+			return !fileSystem.File.Exists(gitPath)
+				? null
+				: fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
 		}
 
 		string BranchTrackingRemote(string b, IniFile c)

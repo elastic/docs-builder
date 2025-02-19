@@ -79,7 +79,7 @@ public class CommentBlockParser : BlockParser
 		if (leadingCount > 0 && leadingCount <= MaxLeadingCount && (c.IsSpaceOrTab() || c == '\0'))
 		{
 			if (processor.TrackTrivia && c.IsSpaceOrTab())
-				processor.NextChar();
+				_ = processor.NextChar();
 
 			// Move to the content
 			var headingBlock = new CommentBlock(this)

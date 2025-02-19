@@ -179,7 +179,7 @@ public class DocumentationGenerator
 	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,
 		out DateTimeOffset outputSeenChanges)
 	{
-		offendingFiles = new HashSet<string>(generationState?.InvalidFiles ?? []);
+		offendingFiles = [.. generationState?.InvalidFiles ?? []];
 		outputSeenChanges = generationState?.LastSeenChanges ?? DateTimeOffset.MinValue;
 		if (generationState == null)
 			return false;

@@ -14,8 +14,8 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 	: DiagnosticsCollector([new Log(loggerFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)]
 	)
 {
-	private readonly List<Diagnostic> _errors = new();
-	private readonly List<Diagnostic> _warnings = new();
+	private readonly List<Diagnostic> _errors = [];
+	private readonly List<Diagnostic> _warnings = [];
 
 	protected override void HandleItem(Diagnostic diagnostic)
 	{
@@ -25,7 +25,7 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 			_errors.Add(diagnostic);
 	}
 
-	public override async Task StopAsync(Cancel ctx)
+	public override async Task StopAsync(Cancel cancellationToken)
 	{
 		var repository = new ErrataFileSourceRepository();
 		repository.WriteDiagnosticsToConsole(_errors, _warnings);

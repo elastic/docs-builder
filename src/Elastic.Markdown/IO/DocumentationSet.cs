@@ -48,7 +48,7 @@ public class DocumentationSet
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));
 		LinkReferenceFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, "links.json"));
 
-		Files = context.ReadFileSystem.Directory
+		Files = [.. context.ReadFileSystem.Directory
 			.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
@@ -60,8 +60,7 @@ public class DocumentationSet
 				".png" => new ImageFile(file, SourcePath),
 				".md" => CreateMarkDownFile(file, context),
 				_ => new StaticFile(file, SourcePath)
-			})
-			.ToList();
+			})];
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
@@ -146,11 +145,11 @@ public class DocumentationSet
 			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
 
 		// we ignore files in folders that start with an underscore
-		if (relativePath.IndexOf("_snippets", StringComparison.Ordinal) >= 0)
+		if (relativePath.Contains("_snippets"))
 			return new SnippetFile(file, SourcePath);
 
 		// we ignore files in folders that start with an underscore
-		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith("_"))
+		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))
 			return new ExcludedFile(file, SourcePath);
 
 		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");

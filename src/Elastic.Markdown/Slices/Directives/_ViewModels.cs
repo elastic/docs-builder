@@ -62,9 +62,9 @@ public class ImageViewModel
 		{
 			var sb = new StringBuilder();
 			if (Height != null)
-				sb.Append($"height: {Height};");
+				_ = sb.Append($"height: {Height};");
 			if (Width != null)
-				sb.Append($"width: {Width};");
+				_ = sb.Append($"width: {Width};");
 			return sb.ToString();
 		}
 	}
@@ -73,7 +73,7 @@ public class ImageViewModel
 
 public class SettingsViewModel
 {
-	public required SettingsCollection SettingsCollection { get; init; }
+	public required YamlSettings SettingsCollection { get; init; }
 
 	public required Func<string, string> RenderMarkdown { get; init; }
 }

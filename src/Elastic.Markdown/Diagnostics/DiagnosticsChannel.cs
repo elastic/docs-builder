@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Markdown.Diagnostics;
 
-public class DiagnosticsChannel
+public class DiagnosticsChannel : IDisposable
 {
 	private readonly Channel<Diagnostic> _channel;
 	private readonly CancellationTokenSource _ctxSource;
@@ -38,6 +38,12 @@ public class DiagnosticsChannel
 		{
 			//TODO
 		}
+	}
+
+	public void Dispose()
+	{
+		_ctxSource.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
 
@@ -74,7 +80,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public ConcurrentBag<string> CrossLinks { get; } = [];
 
-	public Task StartAsync(Cancel ctx)
+	public Task StartAsync(Cancel cancellationToken)
 	{
 		if (_started is not null)
 			return _started;
@@ -95,7 +101,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			}
 
 			Drain();
-		}, ctx);
+		}, cancellationToken);
 		return _started;
 
 		void Drain()
@@ -104,7 +110,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			{
 				IncrementSeverityCount(item);
 				HandleItem(item);
-				OffendingFiles.Add(item.File);
+				_ = OffendingFiles.Add(item.File);
 				foreach (var output in outputs)
 					output.Write(item);
 			}
@@ -114,9 +120,9 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	private void IncrementSeverityCount(Diagnostic item)
 	{
 		if (item.Severity == Severity.Error)
-			Interlocked.Increment(ref _errors);
+			_ = Interlocked.Increment(ref _errors);
 		else if (item.Severity == Severity.Warning)
-			Interlocked.Increment(ref _warnings);
+			_ = Interlocked.Increment(ref _warnings);
 	}
 
 	protected virtual void HandleItem(Diagnostic diagnostic) { }

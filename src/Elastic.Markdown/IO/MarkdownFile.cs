@@ -92,7 +92,7 @@ public record MarkdownFile : DocumentationFile
 				parents.Add(parent.Index);
 			parent = parent?.Parent;
 		} while (parent != null);
-		return parents.ToArray();
+		return [.. parents];
 	}
 	public string[] YieldParentGroups()
 	{
@@ -119,7 +119,7 @@ public record MarkdownFile : DocumentationFile
 	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
 	{
 		if (!_instructionsParsed)
-			await MinimalParseAsync(ctx);
+			_ = await MinimalParseAsync(ctx);
 
 		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 		return document;
@@ -190,7 +190,7 @@ public record MarkdownFile : DocumentationFile
 			.ToArray();
 
 		foreach (var label in anchors)
-			_anchors.Add(label);
+			_ = _anchors.Add(label);
 
 		_instructionsParsed = true;
 	}
@@ -232,12 +232,12 @@ public record MarkdownFile : DocumentationFile
 	}
 
 
-	public string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document)
 	{
 		//we manually render title and optionally append an applies block embedded in yaml front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
 		if (h1 is not null)
-			document.Remove(h1);
+			_ = document.Remove(h1);
 		return document.ToHtml(MarkdownParser.Pipeline);
 	}
 }

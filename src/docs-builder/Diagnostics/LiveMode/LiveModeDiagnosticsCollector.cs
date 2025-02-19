@@ -13,5 +13,5 @@ public class LiveModeDiagnosticsCollector(ILoggerFactory loggerFactory)
 {
 	protected override void HandleItem(Diagnostic diagnostic) { }
 
-	public override async Task StopAsync(Cancel ctx) => await Task.CompletedTask;
+	public override async Task StopAsync(Cancel cancellationToken) => await Task.CompletedTask;
 }

@@ -30,9 +30,9 @@ public static class YamlSerialization
 }
 
 [YamlStaticContext]
-[YamlSerializable(typeof(SettingsCollection))]
+[YamlSerializable(typeof(YamlSettings))]
 [YamlSerializable(typeof(SettingsGrouping))]
-[YamlSerializable(typeof(SettingsCollection))]
+[YamlSerializable(typeof(YamlSettings))]
 [YamlSerializable(typeof(SettingsGrouping))]
 [YamlSerializable(typeof(Setting))]
 [YamlSerializable(typeof(AllowedValue))]

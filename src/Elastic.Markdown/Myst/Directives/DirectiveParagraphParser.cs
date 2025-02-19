@@ -32,9 +32,8 @@ public class DirectiveParagraphParser : ParagraphBlockParser
 			return base.TryContinue(processor, block);
 
 		// TODO only parse this if no content proceeds it (and not in a code fence)
-		if (line.StartsWith(":"))
-			return BlockState.BreakDiscard;
-
-		return base.TryContinue(processor, block);
+		return line.StartsWith(':')
+			? BlockState.BreakDiscard
+			: base.TryContinue(processor, block);
 	}
 }

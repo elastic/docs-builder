@@ -14,6 +14,7 @@ namespace Documentation.Builder.Diagnostics.Console;
 
 public class ErrataFileSourceRepository : ISourceRepository
 {
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	public bool TryGet(string id, [NotNullWhen(true)] out Source? source)
 	{
 		using var reader = new Utf8StreamReader(id);
@@ -48,7 +49,7 @@ public class ErrataFileSourceRepository : ISourceRepository
 			else
 				d = d.WithNote(item.File);
 
-			report.AddDiagnostic(d);
+			_ = report.AddDiagnostic(d);
 		}
 
 		// Render the report

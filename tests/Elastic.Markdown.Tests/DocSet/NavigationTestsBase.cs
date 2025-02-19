@@ -50,5 +50,9 @@ public class NavigationTestsBase : IAsyncLifetime
 		Configuration = Generator.DocumentationSet.Configuration;
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 }

@@ -43,7 +43,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 	{
 		var logger = new TestLoggerFactory(output);
 
-		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---");
+		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 		var documentContents = TestingFullDocument ? content :
 // language=markdown
 $"""
@@ -86,7 +86,7 @@ $"""
 
 		await Set.LinkResolver.FetchLinks();
 		Document = await File.ParseFullAsync(default);
-		var html = File.CreateHtml(Document).AsSpan();
+		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0
@@ -97,6 +97,9 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 }

@@ -172,7 +172,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 		//https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/cloud-account/change-your-password
 		var path = lookupPath.Replace(".md", "");
 		if (path.EndsWith("/index"))
-			path = path.Substring(0, path.Length - 6);
+			path = path[..^6];
 		if (path == "index")
 			path = string.Empty;
 		return path;

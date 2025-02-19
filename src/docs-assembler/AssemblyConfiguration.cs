@@ -35,7 +35,7 @@ public record AssemblyConfiguration
 	}
 
 	[YamlMember(Alias = "repos")]
-	public Dictionary<string, Repository> Repositories { get; set; } = new();
+	public Dictionary<string, Repository> Repositories { get; set; } = [];
 }
 
 public record Repository

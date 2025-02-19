@@ -29,36 +29,39 @@ public class DocumentationWebHost
 	{
 		var builder = WebApplication.CreateSlimBuilder();
 
-		builder.Logging.ClearProviders();
-		builder.Logging.SetMinimumLevel(LogLevel.Warning)
+		_ = builder.Logging
+			.ClearProviders()
+			.SetMinimumLevel(LogLevel.Warning)
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information)
-
 			.AddSimpleConsole(o => o.SingleLine = true);
 
 		_context = new BuildContext(fileSystem, fileSystem, path, null)
 		{
 			Collector = new LiveModeDiagnosticsCollector(logger)
 		};
-		builder.Services.AddAotLiveReload(s =>
-		{
-			s.FolderToMonitor = _context.SourcePath.FullName;
-			s.ClientFileExtensions = ".md,.yml";
-		});
-		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(_context.SourcePath, null, _context, logger));
-		builder.Services.AddHostedService<ReloadGeneratorService>();
-		if (IsDotNetWatchBuild())
-			builder.Services.AddHostedService<ParcelWatchService>();
+		_ = builder.Services
+			.AddAotLiveReload(s =>
+			{
+				s.FolderToMonitor = _context.SourcePath.FullName;
+				s.ClientFileExtensions = ".md,.yml";
+			})
+			.AddSingleton<ReloadableGeneratorState>(_ =>
+				new ReloadableGeneratorState(_context.SourcePath, null, _context, logger)
+			)
+			.AddHostedService<ReloadGeneratorService>();
 
-		builder.WebHost.UseUrls($"http://localhost:{port}");
+		if (IsDotNetWatchBuild())
+			_ = builder.Services.AddHostedService<ParcelWatchService>();
+
+		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}
 
-	private bool IsDotNetWatchBuild() =>
-		Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
+	private static bool IsDotNetWatchBuild() => Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
 
 	public async Task RunAsync(Cancel ctx)
 	{
@@ -74,18 +77,20 @@ public class DocumentationWebHost
 
 	private void SetUpRoutes()
 	{
-		_webApplication.UseLiveReload();
-		_webApplication.UseStaticFiles(new StaticFileOptions
-		{
-			FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
-			RequestPath = "/_static"
-		});
-		_webApplication.UseRouting();
+		_ = _webApplication
+			.UseLiveReload()
+			.UseStaticFiles(
+				new StaticFileOptions
+				{
+					FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
+					RequestPath = "/_static"
+				})
+			.UseRouting();
 
-		_webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
+		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, "index.md", ctx));
 
-		_webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
+		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
 	}
 
@@ -122,7 +127,7 @@ public class DocumentationWebHost
 }
 
 
-public class EmbeddedOrPhysicalFileProvider : IFileProvider
+public class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 {
 	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
 	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
@@ -183,5 +188,12 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider
 		if (changeToken is null or NullChangeToken)
 			changeToken = _embeddedProvider.Watch(filter);
 		return changeToken;
+	}
+
+	public void Dispose()
+	{
+		_staticFilesInDocsFolder?.Dispose();
+		_staticWebFilesDuringDebug?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

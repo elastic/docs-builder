@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Myst.Substitution;
@@ -77,7 +78,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 	}
 
-	private void WriteImage(HtmlRenderer renderer, ImageBlock block)
+	private static void WriteImage(HtmlRenderer renderer, ImageBlock block)
 	{
 		var imageUrl = block.ImageUrl;
 		if (!string.IsNullOrEmpty(block.ImageUrl))
@@ -111,7 +112,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteFigure(HtmlRenderer renderer, ImageBlock block)
+	private static void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
 		var imageUrl = block.ImageUrl != null &&
 					   (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
@@ -131,10 +132,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>
+	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>
 		renderer.WriteChildren(directiveBlock);
 
-	private void WriteVersion(HtmlRenderer renderer, VersionBlock block)
+	private static void WriteVersion(HtmlRenderer renderer, VersionBlock block)
 	{
 		var slice = Slices.Directives.Version.Create(new VersionViewModel
 		{
@@ -145,7 +146,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteAdmonition(HtmlRenderer renderer, AdmonitionBlock block)
+	private static void WriteAdmonition(HtmlRenderer renderer, AdmonitionBlock block)
 	{
 		var slice = Admonition.Create(new AdmonitionViewModel
 		{
@@ -158,7 +159,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteDropdown(HtmlRenderer renderer, DropdownBlock block)
+	private static void WriteDropdown(HtmlRenderer renderer, DropdownBlock block)
 	{
 		var slice = Dropdown.Create(new AdmonitionViewModel
 		{
@@ -171,13 +172,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
+	private static void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
 		var slice = TabSet.Create(new TabSetViewModel());
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
+	private static void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
 	{
 		var slice = TabItem.Create(new TabItemViewModel
 		{
@@ -190,13 +191,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
+	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
 	{
 		var slice = Mermaid.Create(new MermaidViewModel());
 		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
-	private void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
+	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
@@ -204,7 +205,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var content = block.FileSystem.File.ReadAllText(file.FullName);
 		if (string.IsNullOrEmpty(block.Language))
-			renderer.Write(content);
+			_ = renderer.Write(content);
 		else
 		{
 			var slice = Code.Create(new CodeViewModel
@@ -218,7 +219,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 	}
 
-	private void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
+	private static void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
@@ -229,12 +230,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(MarkdownParser.Pipeline);
-		renderer.Write(html);
+		_ = renderer.Write(html);
 		//var slice = Include.Create(new IncludeViewModel { Html = html });
 		//RenderRazorSlice(slice, renderer, block);
 	}
 
-	private void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)
+	private static void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
@@ -246,11 +247,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		var file = block.FileSystem.FileInfo.New(block.IncludePath);
 
-		SettingsCollection? settings;
+		YamlSettings? settings;
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<SettingsCollection>(yaml);
+			settings = YamlSerialization.Deserialize<YamlSettings>(yaml);
 		}
 		catch (YamlException e)
 		{
@@ -276,60 +277,65 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSliceNoContent(slice, renderer);
 	}
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, string contents)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		renderer.Write(blocks[0]);
-		renderer.Write(contents);
-		renderer.Write(blocks[1]);
+		_ = renderer
+			.Write(blocks[0])
+			.Write(contents)
+			.Write(blocks[1]);
 	}
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		renderer.Write(blocks[0]);
+		_ = renderer.Write(blocks[0]);
 		renderer.WriteChildren(obj);
-		renderer.Write(blocks[1]);
+		_ = renderer.Write(blocks[1]);
 	}
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSliceNoContent<T>(RazorSlice<T> slice, HtmlRenderer renderer)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		renderer.Write(html);
+		_ = renderer.Write(html);
 	}
 
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		renderer.Write(blocks[0]);
+		_ = renderer.Write(blocks[0]);
 		foreach (var o in obj)
 			Render(o);
 
-		renderer.Write(blocks[1]);
+		_ = renderer.Write(blocks[1]);
 
 		void RenderLeaf(LeafBlock p)
 		{
-			renderer.WriteLeafRawLines(p, true, false, false);
+			_ = renderer.WriteLeafRawLines(p, true, false, false);
 			renderer.EnableHtmlForInline = false;
 			foreach (var oo in p.Inline ?? [])
 			{
 				if (oo is SubstitutionLeaf sl)
-					renderer.Write(sl.Replacement);
+					_ = renderer.Write(sl.Replacement);
 				else if (oo is LiteralInline li)
 					renderer.Write(li);
 				else if (oo is LineBreakInline)
-					renderer.WriteLine();
+					_ = renderer.WriteLine();
 				else if (oo is Role r)
 				{
-					renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
+					_ = renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
 					renderer.WriteChildren(r);
 				}
 
 				else
-					renderer.Write($"(LeafBlock: {oo.GetType().Name}");
+					_ = renderer.Write($"(LeafBlock: {oo.GetType().Name}");
 			}
 
 			renderer.EnableHtmlForInline = true;
@@ -343,13 +349,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					RenderLeaf(lbi);
 				else if (bb is ListItemBlock ll)
 				{
-					renderer.Write(ll.TriviaBefore);
-					renderer.Write("-");
+					_ = renderer.Write(ll.TriviaBefore);
+					_ = renderer.Write("-");
 					foreach (var lll in ll)
 						Render(lll);
 				}
 				else
-					renderer.Write($"(ListBlock: {l.GetType().Name}");
+					_ = renderer.Write($"(ListBlock: {l.GetType().Name}");
 			}
 		}
 
@@ -360,7 +366,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			else if (o is ListBlock l)
 				RenderListBlock(l);
 			else
-				renderer.Write($"(Block: {o.GetType().Name}");
+				_ = renderer.Write($"(Block: {o.GetType().Name}");
 		}
 	}
 }

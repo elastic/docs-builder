@@ -33,25 +33,25 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 		var anchor = obj.GetData("anchor") as string;
 
 		var slugTarget = (anchor ?? header) ?? string.Empty;
-		if (slugTarget.IndexOf('$') >= 0)
+		if (slugTarget.Contains('$'))
 			slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
 
 		var slug = slugTarget.Slugify();
 
-		renderer.Write(@"<div class=""heading-wrapper"" id=""");
-		renderer.Write(slug);
-		renderer.Write(@""">");
-		renderer.Write('<');
-		renderer.Write(headingText);
-		renderer.WriteAttributes(obj);
-		renderer.Write('>');
-		renderer.Write($"""<a class="headerlink" href="#{slug}">""");
-		renderer.WriteLeafInline(obj);
-		renderer.Write("</a>");
-		renderer.Write("</");
-		renderer.Write(headingText);
-		renderer.WriteLine('>');
-		renderer.Write("</div>");
-		renderer.EnsureLine();
+		_ = renderer.Write(@"<div class=""heading-wrapper"" id=""")
+			.Write(slug)
+			.Write(@""">")
+			.Write('<')
+			.Write(headingText)
+			.WriteAttributes(obj)
+			.Write('>')
+			.Write($"""<a class="headerlink" href="#{slug}">""")
+			.WriteLeafInline(obj)
+			.Write("</a>")
+			.Write("</")
+			.Write(headingText)
+			.WriteLine('>')
+			.Write("</div>")
+			.EnsureLine();
 	}
 }

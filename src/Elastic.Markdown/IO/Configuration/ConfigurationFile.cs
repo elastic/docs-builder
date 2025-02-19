@@ -69,12 +69,10 @@ public record ConfigurationFile : DocumentationFile
 						Project = ReadString(entry);
 						break;
 					case "exclude":
-						Exclude = ReadStringArray(entry)
-							.Select(Glob.Parse)
-							.ToArray();
+						Exclude = [.. ReadStringArray(entry).Select(Glob.Parse)];
 						break;
 					case "cross_links":
-						CrossLinkRepositories = ReadStringArray(entry).ToArray();
+						CrossLinkRepositories = [.. ReadStringArray(entry)];
 						break;
 					case "subs":
 						_substitutions = ReadDictionary(entry);
@@ -104,7 +102,7 @@ public record ConfigurationFile : DocumentationFile
 			EmitError("Could not load docset.yml", e);
 		}
 
-		Globs = ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md")).ToArray();
+		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
 	}
 
 	private List<ITocItem> ReadChildren(KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
@@ -177,7 +175,7 @@ public record ConfigurationFile : DocumentationFile
 		if (folder is not null)
 		{
 			if (children is null)
-				ImplicitFolders.Add(parentPath.TrimStart('/'));
+				_ = ImplicitFolders.Add(parentPath.TrimStart('/'));
 
 			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, children ?? [])];
 		}
@@ -242,7 +240,7 @@ public record ConfigurationFile : DocumentationFile
 			EmitError($"File '{path}' does not exist", entry.Key);
 		else
 			found = true;
-		Files.Add((parentPath + "/" + file).TrimStart('/'));
+		_ = Files.Add((parentPath + "/" + file).TrimStart('/'));
 
 		return file;
 	}
@@ -295,11 +293,11 @@ public record ConfigurationFile : DocumentationFile
 		return null;
 	}
 
-	private string[] ReadStringArray(KeyValuePair<YamlNode, YamlNode> entry)
+	private static string[] ReadStringArray(KeyValuePair<YamlNode, YamlNode> entry)
 	{
 		var values = new List<string>();
 		if (entry.Value is not YamlSequenceNode sequence)
-			return values.ToArray();
+			return [.. values];
 
 		foreach (var entryValue in sequence.Children.OfType<YamlScalarNode>())
 		{
@@ -307,7 +305,7 @@ public record ConfigurationFile : DocumentationFile
 				values.Add(entryValue.Value);
 		}
 
-		return values.ToArray();
+		return [.. values];
 	}
 
 	private void EmitError(string message, YamlNode? node) =>

@@ -77,7 +77,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			throw new Exception("Expected parser context to be of type ParserContext");
 
 		codeBlock.Language = (
-			(codeBlock.Info?.IndexOf("{") ?? -1) != -1
+			(codeBlock.Info?.IndexOf('{') ?? -1) != -1
 				? codeBlock.Arguments
 				: codeBlock.Info
 		) ?? "unknown";
@@ -268,7 +268,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		foreach (var individualStartIndex in allStartIndices)
 		{
 			callOutIndex++;
-			var endIndex = span.Slice(match.Index + individualStartIndex).IndexOf('>') + 1;
+			var endIndex = span[(match.Index + individualStartIndex)..].IndexOf('>') + 1;
 			var callout = span.Slice(match.Index + individualStartIndex, endIndex);
 			if (int.TryParse(callout.Trim(['<', '>']), out var index))
 			{

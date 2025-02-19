@@ -45,7 +45,7 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 
 		foreach (var match in splits)
 		{
-			var header = text.Slice(0, match.Index);
+			var header = text[..match.Index];
 			var anchor = text.Slice(match.Index, match.Length);
 
 			var newSlice = new StringSlice(header.ToString());

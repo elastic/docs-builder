@@ -8,7 +8,7 @@ using YamlDotNet.Serialization;
 namespace Elastic.Markdown.Myst.Settings;
 
 [YamlSerializable]
-public record SettingsCollection
+public record YamlSettings
 {
 	[YamlMember(Alias = "product")]
 	public string? Product { get; set; }

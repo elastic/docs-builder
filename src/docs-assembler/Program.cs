@@ -12,18 +12,17 @@ using Microsoft.Extensions.Logging;
 
 var services = new ServiceCollection();
 services.AddGitHubActionsCore();
-services.AddLogging(x =>
-{
-	x.ClearProviders();
-	x.SetMinimumLevel(LogLevel.Information);
-	x.AddSimpleConsole(c =>
+services.AddLogging(x => x
+	.ClearProviders()
+	.SetMinimumLevel(LogLevel.Information)
+	.AddSimpleConsole(c =>
 	{
 		c.SingleLine = true;
 		c.IncludeScopes = true;
 		c.UseUtcTimestamp = true;
 		c.TimestampFormat = Environment.UserInteractive ? ":: " : "[yyyy-MM-ddTHH:mm:ss] ";
-	});
-});
+	})
+);
 services.AddSingleton<DiagnosticsChannel>();
 services.AddSingleton<DiagnosticsCollector>();
 

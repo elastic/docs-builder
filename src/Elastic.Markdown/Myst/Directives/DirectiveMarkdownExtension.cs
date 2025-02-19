@@ -40,12 +40,10 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		{
 			inlineParser.EmphasisDescriptors.Add(new EmphasisDescriptor(':', 2, 2, true));
 			inlineParser.TryCreateEmphasisInlineList.Add((emphasisChar, delimiterCount) =>
-			{
-				if (delimiterCount == 2 && emphasisChar == ':')
-					return new Role { DelimiterChar = ':', DelimiterCount = 2 };
-
-				return null;
-			});
+				delimiterCount != 2 || emphasisChar != ':'
+				? null
+				: (Markdig.Syntax.Inlines.EmphasisInline)new Role { DelimiterChar = ':', DelimiterCount = 2 }
+			);
 		}
 	}
 
@@ -54,9 +52,9 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		if (!renderer.ObjectRenderers.Contains<DirectiveHtmlRenderer>())
 		{
 			// Must be inserted before CodeBlockRenderer
-			renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
+			_ = renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
 		}
 
-		renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
+		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
 	}
 }

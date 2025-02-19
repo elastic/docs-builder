@@ -97,7 +97,7 @@ public abstract class DirectiveBlock(
 
 	internal void AddProperty(string key, string value)
 	{
-		_properties ??= new Dictionary<string, string>();
+		_properties ??= [];
 		_properties[key] = value;
 	}
 

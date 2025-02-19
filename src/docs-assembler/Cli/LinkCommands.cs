@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal class LinkCommands(ILoggerFactory logger)
+internal sealed class LinkCommands(ILoggerFactory logger)
 {
 	private void AssignOutputLogger()
 	{
@@ -40,7 +40,7 @@ internal class LinkCommands(ILoggerFactory logger)
 		Console.WriteLine("--------------------------------------");
 
 
-		var linkIndex = new LinkIndex { Repositories = new Dictionary<string, Dictionary<string, LinkIndexEntry>>() };
+		var linkIndex = new LinkIndex { Repositories = [] };
 		try
 		{
 			ListObjectsV2Response response;

@@ -11,13 +11,13 @@ using YamlDotNet.Serialization;
 namespace Elastic.Markdown.Myst.FrontMatter;
 
 [YamlSerializable]
-public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
+public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
-	private readonly IReadOnlyCollection<Applicability> _items;
-	public ApplicabilityOverTime(Applicability[] items) => _items = items;
+	private readonly Applicability[] _items;
+	public AppliesCollection(Applicability[] items) => _items = items;
 
 	// <lifecycle> [version]
-	public static bool TryParse(string? value, out ApplicabilityOverTime? availability)
+	public static bool TryParse(string? value, out AppliesCollection? availability)
 	{
 		availability = null;
 		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
@@ -37,11 +37,11 @@ public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
 		if (applications.Count == 0)
 			return false;
 
-		availability = new ApplicabilityOverTime(applications.ToArray());
+		availability = new AppliesCollection([.. applications]);
 		return true;
 	}
 
-	public virtual bool Equals(ApplicabilityOverTime? other)
+	public virtual bool Equals(AppliesCollection? other)
 	{
 		if ((object)this == other)
 			return true;
@@ -57,18 +57,18 @@ public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
 	{
 		var comparer = StructuralComparisons.StructuralEqualityComparer;
 		return
-			EqualityComparer<Type>.Default.GetHashCode(EqualityContract) * -1521134295
+			(EqualityComparer<Type>.Default.GetHashCode(EqualityContract) * -1521134295)
 			+ comparer.GetHashCode(_items);
 	}
 
 
-	public static explicit operator ApplicabilityOverTime(string b)
+	public static explicit operator AppliesCollection(string b)
 	{
 		var productAvailability = TryParse(b, out var version) ? version : null;
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string array.");
 	}
 
-	public static ApplicabilityOverTime GenerallyAvailable { get; }
+	public static AppliesCollection GenerallyAvailable { get; }
 		= new([Applicability.GenerallyAvailable]);
 
 	public override string ToString()
@@ -77,15 +77,15 @@ public record ApplicabilityOverTime : IReadOnlyCollection<Applicability>
 			return "all";
 		var sb = new StringBuilder();
 		foreach (var item in _items)
-			sb.Append(item).Append(", ");
+			_ = sb.Append(item).Append(", ");
 		return sb.ToString();
 	}
 
-	public IEnumerator<Applicability> GetEnumerator() => _items.GetEnumerator();
+	public IEnumerator<Applicability> GetEnumerator() => ((IEnumerable<Applicability>)_items).GetEnumerator();
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-	public int Count => _items.Count;
+	public int Count => _items.Length;
 }
 
 [YamlSerializable]
@@ -117,9 +117,9 @@ public record Applicability
 			ProductLifecycle.GenerallyAvailable => "ga",
 			_ => throw new ArgumentOutOfRangeException()
 		};
-		sb.Append(lifecycle);
+		_ = sb.Append(lifecycle);
 		if (Version is not null && Version != AllVersions.Instance)
-			sb.Append(" ").Append(Version);
+			_ = sb.Append(' ').Append(Version);
 		return sb.ToString();
 	}
 
@@ -156,7 +156,7 @@ public record Applicability
 			"discontinued" => ProductLifecycle.Discontinued,
 			"unavailable" => ProductLifecycle.Unavailable,
 			"ga" => ProductLifecycle.GenerallyAvailable,
-			_ => throw new ArgumentOutOfRangeException(nameof(tokens), tokens, $"Unknown product lifecycle: {tokens[0]}")
+			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
 		};
 
 		var version = tokens.Length < 2

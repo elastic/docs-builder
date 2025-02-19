@@ -8,7 +8,7 @@ namespace Elastic.Markdown.Tests;
 
 public class TestLogger(ITestOutputHelper output) : ILogger
 {
-	private class NullScope : IDisposable
+	private sealed class NullScope : IDisposable
 	{
 		public void Dispose() { }
 	}
@@ -23,18 +23,14 @@ public class TestLogger(ITestOutputHelper output) : ILogger
 
 public class TestLoggerProvider(ITestOutputHelper output) : ILoggerProvider
 {
-	public void Dispose()
-	{
-	}
+	public void Dispose() => GC.SuppressFinalize(this);
 
 	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
 }
 
 public class TestLoggerFactory(ITestOutputHelper output) : ILoggerFactory
 {
-	public void Dispose()
-	{
-	}
+	public void Dispose() => GC.SuppressFinalize(this);
 
 	public void AddProvider(ILoggerProvider provider) { }
 

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.IO.Navigation;
@@ -71,7 +70,7 @@ public class DocumentationGroup
 		NavigationItems = navigationItems;
 
 		if (Index is not null)
-			FilesInOrder = FilesInOrder.Except([Index]).ToList();
+			FilesInOrder = [.. FilesInOrder.Except([Index])];
 
 		OwnFiles = [.. FilesInOrder];
 	}
@@ -142,12 +141,11 @@ public class DocumentationGroup
 			else if (tocItem is FolderReference folder)
 			{
 				var children = folder.Children;
-				if (children.Count == 0
-					&& folderLookup.TryGetValue(folder.Path, out var documentationFiles))
+				if (children.Count == 0 && folderLookup.TryGetValue(folder.Path, out var documentationFiles))
 				{
-					children = documentationFiles
+					children = [.. documentationFiles
 						.Select(d => new FileReference(d.RelativePath, true, false, []))
-						.ToArray();
+					];
 				}
 
 				var group = new DocumentationGroup(context, children, lookup, folderLookup, ref fileIndex, depth + 1)
