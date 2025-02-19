@@ -2,12 +2,31 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
+
+public class WarningCollection : IEquatable<WarningCollection>, IReadOnlyCollection<string>
+{
+	private readonly List<string> _list = [];
+
+	public WarningCollection(IEnumerable<string> warnings) => _list.AddRange(warnings);
+
+	public bool Equals(WarningCollection? other) => other != null && _list.SequenceEqual(other._list);
+
+	public IEnumerator<string> GetEnumerator() => _list.GetEnumerator();
+
+	public override bool Equals(object? obj) => Equals(obj as WarningCollection);
+
+	public override int GetHashCode() => _list.GetHashCode();
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+	public int Count => _list.Count;
+}
 
 [YamlSerializable]
 public record ApplicableTo
@@ -24,7 +43,7 @@ public record ApplicableTo
 	[YamlMember(Alias = "product")]
 	public AppliesCollection? Product { get; set; }
 
-	public string[]? Warnings { get; set; }
+	internal WarningCollection? Warnings { get; set; }
 
 	public static ApplicableTo All { get; } = new()
 	{
@@ -115,7 +134,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		var warnings = new List<string>();
 
 		var keys = dictionary.Keys.OfType<string>().ToArray();
-		var oldStyleKeys = keys.Where(k => k.StartsWith(":")).ToList();
+		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
 		if (oldStyleKeys.Count > 0)
 			warnings.Add($"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}");
 		var unknownKeys = keys.Except(KnownKeys).Except(oldStyleKeys).ToList();
@@ -138,7 +157,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			applicableTo.Serverless = serverless;
 
 		if (warnings.Count > 0)
-			applicableTo.Warnings = warnings.ToArray();
+			applicableTo.Warnings = new WarningCollection(warnings);
 		return applicableTo;
 	}
 
