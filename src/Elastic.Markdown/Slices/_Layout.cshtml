@@ -26,9 +26,9 @@
 			</div>
 		</div>
 		<div id="content" class="w-full flex justify-between">
-			@await RenderPartialAsync(_TableOfContents.Create(Model))
+			@await RenderPartialAsync(_TableOfContents.Create<ITableOfContentsModel>(Model))
 			<div class="content-container order-first px-6 pt-6 pb-12">
-				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+				@await RenderPartialAsync(_Breadcrumbs.Create<IBreadCrumbModel>(Model))
 				<article class="markdown-content">
 					@await RenderBodyAsync()
 				</article>

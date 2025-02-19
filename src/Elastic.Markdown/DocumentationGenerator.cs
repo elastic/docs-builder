@@ -252,6 +252,7 @@ public class DocumentationGenerator
 	public async Task<string?> RenderLayout(MarkdownFile markdown, Cancel ctx)
 	{
 		await DocumentationSet.Tree.Resolve(ctx);
-		return await HtmlWriter.RenderLayout(markdown, ctx);
+		var pageHtml = await HtmlWriter.RenderPageHtml(markdown, ctx);
+		return await HtmlWriter.RenderLayout(markdown, pageHtml, ctx);
 	}
 }

@@ -40,10 +40,15 @@ public class HtmlWriter
 
 	private string? _renderedNavigation;
 
-	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
+	public async Task<string> RenderPageHtml(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
 		var html = markdown.CreateHtml(document);
+		return html;
+	}
+
+	public async Task<string> RenderLayout(MarkdownFile markdown, string markdownHtml, Cancel ctx = default)
+	{
 		await DocumentationSet.Tree.Resolve(ctx);
 		_renderedNavigation ??= await RenderNavigation(markdown, ctx);
 
@@ -59,7 +64,7 @@ public class HtmlWriter
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
-			MarkdownHtml = html,
+			MarkdownHtml = markdownHtml,
 			PageTocItems = markdown.TableOfContents.Values.ToList(),
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
@@ -74,12 +79,39 @@ public class HtmlWriter
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
+
+	public async Task<string> RenderPage(MarkdownFile markdown, string markdownHtml, Cancel ctx = default)
+	{
+		var previous = DocumentationSet.GetPrevious(markdown);
+		var next = DocumentationSet.GetNext(markdown);
+
+		var remote = DocumentationSet.Context.Git.RepositoryName;
+		var branch = DocumentationSet.Context.Git.Branch;
+		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
+		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
+
+		var slice = Page.Create(new MainViewModel
+		{
+			Title = markdown.Title ?? "[TITLE NOT SET]",
+			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
+			MarkdownHtml = markdownHtml,
+			PageTocItems = markdown.TableOfContents.Values.ToList(),
+			CurrentDocument = markdown,
+			PreviousDocument = previous,
+			NextDocument = next,
+			UrlPathPrefix = markdown.UrlPathPrefix,
+			Applies = markdown.YamlFrontMatter?.AppliesTo,
+			GithubEditUrl = editUrl,
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && !markdown.Hidden
+		});
+		return await slice.RenderAsync(cancellationToken: ctx);
+	}
+
 	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		var rendered = await RenderLayout(markdown, ctx);
 		string path;
 		if (outputFile.Name == "index.md")
 			path = Path.ChangeExtension(outputFile.FullName, ".html");
@@ -96,8 +128,15 @@ public class HtmlWriter
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
 				: Path.Combine(dir, "index.html");
 		}
+		var mainPath = Path.ChangeExtension(path, ".main.html");
 
+		var pageHtml = await RenderPageHtml(markdown, ctx);
+
+		var rendered = await RenderLayout(markdown, pageHtml, ctx);
 		await _writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+
+		var renderedPage = await RenderPage(markdown, pageHtml, ctx);
+		await _writeFileSystem.File.WriteAllTextAsync(mainPath, renderedPage, ctx);
 	}
 
 }

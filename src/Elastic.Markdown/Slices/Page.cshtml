@@ -1,0 +1,61 @@
+@using Elastic.Markdown.IO.Navigation
+@using Markdig
+@inherits RazorSliceHttpResult<MainViewModel>
+<main class="w-full order-2">
+	<div class="content-container relative">
+		<div class="w-full htmx-indicator absolute top-0 left-0 right-0" id="indicator">
+			<div class="h-1 w-full bg-pink-10 overflow-hidden">
+				<div class="progress w-full h-full bg-pink-50 left-right"></div>
+			</div>
+		</div>
+	</div>
+	<div id="content" class="w-full flex justify-between">
+		@await RenderPartialAsync(_TableOfContents.Create<ITableOfContentsModel>(Model))
+		<div class="content-container order-first px-6 pt-6 pb-12">
+			@await RenderPartialAsync(_Breadcrumbs.Create<IBreadCrumbModel>(Model))
+			<article class="markdown-content">
+			<section id="elastic-docs-v3">
+				@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@
+				@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
+				@if (Model.Applies is not null)
+				{
+					await RenderPartialAsync(ApplicableTo.Create(Model.Applies));
+				}
+				@(new HtmlString(Model.MarkdownHtml))
+			</section>
+			</article>
+			<footer class="mt-20">
+				<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
+					<div class="basis-full">
+						@if (Model.PreviousDocument != null)
+						{
+						<a href="@Model.PreviousDocument.Url" hx-get="@Model.PreviousDocument.Url" class="flex h-full items-center text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md">
+							<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+							</svg>
+							<div>
+								<div class="text-xs lg:text-sm">Previous</div>
+								<div class="text-base lg:text-xl text-black">@Model.PreviousDocument.NavigationTitle</div>
+							</div>
+						</a>
+						}
+					</div>
+					<div class="basis-full">
+						@if (Model.NextDocument != null)
+						{
+						<a href="@Model.NextDocument.Url" hx-get="@Model.NextDocument.Url" hx-select="#content" hx-target="#content" class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md text-right">
+							<div>
+								<div class="text-xs lg:text-sm">Next</div>
+								<div class="text-base lg:text-xl text-black">@Model.NextDocument.NavigationTitle</div>
+							</div>
+							<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+							</svg>
+						</a>
+						}
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</main>
