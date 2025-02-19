@@ -56,3 +56,29 @@ serverless:
                 Observability=ApplicabilityOverTime.op_Explicit "discontinued 9.2.0"
             )
         ))
+
+type ``warns on old syntax`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+:hosted: all
+```
+"""
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``warns on bad syntax`` () =
+        markdown |> hasWarning "Applies block does not use valid yaml keys: :hosted"
+
+type ``warns on invalid keys`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+hosted: all
+```
+"""
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``warns on bad syntax`` () =
+        markdown |> hasWarning "Applies block does not support the following keys: hosted"
