@@ -109,12 +109,6 @@ jobs:
               exit 1;
               ;;
           esac
-      
-      - name: Clone docs-content
-        uses: actions/checkout@v4
-        with:
-          repository: elastic/docs-content
-          path: docs-content
 
       - name: Bootstrap Action Workspace
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
@@ -125,7 +119,7 @@ jobs:
       - name: Build documentation
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}" --path docs-content
+          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder' && steps.deployment.outputs.result
