@@ -15,7 +15,6 @@ public record LinkModification(string OldLink, string NewLink, string SourceFile
 
 public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
 {
-	private const string ChangeFormatString = "Change \e[31m{0}\e[0m to \e[32m{1}\e[0m at \e[34m{2}:{3}:{4}\e[0m";
 
 	private readonly ILogger _logger = loggerFactory.CreateLogger<Move>();
 	private readonly Dictionary<ChangeSet, List<Change>> _changes = [];
@@ -35,7 +34,7 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		foreach (var (fromFile, toFile) in fromFiles.Zip(toFiles))
 		{
 			var changeSet = new ChangeSet(fromFile, toFile);
-			_logger.LogInformation($"Requested to move from '{fromFile}' to '{toFile}");
+			_logger.LogInformation("Requested to move from '{FromFile}' to '{ToFile}'", fromFile, toFile);
 			await SetupChanges(changeSet, ctx);
 		}
 
@@ -104,14 +103,14 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		{
 			foreach (var (oldLink, newLink, sourceFile, lineNumber, columnNumber) in linkModifications)
 			{
-				_logger.LogInformation(string.Format(
-					ChangeFormatString,
+				_logger.LogInformation(
+					"Change \e[31m{0}\e[0m to \e[32m{1}\e[0m at \e[34m{2}:{3}:{4}\e[0m",
 					oldLink,
 					newLink,
 					sourceFile == changeSet.From.FullName && !isDryRun ? changeSet.To.FullName : sourceFile,
 					lineNumber,
 					columnNumber
-				));
+				);
 			}
 		}
 
@@ -172,9 +171,10 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		//from does not exist at all
 		if (!fromFile.Exists && !fromDirectory.Exists)
 		{
-			_logger.LogError(!string.IsNullOrEmpty(fromFile.Extension)
-				? $"Source file '{fromFile}' does not exist"
-				: $"Source directory '{fromDirectory}' does not exist");
+			if (!string.IsNullOrEmpty(fromFile.Extension))
+				_logger.LogError("Source file '{File}' does not exist", fromFile);
+			else
+				_logger.LogError("Source directory '{Directory}' does not exist", fromDirectory);
 			return false;
 		}
 		//moving file
@@ -192,12 +192,12 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 
 			if (!toFile.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
 			{
-				_logger.LogError($"Target path '{toFile.FullName}' must be a markdown file.");
+				_logger.LogError("Target path '{FullName}' must be a markdown file.", toFile.FullName);
 				return false;
 			}
 			if (toFile.Exists)
 			{
-				_logger.LogError($"Target file {target} already exists");
+				_logger.LogError("Target file {Target} already exists", target);
 				return false;
 			}
 			fromFiles = [fromFile];
@@ -208,13 +208,13 @@ public class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, Docum
 		{
 			if (toDirectory.Exists)
 			{
-				_logger.LogError($"Target directory '{toDirectory.FullName}' already exists.");
+				_logger.LogError("Target directory '{FullName}' already exists.", toDirectory.FullName);
 				return false;
 			}
 
 			if (toDirectory.FullName.StartsWith(fromDirectory.FullName))
 			{
-				_logger.LogError($"Can not move source directory '{toDirectory.FullName}' to a  {toFile.FullName}");
+				_logger.LogError("Can not move source directory '{SourceDirectory}' to a '{TargetFile}'", toDirectory.FullName, toFile.FullName);
 				return false;
 			}
 

@@ -38,9 +38,9 @@ public class DocumentationGenerator
 		Resolver = docSet.LinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
 
-		_logger.LogInformation($"Created documentation set for: {DocumentationSet.Name}");
-		_logger.LogInformation($"Source directory: {docSet.SourcePath} Exists: {docSet.SourcePath.Exists}");
-		_logger.LogInformation($"Output directory: {docSet.OutputPath} Exists: {docSet.OutputPath.Exists}");
+		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
+		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourcePath, docSet.SourcePath.Exists);
+		_logger.LogInformation("Output directory: {OutputPath} Exists: {OutputPathExists}", docSet.OutputPath, docSet.OutputPath.Exists);
 	}
 
 	public GenerationState? GetPreviousGenerationState()
@@ -120,9 +120,9 @@ public class DocumentationGenerator
 			}
 
 			if (processedFiles % 100 == 0)
-				_logger.LogInformation($"-> Processed {processedFiles}/{totalFileCount} files");
+				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
 		});
-		_logger.LogInformation($"-> Processed {processedFileCount}/{totalFileCount} files");
+		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
 	}
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
@@ -144,7 +144,7 @@ public class DocumentationGenerator
 				outputFile.Directory.Create();
 			await using var stream = outputFile.OpenWrite();
 			await resourceStream.CopyToAsync(stream, ctx);
-			_logger.LogInformation($"Copied static embedded resource {path}");
+			_logger.LogInformation("Copied static embedded resource {Path}", path);
 		}
 	}
 
@@ -153,12 +153,12 @@ public class DocumentationGenerator
 		if (!Context.Force)
 		{
 			if (offendingFiles.Contains(file.SourceFile.FullName))
-				_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
+				_logger.LogInformation("Re-evaluating {FileName}", file.SourceFile.FullName);
 			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
 				return;
 		}
 
-		_logger.LogTrace($"--> {file.SourceFile.FullName}");
+		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
 		var outputFile = OutputFile(file.RelativePath);
 		if (file is MarkdownFile markdown)
 			await HtmlWriter.WriteAsync(outputFile, markdown, token);
@@ -185,27 +185,27 @@ public class DocumentationGenerator
 			return false;
 		if (Context.Force)
 		{
-			_logger.LogInformation($"Full compilation: --force was specified");
+			_logger.LogInformation("Full compilation: --force was specified");
 			return false;
 		}
 
 		if (Context.Git != generationState.Git)
 		{
-			_logger.LogInformation($"Full compilation: current git context: {Context.Git} differs from previous git context: {generationState.Git}");
+			_logger.LogInformation("Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}", Context.Git, generationState.Git);
 			return false;
 		}
 
 		if (offendingFiles.Count > 0)
 		{
-			_logger.LogInformation($"Incremental compilation. since: {DocumentationSet.LastWrite}");
-			_logger.LogInformation($"Incremental compilation. {offendingFiles.Count} files with errors/warnings");
+			_logger.LogInformation("Incremental compilation. since: {LastWrite}", DocumentationSet.LastWrite);
+			_logger.LogInformation("Incremental compilation. {FileCount} files with errors/warnings", offendingFiles.Count);
 		}
 		else if (DocumentationSet.LastWrite > outputSeenChanges)
-			_logger.LogInformation($"Incremental compilation. since: {generationState.LastSeenChanges}");
+			_logger.LogInformation("Incremental compilation. since: {LastSeenChanges}", generationState.LastSeenChanges);
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
-			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges} "
-								   + "Pass --force to force a full regeneration");
+			_logger.LogInformation("No compilation: no changes since last observed: {LastSeenChanges}. " +
+								   "Pass --force to force a full regeneration", generationState.LastSeenChanges);
 			return true;
 		}
 
@@ -224,7 +224,7 @@ public class DocumentationGenerator
 	private async Task GenerateDocumentationState(Cancel ctx)
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
-		_logger.LogInformation($"Writing documentation state {DocumentationSet.LastWrite} to {stateFile.FullName}");
+		_logger.LogInformation("Writing documentation state {LastWrite} to {StateFileName}", DocumentationSet.LastWrite, stateFile.FullName);
 		var badFiles = Context.Collector.OffendingFiles.ToArray();
 		var state = new GenerationState
 		{

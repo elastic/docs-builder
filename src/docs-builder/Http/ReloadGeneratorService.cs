@@ -69,29 +69,28 @@ public class ReloadGeneratorService(
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
 
-		Logger.LogInformation($"Changed: {e.FullPath}");
+        Logger.LogInformation("Changed: {FullPath}", e.FullPath);
 	}
 
 	private void OnCreated(object sender, FileSystemEventArgs e)
 	{
-		var value = $"Created: {e.FullPath}";
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
-		Logger.LogInformation(value);
+		Logger.LogInformation("Created: {FullPath}", e.FullPath);
 	}
 
 	private void OnDeleted(object sender, FileSystemEventArgs e)
 	{
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
-		Logger.LogInformation($"Deleted: {e.FullPath}");
+		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
 	}
 
 	private void OnRenamed(object sender, RenamedEventArgs e)
 	{
-		Logger.LogInformation($"Renamed:");
-		Logger.LogInformation($"    Old: {e.OldFullPath}");
-		Logger.LogInformation($"    New: {e.FullPath}");
+		Logger.LogInformation("Renamed:");
+		Logger.LogInformation("    Old: {OldFullPath}", e.OldFullPath);
+		Logger.LogInformation("    New: {NewFullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
 	}
@@ -103,9 +102,9 @@ public class ReloadGeneratorService(
 	{
 		if (ex == null)
 			return;
-		Logger.LogError($"Message: {ex.Message}");
+		Logger.LogError("Message: {Message}", ex.Message);
 		Logger.LogError("Stacktrace:");
-		Logger.LogError(ex.StackTrace);
+		Logger.LogError("{StackTrace}", ex.StackTrace ?? "No stack trace available");
 		PrintException(ex.InnerException);
 	}
 

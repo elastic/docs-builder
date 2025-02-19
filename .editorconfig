@@ -197,12 +197,13 @@ resharper_redundant_case_label_highlighting=do_not_show
 resharper_redundant_argument_default_value_highlighting=do_not_show
 resharper_explicit_caller_info_argument_highlighting=hint
 
-dotnet_diagnostic.IDE0057.severity = none
+csharp_style_namespace_declarations = file_scoped
 
-[DocumentationWebHost.cs]
-dotnet_diagnostic.IL3050.severity = none
-dotnet_diagnostic.IL2026.severity = none
-
+dotnet_analyzer_diagnostic.severity = warning
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1848
+dotnet_diagnostic.CA1848.severity = suggestion
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2201
+dotnet_diagnostic.CA2201.severity = none
 
 [*.{sh,bat,ps1}]
 trim_trailing_whitespace=true

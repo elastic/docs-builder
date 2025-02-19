@@ -35,13 +35,13 @@ public class MarkdownParser(
 	private ICrossLinkResolver LinksResolver { get; } = linksResolver;
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? _minimalPipeline;
+	private static MarkdownPipeline? MinimalPipelineCached;
 	public static MarkdownPipeline MinimalPipeline
 	{
 		get
 		{
-			if (_minimalPipeline is not null)
-				return _minimalPipeline;
+			if (MinimalPipelineCached is not null)
+				return MinimalPipelineCached;
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseInlineAnchors()
@@ -49,20 +49,20 @@ public class MarkdownParser(
 				.UseDirectives();
 
 			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			_minimalPipeline = builder.Build();
-			return _minimalPipeline;
+			MinimalPipelineCached = builder.Build();
+			return MinimalPipelineCached;
 
 		}
 	}
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? _pipeline;
+	private static MarkdownPipeline? PipelineCached;
 	public static MarkdownPipeline Pipeline
 	{
 		get
 		{
-			if (_pipeline is not null)
-				return _pipeline;
+			if (PipelineCached is not null)
+				return PipelineCached;
 
 			var builder = new MarkdownPipelineBuilder()
 				.UseInlineAnchors()
@@ -82,8 +82,8 @@ public class MarkdownParser(
 				.DisableHtml()
 				.UseHardBreaks();
 			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			_pipeline = builder.Build();
-			return _pipeline;
+			PipelineCached = builder.Build();
+			return PipelineCached;
 		}
 	}
 

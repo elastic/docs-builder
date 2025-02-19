@@ -51,7 +51,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 	private readonly string[] _links = configuration.CrossLinkRepositories;
 	private FrozenDictionary<string, LinkReference> _linkReferences = new Dictionary<string, LinkReference>().ToFrozenDictionary();
 	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkResolver));
-	private readonly HashSet<string> _declaredRepositories = new();
+	private readonly HashSet<string> _declaredRepositories = [];
 
 	public static LinkReference Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
@@ -62,11 +62,11 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 		var dictionary = new Dictionary<string, LinkReference>();
 		foreach (var link in _links)
 		{
-			_declaredRepositories.Add(link);
+			_ = _declaredRepositories.Add(link);
 			try
 			{
 				var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{link}/main/links.json";
-				_logger.LogInformation($"Fetching {url}");
+				_logger.LogInformation("Fetching {Url}", url);
 				var json = await client.GetStringAsync(url);
 				var linkReference = Deserialize(json);
 				dictionary.Add(link, linkReference);

@@ -25,7 +25,7 @@ public class DiagnosticsChannel
 
 	public void TryComplete(Exception? exception = null)
 	{
-		_channel.Writer.TryComplete(exception);
+		_ = _channel.Writer.TryComplete(exception);
 		_ctxSource.Cancel();
 	}
 
@@ -70,9 +70,9 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	private Task? _started;
 
-	public HashSet<string> OffendingFiles { get; } = new();
+	public HashSet<string> OffendingFiles { get; } = [];
 
-	public ConcurrentBag<string> CrossLinks { get; } = new();
+	public ConcurrentBag<string> CrossLinks { get; } = [];
 
 	public Task StartAsync(Cancel ctx)
 	{
@@ -80,7 +80,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			return _started;
 		_started = Task.Run(async () =>
 		{
-			await Channel.WaitToWrite();
+			_ = await Channel.WaitToWrite();
 			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
 				try

@@ -166,7 +166,7 @@ public record ConfigurationFile : DocumentationFile
 		if (toc is not null)
 		{
 			foreach (var f in toc.Files)
-				Files.Add(f);
+				_ = Files.Add(f);
 
 			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, toc.TableOfContents)];
 		}

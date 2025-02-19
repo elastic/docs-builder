@@ -14,9 +14,9 @@ public class Log(ILogger logger) : IDiagnosticsOutput
 	public void Write(Diagnostic diagnostic)
 	{
 		if (diagnostic.Severity == Severity.Error)
-			logger.LogError($"{diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			logger.LogError("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line);
 		else
-			logger.LogWarning($"{diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			logger.LogWarning("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line);
 	}
 }
 

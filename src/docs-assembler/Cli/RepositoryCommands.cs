@@ -26,8 +26,10 @@ internal class RepositoryCommands(ILoggerFactory logger)
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
+#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
+#pragma warning restore CA2254
 	}
 
 	// would love to use libgit2 so there is no git dependency but
