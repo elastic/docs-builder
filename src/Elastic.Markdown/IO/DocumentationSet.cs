@@ -51,6 +51,10 @@ public class DocumentationSet
 		Files = [.. context.ReadFileSystem.Directory
 			.EnumerateFiles(SourcePath.FullName, "*.*", SearchOption.AllDirectories)
 			.Select(f => context.ReadFileSystem.FileInfo.New(f))
+			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
+			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+			// skip hidden folders
+			.Where(f => !Path.GetRelativePath(SourcePath.FullName, f.FullName).StartsWith('.'))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
 			{
 				".jpg" => new ImageFile(file, SourcePath, "image/jpeg"),

@@ -52,17 +52,25 @@ public class ErrataFileSourceRepository : ISourceRepository
 			_ = report.AddDiagnostic(d);
 		}
 
-		// Render the report
-		report.Render(AnsiConsole.Console);
-
 		var totalErrorCount = errors.Count + warnings.Count;
-		if (limitted.Length >= totalErrorCount)
-			return;
 
 		AnsiConsole.WriteLine();
-		AnsiConsole.WriteLine();
-		AnsiConsole.Write(new Markup($"Displayed first [bold]{limitted.Length}[/] error/warnings out of [bold]{totalErrorCount}[/]"));
+		if (totalErrorCount > 0)
+		{
+			AnsiConsole.Write(new Markup($"	[bold]The following errors and warnings were found in the documentation[/]"));
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine();
+			// Render the report
+			report.Render(AnsiConsole.Console);
 
-		AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine();
+
+			if (limitted.Length <= totalErrorCount)
+				AnsiConsole.Write(new Markup($"	[bold]Only shown the first [yellow]{limitted.Length}[/] diagnostics out of [yellow]{totalErrorCount}[/][/]"));
+
+			AnsiConsole.WriteLine();
+
+		}
 	}
 }

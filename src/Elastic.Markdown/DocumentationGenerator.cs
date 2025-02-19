@@ -144,7 +144,7 @@ public class DocumentationGenerator
 				outputFile.Directory.Create();
 			await using var stream = outputFile.OpenWrite();
 			await resourceStream.CopyToAsync(stream, ctx);
-			_logger.LogInformation("Copied static embedded resource {Path}", path);
+			_logger.LogDebug("Copied static embedded resource {Path}", path);
 		}
 	}
 

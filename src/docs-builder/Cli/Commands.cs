@@ -6,6 +6,7 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
+using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Refactor;
@@ -45,6 +46,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 	/// <summary>
 	/// Converts a source markdown folder or file to an output folder
+	/// <para>global options:</para>
+	/// --log-level level
 	/// </summary>
 	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
 	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
@@ -124,6 +127,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="dryRun">Dry run the move operation</param>
 	/// <param name="ctx"></param>
 	[Command("mv")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> Move(
 		[Argument] string source,
 		[Argument] string target,

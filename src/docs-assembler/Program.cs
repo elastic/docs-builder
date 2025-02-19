@@ -2,31 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Actions.Core.Extensions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
+using Elastic.Documentation.Tooling;
+using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
-var services = new ServiceCollection();
-services.AddGitHubActionsCore();
-services.AddLogging(x => x
-	.ClearProviders()
-	.SetMinimumLevel(LogLevel.Information)
-	.AddSimpleConsole(c =>
-	{
-		c.SingleLine = true;
-		c.IncludeScopes = true;
-		c.UseUtcTimestamp = true;
-		c.TimestampFormat = Environment.UserInteractive ? ":: " : "[yyyy-MM-ddTHH:mm:ss] ";
-	})
+await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, services => services
+	.AddSingleton<DiagnosticsChannel>()
+	.AddSingleton<DiagnosticsCollector>()
 );
-services.AddSingleton<DiagnosticsChannel>();
-services.AddSingleton<DiagnosticsCollector>();
 
-await using var serviceProvider = services.BuildServiceProvider();
 ConsoleApp.ServiceProvider = serviceProvider;
 
 var app = ConsoleApp.Create();
