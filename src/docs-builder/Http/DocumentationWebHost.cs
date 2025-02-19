@@ -127,7 +127,7 @@ public class DocumentationWebHost
 }
 
 
-public class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
+public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 {
 	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
 	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
@@ -194,6 +194,5 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 	{
 		_staticFilesInDocsFolder?.Dispose();
 		_staticWebFilesDuringDebug?.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }

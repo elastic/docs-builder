@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Http;
 
-public class ReloadGeneratorService(
+public sealed class ReloadGeneratorService(
 	ReloadableGeneratorState reloadableGenerator,
 	ILogger<ReloadGeneratorService> logger) : IHostedService,
 	IDisposable
@@ -113,7 +113,6 @@ public class ReloadGeneratorService(
 	{
 		_watcher?.Dispose();
 		_debouncer.Dispose();
-		GC.SuppressFinalize(this);
 	}
 
 	private sealed class Debouncer(TimeSpan window) : IDisposable
@@ -143,11 +142,7 @@ public class ReloadGeneratorService(
 			}
 		}
 
-		public void Dispose()
-		{
-			_semaphore.Dispose();
-			GC.SuppressFinalize(this);
-		}
+		public void Dispose() => _semaphore.Dispose();
 	}
 
 }

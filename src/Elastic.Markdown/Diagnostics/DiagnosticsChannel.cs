@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Markdown.Diagnostics;
 
-public class DiagnosticsChannel : IDisposable
+public sealed class DiagnosticsChannel : IDisposable
 {
 	private readonly Channel<Diagnostic> _channel;
 	private readonly CancellationTokenSource _ctxSource;
@@ -40,11 +40,7 @@ public class DiagnosticsChannel : IDisposable
 		}
 	}
 
-	public void Dispose()
-	{
-		_ctxSource.Dispose();
-		GC.SuppressFinalize(this);
-	}
+	public void Dispose() => _ctxSource.Dispose();
 }
 
 public enum Severity { Error, Warning }
