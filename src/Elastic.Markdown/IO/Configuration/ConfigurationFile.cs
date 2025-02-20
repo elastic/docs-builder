@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
@@ -25,14 +24,14 @@ public record ConfigurationFile : DocumentationFile
 
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
 
+	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
+
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 	public Glob[] Globs { get; } = [];
 
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
-
-	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
 
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context, int depth = 0, string parentPath = "")
 		: base(sourceFile, rootPath)
@@ -48,207 +47,60 @@ public record ConfigurationFile : DocumentationFile
 			return;
 		}
 
-		// Load the stream
-		var yaml = new YamlStream();
-		var textReader = sourceFile.FileSystem.File.OpenText(sourceFile.FullName);
-		yaml.Load(textReader);
+		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
+		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
+		var redirectFile = new RedirectFile(redirectFileInfo, _context);
+		Redirects = redirectFile.Redirects;
 
-		if (yaml.Documents.Count == 0)
-		{
-			context.EmitWarning(sourceFile, "empty configuration");
-			return;
-		}
-
+		var reader = new YamlStreamReader(_sourceFile, _context);
 		try
 		{
-			// Examine the stream
-			var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
-
-			foreach (var entry in mapping.Children)
+			foreach (var entry in reader.Read())
 			{
-				var key = ((YamlScalarNode)entry.Key).Value;
-				switch (key)
+				switch (entry.Key)
 				{
 					case "project":
-						Project = ReadString(entry);
+						Project = reader.ReadString(entry.Entry);
 						break;
 					case "exclude":
-						Exclude = [.. ReadStringArray(entry).Select(Glob.Parse)];
+						Exclude = [.. YamlStreamReader.ReadStringArray(entry.Entry).Select(Glob.Parse)];
 						break;
 					case "cross_links":
-						CrossLinkRepositories = [.. ReadStringArray(entry)];
+						CrossLinkRepositories = [.. YamlStreamReader.ReadStringArray(entry.Entry)];
 						break;
 					case "subs":
-						_substitutions = ReadDictionary(entry);
-						break;
-					case "redirects":
-						Redirects = ReadRedirects(entry);
+						_substitutions = reader.ReadDictionary(entry.Entry);
 						break;
 					case "toc":
 						if (depth > 1)
 						{
-							EmitError($"toc.yml files may only be linked from docset.yml", entry.Key);
+							reader.EmitError($"toc.yml files may only be linked from docset.yml", entry.Key);
 							break;
 						}
 
-						var entries = ReadChildren(entry, parentPath);
+						var entries = ReadChildren(reader, entry.Entry, parentPath);
 
 						TableOfContents = entries;
 						break;
 					case "external_hosts":
-						EmitWarning($"{key} has been deprecated and will be removed", entry.Key);
+						reader.EmitWarning($"{entry.Key} has been deprecated and will be removed", entry.Key);
 						break;
 					default:
-						EmitWarning($"{key} is not a known configuration", entry.Key);
+						reader.EmitWarning($"{entry.Key} is not a known configuration", entry.Key);
 						break;
 				}
 			}
 		}
 		catch (Exception e)
 		{
-			EmitError("Could not load docset.yml", e);
+			reader.EmitError("Could not load docset.yml", e);
+			throw;
 		}
 
 		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
 	}
 
-	private Dictionary<string, LinkRedirect>? ReadRedirects(KeyValuePair<YamlNode, YamlNode> entry)
-	{
-		if (!ReadObjectDictionary(entry, out var mapping))
-			return null;
-
-		var dictionary = new Dictionary<string, LinkRedirect>(StringComparer.OrdinalIgnoreCase);
-
-		foreach (var entryValue in mapping.Children)
-		{
-			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
-				continue;
-			var key = scalar.Value;
-			if (entryValue.Value is YamlScalarNode)
-			{
-				var to = ReadString(entryValue);
-				dictionary.Add(key,
-					!string.IsNullOrEmpty(to)
-						? to.StartsWith('!')
-							? new LinkRedirect { To = to.TrimStart('!'), Anchors = LinkRedirect.CatchAllAnchors }
-							: new LinkRedirect { To = to }
-						: new LinkRedirect { To = "index.md", Anchors = LinkRedirect.CatchAllAnchors }
-				);
-				continue;
-			}
-
-			if (!ReadObjectDictionary(entryValue, out var valueMapping))
-				continue;
-
-			var linkRedirect = ReadLinkRedirect(key, valueMapping);
-			if (linkRedirect is not null)
-				dictionary.Add(key, linkRedirect);
-		}
-
-		return dictionary;
-	}
-
-	private LinkRedirect? ReadLinkRedirect(string file, YamlMappingNode mapping)
-	{
-		var redirect = new LinkRedirect();
-		foreach (var entryValue in mapping.Children)
-		{
-			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
-				continue;
-			var key = scalar.Value;
-			switch (key)
-			{
-				case "anchors":
-					redirect = redirect with { Anchors = ReadDictionaryNullValue(entryValue) };
-					continue;
-				case "to":
-					var to = ReadString(entryValue);
-					if (to is not null)
-						redirect = redirect with { To = to };
-					continue;
-				case "many":
-					var many = ReadManyRedirects(file, entryValue.Value);
-					redirect = redirect with { Many = many };
-					continue;
-			}
-		}
-
-		if (redirect.To is null && redirect.Anchors is null && redirect.Many is null)
-			return null;
-
-		if (redirect.To is null)
-			return redirect with { To = file };
-
-		return string.IsNullOrEmpty(redirect.To) ? null : redirect;
-	}
-
-	private LinkSingleRedirect[]? ReadManyRedirects(string file, YamlNode node)
-	{
-		if (node is not YamlSequenceNode sequence)
-			return null;
-
-		var redirects = new List<LinkSingleRedirect>();
-		foreach (var entryValue in sequence.Children)
-		{
-			if (entryValue is not YamlMappingNode mapping)
-				continue;
-			var redirect = new LinkRedirect();
-			foreach (var keyValue in mapping.Children)
-			{
-				if (keyValue.Key is not YamlScalarNode scalar || scalar.Value is null)
-					continue;
-				var key = scalar.Value;
-				switch (key)
-				{
-					case "anchors":
-						redirect = redirect with { Anchors = ReadDictionaryNullValue(keyValue) };
-						continue;
-					case "to":
-						var to = ReadString(keyValue);
-						if (to is not null)
-							redirect = redirect with { To = to };
-						continue;
-				}
-
-				if (redirect.To is null && redirect.Anchors is not null && redirect.Anchors.Count >= 0)
-					redirect = redirect with { To = file };
-			}
-			redirects.Add(redirect);
-		}
-
-		if (redirects.Count == 0)
-			return null;
-
-		return
-		[
-			..redirects
-				.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)
-		];
-	}
-
-
-	private bool ReadObjectDictionary(KeyValuePair<YamlNode, YamlNode> entry, [NotNullWhen(true)] out YamlMappingNode? mapping)
-	{
-		mapping = null;
-		if (entry.Value is not YamlMappingNode m)
-		{
-			if (entry.Key is YamlScalarNode scalarKey)
-			{
-				var key = scalarKey.Value;
-				EmitWarning($"'{key}' is not a dictionary");
-			}
-			else
-				EmitWarning($"'{entry.Key}' is not a dictionary");
-
-			return false;
-		}
-
-		mapping = m;
-
-		return true;
-	}
-
-	private List<ITocItem> ReadChildren(KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
+	private List<ITocItem> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
 	{
 		var entries = new List<ITocItem>();
 		if (entry.Value is not YamlSequenceNode sequence)
@@ -256,23 +108,23 @@ public record ConfigurationFile : DocumentationFile
 			if (entry.Key is YamlScalarNode scalarKey)
 			{
 				var key = scalarKey.Value;
-				EmitWarning($"'{key}' is not an array");
+				reader.EmitWarning($"'{key}' is not an array");
 			}
 			else
-				EmitWarning($"'{entry.Key}' is not an array");
+				reader.EmitWarning($"'{entry.Key}' is not an array");
 
 			return entries;
 		}
 
 		entries.AddRange(
 			sequence.Children.OfType<YamlMappingNode>()
-				.SelectMany(tocEntry => ReadChild(tocEntry, parentPath) ?? [])
+				.SelectMany(tocEntry => ReadChild(reader, tocEntry, parentPath) ?? [])
 		);
 
 		return entries;
 	}
 
-	private IEnumerable<ITocItem>? ReadChild(YamlMappingNode tocEntry, string parentPath)
+	private IEnumerable<ITocItem>? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string parentPath)
 	{
 		string? file = null;
 		string? folder = null;
@@ -287,19 +139,19 @@ public record ConfigurationFile : DocumentationFile
 			switch (key)
 			{
 				case "toc":
-					toc = ReadNestedToc(entry, out fileFound);
+					toc = ReadNestedToc(reader, entry, out fileFound);
 					break;
 				case "hidden":
 				case "file":
 					hiddenFile = key == "hidden";
-					file = ReadFile(entry, parentPath, out fileFound);
+					file = ReadFile(reader, entry, parentPath, out fileFound);
 					break;
 				case "folder":
-					folder = ReadFolder(entry, parentPath, out folderFound);
+					folder = ReadFolder(reader, entry, parentPath, out folderFound);
 					parentPath += $"/{folder}";
 					break;
 				case "children":
-					children = ReadChildren(entry, parentPath);
+					children = ReadChildren(reader, entry, parentPath);
 					break;
 			}
 		}
@@ -326,82 +178,15 @@ public record ConfigurationFile : DocumentationFile
 		return null;
 	}
 
-	private Dictionary<string, string?> ReadDictionaryNullValue(KeyValuePair<YamlNode, YamlNode> entry)
-	{
-		var dictionary = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-		if (entry.Value is YamlScalarNode shortSyntax && shortSyntax.Value is not null)
-		{
-			if (shortSyntax.Value is "!")
-				return new Dictionary<string, string?> { { "!", "!" } };
-			EmitError($"'{shortSyntax.Value}' is not a valid redirect anchor value", entry.Key);
-			return [];
-		}
-		if (entry.Value is not YamlMappingNode mapping)
-		{
-			if (entry.Key is YamlScalarNode scalarKey)
-			{
-				var key = scalarKey.Value;
-				EmitWarning($"'{key}' is not a dictionary");
-			}
-			else
-				EmitWarning($"'{entry.Key}' is not a dictionary");
-
-			return dictionary;
-		}
-
-		foreach (var entryValue in mapping.Children)
-		{
-			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
-				continue;
-			var key = scalar.Value;
-			var value = ReadString(entryValue);
-			if (value is "null" or "")
-				dictionary.Add(key, null);
-			else if (value is not null)
-				dictionary.Add(key, value);
-		}
-
-		return dictionary;
-	}
-
-	private Dictionary<string, string> ReadDictionary(KeyValuePair<YamlNode, YamlNode> entry)
-	{
-		var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-		if (entry.Value is not YamlMappingNode mapping)
-		{
-			if (entry.Key is YamlScalarNode scalarKey)
-			{
-				var key = scalarKey.Value;
-				EmitWarning($"'{key}' is not a dictionary");
-			}
-			else
-				EmitWarning($"'{entry.Key}' is not a dictionary");
-
-			return dictionary;
-		}
-
-		foreach (var entryValue in mapping.Children)
-		{
-			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
-				continue;
-			var key = scalar.Value;
-			var value = ReadString(entryValue);
-			if (value is not null)
-				dictionary.Add(key, value);
-		}
-
-		return dictionary;
-	}
-
-	private string? ReadFolder(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private string? ReadFolder(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
 	{
 		found = false;
-		var folder = ReadString(entry);
+		var folder = reader.ReadString(entry);
 		if (folder is not null)
 		{
 			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), folder);
 			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
-				EmitError($"Directory '{path}' does not exist", entry.Key);
+				reader.EmitError($"Directory '{path}' does not exist", entry.Key);
 			else
 				found = true;
 		}
@@ -409,16 +194,16 @@ public record ConfigurationFile : DocumentationFile
 		return folder;
 	}
 
-	private string? ReadFile(KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private string? ReadFile(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
 	{
 		found = false;
-		var file = ReadString(entry);
+		var file = reader.ReadString(entry);
 		if (file is null)
 			return null;
 
 		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), file);
 		if (!_context.ReadFileSystem.FileInfo.New(path).Exists)
-			EmitError($"File '{path}' does not exist", entry.Key);
+			reader.EmitError($"File '{path}' does not exist", entry.Key);
 		else
 			found = true;
 		_ = Files.Add((parentPath + "/" + file).TrimStart('/'));
@@ -426,13 +211,13 @@ public record ConfigurationFile : DocumentationFile
 		return file;
 	}
 
-	private ConfigurationFile? ReadNestedToc(KeyValuePair<YamlNode, YamlNode> entry, out bool found)
+	private ConfigurationFile? ReadNestedToc(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, out bool found)
 	{
 		found = false;
-		var tocPath = ReadString(entry);
+		var tocPath = reader.ReadString(entry);
 		if (tocPath is null)
 		{
-			EmitError($"Empty toc: reference", entry.Key);
+			reader.EmitError($"Empty toc: reference", entry.Key);
 			return null;
 		}
 
@@ -449,82 +234,11 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		if (!source.Exists)
-			EmitError(errorMessage, entry.Key);
+			reader.EmitError(errorMessage, entry.Key);
 		else
 			found = true;
 
 		var nestedConfiguration = new ConfigurationFile(source, _rootPath, _context, _depth + 1, tocPath);
 		return nestedConfiguration;
-	}
-
-
-	private string? ReadString(KeyValuePair<YamlNode, YamlNode> entry)
-	{
-		if (entry.Value is YamlScalarNode scalar)
-			return scalar.Value;
-
-		if (entry.Key is YamlScalarNode scalarKey)
-		{
-			var key = scalarKey.Value;
-			EmitError($"'{key}' is not a string", entry.Key);
-			return null;
-		}
-
-		EmitError($"'{entry.Key}' is not a string", entry.Key);
-		return null;
-	}
-
-	private static string[] ReadStringArray(KeyValuePair<YamlNode, YamlNode> entry)
-	{
-		var values = new List<string>();
-		if (entry.Value is not YamlSequenceNode sequence)
-			return [.. values];
-
-		foreach (var entryValue in sequence.Children.OfType<YamlScalarNode>())
-		{
-			if (entryValue.Value is not null)
-				values.Add(entryValue.Value);
-		}
-
-		return [.. values];
-	}
-
-	private void EmitError(string message, YamlNode? node) =>
-		EmitError(message, node?.Start, node?.End, (node as YamlScalarNode)?.Value?.Length);
-
-	private void EmitWarning(string message, YamlNode? node) =>
-		EmitWarning(message, node?.Start, node?.End, (node as YamlScalarNode)?.Value?.Length);
-
-	private void EmitError(string message, Exception e) =>
-		_context.Collector.EmitError(_sourceFile.FullName, message, e);
-
-	private void EmitError(string message, Mark? start = null, Mark? end = null, int? length = null)
-	{
-		length ??= start.HasValue && end.HasValue ? (int)start.Value.Column - (int)end.Value.Column : null;
-		var d = new Diagnostic
-		{
-			Severity = Severity.Error,
-			File = _sourceFile.FullName,
-			Message = message,
-			Line = start.HasValue ? (int)start.Value.Line : null,
-			Column = start.HasValue ? (int)start.Value.Column : null,
-			Length = length
-		};
-		_context.Collector.Channel.Write(d);
-	}
-
-	private void EmitWarning(string message, Mark? start = null, Mark? end = null, int? length = null)
-	{
-		length ??= start.HasValue && end.HasValue ? (int)start.Value.Column - (int)end.Value.Column : null;
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = _sourceFile.FullName,
-			Message = message,
-			Line = start.HasValue ? (int)start.Value.Line : null,
-			Column = start.HasValue ? (int)start.Value.Column : null,
-			Length = length
-		};
-		_context.Collector.Channel.Write(d);
 	}
 }

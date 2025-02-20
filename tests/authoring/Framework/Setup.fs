@@ -44,8 +44,29 @@ type Setup =
         yaml.WriteLine("  - docs-content");
         yaml.WriteLine("  - elasticsearch");
         yaml.WriteLine("  - kibana")
+        yaml.WriteLine("toc:");
+        let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
+        markdownFiles
+        |> Seq.iter(fun markdownFile ->
+            let relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
+            yaml.WriteLine($" - file: {relative}");
+        )
+
+        match globalVariables with
+        | Some vars ->
+            yaml.WriteLine($"subs:")
+            vars |> Seq.iter(fun kv ->
+                yaml.WriteLine($"  {kv.Key}: {kv.Value}");
+            )
+        | _ -> ()
+
+        let name = if Random().Next(0, 10) % 2 = 0 then "_docset.yml" else "docset.yml"
+        fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()))
+
+        let redirectsName = if name.StartsWith '_' then "_redirects.yml" else "redirects.yml"
+        let redirectYaml = new StringWriter();
         // language=yaml
-        yaml.WriteLine("""redirects:
+        redirectYaml.WriteLine("""redirects:
   'testing/redirects/4th-page.md': 'testing/redirects/5th-page.md'
   'testing/redirects/9th-page.md': '!testing/redirects/5th-page.md'
   'testing/redirects/6th-page.md':
@@ -70,24 +91,7 @@ type Setup =
     anchors:
       'removed-anchor':
         """)
-        yaml.WriteLine("toc:");
-        let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
-        markdownFiles
-        |> Seq.iter(fun markdownFile ->
-            let relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
-            yaml.WriteLine($" - file: {relative}");
-        )
-
-        match globalVariables with
-        | Some vars ->
-            yaml.WriteLine($"subs:")
-            vars |> Seq.iter(fun kv ->
-                yaml.WriteLine($"  {kv.Key}: {kv.Value}");
-            )
-        | _ -> ()
-
-        let name = if Random().Next(0, 10) % 2 = 0 then "_docset.yml" else "docset.yml"
-        fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()));
+        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml.ToString()))
 
     static member Generator (files: TestFile seq) : Task<GeneratorResults> =
 
