@@ -130,11 +130,11 @@ jobs:
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: steps.deployment.outputs.result
+        if: ${{ !cancelled() && steps.deployment.outputs.result }}
 
       - name: Upload to S3
         id: s3-upload
-        if: steps.deployment.outputs.result
+        if: ${{ !cancelled() && steps.deployment.outputs.result }}
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
           aws cloudfront create-invalidation \
@@ -156,7 +156,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ job.status == 'success' && 'success' || 'failure' }}",
+              state: "${{ steps.s3-upload.outcome == 'success' && 'success' || 'failure' }}",
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })

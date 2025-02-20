@@ -18,7 +18,15 @@ public static class DocumentationTooling
 		var defaultLogLevel = LogLevel.Information;
 		ProcessCommandLineArguments(ref args, ref defaultLogLevel);
 
-		var services = new ServiceCollection()
+		var services = new ServiceCollection();
+		CreateServiceCollection(services, defaultLogLevel);
+		configure?.Invoke(services);
+		return services.BuildServiceProvider();
+	}
+
+	public static void CreateServiceCollection(IServiceCollection services, LogLevel defaultLogLevel)
+	{
+		_ = services
 			.AddGitHubActionsCore();
 		services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
 		_ = services.AddLogging(x => x
@@ -27,9 +35,6 @@ public static class DocumentationTooling
 			.AddConsole(c => c.FormatterName = "condensed")
 		);
 
-		configure?.Invoke(services);
-
-		return services.BuildServiceProvider();
 	}
 
 	private static void ProcessCommandLineArguments(ref string[] args, ref LogLevel defaultLogLevel)

@@ -3,30 +3,13 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using RazorSlices;
 
 namespace Elastic.Markdown.Slices;
 
-public class HtmlWriter
+public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
 {
-	private readonly IFileSystem _writeFileSystem;
-
-	public HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
-	{
-		_writeFileSystem = writeFileSystem;
-		var services = new ServiceCollection();
-		_ = services.AddLogging();
-
-		ServiceProvider = services.BuildServiceProvider();
-		LoggerFactory = ServiceProvider.GetRequiredService<ILoggerFactory>();
-		DocumentationSet = documentationSet;
-	}
-
-	private DocumentationSet DocumentationSet { get; }
-	public ILoggerFactory LoggerFactory { get; }
-	public ServiceProvider ServiceProvider { get; }
+	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
 	private async Task<string> RenderNavigation(MarkdownFile markdown, Cancel ctx = default)
 	{
@@ -79,7 +62,6 @@ public class HtmlWriter
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		var rendered = await RenderLayout(markdown, ctx);
 		string path;
 		if (outputFile.Name == "index.md")
 			path = Path.ChangeExtension(outputFile.FullName, ".html");
@@ -89,15 +71,16 @@ public class HtmlWriter
 				? null
 				: Path.Combine(outputFile.Directory.FullName, Path.GetFileNameWithoutExtension(outputFile.Name));
 
-			if (dir is not null && !_writeFileSystem.Directory.Exists(dir))
-				_ = _writeFileSystem.Directory.CreateDirectory(dir);
+			if (dir is not null && !writeFileSystem.Directory.Exists(dir))
+				_ = writeFileSystem.Directory.CreateDirectory(dir);
 
 			path = dir is null
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
 				: Path.Combine(dir, "index.html");
 		}
 
-		await _writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+		var rendered = await RenderLayout(markdown, ctx);
+		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
 	}
 
 }
