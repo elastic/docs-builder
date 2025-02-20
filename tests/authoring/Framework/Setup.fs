@@ -51,6 +51,15 @@ type Setup =
             let relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
             yaml.WriteLine($" - file: {relative}");
         )
+        let redirectFiles = ["5th-page"; "second-page"; "third-page"; "first-page"]
+        redirectFiles
+        |> Seq.iter(fun file ->
+            let relative = $"testing/redirects/{file}.md"
+            yaml.WriteLine($" - file: {relative}")
+            let fullPath = Path.Combine(root.FullName, relative)
+            let contents = File.ReadAllText fullPath
+            fileSystem.AddFile(fullPath, new MockFileData(contents))
+        )
 
         match globalVariables with
         | Some vars ->
@@ -64,34 +73,8 @@ type Setup =
         fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()))
 
         let redirectsName = if name.StartsWith '_' then "_redirects.yml" else "redirects.yml"
-        let redirectYaml = new StringWriter();
-        // language=yaml
-        redirectYaml.WriteLine("""redirects:
-  'testing/redirects/4th-page.md': 'testing/redirects/5th-page.md'
-  'testing/redirects/9th-page.md': '!testing/redirects/5th-page.md'
-  'testing/redirects/6th-page.md':
-  'testing/redirects/7th-page.md':
-    to: 'testing/redirects/5th-page.md'
-    anchors: '!'
-  'testing/redirects/first-page-old.md':
-    to: 'testing/redirects/second-page.md'
-    anchors:
-      'old-anchor': 'active-anchor'
-      'removed-anchor':
-  'testing/redirects/second-page-old.md':
-    many:
-      - to: "testing/redirects/second-page.md"
-        anchors:
-          "aa": "zz"
-          "removed-anchor":
-      - to: "testing/redirects/third-page.md"
-        anchors:
-          "bb": "yy"
-  'testing/redirects/third-page.md':
-    anchors:
-      'removed-anchor':
-        """)
-        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml.ToString()))
+        let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
+        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml))
 
     static member Generator (files: TestFile seq) : Task<GeneratorResults> =
 

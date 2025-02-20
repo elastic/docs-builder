@@ -84,16 +84,14 @@ type ``Scenario 1 B: Moving a file`` () =
 type ``Scenario 2: Splitting a page into multiple smaller pages`` () =
     static let markdown = Setup.Markdown """
 [Scenario 2](docs-content://testing/redirects/second-page-old.md#aa)
-[Scenario 2](docs-content://testing/redirects/second-page-old.md#bb)
+[Scenario 2](docs-content://testing/redirects/second-page-old.md#yy)
 """
 
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page#zz">
-                Scenario 2</a><br/>
-            <a href="{urlPrefix}/testing/redirects/third-page#yy">
-                Scenario 2</a></p>
+            <p><a href="{urlPrefix}/testing/redirects/second-page#zz">Scenario 2</a><br/>
+            <a href="{urlPrefix}/testing/redirects/third-page#bb">Scenario 2</a></p>
         """
 
 

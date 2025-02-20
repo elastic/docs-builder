@@ -50,7 +50,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
     "testing/redirects/second-page.md": {
       "anchors": [ "active-anchor", "zz" ]
     },
-    "testing/redirects/third-page.md": { "anchors": [ "yy" ] },
+    "testing/redirects/third-page.md": { "anchors": [ "bb" ] },
     "testing/redirects/5th-page.md": { "anchors": [ "yy" ] }
   }
 }
