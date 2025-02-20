@@ -95,19 +95,6 @@ if (!iconCopy) {
 /**
  * Set up copy/paste for code blocks
  */
-
-const runWhenDOMLoaded = cb => {
-  if (document.readyState != 'loading') {
-    cb()
-  } else if (document.addEventListener) {
-    document.addEventListener('DOMContentLoaded', cb)
-  } else {
-    document.attachEvent('onreadystatechange', function() {
-      if (document.readyState == 'complete') cb()
-    })
-  }
-}
-
 const codeCellId = index => `codecell${index}`
 
 // Clears selected text since ClipboardJS will select the text when copying
@@ -145,9 +132,14 @@ const addCopyButtonToCodeCells = () => {
   // happens because we load ClipboardJS asynchronously.
 	
   // Add copybuttons to all of our code cells
-  const COPYBUTTON_SELECTOR = 'div.highlight pre';
+  const COPYBUTTON_SELECTOR = '.markdown-content div.highlight pre';
   const codeCells = document.querySelectorAll(COPYBUTTON_SELECTOR)
   codeCells.forEach((codeCell, index) => {
+	  
+	if (codeCell.id != "") {
+	  return
+	}
+	  
     const id = codeCellId(index)
     codeCell.setAttribute('id', id)
 
@@ -256,6 +248,5 @@ var copyTargetText = (trigger) => {
 }
 
 export function initCopyButton() {
-	console.log("initCopyButton");
-	runWhenDOMLoaded(addCopyButtonToCodeCells)
+	addCopyButtonToCodeCells()
 }

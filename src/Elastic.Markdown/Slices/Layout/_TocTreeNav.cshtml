@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @foreach (var item in Model.SubTree.NavigationItems)
@@ -9,7 +10,11 @@
 		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li">
 			<div class="flex">
 				<a class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
-					id="page-@id" href="@f.Url">@f.NavigationTitle</a>
+				   id="page-@id"
+				   href="@f.Url"
+				>
+					@f.NavigationTitle
+				</a>
 			</div>
 		</li>
 	}
@@ -19,7 +24,7 @@
 		const int initialExpandLevel = 1;
 		var shouldInitiallyExpand = g.Depth <= initialExpandLevel;
 		<li class="flex flex-wrap group-navigation @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
-			<label for="@id" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
+			<label for="@id" class="peer flex group/label overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
@@ -45,7 +50,7 @@
 			</label>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto peer-has-checked:my-1">
+				<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						Level = g.Depth,

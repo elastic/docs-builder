@@ -126,7 +126,7 @@ function setupSmoothScrolling(elements: TocElements) {
 	});
 }
 
-export function initTocNav() {
+export function initTocNav(): () => void {
 	const elements = initializeTocElements();
 	if (elements.progressIndicator != null) {
 		elements.progressIndicator.style.height = '0';
@@ -137,4 +137,8 @@ export function initTocNav() {
 	window.addEventListener('scroll', update);
 	window.addEventListener('resize', update);
 	setupSmoothScrolling(elements);
+	return () => {
+		window.removeEventListener('scroll', update);
+		window.removeEventListener('resize', update);
+	}
 }

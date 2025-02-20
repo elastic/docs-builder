@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/*@import "unpoly/unpoly.css";*/
 @import "./fonts.css";
 @import "./theme.css";
 @import "./markdown/typography.css";
@@ -85,7 +86,7 @@
 	}
 	
 	.content-container {
-		@apply w-full max-w-[80ch] lg:w-[80ch];
+		@apply w-full max-w-[80ch];
 	}
 
 	.applies {
@@ -119,9 +120,9 @@
 
 :root {
 	--outline-size: max(2px, 0.08em);
-	--outline-style: auto;
+	--outline-style: solid;
 	--outline-color: var(--color-blue-elastic);
-	--outline-offset: 5;
+	--outline-offset: 10;
 }
 
 :is(a, button, input, textarea, summary):focus {
@@ -136,4 +137,29 @@
 
 :is(a, button, input, textarea, summary):focus:not(:focus-visible) {
 	outline: none;
+}
+
+up-progress-bar {
+	@apply bg-pink-90!;
+}
+
+.left-right {
+	transform-origin: 0% 50%;
+}
+@keyframes progress {
+	0% {
+		transform:  translateX(0) scaleX(0);
+	}
+	40% {
+		transform:  translateX(0) scaleX(0.4);
+	}
+	100% {
+		transform:  translateX(100%) scaleX(0.5);
+	}
+}
+
+#pages-nav {
+	.up-current {
+		@apply text-blue-elastic!;
+	}
 }
