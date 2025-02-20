@@ -41,6 +41,9 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 
 		var redirect2 = Configuration.Redirects!["testing/redirects/second-page-old.md"];
 		redirect2.Many.Should().NotBeNullOrEmpty().And.HaveCount(2);
+		redirect2.Many![0].To.Should().Be("testing/redirects/second-page.md");
+		redirect2.Many![1].To.Should().Be("testing/redirects/third-page.md");
+		redirect2.To.Should().BeNullOrEmpty();
 
 		var redirect3 = Configuration.Redirects!["testing/redirects/third-page.md"];
 		redirect3.To.Should().Be("testing/redirects/third-page.md");

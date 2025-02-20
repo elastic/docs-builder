@@ -98,6 +98,12 @@ toc:
         children:
           - file: first-page.md
           - file: second-page.md
+      - folder: redirects
+        children:
+          - file: first-page.md
+          - file: second-page.md
+          - file: third-page.md
+          - file: 5th-page.md
       - folder: deeply-nested
         children:
           - file: index.md

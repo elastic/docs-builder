@@ -8,6 +8,12 @@ If you [move files around](move.md) or simply need to delete a few pages you mig
 Redirects allow you to force other documentation sets to resolve old links to their new location.
 This allows you to publish your changes and work to update the other documentation sets.
 
+## File location.
+
+The file should be located next to your `docset.yml` file
+
+* `redirects.yml` if you use `docset.yml`
+* `_redirects.yml` if you use `_docset.yml`
 
 ## Syntax
 

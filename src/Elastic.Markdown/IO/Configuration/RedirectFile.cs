@@ -110,10 +110,11 @@ public record RedirectFile
 		if (redirect.To is null && redirect.Anchors is null && redirect.Many is null)
 			return null;
 
-		if (redirect.To is null)
+		if (redirect.To is null && redirect.Many is null or { Length: 0 })
 			return redirect with { To = file };
 
-		return string.IsNullOrEmpty(redirect.To) ? null : redirect;
+		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 }
+			? null : redirect;
 	}
 
 	private static LinkSingleRedirect[]? ReadManyRedirects(YamlStreamReader reader, string file, YamlNode node)
@@ -143,10 +144,10 @@ public record RedirectFile
 							redirect = redirect with { To = to };
 						continue;
 				}
-
-				if (redirect.To is null && redirect.Anchors is not null && redirect.Anchors.Count >= 0)
-					redirect = redirect with { To = file };
 			}
+
+			if (redirect.To is null && redirect.Anchors is not null && redirect.Anchors.Count >= 0)
+				redirect = redirect with { To = file };
 			redirects.Add(redirect);
 		}
 
@@ -159,7 +160,4 @@ public record RedirectFile
 				.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)
 		];
 	}
-
-
-
 }

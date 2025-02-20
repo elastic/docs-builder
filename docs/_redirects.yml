@@ -13,8 +13,6 @@ redirects:
           "aa": "zz"
           "removed-anchor":
       - to: "testing/redirects/third-page.md"
-        anchors:
-          "bb": "yy"
   'testing/redirects/third-page.md':
     anchors:
       'removed-anchor':

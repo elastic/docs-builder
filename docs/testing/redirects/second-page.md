@@ -4,7 +4,7 @@
 2 is redirecting to 1
 
 
-## A different anchor
+## A different anchor [active-anchor]
 
 ## Anchor ZZ [zz]
 
