@@ -145,9 +145,13 @@ const addCopyButtonToCodeCells = () => {
   // happens because we load ClipboardJS asynchronously.
 	
   // Add copybuttons to all of our code cells
-  const COPYBUTTON_SELECTOR = 'div.highlight pre';
+  const COPYBUTTON_SELECTOR = '.markdown-content div.highlight pre';
   const codeCells = document.querySelectorAll(COPYBUTTON_SELECTOR)
   codeCells.forEach((codeCell, index) => {
+	if (codeCell.id) {
+	  return
+	}
+  
     const id = codeCellId(index)
     codeCell.setAttribute('id', id)
 
@@ -256,5 +260,5 @@ var copyTargetText = (trigger) => {
 }
 
 export function initCopyButton() {
-	runWhenDOMLoaded(addCopyButtonToCodeCells)
+	addCopyButtonToCodeCells();
 }
