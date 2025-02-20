@@ -36,6 +36,7 @@ function keepNavState(nav: HTMLElement): () => void {
 				const link = input.nextElementSibling as HTMLAnchorElement;
 				link.classList.add('font-semibold');
 			}
+		}
 	}
 
 	// expand items previously selected
