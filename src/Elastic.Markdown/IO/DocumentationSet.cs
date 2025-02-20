@@ -39,10 +39,10 @@ public class DocumentationSet
 		SourcePath = context.SourcePath;
 		OutputPath = context.OutputPath;
 		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
-		Configuration = new ConfigurationFile(context.ConfigurationPath, SourcePath, context);
-		LinkResolver = linkResolver ?? new CrossLinkResolver(Configuration, logger);
+		LinkResolver = linkResolver ?? new CrossLinkResolver(context.Configuration, logger);
+		Configuration = context.Configuration;
 
-		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration, LinkResolver);
+		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, context.Configuration, LinkResolver);
 
 		Name = SourcePath.FullName;
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));

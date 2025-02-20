@@ -22,10 +22,7 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
-		var context = new BuildContext(fileSystem)
-		{
-			Collector = new DiagnosticsCollector([])
-		};
+		var context = new BuildContext(fileSystem);
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);

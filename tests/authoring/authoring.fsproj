@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="Inline\InlineLinks.fs" />
     <Compile Include="Inline\CrossLinks.fs" />
+    <Compile Include="Inline\CrossLinksRedirects.fs" />
     <Compile Include="Container\DefinitionLists.fs"/>
     <Compile Include="Generator\LinkReferenceFile.fs"/>
   </ItemGroup>

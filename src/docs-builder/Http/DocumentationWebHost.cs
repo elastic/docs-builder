@@ -37,10 +37,8 @@ public class DocumentationWebHost
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information)
 			.AddSimpleConsole(o => o.SingleLine = true);
 
-		_context = new BuildContext(fileSystem, fileSystem, path, null)
-		{
-			Collector = new LiveModeDiagnosticsCollector(logger)
-		};
+		var collector = new LiveModeDiagnosticsCollector(logger);
+		_context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{

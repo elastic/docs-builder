@@ -5,3 +5,11 @@
 
 
 ## A different anchor
+
+## Anchor ZZ [zz]
+
+Some content
+
+## Anchor YY [yy]
+
+Some content

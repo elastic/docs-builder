@@ -67,10 +67,7 @@ $"""
 		FileSystem.GenerateDocSetYaml(root);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(FileSystem)
-		{
-			Collector = Collector
-		};
+		var context = new BuildContext(Collector, FileSystem);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();

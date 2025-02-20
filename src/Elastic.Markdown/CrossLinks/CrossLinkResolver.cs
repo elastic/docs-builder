@@ -169,28 +169,76 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 	)
 	{
 		lookupFragment = null;
+
+		if (linkReference.Redirects is not null && linkReference.Redirects.TryGetValue(lookupPath, out var redirect))
+		{
+			var targets = (redirect.Many ?? [])
+				.Select(r => r)
+				.Concat([redirect])
+				.Where(s => !string.IsNullOrEmpty(s.To))
+				.ToArray();
+
+			return ResolveLinkRedirect(targets, errorEmitter, linkReference, crossLinkUri, ref lookupPath, out link, ref lookupFragment);
+		}
 		if (linkReference.Links.TryGetValue(lookupPath, out link))
 		{
 			lookupFragment = crossLinkUri.Fragment;
 			return true;
 		}
-		if (linkReference.Redirects is not null && linkReference.Redirects.TryGetValue(lookupPath, out var redirect))
-		{
-			if (linkReference.Links.TryGetValue(redirect.To, out link))
-			{
-				lookupPath = redirect.To;
-				lookupFragment =
-					redirect.Anchors is not null
-						&& redirect.Anchors.TryGetValue(crossLinkUri.Fragment.TrimStart('#'), out var fragment)
-					? fragment
-					: crossLinkUri.Fragment;
-				return true;
-			}
-			errorEmitter($"'{lookupPath}' is set a redirect but the redirect '{redirect.To}' does not exists.");
-			return false;
-		}
 
 		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link repository.");
+		return false;
+	}
+
+	private static bool ResolveLinkRedirect(
+		LinkSingleRedirect[] redirects,
+		Action<string> errorEmitter,
+		LinkReference linkReference,
+		Uri crossLinkUri,
+		ref string lookupPath, out LinkMetadata? link, ref string? lookupFragment)
+	{
+		var fragment = crossLinkUri.Fragment.TrimStart('#');
+		link = null;
+		foreach (var redirect in redirects)
+		{
+			if (string.IsNullOrEmpty(redirect.To))
+				continue;
+			if (!linkReference.Links.TryGetValue(redirect.To, out link))
+				continue;
+
+			if (string.IsNullOrEmpty(fragment))
+			{
+				lookupPath = redirect.To;
+				return true;
+			}
+
+			if (redirect.Anchors is null || redirect.Anchors.Count == 0)
+			{
+				if (redirects.Length > 1)
+					continue;
+				lookupPath = redirect.To;
+				lookupFragment = crossLinkUri.Fragment;
+				return true;
+			}
+
+			if (redirect.Anchors.TryGetValue("!", out _))
+			{
+				lookupPath = redirect.To;
+				lookupFragment = null;
+				return true;
+			}
+
+			if (!redirect.Anchors.TryGetValue(crossLinkUri.Fragment.TrimStart('#'), out var newFragment))
+				continue;
+
+			lookupPath = redirect.To;
+			lookupFragment = newFragment;
+			return true;
+		}
+
+		var targets = string.Join(", ", redirects.Select(r => r.To));
+		var failedLookup = lookupFragment is null ? lookupPath : $"{lookupPath}#{lookupFragment.TrimStart('#')}";
+		errorEmitter($"'{failedLookup}' is set a redirect but none of redirect '{targets}' match or exist in links.json.");
 		return false;
 	}
 

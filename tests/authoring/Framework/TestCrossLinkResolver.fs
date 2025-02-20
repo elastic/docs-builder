@@ -9,9 +9,10 @@ open System.Collections.Generic
 open System.Runtime.InteropServices
 open System.Threading.Tasks
 open Elastic.Markdown.CrossLinks
+open Elastic.Markdown.IO.Configuration
 open Elastic.Markdown.IO.State
 
-type TestCrossLinkResolver () =
+type TestCrossLinkResolver (config: ConfigurationFile) =
 
     let references = Dictionary<string, LinkReference>()
     let declared = HashSet<string>()
@@ -21,8 +22,9 @@ type TestCrossLinkResolver () =
 
     interface ICrossLinkResolver with
         member this.FetchLinks() =
+            let redirects = LinkReference.SerializeRedirects config.Redirects
             // language=json
-            let json = """{
+            let json = $$"""{
   "origin": {
     "branch": "main",
     "remote": " https://github.com/elastic/docs-conten",
@@ -30,17 +32,7 @@ type TestCrossLinkResolver () =
   },
   "url_path_prefix": "/elastic/docs-content/tree/main",
   "cross_links": [],
-  "redirects" : {
-    "testing/redirects/first-page-old.md": {
-      "to": "testing/redirects/second-page.md",
-      "anchors": {
-        "old-anchor" : "active-anchor"
-      }
-    },
-    "testing/redirects/second-page-old.md": {
-      "to": "testing/redirects/second-page.md"
-    }
-  },
+  "redirects" : {{redirects}},
   "links": {
     "index.md": {},
     "get-started/index.md": {
@@ -56,8 +48,10 @@ type TestCrossLinkResolver () =
       "anchors": [ "current-anchor", "another-anchor" ]
     },
     "testing/redirects/second-page.md": {
-      "anchors": [ "active-anchor" ]
-    }
+      "anchors": [ "active-anchor", "zz" ]
+    },
+    "testing/redirects/third-page.md": { "anchors": [ "yy" ] },
+    "testing/redirects/5th-page.md": { "anchors": [ "yy" ] }
   }
 }
 """

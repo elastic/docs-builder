@@ -108,9 +108,8 @@ $"""
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(FileSystem)
+		var context = new BuildContext(Collector, FileSystem)
 		{
-			Collector = Collector,
 			UrlPathPrefix = "/docs"
 		};
 		var linkResolver = new TestCrossLinkResolver();

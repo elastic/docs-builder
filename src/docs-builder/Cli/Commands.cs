@@ -73,11 +73,11 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		var context = new BuildContext(fileSystem, fileSystem, path, output)
+		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		var context = new BuildContext(collector, fileSystem, fileSystem, path, output)
 		{
 			UrlPathPrefix = pathPrefix,
 			Force = force ?? false,
-			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService),
 			AllowIndexing = allowIndexing != null
 		};
 		var set = new DocumentationSet(context, logger);
@@ -140,10 +140,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	{
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		var context = new BuildContext(fileSystem, fileSystem, path, null)
-		{
-			Collector = new ConsoleDiagnosticsCollector(logger, null),
-		};
+		var collector = new ConsoleDiagnosticsCollector(logger, null);
+		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		var set = new DocumentationSet(context, logger);
 
 		var moveCommand = new Move(fileSystem, fileSystem, set, logger);

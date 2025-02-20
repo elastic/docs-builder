@@ -124,10 +124,23 @@ public record ConfigurationFile : DocumentationFile
 			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
 				continue;
 			var key = scalar.Value;
+			if (entryValue.Value is YamlScalarNode)
+			{
+				var to = ReadString(entryValue);
+				dictionary.Add(key,
+					!string.IsNullOrEmpty(to)
+						? to.StartsWith('!')
+							? new LinkRedirect { To = to.TrimStart('!'), Anchors = LinkRedirect.CatchAllAnchors }
+							: new LinkRedirect { To = to }
+						: new LinkRedirect { To = "index.md", Anchors = LinkRedirect.CatchAllAnchors }
+				);
+				continue;
+			}
+
 			if (!ReadObjectDictionary(entryValue, out var valueMapping))
 				continue;
 
-			var linkRedirect = ReadLinkRedirect(valueMapping);
+			var linkRedirect = ReadLinkRedirect(key, valueMapping);
 			if (linkRedirect is not null)
 				dictionary.Add(key, linkRedirect);
 		}
@@ -135,7 +148,7 @@ public record ConfigurationFile : DocumentationFile
 		return dictionary;
 	}
 
-	private LinkRedirect? ReadLinkRedirect(YamlMappingNode mapping)
+	private LinkRedirect? ReadLinkRedirect(string file, YamlMappingNode mapping)
 	{
 		var redirect = new LinkRedirect();
 		foreach (var entryValue in mapping.Children)
@@ -146,17 +159,73 @@ public record ConfigurationFile : DocumentationFile
 			switch (key)
 			{
 				case "anchors":
-					redirect = redirect with { Anchors = ReadDictionary(entryValue) };
+					redirect = redirect with { Anchors = ReadDictionaryNullValue(entryValue) };
 					continue;
 				case "to":
 					var to = ReadString(entryValue);
 					if (to is not null)
 						redirect = redirect with { To = to };
 					continue;
+				case "many":
+					var many = ReadManyRedirects(file, entryValue.Value);
+					redirect = redirect with { Many = many };
+					continue;
 			}
 		}
+
+		if (redirect.To is null && redirect.Anchors is null && redirect.Many is null)
+			return null;
+
+		if (redirect.To is null)
+			return redirect with { To = file };
+
 		return string.IsNullOrEmpty(redirect.To) ? null : redirect;
 	}
+
+	private LinkSingleRedirect[]? ReadManyRedirects(string file, YamlNode node)
+	{
+		if (node is not YamlSequenceNode sequence)
+			return null;
+
+		var redirects = new List<LinkSingleRedirect>();
+		foreach (var entryValue in sequence.Children)
+		{
+			if (entryValue is not YamlMappingNode mapping)
+				continue;
+			var redirect = new LinkRedirect();
+			foreach (var keyValue in mapping.Children)
+			{
+				if (keyValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+					continue;
+				var key = scalar.Value;
+				switch (key)
+				{
+					case "anchors":
+						redirect = redirect with { Anchors = ReadDictionaryNullValue(keyValue) };
+						continue;
+					case "to":
+						var to = ReadString(keyValue);
+						if (to is not null)
+							redirect = redirect with { To = to };
+						continue;
+				}
+
+				if (redirect.To is null && redirect.Anchors is not null && redirect.Anchors.Count >= 0)
+					redirect = redirect with { To = file };
+			}
+			redirects.Add(redirect);
+		}
+
+		if (redirects.Count == 0)
+			return null;
+
+		return
+		[
+			..redirects
+				.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)
+		];
+	}
+
 
 	private bool ReadObjectDictionary(KeyValuePair<YamlNode, YamlNode> entry, [NotNullWhen(true)] out YamlMappingNode? mapping)
 	{
@@ -255,6 +324,44 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		return null;
+	}
+
+	private Dictionary<string, string?> ReadDictionaryNullValue(KeyValuePair<YamlNode, YamlNode> entry)
+	{
+		var dictionary = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+		if (entry.Value is YamlScalarNode shortSyntax && shortSyntax.Value is not null)
+		{
+			if (shortSyntax.Value is "!")
+				return new Dictionary<string, string?> { { "!", "!" } };
+			EmitError($"'{shortSyntax.Value}' is not a valid redirect anchor value", entry.Key);
+			return [];
+		}
+		if (entry.Value is not YamlMappingNode mapping)
+		{
+			if (entry.Key is YamlScalarNode scalarKey)
+			{
+				var key = scalarKey.Value;
+				EmitWarning($"'{key}' is not a dictionary");
+			}
+			else
+				EmitWarning($"'{entry.Key}' is not a dictionary");
+
+			return dictionary;
+		}
+
+		foreach (var entryValue in mapping.Children)
+		{
+			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+				continue;
+			var key = scalar.Value;
+			var value = ReadString(entryValue);
+			if (value is "null" or "")
+				dictionary.Add(key, null);
+			else if (value is not null)
+				dictionary.Add(key, value);
+		}
+
+		return dictionary;
 	}
 
 	private Dictionary<string, string> ReadDictionary(KeyValuePair<YamlNode, YamlNode> entry)

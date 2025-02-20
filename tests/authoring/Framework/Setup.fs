@@ -43,7 +43,33 @@ type Setup =
         yaml.WriteLine("cross_links:");
         yaml.WriteLine("  - docs-content");
         yaml.WriteLine("  - elasticsearch");
-        yaml.WriteLine("  - kibana");
+        yaml.WriteLine("  - kibana")
+        // language=yaml
+        yaml.WriteLine("""redirects:
+  'testing/redirects/4th-page.md': 'testing/redirects/5th-page.md'
+  'testing/redirects/9th-page.md': '!testing/redirects/5th-page.md'
+  'testing/redirects/6th-page.md':
+  'testing/redirects/7th-page.md':
+    to: 'testing/redirects/5th-page.md'
+    anchors: '!'
+  'testing/redirects/first-page-old.md':
+    to: 'testing/redirects/second-page.md'
+    anchors:
+      'old-anchor': 'active-anchor'
+      'removed-anchor':
+  'testing/redirects/second-page-old.md':
+    many:
+      - to: "testing/redirects/second-page.md"
+        anchors:
+          "aa": "zz"
+          "removed-anchor":
+      - to: "testing/redirects/third-page.md"
+        anchors:
+          "bb": "yy"
+  'testing/redirects/third-page.md':
+    anchors:
+      'removed-anchor':
+        """)
         yaml.WriteLine("toc:");
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
@@ -51,6 +77,7 @@ type Setup =
             let relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
             yaml.WriteLine($" - file: {relative}");
         )
+
         match globalVariables with
         | Some vars ->
             yaml.WriteLine($"subs:")
@@ -78,9 +105,9 @@ type Setup =
         GenerateDocSetYaml (fileSystem, None)
 
         let collector = TestDiagnosticsCollector();
-        let context = BuildContext(fileSystem, Collector=collector)
+        let context = BuildContext(collector, fileSystem)
         let logger = new TestLoggerFactory()
-        let linkResolver = TestCrossLinkResolver()
+        let linkResolver = TestCrossLinkResolver(context.Configuration)
         let set = DocumentationSet(context, logger, linkResolver);
         let generator = DocumentationGenerator(set, logger)
 
