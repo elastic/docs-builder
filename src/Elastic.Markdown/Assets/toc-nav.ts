@@ -110,20 +110,29 @@ function updateIndicator(elements: TocElements) {
 	}
 }
 
-function setupSmoothScrolling(elements: TocElements) {
-	elements.tocLinks.forEach(link => {
-		link.addEventListener('click', (e) => {
-			const href = link.getAttribute('href');
-			if (href?.charAt(0) === '#') {
-				e.preventDefault();
-				const target = document.getElementById(href.slice(1));
-				if (target) {
-					target.scrollIntoView({ behavior: 'smooth' });
-					history.pushState(null, '', href);
-				}
+function setupSmoothScrolling(elements: TocElements): () => void {
+	const clickHandler = (e: Event) => {
+		const link = e.currentTarget as HTMLAnchorElement;
+		const href = link.getAttribute('href');
+		if (href?.charAt(0) === '#') {
+			e.preventDefault();
+			const target = document.getElementById(href.slice(1));
+			if (target) {
+				target.scrollIntoView({ behavior: 'smooth' });
+				history.pushState(null, '', href);
 			}
-		});
+		}
+	};
+
+	elements.tocLinks.forEach(link => {
+		link.addEventListener('click', clickHandler);
 	});
+
+	return () => {
+		elements.tocLinks.forEach(link => {
+			link.removeEventListener('click', clickHandler);
+		});
+	};
 }
 
 export function initTocNav(): () => void {
@@ -132,13 +141,14 @@ export function initTocNav(): () => void {
 		elements.progressIndicator.style.height = '0';
 		elements.progressIndicator.style.top = '0';
 	}
-	const update = () => updateIndicator(elements)
+	const update = () => updateIndicator(elements);
 	update();
 	window.addEventListener('scroll', update);
 	window.addEventListener('resize', update);
-	setupSmoothScrolling(elements);
+	const removeSmoothScrolling = setupSmoothScrolling(elements);
 	return () => {
 		window.removeEventListener('scroll', update);
 		window.removeEventListener('resize', update);
-	}
+		removeSmoothScrolling();
+	};
 }
