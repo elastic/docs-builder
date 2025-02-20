@@ -38,6 +38,7 @@ toc:
       - file: locally.md
       - file: on-the-web.md
       - file: move.md
+      - file: redirects.md
   - folder: migration
     children:
       - file: index.md
