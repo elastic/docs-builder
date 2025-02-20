@@ -3,7 +3,7 @@ navigation_title: "Redirects"
 ---
 # Adding redirects to link resolving
 
-If you [move files around](move.md) or simply need to delete a few pages you might end up in a chicken-and-egg situation. The files you move or delete might still be linked to by other [documentation sets](../configure/content-set/index.md)
+If you [move files around](move.md) or simply need to delete a few pages you might end up in a chicken-and-egg situation. The files you move or delete might still be linked to by other [documentation sets](../configure/content-set/index.md).
 
 Redirects allow you to force other documentation sets to resolve old links to their new location.
 This allows you to publish your changes and work to update the other documentation sets.
