@@ -8,8 +8,19 @@
 		var f = file.File;
 		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li">
 			<div class="flex">
-				<a class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
-					id="page-@id" href="@f.Url">@f.NavigationTitle</a>
+				<a
+					hx-get="@f.Url"
+					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav"
+					hx-swap="none"
+					hx-push-url="true"
+					hx-indicator="#htmx-indicator"
+					hx-swap="show:unset"
+					preload="mouseover"
+					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
+					id="page-@id"
+					href="@f.Url">
+					@f.NavigationTitle
+				</a>
 			</div>
 		</li>
 	}
@@ -38,6 +49,12 @@
 				>
 				<a
 					href="@g.Index?.Url"
+					hx-get="@g.Index?.Url"
+					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav"
+					hx-swap="none"
+					hx-push-url="true"
+					hx-indicator="#htmx-indicator"
+					preload="mouseover"
 					id="page-@g.Index?.Id"
 					class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty)">
 					@g.Index?.NavigationTitle

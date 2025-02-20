@@ -256,6 +256,5 @@ var copyTargetText = (trigger) => {
 }
 
 export function initCopyButton() {
-	console.log("initCopyButton");
 	runWhenDOMLoaded(addCopyButtonToCodeCells)
 }

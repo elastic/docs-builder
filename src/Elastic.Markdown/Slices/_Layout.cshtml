@@ -5,56 +5,63 @@
 	<title>@Model.Title</title>
 	<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
 	<meta charset="utf-8">
-	@* <meta name="viewport" content="width=device-width, initial-scale=1.0"> *@
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
+	<meta name="htmx-config" content='{"scrollIntoViewOnBoost": false, "selfRequestsOnly": true}'>
 </head>
-<body class="text-ink">
+<body class="text-ink" hx-ext="preload">
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div class="flex flex-col items-center px-6">
-<div class="container flex">
-	@await RenderPartialAsync(_PagesNav.Create(Model))
-	@await RenderPartialAsync(_TableOfContents.Create(Model))
-	<main class="w-full pt-6 pb-30 px-6 order-2">
-		<div class="content-container">
-			@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-		</div>
-		<article class="content-container markdown-content">
-			@await RenderBodyAsync()
-		</article>
-		<footer class="content-container mt-20">
-			<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
-				<div class="w-full">
-					@if (Model.Previous != null)
-					{
-						<a href="@Model.Previous.Url" class="flex h-full items-center text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md">
-							<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
-							</svg>
-							<div>
-								<div class="text-xs lg:text-sm">Previous</div>
-								<div class="text-base lg:text-xl text-black">@Model.Previous.NavigationTitle</div>
-							</div>
-						</a>
-					}
+	<div class="container flex">
+		@await RenderPartialAsync(_PagesNav.Create(Model))
+		@await RenderPartialAsync(_TableOfContents.Create(Model))
+		<main class="w-full pt-6 pb-30 px-6 order-2 relative">
+			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+				<div class="h-[2px] w-full overflow-hidden">
+					<div class="progress w-full h-full bg-pink-70 left-right"></div>
 				</div>
-				<div class="w-full">
-					@if (Model.Next != null)
-					{
-						<a href="@Model.Next.Url" class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md text-right">
-							<div>
-								<div class="text-xs lg:text-sm">Next</div>
-								<div class="text-base lg:text-xl text-black">@Model.Next.NavigationTitle</div>
-							</div>
-							<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
-							</svg>
-						</a>
-					}
-				</div>
+				<div class="sr-only">Loading</div>
 			</div>
-		</footer>
-	</main>
-</div>
+			<div class="content-container">
+				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+			</div>
+			<article id="markdown-content" class="content-container markdown-content">
+				@await RenderBodyAsync()
+			</article>
+			<footer id="prev-next-nav" class="content-container mt-20">
+				<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
+					<div class="w-full">
+						@if (Model.Previous != null)
+						{
+							<a href="@Model.Previous.Url" class="flex h-full items-center text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md">
+								<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+								</svg>
+								<div>
+									<div class="text-xs lg:text-sm">Previous</div>
+									<div class="text-base lg:text-xl text-black">@Model.Previous.NavigationTitle</div>
+								</div>
+							</a>
+						}
+					</div>
+					<div class="w-full">
+						@if (Model.Next != null)
+						{
+							<a href="@Model.Next.Url" class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md text-right">
+								<div>
+									<div class="text-xs lg:text-sm">Next</div>
+									<div class="text-base lg:text-xl text-black">@Model.Next.NavigationTitle</div>
+								</div>
+								<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+								</svg>
+							</a>
+						}
+					</div>
+				</div>
+			</footer>
+		</main>
+	</div>
 </div>
 @(await RenderPartialAsync(_Footer.Create(Model)))
 <script src="@Model.Static("main.js")"></script>
