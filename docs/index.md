@@ -9,3 +9,31 @@ Elastic Docs V3 is our next-generation documentation platform designed to improv
 * [Configure content sets in V3](./configure/index.md)
 * [Learn about V3 syntax](./syntax/index.md)
 * [Contribute to V3 (developer guide)](./development/index.md)
+
+
+## What the `code`?
+
+
+
+`super long inline code that should wrap super long inline code that should wrap super long inline code that should wrap`
+
+
+:::{important}
+
+Test `code` inline within admonition.
+
+`super long inline code that should wrap super long inline code that should wrap super long inline code that should wrap`
+:::
+
+:::{warning}
+
+Test `code` inline within admonition.
+
+`super long inline code that should wrap super long inline code that should wrap super long inline code that should wrap`
+:::
+
+
+- list item 1
+    - sub list item 1 
+
+        `with super long inline code that should wrap super long inline code that should wrap super long inline code that should wrap`

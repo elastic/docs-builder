@@ -68,8 +68,6 @@
 		rounded-xs
 		border-1
 		border-gray-300
-		inline-block
-		text-nowrap
 		;
 		font-size: 0.875em;
 		line-height: 1.4em;
@@ -78,6 +76,7 @@
 		letter-spacing: 0.02em;
 		text-decoration: inherit;
 		font-weight: inherit;
+		mix-blend-mode: multiply;
 	}
 
 
