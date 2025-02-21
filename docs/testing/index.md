@@ -31,18 +31,3 @@ The files in this directory are used for testing purposes. Do not edit these fil
         "key": "value"
       }
       ```
-      
-
-```yaml
-xpack:
-  security:
-    authc:
-      realms:
-        active_directory:
-          my_ad:
-            order: 0
-            domain_name: example.com <1>
-            url: ldaps://dc1.ad.example.com:3269, ldaps://dc2.ad.example.com:3269 <2>
-            load_balance:
-              type: "round_robin" <3>
-```
