@@ -62,7 +62,7 @@
 			</label>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto">
+				<ul class="w-full overflow-y-hidden hidden peer-has-checked:block peer-has-[:focus]:block has-[:focus]:block">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						Level = g.Depth,
