@@ -10,7 +10,7 @@
 			<div class="flex">
 				<a
 					hx-get="@f.Url"
-					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav"
+					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
@@ -49,7 +49,7 @@
 				<a
 					href="@g.Index?.Url"
 					hx-get="@g.Index?.Url"
-					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav"
+					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
