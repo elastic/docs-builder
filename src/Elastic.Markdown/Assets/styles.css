@@ -42,8 +42,8 @@
 
 @layer components {
 	.link {
-		font-family: "Mier B", "Inter", sans-serif;
 		@apply 
+			font-sans
 			text-blue-elastic 
 			text-nowrap
 			font-semibold
@@ -89,9 +89,9 @@
 	}
 
 	.applies {
+		@apply font-sans;
 		border-bottom: 1px solid var(--color-gray-300);
 		padding-bottom: calc(var(--spacing) * 3);
-		font-family: "Mier B", "Inter", sans-serif;
 
 		.applies-to-label {
 			display: block;
