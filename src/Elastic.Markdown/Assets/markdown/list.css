@@ -1,6 +1,5 @@
 .markdown-content {
 	ol,ul {
-		font-family: "Inter", sans-serif;
 		@apply mt-4;
 		line-height: 1.5em;
 		letter-spacing: 0;
