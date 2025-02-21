@@ -8,7 +8,7 @@
 		}
 		
 		th, td {
-			@apply py-2 px-4  align-top min-w-30;
+			@apply py-2 px-4 min-w-30;
 		}
 
 		th:first-of-type {
@@ -25,7 +25,7 @@
 		}
 		
 		thead {
-			@apply font-semibold text-sm text-left;
+			@apply font-semibold text-sm text-left align-top;
 		}
 		
 		tbody {
