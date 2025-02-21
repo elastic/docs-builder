@@ -15,6 +15,7 @@
 					p-6!
 				;
 				background-color: #22272e;
+				mix-blend-mode: unset;
 			}
 			code:first-child {
 				@apply rounded-t-sm;
