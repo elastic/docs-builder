@@ -18,7 +18,7 @@
 		}
 		
 		.tabs-content {
-			@apply w-full order-99 border-1 border-gray-200 px-6 z-0 hidden pb-4;
+			@apply w-full order-99 border-1 border-gray-200 px-6 z-0 hidden pb-6 pt-2;
 		}
 		
 		.tabs-input:checked+.tabs-label+.tabs-content {
