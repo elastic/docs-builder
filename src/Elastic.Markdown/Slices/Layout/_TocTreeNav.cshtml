@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @foreach (var item in Model.SubTree.NavigationItems)
@@ -10,7 +11,7 @@
 			<div class="flex">
 				<a
 					hx-get="@f.Url"
-					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
+					hx-select-oob="@Htmx.GetHxSelectOob()"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
@@ -49,7 +50,7 @@
 				<a
 					href="@g.Index?.Url"
 					hx-get="@g.Index?.Url"
-					hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
+					hx-select-oob="@Htmx.GetHxSelectOob()"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"

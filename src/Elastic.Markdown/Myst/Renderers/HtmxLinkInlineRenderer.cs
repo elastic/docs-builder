@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Helpers;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html.Inlines;
@@ -19,7 +20,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
-			_ = renderer.Write(" hx-select-oob=\"#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs\"");
+			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob()}\"");
 			_ = renderer.Write(" hx-swap=\"none\"");
 			_ = renderer.Write(" hx-push-url=\"true\"");
 			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");

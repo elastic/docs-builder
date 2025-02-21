@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Helpers
 @inherits RazorLayoutSlice<LayoutViewModel>
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
@@ -36,7 +37,7 @@
 							<a 
 								href="@Model.Previous.Url"
 								hx-get="@Model.Previous.Url"
-								hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
+								hx-select-oob="@Htmx.GetHxSelectOob()"
 								hx-swap="none"
 								hx-push-url="true"
 								hx-indicator="#htmx-indicator"
@@ -59,7 +60,7 @@
 							<a 
 								href="@Model.Next.Url"
 								hx-get="@Model.Next.Url"
-								hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
+								hx-select-oob="@Htmx.GetHxSelectOob()"
 								hx-swap="none"
 								hx-push-url="true"
 								hx-indicator="#htmx-indicator"
