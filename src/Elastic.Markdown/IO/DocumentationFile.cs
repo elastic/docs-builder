@@ -9,6 +9,7 @@ public abstract record DocumentationFile(IFileInfo SourceFile, IDirectoryInfo Ro
 {
 	public string RelativePath { get; } = Path.GetRelativePath(RootPath.FullName, SourceFile.FullName);
 	public string RelativeFolder { get; } = Path.GetRelativePath(RootPath.FullName, SourceFile.Directory!.FullName);
+
 }
 
 public record ImageFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string MimeType = "image/png")

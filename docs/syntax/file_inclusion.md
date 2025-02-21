@@ -20,6 +20,16 @@ Files to be included must live in a `_snippets` folder to be considered a snippe
 :::{include} _snippets/reusable-snippet.md
 :::
 
+#### Linking to snippets with custom anchors
+
+To link to a heading with a [custom anchor (ID)](./headings.md#custom-anchor-links) defined in a snippet, target the parent file + anchor. 
+
+For example:
+
+```markdown
+[my favorite esql function](parent-file.md#id-from-included-snippet)
+```
+
 ### Asciidoc syntax
 
 ```asciidoc

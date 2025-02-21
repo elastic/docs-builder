@@ -8,6 +8,7 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 
@@ -39,10 +40,10 @@ public class DocumentationSet
 		SourcePath = context.SourcePath;
 		OutputPath = context.OutputPath;
 		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
-		Configuration = new ConfigurationFile(context.ConfigurationPath, SourcePath, context);
-		LinkResolver = linkResolver ?? new CrossLinkResolver(Configuration, logger);
+		LinkResolver = linkResolver ?? new CrossLinkResolver(context.Configuration, logger);
+		Configuration = context.Configuration;
 
-		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, Configuration, LinkResolver);
+		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, context.Configuration, LinkResolver);
 
 		Name = SourcePath.FullName;
 		OutputStateFile = OutputPath.FileSystem.FileInfo.New(Path.Combine(OutputPath.FullName, ".doc.state"));
@@ -87,7 +88,51 @@ public class DocumentationSet
 			Context.EmitError(Context.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
 
 		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+		ValidateRedirectsExists();
+	}
 
+	private void ValidateRedirectsExists()
+	{
+		if (Configuration.Redirects is null || Configuration.Redirects.Count == 0)
+			return;
+		foreach (var redirect in Configuration.Redirects)
+		{
+			if (redirect.Value.To is not null)
+				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors);
+			else if (redirect.Value.Many is not null)
+			{
+				foreach (var r in redirect.Value.Many)
+				{
+					if (r.To is not null)
+						ValidateExists(redirect.Key, r.To, r.Anchors);
+				}
+			}
+		}
+
+		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
+		{
+			if (!FlatMappedFiles.TryGetValue(to, out var file))
+			{
+				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
+				return;
+
+			}
+
+			if (file is not MarkdownFile markdownFile)
+			{
+				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
+				return;
+			}
+
+			if (valueAnchors is null or { Count: 0 })
+				return;
+
+			markdownFile.AnchorRemapping =
+				markdownFile.AnchorRemapping?
+					.Concat(valueAnchors)
+					.DistinctBy(kv => kv.Key)
+					.ToDictionary(kv => kv.Key, kv => kv.Value) ?? valueAnchors;
+		}
 	}
 
 	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; }

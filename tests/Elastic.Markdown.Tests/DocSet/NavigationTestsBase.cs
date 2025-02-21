@@ -22,11 +22,10 @@ public class NavigationTestsBase : IAsyncLifetime
 			CurrentDirectory = Paths.Root.FullName
 		});
 		var collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(ReadFileSystem, WriteFileSystem)
+		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem)
 		{
 			Force = false,
-			UrlPathPrefix = null,
-			Collector = collector
+			UrlPathPrefix = null
 		};
 
 		var linkResolver = new TestCrossLinkResolver();

@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -16,7 +17,6 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-
 public record MarkdownFile : DocumentationFile
 {
 	private string? _navigationTitle;
@@ -29,6 +29,7 @@ public record MarkdownFile : DocumentationFile
 		UrlPathPrefix = context.UrlPathPrefix;
 		MarkdownParser = parser;
 		Collector = context.Collector;
+		_configurationFile = context.Configuration.SourceFile;
 	}
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
@@ -56,6 +57,7 @@ public record MarkdownFile : DocumentationFile
 			TitleRaw = value;
 		}
 	}
+
 	public string? NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
@@ -71,6 +73,7 @@ public record MarkdownFile : DocumentationFile
 
 	public string FilePath { get; }
 	public string FileName { get; }
+
 	public string Url => Path.GetFileName(RelativePath) == "index.md"
 		? $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
 		: $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf(".md", StringComparison.Ordinal), 3)}";
@@ -82,6 +85,8 @@ public record MarkdownFile : DocumentationFile
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
 	private string? _title;
+	private readonly IFileInfo _configurationFile;
+
 	public MarkdownFile[] YieldParents()
 	{
 		var parents = new List<MarkdownFile>();
@@ -92,8 +97,10 @@ public record MarkdownFile : DocumentationFile
 				parents.Add(parent.Index);
 			parent = parent?.Parent;
 		} while (parent != null);
+
 		return [.. parents];
 	}
+
 	public string[] YieldParentGroups()
 	{
 		var parents = new List<string>();
@@ -106,13 +113,34 @@ public record MarkdownFile : DocumentationFile
 				parents.Add(parent.Id);
 			parent = parent?.Parent;
 		} while (parent != null);
+
 		return [.. parents];
+	}
+
+	/// this get set by documentationset when validating redirects
+	/// because we need to minimally parse to see the anchors anchor validation is deferred.
+	public IReadOnlyDictionary<string, string?>? AnchorRemapping { get; set; }
+
+	private void ValidateAnchorRemapping()
+	{
+		if (AnchorRemapping is null)
+			return;
+		foreach (var (_, v) in AnchorRemapping)
+		{
+			if (v is null or "" or "!")
+				continue;
+			if (Anchors.Contains(v))
+				continue;
+
+			Collector.EmitError(_configurationFile.FullName, $"Bad anchor remap '{v}' does not exist in {RelativePath}");
+		}
 	}
 
 	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
 	{
 		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
 		ReadDocumentInstructions(document);
+		ValidateAnchorRemapping();
 		return document;
 	}
 
@@ -212,6 +240,7 @@ public record MarkdownFile : DocumentationFile
 			if (string.IsNullOrEmpty(Title))
 				Title = deprecatedTitle;
 		}
+
 		// set title on yaml front matter manually.
 		// frontmatter gets passed around as page information throughout
 		fm.Title = Title;

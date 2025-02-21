@@ -18,6 +18,7 @@ toc:
       - file: locally.md
       - file: on-the-web.md
       - file: move.md
+      - file: redirects.md
   - folder: migration
     children:
       - file: index.md
@@ -97,6 +98,12 @@ toc:
         children:
           - file: first-page.md
           - file: second-page.md
+      - folder: redirects
+        children:
+          - file: first-page.md
+          - file: second-page.md
+          - file: third-page.md
+          - file: 5th-page.md
       - folder: deeply-nested
         children:
           - file: index.md

@@ -36,10 +36,8 @@ public class DocumentationWebHost
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
-		_context = new BuildContext(fileSystem, fileSystem, path, null)
-		{
-			Collector = new LiveModeDiagnosticsCollector(logger)
-		};
+		var collector = new LiveModeDiagnosticsCollector(logger);
+		_context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
