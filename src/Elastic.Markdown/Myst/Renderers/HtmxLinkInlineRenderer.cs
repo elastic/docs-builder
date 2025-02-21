@@ -19,13 +19,13 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
-			_ = renderer.Write("hx-select-oob=\"#markdown-content,#toc-nav,#prev-next-nav\"");
-			_ = renderer.Write("hx-swap=\"none\"");
-			_ = renderer.Write("hx-push-url=\"true\"");
-			_ = renderer.Write("hx-indicator=\"#htmx-indicator\"");
-			_ = renderer.Write("preload=\"mouseover\"");
+			_ = renderer.Write(" hx-select-oob=\"#markdown-content,#toc-nav,#prev-next-nav\"");
+			_ = renderer.Write(" hx-swap=\"none\"");
+			_ = renderer.Write(" hx-push-url=\"true\"");
+			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
+			_ = renderer.Write(" preload=\"mouseover\"");
 
-			if (renderer.EnableHtmlForInline && !string.IsNullOrEmpty(link.Title))
+			if (!string.IsNullOrEmpty(link.Title))
 			{
 				_ = renderer.Write(" title=\"");
 				_ = renderer.WriteEscape(link.Title);
