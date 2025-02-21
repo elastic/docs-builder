@@ -15,6 +15,11 @@ document.addEventListener('htmx:load', function() {
 	initNav();
 });
 
+document.body.addEventListener('htmx:oobAfterSwap', function(event) {
+	if (event.target.id === 'markdown-content') {
+		window.scrollTo(0, 0);
+	}
+});
 
 document.body.addEventListener('htmx:pushedIntoHistory', function(event) {
 	const currentNavItem = $$('.current');

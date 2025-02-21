@@ -1,7 +1,7 @@
 import {$, $$} from "select-dom";
 
 function expandAllParents(navItem: HTMLElement) {
-	let parent = navItem.closest('li');
+	let parent = navItem?.closest('li');
 	while (parent) {
 		const input = parent.querySelector('input');
 		if (input) {
