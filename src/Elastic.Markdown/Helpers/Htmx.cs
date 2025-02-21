@@ -6,5 +6,5 @@ namespace Elastic.Markdown.Helpers;
 
 public class Htmx
 {
-	public static string GetHxSelectOob() => "#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs"
+	public static string GetHxSelectOob() => "#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs";
 }
