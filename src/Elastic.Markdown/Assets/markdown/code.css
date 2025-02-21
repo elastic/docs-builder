@@ -27,7 +27,8 @@
 			}
 		}
 		
-		pre code .code-callout .hljs-number {
+		pre code .code-callout {
+			@apply ml-2;
 			transform: translateY(-1px);
 			user-select: none;
 		}
@@ -47,8 +48,12 @@
 			left: calc(-1 * var(--spacing) * 6);
 		}
 	}
+	
+	pre code .code-callout .hljs-number {
+		@apply text-white!;
+	}
 
-	pre code .code-callout .hljs-number,
+	pre code .code-callout,
 	ol.code-callouts li::before {
 		@apply text-xs!
 			text-white!

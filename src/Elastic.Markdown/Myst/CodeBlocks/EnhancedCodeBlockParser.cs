@@ -238,7 +238,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 	private static CallOut? ParseMagicCallout(ValueMatch match, ref ReadOnlySpan<char> span, ref int callOutIndex, int originatingLine)
 	{
-		var startIndex = Math.Max(span.LastIndexOf("//"), span.LastIndexOf('#'));
+		var startIndex = Math.Max(span.LastIndexOf(" // "), span.LastIndexOf('#'));
 		if (startIndex <= 0)
 			return null;
 
@@ -248,7 +248,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		return new CallOut
 		{
 			Index = callOutIndex,
-			Text = callout.TrimStart('/').TrimStart('#').TrimStart().ToString(),
+			Text = callout.TrimStart().TrimStart('/').TrimStart('#').TrimStart().ToString(),
 			InlineCodeAnnotation = true,
 			SliceStart = startIndex,
 			Line = originatingLine,
@@ -257,7 +257,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 	private static List<CallOut> ParseClassicCallOuts(ValueMatch match, ref ReadOnlySpan<char> span, ref int callOutIndex, int originatingLine)
 	{
-		var indexOfLastComment = Math.Max(span.LastIndexOf('#'), span.LastIndexOf("//"));
+		var indexOfLastComment = Math.Max(span.LastIndexOf('#'), span.LastIndexOf(" // "));
 		var startIndex = span.LastIndexOf('<');
 		if (startIndex <= 0)
 			return [];
