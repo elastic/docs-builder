@@ -248,7 +248,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		return new CallOut
 		{
 			Index = callOutIndex,
-			Text = callout.TrimStart().TrimStart('/').TrimStart(" # ").TrimStart().ToString(),
+			Text = callout.TrimStart().TrimStart('/').TrimStart('#').TrimStart().ToString(),
 			InlineCodeAnnotation = true,
 			SliceStart = startIndex,
 			Line = originatingLine,
