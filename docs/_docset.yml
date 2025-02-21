@@ -65,6 +65,7 @@ toc:
       - file: comments.md
       - file: conditionals.md
       - file: dropdowns.md
+      - file: definition-lists.md
       - file: example_blocks.md
       - file: file_inclusion.md
       - file: frontmatter.md
