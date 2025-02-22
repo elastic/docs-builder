@@ -9,6 +9,7 @@ open System.Diagnostics
 open System.IO
 open AngleSharp.Diffing
 open AngleSharp.Diffing.Core
+open AngleSharp.Dom
 open AngleSharp.Html
 open AngleSharp.Html.Parser
 open DiffPlex.DiffBuilder
@@ -89,6 +90,17 @@ actual: {actual}
             match querySelector with
             | Some q -> document.QuerySelector q
             | None -> document.Body
+
+        let links = element.QuerySelectorAll("a")
+        links
+        |> Seq.iter(fun l ->
+            l.RemoveAttribute "hx-select-oob" |> ignore
+            l.RemoveAttribute "hx-swap" |> ignore
+            l.RemoveAttribute "hx-indicator" |> ignore
+            l.RemoveAttribute "hx-push-url" |> ignore
+            l.RemoveAttribute "preload" |> ignore
+        )
+
         use sw = new StringWriter()
         let formatter = PrettyMarkupFormatter()
         element.Children
