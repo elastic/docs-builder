@@ -10,8 +10,6 @@ namespace Elastic.Markdown.Myst.Directives;
 public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 	: DirectiveBlock(parser, context)
 {
-	public string Id { get; private set; } = Guid.NewGuid().ToString();
-
 	public override string Directive => "tab-set";
 
 	public int Index { get; set; }
