@@ -5,10 +5,10 @@
 		<a
 			itemprop="item"
 			href="@Model.UrlPathPrefix/"
-			hx-get="@Model.UrlPathPrefix/"
+			hx-get="@Model.UrlPathPrefix/index.page.html"
+			hx-push-url="@Model.UrlPathPrefix/"
 			hx-select-oob="@Htmx.GetHxSelectOob()"
 			hx-swap="none"
-			hx-push-url="true"
 			hx-indicator="#htmx-indicator"
 			preload="mouseover"
 	>

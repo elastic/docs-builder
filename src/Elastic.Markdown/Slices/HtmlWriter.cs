@@ -111,7 +111,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
 				: Path.Combine(dir, "index.html");
 		}
-		var mainPath = Path.ChangeExtension(path, ".main.html");
+		var mainPath = Path.ChangeExtension(path, ".page.html");
 
 		var pageHtml = await RenderPageHtml(markdown, ctx);
 

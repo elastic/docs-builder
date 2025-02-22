@@ -95,7 +95,7 @@ public record MarkdownFile : DocumentationFile
 		{
 			if (_urlFetch is not null)
 				return _urlFetch;
-			_urlFetch = Url.TrimEnd('/') + "/index.main.html";
+			_urlFetch = Url.TrimEnd('/') + "/index.page.html";
 			return _urlFetch;
 		}
 	}

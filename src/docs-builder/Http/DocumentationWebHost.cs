@@ -98,10 +98,10 @@ public class DocumentationWebHost
 
 
 		var renderPage = false;
-		if (slug.EndsWith(".main.html"))
+		if (slug.EndsWith(".page.html"))
 		{
 			renderPage = true;
-			slug = slug.Replace(".main.html", ".html");
+			slug = slug.Replace(".page.html", ".html");
 		}
 
 		var markdownPath = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug.Replace(".html", ".md");
