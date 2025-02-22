@@ -227,6 +227,7 @@ public record MarkdownFile : DocumentationFile
 	{
 		var includeBlocks = document.Descendants<IncludeBlock>().ToArray();
 		var includes = includeBlocks
+			.Where(i => i.Found)
 			.Select(i =>
 			{
 				var path = i.IncludePathFromSourceDirectory;
