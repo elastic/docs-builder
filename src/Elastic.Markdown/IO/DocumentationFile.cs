@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
+using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.FrontMatter;
+using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.IO;
 
@@ -22,4 +25,32 @@ public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
 	: DocumentationFile(SourceFile, RootPath);
 
 public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
-	: DocumentationFile(SourceFile, RootPath);
+	: DocumentationFile(SourceFile, RootPath)
+{
+	private SnippetAnchors? Anchors { get; set; }
+	private bool _parsed;
+
+	public SnippetAnchors? GetAnchors(
+		DocumentationSet set,
+		MarkdownParser parser,
+		YamlFrontMatter? frontMatter
+	)
+	{
+		if (_parsed)
+			return Anchors;
+		var document = parser.ParseAsync(SourceFile, frontMatter, default).GetAwaiter().GetResult();
+		if (!SourceFile.Exists)
+		{
+			_parsed = true;
+			return null;
+		}
+
+		var toc = MarkdownFile.GetAnchors(set, parser, frontMatter, document, new Dictionary<string, string>(), out var anchors);
+		Anchors = new SnippetAnchors(anchors, toc);
+		_parsed = true;
+		return Anchors;
+	}
+}
+
+public record SnippetAnchors(string[] Anchors, IReadOnlyCollection<PageTocItem> TableOfContentItems);
+

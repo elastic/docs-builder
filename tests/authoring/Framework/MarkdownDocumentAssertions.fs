@@ -48,3 +48,7 @@ module MarkdownDocumentAssertions =
             test <@ apply = expectedAvailability @>
         | _ -> failwithf "Could not locate an AppliesToDirective"
 
+    [<DebuggerStepThrough>]
+    let markdownFile (actual: MarkdownResult) =
+        actual.File
+

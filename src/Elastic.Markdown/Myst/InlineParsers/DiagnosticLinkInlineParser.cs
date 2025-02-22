@@ -190,7 +190,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (string.IsNullOrWhiteSpace(url))
 			return;
 
-		var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
+		var pathOnDisk = Path.GetFullPath(Path.Combine(includeFrom, url.TrimStart('/')));
 		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 			processor.EmitError(link, $"`{url}` does not exist. resolved to `{pathOnDisk}");
 	}

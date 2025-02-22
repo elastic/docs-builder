@@ -21,7 +21,15 @@ public record MarkdownFile : DocumentationFile
 {
 	private string? _navigationTitle;
 
-	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext context)
+	private readonly DocumentationSet _set;
+
+	public MarkdownFile(
+		IFileInfo sourceFile,
+		IDirectoryInfo rootPath,
+		MarkdownParser parser,
+		BuildContext context,
+		DocumentationSet set
+	)
 		: base(sourceFile, rootPath)
 	{
 		FileName = sourceFile.Name;
@@ -30,6 +38,7 @@ public record MarkdownFile : DocumentationFile
 		MarkdownParser = parser;
 		Collector = context.Collector;
 		_configurationFile = context.Configuration.SourceFile;
+		_set = set;
 	}
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
@@ -191,36 +200,73 @@ public record MarkdownFile : DocumentationFile
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
 			Title = replacement;
 
-		var contents = document
+		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
+
+		_tableOfContent.Clear();
+		foreach (var t in toc)
+			_tableOfContent[t.Slug] = t;
+
+
+		foreach (var label in anchors)
+			_ = _anchors.Add(label);
+
+		_instructionsParsed = true;
+	}
+
+	public static List<PageTocItem> GetAnchors(
+		DocumentationSet set,
+		MarkdownParser parser,
+		YamlFrontMatter? frontMatter,
+		MarkdownDocument document,
+		IReadOnlyDictionary<string, string> subs,
+		out string[] anchors)
+	{
+		var includeBlocks = document.Descendants<IncludeBlock>().ToArray();
+		var includes = includeBlocks
+			.Select(i =>
+			{
+				var path = i.IncludePathRelative;
+				if (path is null
+					|| !set.FlatMappedFiles.TryGetValue(path, out var file)
+					|| file is not SnippetFile snippet)
+					return null;
+
+				return snippet.GetAnchors(set, parser, frontMatter);
+			})
+			.Where(i => i is not null)
+			.ToArray();
+
+		var includedTocs = includes.SelectMany(i => i!.TableOfContentItems).ToArray();
+		var toc = document
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
-				if (header.AsSpan().ReplaceSubstitutions(subs, out var replacement))
-					header = replacement;
 				return new PageTocItem { Heading = header, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
 			})
+			.Concat(includedTocs)
+			.Select(toc => subs.Count == 0
+				? toc
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, out var r)
+					? toc with { Heading = r }
+					: toc)
 			.ToList();
 
-		_tableOfContent.Clear();
-		foreach (var t in contents)
-			_tableOfContent[t.Slug] = t;
-
-		var anchors = document.Descendants<DirectiveBlock>()
-			.Select(b => b.CrossReferenceName)
-			.Where(l => !string.IsNullOrWhiteSpace(l))
-			.Select(s => s.Slugify())
-			.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
-			.Concat(_tableOfContent.Values.Select(t => t.Slug))
-			.Where(anchor => !string.IsNullOrEmpty(anchor))
-			.ToArray();
-
-		foreach (var label in anchors)
-			_ = _anchors.Add(label);
-
-		_instructionsParsed = true;
+		var includedAnchors = includes.SelectMany(i => i!.Anchors).ToArray();
+		anchors =
+		[
+			..document.Descendants<DirectiveBlock>()
+				.Select(b => b.CrossReferenceName)
+				.Where(l => !string.IsNullOrWhiteSpace(l))
+				.Select(s => s.Slugify())
+				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
+				.Concat(toc.Select(t => t.Slug))
+				.Where(anchor => !string.IsNullOrEmpty(anchor))
+				.Concat(includedAnchors)
+		];
+		return toc;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)

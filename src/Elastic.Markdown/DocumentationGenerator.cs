@@ -9,12 +9,19 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Slices;
+using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown;
 
+public interface IConversionCollector
+{
+	void Collect(MarkdownFile file, MarkdownDocument document, string html);
+}
+
 public class DocumentationGenerator
 {
+	private readonly IConversionCollector? _conversionCollector;
 	private readonly IFileSystem _readFileSystem;
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
@@ -26,9 +33,11 @@ public class DocumentationGenerator
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
-		ILoggerFactory logger
+		ILoggerFactory logger,
+		IConversionCollector? conversionCollector = null
 	)
 	{
+		_conversionCollector = conversionCollector;
 		_readFileSystem = docSet.Context.ReadFileSystem;
 		_writeFileSystem = docSet.Context.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
@@ -161,7 +170,7 @@ public class DocumentationGenerator
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
 		var outputFile = OutputFile(file.RelativePath);
 		if (file is MarkdownFile markdown)
-			await HtmlWriter.WriteAsync(outputFile, markdown, token);
+			await HtmlWriter.WriteAsync(outputFile, markdown, _conversionCollector, token);
 		else
 		{
 			if (outputFile.Directory is { Exists: false })

@@ -5,6 +5,7 @@
 namespace authoring
 
 open System
+open System.Collections.Concurrent
 open System.IO.Abstractions
 open Elastic.Markdown
 open Elastic.Markdown.Diagnostics
@@ -59,6 +60,20 @@ type TestLoggerFactory () =
         member this.Dispose() = ()
 
 
+type ConversionResult = {
+    File: MarkdownFile
+    Document: MarkdownDocument
+    Html: string
+}
+
+type TestConversionCollector () =
+    let x = ConcurrentDictionary<string, ConversionResult>()
+    member this.Results = x
+    interface IConversionCollector with
+        member this.Collect(file, document, html) =
+            this.Results.TryAdd(file.RelativePath, { File= file; Document=document;Html=html}) |> ignore
+
+
 type MarkdownResult = {
     File: MarkdownFile
     MinimalParse: MarkdownDocument
@@ -73,8 +88,8 @@ and GeneratorResults = {
 
 and MarkdownTestContext =
     {
-       MarkdownFiles: MarkdownFile seq
        Collector: TestDiagnosticsCollector
+       ConversionCollector: TestConversionCollector
        Set: DocumentationSet
        Generator: DocumentationGenerator
        ReadFileSystem: IFileSystem
@@ -86,13 +101,13 @@ and MarkdownTestContext =
         do! this.Generator.GenerateAll(ctx)
 
         let results =
-            this.MarkdownFiles
-            |> Seq.map (fun (f: MarkdownFile) -> task {
-                // technically we do this work twice since generate all also does it
-                let! document = f.ParseFullAsync(ctx)
-                let! minimal = f.MinimalParseAsync(ctx)
-                let html = MarkdownFile.CreateHtml(document)
-                return { File = f; Document = document; MinimalParse = minimal; Html = html; Context = this  }
+            this.ConversionCollector.Results
+            |> Seq.map (fun kv -> task {
+                let file = kv.Value.File
+                let document = kv.Value.Document
+                let html = kv.Value.Html
+                let! minimal = kv.Value.File.MinimalParseAsync(ctx)
+                return { File = file; Document = document; MinimalParse = minimal; Html = html; Context = this  }
             })
             // this is not great code, refactor or depend on FSharp.Control.TaskSeq
             // for now this runs without issue

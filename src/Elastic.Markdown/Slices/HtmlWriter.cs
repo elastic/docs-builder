@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
+using Markdig.Syntax;
 using RazorSlices;
 
 namespace Elastic.Markdown.Slices;
@@ -26,6 +27,11 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
+		return await RenderLayout(markdown, document, ctx);
+	}
+
+	public async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
+	{
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 		_renderedNavigation ??= await RenderNavigation(markdown, ctx);
@@ -57,7 +63,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
-	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, Cancel ctx = default)
+	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -79,7 +85,9 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 				: Path.Combine(dir, "index.html");
 		}
 
-		var rendered = await RenderLayout(markdown, ctx);
+		var document = await markdown.ParseFullAsync(ctx);
+		var rendered = await RenderLayout(markdown, document, ctx);
+		collector?.Collect(markdown, document, rendered);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
 	}
 

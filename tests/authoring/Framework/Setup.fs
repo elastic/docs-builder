@@ -25,12 +25,16 @@ type Markdown = string
 type TestFile =
     | File of name: string * contents: string
     | MarkdownFile of name: string * markdown: Markdown
+    | SnippetFile of name: string * markdown: Markdown
 
     static member Index ([<LanguageInjection("markdown")>] m) =
         MarkdownFile("index.md" , m)
 
     static member Markdown path ([<LanguageInjection("markdown")>] m) =
         MarkdownFile(path , m)
+
+    static member Snippet path ([<LanguageInjection("markdown")>] m) =
+        SnippetFile(path , m)
 
 type Setup =
 
@@ -82,6 +86,7 @@ type Setup =
                 |> Seq.map (fun f ->
                     match f with
                     | File(name, contents) -> ($"docs/{name}", MockFileData(contents))
+                    | SnippetFile(name, markdown) -> ($"docs/{name}", MockFileData(markdown))
                     | MarkdownFile(name, markdown) -> ($"docs/{name}", MockFileData(markdown))
                 )
                 |> Map.ofSeq
@@ -94,28 +99,14 @@ type Setup =
         let collector = TestDiagnosticsCollector();
         let context = BuildContext(collector, fileSystem)
         let logger = new TestLoggerFactory()
+        let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)
         let set = DocumentationSet(context, logger, linkResolver);
-        let generator = DocumentationGenerator(set, logger)
-
-        let markdownFiles =
-            files
-            |> Seq.map (fun f ->
-                match f with
-                | File _ -> None
-                | MarkdownFile(name, _) -> Some $"docs/{name}"
-            )
-            |> Seq.choose id
-            |> Seq.map (fun f ->
-                match set.GetMarkdownFile(fileSystem.FileInfo.New(f)) with
-                | NonNull m -> Some m
-                | _ -> None
-             )
-            |> Seq.choose id
+        let generator = DocumentationGenerator(set, logger, conversionCollector)
 
         let context = {
-            MarkdownFiles = markdownFiles
             Collector = collector
+            ConversionCollector= conversionCollector
             Set = set
             Generator = generator
             ReadFileSystem = fileSystem

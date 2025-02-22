@@ -187,15 +187,15 @@ public class DocumentationSet
 		if (Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
 			return new ExcludedFile(file, SourcePath);
 
-		if (Configuration.Files.Contains(relativePath))
-			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
-
-		if (Configuration.Globs.Any(g => g.IsMatch(relativePath)))
-			return new MarkdownFile(file, SourcePath, MarkdownParser, context);
-
 		// we ignore files in folders that start with an underscore
 		if (relativePath.Contains("_snippets"))
 			return new SnippetFile(file, SourcePath);
+
+		if (Configuration.Files.Contains(relativePath))
+			return new MarkdownFile(file, SourcePath, MarkdownParser, context, this);
+
+		if (Configuration.Globs.Any(g => g.IsMatch(relativePath)))
+			return new MarkdownFile(file, SourcePath, MarkdownParser, context, this);
 
 		// we ignore files in folders that start with an underscore
 		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))

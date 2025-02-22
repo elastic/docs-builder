@@ -21,7 +21,7 @@
     <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="21.0.29"/>
     <PackageReference Include="FsUnit.xUnit" Version="7.0.1"/>
-    <PackageReference Include="AngleSharp.Diffing" Version="1.0.0"/>
+    <PackageReference Include="AngleSharp" Version="1.2.0"/>
     <PackageReference Include="DiffPlex" Version="1.7.2"/>
     <PackageReference Include="Unquote" Version="7.0.1"/>
   </ItemGroup>
@@ -51,6 +51,7 @@
     <Compile Include="Inline\InlineLinks.fs" />
     <Compile Include="Inline\CrossLinks.fs" />
     <Compile Include="Inline\CrossLinksRedirects.fs" />
+    <Compile Include="Inline\RelativeLinks.fs" />
     <Compile Include="Container\DefinitionLists.fs"/>
     <Compile Include="Generator\LinkReferenceFile.fs"/>
   </ItemGroup>
@@ -64,6 +65,10 @@
   <ItemGroup>
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Directives\IncludeBlocks.fs" />
   </ItemGroup>
 
 </Project>
