@@ -200,6 +200,10 @@ public record MarkdownFile : DocumentationFile
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
 			Title = replacement;
 
+		if (RelativePath.Contains("esql-functions-operators"))
+		{
+
+		}
 		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
 		_tableOfContent.Clear();
@@ -225,7 +229,7 @@ public record MarkdownFile : DocumentationFile
 		var includes = includeBlocks
 			.Select(i =>
 			{
-				var path = i.IncludePathRelative;
+				var path = i.IncludePathFromSourceDirectory;
 				if (path is null
 					|| !set.FlatMappedFiles.TryGetValue(path, out var file)
 					|| file is not SnippetFile snippet)
