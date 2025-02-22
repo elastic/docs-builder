@@ -69,7 +69,7 @@ We support _some_ [GitHub Flavored Markdown (GFM) extensions](https://github.git
 
 ### Supported
 
-* [](tables.md#github-flavored-markdown-gfm-table)
+* [](tables.md#basic-table)
 * Strikethrough: ~~as seen here~~
 
 ### Not supported

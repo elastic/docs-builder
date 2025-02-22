@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Markdig;
+using Markdig.Extensions.Tables;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
@@ -56,5 +57,7 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		}
 
 		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
+
+		_ = renderer.ObjectRenderers.Replace<HtmlTableRenderer>(new WrappedTableRenderer());
 	}
 }

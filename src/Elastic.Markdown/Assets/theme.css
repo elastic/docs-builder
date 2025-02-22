@@ -2,6 +2,7 @@
 	/*--color-*: initial;*/
 
 	--font-sans: "Mier B", "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	--font-body: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
 	--color-white: #FFFFFF;
 	--color-black: #000000;

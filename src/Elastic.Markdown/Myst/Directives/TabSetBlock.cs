@@ -18,15 +18,20 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
 
 	private int _index = -1;
+
+	// For simplicity, we use the line number as the index.
+	// It's not ideal, but it's unique.
+	// This is more efficient than finding the root block and then finding the index.
 	public int FindIndex()
 	{
 		if (_index > -1)
 			return _index;
-		var siblings = Parent!.OfType<TabSetBlock>().ToList();
-		_index = siblings.IndexOf(this);
+
+		_index = Line;
 		return _index;
 	}
 }
+
 public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 	: DirectiveBlock(parser, context)
 {

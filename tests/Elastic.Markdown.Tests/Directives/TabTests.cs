@@ -49,7 +49,6 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 		for (var i = 0; i < items.Length; i++)
 		{
 			items[i].Index.Should().Be(i);
-			items[i].TabSetIndex.Should().Be(0);
 		}
 	}
 }
@@ -88,7 +87,7 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 			for (var i = 0; i < items.Length; i++)
 			{
 				items[i].Index.Should().Be(i);
-				items[i].TabSetIndex.Should().Be(s);
+				items[i].TabSetIndex.Should().Be(sets[s].Line);
 			}
 		}
 	}
@@ -148,7 +147,7 @@ Content for C# tab
 			for (var i = 0; i < items.Length; i++)
 			{
 				items[i].Index.Should().Be(i);
-				items[i].TabSetIndex.Should().Be(s);
+				items[i].TabSetIndex.Should().Be(sets[s].Line);
 			}
 		}
 	}

@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @foreach (var item in Model.SubTree.NavigationItems)
@@ -8,8 +9,18 @@
 		var f = file.File;
 		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li">
 			<div class="flex">
-				<a class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
-					id="page-@id" href="@f.Url">@f.NavigationTitle</a>
+				<a
+					hx-get="@f.Url"
+					hx-select-oob="@Htmx.GetHxSelectOob()"
+					hx-swap="none"
+					hx-push-url="true"
+					hx-indicator="#htmx-indicator"
+					preload="mouseover"
+					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
+					id="page-@id"
+					href="@f.Url">
+					@f.NavigationTitle
+				</a>
 			</div>
 		</li>
 	}
@@ -38,6 +49,12 @@
 				>
 				<a
 					href="@g.Index?.Url"
+					hx-get="@g.Index?.Url"
+					hx-select-oob="@Htmx.GetHxSelectOob()"
+					hx-swap="none"
+					hx-push-url="true"
+					hx-indicator="#htmx-indicator"
+					preload="mouseover"
 					id="page-@g.Index?.Id"
 					class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty)">
 					@g.Index?.NavigationTitle
@@ -45,7 +62,7 @@
 			</label>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto peer-has-checked:my-1">
+				<ul class="w-full overflow-y-hidden hidden peer-has-checked:block peer-has-[:focus]:block has-[:focus]:block">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						Level = g.Depth,

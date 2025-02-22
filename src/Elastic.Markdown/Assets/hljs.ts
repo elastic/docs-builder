@@ -164,6 +164,7 @@ hljs.registerLanguage('esql', function() {
 
 hljs.addPlugin(mergeHTMLPlugin);
 export function initHighlight() {
-
-	hljs.highlightAll();
+	document.querySelectorAll('#markdown-content pre code:not(.hljs)').forEach((block) => {
+	  hljs.highlightElement(block);
+	});
 }

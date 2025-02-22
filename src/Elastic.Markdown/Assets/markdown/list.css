@@ -1,6 +1,5 @@
 .markdown-content {
 	ol,ul {
-		font-family: "Inter", sans-serif;
 		@apply mt-4;
 		line-height: 1.5em;
 		letter-spacing: 0;
@@ -38,10 +37,13 @@
 	ol>li>ol>li>ol>li>ol>li>ol>li>ol { list-style-type: lower-roman; }
 	
 	/* Special handling of elements within a list item */
-	li>p:nth-child(2),
-	li>div>.highlight,
-	li>.admonition
+	li>*:first-child,
+	li>p:nth-child(2)
 	{
 		@apply mt-1;
+	}
+	li>p:first-child
+	{
+		@apply mt-4;
 	}
 }

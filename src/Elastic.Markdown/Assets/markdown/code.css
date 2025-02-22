@@ -15,6 +15,7 @@
 					p-6!
 				;
 				background-color: #22272e;
+				mix-blend-mode: unset;
 			}
 			code:first-child {
 				@apply rounded-t-sm;
@@ -27,7 +28,8 @@
 			}
 		}
 		
-		pre code .code-callout .hljs-number {
+		pre code .code-callout {
+			@apply ml-1;
 			transform: translateY(-1px);
 			user-select: none;
 		}
@@ -47,8 +49,12 @@
 			left: calc(-1 * var(--spacing) * 6);
 		}
 	}
+	
+	pre code .code-callout .hljs-number {
+		@apply text-white!;
+	}
 
-	pre code .code-callout .hljs-number,
+	pre code .code-callout,
 	ol.code-callouts li::before {
 		@apply text-xs!
 			text-white!
@@ -68,8 +74,6 @@
 		rounded-xs
 		border-1
 		border-gray-300
-		inline-block
-		text-nowrap
 		;
 		font-size: 0.875em;
 		line-height: 1.4em;
@@ -78,6 +82,7 @@
 		letter-spacing: 0.02em;
 		text-decoration: inherit;
 		font-weight: inherit;
+		mix-blend-mode: multiply;
 	}
 
 
