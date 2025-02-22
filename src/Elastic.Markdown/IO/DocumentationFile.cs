@@ -38,13 +38,13 @@ public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
 	{
 		if (_parsed)
 			return Anchors;
-		var document = parser.ParseAsync(SourceFile, frontMatter, default).GetAwaiter().GetResult();
 		if (!SourceFile.Exists)
 		{
 			_parsed = true;
 			return null;
 		}
 
+		var document = parser.MinimalParseAsync(SourceFile, default).GetAwaiter().GetResult();
 		var toc = MarkdownFile.GetAnchors(set, parser, frontMatter, document, new Dictionary<string, string>(), out var anchors);
 		Anchors = new SnippetAnchors(anchors, toc);
 		_parsed = true;

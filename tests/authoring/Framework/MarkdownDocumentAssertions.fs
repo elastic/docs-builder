@@ -30,7 +30,7 @@ module MarkdownDocumentAssertions =
     [<DebuggerStepThrough>]
     let appliesTo (expectedAvailability: ApplicableTo) (actual: Lazy<GeneratorResults>) =
         let actual = actual.Value
-        let result = actual.MarkdownResults |> Seq.head
+        let result = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         let matter = result.File.YamlFrontMatter
         match matter with
         | NonNull m ->

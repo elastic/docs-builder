@@ -231,8 +231,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
-		//var slice = Include.Create(new IncludeViewModel { Html = html });
-		//RenderRazorSlice(slice, renderer, block);
 	}
 
 	private static void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)

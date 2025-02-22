@@ -55,3 +55,26 @@ type ``include hoists anchors and table of contents`` () =
     let ``has no errors`` () = generator |> hasNoErrors
 
 
+type ``include can contain links to parent page's includes`` () =
+
+    static let generator = Setup.Generate [
+        Index """
+# A Document that lives at the root
+
+:::{include} _snippets/my-snippet.md
+:::
+
+:::{include} _snippets/my-other-snippet.md
+:::
+"""
+        Snippet "_snippets/my-snippet.md" """
+## header from snippet [aa]
+        """
+
+        Snippet "_snippets/my-other-snippet.md" """
+[link to root with included anchor](../index.md#aa)
+        """
+    ]
+
+    [<Fact>]
+    let ``has no errors`` () = generator |> hasNoErrors
