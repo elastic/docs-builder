@@ -1,5 +1,5 @@
 @using Elastic.Markdown.Helpers
-@inherits RazorSlice<IBreadCrumbModel>
+@inherits RazorSlice<LayoutViewModel>
 <ol id="breadcrumbs" class="block w-full" itemscope="" itemtype="https://schema.org/BreadcrumbList">
 	<li class="inline text-ink text-sm hover:text-ink leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 		<a
@@ -23,10 +23,10 @@
 			<a
 				itemprop="item"
 				href="@item.Url"
-				hx-get="@item.Url"
+				hx-get="@(item.UrlFetch)"
+				hx-push-url="@item.Url"
 				hx-select-oob="@Htmx.GetHxSelectOob()"
 				hx-swap="none"
-				hx-push-url="true"
 				hx-indicator="#htmx-indicator"
 				preload="mouseover"
 			>

@@ -255,4 +255,11 @@ public class DocumentationGenerator
 		var pageHtml = await HtmlWriter.RenderPageHtml(markdown, ctx);
 		return await HtmlWriter.RenderLayout(markdown, pageHtml, ctx);
 	}
+
+	public async Task<string?> RenderPage(MarkdownFile markdown, Cancel ctx)
+	{
+		await DocumentationSet.Tree.Resolve(ctx);
+		var pageHtml = await HtmlWriter.RenderPageHtml(markdown, ctx);
+		return await HtmlWriter.RenderPage(markdown, pageHtml, ctx);
+	}
 }

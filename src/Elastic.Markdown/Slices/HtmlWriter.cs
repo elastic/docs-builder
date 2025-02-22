@@ -49,7 +49,6 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = markdownHtml,
 			PageTocItems = [.. markdown.TableOfContents.Values],
-			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
@@ -73,7 +72,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
 		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 
-		var slice = Page.Create(new MainViewModel
+		var slice = Page.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
@@ -81,6 +80,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			PageTocItems = [.. markdown.TableOfContents.Values],
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
+			NavigationHtml = string.Empty,
 			NextDocument = next,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,

@@ -14,8 +14,11 @@
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div class="flex flex-col items-center px-6">
 	<div class="container flex">
-		@await RenderPartialAsync(_PagesNav.Create(Model))
-		@await RenderPartialAsync(_TableOfContents.Create<ITableOfContentsModel>(Model))
+		@if (!string.IsNullOrWhiteSpace(Model.NavigationHtml))
+		{
+			await RenderPartialAsync(_PagesNav.Create(Model));
+		}
+		@await RenderPartialAsync(_TableOfContents.Create(Model))
 		<main class="w-full pt-6 pb-30 px-6 order-2 relative">
 			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
 				<div class="h-[2px] w-full overflow-hidden">
@@ -24,7 +27,7 @@
 				<div class="sr-only">Loading</div>
 			</div>
 			<div class="content-container">
-				@await RenderPartialAsync(_Breadcrumbs.Create<IBreadCrumbModel>(Model))
+				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 			</div>
 			<article id="markdown-content" class="content-container markdown-content">
 				@await RenderBodyAsync()
@@ -36,10 +39,10 @@
 						{
 							<a
 								href="@Model.Previous.Url"
-								hx-get="@Model.Previous.Url"
+								hx-get="@Model.Previous.UrlFetch"
+								hx-push-url="@Model.Previous.Url"
 								hx-select-oob="@Htmx.GetHxSelectOob()"
 								hx-swap="none"
-								hx-push-url="true"
 								hx-indicator="#htmx-indicator"
 								preload="mouseover"
 								class="flex h-full items-center text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md"
@@ -59,10 +62,10 @@
 						{
 							<a
 								href="@Model.Next.Url"
-								hx-get="@Model.Next.Url"
+								hx-get="@Model.Next.UrlFetch"
+								hx-push-url="@Model.Next.Url"
 								hx-select-oob="@Htmx.GetHxSelectOob()"
 								hx-swap="none"
-								hx-push-url="true"
 								hx-indicator="#htmx-indicator"
 								preload="mouseover"
 								class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md text-right"

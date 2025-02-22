@@ -74,9 +74,31 @@ public record MarkdownFile : DocumentationFile
 	public string FilePath { get; }
 	public string FileName { get; }
 
-	public string Url => Path.GetFileName(RelativePath) == "index.md"
-		? $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
-		: $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf(".md", StringComparison.Ordinal), 3)}";
+	private string? _url;
+	public string Url
+	{
+		get
+		{
+			if (_url is not null)
+				return _url;
+			_url = Path.GetFileName(RelativePath) == "index.md"
+				? $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
+				: $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf(".md", StringComparison.Ordinal), 3)}";
+			return _url;
+		}
+	}
+
+	private string? _urlFetch;
+	public string UrlFetch
+	{
+		get
+		{
+			if (_urlFetch is not null)
+				return _urlFetch;
+			_urlFetch = Url.TrimEnd('/') + "/index.main.html";
+			return _urlFetch;
+		}
+	}
 
 	public int NavigationIndex { get; internal set; } = -1;
 

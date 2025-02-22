@@ -6,7 +6,6 @@
 	{
 		Title = $"Elastic Documentation: {Model.Title}",
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
-		Tree = Model.Tree,
 		CurrentDocument = Model.CurrentDocument,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,

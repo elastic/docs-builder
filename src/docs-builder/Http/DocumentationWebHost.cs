@@ -77,11 +77,7 @@ public class DocumentationWebHost
 		_ = _webApplication
 			.UseLiveReload()
 			.UseStaticFiles(
-				new StaticFileOptions
-				{
-					FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
-					RequestPath = "/_static"
-				})
+				new StaticFileOptions { FileProvider = new EmbeddedOrPhysicalFileProvider(_context), RequestPath = "/_static" })
 			.UseRouting();
 
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
@@ -99,22 +95,31 @@ public class DocumentationWebHost
 		// Hence, both http://localhost:5000/migration/versioning.html and http://localhost:5000/migration/versioning works,
 		// so it's easier to copy links from issues created during the bug bounty.
 		// However, we can remove this logic in the future and only support links without the .html extension.
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug.Replace(".html", ".md");
-		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
+
+
+		var renderPage = false;
+		if (slug.EndsWith(".main.html"))
 		{
-			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace("/index.md", ".md");
-			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
+			renderPage = true;
+			slug = slug.Replace(".main.html", ".html");
+		}
+
+		var markdownPath = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug.Replace(".html", ".md");
+		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(markdownPath, out var documentationFile))
+		{
+			markdownPath = Path.GetExtension(slug) == string.Empty ? slug + ".md" : markdownPath.Replace("/index.md", ".md");
+			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(markdownPath, out documentationFile))
 				return Results.NotFound();
 		}
 
 		switch (documentationFile)
 		{
 			case MarkdownFile markdown:
-				{
-					var rendered = await generator.RenderLayout(markdown, ctx);
+				var rendered = renderPage
+					? await generator.RenderPage(markdown, ctx)
+					: await generator.RenderLayout(markdown, ctx);
 
-					return Results.Content(rendered, "text/html");
-				}
+				return Results.Content(rendered, "text/html");
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
@@ -122,7 +127,6 @@ public class DocumentationWebHost
 		}
 	}
 }
-
 
 public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 {
@@ -140,7 +144,6 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		var solutionRoot = Paths.GetSolutionDirectory();
 		if (solutionRoot != null)
 		{
-
 			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
 			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
 		}

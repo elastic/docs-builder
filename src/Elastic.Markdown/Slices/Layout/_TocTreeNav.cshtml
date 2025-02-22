@@ -10,15 +10,16 @@
 		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li">
 			<div class="flex">
 				<a
-					hx-get="@f.Url"
+					href="@f.Url"
+					hx-get="@(f.UrlFetch)"
+					hx-push-url="@f.Url"
 					hx-select-oob="@Htmx.GetHxSelectOob()"
 					hx-swap="none"
-					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
 					preload="mouseover"
 					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
 					id="page-@id"
-					href="@f.Url">
+					>
 					@f.NavigationTitle
 				</a>
 			</div>
@@ -49,7 +50,8 @@
 				>
 				<a
 					href="@g.Index?.Url"
-					hx-get="@g.Index?.Url"
+					hx-get="@(g.Index?.UrlFetch)"
+					hx-push-url="@g.Index?.Url"
 					hx-select-oob="@Htmx.GetHxSelectOob()"
 					hx-swap="none"
 					hx-push-url="true"
