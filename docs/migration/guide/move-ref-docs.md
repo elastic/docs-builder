@@ -70,6 +70,8 @@ For the **full Elastic.co/docs site**, the assembler references the individual c
 
 ## How to Move Reference Content
 
+The steps below explain how to move reference content. You can also take a look at our [sample PR](https://github.com/elastic/apm-agent-android/pull/398), which has specific commits to illustrate some of the steps below.
+
 ### Step 1: Delete Existing AsciiDoc Files
 
 :::{important}
@@ -81,15 +83,26 @@ Ensure you only delete **external documentation files**.
 - In others, manually verify which files should be removed.  
 - Use [`conf.yaml`](https://github.com/elastic/docs/blob/master/conf.yaml) to determine what should and shouldn't be removed.
 
+Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/749803ae9bccdb9f8abdf27a5c7434350716b6c0)
+
 ### Step 2: Copy and Paste New Content
 
 Move content from `asciidocalypse` to the correct directory in the target repo.  
 Use [issue#130](https://github.com/elastic/docs-eng-team/issues/130) to determine the correct path structure.
 
-### Step 3: Add the CI Check
+Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/3f966b0e1fa2f008da23d02f2c9e91a60c1bdf8d)
 
-- Example configuration:  
-- File location:  
+### Step 3: Add the CI Checks
+
+**docs-build**
+* The file to add: https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-build.yml
+* The path and name of the new file: `.github/workflows/docs-build.yml`
+
+**docs-cleanup**
+* The file to add: https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-cleanup.yml
+* The path and name of the new file: `.github/workflows/docs-cleanup.yml`
+
+Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/e869386bbf4af23d51432226f1fd3935d233e43d)
 
 ### Step 4: Wait for CI to Pass
 
