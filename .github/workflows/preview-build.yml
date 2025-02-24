@@ -58,13 +58,6 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
-
-      - name: Checkout
-        if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          persist-credentials: false
           
       - name: Create Deployment
         if: github.event_name == 'push' || (steps.check-files.outputs.any_changed == 'true' && startsWith(github.event_name, 'pull_request'))
