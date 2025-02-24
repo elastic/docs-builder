@@ -25,7 +25,7 @@ app.Add<LinkCommands>("link");
 app.Add<RepositoryCommands>("repo");
 
 var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
-var command = githubActions?.GetInput("COMMAND");
+var command = githubActions?.GetInput("COMMAND") ?? Environment.GetEnvironmentVariable("INPUT_COMMAND");
 if (!string.IsNullOrEmpty(command))
 	args = command.Split(' ');
 
