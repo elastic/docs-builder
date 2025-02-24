@@ -134,6 +134,9 @@ jobs:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
+      - uses: elastic/docs-builder/actions/validate-inbound-local@main
+        if: ${{ !cancelled() && steps.deployment.outputs.result }}
+
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: ${{ !cancelled() && steps.deployment.outputs.result }}
 
