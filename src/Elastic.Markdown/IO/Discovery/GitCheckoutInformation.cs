@@ -33,7 +33,7 @@ public record GitCheckoutInformation
 	public string? RepositoryName
 	{
 		get => _repositoryName ??= Remote.Split('/').Last();
-		set => _repositoryName = value;
+		init => _repositoryName = value;
 	}
 
 	// manual read because libgit2sharp is not yet AOT ready
@@ -73,13 +73,15 @@ public record GitCheckoutInformation
 		using var streamReader = new StreamReader(stream);
 		ini.Load(streamReader);
 
-		var remote = BranchTrackingRemote(branch, ini);
+		var remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		if (string.IsNullOrEmpty(remote))
+			remote = BranchTrackingRemote(branch, ini);
 		if (string.IsNullOrEmpty(remote))
 			remote = BranchTrackingRemote("main", ini);
 		if (string.IsNullOrEmpty(remote))
 			remote = BranchTrackingRemote("master", ini);
 		if (string.IsNullOrEmpty(remote))
-			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "elastic/docs-builder-unknown";
+			remote = "elastic/docs-builder-unknown";
 
 		remote = remote.AsSpan().TrimEnd(".git").ToString();
 
