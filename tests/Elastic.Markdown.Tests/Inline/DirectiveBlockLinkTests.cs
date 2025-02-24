@@ -66,7 +66,7 @@ public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlo
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#hint_ref" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#hint_ref" hx-get="/docs/testing/req#hint_ref" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Sub Requirements</a></p>"""
 		);
 
 	[Fact]

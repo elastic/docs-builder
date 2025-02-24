@@ -20,6 +20,9 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
+			_ = renderer.Write(" hx-get=\"");
+			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
+			_ = renderer.Write('"');
 			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob()}\"");
 			_ = renderer.Write(" hx-swap=\"none\"");
 			_ = renderer.Write(" hx-push-url=\"true\"");
