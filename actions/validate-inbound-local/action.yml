@@ -1,10 +1,12 @@
 name: 'Validate Inbound Links'
 description: 'Validates all published cross links from all known repositories against local links.json'
 
+inputs:
+  command:
+    description: 'The assembler command to run'
+    required: false
+    default: "link validate-inbound-local"
+
 runs:
-  using: "composite"
-  steps:
-    - name: Validate Inbound Links
-      uses: elastic/docs-builder/actions/assembler@main
-      with:
-        command: "link validate-inbound-local"
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-assembler:edge"
