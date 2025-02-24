@@ -8,10 +8,10 @@ using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
 using ConsoleAppFramework;
-using Elastic.Markdown.CrossLinks;
-using Microsoft.Extensions.Logging;
 using Documentation.Assembler.Links;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.Discovery;
+using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 

@@ -50,7 +50,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _linkReferences, crossLinkUri, out resolvedUri);
 
-	private static Uri BaseUri { get; } = new ("https://docs-v3-preview.elastic.dev");
+	private static Uri BaseUri { get; } = new("https://docs-v3-preview.elastic.dev");
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
