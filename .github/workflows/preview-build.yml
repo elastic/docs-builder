@@ -133,7 +133,7 @@ jobs:
           dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder' && steps.deployment.outputs.result || github.event_name == 'merge_group'
+        if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_changed == 'true' && github.event_name == 'merge_group'))
         uses: elastic/docs-builder@main
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
@@ -141,7 +141,7 @@ jobs:
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
       - uses: elastic/docs-builder/actions/validate-inbound-local@main
-        if: ${{ !cancelled() && (steps.deployment.outputs.result || github.event_name == 'merge_group') }}
+        if: ${{ !cancelled() && (steps.deployment.outputs.result || (steps.check-files.outputs.any_changed == 'true' && github.event_name == 'merge_group')) }}
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: ${{ !cancelled() && steps.deployment.outputs.result }}
