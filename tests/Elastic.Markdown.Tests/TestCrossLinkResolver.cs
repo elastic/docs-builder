@@ -23,7 +23,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           {
 		           	  "origin": {
 		           		"branch": "main",
-		           		"remote": " https://github.com/elastic/docs-conten",
+		           		"remote": " https://github.com/elastic/docs-content",
 		           		"ref": "76aac68d066e2af935c38bca8ce04d3ee67a8dd9"
 		           	  },
 		           	  "url_path_prefix": "/elastic/docs-content/tree/main",
