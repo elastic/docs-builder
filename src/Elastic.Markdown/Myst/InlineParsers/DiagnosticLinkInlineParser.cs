@@ -202,19 +202,20 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
 
-		if (markdown == null)
+		if (markdown == null && link.FirstChild == null)
 		{
 			processor.EmitWarning(link,
 				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
 			return;
 		}
 
-		var title = markdown.Title;
+		var title = markdown?.Title;
 
 		if (!string.IsNullOrEmpty(anchor))
 		{
-			ValidateAnchor(processor, markdown, anchor, link);
-			if (link.FirstChild == null && markdown.TableOfContents.TryGetValue(anchor, out var heading))
+			if (markdown is not null)
+				ValidateAnchor(processor, markdown, anchor, link);
+			if (link.FirstChild == null && (markdown?.TableOfContents.TryGetValue(anchor, out var heading) ?? false))
 				title += " > " + heading.Heading;
 		}
 

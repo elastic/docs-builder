@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Markdown.Diagnostics;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
@@ -180,6 +181,23 @@ public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestB
 		Collector.Diagnostics.First().Severity.Should().Be(Diagnostics.Severity.Warning);
 		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
 	}
+}
+
+public class NonExistingLinks(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[Non Existing Link](/non-existing.md)
+	"""
+)
+{
+	[Fact]
+	public void HasErrors() => Collector.Diagnostics
+		.Where(d => d.Severity == Severity.Error)
+		.Should().HaveCount(1);
+
+	[Fact]
+	public void HasNoWarning() => Collector.Diagnostics
+		.Where(d => d.Severity == Severity.Warning)
+		.Should().HaveCount(0);
 }
 
 public class CommentedNonExistingLinks(ITestOutputHelper output) : LinkTestBase(output,
