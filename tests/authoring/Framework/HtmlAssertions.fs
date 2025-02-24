@@ -94,6 +94,7 @@ actual: {actual}
         let links = element.QuerySelectorAll("a")
         links
         |> Seq.iter(fun l ->
+            l.RemoveAttribute "hx-get" |> ignore
             l.RemoveAttribute "hx-select-oob" |> ignore
             l.RemoveAttribute "hx-swap" |> ignore
             l.RemoveAttribute "hx-indicator" |> ignore
