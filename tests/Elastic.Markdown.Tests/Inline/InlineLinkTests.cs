@@ -178,7 +178,7 @@ public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestB
 	public void HasWarnings()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.First().Severity.Should().Be(Diagnostics.Severity.Warning);
+		Collector.Diagnostics.First().Severity.Should().Be(Severity.Warning);
 		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
 	}
 }
