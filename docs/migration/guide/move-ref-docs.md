@@ -2,21 +2,21 @@
 navigation_title: Move reference docs
 ---
 
-# Move Reference Docs from Asciidocalypse
+# Move reference docs from Asciidocalypse
 
-:::{important}
+:::{note}
 This guide is only for technical writers tasked with moving content out of `elastic/asciidocalypse`.
 :::
 
-## How Reference Content Works
+## How reference content works in V3
 
 There are two use cases for building reference content in V3:
 - **Preview builds**
-- **Elastic.co/docs builds**
+- **elastic.co/docs builds**
 
-Some repositories, like `elastic-search-forwarder`, contain a single content set in the larger `elastic.co/docs` build. This means the structure of the content is the same for both preview builds and the final Elastic.co/docs build.
+Some repositories, like [`elastic/elastic-serverless-forwarder`](https://github.com/elastic/elastic-serverless-forwarder), contain a single chunk of content within the larger `elastic.co/docs` build. This means the structure of the content is the same for both preview builds and the final Elastic.co/docs build.
 
-However, other repositories, like `apm-agent-android`, contain content that lives in multiple locations within the new `elastic.co/docs` IA:
+However, most repositories contain content that will live in multiple locations within the new `elastic.co/docs` IA. Consider `apm-agent-android` as an example. It has the following content:
 - Reference docs
 - Release notes
 - Known issues
@@ -25,23 +25,22 @@ However, other repositories, like `apm-agent-android`, contain content that live
 
 ### Directory Structure
 
-Release notes do **not** require individual `toc.yml` files for each content set. The directory structure for `apm-agent-android` follows this format:
+Release notes do **not** require individual `toc.yml` files for each content set. The directory structure for `apm-agent-android` therefore follows this format:
 
 ```md
-apm-agent-android
-    docs/
-        docset.yml
-            * Defines subs
-            * Includes all `toc.yml` files in this repo
-            * Ignored by the assembler
-        reference/
-            toc.yml (for this directory)
-            All reference `.md` files go here
-        release-notes/
-            toc.yml (for this directory)
-            All release notes, known issues, breaking changes, and deprecations go here
-        images/
-            All image files for all content sets
+docs/
+    `docset.yml`
+        * Defines substitutions
+        * Includes all `toc.yml` files in this repo
+        * Ignored by the assembler
+    reference/
+        `toc.yml` (for this directory)
+        All reference `.md` files go here
+    release-notes/
+        `toc.yml` (for this directory)
+        All release notes, known issues, breaking changes, and deprecations files go here
+    images/
+        All image files for all content sets
 ```
 
 ### Preview Site vs. Full Site Structure
@@ -64,7 +63,9 @@ For individual repository preview builds, **all** content in the `docs/` directo
    APM Android Agent release notes
 ```
 
-For the **full Elastic.co/docs site**, the assembler references the individual content set definitions (`toc.yml`) and organizes the content accordingly:
+This structure is defined in the repo's `docset.yml` file.
+
+For the **full Elastic.co/docs site**, the assembler references the individual content set definitions (`toc.yml`) within the repo and organizes the content accordingly:
 
 ![Diagram of how everything maps together](../../images/great-drawing-of-new-structure.png)
 
