@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -39,18 +40,26 @@ public interface ICrossLinkResolver
 
 public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 {
-	private FetchedCrossLinks _linkReferences = FetchedCrossLinks.Empty;
+	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 
 	public async Task<FetchedCrossLinks> FetchLinks()
 	{
-		_linkReferences = await fetcher.Fetch();
-		return _linkReferences;
+		_crossLinks = await fetcher.Fetch();
+		return _crossLinks;
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, _linkReferences, crossLinkUri, out resolvedUri);
+		TryResolve(errorEmitter, _crossLinks, crossLinkUri, out resolvedUri);
 
 	private static Uri BaseUri { get; } = new("https://docs-v3-preview.elastic.dev");
+
+	public FetchedCrossLinks UpdateLinkReference(string repository, LinkReference linkReference)
+	{
+		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		dictionary[repository] = linkReference;
+		_crossLinks = _crossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
+		return _crossLinks;
+	}
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
