@@ -85,11 +85,6 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 				if (currentRepository != null && uri.Scheme != currentRepository)
 					continue;
 
-				if (crossLink.Contains("upload-custom-plugins-bundles"))
-				{
-
-				}
-
 				_ = resolver.TryResolve(s =>
 				{
 					if (s.Contains("is not a valid link in the"))
