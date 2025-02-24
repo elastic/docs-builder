@@ -21,7 +21,7 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetche
 			var linkIndexEntry = value.First().Value;
 			var linkReference = await FetchLinkIndexEntry(repository, linkIndexEntry);
 			dictionary.Add(repository, linkReference);
-			_ =declaredRepositories.Add(repository);
+			_ = declaredRepositories.Add(repository);
 		}
 
 		return new FetchedCrossLinks
