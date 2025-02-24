@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    
+    <AWSProjectType>Lambda</AWSProjectType>
+    
+    <IsPublishable>true</IsPublishable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.12.0"/>
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0"/>
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4"/>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.414.5"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\.dockerignore">
+      <Link>.dockerignore</Link>
+    </Content>
+  </ItemGroup>
+</Project>
