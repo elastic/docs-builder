@@ -93,7 +93,7 @@ Use [issue#130](https://github.com/elastic/docs-eng-team/issues/130) to determin
 
 Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/3f966b0e1fa2f008da23d02f2c9e91a60c1bdf8d)
 
-### Step 3: Add the CI Checks
+### Step 3: Add the new CI checks
 
 **docs-build**
 * The file to add: https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-build.yml
@@ -104,6 +104,18 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 * The path and name of the new file: `.github/workflows/docs-cleanup.yml`
 
 Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/e869386bbf4af23d51432226f1fd3935d233e43d)
+
+### Step 4: Delete the asciidoc warning
+
+:::{important}
+Skip this step for **any Cloud repos** and the **search-ui repository**.
+:::
+
+During the migration freeze, we added a check to each repository that warned when a PR was opened against asciidoc files in `main`. It is now safe to remove this file.
+
+File to delete: `.github/workflows/comment-on-asciidoc-changes.yml`
+
+Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/be422934e79c5ecadd7b76523d2e1676fc86f323)
 
 ### Step 4: Wait for CI to Pass
 
