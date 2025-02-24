@@ -36,6 +36,7 @@ toc:
           - file: working-in-docs-content.md
           - file: automated.md
           - file: tooling.md
+          - file: move-ref-docs.md
           - file: mapping.md
           - file: how-to-set-up-docs-previews.md
   - folder: configure
