@@ -84,6 +84,8 @@ public record GitCheckoutInformation
 			remote = "elastic/docs-builder-unknown";
 
 		remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
+		if (remote.EndsWith("docs-conten"))
+			remote += "t";
 
 		return new GitCheckoutInformation
 		{
