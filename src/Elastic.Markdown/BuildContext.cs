@@ -65,7 +65,7 @@ public record BuildContext
 		if (ConfigurationPath.FullName != SourcePath.FullName)
 			SourcePath = ConfigurationPath.Directory!;
 
-		Git = GitCheckoutInformation.Create(ReadFileSystem);
+		Git = GitCheckoutInformation.Create(SourcePath, ReadFileSystem);
 		Configuration = new ConfigurationFile(ConfigurationPath, SourcePath, this);
 	}
 

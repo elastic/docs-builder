@@ -37,7 +37,7 @@ public record GitCheckoutInformation
 	}
 
 	// manual read because libgit2sharp is not yet AOT ready
-	public static GitCheckoutInformation Create(IFileSystem fileSystem)
+	public static GitCheckoutInformation Create(IDirectoryInfo source, IFileSystem fileSystem)
 	{
 		if (fileSystem is not FileSystem)
 		{
@@ -51,18 +51,18 @@ public record GitCheckoutInformation
 		}
 
 		var fakeRef = Guid.NewGuid().ToString()[..16];
-		var gitConfig = Git(".git/config");
+		var gitConfig = Git(source, ".git/config");
 		if (!gitConfig.Exists)
 			return Unavailable;
 
-		var head = Read(".git/HEAD") ?? fakeRef;
+		var head = Read(source, ".git/HEAD") ?? fakeRef;
 		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
 		//not detached HEAD
 		if (head.StartsWith("ref:"))
 		{
 			head = head.Replace("ref: ", string.Empty);
-			gitRef = Read(".git/" + head) ?? fakeRef;
+			gitRef = Read(source, ".git/" + head) ?? fakeRef;
 			branch = branch.Replace("ref: ", string.Empty);
 		}
 		else
@@ -83,7 +83,7 @@ public record GitCheckoutInformation
 		if (string.IsNullOrEmpty(remote))
 			remote = "elastic/docs-builder-unknown";
 
-		remote = remote.AsSpan().TrimEnd(".git").ToString();
+		remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
 
 		return new GitCheckoutInformation
 		{
@@ -93,11 +93,12 @@ public record GitCheckoutInformation
 			RepositoryName = remote.Split('/').Last()
 		};
 
-		IFileInfo Git(string path) => fileSystem.FileInfo.New(Path.Combine(Paths.Root.FullName, path));
+		IFileInfo Git(IDirectoryInfo directoryInfo, string path) =>
+			fileSystem.FileInfo.New(Path.Combine(directoryInfo.FullName, path));
 
-		string? Read(string path)
+		string? Read(IDirectoryInfo directoryInfo, string path)
 		{
-			var gitPath = Git(path).FullName;
+			var gitPath = Git(directoryInfo, path).FullName;
 			return !fileSystem.File.Exists(gitPath)
 				? null
 				: fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
