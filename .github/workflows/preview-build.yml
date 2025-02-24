@@ -66,7 +66,7 @@ jobs:
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref_name }}
+          REF: ${{ startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha || github.ref_name }}
         with:
           result-encoding: string
           script: |
@@ -100,7 +100,13 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           case "${GITHUB_EVENT_NAME}" in
+            "merge_group")
+              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
+              ;;
             "pull_request_target")
+              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
+              ;;
+            "pull_request")
               echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
               ;;
             "push")
