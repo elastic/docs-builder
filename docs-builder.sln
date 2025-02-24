@@ -55,6 +55,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler", "assembler", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Tooling", "Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj", "{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-inbound-local", "validate-inbound-local", "{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46}"
+	ProjectSection(SolutionItems) = preProject
+		actions\validate-inbound-local\action.yml = actions\validate-inbound-local\action.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -113,5 +118,6 @@ Global
 		{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{CFEE9FAD-9E0C-4C0E-A0C2-B97D594C14B5} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 	EndGlobalSection
 EndGlobal

@@ -12,6 +12,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.2"/>
     <PackageReference Include="Github.Actions.Core" Version="9.0.0"/>
     <PackageReference Include="Crayon" Version="2.0.69"/>
+    <PackageReference Include="Errata" Version="0.13.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
 
 </Project>

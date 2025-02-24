@@ -71,7 +71,7 @@ public class DocumentationGenerator
 			return;
 
 		_logger.LogInformation($"Fetching external links");
-		await Resolver.FetchLinks();
+		_ = await Resolver.FetchLinks();
 
 		await ResolveDirectoryTree(ctx);
 

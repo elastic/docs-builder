@@ -10,7 +10,7 @@ using Errata;
 using Spectre.Console;
 using Diagnostic = Elastic.Markdown.Diagnostics.Diagnostic;
 
-namespace Documentation.Builder.Diagnostics.Console;
+namespace Elastic.Documentation.Tooling.Diagnostics.Console;
 
 public class ErrataFileSourceRepository : ISourceRepository
 {

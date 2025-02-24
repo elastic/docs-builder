@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
@@ -11,10 +12,11 @@ namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
+	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];
 
-	public Task FetchLinks()
+	public Task<FetchedCrossLinks> FetchLinks()
 	{
 		// language=json
 		var json = """
@@ -40,13 +42,18 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           	  }
 		           	}
 		           """;
-		var reference = CrossLinkResolver.Deserialize(json);
+		var reference = CrossLinkFetcher.Deserialize(json);
 		LinkReferences.Add("docs-content", reference);
 		LinkReferences.Add("kibana", reference);
 		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
-		return Task.CompletedTask;
+		_crossLinks = new FetchedCrossLinks
+		{
+			DeclaredRepositories = DeclaredRepositories,
+			LinkReferences = LinkReferences.ToFrozenDictionary()
+		};
+		return Task.FromResult(_crossLinks);
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, DeclaredRepositories, LinkReferences, crossLinkUri, out resolvedUri);
+		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, crossLinkUri, out resolvedUri);
 }

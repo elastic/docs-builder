@@ -61,6 +61,9 @@ public record LinkReference
 	public static string SerializeRedirects(Dictionary<string, LinkRedirect>? redirects) =>
 		JsonSerializer.Serialize(redirects, SourceGenerationContext.Default.DictionaryStringLinkRedirect);
 
+	public static LinkReference Deserialize(string json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
+
 	public static LinkReference Create(DocumentationSet set)
 	{
 		var redirects = set.Configuration.Redirects;

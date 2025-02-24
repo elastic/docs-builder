@@ -2,13 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.State;
-using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.CrossLinks;
 
@@ -36,61 +33,34 @@ public record LinkIndexEntry
 
 public interface ICrossLinkResolver
 {
-	Task FetchLinks();
+	Task<FetchedCrossLinks> FetchLinks();
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 }
 
-public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory logger) : ICrossLinkResolver
+public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 {
-	private readonly string[] _links = configuration.CrossLinkRepositories;
-	private FrozenDictionary<string, LinkReference> _linkReferences = new Dictionary<string, LinkReference>().ToFrozenDictionary();
-	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkResolver));
-	private readonly HashSet<string> _declaredRepositories = [];
+	private FetchedCrossLinks _linkReferences = FetchedCrossLinks.Empty;
 
-	public static LinkReference Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
-
-	public async Task FetchLinks()
+	public async Task<FetchedCrossLinks> FetchLinks()
 	{
-		using var client = new HttpClient();
-		var dictionary = new Dictionary<string, LinkReference>();
-		foreach (var link in _links)
-		{
-			_ = _declaredRepositories.Add(link);
-			try
-			{
-				var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{link}/main/links.json";
-				_logger.LogInformation("Fetching {Url}", url);
-				var json = await client.GetStringAsync(url);
-				var linkReference = Deserialize(json);
-				dictionary.Add(link, linkReference);
-			}
-			catch when (link == "docs-content")
-			{
-				throw;
-			}
-			catch when (link != "docs-content")
-			{
-				// TODO: ignored for now while we wait for all links.json files to populate
-			}
-		}
-
-		_linkReferences = dictionary.ToFrozenDictionary();
+		_linkReferences = await fetcher.Fetch();
+		return _linkReferences;
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, _declaredRepositories, _linkReferences, crossLinkUri, out resolvedUri);
+		TryResolve(errorEmitter, _linkReferences, crossLinkUri, out resolvedUri);
 
-	private static Uri BaseUri { get; } = new Uri("https://docs-v3-preview.elastic.dev");
+	private static Uri BaseUri { get; } = new ("https://docs-v3-preview.elastic.dev");
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
-		HashSet<string> declaredRepositories,
-		IDictionary<string, LinkReference> lookup,
+		FetchedCrossLinks fetchedCrossLinks,
 		Uri crossLinkUri,
 		[NotNullWhen(true)] out Uri? resolvedUri
 	)
 	{
+		var lookup = fetchedCrossLinks.LinkReferences;
+		var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
 		resolvedUri = null;
 		if (crossLinkUri.Scheme == "docs-content")
 		{
@@ -180,6 +150,7 @@ public class CrossLinkResolver(ConfigurationFile configuration, ILoggerFactory l
 
 			return ResolveLinkRedirect(targets, errorEmitter, linkReference, crossLinkUri, ref lookupPath, out link, ref lookupFragment);
 		}
+
 		if (linkReference.Links.TryGetValue(lookupPath, out link))
 		{
 			lookupFragment = crossLinkUri.Fragment;

@@ -6,6 +6,7 @@ namespace authoring
 
 open System
 open System.Collections.Generic
+open System.Collections.Frozen
 open System.Runtime.InteropServices
 open System.Threading.Tasks
 open Elastic.Markdown.CrossLinks
@@ -55,15 +56,25 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
   }
 }
 """
-            let reference = CrossLinkResolver.Deserialize json
+            let reference = CrossLinkFetcher.Deserialize json
             this.LinkReferences.Add("docs-content", reference)
             this.LinkReferences.Add("kibana", reference)
             this.DeclaredRepositories.Add("docs-content") |> ignore;
             this.DeclaredRepositories.Add("kibana") |> ignore;
             this.DeclaredRepositories.Add("elasticsearch") |> ignore;
-            Task.CompletedTask
+            let crossLinks =
+                FetchedCrossLinks(
+                    DeclaredRepositories=this.DeclaredRepositories,
+                    LinkReferences=this.LinkReferences.ToFrozenDictionary()
+                )
+            Task.FromResult crossLinks
 
         member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
-            CrossLinkResolver.TryResolve(errorEmitter, this.DeclaredRepositories, this.LinkReferences, crossLinkUri, &resolvedUri);
+            let crossLinks =
+                FetchedCrossLinks(
+                    DeclaredRepositories=this.DeclaredRepositories,
+                    LinkReferences=this.LinkReferences.ToFrozenDictionary()
+                )
+            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, crossLinkUri, &resolvedUri);
 
 

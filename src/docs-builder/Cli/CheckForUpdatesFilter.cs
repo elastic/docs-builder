@@ -5,22 +5,13 @@
 using System.Reflection;
 using ConsoleAppFramework;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class CheckForUpdatesFilter : ConsoleAppFilter
+internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {
-	private readonly FileInfo _stateFile;
-
-	public CheckForUpdatesFilter(ConsoleAppFilter next) : base(next)
-	{
-		// ~/Library/Application\ Support/ on osx
-		// XDG_DATA_HOME or home/.local/share on linux
-		// %LOCAL_APPLICATION_DATA% windows
-		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var elasticPath = Path.Combine(localPath, "elastic");
-		_stateFile = new FileInfo(Path.Combine(elasticPath, "docs-build-check.state"));
-	}
+	private readonly FileInfo _stateFile = new(Path.Combine(Paths.ApplicationData.FullName, "docs-build-check.state"));
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{

@@ -40,7 +40,8 @@ public class DocumentationSet
 		SourcePath = context.SourcePath;
 		OutputPath = context.OutputPath;
 		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
-		LinkResolver = linkResolver ?? new CrossLinkResolver(context.Configuration, logger);
+		LinkResolver =
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, logger));
 		Configuration = context.Configuration;
 
 		MarkdownParser = new MarkdownParser(SourcePath, context, GetMarkdownFile, context.Configuration, LinkResolver);
