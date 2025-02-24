@@ -99,13 +99,7 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           case "${GITHUB_EVENT_NAME}" in
-            "merge_group")
-              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
-              ;;
-            "pull_request_target")
-              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
-              ;;
-            "pull_request")
+            "merge_group" | "pull_request" | "pull_request_target")
               echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
               ;;
             "push")
