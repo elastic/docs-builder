@@ -19,7 +19,7 @@ on:
         description: 'Do not fail to publish if build fails'
         type: string
         required: false
-        default: 'true'
+        default: 'false'
       path-pattern:
         description: 'Path pattern to filter files. Only if changed files match the pattern, the workflow will continue.'
         type: string
