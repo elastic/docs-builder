@@ -4,11 +4,13 @@ navigation_title: Move reference docs
 
 # Move reference docs from Asciidocalypse
 
-This page has three parts:
+This page is divided into three sections:
 
-1. [How reference content works in V3](#how-reference-content-works-in-v3) --> potentially interesting for contributors wanting to understand how PR previews and full website builds differ
-2. [How to Move Reference Content](#how-to-move-reference-content) --> not really important anymore as the process has been automated
-3. [How to manage moved reference content](#how-to-manage-moved-reference-content) --> important for writers who have been assigned to help get reference content merged
+1. [How Reference Content Works in V3](#how-reference-content-works-in-v3) – Useful for contributors who want to understand the difference between PR previews and full website builds.  
+2. [How to Move Reference Content](#how-to-move-reference-content) – No longer relevant, as the process has been automated.  
+3. [How to Manage Moved Reference Content](#how-to-manage-moved-reference-content) – Important for writers responsible for merging reference content.  
+
+Jump to the relevant section based on your needs.
 
 ## How reference content works in V3
 
@@ -182,28 +184,37 @@ Once everything is confirmed working, merge the pull request.
 
 Update [issue#130](https://github.com/elastic/docs-eng-team/issues/130) to reflect the completed migration.
 
-## How to manage moved reference content
+## Managing Moved Reference Content
 
-You've been assigned to a repo in [issue#130](https://github.com/elastic/docs-eng-team/issues/130). Now what?
+You've been assigned to a repository in [issue #130](https://github.com/elastic/docs-eng-team/issues/130). Now what?
 
-The good news is all of the PRs have been opened for you. For each repository, there are two PRs that have been opened:
+The good news: all necessary PRs have already been opened for you. Each repository has two PRs:
 
-1. A PR that adds the GH actions for build previews ([example](https://github.com/elastic/ecs-logging/pull/85))
-2. A PR that removes asciidoc content and adds md content ([example](https://github.com/elastic/ecs-logging/pull/84))
+1. A PR that adds GitHub Actions for build previews ([example](https://github.com/elastic/ecs-logging/pull/85)).
+2. A PR that removes AsciiDoc content and adds Markdown content ([example](https://github.com/elastic/ecs-logging/pull/84)).
 
-In an ideal world, your job is to work with codeowners and repo admins to:
+### Your Role
 
-1. Get the first PR merged
-2. Merge main into the second PR and get it merged
+Ideally, your job is to work with codeowners and repo admins to:
 
-Doing this in two PRs ensures we can merge content with clean CI the first time.
+1. **Get the first PR merged** (to ensure previews work).
+2. **Merge `main` into the second PR and get it merged**.
 
-We recognize that some repositories are harder to work in than others. If this is the case, you can cherry pick the commits into a single PR and work with codeowners to get one PR merged. The downside of this approach is that we won't be sure if CI passes until the content is merged. We trust your judgement. Do what is right for your scenario.
+Splitting this into two PRs ensures that content is merged with a clean CI pass on the first attempt.
 
-### Considerations
+### Alternative Approach
 
-Make sure to consider the following things:
+Some repositories may be more challenging to work with. If needed, you can cherry-pick the commits into a single PR and collaborate with codeowners to get it merged. 
 
-* Are these PRs deleting the right content? Is any of the content in the docs dir used, for example, for internal docs that shouldn't be deleted?
-* Is the right content being moved?
-* Are tests passing? If not, what needs to be done to get the content into a mergable state?
+**Downside:** We won't know if CI passes until after merging.  
+**Use your judgment**—choose the best approach for your situation.
+
+### Key Considerations
+
+Before merging, review the following:
+
+- **Is the right content being deleted?** Ensure no essential internal docs are being removed.
+- **Is the correct content being moved?** Double-check that everything is in its proper place.
+- **Are tests passing?** If not, what adjustments are needed to make the content mergeable?
+
+Let us know if you encounter any blockers. Thanks for your help!
