@@ -184,7 +184,7 @@ Once everything is confirmed working, merge the pull request.
 
 Update [issue#130](https://github.com/elastic/docs-eng-team/issues/130) to reflect the completed migration.
 
-## Managing Moved Reference Content
+## How to manage moved reference content
 
 You've been assigned to a repository in [issue #130](https://github.com/elastic/docs-eng-team/issues/130). Now what?
 
