@@ -95,6 +95,8 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 
 ### Step 3: Add the new CI checks
 
+There are two CI checks to add:
+
 **docs-build**
 * The file to add: [`github/workflows/docs-build.yml`](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-build.yml)
 * The path and name of the new file: `.github/workflows/docs-build.yml`
@@ -102,6 +104,34 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 **docs-cleanup**
 * The file to add: [`.github/workflows/docs-cleanup.yml`](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-cleanup.yml)
 * The path and name of the new file: `.github/workflows/docs-cleanup.yml`
+
+In the `docs-build.yml` file, specify the directory in which the check should run using the `path-pattern` parameter. For example, if you've added docs to the `/docs` dir, add the following lines to the `docs-preview` job:
+
+```yml
+    with:
+      path-pattern: docs/**
+```
+
+In context:
+
+```yml
+jobs:
+  docs-preview:
+    uses: elastic/docs-builder/.github/workflows/preview-build.yml 
+
+    with:
+      path-pattern: docs/** <1>
+
+    permissions:
+      id-token: write
+      deployments: write
+      contents: read
+      pull-requests: read
+```
+
+1. The path to the docs directory
+
+Learn more about these ci checks in [](./how-to-set-up-docs-previews).
 
 Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/e869386bbf4af23d51432226f1fd3935d233e43d)
 
