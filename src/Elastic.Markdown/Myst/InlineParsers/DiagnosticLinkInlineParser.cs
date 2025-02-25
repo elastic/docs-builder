@@ -55,6 +55,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 
 		var context = processor.GetContext();
+		if (context.CurrentUrlPath is not null)
+			link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
+
 		if (IsInCommentBlock(link) || context.SkipValidation)
 			return match;
 
@@ -183,7 +186,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
 		url.StartsWith('/')
 			? context.Parser.SourcePath.FullName
-			: context.Path.Directory!.FullName;
+			: context.CurrentPath.Directory!.FullName;
 
 	private static void ValidateInternalUrl(InlineProcessor processor, string url, string includeFrom, LinkInline link, ParserContext context)
 	{
@@ -200,7 +203,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
-		var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
+		var markdown = context.GetDocumentationFile(file) as MarkdownFile;
 
 		if (markdown == null && link.FirstChild == null)
 		{
@@ -225,10 +228,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static IFileInfo ResolveFile(ParserContext context, string url) =>
 		string.IsNullOrWhiteSpace(url)
-			? context.Path
+			? context.CurrentPath
 			: url.StartsWith('/')
 				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')))
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Path.Directory!.FullName, url));
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.CurrentPath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{

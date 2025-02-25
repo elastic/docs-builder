@@ -16,6 +16,15 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage && link.Url?.StartsWith('/') == true)
 		{
+			// ReSharper disable once UnusedVariable
+			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
+			{
+
+			}
+			else
+			{
+
+			}
 			_ = renderer.Write("<a href=\"");
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');

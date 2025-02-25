@@ -32,14 +32,20 @@ public class ParserContext : MarkdownParserContext
 		YamlFrontMatter? frontMatter,
 		BuildContext context,
 		ConfigurationFile configuration,
-		ICrossLinkResolver linksResolver)
+		ICrossLinkResolver linksResolver,
+		Func<IFileInfo, DocumentationFile?> getDocumentationFile
+	)
 	{
 		Parser = markdownParser;
-		Path = path;
 		FrontMatter = frontMatter;
 		Build = context;
 		Configuration = configuration;
 		LinksResolver = linksResolver;
+		CurrentPath = path;
+		CurrentPathRelative = Path.GetRelativePath(markdownParser.SourcePath.FullName, CurrentPath.FullName);
+		GetDocumentationFile = getDocumentationFile;
+		if (getDocumentationFile(CurrentPath) is MarkdownFile md)
+			CurrentUrlPath = md.Url;
 
 		if (frontMatter?.Properties is not { Count: > 0 })
 			Substitutions = configuration.Substitutions;
@@ -69,11 +75,13 @@ public class ParserContext : MarkdownParserContext
 	public ConfigurationFile Configuration { get; }
 	public ICrossLinkResolver LinksResolver { get; }
 	public MarkdownParser Parser { get; }
-	public IFileInfo Path { get; }
+	public IFileInfo CurrentPath { get; }
+	public string CurrentPathRelative { get; }
+	public string? CurrentUrlPath { get; }
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; init; }
-	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; init; }
+	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; init; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
 

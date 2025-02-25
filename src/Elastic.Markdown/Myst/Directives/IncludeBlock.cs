@@ -22,7 +22,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 {
 	public override string Directive => "include";
 
-	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; } = context.GetDocumentationFile;
+	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; } = context.GetDocumentationFile;
 
 	public ConfigurationFile Configuration { get; } = context.Configuration;
 
@@ -65,7 +65,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		var includeFrom = context.Path.Directory!.FullName;
+		var includeFrom = context.CurrentPath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
 			includeFrom = DocumentationSourcePath.FullName;
 
@@ -89,7 +89,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			Found = false;
 		}
 
-		if (file.FullName == context.Path.FullName)
+		if (file.FullName == context.CurrentPath.FullName)
 		{
 			this.EmitError($"{{include}} cyclical include detected `{IncludePath}` points to itself");
 			Found = false;

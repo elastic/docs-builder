@@ -14,7 +14,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 {
 	public override string Directive => "settings";
 
-	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; } = context.GetDocumentationFile;
+	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; } = context.GetDocumentationFile;
 
 	public ConfigurationFile Configuration { get; } = context.Configuration;
 
@@ -22,7 +22,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
 
-	public IFileInfo IncludeFrom { get; } = context.Path;
+	public IFileInfo IncludeFrom { get; } = context.CurrentPath;
 
 	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;
 
@@ -46,7 +46,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			return;
 		}
 
-		var includeFrom = context.Path.Directory!.FullName;
+		var includeFrom = context.CurrentPath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
 			includeFrom = DocumentationSourcePath.FullName;
 

@@ -43,7 +43,7 @@ public abstract class DirectiveBlock(
 
 	public BuildContext Build { get; } = context.Build;
 
-	public IFileInfo CurrentFile { get; } = context.Path;
+	public IFileInfo CurrentFile { get; } = context.CurrentPath;
 
 	public bool SkipValidation { get; } = context.SkipValidation;
 

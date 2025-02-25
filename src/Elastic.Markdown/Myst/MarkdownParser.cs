@@ -24,7 +24,7 @@ namespace Elastic.Markdown.Myst;
 public class MarkdownParser(
 	IDirectoryInfo sourcePath,
 	BuildContext context,
-	Func<IFileInfo, DocumentationFile?>? getDocumentationFile,
+	Func<IFileInfo, DocumentationFile?> getDocumentationFile,
 	ConfigurationFile configuration,
 	ICrossLinkResolver linksResolver
 	)
@@ -94,20 +94,16 @@ public class MarkdownParser(
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context, Configuration, LinksResolver)
+		var context = new ParserContext(this, path, null, Context, Configuration, LinksResolver, getDocumentationFile)
 		{
-			SkipValidation = true,
-			GetDocumentationFile = getDocumentationFile
+			SkipValidation = true
 		};
 		return ParseAsync(path, context, MinimalPipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, matter, Context, Configuration, LinksResolver)
-		{
-			GetDocumentationFile = getDocumentationFile
-		};
+		var context = new ParserContext(this, path, matter, Context, Configuration, LinksResolver, getDocumentationFile);
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
@@ -135,10 +131,7 @@ public class MarkdownParser(
 
 	public MarkdownDocument Parse(string yaml, IFileInfo parent, YamlFrontMatter? matter)
 	{
-		var context = new ParserContext(this, parent, matter, Context, Configuration, LinksResolver)
-		{
-			GetDocumentationFile = getDocumentationFile
-		};
+		var context = new ParserContext(this, parent, matter, Context, Configuration, LinksResolver, getDocumentationFile);
 		var markdownDocument = Markdig.Markdown.Parse(yaml, Pipeline, context);
 		return markdownDocument;
 	}
