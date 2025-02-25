@@ -96,11 +96,11 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 ### Step 3: Add the new CI checks
 
 **docs-build**
-* The file to add: [](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-build.yml)
+* The file to add: [`github/workflows/docs-build.yml`](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-build.yml)
 * The path and name of the new file: `.github/workflows/docs-build.yml`
 
 **docs-cleanup**
-* The file to add: [](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-cleanup.yml)
+* The file to add: [`.github/workflows/docs-cleanup.yml`](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-cleanup.yml)
 * The path and name of the new file: `.github/workflows/docs-cleanup.yml`
 
 Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/e869386bbf4af23d51432226f1fd3935d233e43d)
