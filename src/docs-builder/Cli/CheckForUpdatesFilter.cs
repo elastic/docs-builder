@@ -44,7 +44,7 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppF
 			ConsoleApp.Log($"	{latestVersionUrl}");
 			ConsoleApp.Log("");
 			ConsoleApp.Log("Read more about updating here:");
-			ConsoleApp.Log("	https://elastic.github.io/docs-builder/contribute/locally.html#step-one	");
+			ConsoleApp.Log("	https://elastic.github.io/docs-builder/contribute/locally#step-one	");
 			ConsoleApp.Log("");
 			return;
 		}
