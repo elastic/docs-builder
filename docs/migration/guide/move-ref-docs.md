@@ -104,7 +104,7 @@ Add a file named `docs-build.yml` at `.github/workflows/docs-build.yml`. The con
 name: docs-build
 
 on:
-  merge_group
+  merge_group: ~
   push:
     branches:
       - main
