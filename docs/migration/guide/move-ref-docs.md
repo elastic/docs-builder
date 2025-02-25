@@ -98,42 +98,58 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 There are two CI checks to add:
 
 **docs-build**
-* The file to add: [`github/workflows/docs-build.yml`](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-build.yml)
-* The path and name of the new file: `.github/workflows/docs-build.yml`
-
-**docs-cleanup**
-* The file to add: [`.github/workflows/docs-cleanup.yml`](https://github.com/elastic/docs-content/blob/main/.github/workflows/docs-cleanup.yml)
-* The path and name of the new file: `.github/workflows/docs-cleanup.yml`
-
-In the `docs-build.yml` file, specify the directory in which the check should run using the `path-pattern` parameter. For example, if you've added docs to the `/docs` dir, add the following lines to the `docs-preview` job:
+Add a file named `docs-build.yml` at `.github/workflows/docs-build.yml`. The contents of this file are below:
 
 ```yml
-    with:
-      path-pattern: docs/**
-```
+name: docs-build
 
-In context:
+on:
+  push:
+    branches:
+      - main
+  pull_request_target: ~
 
-```yml
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-build.yml 
-
+    uses: elastic/docs-builder/.github/workflows/preview-build.yml@main
     with:
-      path-pattern: docs/** <1>
-
+      path-pattern: docs/**
     permissions:
-      id-token: write
       deployments: write
+      id-token: write
       contents: read
       pull-requests: read
 ```
 
-1. The path to the docs directory
+Learn more about this file: [`docs-build.yml`](./how-to-set-up-docs-previews.md#build).
 
-Learn more about these ci checks in [](./how-to-set-up-docs-previews).
+:::{important}
+If the documentation you are adding will not live in the `/docs/*` dir of the repository, you must update the `path-pattern` appropriately. Please reach out in #docs-team if you need help with this.
+:::
 
-Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/398/commits/e869386bbf4af23d51432226f1fd3935d233e43d)
+**docs-cleanup**
+Add a file named `docs-cleanup.yml` at `.github/workflows/docs-cleanup.yml`. The contents of this file are below:
+
+```yml
+name: docs-cleanup
+
+on:
+  pull_request_target:
+    types:
+      - closed
+
+jobs:
+  docs-preview:
+    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml@main
+    permissions:
+      contents: none
+      id-token: write
+      deployments: write
+```
+
+Learn more about this file: [`docs-cleanup.yml`](./how-to-set-up-docs-previews.md#cleanup)
+
+Example PR: [#398](https://github.com/elastic/apm-agent-android/pull/398)
 
 ### Step 4: Delete the asciidoc warning
 
