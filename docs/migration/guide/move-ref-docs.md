@@ -97,7 +97,7 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 
 There are two CI checks to add:
 
-**docs-build**
+**`docs-build.yml`**
 Add a file named `docs-build.yml` at `.github/workflows/docs-build.yml`. The contents of this file are below:
 
 ```yml
@@ -127,7 +127,7 @@ Learn more about this file: [`docs-build.yml`](./how-to-set-up-docs-previews.md#
 If the documentation you are adding will not live in the `/docs/*` dir of the repository, you must update the `path-pattern` appropriately. Please reach out in #docs-team if you need help with this.
 :::
 
-**docs-cleanup**
+**`docs-cleanup.yml`**
 Add a file named `docs-cleanup.yml` at `.github/workflows/docs-cleanup.yml`. The contents of this file are below:
 
 ```yml
