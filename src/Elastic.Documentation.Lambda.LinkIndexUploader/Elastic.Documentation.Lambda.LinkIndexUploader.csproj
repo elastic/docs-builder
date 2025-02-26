@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
 
+    <AssemblyName>bootstrap</AssemblyName>
     <AWSProjectType>Lambda</AWSProjectType>
     
     <IsPublishable>true</IsPublishable>
