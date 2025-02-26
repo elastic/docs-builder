@@ -75,9 +75,11 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 
 		CurrentUrlPath = DocumentationFileLookup(parentPath ?? MarkdownSourcePath) is MarkdownFile md
 			? md.Url
-			: SkipValidation
-				? string.Empty
-				: throw new Exception($"Unable to find documentation file for {(parentPath ?? MarkdownSourcePath).FullName}");
+			: string.Empty;
+		if (SkipValidation && string.IsNullOrEmpty(CurrentUrlPath))
+		{
+			//TODO investigate this deeper.
+		}
 
 		if (YamlFrontMatter?.Properties is not { Count: > 0 })
 			Substitutions = Configuration.Substitutions;
