@@ -38,18 +38,18 @@ public class DocumentationGenerator
 	)
 	{
 		_conversionCollector = conversionCollector;
-		_readFileSystem = docSet.Context.ReadFileSystem;
-		_writeFileSystem = docSet.Context.WriteFileSystem;
+		_readFileSystem = docSet.Build.ReadFileSystem;
+		_writeFileSystem = docSet.Build.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
-		Context = docSet.Context;
+		Context = docSet.Build;
 		Resolver = docSet.LinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
-		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourcePath, docSet.SourcePath.Exists);
-		_logger.LogInformation("Output directory: {OutputPath} Exists: {OutputPathExists}", docSet.OutputPath, docSet.OutputPath.Exists);
+		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
+		_logger.LogInformation("Output directory: {OutputPath} Exists: {OutputPathExists}", docSet.OutputDirectory, docSet.OutputDirectory.Exists);
 	}
 
 	public GenerationState? GetPreviousGenerationState()
@@ -181,7 +181,7 @@ public class DocumentationGenerator
 
 	private IFileInfo OutputFile(string relativePath)
 	{
-		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputPath.FullName, relativePath));
+		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
 		return outputFile;
 	}
 
@@ -227,7 +227,7 @@ public class DocumentationGenerator
 		var state = LinkReference.Create(DocumentationSet);
 
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
-		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
 	}
 
 	private async Task GenerateDocumentationState(Cancel ctx)
@@ -242,7 +242,7 @@ public class DocumentationGenerator
 			Git = Context.Git
 		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);
-		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
+		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
 	}
 
 	private async Task CopyFileFsAware(DocumentationFile file, IFileInfo outputFile, Cancel ctx)

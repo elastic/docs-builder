@@ -24,20 +24,31 @@ public static class ParserContextExtensions
 		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 }
 
-public record ParserState(BuildContext Build)
+public interface IParserResolvers
+{
+	ICrossLinkResolver CrossLinkResolver { get; }
+	Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
+}
+
+public record ParserResolvers : IParserResolvers
+{
+	public required ICrossLinkResolver CrossLinkResolver { get; init; }
+
+	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
+}
+
+public record ParserState(BuildContext Build) : ParserResolvers
 {
 	public ConfigurationFile Configuration { get; } = Build.Configuration;
 
 	public required IFileInfo MarkdownSourcePath { get; init; }
 	public required YamlFrontMatter? YamlFrontMatter { get; init; }
-	public required ICrossLinkResolver CrossLinkResolver { get; init; }
-	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
 
 	public IFileInfo? ParentMarkdownPath { get; init; }
 	public bool SkipValidation { get; init; }
 }
 
-public class ParserContext : MarkdownParserContext
+public class ParserContext : MarkdownParserContext, IParserResolvers
 {
 	public ConfigurationFile Configuration { get; }
 	public ICrossLinkResolver CrossLinkResolver { get; }

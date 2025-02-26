@@ -254,9 +254,9 @@ public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSyste
 	{
 		var relativeSource = Path.GetRelativePath(currentDir, sourcePath);
 		var relativeSourceWithDotSlash = Path.Combine(".", relativeSource);
-		var relativeToDocsFolder = Path.GetRelativePath(documentationSet.SourcePath.FullName, sourcePath);
+		var relativeToDocsFolder = Path.GetRelativePath(documentationSet.SourceDirectory.FullName, sourcePath);
 		var absolutStyleSource = $"/{relativeToDocsFolder}";
-		var relativeToDocsFolderTarget = Path.GetRelativePath(documentationSet.SourcePath.FullName, targetPath);
+		var relativeToDocsFolderTarget = Path.GetRelativePath(documentationSet.SourceDirectory.FullName, targetPath);
 		var absoluteStyleTarget = $"/{relativeToDocsFolderTarget}";
 		return (
 			relativeSource,

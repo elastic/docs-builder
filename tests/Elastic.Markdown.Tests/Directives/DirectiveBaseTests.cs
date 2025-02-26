@@ -70,7 +70,7 @@ $"""
 		var context = new BuildContext(Collector, FileSystem);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
-		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
+		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}

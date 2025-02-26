@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -27,23 +28,24 @@ public record MarkdownFile : DocumentationFile
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext context,
+		BuildContext build,
 		DocumentationSet set
 	)
 		: base(sourceFile, rootPath)
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		UrlPathPrefix = context.UrlPathPrefix;
+		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
-		Collector = context.Collector;
-		_configurationFile = context.Configuration.SourceFile;
+		Collector = build.Collector;
+		Configuration = build.Configuration;
 		_set = set;
 	}
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
 	private DiagnosticsCollector Collector { get; }
+	private ConfigurationFile Configuration { get; }
 
 	public DocumentationGroup? Parent
 	{
@@ -94,7 +96,6 @@ public record MarkdownFile : DocumentationFile
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
 	private string? _title;
-	private readonly IFileInfo _configurationFile;
 
 	public MarkdownFile[] YieldParents()
 	{
@@ -141,7 +142,7 @@ public record MarkdownFile : DocumentationFile
 			if (Anchors.Contains(v))
 				continue;
 
-			Collector.EmitError(_configurationFile.FullName, $"Bad anchor remap '{v}' does not exist in {RelativePath}");
+			Collector.EmitError(Configuration.SourceFile.FullName, $"Bad anchor remap '{v}' does not exist in {RelativePath}");
 		}
 	}
 
@@ -164,7 +165,7 @@ public record MarkdownFile : DocumentationFile
 
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
-		var globalSubstitutions = MarkdownParser.Configuration.Substitutions;
+		var globalSubstitutions = Configuration.Substitutions;
 		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;

@@ -224,13 +224,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(
-			block.Build.DocumentationSourceDirectory,
-			block.Build,
-			block.Context.DocumentationFileLookup,
-			block.Build.Configuration,
-			block.Context.CrossLinkResolver
-		);
+		var parser = new MarkdownParser(block.Build, block.Context);
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		var parentPath = block.Context.MarkdownSourcePath;
 		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
@@ -243,10 +237,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(
-			block.Build.DocumentationSourceDirectory, block.Build, block.Context.DocumentationFileLookup, block.Build.Configuration
-			, block.Context.CrossLinkResolver
-		);
+		var parser = new MarkdownParser(block.Build, block.Context);
 
 		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
