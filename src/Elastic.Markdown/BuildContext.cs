@@ -15,8 +15,8 @@ public record BuildContext
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
 
-	public IDirectoryInfo SourcePath { get; }
-	public IDirectoryInfo OutputPath { get; }
+	public IDirectoryInfo DocumentationSourceDirectory { get; }
+	public IDirectoryInfo DocumentationOutputDirectory { get; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -56,17 +56,17 @@ public record BuildContext
 			? ReadFileSystem.DirectoryInfo.New(source)
 			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName));
 
-		(SourcePath, ConfigurationPath) = FindDocsFolderFromRoot(rootFolder);
+		(DocumentationSourceDirectory, ConfigurationPath) = FindDocsFolderFromRoot(rootFolder);
 
-		OutputPath = !string.IsNullOrWhiteSpace(output)
+		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
 			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
 
-		if (ConfigurationPath.FullName != SourcePath.FullName)
-			SourcePath = ConfigurationPath.Directory!;
+		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
+			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-		Git = GitCheckoutInformation.Create(SourcePath, ReadFileSystem);
-		Configuration = new ConfigurationFile(ConfigurationPath, SourcePath, this);
+		Git = GitCheckoutInformation.Create(DocumentationSourceDirectory, ReadFileSystem);
+		Configuration = new ConfigurationFile(ConfigurationPath, DocumentationSourceDirectory, this);
 	}
 
 	public ConfigurationFile Configuration { get; set; }

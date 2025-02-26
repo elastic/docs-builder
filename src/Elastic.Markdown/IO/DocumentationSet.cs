@@ -37,8 +37,8 @@ public class DocumentationSet
 	public DocumentationSet(BuildContext context, ILoggerFactory logger, ICrossLinkResolver? linkResolver = null)
 	{
 		Context = context;
-		SourcePath = context.SourcePath;
-		OutputPath = context.OutputPath;
+		SourcePath = context.DocumentationSourceDirectory;
+		OutputPath = context.DocumentationOutputDirectory;
 		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourcePath.FullName);
 		LinkResolver =
 			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, logger));

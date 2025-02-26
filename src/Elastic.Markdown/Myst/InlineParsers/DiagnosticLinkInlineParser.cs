@@ -184,7 +184,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
 		url.StartsWith('/')
-			? context.Parser.SourcePath.FullName
+			? context.Build.DocumentationSourceDirectory.FullName
 			: context.CurrentPath.Directory!.FullName;
 
 	private static void ValidateInternalUrl(InlineProcessor processor, string url, string includeFrom, LinkInline link, ParserContext context)
@@ -229,7 +229,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		string.IsNullOrWhiteSpace(url)
 			? context.CurrentPath
 			: url.StartsWith('/')
-				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')))
+				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
 				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.CurrentPath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)

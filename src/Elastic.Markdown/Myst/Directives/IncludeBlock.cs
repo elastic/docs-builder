@@ -30,7 +30,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
 
-	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;
+	public IDirectoryInfo DocumentationSourceDirectory { get; } = context.Build.DocumentationSourceDirectory;
 
 	public YamlFrontMatter? FrontMatter { get; } = context.FrontMatter;
 
@@ -70,10 +70,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 		var includeFrom = context.CurrentPath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
-			includeFrom = DocumentationSourcePath.FullName;
+			includeFrom = DocumentationSourceDirectory.FullName;
 
 		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
-		IncludePathFromSourceDirectory = Path.GetRelativePath(DocumentationSourcePath.FullName, IncludePath);
+		IncludePathFromSourceDirectory = Path.GetRelativePath(DocumentationSourceDirectory.FullName, IncludePath);
 		if (FileSystem.File.Exists(IncludePath))
 			Found = true;
 		else

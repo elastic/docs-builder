@@ -24,7 +24,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 	public IFileInfo IncludeFrom { get; } = context.CurrentPath;
 
-	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;
+	public IDirectoryInfo DocumentationSourceDirectory { get; } = context.Build.DocumentationSourceDirectory;
 
 	public YamlFrontMatter? FrontMatter { get; } = context.FrontMatter;
 
@@ -48,7 +48,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		var includeFrom = context.CurrentPath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
-			includeFrom = DocumentationSourcePath.FullName;
+			includeFrom = DocumentationSourceDirectory.FullName;
 
 		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
 		if (FileSystem.File.Exists(IncludePath))

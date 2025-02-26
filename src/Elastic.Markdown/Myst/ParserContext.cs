@@ -24,41 +24,61 @@ public static class ParserContextExtensions
 		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 }
 
+public record ParserState(BuildContext Build)
+{
+	public ConfigurationFile Configuration { get; } = Build.Configuration;
+
+	public required IFileInfo SourcePath { get; init; }
+	public required YamlFrontMatter? YamlFrontMatter { get; init; }
+	public required ICrossLinkResolver CrossLinkResolver { get; init; }
+	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
+
+	public IFileInfo? ParentMarkdownPath { get; set; }
+	public bool SkipValidation { get; set; }
+}
+
 public class ParserContext : MarkdownParserContext
 {
-	public ParserContext(
-		MarkdownParser markdownParser,
-		IFileInfo path,
-		YamlFrontMatter? frontMatter,
-		BuildContext context,
-		ConfigurationFile configuration,
-		ICrossLinkResolver linksResolver,
-		Func<IFileInfo, DocumentationFile?> getDocumentationFile,
-		IFileInfo? parentPath = null
-	)
+	public ConfigurationFile Configuration { get; }
+	public ICrossLinkResolver LinksResolver { get; }
+	public IFileInfo CurrentPath { get; }
+	public string CurrentPathRelative { get; }
+	public string CurrentUrlPath { get; }
+	public YamlFrontMatter? FrontMatter { get; }
+	public BuildContext Build { get; }
+	public bool SkipValidation { get; }
+	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; }
+	public IReadOnlyDictionary<string, string> Substitutions { get; }
+	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
+
+	public ParserContext(ParserState state)
 	{
-		Parser = markdownParser;
-		FrontMatter = frontMatter;
-		Build = context;
-		Configuration = configuration;
-		LinksResolver = linksResolver;
-		CurrentPath = path;
-		CurrentPathRelative = Path.GetRelativePath(markdownParser.SourcePath.FullName, CurrentPath.FullName);
-		GetDocumentationFile = getDocumentationFile;
+		Build = state.Build;
+		Configuration = state.Configuration;
+		FrontMatter = state.YamlFrontMatter;
+		SkipValidation = state.SkipValidation;
 
-		CurrentUrlPath = getDocumentationFile(parentPath ?? CurrentPath) is MarkdownFile md
+		LinksResolver = state.CrossLinkResolver;
+		CurrentPath = state.SourcePath;
+		CurrentPathRelative = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, CurrentPath.FullName);
+		GetDocumentationFile = state.DocumentationFileLookup;
+		var parentPath = state.ParentMarkdownPath;
+
+		CurrentUrlPath = GetDocumentationFile(parentPath ?? CurrentPath) is MarkdownFile md
 			? md.Url
-			: throw new Exception($"Unable to find documentation file for {(parentPath ?? CurrentPath).FullName}");
+			: SkipValidation
+				? string.Empty
+				: throw new Exception($"Unable to find documentation file for {(parentPath ?? CurrentPath).FullName}");
 
-		if (frontMatter?.Properties is not { Count: > 0 })
-			Substitutions = configuration.Substitutions;
+		if (FrontMatter?.Properties is not { Count: > 0 })
+			Substitutions = Configuration.Substitutions;
 		else
 		{
-			var subs = new Dictionary<string, string>(configuration.Substitutions);
-			foreach (var (k, value) in frontMatter.Properties)
+			var subs = new Dictionary<string, string>(Configuration.Substitutions);
+			foreach (var (k, value) in FrontMatter.Properties)
 			{
 				var key = k.ToLowerInvariant();
-				if (configuration.Substitutions.TryGetValue(key, out _))
+				if (Configuration.Substitutions.TryGetValue(key, out _))
 					this.EmitError($"{{{key}}} can not be redeclared in front matter as its a global substitution");
 				else
 					subs[key] = value;
@@ -69,23 +89,9 @@ public class ParserContext : MarkdownParserContext
 
 		var contextSubs = new Dictionary<string, string>();
 
-		if (frontMatter?.Title is { } title)
+		if (FrontMatter?.Title is { } title)
 			contextSubs["context.page_title"] = title;
 
 		ContextSubstitutions = contextSubs;
 	}
-
-	public ConfigurationFile Configuration { get; }
-	public ICrossLinkResolver LinksResolver { get; }
-	public MarkdownParser Parser { get; }
-	public IFileInfo CurrentPath { get; }
-	public string CurrentPathRelative { get; }
-	public string CurrentUrlPath { get; }
-	public YamlFrontMatter? FrontMatter { get; }
-	public BuildContext Build { get; }
-	public bool SkipValidation { get; init; }
-	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; init; }
-	public IReadOnlyDictionary<string, string> Substitutions { get; }
-	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
-
 }

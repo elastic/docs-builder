@@ -224,7 +224,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetDocumentationFile, block.Configuration, block.LinksResolver);
+		var parser = new MarkdownParser(block.DocumentationSourceDirectory, block.Build, block.GetDocumentationFile, block.Configuration, block.LinksResolver);
 		var snippet = block.FileSystem.FileInfo.New(block.IncludePath);
 		var parentPath = block.ParentMarkdownFile!;
 		var document = parser.ParseSnippetAsync(snippet, parentPath, block.FrontMatter, default).GetAwaiter().GetResult();
@@ -238,7 +238,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 
 		var parser = new MarkdownParser(
-			block.DocumentationSourcePath, block.Build, block.GetDocumentationFile, block.Configuration
+			block.DocumentationSourceDirectory, block.Build, block.GetDocumentationFile, block.Configuration
 			, block.LinksResolver
 		);
 
@@ -266,7 +266,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			RenderMarkdown = s =>
 			{
-				var document = parser.Parse(s, block.IncludeFrom, block.FrontMatter);
+				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.FrontMatter);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
