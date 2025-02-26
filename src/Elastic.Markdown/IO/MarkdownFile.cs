@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;

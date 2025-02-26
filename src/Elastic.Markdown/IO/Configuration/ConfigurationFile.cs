@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.State;
-using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Markdown.IO.Configuration;

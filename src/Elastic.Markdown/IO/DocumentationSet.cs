@@ -8,7 +8,6 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 

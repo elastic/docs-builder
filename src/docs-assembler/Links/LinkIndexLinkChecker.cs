@@ -2,14 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using Actions.Core.Services;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Links;
 
@@ -36,6 +34,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
+		// ReSharper disable once RedundantAssignment
 		var crossLinks = await resolver.FetchLinks();
 
 		if (string.IsNullOrEmpty(repository))
