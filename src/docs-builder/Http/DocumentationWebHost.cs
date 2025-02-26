@@ -41,11 +41,11 @@ public class DocumentationWebHost
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
-				s.FolderToMonitor = _context.SourcePath.FullName;
+				s.FolderToMonitor = _context.DocumentationSourceDirectory.FullName;
 				s.ClientFileExtensions = ".md,.yml";
 			})
 			.AddSingleton<ReloadableGeneratorState>(_ =>
-				new ReloadableGeneratorState(_context.SourcePath, null, _context, logger)
+				new ReloadableGeneratorState(_context.DocumentationSourceDirectory, null, _context, logger)
 			)
 			.AddHostedService<ReloadGeneratorService>();
 
@@ -133,7 +133,7 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 
 	public EmbeddedOrPhysicalFileProvider(BuildContext context)
 	{
-		var documentationStaticFiles = Path.Combine(context.SourcePath.FullName, "_static");
+		var documentationStaticFiles = Path.Combine(context.DocumentationSourceDirectory.FullName, "_static");
 #if DEBUG
 		// this attempts to serve files directly from their source rather than the embedded resources during development.
 		// this allows us to change js/css files without restarting the webserver

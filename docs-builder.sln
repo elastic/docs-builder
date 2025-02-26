@@ -53,7 +53,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler", "assembler", "{
 		actions\assembler\action.yml = actions\assembler\action.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Tooling", "Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj", "{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Tooling", "src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj", "{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-inbound-local", "validate-inbound-local", "{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46}"
 	ProjectSection(SolutionItems) = preProject

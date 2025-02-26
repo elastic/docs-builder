@@ -55,6 +55,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 
 		var context = processor.GetContext();
+		link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
+
 		if (IsInCommentBlock(link) || context.SkipValidation)
 			return match;
 
@@ -160,7 +162,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.LinksResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
 			link.Url = resolvedUri.ToString();
 	}
 
@@ -182,8 +184,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
 		url.StartsWith('/')
-			? context.Parser.SourcePath.FullName
-			: context.Path.Directory!.FullName;
+			? context.Build.DocumentationSourceDirectory.FullName
+			: context.MarkdownSourcePath.Directory!.FullName;
 
 	private static void ValidateInternalUrl(InlineProcessor processor, string url, string includeFrom, LinkInline link, ParserContext context)
 	{
@@ -200,21 +202,22 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
-		var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
+		var markdown = context.DocumentationFileLookup(file) as MarkdownFile;
 
-		if (markdown == null)
+		if (markdown == null && link.FirstChild == null)
 		{
 			processor.EmitWarning(link,
 				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
 			return;
 		}
 
-		var title = markdown.Title;
+		var title = markdown?.Title;
 
 		if (!string.IsNullOrEmpty(anchor))
 		{
-			ValidateAnchor(processor, markdown, anchor, link);
-			if (link.FirstChild == null && markdown.TableOfContents.TryGetValue(anchor, out var heading))
+			if (markdown is not null)
+				ValidateAnchor(processor, markdown, anchor, link);
+			if (link.FirstChild == null && (markdown?.TableOfContents.TryGetValue(anchor, out var heading) ?? false))
 				title += " > " + heading.Heading;
 		}
 
@@ -224,10 +227,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static IFileInfo ResolveFile(ParserContext context, string url) =>
 		string.IsNullOrWhiteSpace(url)
-			? context.Path
+			? context.MarkdownSourcePath
 			: url.StartsWith('/')
-				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')))
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Path.Directory!.FullName, url));
+				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.MarkdownSourcePath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{

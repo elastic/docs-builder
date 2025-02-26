@@ -67,7 +67,7 @@ public record LinkReference
 	public static LinkReference Create(DocumentationSet set)
 	{
 		var redirects = set.Configuration.Redirects;
-		var crossLinks = set.Context.Collector.CrossLinks.ToHashSet().ToArray();
+		var crossLinks = set.Build.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = set.MarkdownFiles.Values
 			.Select(m => (m.RelativePath, File: m))
 			.ToDictionary(k => k.RelativePath, v =>
@@ -79,8 +79,8 @@ public record LinkReference
 		return new LinkReference
 		{
 			Redirects = redirects,
-			UrlPathPrefix = set.Context.UrlPathPrefix,
-			Origin = set.Context.Git,
+			UrlPathPrefix = set.Build.UrlPathPrefix,
+			Origin = set.Build.Git,
 			Links = links,
 			CrossLinks = crossLinks
 		};

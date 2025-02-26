@@ -47,9 +47,7 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 		var items = Block!.OfType<TabItemBlock>().ToArray();
 		items.Should().NotBeNull().And.HaveCount(3);
 		for (var i = 0; i < items.Length; i++)
-		{
 			items[i].Index.Should().Be(i);
-		}
 	}
 }
 

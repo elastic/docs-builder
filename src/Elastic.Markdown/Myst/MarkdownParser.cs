@@ -4,9 +4,6 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
-using Elastic.Markdown.CrossLinks;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -21,23 +18,90 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public class MarkdownParser(
-	IDirectoryInfo sourcePath,
-	BuildContext context,
-	Func<IFileInfo, DocumentationFile?>? getDocumentationFile,
-	ConfigurationFile configuration,
-	ICrossLinkResolver linksResolver
-	)
+public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 {
-	public IDirectoryInfo SourcePath { get; } = sourcePath;
+	private BuildContext Build { get; } = build;
+	private IParserResolvers Resolvers { get; } = resolvers;
 
-	private BuildContext Context { get; } = context;
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
+	{
+		var state = new ParserState(Build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = null,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			SkipValidation = true
+		};
+		var context = new ParserContext(state);
+		return ParseAsync(path, context, MinimalPipeline, ctx);
+	}
 
-	private ICrossLinkResolver LinksResolver { get; } = linksResolver;
+	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
+	{
+		var state = new ParserState(Build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver
+		};
+		var context = new ParserContext(state);
+		return ParseAsync(path, context, Pipeline, ctx);
+	}
+
+	public Task<MarkdownDocument> ParseSnippetAsync(IFileInfo path, IFileInfo parentPath, YamlFrontMatter? matter, Cancel ctx)
+	{
+		var state = new ParserState(Build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			ParentMarkdownPath = parentPath
+		};
+		var context = new ParserContext(state);
+		return ParseAsync(path, context, Pipeline, ctx);
+	}
+
+	public MarkdownDocument ParseEmbeddedMarkdown(string markdown, IFileInfo path, YamlFrontMatter? matter)
+	{
+		var state = new ParserState(Build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver
+		};
+		var context = new ParserContext(state);
+		var markdownDocument = Markdig.Markdown.Parse(markdown, Pipeline, context);
+		return markdownDocument;
+	}
+
+	private static async Task<MarkdownDocument> ParseAsync(
+		IFileInfo path,
+		MarkdownParserContext context,
+		MarkdownPipeline pipeline,
+		Cancel ctx)
+	{
+		if (path.FileSystem is FileSystem)
+		{
+			//real IO optimize through UTF8 stream reader.
+			await using var streamReader = new Utf8StreamReader(path.FullName, fileOpenMode: FileOpenMode.Throughput);
+			var inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
+			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
+			return markdownDocument;
+		}
+		else
+		{
+			var inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
+			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
+			return markdownDocument;
+		}
+	}
 
 	// ReSharper disable once InconsistentNaming
 	private static MarkdownPipeline? MinimalPipelineCached;
-
 	private static MarkdownPipeline MinimalPipeline
 	{
 		get
@@ -53,7 +117,6 @@ public class MarkdownParser(
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			MinimalPipelineCached = builder.Build();
 			return MinimalPipelineCached;
-
 		}
 	}
 
@@ -90,56 +153,4 @@ public class MarkdownParser(
 		}
 	}
 
-	public ConfigurationFile Configuration { get; } = configuration;
-
-	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
-	{
-		var context = new ParserContext(this, path, null, Context, Configuration, LinksResolver)
-		{
-			SkipValidation = true,
-			GetDocumentationFile = getDocumentationFile
-		};
-		return ParseAsync(path, context, MinimalPipeline, ctx);
-	}
-
-	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
-	{
-		var context = new ParserContext(this, path, matter, Context, Configuration, LinksResolver)
-		{
-			GetDocumentationFile = getDocumentationFile
-		};
-		return ParseAsync(path, context, Pipeline, ctx);
-	}
-
-	private static async Task<MarkdownDocument> ParseAsync(
-		IFileInfo path,
-		MarkdownParserContext context,
-		MarkdownPipeline pipeline,
-		Cancel ctx)
-	{
-		if (path.FileSystem is FileSystem)
-		{
-			//real IO optimize through UTF8 stream reader.
-			await using var streamReader = new Utf8StreamReader(path.FullName, fileOpenMode: FileOpenMode.Throughput);
-			var inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
-			return markdownDocument;
-		}
-		else
-		{
-			var inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
-			return markdownDocument;
-		}
-	}
-
-	public MarkdownDocument Parse(string yaml, IFileInfo parent, YamlFrontMatter? matter)
-	{
-		var context = new ParserContext(this, parent, matter, Context, Configuration, LinksResolver)
-		{
-			GetDocumentationFile = getDocumentationFile
-		};
-		var markdownDocument = Markdig.Markdown.Parse(yaml, Pipeline, context);
-		return markdownDocument;
-	}
 }

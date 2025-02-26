@@ -2,14 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using Actions.Core.Services;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Links;
 
@@ -36,6 +34,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
+		// ReSharper disable once RedundantAssignment
 		var crossLinks = await resolver.FetchLinks();
 
 		if (string.IsNullOrEmpty(repository))
@@ -48,31 +47,28 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		if (!Path.IsPathRooted(localLinksJson))
 			localLinksJson = Path.Combine(Paths.Root.FullName, localLinksJson);
 
-		var dictionary = crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
 			var localLinkReference = LinkReference.Deserialize(json);
-
-			dictionary[repository] = localLinkReference;
+			crossLinks = resolver.UpdateLinkReference(repository, localLinkReference);
 		}
 		catch (Exception e)
 		{
 			_logger.LogError(e, "Failed to read {LocalLinksJson}", localLinksJson);
 			throw;
 		}
-		crossLinks = crossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
 
 		_logger.LogInformation("Validating all cross links to {Repository}:// from all repositories published to link-index.json", repository);
 
-		return await ValidateCrossLinks(githubActionsService, crossLinks, resolver, [repository], ctx);
+		return await ValidateCrossLinks(githubActionsService, crossLinks, resolver, repository, ctx);
 	}
 
 	private async Task<int> ValidateCrossLinks(
 		ICoreService githubActionsService,
 		FetchedCrossLinks crossLinks,
 		CrossLinkResolver resolver,
-		string[]? repositoryFilter,
+		string? currentRepository,
 		Cancel ctx)
 	{
 		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
@@ -85,7 +81,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 				// if we are filtering we only want errors from inbound links to a certain
 				// repository
 				var uri = new Uri(crossLink);
-				if (repositoryFilter != null && uri.Scheme != repository)
+				if (currentRepository != null && uri.Scheme != currentRepository)
 					continue;
 
 				_ = resolver.TryResolve(s =>

@@ -22,7 +22,7 @@ public sealed class ReloadGeneratorService(
 	{
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
-		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourcePath.FullName)
+		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName)
 		{
 			NotifyFilter = NotifyFilters.Attributes
 							   | NotifyFilters.CreationTime

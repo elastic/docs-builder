@@ -39,8 +39,8 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);
 
-		var remote = DocumentationSet.Context.Git.RepositoryName;
-		var branch = DocumentationSet.Context.Git.Branch;
+		var remote = DocumentationSet.Build.Git.RepositoryName;
+		var branch = DocumentationSet.Build.Git.Branch;
 		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
 		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 
@@ -58,7 +58,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && !markdown.Hidden
+			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

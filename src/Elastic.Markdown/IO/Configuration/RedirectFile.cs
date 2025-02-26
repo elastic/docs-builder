@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.State;
 using YamlDotNet.RepresentationModel;
 

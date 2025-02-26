@@ -10,6 +10,7 @@ using Amazon.S3.Model;
 using ConsoleAppFramework;
 using Documentation.Assembler.Links;
 using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Microsoft.Extensions.Logging;
 
@@ -48,7 +49,9 @@ internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubAct
 	{
 		AssignOutputLogger();
 		file ??= ".artifacts/docs/html/links.json";
-		repository ??= GitCheckoutInformation.Create(new FileSystem()).RepositoryName;
+		var fs = new FileSystem();
+		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
+		repository ??= GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName;
 		if (repository == null)
 			throw new Exception("Unable to determine repository name");
 

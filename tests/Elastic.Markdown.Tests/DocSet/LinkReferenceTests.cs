@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.State;
 using FluentAssertions;
@@ -32,7 +33,8 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 	[Fact]
 	public void Create()
 	{
-		var git = GitCheckoutInformation.Create(ReadFileSystem);
+		var root = ReadFileSystem.DirectoryInfo.New(Paths.Root.FullName);
+		var git = GitCheckoutInformation.Create(root, ReadFileSystem);
 
 		git.Should().NotBeNull();
 		git.Branch.Should().NotBeNullOrWhiteSpace();

@@ -23,21 +23,26 @@ public record MarkdownFile : DocumentationFile
 
 	private readonly DocumentationSet _set;
 
+	private readonly IFileInfo _configurationFile;
+
+	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
+
 	public MarkdownFile(
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext context,
+		BuildContext build,
 		DocumentationSet set
 	)
 		: base(sourceFile, rootPath)
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		UrlPathPrefix = context.UrlPathPrefix;
+		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
-		Collector = context.Collector;
-		_configurationFile = context.Configuration.SourceFile;
+		Collector = build.Collector;
+		_configurationFile = build.Configuration.SourceFile;
+		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
 	}
 
@@ -94,7 +99,6 @@ public record MarkdownFile : DocumentationFile
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
 	private string? _title;
-	private readonly IFileInfo _configurationFile;
 
 	public MarkdownFile[] YieldParents()
 	{
@@ -164,7 +168,7 @@ public record MarkdownFile : DocumentationFile
 
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
-		var globalSubstitutions = MarkdownParser.Configuration.Substitutions;
+		var globalSubstitutions = _globalSubstitutions;
 		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;
@@ -230,9 +234,9 @@ public record MarkdownFile : DocumentationFile
 			.Where(i => i.Found)
 			.Select(i =>
 			{
-				var path = i.IncludePathFromSourceDirectory;
-				if (path is null
-					|| !set.FlatMappedFiles.TryGetValue(path, out var file)
+				var relativePath = i.IncludePathRelativeToSource;
+				if (relativePath is null
+					|| !set.FlatMappedFiles.TryGetValue(relativePath, out var file)
 					|| file is not SnippetFile snippet)
 					return null;
 
