@@ -24,6 +24,10 @@ public record MarkdownFile : DocumentationFile
 
 	private readonly DocumentationSet _set;
 
+	private readonly IFileInfo _configurationFile;
+
+	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
+
 	public MarkdownFile(
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
@@ -38,14 +42,14 @@ public record MarkdownFile : DocumentationFile
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
 		Collector = build.Collector;
-		Configuration = build.Configuration;
+		_configurationFile = build.Configuration.SourceFile;
+		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
 	}
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
 	private DiagnosticsCollector Collector { get; }
-	private ConfigurationFile Configuration { get; }
 
 	public DocumentationGroup? Parent
 	{
@@ -142,7 +146,7 @@ public record MarkdownFile : DocumentationFile
 			if (Anchors.Contains(v))
 				continue;
 
-			Collector.EmitError(Configuration.SourceFile.FullName, $"Bad anchor remap '{v}' does not exist in {RelativePath}");
+			Collector.EmitError(_configurationFile.FullName, $"Bad anchor remap '{v}' does not exist in {RelativePath}");
 		}
 	}
 
@@ -165,7 +169,7 @@ public record MarkdownFile : DocumentationFile
 
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
-		var globalSubstitutions = Configuration.Substitutions;
+		var globalSubstitutions = _globalSubstitutions;
 		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;

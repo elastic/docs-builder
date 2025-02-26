@@ -13,7 +13,6 @@ namespace Elastic.Markdown.IO.Configuration;
 
 public record ConfigurationFile : DocumentationFile
 {
-	private readonly IFileInfo _sourceFile;
 	private readonly IDirectoryInfo _rootPath;
 	private readonly BuildContext _context;
 	private readonly int _depth;
@@ -36,7 +35,6 @@ public record ConfigurationFile : DocumentationFile
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context, int depth = 0, string parentPath = "")
 		: base(sourceFile, rootPath)
 	{
-		_sourceFile = sourceFile;
 		_rootPath = rootPath;
 		_context = context;
 		_depth = depth;
@@ -52,7 +50,7 @@ public record ConfigurationFile : DocumentationFile
 		var redirectFile = new RedirectFile(redirectFileInfo, _context);
 		Redirects = redirectFile.Redirects;
 
-		var reader = new YamlStreamReader(_sourceFile, _context);
+		var reader = new YamlStreamReader(sourceFile, _context);
 		try
 		{
 			foreach (var entry in reader.Read())
