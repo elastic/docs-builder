@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
 
 </Project>
