@@ -158,6 +158,10 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
 
+      - name: Update Reference Index
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
+        uses: elastic/docs-builder/actions/update-reference-index@main
+
       - name: Update deployment status
         uses: actions/github-script@v7
         if: always() && steps.deployment.outputs.result
