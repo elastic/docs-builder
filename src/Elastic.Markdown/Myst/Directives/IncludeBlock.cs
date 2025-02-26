@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using System.IO.Abstractions;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
@@ -22,21 +23,11 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 {
 	public override string Directive => "include";
 
-	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; } = context.GetDocumentationFile;
+	public ParserContext Context { get; } = context;
 
-	public ConfigurationFile Configuration { get; } = context.Configuration;
-
-	public ICrossLinkResolver LinksResolver { get; } = context.LinksResolver;
-
-	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
-
-	public IDirectoryInfo DocumentationSourceDirectory { get; } = context.Build.DocumentationSourceDirectory;
-
-	public YamlFrontMatter? FrontMatter { get; } = context.FrontMatter;
-
-	public IFileInfo? ParentMarkdownFile { get; private set; }
 	public string? IncludePath { get; private set; }
-	public string? IncludePathFromSourceDirectory { get; private set; }
+
+	public string? IncludePathRelativeToSource { get; private set; }
 
 	public bool Found { get; private set; }
 
@@ -59,8 +50,6 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	private void ExtractInclusionPath(ParserContext context)
 	{
-		ParentMarkdownFile = context.CurrentPath;
-
 		var includePath = Arguments;
 		if (string.IsNullOrWhiteSpace(includePath))
 		{
@@ -70,11 +59,12 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 		var includeFrom = context.CurrentPath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
-			includeFrom = DocumentationSourceDirectory.FullName;
+			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
 		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
-		IncludePathFromSourceDirectory = Path.GetRelativePath(DocumentationSourceDirectory.FullName, IncludePath);
-		if (FileSystem.File.Exists(IncludePath))
+		IncludePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, IncludePath);
+
+		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
@@ -84,7 +74,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (Literal)
 			return;
 
-		var file = FileSystem.FileInfo.New(IncludePath);
+		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
 
 		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
 		{

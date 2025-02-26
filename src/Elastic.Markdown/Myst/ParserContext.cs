@@ -42,7 +42,6 @@ public class ParserContext : MarkdownParserContext
 	public ConfigurationFile Configuration { get; }
 	public ICrossLinkResolver LinksResolver { get; }
 	public IFileInfo CurrentPath { get; }
-	public string CurrentPathRelative { get; }
 	public string CurrentUrlPath { get; }
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
@@ -60,7 +59,6 @@ public class ParserContext : MarkdownParserContext
 
 		LinksResolver = state.CrossLinkResolver;
 		CurrentPath = state.SourcePath;
-		CurrentPathRelative = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, CurrentPath.FullName);
 		GetDocumentationFile = state.DocumentationFileLookup;
 		var parentPath = state.ParentMarkdownPath;
 

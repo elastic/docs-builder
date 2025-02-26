@@ -230,9 +230,9 @@ public record MarkdownFile : DocumentationFile
 			.Where(i => i.Found)
 			.Select(i =>
 			{
-				var path = i.IncludePathFromSourceDirectory;
-				if (path is null
-					|| !set.FlatMappedFiles.TryGetValue(path, out var file)
+				var relativePath = i.IncludePathRelativeToSource;
+				if (relativePath is null
+					|| !set.FlatMappedFiles.TryGetValue(relativePath, out var file)
 					|| file is not SnippetFile snippet)
 					return null;
 

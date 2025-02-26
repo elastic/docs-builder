@@ -202,8 +202,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var file = block.FileSystem.FileInfo.New(block.IncludePath);
-		var content = block.FileSystem.File.ReadAllText(file.FullName);
+		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
+		var content = block.Build.ReadFileSystem.File.ReadAllText(file.FullName);
 		if (string.IsNullOrEmpty(block.Language))
 			_ = renderer.Write(content);
 		else
@@ -224,10 +224,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(block.DocumentationSourceDirectory, block.Build, block.GetDocumentationFile, block.Configuration, block.LinksResolver);
-		var snippet = block.FileSystem.FileInfo.New(block.IncludePath);
-		var parentPath = block.ParentMarkdownFile!;
-		var document = parser.ParseSnippetAsync(snippet, parentPath, block.FrontMatter, default).GetAwaiter().GetResult();
+		var parser = new MarkdownParser(
+			block.Build.DocumentationSourceDirectory,
+			block.Build,
+			block.Context.GetDocumentationFile,
+			block.Build.Configuration,
+			block.Context.LinksResolver
+		);
+		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
+		var parentPath = block.Context.CurrentPath;
+		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.FrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
 	}
@@ -238,11 +244,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 
 		var parser = new MarkdownParser(
-			block.DocumentationSourceDirectory, block.Build, block.GetDocumentationFile, block.Configuration
-			, block.LinksResolver
+			block.Build.DocumentationSourceDirectory, block.Build, block.Context.GetDocumentationFile, block.Build.Configuration
+			, block.Context.LinksResolver
 		);
 
-		var file = block.FileSystem.FileInfo.New(block.IncludePath);
+		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		YamlSettings? settings;
 		try
@@ -266,7 +272,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			RenderMarkdown = s =>
 			{
-				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.FrontMatter);
+				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.Context.FrontMatter);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
