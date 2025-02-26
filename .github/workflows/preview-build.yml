@@ -58,7 +58,7 @@ jobs:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
 
       - name: Free Disk Space
-        if: fromJSON(inputs.free-disk-space != '' && inputs.free-disk-space || 'false')
+        if: github.repository == 'elastic/asciidocalypse'
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
