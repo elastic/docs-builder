@@ -224,11 +224,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (!block.Found || block.IncludePath is null)
 			return;
 
-		var parser = new MarkdownParser(
-			block.DocumentationSourcePath, block.Build, block.GetDocumentationFile,
-			block.Configuration, block.LinksResolver);
-		var file = block.FileSystem.FileInfo.New(block.IncludePath);
-		var document = parser.ParseAsync(file, block.FrontMatter, default).GetAwaiter().GetResult();
+		var parser = new MarkdownParser(block.DocumentationSourcePath, block.Build, block.GetDocumentationFile, block.Configuration, block.LinksResolver);
+		var snippet = block.FileSystem.FileInfo.New(block.IncludePath);
+		var parentPath = block.ParentMarkdownFile!;
+		var document = parser.ParseSnippetAsync(snippet, parentPath, block.FrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
 	}

@@ -19,12 +19,10 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			// ReSharper disable once UnusedVariable
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
 			{
-
+				base.Write(renderer, link);
+				return;
 			}
-			else
-			{
 
-			}
 			_ = renderer.Write("<a href=\"");
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');
@@ -44,6 +42,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				_ = renderer.WriteEscape(link.Title);
 				_ = renderer.Write('"');
 			}
+
 			if (!string.IsNullOrWhiteSpace(Rel))
 			{
 				_ = renderer.Write(" rel=\"");
@@ -57,9 +56,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write("</a>");
 		}
 		else
-		{
 			base.Write(renderer, link);
-		}
 	}
 }
 

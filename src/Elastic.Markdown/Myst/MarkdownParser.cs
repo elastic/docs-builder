@@ -107,6 +107,12 @@ public class MarkdownParser(
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
+	public Task<MarkdownDocument> ParseSnippetAsync(IFileInfo path, IFileInfo parentPath, YamlFrontMatter? matter, Cancel ctx)
+	{
+		var context = new ParserContext(this, path, matter, Context, Configuration, LinksResolver, getDocumentationFile, parentPath);
+		return ParseAsync(path, context, Pipeline, ctx);
+	}
+
 	private static async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,
 		MarkdownParserContext context,

@@ -55,8 +55,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 
 		var context = processor.GetContext();
-		if (context.CurrentUrlPath is not null)
-			link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
+		link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
 
 		if (IsInCommentBlock(link) || context.SkipValidation)
 			return match;

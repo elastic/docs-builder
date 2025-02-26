@@ -33,7 +33,8 @@ public class ParserContext : MarkdownParserContext
 		BuildContext context,
 		ConfigurationFile configuration,
 		ICrossLinkResolver linksResolver,
-		Func<IFileInfo, DocumentationFile?> getDocumentationFile
+		Func<IFileInfo, DocumentationFile?> getDocumentationFile,
+		IFileInfo? parentPath = null
 	)
 	{
 		Parser = markdownParser;
@@ -44,8 +45,10 @@ public class ParserContext : MarkdownParserContext
 		CurrentPath = path;
 		CurrentPathRelative = Path.GetRelativePath(markdownParser.SourcePath.FullName, CurrentPath.FullName);
 		GetDocumentationFile = getDocumentationFile;
-		if (getDocumentationFile(CurrentPath) is MarkdownFile md)
-			CurrentUrlPath = md.Url;
+
+		CurrentUrlPath = getDocumentationFile(parentPath ?? CurrentPath) is MarkdownFile md
+			? md.Url
+			: throw new Exception($"Unable to find documentation file for {(parentPath ?? CurrentPath).FullName}");
 
 		if (frontMatter?.Properties is not { Count: > 0 })
 			Substitutions = configuration.Substitutions;
@@ -77,7 +80,7 @@ public class ParserContext : MarkdownParserContext
 	public MarkdownParser Parser { get; }
 	public IFileInfo CurrentPath { get; }
 	public string CurrentPathRelative { get; }
-	public string? CurrentUrlPath { get; }
+	public string CurrentUrlPath { get; }
 	public YamlFrontMatter? FrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; init; }

@@ -34,6 +34,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	public YamlFrontMatter? FrontMatter { get; } = context.FrontMatter;
 
+	public IFileInfo? ParentMarkdownFile { get; private set; }
 	public string? IncludePath { get; private set; }
 	public string? IncludePathFromSourceDirectory { get; private set; }
 
@@ -58,6 +59,8 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	private void ExtractInclusionPath(ParserContext context)
 	{
+		ParentMarkdownFile = context.CurrentPath;
+
 		var includePath = Arguments;
 		if (string.IsNullOrWhiteSpace(includePath))
 		{
