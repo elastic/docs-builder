@@ -20,21 +20,21 @@ public class IndexViewModel
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
-	public required Deployment? Applies { get; init; }
+	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
 }
 
-public abstract class RedsignViewModel
+public class LayoutViewModel
 {
-	public bool IsRedesign => Environment.GetEnvironmentVariable("REDESIGN") == "true";
-}
-
-public class LayoutViewModel : RedsignViewModel
-{
+	/// Used to identify the navigation for the current compilation
+	/// We want to reset users sessionStorage every time this changes to invalidate
+	/// the guids that no longer exist
+	public static string CurrentNavigationId { get; } = Guid.NewGuid().ToString("N")[..8];
 	public string Title { get; set; } = "Elastic Documentation";
 	public string RawTitle { get; set; } = "Elastic Documentation";
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required DocumentationGroup Tree { get; init; }
+	public string[] ParentIds => [.. CurrentDocument.YieldParentGroups()];
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required MarkdownFile? Previous { get; init; }
 	public required MarkdownFile? Next { get; init; }
@@ -69,20 +69,21 @@ public class LayoutViewModel : RedsignViewModel
 	}
 }
 
-public class PageTocItem
+public record PageTocItem
 {
 	public required string Heading { get; init; }
 	public required string Slug { get; init; }
+	public required int Level { get; init; }
 }
 
 
-public class NavigationViewModel : RedsignViewModel
+public class NavigationViewModel
 {
 	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 }
 
-public class NavigationTreeItem : RedsignViewModel
+public class NavigationTreeItem
 {
 	public required int Level { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }

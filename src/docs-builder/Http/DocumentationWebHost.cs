@@ -1,21 +1,17 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-using System.Diagnostics.CodeAnalysis;
+
 using System.IO.Abstractions;
-using System.Reflection;
-using Documentation.Builder.Diagnostics;
-using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Diagnostics.LiveMode;
+using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -29,43 +25,40 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly BuildContext _context;
-	private readonly ILogger<DocumentationWebHost> _logger;
 
 	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
 	{
-		_logger = logger.CreateLogger<DocumentationWebHost>();
 		var builder = WebApplication.CreateSlimBuilder();
+		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
 
-		builder.Logging.ClearProviders();
-		builder.Logging.SetMinimumLevel(LogLevel.Warning)
+		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
-			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information)
+			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
-			.AddSimpleConsole(o => o.SingleLine = true);
+		var collector = new LiveModeDiagnosticsCollector(logger);
+		_context = new BuildContext(collector, fileSystem, fileSystem, path, null);
+		_ = builder.Services
+			.AddAotLiveReload(s =>
+			{
+				s.FolderToMonitor = _context.DocumentationSourceDirectory.FullName;
+				s.ClientFileExtensions = ".md,.yml";
+			})
+			.AddSingleton<ReloadableGeneratorState>(_ =>
+				new ReloadableGeneratorState(_context.DocumentationSourceDirectory, null, _context, logger)
+			)
+			.AddHostedService<ReloadGeneratorService>();
 
-		_context = new BuildContext(fileSystem, fileSystem, path, null)
-		{
-			Collector = new LiveModeDiagnosticsCollector(logger)
-		};
-		builder.Services.AddAotLiveReload(s =>
-		{
-			s.FolderToMonitor = _context.SourcePath.FullName;
-			s.ClientFileExtensions = ".md,.yml";
-		});
-		builder.Services.AddSingleton<ReloadableGeneratorState>(_ => new ReloadableGeneratorState(_context.SourcePath, null, _context, logger));
-		builder.Services.AddHostedService<ReloadGeneratorService>();
 		if (IsDotNetWatchBuild())
-			builder.Services.AddHostedService<ParcelWatchService>();
+			_ = builder.Services.AddHostedService<ParcelWatchService>();
 
-		builder.WebHost.UseUrls($"http://localhost:{port}");
+		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}
 
-	private bool IsDotNetWatchBuild() =>
-		Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
+	private static bool IsDotNetWatchBuild() => Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
 
 	public async Task RunAsync(Cancel ctx)
 	{
@@ -81,18 +74,20 @@ public class DocumentationWebHost
 
 	private void SetUpRoutes()
 	{
-		_webApplication.UseLiveReload();
-		_webApplication.UseStaticFiles(new StaticFileOptions
-		{
-			FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
-			RequestPath = "/_static"
-		});
-		_webApplication.UseRouting();
+		_ = _webApplication
+			.UseLiveReload()
+			.UseStaticFiles(
+				new StaticFileOptions
+				{
+					FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
+					RequestPath = "/_static"
+				})
+			.UseRouting();
 
-		_webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
+		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, "index.md", ctx));
 
-		_webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
+		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
 	}
 
@@ -129,16 +124,16 @@ public class DocumentationWebHost
 }
 
 
-public class EmbeddedOrPhysicalFileProvider : IFileProvider
+public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 {
 	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
 	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
 
-	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug = null;
+	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
 
 	public EmbeddedOrPhysicalFileProvider(BuildContext context)
 	{
-		var documentationStaticFiles = Path.Combine(context.SourcePath.FullName, "_static");
+		var documentationStaticFiles = Path.Combine(context.DocumentationSourceDirectory.FullName, "_static");
 #if DEBUG
 		// this attempts to serve files directly from their source rather than the embedded resources during development.
 		// this allows us to change js/css files without restarting the webserver
@@ -149,6 +144,8 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider
 			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
 			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
 		}
+#else
+		_staticWebFilesDuringDebug = null;
 #endif
 		if (context.ReadFileSystem.Directory.Exists(documentationStaticFiles))
 			_staticFilesInDocsFolder = new PhysicalFileProvider(documentationStaticFiles);
@@ -188,5 +185,11 @@ public class EmbeddedOrPhysicalFileProvider : IFileProvider
 		if (changeToken is null or NullChangeToken)
 			changeToken = _embeddedProvider.Watch(filter);
 		return changeToken;
+	}
+
+	public void Dispose()
+	{
+		_staticFilesInDocsFolder?.Dispose();
+		_staticWebFilesDuringDebug?.Dispose();
 	}
 }

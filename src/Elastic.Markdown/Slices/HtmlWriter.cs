@@ -3,33 +3,14 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Markdig.Syntax;
 using RazorSlices;
 
 namespace Elastic.Markdown.Slices;
 
-public class HtmlWriter
+public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
 {
-	private readonly IFileSystem _writeFileSystem;
-
-	public HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
-	{
-		_writeFileSystem = writeFileSystem;
-		var services = new ServiceCollection();
-		services.AddLogging();
-
-		ServiceProvider = services.BuildServiceProvider();
-		LoggerFactory = ServiceProvider.GetRequiredService<ILoggerFactory>();
-		DocumentationSet = documentationSet;
-	}
-
-	private DocumentationSet DocumentationSet { get; }
-	public ILoggerFactory LoggerFactory { get; }
-	public ServiceProvider ServiceProvider { get; }
-
-	private Task<string> RenderEmptyString(MarkdownFile markdown, Cancel ctx = default) =>
-		Task.FromResult(string.Empty);
+	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
 	private async Task<string> RenderNavigation(MarkdownFile markdown, Cancel ctx = default)
 	{
@@ -41,18 +22,25 @@ public class HtmlWriter
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
+	private string? _renderedNavigation;
+
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
-		var html = markdown.CreateHtml(document);
+		return await RenderLayout(markdown, document, ctx);
+	}
+
+	public async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
+	{
+		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
-		var navigationHtml = await RenderNavigation(markdown, ctx);
+		_renderedNavigation ??= await RenderNavigation(markdown, ctx);
 
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);
 
-		var remote = DocumentationSet.Context.Git.RepositoryName;
-		var branch = DocumentationSet.Context.Git.Branch;
+		var remote = DocumentationSet.Build.Git.RepositoryName;
+		var branch = DocumentationSet.Build.Git.Branch;
 		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
 		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 
@@ -61,46 +49,46 @@ public class HtmlWriter
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
-			PageTocItems = markdown.TableOfContents.Values.ToList(),
+			PageTocItems = [.. markdown.TableOfContents.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
-			NavigationHtml = navigationHtml,
+			NavigationHtml = _renderedNavigation,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && !markdown.Hidden
+			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
-	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, Cancel ctx = default)
+	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		var rendered = await RenderLayout(markdown, ctx);
 		string path;
 		if (outputFile.Name == "index.md")
-		{
 			path = Path.ChangeExtension(outputFile.FullName, ".html");
-		}
 		else
 		{
 			var dir = outputFile.Directory is null
 				? null
 				: Path.Combine(outputFile.Directory.FullName, Path.GetFileNameWithoutExtension(outputFile.Name));
 
-			if (dir is not null && !_writeFileSystem.Directory.Exists(dir))
-				_writeFileSystem.Directory.CreateDirectory(dir);
+			if (dir is not null && !writeFileSystem.Directory.Exists(dir))
+				_ = writeFileSystem.Directory.CreateDirectory(dir);
 
 			path = dir is null
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
 				: Path.Combine(dir, "index.html");
 		}
 
-		await _writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+		var document = await markdown.ParseFullAsync(ctx);
+		var rendered = await RenderLayout(markdown, document, ctx);
+		collector?.Collect(markdown, document, rendered);
+		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
 	}
 
 }

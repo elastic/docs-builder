@@ -6,9 +6,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Http;
 
-public class ReloadGeneratorService(
+public sealed class ReloadGeneratorService(
 	ReloadableGeneratorState reloadableGenerator,
-	ILogger<ReloadGeneratorService> logger) : IHostedService
+	ILogger<ReloadGeneratorService> logger) : IHostedService,
+	IDisposable
 {
 	private FileSystemWatcher? _watcher;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
@@ -17,11 +18,11 @@ public class ReloadGeneratorService(
 	//debounce reload requests due to many file changes
 	private readonly Debouncer _debouncer = new(TimeSpan.FromMilliseconds(200));
 
-	public async Task StartAsync(Cancel ctx)
+	public async Task StartAsync(Cancel cancellationToken)
 	{
-		await ReloadableGenerator.ReloadAsync(ctx);
+		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
-		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourcePath.FullName)
+		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName)
 		{
 			NotifyFilter = NotifyFilters.Attributes
 							   | NotifyFilters.CreationTime
@@ -53,7 +54,7 @@ public class ReloadGeneratorService(
 			Logger.LogInformation("Reload complete!");
 		}, default);
 
-	public Task StopAsync(CancellationToken cancellationToken)
+	public Task StopAsync(Cancel cancellationToken)
 	{
 		_watcher?.Dispose();
 		return Task.CompletedTask;
@@ -69,29 +70,28 @@ public class ReloadGeneratorService(
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
 
-		Logger.LogInformation($"Changed: {e.FullPath}");
+		Logger.LogInformation("Changed: {FullPath}", e.FullPath);
 	}
 
 	private void OnCreated(object sender, FileSystemEventArgs e)
 	{
-		var value = $"Created: {e.FullPath}";
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
-		Logger.LogInformation(value);
+		Logger.LogInformation("Created: {FullPath}", e.FullPath);
 	}
 
 	private void OnDeleted(object sender, FileSystemEventArgs e)
 	{
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
-		Logger.LogInformation($"Deleted: {e.FullPath}");
+		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
 	}
 
 	private void OnRenamed(object sender, RenamedEventArgs e)
 	{
-		Logger.LogInformation($"Renamed:");
-		Logger.LogInformation($"    Old: {e.OldFullPath}");
-		Logger.LogInformation($"    New: {e.FullPath}");
+		Logger.LogInformation("Renamed:");
+		Logger.LogInformation("    Old: {OldFullPath}", e.OldFullPath);
+		Logger.LogInformation("    New: {NewFullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
 	}
@@ -103,19 +103,25 @@ public class ReloadGeneratorService(
 	{
 		if (ex == null)
 			return;
-		Logger.LogError($"Message: {ex.Message}");
+		Logger.LogError("Message: {Message}", ex.Message);
 		Logger.LogError("Stacktrace:");
-		Logger.LogError(ex.StackTrace);
+		Logger.LogError("{StackTrace}", ex.StackTrace ?? "No stack trace available");
 		PrintException(ex.InnerException);
 	}
 
-	private class Debouncer(TimeSpan window)
+	public void Dispose()
+	{
+		_watcher?.Dispose();
+		_debouncer.Dispose();
+	}
+
+	private sealed class Debouncer(TimeSpan window) : IDisposable
 	{
 		private readonly SemaphoreSlim _semaphore = new(1, 1);
 		private readonly long _windowInTicks = window.Ticks;
 		private long _nextRun;
 
-		public async Task ExecuteAsync(Func<CancellationToken, Task> innerAction, CancellationToken cancellationToken)
+		public async Task ExecuteAsync(Func<Cancel, Task> innerAction, Cancel cancellationToken)
 		{
 			var requestStart = DateTime.UtcNow.Ticks;
 
@@ -132,8 +138,11 @@ public class ReloadGeneratorService(
 			}
 			finally
 			{
-				_semaphore.Release();
+				_ = _semaphore.Release();
 			}
 		}
+
+		public void Dispose() => _semaphore.Dispose();
 	}
+
 }

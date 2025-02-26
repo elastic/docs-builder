@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
@@ -14,12 +15,6 @@ namespace Elastic.Markdown.Myst;
 
 public static class ParserContextExtensions
 {
-	public static BuildContext GetBuildContext(this InlineProcessor processor) =>
-		processor.GetContext().Build;
-
-	public static BuildContext GetBuildContext(this BlockProcessor processor) =>
-		processor.GetContext().Build;
-
 	public static ParserContext GetContext(this InlineProcessor processor) =>
 		processor.Context as ParserContext
 		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
@@ -29,30 +24,72 @@ public static class ParserContextExtensions
 		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 }
 
-public class ParserContext : MarkdownParserContext
+public interface IParserResolvers
 {
-	public ParserContext(
-		MarkdownParser markdownParser,
-		IFileInfo path,
-		YamlFrontMatter? frontMatter,
-		BuildContext context,
-		ConfigurationFile configuration)
-	{
-		Parser = markdownParser;
-		Path = path;
-		FrontMatter = frontMatter;
-		Build = context;
-		Configuration = configuration;
+	ICrossLinkResolver CrossLinkResolver { get; }
+	Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
+}
 
-		if (frontMatter?.Properties is not { Count: > 0 })
-			Substitutions = configuration.Substitutions;
+public record ParserResolvers : IParserResolvers
+{
+	public required ICrossLinkResolver CrossLinkResolver { get; init; }
+
+	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
+}
+
+public record ParserState(BuildContext Build) : ParserResolvers
+{
+	public ConfigurationFile Configuration { get; } = Build.Configuration;
+
+	public required IFileInfo MarkdownSourcePath { get; init; }
+	public required YamlFrontMatter? YamlFrontMatter { get; init; }
+
+	public IFileInfo? ParentMarkdownPath { get; init; }
+	public bool SkipValidation { get; init; }
+}
+
+public class ParserContext : MarkdownParserContext, IParserResolvers
+{
+	public ConfigurationFile Configuration { get; }
+	public ICrossLinkResolver CrossLinkResolver { get; }
+	public IFileInfo MarkdownSourcePath { get; }
+	public string CurrentUrlPath { get; }
+	public YamlFrontMatter? YamlFrontMatter { get; }
+	public BuildContext Build { get; }
+	public bool SkipValidation { get; }
+	public Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
+	public IReadOnlyDictionary<string, string> Substitutions { get; }
+	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
+
+	public ParserContext(ParserState state)
+	{
+		Build = state.Build;
+		Configuration = state.Configuration;
+		YamlFrontMatter = state.YamlFrontMatter;
+		SkipValidation = state.SkipValidation;
+
+		CrossLinkResolver = state.CrossLinkResolver;
+		MarkdownSourcePath = state.MarkdownSourcePath;
+		DocumentationFileLookup = state.DocumentationFileLookup;
+		var parentPath = state.ParentMarkdownPath;
+
+		CurrentUrlPath = DocumentationFileLookup(parentPath ?? MarkdownSourcePath) is MarkdownFile md
+			? md.Url
+			: string.Empty;
+		if (SkipValidation && string.IsNullOrEmpty(CurrentUrlPath))
+		{
+			//TODO investigate this deeper.
+		}
+
+		if (YamlFrontMatter?.Properties is not { Count: > 0 })
+			Substitutions = Configuration.Substitutions;
 		else
 		{
-			var subs = new Dictionary<string, string>(configuration.Substitutions);
-			foreach (var (k, value) in frontMatter.Properties)
+			var subs = new Dictionary<string, string>(Configuration.Substitutions);
+			foreach (var (k, value) in YamlFrontMatter.Properties)
 			{
 				var key = k.ToLowerInvariant();
-				if (configuration.Substitutions.TryGetValue(key, out _))
+				if (Configuration.Substitutions.TryGetValue(key, out _))
 					this.EmitError($"{{{key}}} can not be redeclared in front matter as its a global substitution");
 				else
 					subs[key] = value;
@@ -63,20 +100,9 @@ public class ParserContext : MarkdownParserContext
 
 		var contextSubs = new Dictionary<string, string>();
 
-		if (frontMatter?.Title is { } title)
+		if (YamlFrontMatter?.Title is { } title)
 			contextSubs["context.page_title"] = title;
 
 		ContextSubstitutions = contextSubs;
 	}
-
-	public ConfigurationFile Configuration { get; }
-	public MarkdownParser Parser { get; }
-	public IFileInfo Path { get; }
-	public YamlFrontMatter? FrontMatter { get; }
-	public BuildContext Build { get; }
-	public bool SkipValidation { get; init; }
-	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; init; }
-	public IReadOnlyDictionary<string, string> Substitutions { get; }
-	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
-
 }

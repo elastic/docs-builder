@@ -1,11 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-using System.IO.Abstractions;
+
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -21,17 +18,11 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 {
 	public override string Directive => "include";
 
-	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; } = context.GetDocumentationFile;
-
-	public ConfigurationFile Configuration { get; } = context.Configuration;
-
-	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
-
-	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;
-
-	public YamlFrontMatter? FrontMatter { get; } = context.FrontMatter;
+	public ParserContext Context { get; } = context;
 
 	public string? IncludePath { get; private set; }
+
+	public string? IncludePathRelativeToSource { get; private set; }
 
 	public bool Found { get; private set; }
 
@@ -39,7 +30,6 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? Language { get; private set; }
 	public string? Caption { get; private set; }
 	public string? Label { get; private set; }
-
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
@@ -62,12 +52,14 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		var includeFrom = context.Path.Directory!.FullName;
+		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
-			includeFrom = DocumentationSourcePath.FullName;
+			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
 		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
-		if (FileSystem.File.Exists(IncludePath))
+		IncludePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, IncludePath);
+
+		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
@@ -77,7 +69,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (Literal)
 			return;
 
-		var file = FileSystem.FileInfo.New(IncludePath);
+		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
 
 		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
 		{
@@ -85,7 +77,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			Found = false;
 		}
 
-		if (file.FullName == context.Path.FullName)
+		if (file.FullName == context.MarkdownSourcePath.FullName)
 		{
 			this.EmitError($"{{include}} cyclical include detected `{IncludePath}` points to itself");
 			Found = false;

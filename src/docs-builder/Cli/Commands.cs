@@ -4,8 +4,9 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Refactor;
@@ -13,13 +14,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal class Commands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
+#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
+#pragma warning restore CA2254
 	}
 
 	/// <summary>
@@ -43,6 +46,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 
 	/// <summary>
 	/// Converts a source markdown folder or file to an output folder
+	/// <para>global options:</para>
+	/// --log-level level
 	/// </summary>
 	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
 	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
@@ -68,14 +73,14 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		var context = new BuildContext(fileSystem, fileSystem, path, output)
+		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		var context = new BuildContext(collector, fileSystem, fileSystem, path, output)
 		{
 			UrlPathPrefix = pathPrefix,
 			Force = force ?? false,
-			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService),
 			AllowIndexing = allowIndexing != null
 		};
-		var set = new DocumentationSet(context);
+		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
 
@@ -122,6 +127,9 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="dryRun">Dry run the move operation</param>
 	/// <param name="ctx"></param>
 	[Command("mv")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> Move(
 		[Argument] string source,
 		[Argument] string target,
@@ -132,11 +140,9 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	{
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		var context = new BuildContext(fileSystem, fileSystem, path, null)
-		{
-			Collector = new ConsoleDiagnosticsCollector(logger, null),
-		};
-		var set = new DocumentationSet(context);
+		var collector = new ConsoleDiagnosticsCollector(logger, null);
+		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
+		var set = new DocumentationSet(context, logger);
 
 		var moveCommand = new Move(fileSystem, fileSystem, set, logger);
 		return await moveCommand.Execute(source, target, dryRun ?? false, ctx);

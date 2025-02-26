@@ -1,37 +1,12 @@
 @inherits RazorSlice<NavigationViewModel>
-
-@if (Model.IsRedesign)
-{
-	<div class="pt-6 pb-20">
-		<ul class="block w-full">
-			@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-			{
-				Level = Model.Tree.Depth,
-				SubTree = Model.Tree,
-				CurrentDocument = Model.CurrentDocument
-			}))
-		</ul>
-	</div>
-}
-else
-{
-	<aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
-		<div class="sy-lside-inner md:sticky">
-			<div class="sy-scrollbar p-6">
-				<div class="globaltoc" data-expand-depth="0">
-					<p class="caption" role="heading" aria-level="3">
-						<span class="caption-text">Elastic Docs Guide</span>
-					</p>
-					<ul class="current">@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-					                    {
-						                    Level = Model.Tree.Depth,
-						                    SubTree = Model.Tree,
-						                    CurrentDocument = Model.CurrentDocument
-					                    }))
-					</ul>
-				</div>
-			</div>
-		</div>
-	</aside>
-	<div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
-}
+<div class="pt-6 pb-20">
+	<div class="font-bold">Elastic Docs</div>
+	<ul class="block">
+		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+		{
+			Level = Model.Tree.Depth,
+			SubTree = Model.Tree,
+			CurrentDocument = Model.CurrentDocument
+		}))
+	</ul>
+</div>

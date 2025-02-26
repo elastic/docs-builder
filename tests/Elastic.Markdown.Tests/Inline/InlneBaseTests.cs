@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
@@ -84,7 +83,7 @@ public abstract class InlineTest : IAsyncLifetime
 		Dictionary<string, string>? globalVariables = null)
 	{
 		var logger = new TestLoggerFactory(output);
-		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---");
+		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 
 		var documentContents = TestingFullDocument ? content :
 // language=markdown
@@ -109,13 +108,13 @@ $"""
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(FileSystem)
+		var context = new BuildContext(Collector, FileSystem)
 		{
-			Collector = Collector,
 			UrlPathPrefix = "/docs"
 		};
-		Set = new DocumentationSet(context);
-		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
+		var linkResolver = new TestCrossLinkResolver();
+		Set = new DocumentationSet(context, logger, linkResolver);
+		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}
@@ -127,9 +126,10 @@ $"""
 		_ = Collector.StartAsync(default);
 
 		await Set.ResolveDirectoryTree(default);
+		await Set.LinkResolver.FetchLinks();
 
 		Document = await File.ParseFullAsync(default);
-		var html = File.CreateHtml(Document).AsSpan();
+		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0 && !TestingFullDocument
@@ -139,6 +139,9 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 }

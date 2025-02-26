@@ -10,25 +10,23 @@ public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) :
 
 public class AdmonitionBlock : DirectiveBlock
 {
-	private readonly string _admonition;
-
 	public AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context) : base(parser, context)
 	{
-		_admonition = admonition;
-		if (_admonition is "admonition")
+		Admonition = admonition;
+		if (Admonition is "admonition")
 			Classes = "plain";
 
 		var t = Admonition;
 		var title = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(t);
 		Title = title;
-
 	}
 
-	public string Admonition => _admonition;
+	public string Admonition { get; }
 
 	public override string Directive => Admonition;
 
 	public string? Classes { get; protected set; }
+
 	public bool? DropdownOpen { get; private set; }
 
 	public string Title { get; private set; }
@@ -40,7 +38,7 @@ public class AdmonitionBlock : DirectiveBlock
 		if (DropdownOpen.HasValue)
 			Classes = "dropdown";
 
-		if (_admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
+		if (Admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
 			Title = Arguments;
 		else if (!string.IsNullOrEmpty(Arguments))
 			Title += $" {Arguments}";

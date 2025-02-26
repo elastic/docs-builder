@@ -4,8 +4,11 @@
 
 module ``block elements``.``code blocks``
 
+open Elastic.Markdown.Myst.CodeBlocks
+open Swensen.Unquote
 open Xunit
 open authoring
+open authoring.MarkdownDocumentAssertions
 
 type ``warns on invalid language`` () =
     static let markdown = Setup.Markdown """
@@ -16,3 +19,8 @@ type ``warns on invalid language`` () =
     [<Fact>]
     let ``validate HTML: generates link and alt attr`` () =
         markdown |> hasWarning "Unknown language: not-a-valid-language"
+
+    [<Fact>]
+    let ``parses to EnhancedCodeBlock`` () =
+        let codeBlocks = markdown |> converts "index.md" |> parses<EnhancedCodeBlock>
+        test <@ codeBlocks.Length = 1 @>

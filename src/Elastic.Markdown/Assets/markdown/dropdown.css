@@ -1,0 +1,29 @@
+@layer components {
+	.markdown-content {
+		.dropdown {
+			@apply mt-4 border-1 border-gray-300 rounded-sm shadow-xs;
+			.dropdown-title {
+				@apply flex 
+				justify-between
+				items-center
+				px-4
+				py-2
+				cursor-pointer
+				text-ink-dark 
+				font-semibold
+				;
+			}
+			
+			&[open] .dropdown-title {
+				@apply border-b-1 border-b-gray-300;
+				svg {
+					transform: rotate(90deg);
+				}
+			}
+			
+			.dropdown-content {
+				@apply px-4 pb-4;
+			}
+		}
+	}
+}

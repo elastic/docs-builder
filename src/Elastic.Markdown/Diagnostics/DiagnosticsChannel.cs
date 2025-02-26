@@ -5,17 +5,16 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Diagnostics;
 
-public class DiagnosticsChannel
+public sealed class DiagnosticsChannel : IDisposable
 {
 	private readonly Channel<Diagnostic> _channel;
 	private readonly CancellationTokenSource _ctxSource;
 	public ChannelReader<Diagnostic> Reader => _channel.Reader;
 
-	public CancellationToken CancellationToken => _ctxSource.Token;
+	public Cancel CancellationToken => _ctxSource.Token;
 
 	public DiagnosticsChannel()
 	{
@@ -26,11 +25,11 @@ public class DiagnosticsChannel
 
 	public void TryComplete(Exception? exception = null)
 	{
-		_channel.Writer.TryComplete(exception);
+		_ = _channel.Writer.TryComplete(exception);
 		_ctxSource.Cancel();
 	}
 
-	public ValueTask<bool> WaitToWrite() => _channel.Writer.WaitToWriteAsync();
+	public ValueTask<bool> WaitToWrite(Cancel ctx) => _channel.Writer.WaitToWriteAsync(ctx);
 
 	public void Write(Diagnostic diagnostic)
 	{
@@ -40,6 +39,8 @@ public class DiagnosticsChannel
 			//TODO
 		}
 	}
+
+	public void Dispose() => _ctxSource.Dispose();
 }
 
 public enum Severity { Error, Warning }
@@ -71,17 +72,17 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	private Task? _started;
 
-	public HashSet<string> OffendingFiles { get; } = new();
+	public HashSet<string> OffendingFiles { get; } = [];
 
-	public ConcurrentBag<string> CrossLinks { get; } = new();
+	public ConcurrentBag<string> CrossLinks { get; } = [];
 
-	public Task StartAsync(Cancel ctx)
+	public Task StartAsync(Cancel cancellationToken)
 	{
 		if (_started is not null)
 			return _started;
 		_started = Task.Run(async () =>
 		{
-			await Channel.WaitToWrite();
+			_ = await Channel.WaitToWrite(cancellationToken);
 			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
 				try
@@ -96,7 +97,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			}
 
 			Drain();
-		}, ctx);
+		}, cancellationToken);
 		return _started;
 
 		void Drain()
@@ -105,7 +106,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			{
 				IncrementSeverityCount(item);
 				HandleItem(item);
-				OffendingFiles.Add(item.File);
+				_ = OffendingFiles.Add(item.File);
 				foreach (var output in outputs)
 					output.Write(item);
 			}
@@ -115,14 +116,14 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	private void IncrementSeverityCount(Diagnostic item)
 	{
 		if (item.Severity == Severity.Error)
-			Interlocked.Increment(ref _errors);
+			_ = Interlocked.Increment(ref _errors);
 		else if (item.Severity == Severity.Warning)
-			Interlocked.Increment(ref _warnings);
+			_ = Interlocked.Increment(ref _warnings);
 	}
 
 	protected virtual void HandleItem(Diagnostic diagnostic) { }
 
-	public virtual async Task StopAsync(CancellationToken cancellationToken)
+	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		if (_started is not null)
 			await _started;

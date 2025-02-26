@@ -1,11 +1,9 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license.
-// See the license.txt file in the project root for more information.
 
 using Markdig;
+using Markdig.Extensions.Tables;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
@@ -33,9 +31,9 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		if (!pipeline.BlockParsers.Contains<DirectiveBlockParser>())
 		{
 			// Insert the parser before any other parsers
-			pipeline.BlockParsers.InsertBefore<ThematicBreakParser>(new DirectiveBlockParser());
+			_ = pipeline.BlockParsers.InsertBefore<ThematicBreakParser>(new DirectiveBlockParser());
 		}
-		pipeline.BlockParsers.Replace<ParagraphBlockParser>(new DirectiveParagraphParser());
+		_ = pipeline.BlockParsers.Replace<ParagraphBlockParser>(new DirectiveParagraphParser());
 
 		// Plug the inline parser for CustomContainerInline
 		var inlineParser = pipeline.InlineParsers.Find<EmphasisInlineParser>();
@@ -43,12 +41,10 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		{
 			inlineParser.EmphasisDescriptors.Add(new EmphasisDescriptor(':', 2, 2, true));
 			inlineParser.TryCreateEmphasisInlineList.Add((emphasisChar, delimiterCount) =>
-			{
-				if (delimiterCount == 2 && emphasisChar == ':')
-					return new Role { DelimiterChar = ':', DelimiterCount = 2 };
-
-				return null;
-			});
+				delimiterCount != 2 || emphasisChar != ':'
+				? null
+				: (Markdig.Syntax.Inlines.EmphasisInline)new Role { DelimiterChar = ':', DelimiterCount = 2 }
+			);
 		}
 	}
 
@@ -57,9 +53,11 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		if (!renderer.ObjectRenderers.Contains<DirectiveHtmlRenderer>())
 		{
 			// Must be inserted before CodeBlockRenderer
-			renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
+			_ = renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
 		}
 
-		renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
+		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
+
+		_ = renderer.ObjectRenderers.Replace<HtmlTableRenderer>(new WrappedTableRenderer());
 	}
 }

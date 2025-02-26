@@ -1,0 +1,13 @@
+@layer components {
+	.markdown-content {
+		dl {
+			@apply mt-4;
+		}
+		dt {
+			@apply font-mono text-grey-100 mt-6;
+		}
+		dd {
+			@apply mt-2 ml-4;
+		}
+	}
+}

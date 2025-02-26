@@ -5,7 +5,7 @@
 	public LayoutViewModel LayoutModel => new()
 	{
 		Title = $"Elastic Documentation: {Model.Title}",
-		PageTocItems = Model.PageTocItems,
+		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
 		Tree = Model.Tree,
 		CurrentDocument = Model.CurrentDocument,
 		Previous = Model.PreviousDocument,
@@ -21,7 +21,7 @@
 	@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
 	@if (Model.Applies is not null)
 	{
-		await RenderPartialAsync(Applies.Create(Model.Applies));
+		await RenderPartialAsync(ApplicableTo.Create(Model.Applies));
 	}
 	@(new HtmlString(Model.MarkdownHtml))
 </section>

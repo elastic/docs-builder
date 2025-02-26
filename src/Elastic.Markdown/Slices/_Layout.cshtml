@@ -1,133 +1,30 @@
 @inherits RazorLayoutSlice<LayoutViewModel>
-@if (Model.IsRedesign)
-{
-	<!DOCTYPE html>
-	<html lang="en" class="h-screen">
-	<head>
-		<title>@Model.Title</title>
-		<link rel="stylesheet" type="text/css" href="@Model.Static("styles.css")"/>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
-	</head>
-	<body class="text-ink">
-	@(await RenderPartialAsync(_Header.Create(Model)))
-	<div class="container mx-auto flex">
-		@await RenderPartialAsync(_PagesNav.Create(Model))
-		<main class="markdown-content w-full max-w-screen pt-6 pb-6 px-6">
-			@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-			@await RenderBodyAsync()
-		</main>
-		<aside>
-			<nav id="toc-nav" class="sticky top-22 w-80 z-10 max-h-[calc(100vh-var(--spacing)*22)] overflow-y-auto">
-				TODO
-			</nav>
-		</aside>
-	</div>
-	<script src="@Model.Static("main.js")"></script>
-	</body>
-	</html>
-}
-else
-{
 <!DOCTYPE html>
-<html lang="en" data-accent-color="blue" data-content_root="./">
-@(await RenderPartialAsync(_Head.Create(Model)))
-@(await RenderPartialAsync<_Announcement>())
-<body>
-<div class="sy-head">
-	<div class="sy-head-blur"></div>
-	<div class="sy-head-inner sy-container mx-auto">
-		<a class="sy-head-brand" href="/index.html">
-			<img class="light-logo" src="@Model.Static("logo-light.svg")" alt="Elastic" height="28" loading="lazy">
-			<img class="dark-logo" src="@Model.Static("logo-dark.svg")" alt="Elastic" height="28" loading="lazy">
-			<strong>Elastic</strong>
-		</a>
-		@(await RenderPartialAsync<_HeadNav>())
+<html lang="en" class="h-screen">
+@await RenderPartialAsync(_Head.Create(Model))
+<body class="text-ink" hx-ext="preload,head-support">
+@(await RenderPartialAsync(_Header.Create(Model)))
+<div class="flex flex-col items-center px-6">
+	<div class="container flex">
+		@await RenderPartialAsync(_PagesNav.Create(Model))
+		@await RenderPartialAsync(_TableOfContents.Create(Model))
+		<main class="w-full pt-6 pb-30 px-6 order-2 relative">
+			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+				<div class="h-[2px] w-full overflow-hidden">
+					<div class="progress w-full h-full bg-pink-70 left-right"></div>
+				</div>
+				<div class="sr-only">Loading</div>
+			</div>
+			<div class="content-container">
+				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+			</div>
+			<article id="markdown-content" class="content-container markdown-content">
+				@await RenderBodyAsync()
+			</article>
+			@await RenderPartialAsync(_PrevNextNav.Create(Model))
+		</main>
 	</div>
 </div>
-<div class="sy-page sy-container flex mx-auto">
-	@(new HtmlString(Model.NavigationHtml))
-	@(await RenderPartialAsync(_TableOfContents.Create(Model)))
-	<main class="sy-main w-full max-sm:max-w-full print:pt-6">
-		<div class="sy-breadcrumbs" role="navigation">
-			<div class="sy-breadcrumbs-inner flex items-center">
-				<div class="md:hidden mr-3">
-					<button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
-						<i class="i-lucide menu"></i>
-					</button>
-				</div>
-				<ol class="flex-1" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-					<li itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-						<a itemprop="item" href="#">
-							<span itemprop="name">Elastic</span>
-						</a>
-						<span>/</span>
-						<meta itemprop="position" content="1">
-					</li>
-					@foreach (var item in Model.Parents.Reverse())
-					{
-						<li itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-							<a itemprop="item" href="@item.Url">
-								<span itemprop="name">@item.NavigationTitle</span>
-							</a>
-							<span>/</span>
-							<meta itemprop="position" content="2">
-						</li>
-					}
-				</ol>
-				<div class="xl:hidden ml-1">
-					<button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside" aria-expanded="false">
-						<i class="i-lucide outdent"></i>
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="flex flex-col break-words justify-between">
-			<div class="min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
-				<article class="yue" role="main">
-					@await RenderBodyAsync()
-				</article>
-				<button class="back-to-top" type="button" data-visible="true">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-						<path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
-					</svg>
-					<span>Back to top</span>
-				</button>
-				<div class="navigation flex print:hidden">
-					@if (Model.Previous != null)
-					{
-					<div class="navigation-previous">
-						<i class="i-lucide chevron-left"></i>
-						<a href="@Model.Previous.Url">
-							<div class="page-info">
-								<span>Previous</span>
-								<div class="title">@Model.Previous.NavigationTitle</div>
-							</div>
-						</a>
-					</div>
-					}
-					@if (Model.Next != null)
-					{
-					<div class="navigation-next">
-						<a href="@Model.Next.Url">
-							<div class="page-info">
-								<span>Next</span>
-								<div class="title">@Model.Next.NavigationTitle</div>
-							</div>
-							<i class="i-lucide chevron-right"></i>
-						</a>
-					</div>
-					}
-				</div>
-			</div>
-		</div>
-	</main>
-</div>
-@(await RenderPartialAsync<_Footer>())
-@(await RenderPartialAsync(_Scripts.Create(Model)))
-@await RenderSectionAsync("scripts")
-
+@await RenderPartialAsync(_Footer.Create(Model))
 </body>
 </html>
-}

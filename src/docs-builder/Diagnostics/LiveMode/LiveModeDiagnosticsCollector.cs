@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Tooling.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Diagnostic = Elastic.Markdown.Diagnostics.Diagnostic;
@@ -13,5 +14,5 @@ public class LiveModeDiagnosticsCollector(ILoggerFactory loggerFactory)
 {
 	protected override void HandleItem(Diagnostic diagnostic) { }
 
-	public override async Task StopAsync(Cancel ctx) => await Task.CompletedTask;
+	public override async Task StopAsync(Cancel cancellationToken) => await Task.CompletedTask;
 }

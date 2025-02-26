@@ -33,7 +33,13 @@
     "defaults"
   ],
   "dependencies": {
+    "clipboard": "^2.0.11",
     "highlight.js": "^11.11.1",
+    "htmx-ext-head-support": "^2.0.4",
+    "htmx-ext-preload": "^2.1.1",
+    "htmx.org": "^2.0.4",
+    "install": "^0.13.0",
+    "npm": "^11.1.0",
     "select-dom": "^9.3.0",
     "tailwindcss": "^4.0.3"
   }

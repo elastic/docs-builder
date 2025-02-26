@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -16,16 +16,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework" Version="5.3.3">
-      <PrivateAssets>all</PrivateAssets>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.414.5" />
+    <PackageReference Include="ConsoleAppFramework.Abstractions" Version="5.4.1" />
+    <PackageReference Include="ConsoleAppFramework" Version="5.4.1" PrivateAssets="all">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0"/>
-    <PackageReference Include="Github.Actions.Core" Version="9.0.0"/>
     <PackageReference Include="Proc" Version="0.9.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
 </Project>

@@ -2,10 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Markdown.Tests;
 
@@ -23,11 +21,9 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		{
 			CurrentDirectory = Paths.Root.FullName
 		});
-		var context = new BuildContext(fileSystem)
-		{
-			Collector = new DiagnosticsCollector([])
-		};
-		var set = new DocumentationSet(context);
+		var context = new BuildContext(fileSystem);
+		var linkResolver = new TestCrossLinkResolver();
+		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(TestContext.Current.CancellationToken);

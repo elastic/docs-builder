@@ -5,7 +5,6 @@
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
-using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 

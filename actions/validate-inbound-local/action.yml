@@ -1,0 +1,10 @@
+name: 'Validate Inbound Links'
+description: 'Validates all published cross links from all known repositories against local links.json'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate Inbound Links
+      uses: elastic/docs-builder/actions/assembler@main
+      with:
+        command: "link validate-inbound-local"

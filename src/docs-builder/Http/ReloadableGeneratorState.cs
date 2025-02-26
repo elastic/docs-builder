@@ -20,16 +20,16 @@ public class ReloadableGeneratorState(
 	private IDirectoryInfo? SourcePath { get; } = sourcePath;
 	private IDirectoryInfo? OutputPath { get; } = outputPath;
 
-	private DocumentationGenerator _generator = new(new DocumentationSet(context), logger);
+	private DocumentationGenerator _generator = new(new DocumentationSet(context, logger), logger);
 	public DocumentationGenerator Generator => _generator;
 
 	public async Task ReloadAsync(Cancel ctx)
 	{
 		SourcePath?.Refresh();
 		OutputPath?.Refresh();
-		var docSet = new DocumentationSet(context);
+		var docSet = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(docSet, logger);
 		await generator.ResolveDirectoryTree(ctx);
-		Interlocked.Exchange(ref _generator, generator);
+		_ = Interlocked.Exchange(ref _generator, generator);
 	}
 }

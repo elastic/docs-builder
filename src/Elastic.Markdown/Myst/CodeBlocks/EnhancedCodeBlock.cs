@@ -4,17 +4,24 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Parsers;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
+
+public class AppliesToDirective(BlockParser parser, ParserContext context)
+	: EnhancedCodeBlock(parser, context)
+{
+	public ApplicableTo? AppliesTo { get; set; }
+}
 
 public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 	: FencedCodeBlock(parser), IBlockExtension
 {
 	public BuildContext Build { get; } = context.Build;
 
-	public IFileInfo CurrentFile { get; } = context.Path;
+	public IFileInfo CurrentFile { get; } = context.MarkdownSourcePath;
 
 	public bool SkipValidation { get; } = context.SkipValidation;
 
@@ -22,7 +29,7 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 
 	public List<CallOut> CallOuts { get; set; } = [];
 
-	public IReadOnlyCollection<CallOut> UniqueCallOuts => CallOuts?.DistinctBy(c => c.Index).ToList() ?? [];
+	public IReadOnlyCollection<CallOut> UniqueCallOuts => [.. CallOuts.DistinctBy(c => c.Index)];
 
 	public bool InlineAnnotations { get; set; }
 

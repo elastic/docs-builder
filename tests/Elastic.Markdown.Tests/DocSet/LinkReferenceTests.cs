@@ -33,10 +33,11 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 	[Fact]
 	public void Create()
 	{
-		var git = GitCheckoutInformation.Create(ReadFileSystem);
+		var root = ReadFileSystem.DirectoryInfo.New(Paths.Root.FullName);
+		var git = GitCheckoutInformation.Create(root, ReadFileSystem);
 
 		git.Should().NotBeNull();
-		git!.Branch.Should().NotBeNullOrWhiteSpace();
+		git.Branch.Should().NotBeNullOrWhiteSpace();
 		// this validates we are not returning the test instance as were doing a real read
 		git.Branch.Should().NotContain(git.Ref);
 		git.Ref.Should().NotBeNullOrWhiteSpace();

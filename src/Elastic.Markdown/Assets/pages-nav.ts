@@ -1,56 +1,21 @@
-import {$, $$} from "select-dom/strict";
+import {$, $$} from "select-dom";
 
-type NavExpandState = { [key: string]: boolean };
-const PAGE_NAV_EXPAND_STATE_KEY = 'pagesNavState';
-const navState = JSON.parse(sessionStorage.getItem(PAGE_NAV_EXPAND_STATE_KEY)) as NavExpandState
-
-// Initialize the nav state from the session storage
-// Return a function to keep the nav state in the session storage that should be called before the page is unloaded
-function keepNavState(nav: HTMLElement): () => void {
-	const inputs = $$('input[type="checkbox"]', nav);
-	if (navState) {
-		inputs.forEach(input => {
-			const key = input.id;
-			if ('shouldExpand' in input.dataset && input.dataset['shouldExpand'] === 'true') {
-				input.checked = true;
-			} else {
-				input.checked = navState[key];
-			}
-		});
-	}
-	
-	return () => {
-		const inputs = $$('input[type="checkbox"]', nav);
-		const state: NavExpandState = inputs.reduce((state: NavExpandState, input) => {
-			const key = input.id;
-			const value = input.checked;
-			return { ...state, [key]: value};
-		}, {});
-		sessionStorage.setItem(PAGE_NAV_EXPAND_STATE_KEY, JSON.stringify(state));
-	}
-}
-
-type NavScrollPosition = number;
-const PAGE_NAV_SCROLL_POSITION_KEY = 'pagesNavScrollPosition';
-const pagesNavScrollPosition: NavScrollPosition = parseInt(
-	sessionStorage.getItem(PAGE_NAV_SCROLL_POSITION_KEY) ?? '0'
-);
-
-
-// Initialize the nav scroll position from the session storage
-// Return a function to keep the nav scroll position in the session storage that should be called before the page is unloaded
-function keepNavPosition(nav: HTMLElement): () => void {
-	if (pagesNavScrollPosition) {
-		nav.scrollTop = pagesNavScrollPosition;
-	}
-	return () => {
-		sessionStorage.setItem(PAGE_NAV_SCROLL_POSITION_KEY, nav.scrollTop.toString());
+function expandAllParents(navItem: HTMLElement) {
+	let parent = navItem?.closest('li');
+	while (parent) {
+		const input = parent.querySelector('input');
+		if (input) {
+			(input as HTMLInputElement).checked = true;
+		}
+		parent = parent.parentElement?.closest('li');
 	}
 }
 
 function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
+	const currentNavItem = $('.current', nav);
+	expandAllParents(currentNavItem);
 	setTimeout(() => {
-		const currentNavItem = $('.current', nav);
+
 		if (currentNavItem && !isElementInViewport(currentNavItem)) {
 			currentNavItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
 		}
@@ -68,11 +33,15 @@ function isElementInViewport(el: HTMLElement): boolean {
 
 export function initNav() {
 	const pagesNav = $('#pages-nav');
-	const keepNavStateCallback = keepNavState(pagesNav);
-	const keepNavPositionCallback = keepNavPosition(pagesNav);
+	if (!pagesNav) {
+		return;
+	}
+	const navItems = $$('a[href="' + window.location.pathname + '"]', pagesNav);
+	navItems.forEach(el => {
+		el.classList.add('current');
+	});
 	scrollCurrentNaviItemIntoView(pagesNav, 100);
-	window.addEventListener('beforeunload', () => {
-		keepNavStateCallback();
-		keepNavPositionCallback();
-	}, true);
 }
+
+
+// initNav();

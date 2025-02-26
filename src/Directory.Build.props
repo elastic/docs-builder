@@ -6,8 +6,8 @@
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAuditLevel>low</NuGetAuditLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
+    <!-- TODO ENABLE to document our code properly <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 

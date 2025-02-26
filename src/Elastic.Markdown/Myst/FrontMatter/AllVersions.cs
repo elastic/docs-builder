@@ -18,7 +18,7 @@ public class SemVersionConverter : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(SemVersion);
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
 		var value = parser.Consume<Scalar>();
 		if (string.IsNullOrWhiteSpace(value.Value))

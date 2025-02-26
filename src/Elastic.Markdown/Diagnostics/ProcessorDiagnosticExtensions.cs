@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
-using Markdig.Helpers;
 using Markdig.Parsers;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Diagnostics;
 
@@ -20,7 +20,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
-			File = processor.GetContext().Path.FullName,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -38,7 +38,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
-			File = processor.GetContext().Path.FullName,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -54,7 +54,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
-			File = context.Path.FullName,
+			File = context.MarkdownSourcePath.FullName,
 			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
 		};
 		context.Build.Collector.Channel.Write(d);
@@ -67,7 +67,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
-			File = context.Path.FullName,
+			File = context.MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -130,5 +130,51 @@ public static class ProcessorDiagnosticExtensions
 			Message = message
 		};
 		block.Build.Collector.Channel.Write(d);
+	}
+
+
+	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message)
+	{
+		var url = inline.Url;
+		var line = inline.Line + 1;
+		var column = inline.Column;
+		var length = url?.Length ?? 1;
+
+		var context = processor.GetContext();
+		if (context.SkipValidation)
+			return;
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
+			Column = column,
+			Line = line,
+			Message = message,
+			Length = length
+		};
+		context.Build.Collector.Channel.Write(d);
+	}
+
+
+	public static void EmitWarning(this InlineProcessor processor, LinkInline inline, string message)
+	{
+		var url = inline.Url;
+		var line = inline.Line + 1;
+		var column = inline.Column;
+		var length = url?.Length ?? 1;
+
+		var context = processor.GetContext();
+		if (context.SkipValidation)
+			return;
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
+			Column = column,
+			Line = line,
+			Message = message,
+			Length = length
+		};
+		context.Build.Collector.Channel.Write(d);
 	}
 }
