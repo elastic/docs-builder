@@ -25,6 +25,11 @@ on:
         type: string
         default: '**'
         required: false
+      free-disk-space:
+        description: 'Free disk space before running the build'
+        type: string
+        default: 'false'
+        required: false
 
 permissions:
   id-token: write
@@ -53,7 +58,7 @@ jobs:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
 
       - name: Free Disk Space
-        if: github.event_name != 'merge_group'
+        if: ${{ inputs.free-disk-space != '' && inputs.free-disk-space || 'false' }}
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
