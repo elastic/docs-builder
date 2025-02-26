@@ -162,7 +162,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.LinksResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
 			link.Url = resolvedUri.ToString();
 	}
 
@@ -185,7 +185,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
 		url.StartsWith('/')
 			? context.Build.DocumentationSourceDirectory.FullName
-			: context.CurrentPath.Directory!.FullName;
+			: context.MarkdownSourcePath.Directory!.FullName;
 
 	private static void ValidateInternalUrl(InlineProcessor processor, string url, string includeFrom, LinkInline link, ParserContext context)
 	{
@@ -202,7 +202,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
-		var markdown = context.GetDocumentationFile(file) as MarkdownFile;
+		var markdown = context.DocumentationFileLookup(file) as MarkdownFile;
 
 		if (markdown == null && link.FirstChild == null)
 		{
@@ -227,10 +227,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static IFileInfo ResolveFile(ParserContext context, string url) =>
 		string.IsNullOrWhiteSpace(url)
-			? context.CurrentPath
+			? context.MarkdownSourcePath
 			: url.StartsWith('/')
 				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.CurrentPath.Directory!.FullName, url));
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.MarkdownSourcePath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{

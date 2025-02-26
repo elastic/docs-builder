@@ -21,7 +21,7 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 {
 	public BuildContext Build { get; } = context.Build;
 
-	public IFileInfo CurrentFile { get; } = context.CurrentPath;
+	public IFileInfo CurrentFile { get; } = context.MarkdownSourcePath;
 
 	public bool SkipValidation { get; } = context.SkipValidation;
 

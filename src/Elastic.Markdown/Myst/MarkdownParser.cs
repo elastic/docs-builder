@@ -96,7 +96,7 @@ public class MarkdownParser(
 	{
 		var state = new ParserState(Build)
 		{
-			SourcePath = path,
+			MarkdownSourcePath = path,
 			YamlFrontMatter = null,
 			DocumentationFileLookup = getDocumentationFile,
 			CrossLinkResolver = LinksResolver,
@@ -110,7 +110,7 @@ public class MarkdownParser(
 	{
 		var state = new ParserState(Build)
 		{
-			SourcePath = path,
+			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
 			DocumentationFileLookup = getDocumentationFile,
 			CrossLinkResolver = LinksResolver
@@ -123,7 +123,7 @@ public class MarkdownParser(
 	{
 		var state = new ParserState(Build)
 		{
-			SourcePath = path,
+			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
 			DocumentationFileLookup = getDocumentationFile,
 			CrossLinkResolver = LinksResolver,
@@ -137,7 +137,7 @@ public class MarkdownParser(
 	{
 		var state = new ParserState(Build)
 		{
-			SourcePath = path,
+			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
 			DocumentationFileLookup = getDocumentationFile,
 			CrossLinkResolver = LinksResolver

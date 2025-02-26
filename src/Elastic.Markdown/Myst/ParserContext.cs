@@ -28,25 +28,25 @@ public record ParserState(BuildContext Build)
 {
 	public ConfigurationFile Configuration { get; } = Build.Configuration;
 
-	public required IFileInfo SourcePath { get; init; }
+	public required IFileInfo MarkdownSourcePath { get; init; }
 	public required YamlFrontMatter? YamlFrontMatter { get; init; }
 	public required ICrossLinkResolver CrossLinkResolver { get; init; }
 	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
 
-	public IFileInfo? ParentMarkdownPath { get; set; }
-	public bool SkipValidation { get; set; }
+	public IFileInfo? ParentMarkdownPath { get; init; }
+	public bool SkipValidation { get; init; }
 }
 
 public class ParserContext : MarkdownParserContext
 {
 	public ConfigurationFile Configuration { get; }
-	public ICrossLinkResolver LinksResolver { get; }
-	public IFileInfo CurrentPath { get; }
+	public ICrossLinkResolver CrossLinkResolver { get; }
+	public IFileInfo MarkdownSourcePath { get; }
 	public string CurrentUrlPath { get; }
-	public YamlFrontMatter? FrontMatter { get; }
+	public YamlFrontMatter? YamlFrontMatter { get; }
 	public BuildContext Build { get; }
 	public bool SkipValidation { get; }
-	public Func<IFileInfo, DocumentationFile?> GetDocumentationFile { get; }
+	public Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
 
@@ -54,26 +54,26 @@ public class ParserContext : MarkdownParserContext
 	{
 		Build = state.Build;
 		Configuration = state.Configuration;
-		FrontMatter = state.YamlFrontMatter;
+		YamlFrontMatter = state.YamlFrontMatter;
 		SkipValidation = state.SkipValidation;
 
-		LinksResolver = state.CrossLinkResolver;
-		CurrentPath = state.SourcePath;
-		GetDocumentationFile = state.DocumentationFileLookup;
+		CrossLinkResolver = state.CrossLinkResolver;
+		MarkdownSourcePath = state.MarkdownSourcePath;
+		DocumentationFileLookup = state.DocumentationFileLookup;
 		var parentPath = state.ParentMarkdownPath;
 
-		CurrentUrlPath = GetDocumentationFile(parentPath ?? CurrentPath) is MarkdownFile md
+		CurrentUrlPath = DocumentationFileLookup(parentPath ?? MarkdownSourcePath) is MarkdownFile md
 			? md.Url
 			: SkipValidation
 				? string.Empty
-				: throw new Exception($"Unable to find documentation file for {(parentPath ?? CurrentPath).FullName}");
+				: throw new Exception($"Unable to find documentation file for {(parentPath ?? MarkdownSourcePath).FullName}");
 
-		if (FrontMatter?.Properties is not { Count: > 0 })
+		if (YamlFrontMatter?.Properties is not { Count: > 0 })
 			Substitutions = Configuration.Substitutions;
 		else
 		{
 			var subs = new Dictionary<string, string>(Configuration.Substitutions);
-			foreach (var (k, value) in FrontMatter.Properties)
+			foreach (var (k, value) in YamlFrontMatter.Properties)
 			{
 				var key = k.ToLowerInvariant();
 				if (Configuration.Substitutions.TryGetValue(key, out _))
@@ -87,7 +87,7 @@ public class ParserContext : MarkdownParserContext
 
 		var contextSubs = new Dictionary<string, string>();
 
-		if (FrontMatter?.Title is { } title)
+		if (YamlFrontMatter?.Title is { } title)
 			contextSubs["context.page_title"] = title;
 
 		ContextSubstitutions = contextSubs;

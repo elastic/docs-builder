@@ -57,7 +57,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		var includeFrom = context.CurrentPath.Directory!.FullName;
+		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
@@ -82,7 +82,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			Found = false;
 		}
 
-		if (file.FullName == context.CurrentPath.FullName)
+		if (file.FullName == context.MarkdownSourcePath.FullName)
 		{
 			this.EmitError($"{{include}} cyclical include detected `{IncludePath}` points to itself");
 			Found = false;

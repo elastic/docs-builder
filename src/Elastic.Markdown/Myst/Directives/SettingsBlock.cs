@@ -14,7 +14,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 	public string? IncludePath { get; private set; }
 
-	public IFileInfo IncludeFrom { get; } = context.CurrentPath;
+	public IFileInfo IncludeFrom { get; } = context.MarkdownSourcePath;
 
 	public bool Found { get; private set; }
 
@@ -32,7 +32,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			return;
 		}
 
-		var includeFrom = context.CurrentPath.Directory!.FullName;
+		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 

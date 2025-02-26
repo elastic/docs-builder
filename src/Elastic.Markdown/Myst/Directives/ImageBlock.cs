@@ -88,7 +88,7 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 			return;
 		}
 
-		var includeFrom = context.CurrentPath.Directory!.FullName;
+		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (imageUrl.StartsWith('/'))
 			includeFrom = context.Build.DocumentationSourceDirectory.FullName;
 

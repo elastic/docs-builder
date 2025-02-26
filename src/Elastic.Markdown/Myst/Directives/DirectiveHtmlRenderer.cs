@@ -227,13 +227,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var parser = new MarkdownParser(
 			block.Build.DocumentationSourceDirectory,
 			block.Build,
-			block.Context.GetDocumentationFile,
+			block.Context.DocumentationFileLookup,
 			block.Build.Configuration,
-			block.Context.LinksResolver
+			block.Context.CrossLinkResolver
 		);
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
-		var parentPath = block.Context.CurrentPath;
-		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.FrontMatter, default).GetAwaiter().GetResult();
+		var parentPath = block.Context.MarkdownSourcePath;
+		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
 	}
@@ -244,8 +244,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 
 		var parser = new MarkdownParser(
-			block.Build.DocumentationSourceDirectory, block.Build, block.Context.GetDocumentationFile, block.Build.Configuration
-			, block.Context.LinksResolver
+			block.Build.DocumentationSourceDirectory, block.Build, block.Context.DocumentationFileLookup, block.Build.Configuration
+			, block.Context.CrossLinkResolver
 		);
 
 		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
@@ -272,7 +272,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			RenderMarkdown = s =>
 			{
-				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.Context.FrontMatter);
+				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.Context.YamlFrontMatter);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
