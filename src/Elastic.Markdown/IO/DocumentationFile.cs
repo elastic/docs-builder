@@ -53,4 +53,3 @@ public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
 }
 
 public record SnippetAnchors(string[] Anchors, IReadOnlyCollection<PageTocItem> TableOfContentItems);
-
