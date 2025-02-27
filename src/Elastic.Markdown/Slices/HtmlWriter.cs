@@ -56,7 +56,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 
 		string? navigationHtml;
 
-		if (DocumentationSet.Configuration.Features.ContainsKey("PrimaryNav"))
+		if (DocumentationSet.Configuration.Features.ContainsKey("primary-nav"))
 		{
 			var topLevelGroupId = GetTopLevelGroupId(markdown);
 			if (!_renderedNavigationCache.TryGetValue(topLevelGroupId, out var value))

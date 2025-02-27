@@ -113,7 +113,7 @@
 					<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
 				</a>
 			</div>
-			@if (Model.Configuration.Features.ContainsKey("PrimaryNav"))
+			@if (Model.Configuration.Features.ContainsKey("primary-nav"))
 			{
 				@await RenderPartialAsync(_PrimaryNav.Create(primaryNavViewModel))
 			}
@@ -143,12 +143,12 @@
 </header>
 @* <div class="h-1"> *@
 @* </div> *@
-@if (Model.Configuration.Features.ContainsKey("PrimaryNav"))
+@if (Model.Configuration.Features.ContainsKey("primary-nav"))
 {
 	<nav id="secondary-nav" class="bg-grey-10 border-b-1 border-grey-20 font-sans font-semibold px-6 pt-6">
 		<div class="container flex mx-auto justify-between">
 			<ul class="flex gap-6">
-				@if (!Model.Configuration.Features.ContainsKey("PrimaryNav"))
+				@if (!Model.Configuration.Features.ContainsKey("primary-nav"))
 				{
 					@foreach (var navItem in Model.TopLevelNavigationItems)
 					{

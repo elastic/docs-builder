@@ -15,7 +15,7 @@ public static class Htmx
 		[
 			"#primary-nav", "#secondary-nav", "#markdown-content", "#toc-nav", "#prev-next-nav", "#breadcrumbs"
 		];
-		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && configuration.Features.ContainsKey("PrimaryNav"))
+		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && configuration.Features.ContainsKey("primary-nav"))
 			_ = selectTargets.Add("#pages-nav");
 		return string.Join(',', selectTargets);
 	}
