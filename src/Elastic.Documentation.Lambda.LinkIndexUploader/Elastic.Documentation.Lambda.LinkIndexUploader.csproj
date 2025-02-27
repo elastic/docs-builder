@@ -14,10 +14,6 @@
     <PublishTrimmed>true</PublishTrimmed>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-
-    <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys>true</UseSystemResourceKeys>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.12.3"/>
