@@ -12,6 +12,9 @@ inputs:
   strict:
     description: 'Treat warnings as errors'
     required: false
+outputs:
+  skip:
+    description: "hint from the documentation tool to skip the docs build for this PR"
 
 runs:
   using: 'docker'
