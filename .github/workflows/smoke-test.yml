@@ -1,0 +1,27 @@
+name: smoke-tests
+
+on:
+  pull_request: ~
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        include:
+          - repository: elastic/docs-content
+          - repository: elastic/apm-agent-android
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap Action Workspace
+        uses: ./.github/actions/bootstrap
+        
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          path: test-repo
+
+      - name: Build documentation
+        working-directory: test-repo
+        run: |
+          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs"
