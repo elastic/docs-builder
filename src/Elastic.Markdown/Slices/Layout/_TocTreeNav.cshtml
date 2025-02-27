@@ -1,49 +1,43 @@
 @using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
-@{
-	var topLevel = Model.IsRoot ? 1 : 2;
-}
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	var id = item.Id;
 	if (item is FileNavigation file)
 	{
 		var f = file.File;
-		<li class="block group/li mt-1">
+		<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li">
+			<div class="flex">
 				<a
 					hx-get="@f.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
-					data-current-url="@Model.CurrentDocument.Url"
-					data-target-url="@f.Url"
-					data-path-prefix="@Model.CurrentDocument.UrlPathPrefix"
-					data-has-same-segment="@Htmx.HasSameTopLevelGroup(Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
+					hx-select-oob="@Htmx.GetHxSelectOob()"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
-					preload
-					class="sidebar-link group-[.current]/li:text-blue-elastic!"
+					preload="mouseover"
+					class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic!"
 					id="page-@id"
 					href="@f.Url">
 					@f.NavigationTitle
 				</a>
+			</div>
 		</li>
 	}
 	else if (item is GroupNavigation folder)
 	{
 		var g = folder.Group;
-		// const int initialExpandLevel = 3;
-		// var shouldInitiallyExpand = g.Depth <= initialExpandLevel;
-		<li class="flex flex-wrap group-navigation mt-2">
-			<label for="@id" class="peer group/label flex items-start">
+		const int initialExpandLevel = 1;
+		var shouldInitiallyExpand = g.Depth <= initialExpandLevel;
+		<li class="flex flex-wrap group-navigation @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
+			<label for="@id" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke-width="1.5"
 					stroke="currentColor"
-					width="12"
-					class="w-3 mr-1 mt-[3px] shrink-0 -rotate-90 group-has-checked/label:rotate-0 cursor-pointer @(g.Depth == topLevel ? "hidden" : "")">
+					class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
 					<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 				</svg>
 				<input
@@ -51,27 +45,29 @@
 					type="checkbox"
 					class="hidden"
 					aria-hidden="true"
-					@(g.Depth <= topLevel ? "checked" : "")
-					@(g.Depth <= topLevel ? "disabled" : "")
-					>
+					@(shouldInitiallyExpand ? "checked" : string.Empty)
+				>
 				<a
-					href="@(g.Index?.Url ?? "")"
-					@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, g.Index?.Url ?? "")
-					id="page-@(g.Index?.Id ?? id)"
-					class="sidebar-link @(g.Depth == topLevel ? "font-semibold mt-2" : "")">
-					@(g.Index?.NavigationTitle ?? "Untitled")
+					href="@g.Index?.Url"
+					hx-get="@g.Index?.Url"
+					hx-select-oob="@Htmx.GetHxSelectOob()"
+					hx-swap="none"
+					hx-push-url="true"
+					hx-indicator="#htmx-indicator"
+					preload="mouseover"
+					id="page-@g.Index?.Id"
+					class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty)">
+					@g.Index?.NavigationTitle
 				</a>
 			</label>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="w-full hidden peer-has-checked:block peer-has-[:focus]:block focus-within:block @(g.Depth > topLevel ? "ml-4": "ml-4")">
+				<ul class="w-full overflow-y-hidden hidden peer-has-checked:block peer-has-[:focus]:block has-[:focus]:block">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
-						Features = Model.Features,
 						Level = g.Depth,
 						CurrentDocument = Model.CurrentDocument,
-						SubTree = g,
-						IsRoot = Model.IsRoot
+						SubTree = g
 					}))
 				</ul>
 			}

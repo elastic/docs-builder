@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
 @await RenderPartialAsync(_Head.Create(Model))
-<body class="text-ink" hx-ext="preload, head-support">
+<body class="text-ink" hx-ext="preload,head-support">
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div class="flex flex-col items-center px-6">
 	<div class="container flex">

@@ -15,9 +15,9 @@ function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
 	const currentNavItem = $('.current', nav);
 	expandAllParents(currentNavItem);
 	setTimeout(() => {
+
 		if (currentNavItem && !isElementInViewport(currentNavItem)) {
 			currentNavItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			window.scrollTo(0, 0);
 		}
 	}, delay);
 }
@@ -36,7 +36,7 @@ export function initNav() {
 	if (!pagesNav) {
 		return;
 	}
-	const navItems = $$('a[href="' + window.location.pathname + '"], a[href="' + window.location.pathname + '/"]', pagesNav);
+	const navItems = $$('a[href="' + window.location.pathname + '"]', pagesNav);
 	navItems.forEach(el => {
 		el.classList.add('current');
 	});
