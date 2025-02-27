@@ -56,6 +56,7 @@ jobs:
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
+          since_last_remote_commit: true
 
       - name: Free Disk Space
         if: github.repository == 'elastic/asciidocalypse'
