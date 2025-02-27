@@ -2,28 +2,36 @@
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
 @await RenderPartialAsync(_Head.Create(Model))
-<body class="text-ink" hx-ext="preload, head-support">
+<body id="body" class="text-ink" hx-ext="preload, head-support">
 @(await RenderPartialAsync(_Header.Create(Model)))
-<div class="flex flex-col items-center px-6">
-	<div class="container flex">
-		@await RenderPartialAsync(_PagesNav.Create(Model))
-		@await RenderPartialAsync(_TableOfContents.Create(Model))
-		<main class="w-full pt-6 pb-30 px-6 order-2 relative">
-			<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-				<div class="h-[2px] w-full overflow-hidden">
-					<div class="progress w-full h-full bg-pink-70 left-right"></div>
+<div id="main-container" class="flex flex-col items-center px-6">
+		
+		@if (Model.Features.IsLandingPageEnabled && Model.CurrentDocument.Url == Model.Link("/"))
+		{
+			@await RenderPartialAsync(_LandingPage.Create(Model))
+		}
+		else
+		{
+			<div class="container flex">
+			@await RenderPartialAsync(_PagesNav.Create(Model))
+			@await RenderPartialAsync(_TableOfContents.Create(Model))
+			<main class="w-full pt-6 pb-30 px-6 order-2 relative">
+				<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+					<div class="h-[2px] w-full overflow-hidden">
+						<div class="progress w-full h-full bg-pink-70 left-right"></div>
+					</div>
+					<div class="sr-only">Loading</div>
 				</div>
-				<div class="sr-only">Loading</div>
+				<div class="content-container">
+					@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+				</div>
+				<article id="markdown-content" class="content-container markdown-content">
+					@await RenderBodyAsync()
+				</article>
+				@await RenderPartialAsync(_PrevNextNav.Create(Model))
+			</main>
 			</div>
-			<div class="content-container">
-				@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-			</div>
-			<article id="markdown-content" class="content-container markdown-content">
-				@await RenderBodyAsync()
-			</article>
-			@await RenderPartialAsync(_PrevNextNav.Create(Model))
-		</main>
-	</div>
+		}
 </div>
 @await RenderPartialAsync(_Footer.Create(Model))
 </body>

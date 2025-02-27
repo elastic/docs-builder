@@ -5,34 +5,24 @@
 		<a 
 			itemprop="item"
 			href="@Model.Link("/")"
-			hx-get="@Model.Link("/")"
-			hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.UrlPathPrefix, Model.Link("/"), Model.CurrentDocument.Url)"
-			hx-swap="none"
-			hx-push-url="true"
-			hx-indicator="#htmx-indicator"
-			preload="@Htmx.GetPreload()"
+			@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.Link("/"), Model.CurrentDocument.Url)
 	>
 			<span itemprop="name" class="hover:text-ink">Elastic</span>
 		</a>
 		<meta itemprop="position" content="1">
 	</li>
-	@foreach (var item in Model.Parents.Reverse().Skip(1))
+	@foreach (var (item, index) in Model.Parents.Reverse().Skip(1).Select((item, index) => (item, index)))
 	{
 		<li class="inline text-gray-500 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<span class="px-1">/</span>
 			<a
 				itemprop="item" 
 				href="@item.Url"
-				hx-get="@item.Url"
-				hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.UrlPathPrefix, item.Url, Model.CurrentDocument.Url)"
-				hx-swap="none"
-				hx-push-url="true"
-				hx-indicator="#htmx-indicator"
-				preload="@Htmx.GetPreload()"
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, item.Url, Model.CurrentDocument.Url)
 			>
 				<span itemprop="name" class="hover:text-ink">@item.NavigationTitle</span>
 			</a>
-			<meta itemprop="position" content="2">
+			<meta itemprop="position" content="@(index+2)">
 		</li>
 	}
 	<li class="inline text-gray-500 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">

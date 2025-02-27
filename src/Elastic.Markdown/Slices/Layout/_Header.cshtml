@@ -108,7 +108,7 @@
 <header id="main-header" class="sticky top-0 z-50 max-w-screen bg-white border-b-1 border-grey-20">
 	<div class="flex items-center justify-center h-21 bg-white px-6">
 		<div class="container flex flex-wrap lg:flex-nowrap justify-start items-center">
-			<div class="h-10 mr-10">
+			<div class="h-10 mr-10 shrink-0">
 				<a href="@Model.UrlPathPrefix/">
 					<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
 				</a>
@@ -135,7 +135,7 @@
 				</div>
 			</form>
 			<div class="flex grow lg:flex-none h-10">
-				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 me-3 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
+				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
 				@* <a href="https://elastic.co/contact" class="grow cursor-pointer text-white text-nowrap border-2 border-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">Contact Sales</a> *@
 			</div>
 		</div>
@@ -156,12 +156,8 @@
 							<li class="border-b-2 text-nowrap pb-2 -mb-[1px] @(isCurrent ? "text-blue-elastic border-b-blue-elastic" : "border-b-transparent hover:text-black")">
 								<a
 									href="@navItem.Index.Url"
-									hx-get="@navItem.Index.Url"
-									hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
-									hx-swap="none"
-									hx-push-url="true"
-									hx-indicator="#htmx-indicator"
-									preload="@Htmx.GetPreload()">
+									@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)
+								>
 									@navItem.Index.NavigationTitle
 								</a>
 							</li>
