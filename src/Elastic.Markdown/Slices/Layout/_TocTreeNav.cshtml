@@ -2,7 +2,7 @@
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @{
-	var topLevel = Model.IsRoot ? 0 : 1;
+	var topLevel = Model.IsRoot ? 1 : 2;
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
