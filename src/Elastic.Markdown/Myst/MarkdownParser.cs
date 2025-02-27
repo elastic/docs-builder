@@ -102,22 +102,22 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	}
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? MinimalPipelineCached;
-	private static MarkdownPipeline MinimalPipeline
+	private MarkdownPipeline? _minimalPipelineCached;
+	private MarkdownPipeline MinimalPipeline
 	{
 		get
 		{
-			if (MinimalPipelineCached is not null)
-				return MinimalPipelineCached;
+			if (_minimalPipelineCached is not null)
+				return _minimalPipelineCached;
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
-				.UseDirectives();
+				.UseDirectives(this);
 
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			MinimalPipelineCached = builder.Build();
-			return MinimalPipelineCached;
+			_minimalPipelineCached = builder.Build();
+			return _minimalPipelineCached;
 		}
 	}
 
@@ -142,7 +142,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseYamlFrontMatter()
 				.UseGridTables()
 				.UsePipeTables()
-				.UseDirectives()
+				.UseDirectives(this)
 				.UseDefinitionLists()
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer(Build)
