@@ -26,7 +26,7 @@ public class IndexViewModel
 	public required string? GithubEditUrl { get; init; }
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
-	public required ConfigurationFile Configuration { get; init; }
+	public required FeatureFlags Features { get; init; }
 }
 
 public class LayoutViewModel
@@ -47,7 +47,7 @@ public class LayoutViewModel
 	public required string? UrlPathPrefix { get; set; }
 	public required string? GithubEditUrl { get; set; }
 	public required bool AllowIndexing { get; init; }
-	public required ConfigurationFile Configuration { get; init; }
+	public required FeatureFlags Features { get; init; }
 
 	public required DocumentationGroup[] TopLevelNavigationItems { get; init; }
 
@@ -92,7 +92,7 @@ public class NavigationViewModel
 	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required bool IsRoot { get; init; }
-	public required ConfigurationFile Configuration { get; init; }
+	public required FeatureFlags Features { get; init; }
 }
 
 public class NavigationTreeItem
@@ -101,7 +101,7 @@ public class NavigationTreeItem
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required DocumentationGroup SubTree { get; init; }
 	public required bool IsRoot { get; init; }
-	public required ConfigurationFile Configuration { get; init; }
+	public required FeatureFlags Features { get; init; }
 }
 
 public class PrimaryNavViewModel

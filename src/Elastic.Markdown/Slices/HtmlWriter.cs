@@ -27,7 +27,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Tree = group ?? DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			IsRoot = topLevelGroupId == DocumentationSet.Tree.Id,
-			Configuration = configuration
+			Features = configuration.Features
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
@@ -56,7 +56,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 
 		string? navigationHtml;
 
-		if (DocumentationSet.Configuration.Features.ContainsKey("primary-nav"))
+		if (DocumentationSet.Configuration.Features.IsPrimaryNavEnabled)
 		{
 			var topLevelGroupId = GetTopLevelGroupId(markdown);
 			if (!_renderedNavigationCache.TryGetValue(topLevelGroupId, out var value))
@@ -101,7 +101,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
-			Configuration = DocumentationSet.Configuration
+			Features = DocumentationSet.Configuration.Features
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

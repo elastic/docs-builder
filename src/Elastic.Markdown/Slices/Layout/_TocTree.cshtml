@@ -3,7 +3,7 @@
 <div class="pt-6 pb-20">
 	<a
 		href="@Model.TitleUrl"
-		@Htmx.GetHxAttributes(Model.Configuration, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, Model.TitleUrl)
+		@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, Model.TitleUrl)
 		class="font-semibold text-ink hover:text-black"
 		>
 		@Model.Title
@@ -11,7 +11,7 @@
 	<ul class="block">
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{
-			Configuration = Model.Configuration,
+			Features = Model.Features,
 			Level = Model.Tree.Depth,
 			SubTree = Model.Tree,
 			CurrentDocument = Model.CurrentDocument,

@@ -10,8 +10,8 @@ subs:
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
   
-# features:
-#   primary-nav: true
+features:
+  primary-nav: false
 
 toc:
   - file: index.md

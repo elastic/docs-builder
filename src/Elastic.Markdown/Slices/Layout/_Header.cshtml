@@ -4,7 +4,7 @@
 @{
 	string GetHxAttributes(string url)
 	{
-		return Htmx.GetHxAttributes(Model.Configuration, Model.UrlPathPrefix, Model.CurrentDocument.Url, url);
+		return Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, url);
 	}
 
 	var primaryNavViewModel = new PrimaryNavViewModel
@@ -31,7 +31,7 @@
 						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
 						Url =  Model.Link("/solutions/observability"),
 						HtmxAttributes = Htmx.GetHxAttributes(
-							Model.Configuration,
+							Model.Features,
 							Model.CurrentDocument.UrlPathPrefix,
 							Model.CurrentDocument.Url, 
 							Model.Link("/solutions/security")
@@ -113,7 +113,7 @@
 					<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
 				</a>
 			</div>
-			@if (Model.Configuration.Features.ContainsKey("primary-nav"))
+			@if (Model.Features.IsPrimaryNavEnabled)
 			{
 				@await RenderPartialAsync(_PrimaryNav.Create(primaryNavViewModel))
 			}
@@ -141,14 +141,12 @@
 		</div>
 	</div>
 </header>
-@* <div class="h-1"> *@
-@* </div> *@
-@if (Model.Configuration.Features.ContainsKey("primary-nav"))
+@if (Model.Features.IsPrimaryNavEnabled)
 {
 	<nav id="secondary-nav" class="bg-grey-10 border-b-1 border-grey-20 font-sans font-semibold px-6 pt-6">
 		<div class="container flex mx-auto justify-between">
 			<ul class="flex gap-6">
-				@if (!Model.Configuration.Features.ContainsKey("primary-nav"))
+				@if (!Model.Features.IsPrimaryNavEnabled)
 				{
 					@foreach (var navItem in Model.TopLevelNavigationItems)
 					{
@@ -159,7 +157,7 @@
 								<a
 									href="@navItem.Index.Url"
 									hx-get="@navItem.Index.Url"
-									hx-select-oob="@Htmx.GetHxSelectOob(Model.Configuration, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
+									hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
 									hx-swap="none"
 									hx-push-url="true"
 									hx-indicator="#htmx-indicator"
