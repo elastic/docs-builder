@@ -62,10 +62,10 @@ public static class Htmx
 
 internal sealed class InvalidUrlException : ArgumentException
 {
-	public InvalidUrlException(string message, string currentUrl, int startIndex)
-		: base(message)
+	public InvalidUrlException(string message, string url, int startIndex)
+		: base($"{message} (Url: {url}, StartIndex: {startIndex})")
 	{
-		Data["CurrentUrl"] = currentUrl;
+		Data["Url"] = url;
 		Data["StartIndex"] = startIndex;
 	}
 }
