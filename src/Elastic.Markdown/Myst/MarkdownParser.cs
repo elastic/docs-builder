@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -101,33 +102,33 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	}
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? MinimalPipelineCached;
-	private static MarkdownPipeline MinimalPipeline
+	private MarkdownPipeline? _minimalPipelineCached;
+	private MarkdownPipeline MinimalPipeline
 	{
 		get
 		{
-			if (MinimalPipelineCached is not null)
-				return MinimalPipelineCached;
+			if (_minimalPipelineCached is not null)
+				return _minimalPipelineCached;
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
-				.UseDirectives();
+				.UseDirectives(this);
 
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			MinimalPipelineCached = builder.Build();
-			return MinimalPipelineCached;
+			_minimalPipelineCached = builder.Build();
+			return _minimalPipelineCached;
 		}
 	}
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? PipelineCached;
-	public static MarkdownPipeline Pipeline
+	private MarkdownPipeline? _pipelineCached;
+	public MarkdownPipeline Pipeline
 	{
 		get
 		{
-			if (PipelineCached is not null)
-				return PipelineCached;
+			if (_pipelineCached is not null)
+				return _pipelineCached;
 
 			var builder = new MarkdownPipelineBuilder()
 				.UseInlineAnchors()
@@ -141,15 +142,15 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseYamlFrontMatter()
 				.UseGridTables()
 				.UsePipeTables()
-				.UseDirectives()
+				.UseDirectives(this)
 				.UseDefinitionLists()
 				.UseEnhancedCodeBlocks()
-				.UseHtmxLinkInlineRenderer()
+				.UseHtmxLinkInlineRenderer(Build)
 				.DisableHtml()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			PipelineCached = builder.Build();
-			return PipelineCached;
+			_pipelineCached = builder.Build();
+			return _pipelineCached;
 		}
 	}
 
