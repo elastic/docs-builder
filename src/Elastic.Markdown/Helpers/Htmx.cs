@@ -26,10 +26,10 @@ public static class Htmx
 			return false;
 		var startIndex = pathPrefix?.Length ?? 0;
 
-		if (currentUrl.Length > startIndex)
+		if (currentUrl.Length < startIndex)
 			throw new InvalidUrlException("Current URL is not a valid URL", currentUrl, startIndex);
 
-		if (targetUrl.Length > startIndex)
+		if (targetUrl.Length < startIndex)
 			throw new InvalidUrlException("Target URL is not a valid URL", targetUrl, startIndex);
 
 		var currentSegments = GetSegments(currentUrl[startIndex..].Trim('/'));
