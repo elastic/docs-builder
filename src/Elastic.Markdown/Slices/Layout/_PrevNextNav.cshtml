@@ -8,11 +8,11 @@
 				<a 
 					href="@Model.Previous.Url"
 					hx-get="@Model.Previous.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob()"
+					hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, Model.Previous.Url)"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
-					preload="mouseover"
+					preload="@Htmx.GetPreload()"
 					class="flex h-full items-center text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md"
 				>
 					<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -31,11 +31,11 @@
 				<a 
 					href="@Model.Next.Url"
 					hx-get="@Model.Next.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob()"
+					hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, Model.Next.Url)"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
-					preload="mouseover"
+					preload="@Htmx.GetPreload()"
 					class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-gray-300 hover:border-gray-500 rounded-lg p-6 shadow-md text-right"
 				>
 					<div>

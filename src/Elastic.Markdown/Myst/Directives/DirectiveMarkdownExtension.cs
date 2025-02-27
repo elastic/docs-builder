@@ -13,9 +13,9 @@ namespace Elastic.Markdown.Myst.Directives;
 
 public static class DirectiveMarkdownBuilderExtensions
 {
-	public static MarkdownPipelineBuilder UseDirectives(this MarkdownPipelineBuilder pipeline)
+	public static MarkdownPipelineBuilder UseDirectives(this MarkdownPipelineBuilder pipeline, MarkdownParser markdownParser)
 	{
-		pipeline.Extensions.AddIfNotAlready<DirectiveMarkdownExtension>();
+		pipeline.Extensions.AddIfNotAlready(new DirectiveMarkdownExtension(markdownParser));
 		return pipeline;
 	}
 }
@@ -24,7 +24,7 @@ public static class DirectiveMarkdownBuilderExtensions
 /// Extension to allow custom containers.
 /// </summary>
 /// <seealso cref="IMarkdownExtension" />
-public class DirectiveMarkdownExtension : IMarkdownExtension
+public class DirectiveMarkdownExtension(MarkdownParser markdownParser) : IMarkdownExtension
 {
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{
@@ -53,7 +53,7 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		if (!renderer.ObjectRenderers.Contains<DirectiveHtmlRenderer>())
 		{
 			// Must be inserted before CodeBlockRenderer
-			_ = renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
+			_ = renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer(markdownParser));
 		}
 
 		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());

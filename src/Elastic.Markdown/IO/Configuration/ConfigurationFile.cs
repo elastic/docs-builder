@@ -31,6 +31,10 @@ public record ConfigurationFile : DocumentationFile
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
+	private readonly Dictionary<string, bool> _features = new(StringComparer.OrdinalIgnoreCase);
+	private FeatureFlags? _featureFlags;
+	public FeatureFlags Features => _featureFlags ??= new FeatureFlags(_features);
+
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context, int depth = 0, string parentPath = "")
 		: base(sourceFile, rootPath)
 	{
@@ -79,6 +83,9 @@ public record ConfigurationFile : DocumentationFile
 
 						TableOfContents = entries;
 						break;
+					case "features":
+						_features = reader.ReadDictionary(entry.Entry).ToDictionary(k => k.Key, v => bool.Parse(v.Value), StringComparer.OrdinalIgnoreCase);
+						break;
 					case "external_hosts":
 						reader.EmitWarning($"{entry.Key} has been deprecated and will be removed", entry.Key);
 						break;
@@ -96,6 +103,8 @@ public record ConfigurationFile : DocumentationFile
 
 		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
 	}
+
+	public bool IsFeatureEnabled(string feature) => _features.TryGetValue(feature, out var enabled) && enabled;
 
 	private List<ITocItem> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
 	{
