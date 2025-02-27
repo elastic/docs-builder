@@ -14,7 +14,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
-	private async Task<string> RenderNavigation(ConfigurationFile configuration, string topLevelGroupId, MarkdownFile markdown, Cancel ctx = default)
+	private async Task<string> RenderNavigation(string topLevelGroupId, MarkdownFile markdown, Cancel ctx = default)
 	{
 		var group = DocumentationSet.Tree.NavigationItems
 			.OfType<GroupNavigation>()
@@ -23,11 +23,11 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var slice = Layout._TocTree.Create(new NavigationViewModel
 		{
 			Title = group?.Index?.NavigationTitle ?? DocumentationSet.Tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = group?.Index?.Url ?? DocumentationSet.Tree.Index?.Url ?? "#",
+			TitleUrl = group?.Index?.Url ?? DocumentationSet.Tree.Index?.Url ?? DocumentationSet.Build.UrlPathPrefix ?? "/",
 			Tree = group ?? DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			IsRoot = topLevelGroupId == DocumentationSet.Tree.Id,
-			Features = configuration.Features
+			Features = DocumentationSet.Configuration.Features
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
@@ -61,7 +61,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			var topLevelGroupId = GetTopLevelGroupId(markdown);
 			if (!_renderedNavigationCache.TryGetValue(topLevelGroupId, out var value))
 			{
-				value = await RenderNavigation(DocumentationSet.Configuration, topLevelGroupId, markdown, ctx);
+				value = await RenderNavigation(topLevelGroupId, markdown, ctx);
 				_renderedNavigationCache[topLevelGroupId] = value;
 			}
 			navigationHtml = value;
@@ -70,7 +70,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		{
 			if (!_renderedNavigationCache.TryGetValue("root", out var value))
 			{
-				value = await RenderNavigation(DocumentationSet.Configuration, DocumentationSet.Tree.Id, markdown, ctx);
+				value = await RenderNavigation(DocumentationSet.Tree.Id, markdown, ctx);
 				_renderedNavigationCache["root"] = value;
 			}
 			navigationHtml = value;
