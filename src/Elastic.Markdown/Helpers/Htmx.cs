@@ -11,6 +11,10 @@ public static class Htmx
 {
 	public static string GetHxSelectOob(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
+		var startIndex = pathPrefix?.Length ?? 0;
+		if (currentUrl[startIndex..] == "/")
+			return "#main-container,#primary-nav";
+
 		HashSet<string> selectTargets =
 		[
 			"#primary-nav", "#secondary-nav", "#markdown-content", "#toc-nav", "#prev-next-nav", "#breadcrumbs"
@@ -47,7 +51,6 @@ public static class Htmx
 
 	public static string GetHxAttributes(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
-
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-get={targetUrl}");
 		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(features, pathPrefix, currentUrl, targetUrl)}");

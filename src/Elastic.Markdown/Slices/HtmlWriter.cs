@@ -5,7 +5,6 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Markdig.Syntax;
 using RazorSlices;

@@ -5,16 +5,13 @@
 		<a
 			itemprop="item"
 			href="@Model.Link("/")"
-			hx-get="@Model.Link("/")"
-			hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.UrlPathPrefix, Model.Link("/"), Model.CurrentDocument.Url)"
-			hx-swap="none"
-			hx-push-url="true"
-			hx-indicator="#htmx-indicator"
-			preload="@Htmx.GetPreload()"
-			>
+			@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.Link("/"), Model.CurrentDocument.Url)
+		>
 			<span itemprop="name" class="hover:text-black">
 				Home
 			</span>
+	>
+			<span itemprop="name" class="hover:text-ink">Elastic</span>
 		</a>
 		<meta itemprop="position" content="1">
 	</li>
@@ -28,12 +25,7 @@
 			<a
 				itemprop="item"
 				href="@firstCrumb.Url"
-				hx-get="@firstCrumb.Url"
-				hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.UrlPathPrefix, firstCrumb.Url, Model.CurrentDocument.Url)"
-				hx-swap="none"
-				hx-push-url="true"
-				hx-indicator="#htmx-indicator"
-				preload="@Htmx.GetPreload()"
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, firstCrumb.Url, Model.CurrentDocument.Url)
 			>
 				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
@@ -60,12 +52,7 @@
 			<a
 				itemprop="item" 
 				href="@item.Url"
-				hx-get="@item.Url"
-				hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.UrlPathPrefix, item.Url, Model.CurrentDocument.Url)"
-				hx-swap="none"
-				hx-push-url="true"
-				hx-indicator="#htmx-indicator"
-				preload="@Htmx.GetPreload()"
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, item.Url, Model.CurrentDocument.Url)
 			>
 				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
 			</a>
