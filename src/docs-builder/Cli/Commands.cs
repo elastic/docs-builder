@@ -100,11 +100,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			await githubActionsService.SetOutputAsync("skip", "true");
 			return 0;
 		}
-		finally
-		{
-			if (runningOnCi)
-				await githubActionsService.SetOutputAsync("skip", "false");
-		}
+		if (runningOnCi)
+			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
