@@ -72,9 +72,8 @@
 	
 	.sidebar {
 		.sidebar-nav {
-			@apply sticky top-21 z-30 overflow-y-auto;
+			@apply sticky top-22 z-30 overflow-y-auto;
 			max-height: calc(100vh - var(--spacing) * 22);
-			scrollbar-gutter: stable;
 		}
 		
 		.sidebar-link {
@@ -82,9 +81,7 @@
 				text-ink-light
 				hover:text-black
 				text-sm
-				text-wrap
-				inline-block
-			    leading-[1.3em]
+			    leading-[1.2em]
 			    tracking-[-0.02em];
 		}
 	}
@@ -172,7 +169,7 @@
 }
 
 #pages-nav .current {
-	@apply font-semibold text-blue-elastic!;
+	@apply text-blue-elastic!;
 }
 
 .markdown-content {

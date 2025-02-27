@@ -21,7 +21,7 @@ namespace Elastic.Markdown.Myst.Directives;
 /// An HTML renderer for a <see cref="DirectiveBlock"/>.
 /// </summary>
 /// <seealso cref="HtmlObjectRenderer{CustomContainer}" />
-public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRenderer<DirectiveBlock>
+public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 {
 	protected override void Write(HtmlRenderer renderer, DirectiveBlock directiveBlock)
 	{
@@ -62,10 +62,10 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 				if (includeBlock.Literal)
 					WriteLiteralIncludeBlock(renderer, includeBlock);
 				else
-					WriteIncludeBlock(renderer, includeBlock, markdownParser);
+					WriteIncludeBlock(renderer, includeBlock);
 				return;
 			case SettingsBlock settingsBlock:
-				WriteSettingsBlock(renderer, settingsBlock, markdownParser);
+				WriteSettingsBlock(renderer, settingsBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -219,24 +219,28 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		}
 	}
 
-	private static void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block, MarkdownParser parser)
+	private static void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
 
+		var parser = new MarkdownParser(block.Build, block.Context);
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		var parentPath = block.Context.MarkdownSourcePath;
 		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
-		var html = document.ToHtml(parser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
 	}
 
-	private static void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block, MarkdownParser parser)
+	private static void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
 
+		var parser = new MarkdownParser(block.Build, block.Context);
+
 		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
+
 		YamlSettings? settings;
 		try
 		{
@@ -260,7 +264,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			RenderMarkdown = s =>
 			{
 				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.Context.YamlFrontMatter);
-				var html = document.ToHtml(parser.Pipeline);
+				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
 		});
