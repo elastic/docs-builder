@@ -22,8 +22,8 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 
 		var slice = Layout._TocTree.Create(new NavigationViewModel
 		{
-			Title = group?.Index?.NavigationTitle ?? DocumentationSet.Tree.Index!.NavigationTitle!,
-			TitleUrl = group?.Index?.Url ?? DocumentationSet.Tree.Index!.Url,
+			Title = group?.Index?.NavigationTitle ?? DocumentationSet.Tree.Index?.NavigationTitle ?? "Docs",
+			TitleUrl = group?.Index?.Url ?? DocumentationSet.Tree.Index?.Url ?? "#",
 			Tree = group ?? DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			IsRoot = topLevelGroupId == DocumentationSet.Tree.Id,
