@@ -97,6 +97,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			// we temporarily do not error when pointed to a non documentation folder.
 			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
 
+			ConsoleApp.Log($"Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {e.Message}");
+
 			await githubActionsService.SetOutputAsync("skip", "true");
 			return 0;
 		}
