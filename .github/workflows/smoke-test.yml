@@ -22,6 +22,5 @@ jobs:
           path: test-repo
 
       - name: Build documentation
-        working-directory: test-repo
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs"
+          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs" -p test-repo
