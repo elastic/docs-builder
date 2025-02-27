@@ -74,12 +74,37 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
 		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		var context = new BuildContext(collector, fileSystem, fileSystem, path, output)
+
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		BuildContext context;
+		try
 		{
-			UrlPathPrefix = pathPrefix,
-			Force = force ?? false,
-			AllowIndexing = allowIndexing != null
-		};
+			context = new BuildContext(collector, fileSystem, fileSystem, path, output)
+			{
+				UrlPathPrefix = pathPrefix,
+				Force = force ?? false,
+				AllowIndexing = allowIndexing != null
+			};
+		}
+		// On CI, we are running on merge commit which may have changes against an older
+		// docs folder (this can happen on out of date PR's).
+		// At some point in the future we can remove this try catch
+		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in"))
+		{
+			var outputDirectory = !string.IsNullOrWhiteSpace(output)
+				? fileSystem.DirectoryInfo.New(output)
+				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+			// we temporarily do not error when pointed to a non documentation folder.
+			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
+
+			await githubActionsService.SetOutputAsync("skip", "true");
+			return 0;
+		}
+		finally
+		{
+			if (runningOnCi)
+				await githubActionsService.SetOutputAsync("skip", "false");
+		}
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
