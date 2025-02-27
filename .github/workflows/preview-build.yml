@@ -182,6 +182,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: "${{ steps.docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
-              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}${PREVIEW_URL_PATH}`,
+              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}${process.env.PREVIEW_URL_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
