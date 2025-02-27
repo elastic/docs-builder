@@ -56,7 +56,7 @@ public class DocumentationGroup
 		IDictionary<string, DocumentationFile> lookup,
 		IDictionary<string, DocumentationFile[]> folderLookup,
 		ref int fileIndex,
-		int depth = -1,
+		int depth = 0,
 		MarkdownFile? index = null)
 	{
 		Depth = depth;

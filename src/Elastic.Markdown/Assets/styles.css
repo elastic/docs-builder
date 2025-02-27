@@ -172,7 +172,7 @@
 }
 
 #pages-nav .current {
-	@apply text-blue-elastic!;
+	@apply font-semibold text-blue-elastic!;
 }
 
 .markdown-content {
