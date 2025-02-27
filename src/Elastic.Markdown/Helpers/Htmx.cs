@@ -22,6 +22,8 @@ public static class Htmx
 
 	public static bool HasSameTopLevelGroup(string? pathPrefix, string currentUrl, string targetUrl)
 	{
+		if (string.IsNullOrEmpty(targetUrl))
+			return false;
 		var startIndex = pathPrefix?.Length ?? 0;
 		var currentSegments = GetSegments(currentUrl[startIndex..].Trim('/'));
 		var targetSegments = GetSegments(targetUrl[startIndex..].Trim('/'));
