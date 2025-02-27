@@ -133,22 +133,23 @@ jobs:
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
         uses: elastic/docs-builder@main
+        id: docs-build
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
       - name: 'Validate Inbound Links'
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
         uses: elastic/docs-builder/actions/validate-inbound-local@main
         continue-on-error: true
-        if: ${{ !cancelled() && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: ${{ !cancelled() && steps.deployment.outputs.result }}
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
 
       - name: Upload to S3
         id: s3-upload
-        if: ${{ !cancelled() && steps.deployment.outputs.result }}
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
           aws cloudfront create-invalidation \
