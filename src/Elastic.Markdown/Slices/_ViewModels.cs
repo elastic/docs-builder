@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.FrontMatter;
 
@@ -17,11 +18,15 @@ public class IndexViewModel
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required MarkdownFile? PreviousDocument { get; init; }
 	public required MarkdownFile? NextDocument { get; init; }
+
+	public required DocumentationGroup[] TopLevelNavigationItems { get; init; }
+
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
+	public required ConfigurationFile Configuration { get; init; }
 }
 
 public class LayoutViewModel
@@ -42,6 +47,9 @@ public class LayoutViewModel
 	public required string? UrlPathPrefix { get; set; }
 	public required string? GithubEditUrl { get; set; }
 	public required bool AllowIndexing { get; init; }
+	public required ConfigurationFile Configuration { get; init; }
+
+	public required DocumentationGroup[] TopLevelNavigationItems { get; init; }
 
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents
@@ -79,8 +87,12 @@ public record PageTocItem
 
 public class NavigationViewModel
 {
+	public required string Title { get; init; }
+	public required string TitleUrl { get; init; }
 	public required DocumentationGroup Tree { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
+	public required bool IsRoot { get; init; }
+	public required ConfigurationFile Configuration { get; init; }
 }
 
 public class NavigationTreeItem
@@ -88,4 +100,29 @@ public class NavigationTreeItem
 	public required int Level { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required DocumentationGroup SubTree { get; init; }
+	public required bool IsRoot { get; init; }
+	public required ConfigurationFile Configuration { get; init; }
+}
+
+public class PrimaryNavViewModel
+{
+	public required List<PrimaryNavItemViewModel> Items { get; init; } = [];
+}
+
+public class PrimaryNavItemViewModel
+{
+	public required string Title { get; init; }
+	public string? Url { get; init; }
+	public string? HtmxAttributes { get; init; }
+	public List<PrimaryNavDropdownItemViewModel> DropdownItems { get; init; } = [];
+}
+
+public class PrimaryNavDropdownItemViewModel
+{
+	public required string Title { get; init; }
+	public required string Description { get; init; }
+	public string? IconPath { get; init; }
+	public string? IconAlt { get; init; }
+	public required string Url { get; init; }
+	public required string HtmxAttributes { get; init; }
 }

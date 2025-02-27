@@ -31,6 +31,9 @@ public record ConfigurationFile : DocumentationFile
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
+	private readonly Dictionary<string, string> _features = new(StringComparer.OrdinalIgnoreCase);
+	public IReadOnlyDictionary<string, string> Features => _features;
+
 	public ConfigurationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, BuildContext context, int depth = 0, string parentPath = "")
 		: base(sourceFile, rootPath)
 	{
@@ -78,6 +81,9 @@ public record ConfigurationFile : DocumentationFile
 						var entries = ReadChildren(reader, entry.Entry, parentPath);
 
 						TableOfContents = entries;
+						break;
+					case "features":
+						_features = reader.ReadDictionary(entry.Entry);
 						break;
 					case "external_hosts":
 						reader.EmitWarning($"{entry.Key} has been deprecated and will be removed", entry.Key);

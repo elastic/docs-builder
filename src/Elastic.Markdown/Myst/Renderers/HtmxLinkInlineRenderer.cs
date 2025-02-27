@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO.Configuration;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html.Inlines;
@@ -10,7 +11,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Renderers;
 
-public class HtmxLinkInlineRenderer : LinkInlineRenderer
+public class HtmxLinkInlineRenderer(BuildContext build) : LinkInlineRenderer
 {
 	protected override void Write(HtmlRenderer renderer, LinkInline link)
 	{
@@ -30,11 +31,11 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write(" hx-get=\"");
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');
-			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob()}\"");
+			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(build.Configuration, build.UrlPathPrefix, currentUrl, link.Url)}\"");
 			_ = renderer.Write(" hx-swap=\"none\"");
 			_ = renderer.Write(" hx-push-url=\"true\"");
 			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
-			_ = renderer.Write(" preload=\"mouseover\"");
+			_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
 
 			if (!string.IsNullOrEmpty(link.Title))
 			{
@@ -62,14 +63,14 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 public static class CustomLinkInlineRendererExtensions
 {
-	public static MarkdownPipelineBuilder UseHtmxLinkInlineRenderer(this MarkdownPipelineBuilder pipeline)
+	public static MarkdownPipelineBuilder UseHtmxLinkInlineRenderer(this MarkdownPipelineBuilder pipeline, BuildContext build)
 	{
-		pipeline.Extensions.AddIfNotAlready<HtmxLinkInlineRendererExtension>();
+		pipeline.Extensions.AddIfNotAlready(new HtmxLinkInlineRendererExtension(build));
 		return pipeline;
 	}
 }
 
-public class HtmxLinkInlineRendererExtension : IMarkdownExtension
+public class HtmxLinkInlineRendererExtension(BuildContext build) : IMarkdownExtension
 {
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{
@@ -81,7 +82,7 @@ public class HtmxLinkInlineRendererExtension : IMarkdownExtension
 		if (renderer is HtmlRenderer htmlRenderer)
 		{
 			_ = htmlRenderer.ObjectRenderers.RemoveAll(x => x is LinkInlineRenderer);
-			htmlRenderer.ObjectRenderers.Add(new HtmxLinkInlineRenderer());
+			htmlRenderer.ObjectRenderers.Add(new HtmxLinkInlineRenderer(build));
 		}
 	}
 }

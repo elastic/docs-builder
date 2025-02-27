@@ -228,7 +228,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		var parentPath = block.Context.MarkdownSourcePath;
 		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(parser.Pipeline);
 		_ = renderer.Write(html);
 	}
 
@@ -264,7 +264,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			RenderMarkdown = s =>
 			{
 				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.Context.YamlFrontMatter);
-				var html = document.ToHtml(MarkdownParser.Pipeline);
+				var html = document.ToHtml(parser.Pipeline);
 				return html;
 			}
 		});

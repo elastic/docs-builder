@@ -1,27 +1,198 @@
+@using Elastic.Markdown.Helpers
 @inherits RazorSlice<LayoutViewModel>
-<header class="sticky top-0 z-50 bg-blue-developer max-w-screen px-6 pb-6 flex items-center justify-center">
-	<div class="container flex flex-wrap lg:flex-nowrap">
-		<div class="h-10 mt-6 basis-full lg:basis-auto">
-			<a href="@Model.UrlPathPrefix/">
-				<img src="@Model.Static("logo-elastic-horizontal-color-reverse.svg")" alt="Elastic" class="h-10">
-			</a>
-		</div>
-		<form role="search" class="hidden lg:block grow basis-full lg:basis-auto shrink-0 mt-6 lg:mx-10 h-10" autocomplete="off">
-			<label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-			<div class="relative h-10">
-				<div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none ml-2">
-					<svg class="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-						<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-					</svg>
-				</div>
-				<div class="rounded-full bg-linear-65 from-pink/[.4] to-teal/[.4] p-[2px] h-10">
-					<input type="search" id="default-search" class="flex items-center h-full w-full p-2 ps-10 text-center bg-[#081335] rounded-full focus-visible:outline-[blue]/[.3] focus-visible:outline-2 truncate text-ellipsis text-white" placeholder="Try searching a document here..." required/>
-				</div>
+
+@{
+	string GetHxAttributes(string url)
+	{
+		return Htmx.GetHxAttributes(Model.Configuration, Model.UrlPathPrefix, Model.CurrentDocument.Url, url);
+	}
+
+	var primaryNavViewModel = new PrimaryNavViewModel
+	{
+		Items =
+		[
+			new PrimaryNavItemViewModel
+			{
+				Title = "Get Started",
+				HtmxAttributes = GetHxAttributes(Model.Link("/get-started")),
+				Url = Model.Link("/get-started"),
+			},
+			new PrimaryNavItemViewModel
+			{
+				Title = "Solutions and use cases",
+				Url = Model.Link("/solutions"),
+				HtmxAttributes = GetHxAttributes(Model.Link("/solutions")),
+				DropdownItems = [
+					new PrimaryNavDropdownItemViewModel
+					{
+						IconPath = Model.Static("observability-logo-color-64px.svg"), 
+						IconAlt = "Observability logo", 
+						Title = "Observability", 
+						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
+						Url =  Model.Link("/solutions/observability"),
+						HtmxAttributes = Htmx.GetHxAttributes(
+							Model.Configuration,
+							Model.CurrentDocument.UrlPathPrefix,
+							Model.CurrentDocument.Url, 
+							Model.Link("/solutions/security")
+						)
+					},
+					new PrimaryNavDropdownItemViewModel
+					{
+						IconPath = Model.Static("security-logo-color-64px.svg"), 
+						IconAlt = "Security logo",
+						Title = "Security",
+						Description = "Protect, investigate, and respond to cyber threats with AI-driven security analytics.", 
+						Url =  Model.Link("/solutions/security"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/solutions/security"))
+					},
+					new PrimaryNavDropdownItemViewModel
+					{
+						IconPath = Model.Static("elasticsearch-logo-color-64px.svg"),
+						IconAlt = "Search logo",
+						Title = "Search",
+						Description = "Discover a world of AI possibilities — built with the power of search.",
+						Url = Model.Link("/solutions/search"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/solutions/search"))
+					}
+				]
+			},
+			new PrimaryNavItemViewModel
+			{
+				Title = "Work with the stack",
+				DropdownItems = [
+					new PrimaryNavDropdownItemViewModel
+					{
+						Title = "Manage data", 
+						Description = "Discover a world of AI possibilities — built with the power of search.",
+						Url = Model.Link("/manage-data"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/manage-data"))
+					},
+					new PrimaryNavDropdownItemViewModel
+					{
+						Title = "Explore and analyze",
+						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
+						Url = Model.Link("/explore-analyze"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/explore-analyze"))
+					},
+					new PrimaryNavDropdownItemViewModel
+					{
+						Title = "Deploy and manage", 
+						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
+						Url = Model.Link("/deploy-manage"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/deploy-manage"))
+
+					},
+					new PrimaryNavDropdownItemViewModel
+					{
+						Title = "Manage your cloud",
+						Description = "Unify app and infrastructure visibility to proactively resolve issues.",
+						Url = Model.Link("/cloud-account"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/cloud-account"))
+					},
+				]
+			},
+			new PrimaryNavItemViewModel
+			{
+				Title = "Troubleshoot",
+				HtmxAttributes = GetHxAttributes(Model.Link("/troubleshoot")),
+				Url = Model.Link("/troubleshoot"),
+			},
+		]
+	};
+}
+
+<div class="bg-blue-developer">
+	
+</div>
+<header id="main-header" class="sticky top-0 z-50 max-w-screen bg-white border-b-1 border-grey-20">
+	<div class="flex items-center justify-center h-21 bg-white px-6">
+		<div class="container flex flex-wrap lg:flex-nowrap justify-start items-center">
+			<div class="h-10 mr-10">
+				<a href="@Model.UrlPathPrefix/">
+					<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
+				</a>
 			</div>
-		</form>
-		<div class="flex grow lg:flex-none h-10 mt-6">
-			<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 me-3 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
-			<a href="https://elastic.co/contact" class="grow cursor-pointer text-white text-nowrap border-2 border-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">Contact Sales</a>
+			@if (Model.Configuration.Features.ContainsKey("PrimaryNav"))
+			{
+				@await RenderPartialAsync(_PrimaryNav.Create(primaryNavViewModel))
+			}
+			else
+			{
+				<div class="grow"></div>
+			}
+			<form role="search" class="shrink-0 mx-2 h-10 w-50" autocomplete="off">
+				<label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+				<div class="relative h-10">
+					<div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none ml-2">
+						<svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+							<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+						</svg>
+					</div>
+					<div class="rounded-full bg-linear-65 from-pink/[.4] to-teal/[.4] p-[2px] h-10">
+						<input type="search" id="default-search" class="flex items-center h-full w-full p-2 ps-10 bg-white rounded-full focus-visible:outline-[blue]/[.3] focus-visible:outline-2 truncate text-ellipsis" placeholder="Search" required/>
+					</div>
+				</div>
+			</form>
+			<div class="flex grow lg:flex-none h-10">
+				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 me-3 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
+				@* <a href="https://elastic.co/contact" class="grow cursor-pointer text-white text-nowrap border-2 border-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">Contact Sales</a> *@
+			</div>
 		</div>
 	</div>
 </header>
+@* <div class="h-1"> *@
+@* </div> *@
+@if (Model.Configuration.Features.ContainsKey("PrimaryNav"))
+{
+	<nav id="secondary-nav" class="bg-grey-10 border-b-1 border-grey-20 font-sans font-semibold px-6 pt-6">
+		<div class="container flex mx-auto justify-between">
+			<ul class="flex gap-6">
+				@if (!Model.Configuration.Features.ContainsKey("PrimaryNav"))
+				{
+					@foreach (var navItem in Model.TopLevelNavigationItems)
+					{
+						@if (navItem.Index != null)
+						{
+							var isCurrent = Htmx.HasSameTopLevelGroup(Model.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url);
+							<li class="border-b-2 text-nowrap pb-2 -mb-[1px] @(isCurrent ? "text-blue-elastic border-b-blue-elastic" : "border-b-transparent hover:text-black")">
+								<a
+									href="@navItem.Index.Url"
+									hx-get="@navItem.Index.Url"
+									hx-select-oob="@Htmx.GetHxSelectOob(Model.Configuration, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
+									hx-swap="none"
+									hx-push-url="true"
+									hx-indicator="#htmx-indicator"
+									preload="@Htmx.GetPreload()">
+									@navItem.Index.NavigationTitle
+								</a>
+							</li>
+						}
+					}
+				}
+			</ul>
+			<ul class="flex gap-6">
+				<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
+					<a href="@Model.Link("/release-notes")" class="flex">
+						<span>What's New</span>
+					</a>
+				</li>
+				<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
+					<a href="@Model.Link("/reference")" class="flex">
+						<span>Reference</span>
+					</a>
+				</li>
+				<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
+					<a href="https://elastic.co" class="flex gap-1" target="_blank" rel="noopener noreferrer">
+						<span>
+							Visit Elastic.co
+						</span>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+						</svg>
+					</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+}

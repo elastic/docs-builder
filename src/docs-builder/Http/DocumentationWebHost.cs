@@ -75,6 +75,59 @@ public class DocumentationWebHost
 	private void SetUpRoutes()
 	{
 		_ = _webApplication
+			.UseExceptionHandler(options =>
+			{
+				options.Run(async context =>
+				{
+					try
+					{
+						var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+						if (exception != null)
+						{
+							var logger = context.RequestServices.GetRequiredService<ILogger<DocumentationWebHost>>();
+							logger.LogError(
+								exception.Error,
+								"Unhandled exception processing request {Path}. Error: {Error}\nStack Trace: {StackTrace}\nInner Exception: {InnerException}",
+								context.Request.Path,
+								exception.Error.Message,
+								exception.Error.StackTrace,
+								exception.Error.InnerException?.ToString() ?? "None"
+							);
+							logger.LogError(
+								"Request Details - Method: {Method}, Path: {Path}, QueryString: {QueryString}",
+								context.Request.Method,
+								context.Request.Path,
+								context.Request.QueryString
+							);
+
+							context.Response.StatusCode = 500;
+							context.Response.ContentType = "text/html";
+							await context.Response.WriteAsync(@"
+								<html>
+									<head><title>Error</title></head>
+									<body>
+										<h1>Internal Server Error</h1>
+										<p>An error occurred while processing your request.</p>
+										<p>Please check the application logs for more details.</p>
+									</body>
+								</html>");
+						}
+					}
+					catch (Exception handlerEx)
+					{
+						var logger = context.RequestServices.GetRequiredService<ILogger<DocumentationWebHost>>();
+						logger.LogCritical(
+							handlerEx,
+							"Error handler failed to process exception. Handler Error: {Error}\nStack Trace: {StackTrace}",
+							handlerEx.Message,
+							handlerEx.StackTrace
+						);
+						context.Response.StatusCode = 500;
+						context.Response.ContentType = "text/plain";
+						await context.Response.WriteAsync("A critical error occurred.");
+					}
+				});
+			})
 			.UseLiveReload()
 			.UseStaticFiles(
 				new StaticFileOptions

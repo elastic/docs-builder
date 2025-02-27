@@ -51,6 +51,3 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
-
-      - name: 'Update Reference Index'
-        uses: elastic/docs-builder/actions/update-reference-index@main

@@ -9,6 +9,10 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+  
+#features:
+#  PrimaryNav: true
+
 toc:
   - file: index.md
   - hidden: developer-notes.md

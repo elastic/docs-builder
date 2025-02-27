@@ -4,13 +4,13 @@
 	<li class="inline text-ink text-sm hover:text-ink leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 		<a 
 			itemprop="item"
-			href="@Model.UrlPathPrefix/"
-			hx-get="@Model.UrlPathPrefix/"
-			hx-select-oob="@Htmx.GetHxSelectOob()"
+			href="@Model.Link("/")"
+			hx-get="@Model.Link("/")"
+			hx-select-oob="@Htmx.GetHxSelectOob(Model.Configuration, Model.UrlPathPrefix, Model.Link("/"), Model.CurrentDocument.Url)"
 			hx-swap="none"
 			hx-push-url="true"
 			hx-indicator="#htmx-indicator"
-			preload="mouseover"
+			preload="@Htmx.GetPreload()"
 	>
 			<span itemprop="name" class="hover:text-ink">Elastic</span>
 		</a>
@@ -24,11 +24,11 @@
 				itemprop="item" 
 				href="@item.Url"
 				hx-get="@item.Url"
-				hx-select-oob="@Htmx.GetHxSelectOob()"
+				hx-select-oob="@Htmx.GetHxSelectOob(Model.Configuration, Model.UrlPathPrefix, item.Url, Model.CurrentDocument.Url)"
 				hx-swap="none"
 				hx-push-url="true"
 				hx-indicator="#htmx-indicator"
-				preload="mouseover"
+				preload="@Htmx.GetPreload()"
 			>
 				<span itemprop="name" class="hover:text-ink">@item.NavigationTitle</span>
 			</a>

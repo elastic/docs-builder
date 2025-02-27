@@ -60,17 +60,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-inbound-local", "v
 		actions\validate-inbound-local\action.yml = actions\validate-inbound-local\action.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "update-link-index", "update-link-index", "{6554F917-73CE-4B3D-9101-F28EAA762C6B}"
-	ProjectSection(SolutionItems) = preProject
-		actions\update-link-index\action.yml = actions\update-link-index\action.yml
-		actions\update-link-index\README.md = actions\update-link-index\README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "update-reference-index", "update-reference-index", "{9FEC15F6-13F8-40B1-A66A-EB054E49E680}"
-	ProjectSection(SolutionItems) = preProject
-		actions\update-reference-index\action.yml = actions\update-reference-index\action.yml
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -130,7 +119,5 @@ Global
 		{CFEE9FAD-9E0C-4C0E-A0C2-B97D594C14B5} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
-		{6554F917-73CE-4B3D-9101-F28EAA762C6B} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
-		{9FEC15F6-13F8-40B1-A66A-EB054E49E680} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 	EndGlobalSection
 EndGlobal

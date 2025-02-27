@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -121,13 +122,13 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	}
 
 	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? PipelineCached;
-	public static MarkdownPipeline Pipeline
+	private MarkdownPipeline? _pipelineCached;
+	public MarkdownPipeline Pipeline
 	{
 		get
 		{
-			if (PipelineCached is not null)
-				return PipelineCached;
+			if (_pipelineCached is not null)
+				return _pipelineCached;
 
 			var builder = new MarkdownPipelineBuilder()
 				.UseInlineAnchors()
@@ -144,12 +145,12 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseDirectives()
 				.UseDefinitionLists()
 				.UseEnhancedCodeBlocks()
-				.UseHtmxLinkInlineRenderer()
+				.UseHtmxLinkInlineRenderer(Build)
 				.DisableHtml()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			PipelineCached = builder.Build();
-			return PipelineCached;
+			_pipelineCached = builder.Build();
+			return _pipelineCached;
 		}
 	}
 
