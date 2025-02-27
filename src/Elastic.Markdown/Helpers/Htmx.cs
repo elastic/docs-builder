@@ -25,6 +25,13 @@ public static class Htmx
 		if (string.IsNullOrEmpty(targetUrl) || string.IsNullOrEmpty(currentUrl))
 			return false;
 		var startIndex = pathPrefix?.Length ?? 0;
+
+		if (currentUrl.Length > startIndex)
+			throw new InvalidUrlException("Current URL is not a valid URL", currentUrl, startIndex);
+
+		if (targetUrl.Length > startIndex)
+			throw new InvalidUrlException("Target URL is not a valid URL", targetUrl, startIndex);
+
 		var currentSegments = GetSegments(currentUrl[startIndex..].Trim('/'));
 		var targetSegments = GetSegments(targetUrl[startIndex..].Trim('/'));
 		return currentSegments.Length >= 1 && targetSegments.Length >= 1 && currentSegments[0] == targetSegments[0];
@@ -49,5 +56,16 @@ public static class Htmx
 		_ = attributes.Append($" hx-indicator={GetHxIndicator()}");
 		_ = attributes.Append($" preload={GetPreload()}");
 		return attributes.ToString();
+	}
+}
+
+
+internal sealed class InvalidUrlException : ArgumentException
+{
+	public InvalidUrlException(string message, string currentUrl, int startIndex)
+		: base(message)
+	{
+		Data["CurrentUrl"] = currentUrl;
+		Data["StartIndex"] = startIndex;
 	}
 }
