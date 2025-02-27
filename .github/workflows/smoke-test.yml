@@ -11,6 +11,8 @@ jobs:
         include:
           - repository: elastic/docs-content
           - repository: elastic/apm-agent-android
+          - repository: elastic/cloud-on-k8s
+
     steps:
       - uses: actions/checkout@v4
       - name: Bootstrap Action Workspace
