@@ -9,6 +9,7 @@ using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Refactor;
 using Microsoft.Extensions.Logging;
 
@@ -107,7 +108,14 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
-
+		if (runningOnCi)
+		{
+			var firstIndex = (set.Tree.Index ?? set.Tree.NavigationItems
+				.OfType<GroupNavigation>()
+				.Select(i => i.Group.Index)
+				.FirstOrDefault(i => i != null)) ?? throw new InvalidOperationException("No index found");
+			await githubActionsService.SetOutputAsync("first-page-path", firstIndex.Url);
+		}
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
 			strict ??= strictValue;
 

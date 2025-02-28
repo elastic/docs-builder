@@ -133,6 +133,7 @@ jobs:
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
+        id: docs-build
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
         run: |
           dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
@@ -176,6 +177,7 @@ jobs:
         if: always() && steps.deployment.outputs.result
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          FIRST_PAGE_PATH: ${{ steps.docs-build.outputs.first-page-path }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -183,6 +185,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: "${{ steps.docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
-              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`,
+              environment_url: `https://docs-v3-preview.elastic.dev${process.env.FIRST_PAGE_PATH ?? process.env.PATH_PREFIX}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
