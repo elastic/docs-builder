@@ -112,7 +112,17 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		{
 			var firstIndex = (set.Tree.Index ?? set.Tree.NavigationItems
 				.OfType<GroupNavigation>()
-				.Select(i => i.Group.Index)
+				.SelectMany(i =>
+				{
+					return GetAllIndexes(i.Group);
+					static IEnumerable<MarkdownFile?> GetAllIndexes(DocumentationGroup group)
+					{
+						yield return group.Index;
+						foreach (var child in group.NavigationItems.OfType<GroupNavigation>())
+							foreach (var index in GetAllIndexes(child.Group))
+								yield return index;
+					}
+				})
 				.FirstOrDefault(i => i != null)) ?? throw new InvalidOperationException("No index found");
 			await githubActionsService.SetOutputAsync("first-page-path", firstIndex.Url);
 		}
