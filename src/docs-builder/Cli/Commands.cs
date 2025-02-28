@@ -9,6 +9,7 @@ using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Refactor;
 using Microsoft.Extensions.Logging;
 
@@ -107,7 +108,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
-
+		if (runningOnCi)
+			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
 			strict ??= strictValue;
 

@@ -1,6 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
@@ -32,7 +34,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
-	private readonly Dictionary<string, string> _renderedNavigationCache = [];
+	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
