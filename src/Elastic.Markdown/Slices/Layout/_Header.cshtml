@@ -25,10 +25,19 @@
 				DropdownItems = [
 					new PrimaryNavDropdownItemViewModel
 					{
+						IconPath = Model.Static("elasticsearch-logo-color-64px.svg"),
+						IconAlt = "Search logo",
+						Title = "Search",
+						Description = "Build search experiences to help users find what they need instantly.",
+						Url = Model.Link("/solutions/search"),
+						HtmxAttributes = GetHxAttributes(Model.Link("/solutions/search"))
+					},
+					new PrimaryNavDropdownItemViewModel
+					{
 						IconPath = Model.Static("observability-logo-color-64px.svg"), 
 						IconAlt = "Observability logo", 
 						Title = "Observability", 
-						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
+						Description = "Unify monitoring for apps and infrastructure.", 
 						Url =  Model.Link("/solutions/observability"),
 						HtmxAttributes = Htmx.GetHxAttributes(
 							Model.Features,
@@ -42,51 +51,42 @@
 						IconPath = Model.Static("security-logo-color-64px.svg"), 
 						IconAlt = "Security logo",
 						Title = "Security",
-						Description = "Protect, investigate, and respond to cyber threats with AI-driven security analytics.", 
+						Description = "Protect, investigate, and respond to cyber threats.", 
 						Url =  Model.Link("/solutions/security"),
 						HtmxAttributes = GetHxAttributes(Model.Link("/solutions/security"))
-					},
-					new PrimaryNavDropdownItemViewModel
-					{
-						IconPath = Model.Static("elasticsearch-logo-color-64px.svg"),
-						IconAlt = "Search logo",
-						Title = "Search",
-						Description = "Discover a world of AI possibilities — built with the power of search.",
-						Url = Model.Link("/solutions/search"),
-						HtmxAttributes = GetHxAttributes(Model.Link("/solutions/search"))
 					}
 				]
 			},
 			new PrimaryNavItemViewModel
 			{
-				Title = "Work with the stack",
+				Title = "Work with the Elastic Stack",
 				DropdownItems = [
 					new PrimaryNavDropdownItemViewModel
 					{
-						Title = "Manage data", 
-						Description = "Discover a world of AI possibilities — built with the power of search.",
+						Title = "Manage your data", 
+						Description = "Ingest, enrich, and manage your data.",
 						Url = Model.Link("/manage-data"),
 						HtmxAttributes = GetHxAttributes(Model.Link("/manage-data"))
 					},
 					new PrimaryNavDropdownItemViewModel
 					{
-						Title = "Explore and analyze",
-						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
+						Title = "Explore and analyze your data",
+						Description = "Query, shape, visualize, alert, and more.", 
 						Url = Model.Link("/explore-analyze"),
 						HtmxAttributes = GetHxAttributes(Model.Link("/explore-analyze"))
 					},
 					new PrimaryNavDropdownItemViewModel
 					{
-						Title = "Deploy and manage", 
-						Description = "Unify app and infrastructure visibility to proactively resolve issues.", 
+						Title = "Deploy and manage Elastic", 
+						Description = "Deploy, configure, manage, and upgrade clusters and deployments.", 
 						Url = Model.Link("/deploy-manage"),
 						HtmxAttributes = GetHxAttributes(Model.Link("/deploy-manage"))
 
 					},
 					new PrimaryNavDropdownItemViewModel
 					{
-						Title = "Manage your cloud",
-						Description = "Unify app and infrastructure visibility to proactively resolve issues.",
+						Title = "Manage your Cloud account",
+						Description = "Manage the settings for your Elastic Cloud account.",
 						Url = Model.Link("/cloud-account"),
 						HtmxAttributes = GetHxAttributes(Model.Link("/cloud-account"))
 					},
@@ -94,9 +94,9 @@
 			},
 			new PrimaryNavItemViewModel
 			{
-				Title = "Troubleshoot",
-				HtmxAttributes = GetHxAttributes(Model.Link("/troubleshoot")),
-				Url = Model.Link("/troubleshoot"),
+				Title = "Reference",
+				HtmxAttributes = GetHxAttributes(Model.Link("/reference")),
+				Url = Model.Link("/reference"),
 			},
 		]
 	};
@@ -172,18 +172,18 @@
 			<ul class="flex gap-6">
 				<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
 					<a href="@Model.Link("/release-notes")" class="flex">
-						<span>What's New</span>
+						<span>Release notes</span>
 					</a>
 				</li>
 				<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
-					<a href="@Model.Link("/reference")" class="flex">
-						<span>Reference</span>
+					<a href="@Model.Link("/troubleshoot")" class="flex">
+						<span>Troubleshoot</span>
 					</a>
 				</li>
 				<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
 					<a href="https://elastic.co" class="flex gap-1" target="_blank" rel="noopener noreferrer">
 						<span>
-							Visit Elastic.co
+							elastic.co
 						</span>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
