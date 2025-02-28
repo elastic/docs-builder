@@ -2,29 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
 using ConsoleAppFramework;
-using Documentation.Assembler.Links;
 using Elastic.Markdown.CrossLinks;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Discovery;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
 internal sealed class LinkRegistryCommands(ILoggerFactory logger)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
-#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
-#pragma warning restore CA2254
 	}
 
 	/// <summary>

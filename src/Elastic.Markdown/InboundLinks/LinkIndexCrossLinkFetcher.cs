@@ -7,7 +7,7 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Links;
+namespace Elastic.Markdown.InboundLinks;
 
 public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetcher(logger)
 {

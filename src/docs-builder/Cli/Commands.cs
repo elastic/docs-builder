@@ -1,6 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
@@ -9,7 +11,6 @@ using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Refactor;
 using Microsoft.Extensions.Logging;
 
@@ -17,13 +18,12 @@ namespace Documentation.Builder.Cli;
 
 internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
-#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
-#pragma warning restore CA2254
 	}
 
 	/// <summary>
@@ -74,7 +74,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
@@ -103,6 +103,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			await githubActionsService.SetOutputAsync("skip", "true");
 			return 0;
 		}
+
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
@@ -166,7 +167,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	{
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		var collector = new ConsoleDiagnosticsCollector(logger, null);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, null);
 		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		var set = new DocumentationSet(context, logger);
 
