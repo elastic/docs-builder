@@ -57,7 +57,10 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 	{
 		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		dictionary[repository] = linkReference;
-		_crossLinks = _crossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
+		_crossLinks = _crossLinks with
+		{
+			LinkReferences = dictionary.ToFrozenDictionary()
+		};
 		return _crossLinks;
 	}
 
@@ -68,21 +71,15 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		[NotNullWhen(true)] out Uri? resolvedUri
 	)
 	{
-		var lookup = fetchedCrossLinks.LinkReferences;
-		var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
 		resolvedUri = null;
-		if (crossLinkUri.Scheme == "docs-content")
-		{
-			if (!lookup.TryGetValue(crossLinkUri.Scheme, out var linkReference))
-			{
-				errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links");
-				return false;
-			}
-
+		var lookup = fetchedCrossLinks.LinkReferences;
+		if (crossLinkUri.Scheme != "asciidocalypse" && lookup.TryGetValue(crossLinkUri.Scheme, out var linkReference))
 			return TryFullyValidate(errorEmitter, linkReference, crossLinkUri, out resolvedUri);
-		}
 
-		// TODO this is temporary while we wait for all links.json files to be published
+		// TODO this is temporary while we wait for all links.json to be published
+		// Here we just silently rewrite the cross_link to the url
+
+		var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
 		if (!declaredRepositories.Contains(crossLinkUri.Scheme))
 		{
 			errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links");

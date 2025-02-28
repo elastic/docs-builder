@@ -88,9 +88,10 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 				{
 					if (s.Contains("is not a valid link in the"))
 					{
+						//
 						var error = $"'elastic/{repository}' links to unknown file: " + s;
 						error = error.Replace("is not a valid link in the", "in the");
-						collector.EmitError(repository, error);
+						collector.EmitError($"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json", error);
 						return;
 					}
 

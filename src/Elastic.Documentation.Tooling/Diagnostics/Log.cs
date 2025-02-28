@@ -12,10 +12,19 @@ public class Log(ILogger logger) : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
-		if (diagnostic.Severity == Severity.Error)
-			logger.LogError("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line);
+		if (diagnostic.File.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+		{
+			if (diagnostic.Severity == Severity.Error)
+				logger.LogError("{Message}", diagnostic.Message);
+			else
+				logger.LogWarning("{Message}", diagnostic.Message);
+		}
 		else
-			logger.LogWarning("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line);
+		{
+			if (diagnostic.Severity == Severity.Error)
+				logger.LogError("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+			else
+				logger.LogWarning("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+		}
 	}
 }
-
