@@ -80,7 +80,7 @@ public class DocumentationSet
 			.GroupBy(file => file.RelativeFolder)
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
-		var fileIndex = 0;
+		var fileIndex = -1;
 		Tree = new DocumentationGroup(Build, Configuration.TableOfContents, FlatMappedFiles, folderFiles, ref fileIndex)
 		{
 			Parent = null

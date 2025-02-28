@@ -100,12 +100,14 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			ConsoleApp.Log($"Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {e.Message}");
 
 			await githubActionsService.SetOutputAsync("skip", "true");
+			await githubActionsService.SetOutputAsync("landing-page", string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix);
 			return 0;
 		}
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
+		await SetGithubActionsLandingPage(runningOnCi, set);
 		await generator.GenerateAll(ctx);
 
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
@@ -114,6 +116,14 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		if (strict ?? false)
 			return context.Collector.Errors + context.Collector.Warnings;
 		return context.Collector.Errors;
+	}
+
+	private async Task SetGithubActionsLandingPage(bool runningOnCi, DocumentationSet set)
+	{
+		if (runningOnCi && set.MarkdownFiles.Count > 0)
+			await githubActionsService.SetOutputAsync("landing-page", set.MarkdownFiles[0].Url);
+		else if (runningOnCi)
+			await githubActionsService.SetOutputAsync("landing-page", set.Build.UrlPathPrefix ?? "/");
 	}
 
 	/// <summary>
