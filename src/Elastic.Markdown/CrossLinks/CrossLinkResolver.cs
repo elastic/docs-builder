@@ -35,7 +35,7 @@ public record LinkIndexEntry
 public interface ICrossLinkResolver
 {
 	Task<FetchedCrossLinks> FetchLinks();
-	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 }
 
 public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
@@ -48,8 +48,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		return _crossLinks;
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, _crossLinks, crossLinkUri, out resolvedUri);
+	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		TryResolve(errorEmitter, warningEmitter, _crossLinks, crossLinkUri, out resolvedUri);
 
 	private static Uri BaseUri { get; } = new("https://docs-v3-preview.elastic.dev");
 
@@ -66,6 +66,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
+		Action<string> warningEmitter,
 		FetchedCrossLinks fetchedCrossLinks,
 		Uri crossLinkUri,
 		[NotNullWhen(true)] out Uri? resolvedUri
@@ -84,6 +85,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		{
 			if (fetchedCrossLinks.FromConfiguration)
 				errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links: '{crossLinkUri}'");
+			else
+				warningEmitter($"'{crossLinkUri.Scheme}' is not yet publishing to the links registry: '{crossLinkUri}'");
 			return false;
 		}
 

@@ -110,6 +110,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActi
 			}
 			else
 				_logger.LogInformation("Validating all cross_links in {Repository}", repository);
+
 			foreach (var crossLink in linkReference.CrossLinks)
 			{
 				// if we are filtering we only want errors from inbound links to a certain
@@ -118,6 +119,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActi
 				if (filter.LinksTo != null && uri.Scheme != filter.LinksTo)
 					continue;
 
+				var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json";
 				_ = resolver.TryResolve(s =>
 				{
 					if (s.Contains("is not a valid link in the"))
@@ -125,17 +127,19 @@ public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActi
 						//
 						var error = $"'elastic/{repository}' links to unknown file: " + s;
 						error = error.Replace("is not a valid link in the", "in the");
-						collector.EmitError($"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json", error);
+						collector.EmitError(linksJson, error);
 						return;
 					}
 
 					collector.EmitError(repository, s);
-				}, uri, out _);
+				}, s => collector.EmitWarning(linksJson, s), uri, out _);
 			}
 		}
 
 		collector.Channel.TryComplete();
 		await collector.StopAsync(ctx);
-		return collector.Errors + collector.Warnings;
+		// non-strict for now
+		return collector.Errors;
+		// return collector.Errors + collector.Warnings;
 	}
 }

@@ -162,7 +162,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		if (context.CrossLinkResolver.TryResolve(
+				s => processor.EmitError(link, s),
+				s => processor.EmitWarning(link, s),
+				uri, out var resolvedUri)
+		   )
 			link.Url = resolvedUri.ToString();
 	}
 

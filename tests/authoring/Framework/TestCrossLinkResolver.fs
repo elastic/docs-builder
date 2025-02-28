@@ -70,13 +70,13 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                 )
             Task.FromResult crossLinks
 
-        member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
+        member this.TryResolve(errorEmitter, warningEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             let crossLinks =
                 FetchedCrossLinks(
                     DeclaredRepositories=this.DeclaredRepositories,
                     LinkReferences=this.LinkReferences.ToFrozenDictionary(),
                     FromConfiguration=true
                 )
-            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, crossLinkUri, &resolvedUri);
+            CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, crossLinks, crossLinkUri, &resolvedUri);
 
 
