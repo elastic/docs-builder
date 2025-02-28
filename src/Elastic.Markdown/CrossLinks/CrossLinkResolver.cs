@@ -167,7 +167,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 			return true;
 		}
 
-		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link repository.");
+		var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{crossLinkUri.Scheme}/main/links.json";
+		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}.");
 		return false;
 	}
 
