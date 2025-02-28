@@ -27,7 +27,8 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetche
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,
-			LinkReferences = dictionary.ToFrozenDictionary()
+			LinkReferences = dictionary.ToFrozenDictionary(),
+			FromConfiguration = false
 		};
 	}
 }
