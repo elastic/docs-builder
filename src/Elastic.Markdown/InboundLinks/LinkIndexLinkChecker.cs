@@ -2,16 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Actions.Core.Services;
-using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Links;
+namespace Elastic.Markdown.InboundLinks;
 
-public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActionsService)
+public class LinkIndexLinkChecker(ILoggerFactory logger)
 {
 	private readonly ILogger _logger = logger.CreateLogger<LinkIndexLinkChecker>();
 
@@ -23,17 +22,17 @@ public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActi
 		public static RepositoryFilter None => new();
 	}
 
-	public async Task<int> CheckAll(Cancel ctx)
+	public async Task<int> CheckAll(DiagnosticsCollector collector, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		//todo add ctx
 		var crossLinks = await resolver.FetchLinks();
 
-		return await ValidateCrossLinks(crossLinks, resolver, RepositoryFilter.None, ctx);
+		return await ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None, ctx);
 	}
 
-	public async Task<int> CheckRepository(string? toRepository, string? fromRepository, Cancel ctx)
+	public async Task<int> CheckRepository(DiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
@@ -45,14 +44,12 @@ public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActi
 			LinksFrom = fromRepository
 		};
 
-		return await ValidateCrossLinks(crossLinks, resolver, filter, ctx);
+		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
 	}
 
-	public async Task<int> CheckWithLocalLinksJson(
-		string repository,
+	public async Task<int> CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository,
 		string localLinksJson,
-		Cancel ctx
-	)
+		Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
@@ -87,16 +84,16 @@ public class LinkIndexLinkChecker(ILoggerFactory logger, ICoreService githubActi
 			LinksTo = repository
 		};
 
-		return await ValidateCrossLinks(crossLinks, resolver, filter, ctx);
+		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
 	}
 
 	private async Task<int> ValidateCrossLinks(
+		DiagnosticsCollector collector,
 		FetchedCrossLinks crossLinks,
 		CrossLinkResolver resolver,
 		RepositoryFilter filter,
 		Cancel ctx)
 	{
-		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 		_ = collector.StartAsync(ctx);
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{

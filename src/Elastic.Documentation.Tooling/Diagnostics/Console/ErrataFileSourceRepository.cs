@@ -26,11 +26,11 @@ public class ErrataFileSourceRepository : ISourceRepository
 	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> errors, IReadOnlyCollection<Diagnostic> warnings)
 	{
 		var report = new Report(this);
-		var limttedErrors = errors.Take(100).ToArray();
-		var limittedWarnings = warnings.Take(100 - limttedErrors.Length);
-		var limitted = limittedWarnings.Concat(limttedErrors).ToArray();
+		var limitedErrors = errors.Take(100).ToArray();
+		var limitedWarnings = warnings.Take(100 - limitedErrors.Length);
+		var limited = limitedWarnings.Concat(limitedErrors).ToArray();
 
-		foreach (var item in limitted)
+		foreach (var item in limited)
 		{
 			var d = item.Severity switch
 			{
@@ -55,22 +55,20 @@ public class ErrataFileSourceRepository : ISourceRepository
 		var totalErrorCount = errors.Count + warnings.Count;
 
 		AnsiConsole.WriteLine();
-		if (totalErrorCount > 0)
-		{
-			AnsiConsole.Write(new Markup($"	[bold]The following errors and warnings were found in the documentation[/]"));
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine();
-			// Render the report
-			report.Render(AnsiConsole.Console);
+		if (totalErrorCount <= 0)
+			return;
+		AnsiConsole.Write(new Markup($"	[bold]The following errors and warnings were found in the documentation[/]"));
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
+		// Render the report
+		report.Render(AnsiConsole.Console);
 
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
 
-			if (limitted.Length <= totalErrorCount)
-				AnsiConsole.Write(new Markup($"	[bold]Only shown the first [yellow]{limitted.Length}[/] diagnostics out of [yellow]{totalErrorCount}[/][/]"));
+		if (totalErrorCount > limited.Length)
+			AnsiConsole.Write(new Markup($"	[bold]Only shown the first [yellow]{limited.Length}[/] diagnostics out of [yellow]{totalErrorCount}[/][/]"));
 
-			AnsiConsole.WriteLine();
-
-		}
+		AnsiConsole.WriteLine();
 	}
 }

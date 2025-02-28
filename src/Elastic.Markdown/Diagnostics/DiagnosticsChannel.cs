@@ -61,7 +61,7 @@ public interface IDiagnosticsOutput
 }
 
 public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
-	: IHostedService
+	: IHostedService, IAsyncDisposable
 {
 	public DiagnosticsChannel Channel { get; } = new();
 
@@ -155,5 +155,12 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			Message = message,
 		};
 		Channel.Write(d);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		Channel.TryComplete();
+		await StopAsync(CancellationToken.None);
+		GC.SuppressFinalize(this);
 	}
 }

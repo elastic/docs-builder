@@ -7,12 +7,13 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown.InboundLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Cli;
+namespace Documentation.Builder.Cli;
 
 internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
@@ -29,6 +30,8 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
 	/// <param name="ctx"></param>
 	[Command("validate-all")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
 	{
 		AssignOutputLogger();
@@ -36,11 +39,13 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		return await _linkIndexLinkChecker.CheckAll(collector, ctx);
 	}
 
-	/// <summary> Validate all published cross_links in all published links.json files. </summary>
-	/// <param name="from"></param>
-	/// <param name="to"></param>
+	/// <summary> Validate a single repository against the published cross_links in all published links.json files. </summary>
+	/// <param name="from">Outbound links 'from' repository to others, defaults to {pwd}/.git </param>
+	/// <param name="to">Outbound links 'to' repository form others</param>
 	/// <param name="ctx"></param>
 	[Command("validate")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateRepoInboundLinks(string? from = null, string? to = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
@@ -62,6 +67,8 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	/// <param name="file">Path to `links.json` defaults to '.artifacts/docs/html/links.json'</param>
 	/// <param name="ctx"></param>
 	[Command("validate-link-reference")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateLocalLinkReference([Argument] string? file = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();

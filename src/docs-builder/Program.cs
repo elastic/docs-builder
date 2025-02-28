@@ -16,5 +16,6 @@ ConsoleApp.ServiceProvider = serviceProvider;
 
 var app = ConsoleApp.Create();
 app.Add<Commands>();
+app.Add<InboundLinkCommands>("inbound-links");
 
 await app.RunAsync(args).ConfigureAwait(false);
