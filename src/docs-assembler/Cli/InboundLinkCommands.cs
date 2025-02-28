@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private void AssignOutputLogger()
 	{
@@ -27,33 +27,44 @@ internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubAct
 #pragma warning restore CA2254
 	}
 
-	/// <summary>
-	/// Validate all published cross_links in all published links.json files.
-	/// </summary>
+	/// <summary> Validate all published cross_links in all published links.json files. </summary>
 	/// <param name="ctx"></param>
-	[Command("validate-inbound-all")]
+	[Command("validate-all")]
 	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
 	{
 		AssignOutputLogger();
 		return await new LinkIndexLinkChecker(logger).CheckAll(githubActionsService, ctx);
 	}
 
-	/// <summary>
-	/// Create an index.json file from all discovered links.json files in our S3 bucket
-	/// </summary>
+	/// <summary> Validate all published cross_links in all published links.json files. </summary>
 	/// <param name="repository"></param>
-	/// <param name="file"></param>
 	/// <param name="ctx"></param>
-	[Command("validate-inbound-local")]
-	public async Task<int> ValidateLocalInboundLinks(string? repository = null, string? file = null, Cancel ctx = default)
+	[Command("validate")]
+	public async Task<int> ValidateRepoInboundLinks(string? repository = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		file ??= ".artifacts/docs/html/links.json";
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
 		repository ??= GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName;
 		if (repository == null)
 			throw new Exception("Unable to determine repository name");
+		return await new LinkIndexLinkChecker(logger).CheckRepository(githubActionsService, repository, ctx);
+	}
+
+	/// <summary>
+	/// Validate a locally published links.json file against all published links.json files in the registry
+	/// </summary>
+	/// <param name="file"></param>
+	/// <param name="ctx"></param>
+	[Command("validate-link-reference")]
+	public async Task<int> ValidateLocalLinkReference(string? file = null, Cancel ctx = default)
+	{
+		AssignOutputLogger();
+		file ??= ".artifacts/docs/html/links.json";
+		var fs = new FileSystem();
+		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
+		var repository = GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName
+						?? throw new Exception("Unable to determine repository name");
 
 		return await new LinkIndexLinkChecker(logger).CheckWithLocalLinksJson(githubActionsService, repository, file, ctx);
 	}
@@ -69,14 +80,21 @@ internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubAct
 
 		IAmazonS3 client = new AmazonS3Client();
 		var bucketName = "elastic-docs-link-index";
-		var request = new ListObjectsV2Request { BucketName = bucketName, MaxKeys = 5 };
+		var request = new ListObjectsV2Request
+		{
+			BucketName = bucketName,
+			MaxKeys = 5
+		};
 
 		Console.WriteLine("--------------------------------------");
 		Console.WriteLine($"Listing the contents of {bucketName}:");
 		Console.WriteLine("--------------------------------------");
 
 
-		var linkIndex = new LinkIndex { Repositories = [] };
+		var linkIndex = new LinkIndex
+		{
+			Repositories = []
+		};
 		try
 		{
 			ListObjectsV2Response response;
@@ -95,11 +113,20 @@ internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubAct
 					var repository = tokens[1];
 					var branch = tokens[2];
 
-					var entry = new LinkIndexEntry { Repository = repository, Branch = branch, ETag = obj.ETag.Trim('"'), Path = obj.Key };
+					var entry = new LinkIndexEntry
+					{
+						Repository = repository,
+						Branch = branch,
+						ETag = obj.ETag.Trim('"'),
+						Path = obj.Key
+					};
 					if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
 						existingEntry[branch] = entry;
 					else
-						linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry> { { branch, entry } });
+						linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
+						{
+							{ branch, entry }
+						});
 					Console.WriteLine(entry);
 				}
 

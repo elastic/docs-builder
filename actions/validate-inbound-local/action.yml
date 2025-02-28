@@ -7,4 +7,4 @@ runs:
     - name: Validate Inbound Links
       uses: elastic/docs-builder/actions/assembler@main
       with:
-        command: "link validate-inbound-local"
+        command: "inbound-links validate-link-reference"

@@ -25,6 +25,16 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		return await ValidateCrossLinks(githubActionsService, crossLinks, resolver, null, ctx);
 	}
 
+	public async Task<int> CheckRepository(ICoreService githubActionsService, string repository, Cancel ctx)
+	{
+		var fetcher = new LinksIndexCrossLinkFetcher(logger);
+		var resolver = new CrossLinkResolver(fetcher);
+		//todo add ctx
+		var crossLinks = await resolver.FetchLinks();
+
+		return await ValidateCrossLinks(githubActionsService, crossLinks, resolver, repository, ctx);
+	}
+
 	public async Task<int> CheckWithLocalLinksJson(
 		ICoreService githubActionsService,
 		string repository,
@@ -75,7 +85,10 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		_ = collector.StartAsync(ctx);
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
-			_logger.LogInformation("Validating {Repository}", repository);
+			if (!string.IsNullOrEmpty(currentRepository))
+				_logger.LogInformation("Validating '{CurrentRepository}://' links in {TargetRepository}", currentRepository, repository);
+			else
+				_logger.LogInformation("Validating all cross_links in {Repository}", repository);
 			foreach (var crossLink in linkReference.CrossLinks)
 			{
 				// if we are filtering we only want errors from inbound links to a certain
@@ -96,10 +109,10 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 					}
 
 					collector.EmitError(repository, s);
-
 				}, uri, out _);
 			}
 		}
+
 		collector.Channel.TryComplete();
 		await collector.StopAsync(ctx);
 		return collector.Errors + collector.Warnings;
