@@ -3,9 +3,6 @@ name: smoke-tests
 on:
   pull_request: ~
   
-env:
-  PATH_PREFIX: /docs
-  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,9 +11,9 @@ jobs:
       matrix: 
         include:
           - repository: elastic/docs-content
-            landing-page-path-output: ${{ env.PATH_PREFIX }}/
+            landing-page-path-output: /docs/
           - repository: elastic/apm-agent-android
-            landing-page-path-output: ${{ env.PATH_PREFIX }}/reference/
+            landing-page-path-output: /docs/reference/
             
             # This is a random repository that should not have a docset.yml
           - repository: elastic/oblt-actions
@@ -35,7 +32,7 @@ jobs:
       - name: Build documentation
         id: docs-build
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}" -p test-repo
+          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs" -p test-repo
       
       - name: Verify landing-page-path output
         run: test ${{ steps.docs-build.outputs.landing-page-path }} == ${{ matrix.landing-page-path-output }}
