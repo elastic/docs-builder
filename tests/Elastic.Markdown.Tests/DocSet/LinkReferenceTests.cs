@@ -6,6 +6,7 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.State;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -34,7 +35,7 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 	public void Create()
 	{
 		var root = ReadFileSystem.DirectoryInfo.New(Paths.Root.FullName);
-		var git = GitCheckoutInformation.Create(root, ReadFileSystem);
+		var git = GitCheckoutInformation.Create(root, ReadFileSystem, LoggerFactory.CreateLogger(nameof(GitCheckoutInformation)));
 
 		git.Should().NotBeNull();
 		git.Branch.Should().NotBeNullOrWhiteSpace();
