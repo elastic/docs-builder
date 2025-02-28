@@ -3,6 +3,9 @@ name: smoke-tests
 on:
   pull_request: ~
   
+env:
+  PATH_PREFIX: /docs
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,10 +14,12 @@ jobs:
       matrix: 
         include:
           - repository: elastic/docs-content
-            first-page-path-output: /docs
+            first-page-path-output: /docs/
           - repository: elastic/apm-agent-android
-            first-page-path-output: /docs/reference
-          - repository: elastic/cloud-on-k8s
+            first-page-path-output: /docs/reference/
+            
+            # This is a random repository that should not have a docset.yml
+          - repository: elastic/oblt-actions
             first-page-path-output: ""
 
     steps:
