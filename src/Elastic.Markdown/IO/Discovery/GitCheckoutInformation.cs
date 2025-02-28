@@ -78,36 +78,29 @@ public record GitCheckoutInformation
 		ini.Load(streamReader);
 
 		var remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
-		logger?.LogInformation("Remote from environment: {GitRemote}", remote);
 		if (string.IsNullOrEmpty(remote))
 		{
 			remote = BranchTrackingRemote(branch, ini);
 			logger?.LogInformation("Remote from branch: {GitRemote}", remote);
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = BranchTrackingRemote("main", ini);
+				logger?.LogInformation("Remote from main branch: {GitRemote}", remote);
+			}
+
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = BranchTrackingRemote("master", ini);
+				logger?.LogInformation("Remote from master branch: {GitRemote}", remote);
+			}
+
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = "elastic/docs-builder-unknown";
+				logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
+			}
+			remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
 		}
-
-		if (string.IsNullOrEmpty(remote))
-		{
-			remote = BranchTrackingRemote("main", ini);
-			logger?.LogInformation("Remote from main branch: {GitRemote}", remote);
-		}
-
-		if (string.IsNullOrEmpty(remote))
-		{
-			remote = BranchTrackingRemote("master", ini);
-			logger?.LogInformation("Remote from master branch: {GitRemote}", remote);
-		}
-
-		if (string.IsNullOrEmpty(remote))
-		{
-			remote = "elastic/docs-builder-unknown";
-			logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
-		}
-
-		remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
-
-		logger?.LogInformation("Remote trimmed: {GitRemote}", remote);
-		if (remote.EndsWith("docs-conten"))
-			remote += "t";
 
 		var info = new GitCheckoutInformation
 		{
