@@ -21,6 +21,7 @@ var app = ConsoleApp.Create();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 
+app.Add<LinkRegistryCommands>("link-registry");
 app.Add<InboundLinkCommands>("inbound-links");
 app.Add<RepositoryCommands>("repo");
 
