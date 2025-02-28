@@ -14,13 +14,13 @@ jobs:
       matrix: 
         include:
           - repository: elastic/docs-content
-            first-page-path-output: /docs/
+            landing-page-path-output: ${{ env.PATH_PREFIX }}/
           - repository: elastic/apm-agent-android
-            first-page-path-output: /docs/reference/
+            landing-page-path-output: ${{ env.PATH_PREFIX }/reference/
             
             # This is a random repository that should not have a docset.yml
           - repository: elastic/oblt-actions
-            first-page-path-output: ""
+            landing-page-path-output: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
       - name: Build documentation
         id: docs-build
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs" -p test-repo
+          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}" -p test-repo
       
-      - name: Verify first page path
-        run: test ${{ steps.docs-build.outputs.first-page-path }} == ${{ matrix.first-page-path-output }}
+      - name: Verify landing-page-path output
+        run: test ${{ steps.docs-build.outputs.landing-page-path }} == ${{ matrix.landing-page-path-output }}
