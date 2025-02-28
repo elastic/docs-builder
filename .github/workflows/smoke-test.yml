@@ -16,7 +16,7 @@ jobs:
           - repository: elastic/docs-content
             landing-page-path-output: ${{ env.PATH_PREFIX }}/
           - repository: elastic/apm-agent-android
-            landing-page-path-output: ${{ env.PATH_PREFIX }/reference/
+            landing-page-path-output: ${{ env.PATH_PREFIX }}/reference/
             
             # This is a random repository that should not have a docset.yml
           - repository: elastic/oblt-actions
