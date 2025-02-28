@@ -84,6 +84,10 @@ The syntax follows the format `<scheme>://<path>`, where:
 - `scheme`: The target repository name (e.g., kibana, beats)
 - `path`: The file path within that repository
 
+:::{important}
+The `path` in cross-repo links must be relative to the `docset.yml` file and not the full path within the repo
+:::
+
 ### External links
 
 Link to websites and resources outside the Elastic docs:
