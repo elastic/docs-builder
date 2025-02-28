@@ -21,7 +21,7 @@ var app = ConsoleApp.Create();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 
-app.Add<LinkCommands>("link");
+app.Add<InboundLinkCommands>("inbound-links");
 app.Add<RepositoryCommands>("repo");
 
 var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
