@@ -49,7 +49,8 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		_crossLinks = new FetchedCrossLinks
 		{
 			DeclaredRepositories = DeclaredRepositories,
-			LinkReferences = LinkReferences.ToFrozenDictionary()
+			LinkReferences = LinkReferences.ToFrozenDictionary(),
+			FromConfiguration = true
 		};
 		return Task.FromResult(_crossLinks);
 	}

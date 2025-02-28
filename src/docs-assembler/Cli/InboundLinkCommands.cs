@@ -18,6 +18,8 @@ namespace Documentation.Assembler.Cli;
 
 internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logger, githubActionsService);
+
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
@@ -33,22 +35,26 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		return await new LinkIndexLinkChecker(logger).CheckAll(githubActionsService, ctx);
+		return await _linkIndexLinkChecker.CheckAll(ctx);
 	}
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
-	/// <param name="repository"></param>
+	/// <param name="from"></param>
+	/// <param name="to"></param>
 	/// <param name="ctx"></param>
 	[Command("validate")]
-	public async Task<int> ValidateRepoInboundLinks(string? repository = null, Cancel ctx = default)
+	public async Task<int> ValidateRepoInboundLinks(string? from = null, string? to = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
-		repository ??= GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName;
-		if (repository == null)
-			throw new Exception("Unable to determine repository name");
-		return await new LinkIndexLinkChecker(logger).CheckRepository(githubActionsService, repository, ctx);
+		if (from == null && to == null)
+		{
+			from ??= GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName;
+			if (from == null)
+				throw new Exception("Unable to determine repository name");
+		}
+		return await _linkIndexLinkChecker.CheckRepository(from, to, ctx);
 	}
 
 	/// <summary>
@@ -66,6 +72,6 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		var repository = GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
-		return await new LinkIndexLinkChecker(logger).CheckWithLocalLinksJson(githubActionsService, repository, file, ctx);
+		return await _linkIndexLinkChecker.CheckWithLocalLinksJson(repository, file, ctx);
 	}
 }

@@ -82,7 +82,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
 		if (!declaredRepositories.Contains(crossLinkUri.Scheme))
 		{
-			errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links");
+			if (fetchedCrossLinks.FromConfiguration)
+				errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links: '{crossLinkUri}'");
 			return false;
 		}
 

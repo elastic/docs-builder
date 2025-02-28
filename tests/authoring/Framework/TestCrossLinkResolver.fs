@@ -65,7 +65,8 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
             let crossLinks =
                 FetchedCrossLinks(
                     DeclaredRepositories=this.DeclaredRepositories,
-                    LinkReferences=this.LinkReferences.ToFrozenDictionary()
+                    LinkReferences=this.LinkReferences.ToFrozenDictionary(),
+                    FromConfiguration=true
                 )
             Task.FromResult crossLinks
 
@@ -73,7 +74,8 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
             let crossLinks =
                 FetchedCrossLinks(
                     DeclaredRepositories=this.DeclaredRepositories,
-                    LinkReferences=this.LinkReferences.ToFrozenDictionary()
+                    LinkReferences=this.LinkReferences.ToFrozenDictionary(),
+                    FromConfiguration=true
                 )
             CrossLinkResolver.TryResolve(errorEmitter, crossLinks, crossLinkUri, &resolvedUri);
 
