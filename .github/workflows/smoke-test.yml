@@ -11,8 +11,11 @@ jobs:
       matrix: 
         include:
           - repository: elastic/docs-content
+            first-page-path-output: /docs
           - repository: elastic/apm-agent-android
+            first-page-path-output: /docs/reference
           - repository: elastic/cloud-on-k8s
+            first-page-path-output: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -25,5 +28,9 @@ jobs:
           path: test-repo
 
       - name: Build documentation
+        id: docs-build
         run: |
           dotnet run --project src/docs-builder -- --strict --path-prefix "/docs" -p test-repo
+      
+      - name: Verify first page path
+        run: test ${{ steps.docs-build.outputs.first-page-path }} == ${{ matrix.first-page-path-output }}
