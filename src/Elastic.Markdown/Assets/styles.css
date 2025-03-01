@@ -11,16 +11,16 @@
 @import "./markdown/table.css";
 @import "./markdown/definition-list.css";
 
-#default-search::-webkit-search-cancel-button {
-	padding-right: calc(var(--spacing) * 2);
-	-webkit-appearance: none;
-	height: 16px;
-	width: 16px;
-	margin-left: .4em;
-	background-image: url("data:image/svg+xml;utf8,<svg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'><path stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18 17.94 6M18 18 6.06 6'/></svg>");
-	cursor: pointer;
-	background-repeat: no-repeat;
-}
+/*#default-search::-webkit-search-cancel-button {*/
+/*	padding-right: calc(var(--spacing) * 2);*/
+/*	-webkit-appearance: none;*/
+/*	height: 16px;*/
+/*	width: 16px;*/
+/*	margin-left: .4em;*/
+/*	background-image: url("data:image/svg+xml;utf8,<svg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'><path stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18 17.94 6M18 18 6.06 6'/></svg>");*/
+/*	cursor: pointer;*/
+/*	background-repeat: no-repeat;*/
+/*}*/
 
 #pages-nav li.current {
 	position: relative;

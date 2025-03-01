@@ -102,17 +102,15 @@
 	};
 }
 
-<div class="bg-blue-developer">
+<div class="bg-blue-developer" xmlns="http://www.w3.org/1999/html">
 	
 </div>
-<header id="main-header" class="sticky top-0 z-50 max-w-screen bg-white border-b-1 border-grey-20">
+<header id="main-header" class="sticky top-0 z-50 max-w-screen bg-white border-b-1 border-grey-20 group/header">
 	<div class="flex items-center justify-center h-21 bg-white px-6">
-		<div class="container flex flex-wrap lg:flex-nowrap justify-start items-center">
-			<div class="h-10 mr-10">
-				<a href="@Model.UrlPathPrefix/">
-					<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
-				</a>
-			</div>
+		<div class="container flex gap-4 justify-start items-center">
+			<a href="@Model.Link("/")" class="mr-10 flex items-center">
+				<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
+			</a>
 			@if (Model.Features.IsPrimaryNavEnabled)
 			{
 				@await RenderPartialAsync(_PrimaryNav.Create(primaryNavViewModel))
@@ -121,22 +119,34 @@
 			{
 				<div class="grow"></div>
 			}
-			<form role="search" class="shrink-0 mx-2 h-10 w-50" autocomplete="off">
-				<label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+			<div role="search" class="shrink-0 h-10 w-20 xl:w-50" autocomplete="off">
 				<div class="relative h-10">
-					<div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none ml-2">
-						<svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-							<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-						</svg>
-					</div>
 					<div class="rounded-full bg-linear-65 from-pink/[.4] to-teal/[.4] p-[2px] h-10">
-						<input type="search" id="default-search" class="flex items-center h-full w-full p-2 ps-10 bg-white rounded-full focus-visible:outline-[blue]/[.3] focus-visible:outline-2 truncate text-ellipsis" placeholder="Search" required/>
+						<button id="default-search" class="flex gap-2 items-center justify-center xl:justify-start h-full w-full py-2 px-4 bg-grey-10 text-grey-80 rounded-full focus-visible:outline-[blue]/[.3] focus-visible:outline-2">
+							<svg class="shrink-0" fill="currentColor" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16" viewBox="0 0 16 16">
+								<path d="M11.2709852,11.9779932 L15.14275,15.85075 C15.24075,15.94775 15.36875,15.99675 15.49675,15.99675 C15.62475,15.99675 15.75275,15.94775 15.85075,15.85075 C16.04575,15.65475 16.04575,15.33875 15.85075,15.14275 L12.2861494,11.5790625 C14.6668581,8.83239759 14.5527289,4.65636993 11.9437617,2.04675 C9.21444459,-0.68225 4.77355568,-0.68225 2.04623804,2.04675 C-0.682079347,4.77575 -0.682079347,9.21775 2.04623804,11.94675 C3.36890712,13.26875 5.12646738,13.99675 6.99499989,13.99675 C7.27093085,13.99675 7.49487482,13.77275 7.49487482,13.49675 C7.49487482,13.22075 7.27093085,12.99675 6.99499989,12.99675 C5.39240085,12.99675 3.88677755,12.37275 2.7530612,11.23975 C0.414646258,8.89975 0.414646258,5.09375 2.7530612,2.75375 C5.09047639,0.41375 8.89552438,0.41475 11.2369386,2.75375 C13.5753535,5.09375 13.5753535,8.89975 11.2369386,11.23975 C11.0419873,11.43475 11.0419873,11.75175 11.2369386,11.94675 C11.2479153,11.9577858 11.2592787,11.9682002 11.2709852,11.9779932 Z"/>
+							</svg>
+							<span class="hidden xl:inline">Search</span>
+						</button>
 					</div>
 				</div>
-			</form>
-			<div class="flex grow lg:flex-none h-10">
-				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 me-3 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
+			</div>
+			<div class="hidden xl:flex grow xl:flex-none h-10">
+				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
 				@* <a href="https://elastic.co/contact" class="grow cursor-pointer text-white text-nowrap border-2 border-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">Contact Sales</a> *@
+			</div>
+			<div class="xl:hidden">
+				<label class="group">
+					<input id="hamburger" type="checkbox" class="hidden" />
+					<div class="cursor-pointer hover:text-black p-2">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 group-has-checked:hidden">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+						</svg>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 hidden group-has-checked:block">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+						</svg>
+					</div>
+				</label>
 			</div>
 		</div>
 	</div>
