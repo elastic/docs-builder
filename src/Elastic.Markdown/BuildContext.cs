@@ -19,6 +19,8 @@ public record BuildContext
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public IDirectoryInfo DocumentationOutputDirectory { get; }
 
+	public ConfigurationFile Configuration { get; set; }
+
 	public IFileInfo ConfigurationPath { get; }
 
 	public GitCheckoutInformation Git { get; }
@@ -71,8 +73,6 @@ public record BuildContext
 
 	}
 
-	public ConfigurationFile Configuration { get; set; }
-
 	private (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IDirectoryInfo rootPath)
 	{
 		string[] files = ["docset.yml", "_docset.yml"];
@@ -97,4 +97,5 @@ public record BuildContext
 
 		return (docsFolder, configurationPath);
 	}
+
 }

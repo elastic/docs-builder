@@ -51,8 +51,6 @@ public class DocumentationSet : INavigationLookups
 
 	public ICrossLinkResolver LinkResolver { get; }
 
-	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
-
 	public DocumentationGroup Tree { get; }
 
 	public IReadOnlyCollection<DocumentationFile> Files { get; }
@@ -62,6 +60,8 @@ public class DocumentationSet : INavigationLookups
 	public FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; }
 
 	IReadOnlyCollection<ITocItem> INavigationLookups.TableOfContents => Configuration.TableOfContents;
+
+	IReadOnlyCollection<IDocsBuilderExtension> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
 
 	public DocumentationSet(BuildContext build, ILoggerFactory logger, ICrossLinkResolver? linkResolver = null)
 	{
@@ -83,9 +83,6 @@ public class DocumentationSet : INavigationLookups
 		Name = SourceDirectory.FullName;
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
-
-		EnabledExtensions = InstantiateExtensions();
-
 
 		var files = ScanDocumentationFiles(build, SourceDirectory);
 		var ruleSetSources = Configuration.TableOfContents.OfType<RulesFolderReference>();
@@ -113,7 +110,7 @@ public class DocumentationSet : INavigationLookups
 		{
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
-			EnabledExtensions = EnabledExtensions,
+			EnabledExtensions = Configuration.EnabledExtensions,
 			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
@@ -131,22 +128,6 @@ public class DocumentationSet : INavigationLookups
 		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
 
 		ValidateRedirectsExists();
-	}
-
-	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
-	{
-		var list = new List<IDocsBuilderExtension>();
-		foreach (var extension in Configuration.Extensions.Enabled)
-		{
-			switch (extension.ToLowerInvariant())
-			{
-				case "detection-rules":
-					list.Add(new DetectionRulesDocsBuilderExtension(Build, this));
-					continue;
-			}
-		}
-
-		return list.AsReadOnly();
 	}
 
 	private DocumentationFile[] ScanDocumentationFiles(BuildContext build, IDirectoryInfo sourceDirectory) =>
@@ -170,9 +151,9 @@ public class DocumentationSet : INavigationLookups
 
 	private DocumentationFile DefaultFileHandling(IFileInfo file, IDirectoryInfo sourceDirectory)
 	{
-		foreach (var extension in EnabledExtensions)
+		foreach (var extension in Configuration.EnabledExtensions)
 		{
-			var documentationFile = extension.CreateDocumentationFile(file, sourceDirectory);
+			var documentationFile = extension.CreateDocumentationFile(file, sourceDirectory, this);
 			if (documentationFile is not null)
 				return documentationFile;
 		}

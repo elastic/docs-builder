@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.State;
 using YamlDotNet.RepresentationModel;
@@ -22,6 +23,7 @@ public record ConfigurationFile : DocumentationFile
 	public string[] CrossLinkRepositories { get; } = [];
 
 	public EnabledExtensions Extensions { get; } = new([]);
+	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; } = [];
 
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
 
@@ -74,6 +76,7 @@ public record ConfigurationFile : DocumentationFile
 						break;
 					case "extensions":
 						Extensions = new([.. YamlStreamReader.ReadStringArray(entry.Entry)]);
+						EnabledExtensions = InstantiateExtensions();
 						break;
 					case "subs":
 						_substitutions = reader.ReadDictionary(entry.Entry);
@@ -109,6 +112,23 @@ public record ConfigurationFile : DocumentationFile
 
 		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
 	}
+
+	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
+	{
+		var list = new List<IDocsBuilderExtension>();
+		foreach (var extension in Extensions.Enabled)
+		{
+			switch (extension.ToLowerInvariant())
+			{
+				case "detection-rules":
+					list.Add(new DetectionRulesDocsBuilderExtension(_context));
+					continue;
+			}
+		}
+
+		return list.AsReadOnly();
+	}
+
 
 	private List<ITocItem> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
 	{
@@ -163,8 +183,11 @@ public record ConfigurationFile : DocumentationFile
 					parentPath += $"/{folder}";
 					break;
 				case "detection_rules":
-					detectionRules = ReadDetectionRules(reader, entry, parentPath, out detectionRulesFound);
-					parentPath += $"/{folder}";
+					if (Extensions.IsDetectionRulesEnabled)
+					{
+						detectionRules = ReadDetectionRules(reader, entry, parentPath, out detectionRulesFound);
+						parentPath += $"/{folder}";
+					}
 					break;
 				case "children":
 					children = ReadChildren(reader, entry, parentPath);
@@ -192,55 +215,21 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		if (detectionRules is not null)
-			return CreateDetectionRuleReference(reader, tocEntry, parentPath, children, detectionRulesFound, detectionRules);
-
-		return null;
-	}
-
-	private IEnumerable<ITocItem>? CreateDetectionRuleReference(
-		YamlStreamReader reader,
-		YamlMappingNode tocEntry,
-		string parentPath,
-		IReadOnlyCollection<ITocItem>? children,
-		bool detectionRulesFound,
-		string detectionRules)
-	{
-		if (children is not null)
-			reader.EmitError($"'detection_rules' is not allowed to have 'children'", tocEntry);
-
-		if (!detectionRulesFound)
 		{
-			reader.EmitError($"'detection_rules' folder {parentPath} is not found, skipping'", tocEntry);
-			return [];
+			if (children is not null)
+				reader.EmitError($"'detection_rules' is not allowed to have 'children'", tocEntry);
+
+			if (!detectionRulesFound)
+			{
+				reader.EmitError($"'detection_rules' folder {parentPath} is not found, skipping'", tocEntry);
+				return [];
+			}
+
+			var extension = EnabledExtensions.OfType<DetectionRulesDocsBuilderExtension>().First();
+			return extension.CreateTableOfContentItems(parentPath, detectionRulesFound, detectionRules, Files);
 		}
 
-		var detectionRulesFolder = $"{Path.Combine(parentPath, detectionRules)}".TrimStart('/');
-		var fs = _context.ReadFileSystem;
-		var path = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(_rootPath.FullName, detectionRulesFolder)));
-		children =
-		[
-			.. path
-				.EnumerateFiles("*.*", SearchOption.AllDirectories)
-				.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
-				.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
-				.Where(f => f.Extension is ".md" or ".toml")
-				.Select(f =>
-				{
-					var relativePath = Path.GetRelativePath(_rootPath.FullName, f.FullName);
-					if (f.Extension == ".toml")
-					{
-						var rule = DetectionRule.From(f);
-						return new RuleReference(relativePath, true, [], rule);
-					}
-
-					_ = Files.Add(relativePath);
-					return new FileReference(relativePath, true, false, []);
-				})
-				.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
-		];
-
-
-		return [new RulesFolderReference(detectionRulesFolder, detectionRulesFound, children)];
+		return null;
 	}
 
 	private string? ReadFolder(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
