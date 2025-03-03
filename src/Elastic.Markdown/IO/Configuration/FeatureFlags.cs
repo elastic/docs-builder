@@ -6,6 +6,7 @@ namespace Elastic.Markdown.IO.Configuration;
 
 public class FeatureFlags(Dictionary<string, bool> featureFlags)
 {
-	public bool IsPrimaryNavEnabled => IsEnabled("primary-nav");
 	private bool IsEnabled(string key) => featureFlags.TryGetValue(key, out var value) && value;
+
+	public bool IsPrimaryNavEnabled => IsEnabled("primary-nav");
 }

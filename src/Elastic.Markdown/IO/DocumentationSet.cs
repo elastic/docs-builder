@@ -6,6 +6,8 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Extensions;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
@@ -13,7 +15,23 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.IO;
 
-public class DocumentationSet
+public interface INavigationLookups
+{
+	FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; }
+	IReadOnlyCollection<ITocItem> TableOfContents { get; }
+	IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
+	FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
+}
+
+public record NavigationLookups : INavigationLookups
+{
+	public required FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; init; }
+	public required IReadOnlyCollection<ITocItem> TableOfContents { get; init; }
+	public required IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; init; }
+	public required FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; init; }
+}
+
+public class DocumentationSet : INavigationLookups
 {
 	public BuildContext Build { get; }
 	public string Name { get; }
@@ -29,9 +47,21 @@ public class DocumentationSet
 
 	public ConfigurationFile Configuration { get; }
 
-	private MarkdownParser MarkdownParser { get; }
+	public MarkdownParser MarkdownParser { get; }
 
 	public ICrossLinkResolver LinkResolver { get; }
+
+	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
+
+	public DocumentationGroup Tree { get; }
+
+	public IReadOnlyCollection<DocumentationFile> Files { get; }
+
+	public FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
+
+	public FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; }
+
+	IReadOnlyCollection<ITocItem> INavigationLookups.TableOfContents => Configuration.TableOfContents;
 
 	public DocumentationSet(BuildContext build, ILoggerFactory logger, ICrossLinkResolver? linkResolver = null)
 	{
@@ -54,34 +84,40 @@ public class DocumentationSet
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
 
-		Files = [.. build.ReadFileSystem.Directory
-			.EnumerateFiles(SourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
-			.Select(f => build.ReadFileSystem.FileInfo.New(f))
-			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
-			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
-			// skip hidden folders
-			.Where(f => !Path.GetRelativePath(SourceDirectory.FullName, f.FullName).StartsWith('.'))
-			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
-			{
-				".jpg" => new ImageFile(file, SourceDirectory, "image/jpeg"),
-				".jpeg" => new ImageFile(file, SourceDirectory, "image/jpeg"),
-				".gif" => new ImageFile(file, SourceDirectory, "image/gif"),
-				".svg" => new ImageFile(file, SourceDirectory, "image/svg+xml"),
-				".png" => new ImageFile(file, SourceDirectory),
-				".md" => CreateMarkDownFile(file, build),
-				_ => new StaticFile(file, SourceDirectory)
-			})];
+		EnabledExtensions = InstantiateExtensions();
+
+
+		var files = ScanDocumentationFiles(build, SourceDirectory);
+		var ruleSetSources = Configuration.TableOfContents.OfType<RulesFolderReference>();
+		Files =
+		[
+			..files
+				.Concat(ruleSetSources.SelectMany(rules =>
+				{
+					var directory = build.ReadFileSystem.DirectoryInfo.New(Path.GetFullPath(Path.Combine(SourceDirectory.FullName, rules.Path)));
+					return ScanDocumentationFiles(build, directory);
+				}))
+		];
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
 		FlatMappedFiles = Files.ToDictionary(file => file.RelativePath, file => file).ToFrozenDictionary();
 
-		var folderFiles = Files
+		FilesGroupedByFolder = Files
 			.GroupBy(file => file.RelativeFolder)
-			.ToDictionary(g => g.Key, g => g.ToArray());
+			.ToDictionary(g => g.Key, g => g.ToArray())
+			.ToFrozenDictionary();
 
 		var fileIndex = 0;
-		Tree = new DocumentationGroup(Build, Configuration.TableOfContents, FlatMappedFiles, folderFiles, ref fileIndex)
+		var lookups = new NavigationLookups
+		{
+			FlatMappedFiles = FlatMappedFiles,
+			TableOfContents = Configuration.TableOfContents,
+			EnabledExtensions = EnabledExtensions,
+			FilesGroupedByFolder = FilesGroupedByFolder
+		};
+
+		Tree = new DocumentationGroup(Build, lookups, ref fileIndex)
 		{
 			Parent = null
 		};
@@ -93,7 +129,54 @@ public class DocumentationSet
 			Build.EmitError(Build.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
 
 		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+
 		ValidateRedirectsExists();
+	}
+
+	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
+	{
+		var list = new List<IDocsBuilderExtension>();
+		foreach (var extension in Configuration.Extensions.Enabled)
+		{
+			switch (extension.ToLowerInvariant())
+			{
+				case "detection-rules":
+					list.Add(new DetectionRulesDocsBuilderExtension(Build, this));
+					continue;
+			}
+		}
+
+		return list.AsReadOnly();
+	}
+
+	private DocumentationFile[] ScanDocumentationFiles(BuildContext build, IDirectoryInfo sourceDirectory) =>
+		[.. build.ReadFileSystem.Directory
+			.EnumerateFiles(sourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
+			.Select(f => build.ReadFileSystem.FileInfo.New(f))
+			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
+			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+			// skip hidden folders
+			.Where(f => !Path.GetRelativePath(sourceDirectory.FullName, f.FullName).StartsWith('.'))
+			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
+			{
+				".jpg" => new ImageFile(file, SourceDirectory, "image/jpeg"),
+				".jpeg" => new ImageFile(file, SourceDirectory, "image/jpeg"),
+				".gif" => new ImageFile(file, SourceDirectory, "image/gif"),
+				".svg" => new ImageFile(file, SourceDirectory, "image/svg+xml"),
+				".png" => new ImageFile(file, SourceDirectory),
+				".md" => CreateMarkDownFile(file, build),
+				_ => DefaultFileHandling(file, sourceDirectory)
+		})];
+
+	private DocumentationFile DefaultFileHandling(IFileInfo file, IDirectoryInfo sourceDirectory)
+	{
+		foreach (var extension in EnabledExtensions)
+		{
+			var documentationFile = extension.CreateDocumentationFile(file, sourceDirectory);
+			if (documentationFile is not null)
+				return documentationFile;
+		}
+		return new StaticFile(file, sourceDirectory);
 	}
 
 	private void ValidateRedirectsExists()
@@ -209,13 +292,6 @@ public class DocumentationSet
 		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");
 		return new ExcludedFile(file, SourceDirectory);
 	}
-
-	public DocumentationGroup Tree { get; }
-
-	public IReadOnlyCollection<DocumentationFile> Files { get; }
-
-	public FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; }
-
 	public void ClearOutputDirectory()
 	{
 		if (OutputDirectory.Exists)

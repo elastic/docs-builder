@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -148,26 +149,18 @@ public class DocumentationWebHost
 	{
 		var generator = holder.Generator;
 
-		// For now, the logic is backwards compatible.
-		// Hence, both http://localhost:5000/migration/versioning.html and http://localhost:5000/migration/versioning works,
-		// so it's easier to copy links from issues created during the bug bounty.
-		// However, we can remove this logic in the future and only support links without the .html extension.
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug.Replace(".html", ".md");
+		var s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : slug;
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
-			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace("/index.md", ".md");
-			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
+			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("../" + slug + ".toml", out documentationFile))
 				return Results.NotFound();
 		}
 
 		switch (documentationFile)
 		{
 			case MarkdownFile markdown:
-				{
-					var rendered = await generator.RenderLayout(markdown, ctx);
-
-					return Results.Content(rendered, "text/html");
-				}
+				var rendered = await generator.RenderLayout(markdown, ctx);
+				return Results.Content(rendered, "text/html");
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:

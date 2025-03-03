@@ -229,12 +229,12 @@ dotnet_diagnostic.IDE0057.severity = none
 dotnet_diagnostic.IDE0051.severity = suggestion
 dotnet_diagnostic.IDE0059.severity = suggestion
 
+dotnet_diagnostic.CA1859.severity = none
+
 
 [DocumentationWebHost.cs]
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none
-
-
 
 [tests/**/*.cs]
 dotnet_diagnostic.IDE0058.severity = none
