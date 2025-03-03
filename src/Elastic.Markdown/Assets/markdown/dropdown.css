@@ -1,7 +1,7 @@
 @layer components {
 	.markdown-content {
 		.dropdown {
-			@apply mt-4 border-1 border-gray-300 rounded-sm shadow-xs;
+			@apply mt-4 border-1 border-grey-20 rounded-sm shadow-xs;
 			.dropdown-title {
 				@apply flex 
 				justify-between
@@ -15,7 +15,7 @@
 			}
 			
 			&[open] .dropdown-title {
-				@apply border-b-1 border-b-gray-300;
+				@apply border-b-1 border-b-grey-20;
 				svg {
 					transform: rotate(90deg);
 				}

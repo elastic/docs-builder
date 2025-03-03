@@ -1,8 +1,9 @@
 @theme {
-	/*--color-*: initial;*/
 
 	--font-sans: "Mier B", "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 	--font-body: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+	--color-*: initial;
 
 	--color-white: #FFFFFF;
 	--color-black: #000000;
@@ -12,10 +13,6 @@
 	--color-ink: #343741;
 	--color-ink-light: #535966;
 	--color-ink-dark: #1C1E23;
-
-	--color-gray: #E6EBF2;
-	--color-gray-light: #F5F7FA;
-	--color-gray-dark: #D4DAE5;
 
 	--color-blue-sky: #36B9FF;
 	--color-blue-midnight: #20377D;

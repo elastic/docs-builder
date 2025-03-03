@@ -54,6 +54,6 @@
 	}
 	
 	a {
-		@apply font-body text-blue-elastic hover:text-blue-800 underline;
+		@apply font-body text-blue-elastic hover:text-blue-elastic-100 underline;
 	}
 }
