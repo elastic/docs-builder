@@ -12,7 +12,6 @@ subs:
   
 features:
   primary-nav: false
-  landing-page: true
 
 toc:
   - file: index.md
