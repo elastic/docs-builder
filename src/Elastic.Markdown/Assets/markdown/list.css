@@ -6,12 +6,12 @@
 		margin-left: 1.5em;
 		/*list-style-position: inside;*/
 		li::marker {
-			@apply font-mono text-grey-80;
+			@apply text-grey-80;
 		}
 	}
 	
 	ul li {
-		@apply pl-[.5ch];
+		/*@apply pl-[.5ch];*/
 	}
 	
 	li>ul, li>ol {
