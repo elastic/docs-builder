@@ -149,7 +149,6 @@ jobs:
       - name: 'Validate Inbound Links'
         if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
         uses: elastic/docs-builder/actions/validate-inbound-local@main
-        continue-on-error: true
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
