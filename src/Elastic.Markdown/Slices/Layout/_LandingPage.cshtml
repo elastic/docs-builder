@@ -9,7 +9,7 @@
 					<a href="https://cloud.elastic.co/registration" target="_blank" rel="noopener noreferrer" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
 						Start free trial
 					</a>
-					<a href="/deploy-manage/upgrade" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">
+					<a href="@Model.Link("/deploy-manage/upgrade")" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">
 						Upgrade
 					</a>
 				</div>
@@ -29,7 +29,7 @@
 						Learn about Elasticsearch, the components at the heart of the Elastic Search AI Platform, and the solutions it powers.
 					</p>
 					<div class="mt-6">
-						<a href="/get-started" class="link">
+						<a href="@Model.Link("/get-started")" class="link">
 							Get started
 							<svg class="link-arrow"
 							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -76,8 +76,8 @@
 							<p class="font-sans font-bold text-xl">Search</p>
 							<p class="mt-2 grow">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
 							<div class="grid grid-cols-2 mt-6">
-								<a href="/solutions/search/get-started" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
-								<a href="/solutions/search" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
+								<a href="@Model.Link("/solutions/search/get-started")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
+								<a href="@Model.Link("/solutions/search")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
@@ -89,8 +89,8 @@
 							<p class="font-sans font-bold text-xl">Observability</p>
 							<p class="mt-2 grow">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
 							<div class="grid grid-cols-2 mt-6">
-								<a href="/solutions/observability/get-started" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
-								<a href="/solutions/observability/" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
+								<a href="@Model.Link("/solutions/observability/get-started")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
+								<a href="@Model.Link("/solutions/observability/")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
@@ -103,8 +103,8 @@
 							<p class="font-sans font-bold text-xl">Security</p>
 							<p class="mt-2 grow">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>
 							<div class="grid grid-cols-2 mt-6">
-								<a href="/solutions/security/get-started" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
-								<a href="/solutions/security" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
+								<a href="@Model.Link("/solutions/security/get-started")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
+								<a href="@Model.Link("/solutions/security")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
@@ -137,7 +137,7 @@
 					</li>
 				</ul>
 				<div class="mt-6">
-					<a href="/manage-data" class="link">
+					<a href="@Model.Link("/manage-data")" class="link">
 						View all docs
 						<svg class="link-arrow"
 						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -183,7 +183,7 @@
 					</li>
 				</ul>
 				<div class="mt-6">
-					<a href="/explore-analyze" class="link">
+					<a href="@Model.Link("/explore-analyze")" class="link">
 						View all docs
 						<svg class="link-arrow"
 						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -229,7 +229,7 @@
 					</li>
 				</ul>
 				<div class="mt-6">
-					<a href="/deploy-manage" class="link">
+					<a href="@Model.Link("/deploy-manage")" class="link">
 						View all docs
 						<svg class="link-arrow"
 						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -383,7 +383,7 @@
 				</div>
 			</div>
 			<div class="mt-6">
-				<a href="/reference" class="link">
+				<a href="@Model.Link("/reference")" class="link">
 					View all docs
 					<svg class="link-arrow"
 					     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -402,10 +402,10 @@
 					<h3 class="font-sans font-bold text-2xl">Releases</h3>
 					<p class="grow mt-4">Explore the latest features and changes in Elastic.</p>
 					<div class="mt-6 grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-6 text-center">
-						<a href="/release-notes/" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
+						<a href="@Model.Link("/release-notes/")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
 							View release notes
 						</a>
-						<a href="/deploy-manage/upgrade" class="link text-white">
+						<a href="@Model.Link("/deploy-manage/upgrade")" class="link text-white">
 							Upgrade now
 							<svg class="link-arrow"
 							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -418,7 +418,7 @@
 					<h3 class="font-sans font-bold text-2xl">Troubleshoot and support</h3>
 					<p class="grow mt-4">Check troubleshooting guides for common fixes or reach out to the experts.</p>
 					<div class="mt-6 grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-6 text-center">
-						<a href="/troubleshoot/" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
+						<a href="@Model.Link("/troubleshoot/")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
 							Start troubleshooting
 						</a>
 						<a href="https://support.elastic.co" target="_blank" rel="noopener noreferrer" class="link text-white">
