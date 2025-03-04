@@ -23,6 +23,8 @@ public record DetectionRuleFile : MarkdownFile
 	{
 	}
 
+	protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
+
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
 		var document = MarkdownParser.MinimalParseStringAsync(Rule?.Note ?? string.Empty, SourceFile, null);

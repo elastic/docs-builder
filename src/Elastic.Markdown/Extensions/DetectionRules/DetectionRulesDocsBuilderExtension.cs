@@ -49,6 +49,12 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, documentationSet.MarkdownParser, Build, documentationSet);
 	}
 
+	public bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile)
+	{
+		var tomlFile = $"../{slug}.toml";
+		return documentationSet.FlatMappedFiles.TryGetValue(tomlFile, out documentationFile);
+	}
+
 	public IEnumerable<ITocItem> CreateTableOfContentItems(
 		string parentPath,
 		bool detectionRulesFound,

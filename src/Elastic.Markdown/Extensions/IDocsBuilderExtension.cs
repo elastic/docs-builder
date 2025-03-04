@@ -33,4 +33,6 @@ public interface IDocsBuilderExtension
 	/// Return `null` to let another extension handle this.
 	DocumentationFile? CreateDocumentationFile(IFileInfo file, IDirectoryInfo sourceDirectory, DocumentationSet documentationSet);
 
+	/// Attempts to locate a documentation file by slug, used to locate the document for `docs-builder serve` command
+	bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile);
 }

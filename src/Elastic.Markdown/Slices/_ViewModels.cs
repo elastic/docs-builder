@@ -72,7 +72,7 @@ public class LayoutViewModel
 
 	public string Link(string path)
 	{
-		path = path.AsSpan().TrimStart('/').TrimStart("../").ToString();
+		path = path.AsSpan().TrimStart('/').ToString();
 		return $"{UrlPathPrefix}/{path}";
 	}
 }

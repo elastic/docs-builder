@@ -88,11 +88,13 @@ public record MarkdownFile : DocumentationFile
 	public string FilePath { get; }
 	public string FileName { get; }
 
+	protected virtual string RelativePathUrl => RelativePath;
+
 	public string Url
 	{
 		get
 		{
-			var relativePath = RelativePath.AsSpan().TrimStart("../").ToString();
+			var relativePath = RelativePathUrl;
 			return Path.GetFileName(relativePath) == "index.md"
 				? $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
 				: $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";

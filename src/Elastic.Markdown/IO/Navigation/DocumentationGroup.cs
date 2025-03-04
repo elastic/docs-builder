@@ -108,10 +108,7 @@ public class DocumentationGroup
 
 
 				foreach (var extension in context.Configuration.EnabledExtensions)
-				{
-					if (extension.InjectsIntoNavigation(tocItem))
-						extension.Visit(d, tocItem);
-				}
+					extension.Visit(d, tocItem);
 
 				md.Parent = this;
 				md.Hidden = file.Hidden;

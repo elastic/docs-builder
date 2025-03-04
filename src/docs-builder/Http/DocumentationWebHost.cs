@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
-using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -152,8 +151,11 @@ public class DocumentationWebHost
 		var s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : slug;
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
-			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("../" + slug + ".toml", out documentationFile))
-				return Results.NotFound();
+			foreach (var extension in generator.Context.Configuration.EnabledExtensions)
+			{
+				if (extension.TryGetDocumentationFileBySlug(generator.DocumentationSet, slug, out documentationFile))
+					break;
+			}
 		}
 
 		switch (documentationFile)
