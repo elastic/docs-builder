@@ -22,7 +22,7 @@ public static class Htmx
 		var selectTargets = "#primary-nav,#secondary-nav,#content-container";
 		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && features.IsPrimaryNavEnabled)
 			selectTargets += ",#pages-nav";
-		return string.Join(',', selectTargets);
+		return selectTargets;
 	}
 
 	public static bool HasSameTopLevelGroup(string? pathPrefix, string currentUrl, string targetUrl)
