@@ -14,6 +14,8 @@ public static class Htmx
 		if (features.IsLandingPageEnabled)
 		{
 			var startIndex = pathPrefix?.Length ?? 0;
+			if (currentUrl.Length < startIndex)
+				throw new InvalidUrlException("Unexpected current URL", currentUrl, startIndex);
 			if (currentUrl[startIndex..] == "/")
 				return "#main-container,#primary-nav,#secondary-nav";
 		}
@@ -30,10 +32,10 @@ public static class Htmx
 		var startIndex = pathPrefix?.Length ?? 0;
 
 		if (currentUrl.Length < startIndex)
-			throw new InvalidUrlException("Current URL is not a valid URL", currentUrl, startIndex);
+			throw new InvalidUrlException("Unexpected current URL", currentUrl, startIndex);
 
 		if (targetUrl.Length < startIndex)
-			throw new InvalidUrlException("Target URL is not a valid URL", targetUrl, startIndex);
+			throw new InvalidUrlException("Unexpected target URL", targetUrl, startIndex);
 
 		var currentSegments = GetSegments(currentUrl[startIndex..].Trim('/'));
 		var targetSegments = GetSegments(targetUrl[startIndex..].Trim('/'));
