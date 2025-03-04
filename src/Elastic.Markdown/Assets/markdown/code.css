@@ -7,7 +7,7 @@
 		@apply grid;
 		code {
 			@apply text-sm
-				text-gray-300
+				text-grey-30
 				rounded-none 
 				border-0 
 				overflow-x-auto
@@ -23,7 +23,7 @@
 			@apply rounded-b-sm;
 		}
 		code.language-apiheader {
-			@apply border-b-1 border-b-gray-700;
+			@apply border-b-1 border-b-grey-80;
 		}
 	}
 	

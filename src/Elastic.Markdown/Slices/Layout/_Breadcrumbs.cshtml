@@ -5,13 +5,11 @@
 		<a
 			itemprop="item"
 			href="@Model.Link("/")"
-			@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.Link("/"), Model.CurrentDocument.Url)
+			@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, Model.Link("/"))
 		>
 			<span itemprop="name" class="hover:text-black">
 				Home
 			</span>
-	>
-			<span itemprop="name" class="hover:text-ink">Elastic</span>
 		</a>
 		<meta itemprop="position" content="1">
 	</li>
@@ -25,7 +23,7 @@
 			<a
 				itemprop="item"
 				href="@firstCrumb.Url"
-				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, firstCrumb.Url, Model.CurrentDocument.Url)
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, firstCrumb.Url)
 			>
 				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
@@ -52,7 +50,7 @@
 			<a
 				itemprop="item" 
 				href="@item.Url"
-				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, item.Url, Model.CurrentDocument.Url)
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, item.Url)
 			>
 				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
 			</a>
