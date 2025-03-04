@@ -12,7 +12,7 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
 {
 	private BuildContext Build { get; } = build;
-	public bool Processes(ITocItem tocItem) => tocItem is RulesFolderReference;
+	public bool InjectsIntoNavigation(ITocItem tocItem) => tocItem is RulesFolderReference;
 
 	public void CreateNavigationItem(
 		DocumentationGroup? parent,
@@ -32,6 +32,13 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		};
 		groups.Add(group);
 		navigationItems.Add(new GroupNavigation(index, depth, group));
+	}
+
+	public void Visit(DocumentationFile file, ITocItem tocItem)
+	{
+		// ensure the file has an instance of the rule the reference parsed.
+		if (file is DetectionRuleFile df && tocItem is RuleReference r)
+			df.Rule = r.Rule;
 	}
 
 	public DocumentationFile? CreateDocumentationFile(IFileInfo file, IDirectoryInfo sourceDirectory, DocumentationSet documentationSet)

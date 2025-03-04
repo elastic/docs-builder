@@ -11,8 +11,10 @@ namespace Elastic.Markdown.Extensions;
 
 public interface IDocsBuilderExtension
 {
-	bool Processes(ITocItem tocItem);
+	/// Return true if this extension handles Navigation injection
+	bool InjectsIntoNavigation(ITocItem tocItem);
 
+	///  Inject items into the current navigation
 	void CreateNavigationItem(
 		DocumentationGroup? parent,
 		ITocItem tocItem,
@@ -24,5 +26,11 @@ public interface IDocsBuilderExtension
 		int index
 	);
 
+	/// Visit the <paramref name="tocItem"/> and its equivalent <see cref="DocumentationFile"/>
+	void Visit(DocumentationFile file, ITocItem tocItem);
+
+	/// Create an instance of <see cref="DocumentationFile"/> if it matches the <paramref name="file"/>.
+	/// Return `null` to let another extension handle this.
 	DocumentationFile? CreateDocumentationFile(IFileInfo file, IDirectoryInfo sourceDirectory, DocumentationSet documentationSet);
+
 }

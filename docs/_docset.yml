@@ -58,6 +58,7 @@ toc:
           - file: file-structure.md
           - file: attributes.md
           - file: navigation.md
+          - file: extensions.md
       - file: page.md
   - folder: syntax
     children:

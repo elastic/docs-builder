@@ -106,8 +106,12 @@ public class DocumentationGroup
 				if (d is not MarkdownFile md)
 					continue;
 
-				if (d is DetectionRuleFile df && tocItem is RuleReference r)
-					df.Rule = r.Rule;
+
+				foreach (var extension in context.Configuration.EnabledExtensions)
+				{
+					if (extension.InjectsIntoNavigation(tocItem))
+						extension.Visit(d, tocItem);
+				}
 
 				md.Parent = this;
 				md.Hidden = file.Hidden;
@@ -163,7 +167,7 @@ public class DocumentationGroup
 			{
 				foreach (var extension in lookups.EnabledExtensions)
 				{
-					if (extension.Processes(tocItem))
+					if (extension.InjectsIntoNavigation(tocItem))
 						extension.CreateNavigationItem(this, tocItem, lookups, groups, navigationItems, depth, ref fileIndex, index);
 				}
 			}
