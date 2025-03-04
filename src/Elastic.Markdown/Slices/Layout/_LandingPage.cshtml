@@ -23,38 +23,31 @@
 	<section class="w-screen px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">Elastic basics</h2>
-			<div class="grid gap-6 mt-6">
-				<p class="grow mt-2 lg:max-w-[80ch]">
-						Learn about Elasticsearch, the components at the heart of the Elastic Search AI Platform, and the solutions it powers.
-				</p>
-				<div class="mt-6">
-					<a href="/get-started" class="link">
-						Get started
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-					</a>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<section class="w-screen px-6 bg-grey-10">
-		<div class="container mx-auto py-16">
-			<h2 class="font-bold text-3xl text-ink-dark">Instant Elasticsearch</h2>
 			<div class="grid lg:grid-cols-2 gap-6 mt-6">
-				<div class="lg:basis-[50%]">
-					<p class="mt-2 font-body">Get started with the most widely deployed vector database in two minutes.</p>
+				<div>
+					<p class="grow mt-2 lg:max-w-[80ch]">
+						Learn about Elasticsearch, the components at the heart of the Elastic Search AI Platform, and the solutions it powers.
+					</p>
+					<div class="mt-6">
+						<a href="/get-started" class="link">
+							Get started
+							<svg class="link-arrow"
+							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+							</svg>
+						</a>
+					</div>
 				</div>
-				<div class="lg:basis-[50%] rounded-xl border-1 border-grey-20 p-6">
-					<p class="font-body">Try it locally now:</p>
-					<div class="mt-2">
-						<div class="highlight-bash notranslate">
-							<div class="highlight">
+				<div>
+					<div>
+						<p class="font-body">Try it locally now:</p>
+						<div class="mt-2">
+							<div class="highlight-bash notranslate">
+								<div class="highlight">
 								<pre>
 									<code class="language-yaml hljs" data-highlighted="yes">curl -fsSL https://elastic.co/start-local | sh</code>
 								</pre>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -62,6 +55,29 @@
 			</div>
 		</div>
 	</section>
+	@* *@
+	@* <section class="w-screen px-6 bg-grey-10"> *@
+	@* 	<div class="container mx-auto py-16"> *@
+	@* 		<h2 class="font-bold text-3xl text-ink-dark">Instant Elasticsearch</h2> *@
+	@* 		<div class="grid lg:grid-cols-2 gap-6 mt-6"> *@
+	@* 			<div class="lg:basis-[50%]"> *@
+	@* 				<p class="mt-2 font-body">Get started with the most widely deployed vector database in two minutes.</p> *@
+	@* 			</div> *@
+	@* 			<div class="lg:basis-[50%] rounded-xl border-1 border-grey-20 p-6"> *@
+	@* 				<p class="font-body">Try it locally now:</p> *@
+	@* 				<div class="mt-2"> *@
+	@* 					<div class="highlight-bash notranslate"> *@
+	@* 						<div class="highlight"> *@
+	@* 							<pre> *@
+	@* 								<code class="language-yaml hljs" data-highlighted="yes">curl -fsSL https://elastic.co/start-local | sh</code> *@
+	@* 							</pre> *@
+	@* 						</div> *@
+	@* 					</div> *@
+	@* 				</div> *@
+	@* 			</div> *@
+	@* 		</div> *@
+	@* 	</div> *@
+	@* </section> *@
 
 	<section class="w-screen px-6">
 		<div class="container mx-auto py-16">
@@ -243,7 +259,7 @@
 	<section class="w-screen px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
 			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[auto_1fr_auto] gap-12 items-center justify-center text-center lg:text-left">
-				<img class="mx-auto" alt="Elastic Community logo" src="@Model.Static("community-logo.png")" />
+				<img loading="lazy" class="mx-auto" alt="Elastic Community logo" src="@Model.Static("community-logo.png")" />
 				<div>
 					<h2 class="font-sans font-semibold text-4xl text-black -tracking-[0.04em] leading-[1.2em]">Welcome to our community of developers</h2>
 					<p class="mt-2">Learn from your peers and share code examples.</p>

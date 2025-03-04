@@ -1,7 +1,7 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<LayoutViewModel>
 <ol id="breadcrumbs" class="block items-center w-full py-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-	<li class="inline text-grey-80 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+	<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 		<a
 			itemprop="item"
 			href="@Model.Link("/")"
@@ -18,7 +18,7 @@
 	}
 	@if (firstCrumb != null)
 	{
-		<li class="inline text-grey-80 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<span class="px-1">/</span>
 			<a
 				itemprop="item"
@@ -36,7 +36,7 @@
 
 	@if (crumbs.Count < Model.Parents.Reverse().Skip(2).Count())
 	{
-		<li class="inline text-grey-80 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<span class="px-1">/</span>
 			…
 		</li>
@@ -45,7 +45,7 @@
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
 	    var item = crumbs[i];
-		<li class="inline text-grey-80 text-sm leading-[1.2em] tracking-[-0.02em] text-pretty" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em] text-pretty" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<span class="px-1">/</span>
 			<a
 				itemprop="item" 
@@ -57,7 +57,7 @@
 			<meta itemprop="position" content="@(i+2)">
 		</li>
 	}
-	<li class="inline text-grey-80 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+	<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 		<span class="px-1">/</span>
 	</li>
 </ol>

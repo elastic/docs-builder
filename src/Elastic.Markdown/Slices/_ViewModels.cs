@@ -75,6 +75,8 @@ public class LayoutViewModel
 		path = path.TrimStart('/');
 		return $"{UrlPathPrefix}/{path}";
 	}
+
+	public bool IsLandingPage => Features.IsLandingPageEnabled && CurrentDocument.Url == Link("/");
 }
 
 public record PageTocItem

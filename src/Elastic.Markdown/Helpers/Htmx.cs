@@ -11,16 +11,15 @@ public static class Htmx
 {
 	public static string GetHxSelectOob(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
-		var startIndex = pathPrefix?.Length ?? 0;
-		if (currentUrl[startIndex..] == "/")
-			return "#main-container,#primary-nav";
-
-		HashSet<string> selectTargets =
-		[
-			"#primary-nav", "#secondary-nav", "#markdown-content", "#toc-nav", "#prev-next-nav", "#breadcrumbs"
-		];
+		if (features.IsLandingPageEnabled)
+		{
+			var startIndex = pathPrefix?.Length ?? 0;
+			if (currentUrl[startIndex..] == "/")
+				return "#main-container,#primary-nav,#secondary-nav";
+		}
+		var selectTargets = "#primary-nav,#secondary-nav,#content-container";
 		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && features.IsPrimaryNavEnabled)
-			_ = selectTargets.Add("#pages-nav");
+			selectTargets += ",#pages-nav";
 		return string.Join(',', selectTargets);
 	}
 
