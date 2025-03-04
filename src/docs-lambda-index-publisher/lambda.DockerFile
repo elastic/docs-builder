@@ -31,5 +31,5 @@ RUN arch=$TARGETARCH \
     && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
     && echo $TARGETOS-$arch > /tmp/rid
 
-RUN dotnet publish src/Elastic.Documentation.Lambda.LinkIndexUploader -r linux-x64 -c Release
+RUN dotnet publish src/docs-lambda-index-publisher -r linux-x64 -c Release
 
