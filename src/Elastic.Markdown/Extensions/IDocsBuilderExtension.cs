@@ -35,4 +35,10 @@ public interface IDocsBuilderExtension
 
 	/// Attempts to locate a documentation file by slug, used to locate the document for `docs-builder serve` command
 	bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile);
+
+	/// Allows the extension to discover more documentation files for <see cref="DocumentationSet"/>
+	IReadOnlyCollection<DocumentationFile> ScanDocumentationFiles(
+		Func<BuildContext, IDirectoryInfo, DocumentationFile[]> scanDocumentationFiles,
+		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
+	);
 }

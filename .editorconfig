@@ -231,6 +231,8 @@ dotnet_diagnostic.IDE0059.severity = suggestion
 
 dotnet_diagnostic.CA1859.severity = none
 
+dotnet_diagnostic.IDE0305.severity = none
+
 
 [DocumentationWebHost.cs]
 dotnet_diagnostic.IL3050.severity = none

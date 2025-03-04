@@ -22,10 +22,11 @@ extensions:
 ```
 
 This now allows you to use the special `detection_rules` instruction in the [Table of Contents](navigation.md)
+As a means to pick up `toml` files as `children`
 
 ```yaml
 toc:
   - file: index.md
-  - detection_rules: '../rules'
+    detection_rules: '../rules'
 ```
 

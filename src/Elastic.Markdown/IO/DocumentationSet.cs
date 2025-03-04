@@ -85,16 +85,11 @@ public class DocumentationSet : INavigationLookups
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
 
 		var files = ScanDocumentationFiles(build, SourceDirectory);
-		var ruleSetSources = Configuration.TableOfContents.OfType<RulesFolderReference>();
-		Files =
-		[
-			..files
-				.Concat(ruleSetSources.SelectMany(rules =>
-				{
-					var directory = build.ReadFileSystem.DirectoryInfo.New(Path.GetFullPath(Path.Combine(SourceDirectory.FullName, rules.Path)));
-					return ScanDocumentationFiles(build, directory);
-				}))
-		];
+		var additionalSources = Build.Configuration.EnabledExtensions
+			.SelectMany(extension => extension.ScanDocumentationFiles(ScanDocumentationFiles, DefaultFileHandling))
+			.ToArray();
+
+		Files = files.Concat(additionalSources).ToArray();
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 

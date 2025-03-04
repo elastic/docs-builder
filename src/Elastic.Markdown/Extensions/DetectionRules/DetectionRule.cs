@@ -39,8 +39,6 @@ public record DetectionRule
 	public required string[]? References { get; init; }
 	public required string Version { get; init; }
 
-	//[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075", Justification = "Manually verified")]
-	//[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050", Justification = "Manually verified")]
 	public static DetectionRule From(IFileInfo source)
 	{
 		TomlDocument model;

@@ -55,9 +55,27 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		return documentationSet.FlatMappedFiles.TryGetValue(tomlFile, out documentationFile);
 	}
 
-	public IEnumerable<ITocItem> CreateTableOfContentItems(
+	public IReadOnlyCollection<DocumentationFile> ScanDocumentationFiles(
+		Func<BuildContext, IDirectoryInfo, DocumentationFile[]> scanDocumentationFiles,
+		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
+	)
+	{
+		var rules = Build.Configuration.TableOfContents.OfType<FileReference>().First().Children.OfType<RuleReference>().ToArray();
+		if (rules.Length == 0)
+			return [];
+
+		var sourcePath = Path.GetFullPath(Path.Combine(Build.DocumentationSourceDirectory.FullName, rules[0].SourceDirectory));
+		var sourceDirectory = Build.ReadFileSystem.DirectoryInfo.New(sourcePath);
+		return rules.Select(r =>
+		{
+			var file = Build.ReadFileSystem.FileInfo.New(Path.Combine(sourceDirectory.FullName, r.Path));
+			return defaultFileHandling(file, sourceDirectory);
+
+		}).ToArray();
+	}
+
+	public IReadOnlyCollection<ITocItem> CreateTableOfContentItems(
 		string parentPath,
-		bool detectionRulesFound,
 		string detectionRules,
 		HashSet<string> files
 	)
@@ -66,29 +84,28 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		var fs = Build.ReadFileSystem;
 		var sourceDirectory = Build.DocumentationSourceDirectory;
 		var path = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(sourceDirectory.FullName, detectionRulesFolder)));
-		IReadOnlyCollection<ITocItem> children =
-		[
-			.. path
-				.EnumerateFiles("*.*", SearchOption.AllDirectories)
-				.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
-				.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
-				.Where(f => f.Extension is ".md" or ".toml")
-				.Select(f =>
+		IReadOnlyCollection<ITocItem> children = path
+			.EnumerateFiles("*.*", SearchOption.AllDirectories)
+			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
+			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+			.Where(f => f.Extension is ".md" or ".toml")
+			.Where(f => f.Name != "README.md")
+			.Select(f =>
+			{
+				var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
+				if (f.Extension == ".toml")
 				{
-					var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
-					if (f.Extension == ".toml")
-					{
-						var rule = DetectionRule.From(f);
-						return new RuleReference(relativePath, true, [], rule);
-					}
+					var rule = DetectionRule.From(f);
+					return new RuleReference(relativePath, detectionRules, true, [], rule);
+				}
 
-					_ = files.Add(relativePath);
-					return new FileReference(relativePath, true, false, []);
-				})
-				.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
-		];
+				_ = files.Add(relativePath);
+				return new FileReference(relativePath, true, false, []);
+			})
+			.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
+			.ToArray();
 
-
-		return [new RulesFolderReference(detectionRulesFolder, detectionRulesFound, children)];
+		//return [new RulesFolderReference(detectionRulesFolder, true, children)];
+		return children;
 	}
 }

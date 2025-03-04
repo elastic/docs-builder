@@ -204,7 +204,25 @@ public record ConfigurationFile : DocumentationFile
 		}
 
 		if (file is not null)
+		{
+			if (detectionRules is not null)
+			{
+				if (children is not null)
+					reader.EmitError($"'detection_rules' is not allowed to have 'children'", tocEntry);
+
+				if (!detectionRulesFound)
+				{
+					reader.EmitError($"'detection_rules' folder {parentPath} is not found, skipping'", tocEntry);
+					children = [];
+				}
+				else
+				{
+					var extension = EnabledExtensions.OfType<DetectionRulesDocsBuilderExtension>().First();
+					children = extension.CreateTableOfContentItems(parentPath, detectionRules, Files);
+				}
+			}
 			return [new FileReference($"{parentPath}/{file}".TrimStart('/'), fileFound, hiddenFile, children ?? [])];
+		}
 
 		if (folder is not null)
 		{
@@ -212,21 +230,6 @@ public record ConfigurationFile : DocumentationFile
 				_ = ImplicitFolders.Add(parentPath.TrimStart('/'));
 
 			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, children ?? [])];
-		}
-
-		if (detectionRules is not null)
-		{
-			if (children is not null)
-				reader.EmitError($"'detection_rules' is not allowed to have 'children'", tocEntry);
-
-			if (!detectionRulesFound)
-			{
-				reader.EmitError($"'detection_rules' folder {parentPath} is not found, skipping'", tocEntry);
-				return [];
-			}
-
-			var extension = EnabledExtensions.OfType<DetectionRulesDocsBuilderExtension>().First();
-			return extension.CreateTableOfContentItems(parentPath, detectionRulesFound, detectionRules, Files);
 		}
 
 		return null;
