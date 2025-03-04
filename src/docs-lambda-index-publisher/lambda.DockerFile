@@ -1,5 +1,8 @@
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS base
 
+ARG TARGETARCH
+ARG TARGETOS
+
 WORKDIR /app
 
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -24,7 +27,9 @@ COPY . .
 ENV DOTNET_NOLOGO=true
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=true
 
-RUN dotnet restore
+RUN arch=$TARGETARCH \
+    && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
+    && echo $TARGETOS-$arch > /tmp/rid
 
 RUN dotnet publish src/Elastic.Documentation.Lambda.LinkIndexUploader -r linux-x64 -c Release
 
