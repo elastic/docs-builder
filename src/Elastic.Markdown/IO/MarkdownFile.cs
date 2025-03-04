@@ -162,7 +162,7 @@ public record MarkdownFile : DocumentationFile
 		await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
 
 	protected virtual async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
-		await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
+		await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 
 	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
 	{
