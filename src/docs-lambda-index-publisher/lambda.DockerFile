@@ -24,8 +24,8 @@ RUN dnf install -y clang
 
 COPY . .
 
-ENV DOTNET_NOLOGO=true
-ENV DOTNET_CLI_TELEMETRY_OPTOUT=true
+ENV DOTNET_NOLOGO=true \
+    DOTNET_CLI_TELEMETRY_OPTOUT=true
 
 RUN arch=$TARGETARCH \
     && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
