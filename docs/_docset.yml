@@ -11,8 +11,8 @@ subs:
   eck:   "Elastic Cloud on Kubernetes"
   
 features:
-  primary-nav: true
-  landing-page: true
+  primary-nav: false
+  landing-page: false
 
 toc:
   - file: index.md
