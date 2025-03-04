@@ -65,7 +65,13 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-	public MarkdownDocument ParseEmbeddedMarkdown(string markdown, IFileInfo path, YamlFrontMatter? matter)
+	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
+		ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
+
+	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
+		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
+
+	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
 	{
 		var state = new ParserState(Build)
 		{
@@ -75,7 +81,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			CrossLinkResolver = Resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
-		var markdownDocument = Markdig.Markdown.Parse(markdown, Pipeline, context);
+		var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline, context);
 		return markdownDocument;
 	}
 
@@ -103,6 +109,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 
 	// ReSharper disable once InconsistentNaming
 	private MarkdownPipeline? _minimalPipelineCached;
+
 	private MarkdownPipeline MinimalPipeline
 	{
 		get
@@ -123,6 +130,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 
 	// ReSharper disable once InconsistentNaming
 	private MarkdownPipeline? _pipelineCached;
+
 	public MarkdownPipeline Pipeline
 	{
 		get
@@ -153,5 +161,4 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			return _pipelineCached;
 		}
 	}
-
 }

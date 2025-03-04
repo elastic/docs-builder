@@ -261,7 +261,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			SettingsCollection = settings,
 			RenderMarkdown = s =>
 			{
-				var document = parser.ParseEmbeddedMarkdown(s, block.IncludeFrom, block.Context.YamlFrontMatter);
+				var document = parser.ParseStringAsync(s, block.IncludeFrom, block.Context.YamlFrontMatter);
 				var html = document.ToHtml(parser.Pipeline);
 				return html;
 			}

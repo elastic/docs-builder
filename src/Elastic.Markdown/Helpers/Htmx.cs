@@ -11,13 +11,18 @@ public static class Htmx
 {
 	public static string GetHxSelectOob(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
-		HashSet<string> selectTargets =
-		[
-			"#primary-nav", "#secondary-nav", "#markdown-content", "#toc-nav", "#prev-next-nav", "#breadcrumbs"
-		];
+		if (features.IsLandingPageEnabled)
+		{
+			var startIndex = pathPrefix?.Length ?? 0;
+			if (currentUrl.Length < startIndex)
+				throw new InvalidUrlException("Unexpected current URL", currentUrl, startIndex);
+			if (currentUrl[startIndex..] == "/")
+				return "#main-container,#primary-nav,#secondary-nav";
+		}
+		var selectTargets = "#primary-nav,#secondary-nav,#content-container";
 		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && features.IsPrimaryNavEnabled)
-			_ = selectTargets.Add("#pages-nav");
-		return string.Join(',', selectTargets);
+			selectTargets += ",#pages-nav";
+		return selectTargets;
 	}
 
 	public static bool HasSameTopLevelGroup(string? pathPrefix, string currentUrl, string targetUrl)
@@ -27,10 +32,10 @@ public static class Htmx
 		var startIndex = pathPrefix?.Length ?? 0;
 
 		if (currentUrl.Length < startIndex)
-			throw new InvalidUrlException("Current URL is not a valid URL", currentUrl, startIndex);
+			throw new InvalidUrlException("Unexpected current URL", currentUrl, startIndex);
 
 		if (targetUrl.Length < startIndex)
-			throw new InvalidUrlException("Target URL is not a valid URL", targetUrl, startIndex);
+			throw new InvalidUrlException("Unexpected target URL", targetUrl, startIndex);
 
 		var currentSegments = GetSegments(currentUrl[startIndex..].Trim('/'));
 		var targetSegments = GetSegments(targetUrl[startIndex..].Trim('/'));
@@ -47,7 +52,6 @@ public static class Htmx
 
 	public static string GetHxAttributes(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
-
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-get={targetUrl}");
 		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(features, pathPrefix, currentUrl, targetUrl)}");

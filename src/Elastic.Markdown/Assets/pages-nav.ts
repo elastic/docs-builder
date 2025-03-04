@@ -15,19 +15,20 @@ function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
 	const currentNavItem = $('.current', nav);
 	expandAllParents(currentNavItem);
 	setTimeout(() => {
-		if (currentNavItem && !isElementInViewport(currentNavItem)) {
+		if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
 			currentNavItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			window.scrollTo(0, 0);
 		}
 	}, delay);
 }
-function isElementInViewport(el: HTMLElement): boolean {
-	const rect = el.getBoundingClientRect();
+function isElementInViewport(parent: HTMLElement, child: HTMLElement, ): boolean {
+	const childRect = child.getBoundingClientRect();
+	const parentRect = parent.getBoundingClientRect();
 	return (
-		rect.top >= 0 &&
-		rect.left >= 0 &&
-		rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-		rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+		childRect.top >= parentRect.top &&
+		childRect.left >= parentRect.left &&
+		childRect.bottom <= parentRect.bottom &&
+		childRect.right <= parentRect.right
 	);
 }
 

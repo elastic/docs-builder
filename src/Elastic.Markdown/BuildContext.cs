@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Extensions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Discovery;
@@ -17,6 +18,8 @@ public record BuildContext
 
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public IDirectoryInfo DocumentationOutputDirectory { get; }
+
+	public ConfigurationFile Configuration { get; set; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -67,9 +70,8 @@ public record BuildContext
 
 		Git = GitCheckoutInformation.Create(DocumentationSourceDirectory, ReadFileSystem);
 		Configuration = new ConfigurationFile(ConfigurationPath, DocumentationSourceDirectory, this);
-	}
 
-	public ConfigurationFile Configuration { get; set; }
+	}
 
 	private (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IDirectoryInfo rootPath)
 	{
@@ -95,4 +97,5 @@ public record BuildContext
 
 		return (docsFolder, configurationPath);
 	}
+
 }

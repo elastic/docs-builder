@@ -2,8 +2,8 @@
 button.copybtn {
     position: absolute;
     display: flex;
-    top: .3em;
-    right: .3em;
+    top: calc(var(--spacing) * 5);
+    right: calc(var(--spacing) * 4);
     width: 1.7em;
     height: 1.7em;
 	opacity: 0;
@@ -14,14 +14,12 @@ button.copybtn {
     border: none;
     outline: none;
     border-radius: 0.4em;
-    /* The colors that GitHub uses */
-    border: #1b1f2426 1px solid;
-    /*background-color: #f6f8fa;*/
+    background-color: rgb(34, 39, 46);
     color: var(--color-grey-50);
 }
 
 button.copybtn.success {
-    /*border-color: #22863a;*/
+	background-color: rgb(34, 39, 46);
     color: #22863a;
 }
 
@@ -70,9 +68,9 @@ div.highlight  {
     position: absolute;
     content: attr(data-tooltip);
     padding: .2em;
-    font-size: .8em;
+    font-size: var(--text-sm);
     left: -.2em;
-    /*background: grey;*/
+	background-color: rgb(34, 39, 46);
     color: var(--color-grey-50);
     white-space: nowrap;
     z-index: 2;
