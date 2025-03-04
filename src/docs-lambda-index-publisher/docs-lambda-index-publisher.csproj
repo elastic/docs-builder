@@ -14,6 +14,9 @@
     <PublishTrimmed>true</PublishTrimmed>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+
+    <RootNamespace>Elastic.Documentation.Lambda.LinkIndexUploader</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.12.3"/>
@@ -25,3 +28,4 @@
     <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj"/>
   </ItemGroup>
 </Project>
+

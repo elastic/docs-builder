@@ -71,7 +71,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "update-reference-index", "u
 		actions\update-reference-index\action.yml = actions\update-reference-index\action.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Lambda.LinkIndexUploader", "src\Elastic.Documentation.Lambda.LinkIndexUploader\Elastic.Documentation.Lambda.LinkIndexUploader.csproj", "{C559D52D-100B-4B2B-BE87-2344D835761D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-lambda-index-publisher", "src\docs-lambda-index-publisher\docs-lambda-index-publisher.csproj", "{C559D52D-100B-4B2B-BE87-2344D835761D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
