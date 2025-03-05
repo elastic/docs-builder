@@ -10,7 +10,7 @@ This allows you to publish your changes and work to update the other documentati
 
 :::{note}
 The source and target URLs must both be within Elastic Docs V3.
-You cannot use this process to redirect to our API docs site, for example.
+You cannot use this process to redirect to [API docs](https://www.elastic.co/docs/api/), for example.
 :::
 
 ## File location.
