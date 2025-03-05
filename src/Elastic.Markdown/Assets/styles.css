@@ -10,6 +10,7 @@
 @import "./markdown/dropdown.css";
 @import "./markdown/table.css";
 @import "./markdown/definition-list.css";
+@import "./markdown/images.css";
 
 
 :root {
