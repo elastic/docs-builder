@@ -102,6 +102,7 @@ toc:
       - folder: nested
       - file: cross-links.md
       - file: custom-highlighters.md
+      - file: code-callouts.md
       - folder: mover
         children:
           - file: first-page.md

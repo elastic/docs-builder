@@ -28,7 +28,7 @@
 	}
 	
 	pre code .code-callout {
-		@apply ml-1;
+		@apply ml-[1ch];
 		transform: translateY(-1px);
 		user-select: none;
 	}
@@ -48,8 +48,9 @@
 		}
 	}
 	
-	pre code .code-callout .hljs-number {
-		@apply text-white!;
+	pre code .code-callout,
+	pre code .code-callout>*{
+		@apply text-white! text-xs;
 	}
 
 	pre code .code-callout,

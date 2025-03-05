@@ -258,12 +258,16 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	private static List<CallOut> ParseClassicCallOuts(ValueMatch match, ref ReadOnlySpan<char> span, ref int callOutIndex, int originatingLine)
 	{
 		var indexOfLastComment = Math.Max(span.LastIndexOf(" # "), span.LastIndexOf(" // "));
+
+		if (indexOfLastComment == -1)
+			return [];
+
 		var startIndex = span.LastIndexOf('<');
 		if (startIndex <= 0)
 			return [];
 
 		var allStartIndices = new List<int>();
-		for (var i = 0; i < span.Length; i++)
+		for (var i = indexOfLastComment; i < span.Length; i++)
 		{
 			if (span[i] == '<')
 				allStartIndices.Add(i);
