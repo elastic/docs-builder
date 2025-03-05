@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Net;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
@@ -170,6 +171,11 @@ public class DocumentationWebHost
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
+				if (generator.DocumentationSet.FlatMappedFiles.TryGetValue("not-found.md", out var notFoundDocumentationFile))
+				{
+					var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
+					return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);
+				}
 				return Results.NotFound();
 		}
 	}

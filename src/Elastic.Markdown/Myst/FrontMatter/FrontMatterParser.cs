@@ -6,9 +6,16 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
+public enum LayoutName
+{
+	LandingPage,
+	NotFound
+}
+
 [YamlSerializable]
 public class YamlFrontMatter
 {
+
 	[YamlMember(Alias = "title")]
 	public string? Title { get; set; }
 
@@ -17,6 +24,9 @@ public class YamlFrontMatter
 
 	[YamlMember(Alias = "sub")]
 	public Dictionary<string, string>? Properties { get; set; }
+
+	[YamlMember(Alias = "layout")]
+	public LayoutName? Layout { get; set; }
 
 	[YamlMember(Alias = "applies_to")]
 	public ApplicableTo? AppliesTo { get; set; }

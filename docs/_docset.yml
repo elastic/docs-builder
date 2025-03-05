@@ -11,11 +11,11 @@ subs:
   eck:   "Elastic Cloud on Kubernetes"
   
 features:
-  primary-nav: false
-  landing-page: false
-
+  primary-nav: true
+  
 toc:
   - file: index.md
+  - hidden: not-found.md
   - hidden: developer-notes.md
   - folder: contribute
     children:

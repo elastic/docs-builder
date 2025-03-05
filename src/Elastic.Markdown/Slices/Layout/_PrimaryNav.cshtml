@@ -29,7 +29,8 @@
 					{
 						<a 
 							onclick="document.getElementById('primary-nav-hamburger').checked = false"
-							@navItem.HtmxAttributes 
+							@navItem.HtmxAttributes
+							hx-target="#main-container"
 							class="grow p-6 xl:p-0 peer text-nowrap font-semibold flex justify-between items-center gap-1 hover:text-blue-elastic" href="@navItem.Url">
 							@navItem.Title
 							@if (navItem.DropdownItems.Count > 0)

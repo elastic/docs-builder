@@ -5,7 +5,8 @@ import {initHighlight} from "./hljs";
 import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
-import {$$} from "select-dom"
+import {$, $$} from "select-dom"
+import htmx from "htmx.org";
 
 document.addEventListener('htmx:load', function() {
 	initTocNav();
@@ -31,4 +32,9 @@ document.body.addEventListener('htmx:pushedIntoHistory', function(event) {
 	navItems.forEach(navItem => {
 		navItem.classList.add('current');
 	});
+});
+
+document.body.addEventListener('htmx:responseError', function(event) {
+	const rootPath = $('body').dataset.rootPath;
+	htmx.ajax('get', rootPath + 'not-found', { select: '#main-container', target: '#main-container' }).then();
 });

@@ -1,5 +1,11 @@
 @inherits RazorSlice<LayoutViewModel>
-<div class="font-body text-ink">
+<div class="font-body text-ink relative">
+	<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+		<div class="h-[2px] w-full overflow-hidden">
+			<div class="progress w-full h-full bg-pink-70 left-right"></div>
+		</div>
+		<div class="sr-only">Loading</div>
+	</div>
 	<section class="w-screen px-6 bg-grey-10 ">
 		<div class="container mx-auto py-16 grid lg:grid-cols-2 items-center gap-6">
 			<div class="lg:basis-[50%]">
@@ -71,7 +77,7 @@
 			<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
 				<div class="grow rounded-xl border-1 border-grey-20 p-6">
 					<div class="flex gap-6 h-full">
-						<img alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-9"/>
+						<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
 							<p class="font-sans font-bold text-xl">Search</p>
 							<p class="mt-2 grow">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
@@ -84,7 +90,7 @@
 				</div>
 				<div class="grow rounded-xl border-1 border-grey-20 p-6">
 					<div class="flex gap-6 h-full">
-						<img alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-9"/>
+						<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
 							<p class="font-sans font-bold text-xl">Observability</p>
 							<p class="mt-2 grow">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
@@ -98,7 +104,7 @@
 
 				<div class="grow rounded-xl border-1 border-grey-20 p-6">
 					<div class="flex gap-6 h-full">
-					<img alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-9"/>
+					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
 							<p class="font-sans font-bold text-xl">Security</p>
 							<p class="mt-2 grow">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>

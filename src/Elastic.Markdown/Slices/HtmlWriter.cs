@@ -84,8 +84,6 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var branch = DocumentationSet.Build.Git.Branch;
 		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
 		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
-
-
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",

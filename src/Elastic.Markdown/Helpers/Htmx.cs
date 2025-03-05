@@ -11,14 +11,9 @@ public static class Htmx
 {
 	public static string GetHxSelectOob(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
-		if (features.IsLandingPageEnabled)
-		{
-			var startIndex = pathPrefix?.Length ?? 0;
-			if (currentUrl.Length < startIndex)
-				throw new InvalidUrlException("Unexpected current URL", currentUrl, startIndex);
-			if (currentUrl[startIndex..] == "/")
-				return "#main-container,#primary-nav,#secondary-nav";
-		}
+		if (features.IsPrimaryNavEnabled && currentUrl == pathPrefix + "/")
+			return "#main-container,#primary-nav,#secondary-nav";
+
 		var selectTargets = "#primary-nav,#secondary-nav,#content-container";
 		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && features.IsPrimaryNavEnabled)
 			selectTargets += ",#pages-nav";
