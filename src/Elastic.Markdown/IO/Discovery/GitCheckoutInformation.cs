@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using SoftCircuits.IniFileParser;
 
 namespace Elastic.Markdown.IO.Discovery;
@@ -37,7 +38,7 @@ public record GitCheckoutInformation
 	}
 
 	// manual read because libgit2sharp is not yet AOT ready
-	public static GitCheckoutInformation Create(IDirectoryInfo source, IFileSystem fileSystem)
+	public static GitCheckoutInformation Create(IDirectoryInfo source, IFileSystem fileSystem, ILogger? logger = null)
 	{
 		if (fileSystem is not FileSystem)
 		{
@@ -53,7 +54,10 @@ public record GitCheckoutInformation
 		var fakeRef = Guid.NewGuid().ToString()[..16];
 		var gitConfig = Git(source, ".git/config");
 		if (!gitConfig.Exists)
+		{
+			logger?.LogInformation("Git checkout information not available.");
 			return Unavailable;
+		}
 
 		var head = Read(source, ".git/HEAD") ?? fakeRef;
 		var gitRef = head;
@@ -75,25 +79,40 @@ public record GitCheckoutInformation
 
 		var remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
 		if (string.IsNullOrEmpty(remote))
+		{
 			remote = BranchTrackingRemote(branch, ini);
-		if (string.IsNullOrEmpty(remote))
-			remote = BranchTrackingRemote("main", ini);
-		if (string.IsNullOrEmpty(remote))
-			remote = BranchTrackingRemote("master", ini);
-		if (string.IsNullOrEmpty(remote))
-			remote = "elastic/docs-builder-unknown";
+			logger?.LogInformation("Remote from branch: {GitRemote}", remote);
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = BranchTrackingRemote("main", ini);
+				logger?.LogInformation("Remote from main branch: {GitRemote}", remote);
+			}
 
-		remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
-		if (remote.EndsWith("docs-conten"))
-			remote += "t";
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = BranchTrackingRemote("master", ini);
+				logger?.LogInformation("Remote from master branch: {GitRemote}", remote);
+			}
 
-		return new GitCheckoutInformation
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = "elastic/docs-builder-unknown";
+				logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
+			}
+			remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
+		}
+
+		var info = new GitCheckoutInformation
 		{
 			Ref = gitRef,
 			Branch = branch,
 			Remote = remote,
 			RepositoryName = remote.Split('/').Last()
 		};
+
+		logger?.LogInformation("-> Remote Name: {GitRemote}", info.Remote);
+		logger?.LogInformation("-> Repository Name: {RepositoryName}", info.RepositoryName);
+		return info;
 
 		IFileInfo Git(IDirectoryInfo directoryInfo, string path) =>
 			fileSystem.FileInfo.New(Path.Combine(directoryInfo.FullName, path));

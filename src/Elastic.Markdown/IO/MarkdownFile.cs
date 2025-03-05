@@ -58,14 +58,14 @@ public record MarkdownFile : DocumentationFile
 
 	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
-	private MarkdownParser MarkdownParser { get; }
+	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
-	public string? TitleRaw { get; private set; }
+	public string? TitleRaw { get; protected set; }
 
 	public string? Title
 	{
 		get => _title;
-		private set
+		protected set
 		{
 			_title = value?.StripMarkdown();
 			TitleRaw = value;
@@ -88,9 +88,18 @@ public record MarkdownFile : DocumentationFile
 	public string FilePath { get; }
 	public string FileName { get; }
 
-	public string Url => Path.GetFileName(RelativePath) == "index.md"
-		? $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
-		: $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf(".md", StringComparison.Ordinal), 3)}";
+	protected virtual string RelativePathUrl => RelativePath;
+
+	public string Url
+	{
+		get
+		{
+			var relativePath = RelativePathUrl;
+			return Path.GetFileName(relativePath) == "index.md"
+				? $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
+				: $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
+		}
+	}
 
 	public int NavigationIndex { get; internal set; } = -1;
 
@@ -149,9 +158,15 @@ public record MarkdownFile : DocumentationFile
 		}
 	}
 
+	protected virtual async Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx) =>
+		await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
+
+	protected virtual async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
+		await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
+
 	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
 	{
-		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
+		var document = await GetMinimalParseDocumentAsync(ctx);
 		ReadDocumentInstructions(document);
 		ValidateAnchorRemapping();
 		return document;
@@ -162,7 +177,7 @@ public record MarkdownFile : DocumentationFile
 		if (!_instructionsParsed)
 			_ = await MinimalParseAsync(ctx);
 
-		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
+		var document = await GetParseDocumentAsync(ctx);
 		return document;
 	}
 
@@ -179,9 +194,9 @@ public record MarkdownFile : DocumentationFile
 		return allProperties;
 	}
 
-	private void ReadDocumentInstructions(MarkdownDocument document)
+	protected void ReadDocumentInstructions(MarkdownDocument document)
 	{
-		Title = document
+		Title ??= document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
@@ -204,10 +219,6 @@ public record MarkdownFile : DocumentationFile
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
 			Title = replacement;
 
-		if (RelativePath.Contains("esql-functions-operators"))
-		{
-
-		}
 		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
 		_tableOfContent.Clear();
@@ -315,8 +326,7 @@ public record MarkdownFile : DocumentationFile
 		}
 	}
 
-
-	public static string CreateHtml(MarkdownDocument document)
+	public string CreateHtml(MarkdownDocument document)
 	{
 		//we manually render title and optionally append an applies block embedded in yaml front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);

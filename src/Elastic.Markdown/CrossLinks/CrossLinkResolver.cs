@@ -35,7 +35,7 @@ public record LinkIndexEntry
 public interface ICrossLinkResolver
 {
 	Task<FetchedCrossLinks> FetchLinks();
-	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 }
 
 public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
@@ -48,8 +48,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		return _crossLinks;
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, _crossLinks, crossLinkUri, out resolvedUri);
+	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		TryResolve(errorEmitter, warningEmitter, _crossLinks, crossLinkUri, out resolvedUri);
 
 	private static Uri BaseUri { get; } = new("https://docs-v3-preview.elastic.dev");
 
@@ -57,35 +57,36 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 	{
 		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		dictionary[repository] = linkReference;
-		_crossLinks = _crossLinks with { LinkReferences = dictionary.ToFrozenDictionary() };
+		_crossLinks = _crossLinks with
+		{
+			LinkReferences = dictionary.ToFrozenDictionary()
+		};
 		return _crossLinks;
 	}
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
+		Action<string> warningEmitter,
 		FetchedCrossLinks fetchedCrossLinks,
 		Uri crossLinkUri,
 		[NotNullWhen(true)] out Uri? resolvedUri
 	)
 	{
-		var lookup = fetchedCrossLinks.LinkReferences;
-		var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
 		resolvedUri = null;
-		if (crossLinkUri.Scheme == "docs-content")
-		{
-			if (!lookup.TryGetValue(crossLinkUri.Scheme, out var linkReference))
-			{
-				errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links");
-				return false;
-			}
-
+		var lookup = fetchedCrossLinks.LinkReferences;
+		if (crossLinkUri.Scheme != "asciidocalypse" && lookup.TryGetValue(crossLinkUri.Scheme, out var linkReference))
 			return TryFullyValidate(errorEmitter, linkReference, crossLinkUri, out resolvedUri);
-		}
 
-		// TODO this is temporary while we wait for all links.json files to be published
+		// TODO this is temporary while we wait for all links.json to be published
+		// Here we just silently rewrite the cross_link to the url
+
+		var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
 		if (!declaredRepositories.Contains(crossLinkUri.Scheme))
 		{
-			errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links");
+			if (fetchedCrossLinks.FromConfiguration)
+				errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links: '{crossLinkUri}'");
+			else
+				warningEmitter($"'{crossLinkUri.Scheme}' is not yet publishing to the links registry: '{crossLinkUri}'");
 			return false;
 		}
 
@@ -166,7 +167,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 			return true;
 		}
 
-		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link repository.");
+		var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{crossLinkUri.Scheme}/main/links.json";
+		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
 		return false;
 	}
 

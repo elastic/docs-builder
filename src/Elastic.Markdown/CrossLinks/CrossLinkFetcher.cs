@@ -13,12 +13,16 @@ namespace Elastic.Markdown.CrossLinks;
 public record FetchedCrossLinks
 {
 	public required FrozenDictionary<string, LinkReference> LinkReferences { get; init; }
+
 	public required HashSet<string> DeclaredRepositories { get; init; }
+
+	public required bool FromConfiguration { get; init; }
 
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
-		LinkReferences = new Dictionary<string, LinkReference>().ToFrozenDictionary()
+		LinkReferences = new Dictionary<string, LinkReference>().ToFrozenDictionary(),
+		FromConfiguration = false
 	};
 }
 

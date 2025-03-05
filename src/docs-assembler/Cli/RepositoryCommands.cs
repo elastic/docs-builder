@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ConsoleAppFramework;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -23,13 +24,12 @@ public class ConsoleLineHandler(string prefix) : IConsoleLineHandler
 
 internal sealed class RepositoryCommands(ILoggerFactory logger)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
-#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
-#pragma warning restore CA2254
 	}
 
 	// would love to use libgit2 so there is no git dependency but

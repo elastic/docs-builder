@@ -1,38 +1,36 @@
 @layer components {
-	.markdown-content {
-		.highlight {
-			@apply mt-4;
+	.highlight {
+		@apply mt-4;
+	}
+	
+	pre {
+		@apply grid;
+		code {
+			@apply text-sm
+				text-grey-30
+				rounded-none 
+				border-0 
+				overflow-x-auto
+				p-6!
+			;
+			background-color: #22272e;
+			mix-blend-mode: unset;
 		}
-		
-		pre {
-			@apply grid;
-			code {
-				@apply text-sm
-					text-gray-300
-					rounded-none 
-					border-0 
-					overflow-x-auto
-					p-6!
-				;
-				background-color: #22272e;
-				mix-blend-mode: unset;
-			}
-			code:first-child {
-				@apply rounded-t-sm;
-			}
-			code:last-child {
-				@apply rounded-b-sm;
-			}
-			code.language-apiheader {
-				@apply border-b-1 border-b-gray-700;
-			}
+		code:first-child {
+			@apply rounded-t-sm;
 		}
-		
-		pre code .code-callout {
-			@apply ml-1;
-			transform: translateY(-1px);
-			user-select: none;
+		code:last-child {
+			@apply rounded-b-sm;
 		}
+		code.language-apiheader {
+			@apply border-b-1 border-b-grey-80;
+		}
+	}
+	
+	pre code .code-callout {
+		@apply ml-1;
+		transform: translateY(-1px);
+		user-select: none;
 	}
 	
 	ol.code-callouts {
@@ -70,10 +68,10 @@
 
 	code {
 		@apply font-mono
-		bg-gray-100
+		bg-grey-10
 		rounded-xs
 		border-1
-		border-gray-300
+		border-grey-20
 		;
 		font-size: 0.875em;
 		line-height: 1.4em;

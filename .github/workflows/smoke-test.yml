@@ -1,0 +1,39 @@
+name: smoke-tests
+
+on:
+  pull_request: ~
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: build (${{ matrix.repository }})
+    strategy:
+      fail-fast: false
+      matrix: 
+        include:
+          - repository: elastic/docs-content
+            landing-page-path-output: /docs/
+          - repository: elastic/apm-agent-android
+            landing-page-path-output: /docs/reference/
+            
+            # This is a random repository that should not have a docset.yml
+          - repository: elastic/oblt-actions
+            landing-page-path-output: ""
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap Action Workspace
+        uses: ./.github/actions/bootstrap
+        
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          path: test-repo
+
+      - name: Build documentation
+        id: docs-build
+        run: |
+          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs" -p test-repo
+      
+      - name: Verify landing-page-path output
+        run: test ${{ steps.docs-build.outputs.landing-page-path }} == ${{ matrix.landing-page-path-output }}

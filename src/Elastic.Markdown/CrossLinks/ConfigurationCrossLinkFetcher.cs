@@ -36,7 +36,8 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,
-			LinkReferences = dictionary.ToFrozenDictionary()
+			LinkReferences = dictionary.ToFrozenDictionary(),
+			FromConfiguration = true
 		};
 	}
 

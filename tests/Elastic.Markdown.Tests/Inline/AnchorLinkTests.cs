@@ -75,7 +75,7 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -93,7 +93,7 @@ public class ExternalPageCustomAnchorTests(ITestOutputHelper output) : AnchorLin
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#new-reqs" hx-get="/docs/testing/req#new-reqs" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#new-reqs" hx-get="/docs/testing/req#new-reqs" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -110,7 +110,7 @@ public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : Anchor
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Special Requirements &gt; Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements &gt; Sub Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -146,7 +146,7 @@ public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTe
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#sub-requirements2" hx-get="/docs/testing/req#sub-requirements2" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#sub-requirements2" hx-get="/docs/testing/req#sub-requirements2" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -165,7 +165,7 @@ public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(ou
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<a href="/docs/testing/req#heading-inside-dropdown" hx-get="/docs/testing/req#heading-inside-dropdown" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Heading inside dropdown</a>"""
+			"""<a href="/docs/testing/req#heading-inside-dropdown" hx-get="/docs/testing/req#heading-inside-dropdown" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Heading inside dropdown</a>"""
 		);
 	[Fact]
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);

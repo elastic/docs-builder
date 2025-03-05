@@ -1,41 +1,62 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<LayoutViewModel>
-<ol id="breadcrumbs" class="block w-full" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-	<li class="inline text-ink text-sm hover:text-ink leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-		<a 
+<ol id="breadcrumbs" class="block items-center w-full py-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
+	<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<a
 			itemprop="item"
-			href="@Model.UrlPathPrefix/"
-			hx-get="@Model.UrlPathPrefix/"
-			hx-select-oob="@Htmx.GetHxSelectOob()"
-			hx-swap="none"
-			hx-push-url="true"
-			hx-indicator="#htmx-indicator"
-			preload="mouseover"
-	>
-			<span itemprop="name" class="hover:text-ink">Elastic</span>
+			href="@Model.Link("/")"
+		>
+			<span itemprop="name" class="hover:text-black">
+				Home
+			</span>
 		</a>
 		<meta itemprop="position" content="1">
 	</li>
-	@foreach (var item in Model.Parents.Reverse().Skip(1))
+	@{
+		var firstCrumb = Model.Parents.Reverse().Skip(1).FirstOrDefault();
+	}
+	@if (firstCrumb != null)
 	{
-		<li class="inline text-gray-500 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<span class="px-1">/</span>
 			<a
-				itemprop="item" 
-				href="@item.Url"
-				hx-get="@item.Url"
-				hx-select-oob="@Htmx.GetHxSelectOob()"
-				hx-swap="none"
-				hx-push-url="true"
-				hx-indicator="#htmx-indicator"
-				preload="mouseover"
+				itemprop="item"
+				href="@firstCrumb.Url"
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, firstCrumb.Url)
 			>
-				<span itemprop="name" class="hover:text-ink">@item.NavigationTitle</span>
+				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
 			<meta itemprop="position" content="2">
 		</li>
 	}
-	<li class="inline text-gray-500 text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+	@{
+		var crumbs = Model.Parents.Reverse().Skip(2).TakeLast(2).ToList();
+	}
+
+	@if (crumbs.Count < Model.Parents.Reverse().Skip(2).Count())
+	{
+		<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+			<span class="px-1">/</span>
+			…
+		</li>
+	}
+	
+	@for (var i = 0; i < crumbs.Count; i++)
+	{
+	    var item = crumbs[i];
+		<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em] text-pretty" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+			<span class="px-1">/</span>
+			<a
+				itemprop="item" 
+				href="@item.Url"
+				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, item.Url)
+			>
+				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
+			</a>
+			<meta itemprop="position" content="@(i+3)">
+		</li>
+	}
+	<li class="inline text-ink-light text-sm leading-[1.2em] tracking-[-0.02em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 		<span class="px-1">/</span>
 	</li>
 </ol>

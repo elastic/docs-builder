@@ -2,81 +2,52 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
 using ConsoleAppFramework;
-using Documentation.Assembler.Links;
 using Elastic.Markdown.CrossLinks;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Discovery;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class LinkRegistryCommands(ILoggerFactory logger)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
-#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
-#pragma warning restore CA2254
-	}
-
-	/// <summary>
-	/// Validate all published cross_links in all published links.json files.
-	/// </summary>
-	/// <param name="ctx"></param>
-	[Command("validate-inbound-all")]
-	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
-	{
-		AssignOutputLogger();
-		return await new LinkIndexLinkChecker(logger).CheckAll(githubActionsService, ctx);
-	}
-
-	/// <summary>
-	/// Create an index.json file from all discovered links.json files in our S3 bucket
-	/// </summary>
-	/// <param name="repository"></param>
-	/// <param name="file"></param>
-	/// <param name="ctx"></param>
-	[Command("validate-inbound-local")]
-	public async Task<int> ValidateLocalInboundLinks(string? repository = null, string? file = null, Cancel ctx = default)
-	{
-		AssignOutputLogger();
-		file ??= ".artifacts/docs/html/links.json";
-		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
-		repository ??= GitCheckoutInformation.Create(root, new FileSystem()).RepositoryName;
-		if (repository == null)
-			throw new Exception("Unable to determine repository name");
-
-		return await new LinkIndexLinkChecker(logger).CheckWithLocalLinksJson(githubActionsService, repository, file, ctx);
 	}
 
 	/// <summary>
 	/// Create an index.json file from all discovered links.json files in our S3 bucket
 	/// </summary>
 	/// <param name="ctx"></param>
-	[Command("create-index")]
+	[Command("update")]
 	public async Task CreateLinkIndex(Cancel ctx = default)
 	{
 		AssignOutputLogger();
 
 		IAmazonS3 client = new AmazonS3Client();
 		var bucketName = "elastic-docs-link-index";
-		var request = new ListObjectsV2Request { BucketName = bucketName, MaxKeys = 5 };
+		var request = new ListObjectsV2Request
+		{
+			BucketName = bucketName,
+			MaxKeys = 5
+		};
 
 		Console.WriteLine("--------------------------------------");
 		Console.WriteLine($"Listing the contents of {bucketName}:");
 		Console.WriteLine("--------------------------------------");
 
 
-		var linkIndex = new LinkIndex { Repositories = [] };
+		var linkIndex = new LinkIndex
+		{
+			Repositories = []
+		};
 		try
 		{
 			ListObjectsV2Response response;
@@ -95,11 +66,23 @@ internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubAct
 					var repository = tokens[1];
 					var branch = tokens[2];
 
-					var entry = new LinkIndexEntry { Repository = repository, Branch = branch, ETag = obj.ETag.Trim('"'), Path = obj.Key };
+					var entry = new LinkIndexEntry
+					{
+						Repository = repository,
+						Branch = branch,
+						ETag = obj.ETag.Trim('"'),
+						Path = obj.Key
+					};
 					if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
 						existingEntry[branch] = entry;
 					else
-						linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry> { { branch, entry } });
+					{
+						linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
+						{
+							{ branch, entry }
+						});
+					}
+
 					Console.WriteLine(entry);
 				}
 
@@ -119,6 +102,6 @@ internal sealed class LinkCommands(ILoggerFactory logger, ICoreService githubAct
 		using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 		await client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), ctx);
 
-		Console.WriteLine("Uploaded latest link-index.json");
+		Console.WriteLine("Uploaded latest https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json");
 	}
 }

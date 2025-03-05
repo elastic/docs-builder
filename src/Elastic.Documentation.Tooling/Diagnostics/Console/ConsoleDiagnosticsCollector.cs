@@ -25,8 +25,12 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 			_errors.Add(diagnostic);
 	}
 
+	private bool _stopped;
 	public override async Task StopAsync(Cancel cancellationToken)
 	{
+		if (_stopped)
+			return;
+		_stopped = true;
 		var repository = new ErrataFileSourceRepository();
 		repository.WriteDiagnosticsToConsole(_errors, _warnings);
 

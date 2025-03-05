@@ -41,7 +41,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Elasticsearch</a></p>"""
+			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Elasticsearch</a></p>"""
 		);
 
 	[Fact]
@@ -58,7 +58,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -78,7 +78,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Special Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -100,7 +100,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">test</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">test</a></p>"""
 		);
 
 	[Fact]
@@ -231,10 +231,10 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 		Html.TrimEnd().Should().Be("""
 		<p>Links:</p>
 		<ul>
-		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Special Requirements</a></li>
+		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></li>
 		</ul>
 		<ul>
-		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#markdown-content,#toc-nav,#prev-next-nav,#breadcrumbs" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mouseover">Special Requirements</a></li>
+		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></li>
 		</ul>
 		""");
 

@@ -1,6 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
@@ -16,13 +18,12 @@ namespace Documentation.Builder.Cli;
 
 internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
-#pragma warning disable CA2254
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
-#pragma warning restore CA2254
 	}
 
 	/// <summary>
@@ -73,17 +74,43 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		var context = new BuildContext(collector, fileSystem, fileSystem, path, output)
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		BuildContext context;
+		try
 		{
-			UrlPathPrefix = pathPrefix,
-			Force = force ?? false,
-			AllowIndexing = allowIndexing != null
-		};
+			context = new BuildContext(collector, fileSystem, fileSystem, path, output)
+			{
+				UrlPathPrefix = pathPrefix,
+				Force = force ?? false,
+				AllowIndexing = allowIndexing != null
+			};
+		}
+		// On CI, we are running on merge commit which may have changes against an older
+		// docs folder (this can happen on out of date PR's).
+		// At some point in the future we can remove this try catch
+		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in"))
+		{
+			var outputDirectory = !string.IsNullOrWhiteSpace(output)
+				? fileSystem.DirectoryInfo.New(output)
+				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+			// we temporarily do not error when pointed to a non documentation folder.
+			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
+
+			ConsoleApp.Log($"Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {e.Message}");
+
+			await githubActionsService.SetOutputAsync("skip", "true");
+			return 0;
+		}
+
+		if (runningOnCi)
+			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
-
+		if (runningOnCi)
+			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
 			strict ??= strictValue;
 
@@ -140,7 +167,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	{
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		var collector = new ConsoleDiagnosticsCollector(logger, null);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, null);
 		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		var set = new DocumentationSet(context, logger);
 

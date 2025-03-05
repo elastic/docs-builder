@@ -75,6 +75,59 @@ public class DocumentationWebHost
 	private void SetUpRoutes()
 	{
 		_ = _webApplication
+			.UseExceptionHandler(options =>
+			{
+				options.Run(async context =>
+				{
+					try
+					{
+						var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+						if (exception != null)
+						{
+							var logger = context.RequestServices.GetRequiredService<ILogger<DocumentationWebHost>>();
+							logger.LogError(
+								exception.Error,
+								"Unhandled exception processing request {Path}. Error: {Error}\nStack Trace: {StackTrace}\nInner Exception: {InnerException}",
+								context.Request.Path,
+								exception.Error.Message,
+								exception.Error.StackTrace,
+								exception.Error.InnerException?.ToString() ?? "None"
+							);
+							logger.LogError(
+								"Request Details - Method: {Method}, Path: {Path}, QueryString: {QueryString}",
+								context.Request.Method,
+								context.Request.Path,
+								context.Request.QueryString
+							);
+
+							context.Response.StatusCode = 500;
+							context.Response.ContentType = "text/html";
+							await context.Response.WriteAsync(@"
+								<html>
+									<head><title>Error</title></head>
+									<body>
+										<h1>Internal Server Error</h1>
+										<p>An error occurred while processing your request.</p>
+										<p>Please check the application logs for more details.</p>
+									</body>
+								</html>");
+						}
+					}
+					catch (Exception handlerEx)
+					{
+						var logger = context.RequestServices.GetRequiredService<ILogger<DocumentationWebHost>>();
+						logger.LogCritical(
+							handlerEx,
+							"Error handler failed to process exception. Handler Error: {Error}\nStack Trace: {StackTrace}",
+							handlerEx.Message,
+							handlerEx.StackTrace
+						);
+						context.Response.StatusCode = 500;
+						context.Response.ContentType = "text/plain";
+						await context.Response.WriteAsync("A critical error occurred.");
+					}
+				});
+			})
 			.UseLiveReload()
 			.UseStaticFiles(
 				new StaticFileOptions
@@ -95,26 +148,25 @@ public class DocumentationWebHost
 	{
 		var generator = holder.Generator;
 
-		// For now, the logic is backwards compatible.
-		// Hence, both http://localhost:5000/migration/versioning.html and http://localhost:5000/migration/versioning works,
-		// so it's easier to copy links from issues created during the bug bounty.
-		// However, we can remove this logic in the future and only support links without the .html extension.
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug.Replace(".html", ".md");
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
 			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace("/index.md", ".md");
 			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
-				return Results.NotFound();
+			{
+				foreach (var extension in generator.Context.Configuration.EnabledExtensions)
+				{
+					if (extension.TryGetDocumentationFileBySlug(generator.DocumentationSet, slug, out documentationFile))
+						break;
+				}
+			}
 		}
 
 		switch (documentationFile)
 		{
 			case MarkdownFile markdown:
-				{
-					var rendered = await generator.RenderLayout(markdown, ctx);
-
-					return Results.Content(rendered, "text/html");
-				}
+				var rendered = await generator.RenderLayout(markdown, ctx);
+				return Results.Content(rendered, "text/html");
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:

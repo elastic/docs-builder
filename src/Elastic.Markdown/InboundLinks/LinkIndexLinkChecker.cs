@@ -2,35 +2,54 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Actions.Core.Services;
-using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Links;
+namespace Elastic.Markdown.InboundLinks;
 
 public class LinkIndexLinkChecker(ILoggerFactory logger)
 {
 	private readonly ILogger _logger = logger.CreateLogger<LinkIndexLinkChecker>();
 
-	public async Task<int> CheckAll(ICoreService githubActionsService, Cancel ctx)
+	private sealed record RepositoryFilter
+	{
+		public string? LinksTo { get; set; }
+		public string? LinksFrom { get; set; }
+
+		public static RepositoryFilter None => new();
+	}
+
+	public async Task<int> CheckAll(DiagnosticsCollector collector, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		//todo add ctx
 		var crossLinks = await resolver.FetchLinks();
 
-		return await ValidateCrossLinks(githubActionsService, crossLinks, resolver, null, ctx);
+		return await ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None, ctx);
 	}
 
-	public async Task<int> CheckWithLocalLinksJson(
-		ICoreService githubActionsService,
-		string repository,
+	public async Task<int> CheckRepository(DiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
+	{
+		var fetcher = new LinksIndexCrossLinkFetcher(logger);
+		var resolver = new CrossLinkResolver(fetcher);
+		//todo add ctx
+		var crossLinks = await resolver.FetchLinks();
+		var filter = new RepositoryFilter
+		{
+			LinksTo = toRepository,
+			LinksFrom = fromRepository
+		};
+
+		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
+	}
+
+	public async Task<int> CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository,
 		string localLinksJson,
-		Cancel ctx
-	)
+		Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
@@ -60,47 +79,64 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		}
 
 		_logger.LogInformation("Validating all cross links to {Repository}:// from all repositories published to link-index.json", repository);
+		var filter = new RepositoryFilter
+		{
+			LinksTo = repository
+		};
 
-		return await ValidateCrossLinks(githubActionsService, crossLinks, resolver, repository, ctx);
+		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
 	}
 
 	private async Task<int> ValidateCrossLinks(
-		ICoreService githubActionsService,
+		DiagnosticsCollector collector,
 		FetchedCrossLinks crossLinks,
 		CrossLinkResolver resolver,
-		string? currentRepository,
+		RepositoryFilter filter,
 		Cancel ctx)
 	{
-		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 		_ = collector.StartAsync(ctx);
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
-			_logger.LogInformation("Validating {Repository}", repository);
+			if (!string.IsNullOrEmpty(filter.LinksTo))
+				_logger.LogInformation("Validating '{CurrentRepository}://' links in {TargetRepository}", filter.LinksTo, repository);
+			else if (!string.IsNullOrEmpty(filter.LinksFrom))
+			{
+				if (repository != filter.LinksFrom)
+					continue;
+				_logger.LogInformation("Validating cross_links from {TargetRepository}", filter.LinksFrom);
+			}
+			else
+				_logger.LogInformation("Validating all cross_links in {Repository}", repository);
+
 			foreach (var crossLink in linkReference.CrossLinks)
 			{
 				// if we are filtering we only want errors from inbound links to a certain
 				// repository
 				var uri = new Uri(crossLink);
-				if (currentRepository != null && uri.Scheme != currentRepository)
+				if (filter.LinksTo != null && uri.Scheme != filter.LinksTo)
 					continue;
 
+				var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json";
 				_ = resolver.TryResolve(s =>
 				{
 					if (s.Contains("is not a valid link in the"))
 					{
+						//
 						var error = $"'elastic/{repository}' links to unknown file: " + s;
 						error = error.Replace("is not a valid link in the", "in the");
-						collector.EmitError(repository, error);
+						collector.EmitError(linksJson, error);
 						return;
 					}
 
 					collector.EmitError(repository, s);
-
-				}, uri, out _);
+				}, s => collector.EmitWarning(linksJson, s), uri, out _);
 			}
 		}
+
 		collector.Channel.TryComplete();
 		await collector.StopAsync(ctx);
-		return collector.Errors + collector.Warnings;
+		// non-strict for now
+		return collector.Errors;
+		// return collector.Errors + collector.Warnings;
 	}
 }

@@ -46,19 +46,26 @@ jobs:
     steps:
 
       - name: Checkout
+        if:  contains(fromJSON('["push", "merge_group"]'), github.event_name)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Get changed files
-        if: startsWith(github.event_name, 'pull_request') || github.event_name == 'merge_group'
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         id: check-files
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
-
+          
+      - name: Checkout
+        if: startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          
       - name: Free Disk Space
-        if: github.repository == 'elastic/asciidocalypse'
+        if: contains(fromJSON('["elastic/asciidocalypse", "elastic/security-docs"]'), github.repository)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
@@ -133,21 +140,22 @@ jobs:
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
         uses: elastic/docs-builder@main
+        id: docs-build
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
       - name: 'Validate Inbound Links'
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
         uses: elastic/docs-builder/actions/validate-inbound-local@main
-        if: ${{ !cancelled() && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: ${{ !cancelled() && steps.deployment.outputs.result }}
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
 
       - name: Upload to S3
         id: s3-upload
-        if: ${{ !cancelled() && steps.deployment.outputs.result }}
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
           aws cloudfront create-invalidation \
@@ -158,18 +166,23 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
 
+      - name: Update Reference Index
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
+        uses: elastic/docs-builder/actions/update-reference-index@main
+
       - name: Update deployment status
         uses: actions/github-script@v7
         if: always() && steps.deployment.outputs.result
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.s3-upload.outcome == 'success' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`,
+              state: "${{ steps.docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
+              environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
