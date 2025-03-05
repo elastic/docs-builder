@@ -35,8 +35,14 @@ document.body.addEventListener('htmx:pushedIntoHistory', function(event) {
 });
 
 document.body.addEventListener('htmx:responseError', function(event) {
-	const rootPath = $('body').dataset.rootPath;
-	htmx.ajax('get', rootPath + 'not-found', { select: '#main-container', target: '#main-container' }).then(() => {
-		window.location.assign(event.detail.pathInfo.requestPath)
-	});
+	// event.preventDefault();
+	
+	if (event.detail.xhr.status === 404) {
+		window.location.assign(event.detail.pathInfo.requestPath);
+	}
+	
+	// const rootPath = $('body').dataset.rootPath;
+	// window.history.pushState({ path: event.detail.pathInfo.requestPath }, '', event.detail.pathInfo.requestPath);
+	// htmx.ajax('get', rootPath + 'not-found', { select: '#main-container', target: '#main-container' }).then(() => {
+	// });
 });

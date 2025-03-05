@@ -171,7 +171,7 @@ public class DocumentationWebHost
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
-				if (generator.DocumentationSet.FlatMappedFiles.TryGetValue("not-found.md", out var notFoundDocumentationFile))
+				if (generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
 				{
 					var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
 					return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);

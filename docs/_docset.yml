@@ -15,7 +15,7 @@ features:
   
 toc:
   - file: index.md
-  - hidden: not-found.md
+  - hidden: 404.md
   - hidden: developer-notes.md
   - folder: contribute
     children:
