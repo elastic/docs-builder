@@ -8,6 +8,11 @@ If you [move files around](move.md) or simply need to delete a few pages you mig
 Redirects allow you to force other documentation sets to resolve old links to their new location.
 This allows you to publish your changes and work to update the other documentation sets.
 
+:::{note}
+The source and target URLs must both be within Elastic Docs V3.
+You cannot use this process to redirect to our API docs site, for example.
+:::
+
 ## File location.
 
 The file should be located next to your `docset.yml` file
