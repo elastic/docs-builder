@@ -46,5 +46,9 @@ tar -xzf elasticsearch-{{version}}-linux-x86_64.tar.gz
 cd elasticsearch-{{version}}/
 ```
 
+```bash 
+echo "{{a-global-variable}}"
+```
+
 
 Here is a variable with dashes: {{a-key-with-dashes}}

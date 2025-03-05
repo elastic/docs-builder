@@ -147,12 +147,20 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 			var span = line.Slice.AsSpan();
 
-			if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var replacement))
+			if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterreplacement))
+			{
+				var s = new StringSlice(frontMatterreplacement);
+				lines.Lines[index] = new StringLine(ref s);
+				span = lines.Lines[index].Slice.AsSpan();
+			}
+
+			if (span.ReplaceSubstitutions(context.Substitutions, out var replacement))
 			{
 				var s = new StringSlice(replacement);
 				lines.Lines[index] = new StringLine(ref s);
 				span = lines.Lines[index].Slice.AsSpan();
 			}
+
 
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
