@@ -4,10 +4,10 @@
 			@apply mt-4;
 		}
 		dt {
-			@apply font-mono text-grey-100 mt-6;
+			@apply text-black mt-6;
 		}
 		dd {
-			@apply mt-2 ml-4;
+			@apply text-ink-light mt-2 ml-4;
 		}
 	}
 }

@@ -1,6 +1,6 @@
 .markdown-content {
 	
-	font-size: 16px;
+	@apply  text-ink text-base;
 
 	h1 {
 		@apply text-4xl text-ink-dark font-semibold;
@@ -47,10 +47,10 @@
 	}
 	
 	p {
-		@apply font-body text-base text-ink mt-4;
+		@apply font-body mt-4;
 		letter-spacing: 0;
 		line-height: 1.5em;
-		text-wrap: pretty;
+		/*text-wrap: pretty;*/
 	}
 	
 	a {
