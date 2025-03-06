@@ -6,14 +6,6 @@ Images include screenshots, inline images, icons, and more. Syntax for images is
 
 Images can be referenced from the top-level `_static` dir or a local image dir.
 
-## Screenshots
-
-Screenshots are images displayed with a box-shadow.
-
-:::{warning}
-This feature is not currently supported in Elastic Docs V3.
-:::
-
 ## Block-level images
 
 ```markdown
@@ -34,6 +26,20 @@ Or, use the `image` directive.
 :::{image} img/observability.png
 :alt: Elasticsearch
 :width: 250px
+:::
+
+## Screenshots
+
+Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
+
+```markdown
+:::{image} img/observability.png
+:screenshot:
+:::
+```
+
+:::{image} img/observability.png
+:screenshot:
 :::
 
 ## Inline images
