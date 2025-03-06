@@ -1,8 +1,9 @@
 @using Elastic.Markdown.Helpers
+@using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorSlice<LayoutViewModel>
 <nav id="secondary-nav" class="bg-grey-10 border-b-1 border-grey-20 font-sans font-semibold text-sm md:text-base px-6 pt-6">
 	<div class="container flex mx-auto justify-between">
-		@if (!Model.IsLandingPage)
+		@if (Model.CurrentDocument.YamlFrontMatter?.Layout != LayoutName.LandingPage)
 		{
 			<label role="button" class="lg:hidden pb-2 cursor-pointer" for="pages-nav-hamburger">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -40,12 +41,18 @@
 		</ul>
 		<ul class="flex gap-6">
 			<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
-				<a href="@Model.Link("/release-notes")" class="flex">
+				<a 
+					href="@Model.Link("/release-notes")"
+					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/release-notes"))
+					>
 					<span>Release notes</span>
 				</a>
 			</li>
 			<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
-				<a href="@Model.Link("/troubleshoot")" class="flex">
+				<a
+					href="@Model.Link("/troubleshoot")"
+					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/troubleshoot"))
+					>
 					<span>Troubleshoot</span>
 				</a>
 			</li>
