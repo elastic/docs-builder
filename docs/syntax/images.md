@@ -33,12 +33,12 @@ Or, use the `image` directive.
 Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
 
 ```markdown
-:::{image} img/observability.png
+:::{image} img/apm.png
 :screenshot:
 :::
 ```
 
-:::{image} img/observability.png
+:::{image} img/apm.png
 :screenshot:
 :::
 
