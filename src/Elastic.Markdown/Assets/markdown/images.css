@@ -1,7 +1,21 @@
 @layer components {
-    .markdown-content {
+	.markdown-content {
+		a.image-reference {
+			@apply block mt-4 align-middle;
+			&>img {
+				@apply block;
+			}
+		}
+		/* 
+		 * tailwind reset makes all images `display: block`
+		 * this resets it to `display: initial`
+		 */
+		img {
+			display: initial;
+			vertical-align: initial;
+		}
         .screenshot {
             @apply border-1 border-grey-20 p-4 bg-grey-10 shadow-md;
         }
-    }
+	}
 }
