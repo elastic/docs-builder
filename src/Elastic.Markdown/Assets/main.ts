@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "htmx.org"
 import "htmx-ext-preload"
 import {initTocNav} from "./toc-nav";
@@ -5,8 +6,8 @@ import {initHighlight} from "./hljs";
 import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
-import {$, $$} from "select-dom"
-import htmx from "htmx.org";
+import {$$} from "select-dom"
+
 
 document.addEventListener('htmx:load', function() {
 	initTocNav();
@@ -27,7 +28,6 @@ document.body.addEventListener('htmx:pushedIntoHistory', function(event) {
 	currentNavItem.forEach(el => {
 		el.classList.remove('current');
 	})
-	// @ts-ignore
 	const navItems = $$('a[href="' + event.detail.path + '"]');
 	navItems.forEach(navItem => {
 		navItem.classList.add('current');
@@ -35,20 +35,7 @@ document.body.addEventListener('htmx:pushedIntoHistory', function(event) {
 });
 
 document.body.addEventListener('htmx:responseError', function(event) {
-	// event.preventDefault();
-	
 	if (event.detail.xhr.status === 404) {
 		window.location.assign(event.detail.pathInfo.requestPath);
 	}
-	
-	// const rootPath = $('body').dataset.rootPath;
-	// window.history.pushState({ path: event.detail.pathInfo.requestPath }, '', event.detail.pathInfo.requestPath);
-	// htmx.ajax('get', rootPath + 'not-found', { select: '#main-container', target: '#main-container' }).then(() => {
-	// });
-});
-
-console.log("hello")
-document.body.addEventListener('htmx:beforeSwap', function(event) {
-	console.log("hello")
-	console.log(event)
 });
