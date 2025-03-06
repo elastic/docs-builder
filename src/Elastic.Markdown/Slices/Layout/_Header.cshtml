@@ -4,7 +4,7 @@
 @{
 	string GetHxAttributes(string url)
 	{
-		return Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, url);
+		return Htmx.GetHxAttributes(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, url);
 	}
 
 	var primaryNavViewModel = new PrimaryNavViewModel
@@ -40,6 +40,7 @@
 						Description = "Unify monitoring for apps and infrastructure.", 
 						Url =  Model.Link("/solutions/observability"),
 						HtmxAttributes = Htmx.GetHxAttributes(
+							Model.CurrentDocument.YamlFrontMatter?.Layout,
 							Model.Features,
 							Model.CurrentDocument.UrlPathPrefix,
 							Model.CurrentDocument.Url, 

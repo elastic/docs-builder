@@ -27,7 +27,7 @@
 							<a
 								href="@navItem.Index.Url"
 								hx-get="@navItem.Index.Url"
-								hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
+								hx-select-oob="@Htmx.GetHxSelectOob(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
 								hx-swap="none"
 								hx-push-url="true"
 								hx-indicator="#htmx-indicator"
@@ -43,7 +43,7 @@
 			<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
 				<a 
 					href="@Model.Link("/release-notes")"
-					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/release-notes"))
+					@Htmx.GetHxAttributes(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/release-notes"))
 					>
 					<span>Release notes</span>
 				</a>
@@ -51,7 +51,7 @@
 			<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
 				<a
 					href="@Model.Link("/troubleshoot")"
-					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/troubleshoot"))
+					@Htmx.GetHxAttributes(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/troubleshoot"))
 					>
 					<span>Troubleshoot</span>
 				</a>

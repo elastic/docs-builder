@@ -4,14 +4,15 @@
 
 using System.Text;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Helpers;
 
 public static class Htmx
 {
-	public static string GetHxSelectOob(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
+	public static string GetHxSelectOob(LayoutName? layout, FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
-		if (features.IsPrimaryNavEnabled && currentUrl == pathPrefix + "/")
+		if ((features.IsPrimaryNavEnabled && currentUrl == pathPrefix + "/") || layout == LayoutName.NotFound)
 			return "#main-container,#primary-nav,#secondary-nav";
 
 		var selectTargets = "#primary-nav,#secondary-nav,#content-container";
@@ -22,6 +23,8 @@ public static class Htmx
 
 	public static bool HasSameTopLevelGroup(string? pathPrefix, string currentUrl, string targetUrl)
 	{
+
+
 		if (string.IsNullOrEmpty(targetUrl) || string.IsNullOrEmpty(currentUrl))
 			return false;
 		var startIndex = pathPrefix?.Length ?? 0;
@@ -45,11 +48,11 @@ public static class Htmx
 
 	private static string[] GetSegments(string url) => url.Split('/');
 
-	public static string GetHxAttributes(FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
+	public static string GetHxAttributes(LayoutName? layout, FeatureFlags features, string? pathPrefix, string currentUrl, string targetUrl)
 	{
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-get={targetUrl}");
-		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(features, pathPrefix, currentUrl, targetUrl)}");
+		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(layout, features, pathPrefix, currentUrl, targetUrl)}");
 		_ = attributes.Append($" hx-swap={GetHxSwap()}");
 		_ = attributes.Append($" hx-push-url={GetHxPushUrl()}");
 		_ = attributes.Append($" hx-indicator={GetHxIndicator()}");

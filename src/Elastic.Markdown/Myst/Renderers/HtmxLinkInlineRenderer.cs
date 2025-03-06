@@ -31,7 +31,7 @@ public class HtmxLinkInlineRenderer(BuildContext build) : LinkInlineRenderer
 			_ = renderer.Write(" hx-get=\"");
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
 			_ = renderer.Write('"');
-			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(build.Configuration.Features, build.UrlPathPrefix, currentUrl, link.Url)}\"");
+			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(null, build.Configuration.Features, build.UrlPathPrefix, currentUrl, link.Url)}\"");
 			_ = renderer.Write(" hx-swap=\"none\"");
 			_ = renderer.Write(" hx-push-url=\"true\"");
 			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");

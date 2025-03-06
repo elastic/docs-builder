@@ -46,3 +46,9 @@ document.body.addEventListener('htmx:responseError', function(event) {
 	// htmx.ajax('get', rootPath + 'not-found', { select: '#main-container', target: '#main-container' }).then(() => {
 	// });
 });
+
+console.log("hello")
+document.body.addEventListener('htmx:beforeSwap', function(event) {
+	console.log("hello")
+	console.log(event)
+});

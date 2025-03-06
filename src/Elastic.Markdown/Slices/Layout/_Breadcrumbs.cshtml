@@ -22,7 +22,7 @@
 			<a
 				itemprop="item"
 				href="@firstCrumb.Url"
-				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, firstCrumb.Url)
+				@Htmx.GetHxAttributes(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, firstCrumb.Url)
 			>
 				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
@@ -49,7 +49,7 @@
 			<a
 				itemprop="item" 
 				href="@item.Url"
-				@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, item.Url)
+				@Htmx.GetHxAttributes(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, item.Url)
 			>
 				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
 			</a>

@@ -13,7 +13,7 @@
 		<li class="block group/li mt-4 lg:mt-1 ml-4">
 				<a
 					hx-get="@f.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
+					hx-select-oob="@Htmx.GetHxSelectOob(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
 					data-current-url="@Model.CurrentDocument.Url"
 					data-target-url="@f.Url"
 					data-path-prefix="@Model.CurrentDocument.UrlPathPrefix"
@@ -56,7 +56,7 @@
 					>
 				<a
 					href="@(g.Index?.Url ?? "")"
-					@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, g.Index?.Url ?? "")
+					@Htmx.GetHxAttributes(Model.CurrentDocument.YamlFrontMatter?.Layout, Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, g.Index?.Url ?? "")
 					id="page-@(g.Index?.Id ?? id)"
 					class="sidebar-link @(g.Depth == topLevel ? "font-semibold mt-2 mb-1" : "")">
 					@(g.Index?.NavigationTitle ?? "Untitled")
