@@ -5,6 +5,7 @@
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.Settings;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Markdown.Myst;
 
@@ -16,6 +17,7 @@ public static class YamlSerialization
 
 		var deserializer = new StaticDeserializerBuilder(new DocsBuilderYamlStaticContext())
 			.IgnoreUnmatchedProperties()
+			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
 #pragma warning disable CS0618 // Type or member is obsolete
 			.WithTypeConverter(new DeploymentConverter())
@@ -39,4 +41,3 @@ public static class YamlSerialization
 [YamlSerializable(typeof(SettingMutability))]
 
 public partial class DocsBuilderYamlStaticContext;
-

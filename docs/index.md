@@ -1,6 +1,6 @@
 ---
 navigation_title: Elastic Docs v3
-layout: LandingPage
+layout: landing-page
 ---
 
 # Welcome to Elastic Docs v3
