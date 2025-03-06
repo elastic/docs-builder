@@ -6,20 +6,6 @@ You create a heading by adding number signs `#` in front of a word or phrase. Th
 
 ::::{tab-set}
 
-:::{tab-item} Markdown
-
-```markdown
-# Heading 1
-## Heading 2
-### Heading 3
-#### Heading 4
-##### Heading 5
-###### Heading 6
-
-```
-
-:::
-
 :::{tab-item} Output
 
 # Heading 1
@@ -33,6 +19,20 @@ You create a heading by adding number signs `#` in front of a word or phrase. Th
 ##### Heading 5
 
 ###### Heading 6
+
+:::
+
+:::{tab-item} Markdown
+
+```markdown
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+
+```
 
 :::
 
@@ -56,6 +56,12 @@ You will get a hyphened, lowercase, alphanumeric version of any string you pleas
 
 ::::{tab-set}
 
+:::{tab-item} Output
+
+#### Hello-World
+
+:::
+
 :::{tab-item} Markdown
 
 ```markdown
@@ -63,12 +69,6 @@ You will get a hyphened, lowercase, alphanumeric version of any string you pleas
 #### Hello-World
 
 ```
-
-:::
-
-:::{tab-item} Output
-
-#### Hello-World
 
 :::
 
@@ -81,19 +81,19 @@ You can also specify a custom anchor link using the following syntax.
 
 ::::{tab-set}
 
+:::{tab-item} Output
+
+#### Heading [custom-anchor]
+
+:::
+
 :::{tab-item} Markdown
 
 ```markdown
 
-#### Heading [#custom-anchor]
+#### Heading [custom-anchor]
 
 ```
-
-:::
-
-:::{tab-item} Output
-
-#### Heading [#custom-anchor]
 
 :::
 

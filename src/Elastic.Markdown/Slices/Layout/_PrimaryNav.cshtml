@@ -1,6 +1,6 @@
 @inherits RazorSlice<PrimaryNavViewModel>
 <div class="grow xl:hidden"></div>
-<nav class="hidden group-has-[#primary-nav-hamburger:checked]/header:block z-40 overflow-y-scroll xl:overflow-y-visible lg:p-6 pb-12 xl:p-0 fixed xl:static top-[calc(var(--offset-height)+1px)] left-0 right-0 bottom-0 xl:block grow bg-white" id="primary-nav">
+<nav class="hidden group-has-[#primary-nav-hamburger:checked]/header:block z-40 overflow-y-scroll xl:overflow-y-visible lg:p-6 pb-12 xl:p-0 fixed xl:static top-[calc(var(--offset-top)+1px)] left-0 right-0 bottom-0 xl:block grow bg-white" id="primary-nav">
 	<div class="container xl:w-full mx-auto xl:mx-0">
 		<ul class="flex flex-col xl:flex-row xl:items-center justify-start xl:h-full text-ink font-sans xl:gap-6">
 			@foreach (var navItem in Model.Items)
