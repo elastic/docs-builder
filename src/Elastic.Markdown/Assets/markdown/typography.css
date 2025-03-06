@@ -3,40 +3,39 @@
 	font-size: 16px;
 
 	h1 {
-		@apply text-4xl text-ink-dark font-semibold;
+		@apply text-5xl text-ink-dark font-semibold;
 		line-height: 1.2em;
-		letter-spacing: -0.04em;
 	}
 	
 	h2 {
 
-		@apply text-2xl text-ink-dark font-bold mt-10;
+		@apply text-4xl text-ink-dark font-bold mt-10;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 	
 	h3 {
-		@apply text-xl text-ink-dark font-bold mt-8;
+		@apply text-2xl text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 
 	h4 {
-		@apply text-base text-ink-dark font-bold mt-8;
+		@apply text-xl text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 
 	h5 {
-		@apply text-sm text-ink-dark font-bold mt-8;
+		@apply text-base text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 
 	h6 {
-		@apply text-xs text-ink-dark font-bold mt-8;
+		@apply text-sm text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 	
 	h1, h2, h3, h4, h5, h6 {
