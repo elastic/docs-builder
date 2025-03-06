@@ -20,7 +20,7 @@
 	--outline-offset: 5;
 	--header-height: calc(var(--spacing) * 21);
 	--banner-height: calc(var(--spacing) * 9);
-	--offset-height: calc(var(--header-height) + var(--banner-height));
+	--offset-top: calc(var(--header-height) + var(--banner-height));
 }
 
 /*#default-search::-webkit-search-cancel-button {*/
@@ -84,8 +84,8 @@
 	
 	.sidebar {
 		.sidebar-nav {
-			@apply sticky top-(--offset-height) z-30 overflow-y-auto;
-			max-height: calc(100vh - var(--offset-height));
+			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
+			max-height: calc(100vh - var(--offset-top));
 			scrollbar-gutter: stable;
 		}
 		
@@ -131,7 +131,7 @@
 }
 
 * {
-	scroll-margin-top: calc(var(--spacing) * 26);
+	scroll-margin-top: calc(var(--offset-top) + var(--spacing) * 6);
 }
 
 

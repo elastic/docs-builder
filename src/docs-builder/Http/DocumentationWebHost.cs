@@ -148,7 +148,11 @@ public class DocumentationWebHost
 	{
 		var generator = holder.Generator;
 
-		var s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : slug;
+		var s = slug.EndsWith('/')
+			? slug + "index.md"
+			: Path.GetExtension(slug) == string.Empty
+				? slug + ".md"
+				: slug;
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
 			foreach (var extension in generator.Context.Configuration.EnabledExtensions)

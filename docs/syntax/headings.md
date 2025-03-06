@@ -85,7 +85,7 @@ You can also specify a custom anchor link using the following syntax.
 
 ```markdown
 
-#### Heading [#custom-anchor]
+#### Heading [custom-anchor]
 
 ```
 
@@ -93,7 +93,7 @@ You can also specify a custom anchor link using the following syntax.
 
 :::{tab-item} Output
 
-#### Heading [#custom-anchor]
+#### Heading [custom-anchor]
 
 :::
 
