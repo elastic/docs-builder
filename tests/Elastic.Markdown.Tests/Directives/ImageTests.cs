@@ -14,7 +14,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 :::{image} img/observability.png
 :alt: Elasticsearch
 :width: 250px
-:class: screenshot
+:screenshot:
 :::
 """
 )
@@ -31,7 +31,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 		Block!.Alt.Should().Be("Elasticsearch");
 		Block!.Width.Should().Be("250px");
 		Block!.ImageUrl.Should().Be("img/observability.png");
-		Block!.Class.Should().Be("screenshot");
+		Block!.Screenshot.Should().Be("screenshot");
 	}
 
 	[Fact]
@@ -62,40 +62,6 @@ Relaxing at the beach 🏝 🌊 😎
 	{
 		Block!.Found.Should().BeTrue();
 
-		Collector.Diagnostics.Should().HaveCount(1)
-			.And.OnlyContain(d => d.Severity == Severity.Warning);
-	}
-}
-
-public class ImageInvalidClassTest(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
-"""
-:::{image} img/observability.png
-:alt: Elasticsearch
-:width: 250px
-:class: invalid-class
-:::
-"""
-)
-{
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/observability.png", "");
-
-	[Fact]
-	public void ParsesBlock() => Block.Should().NotBeNull();
-
-	[Fact]
-	public void ParsesBreakPoint()
-	{
-		Block!.Alt.Should().Be("Elasticsearch");
-		Block!.Width.Should().Be("250px");
-		Block!.ImageUrl.Should().Be("img/observability.png");
-		Block!.Class.Should().BeEmpty();
-	}
-
-	[Fact]
-	public void WarnsOnInvalidClass()
-	{
-		Block!.Found.Should().BeTrue();
 		Collector.Diagnostics.Should().HaveCount(1)
 			.And.OnlyContain(d => d.Severity == Severity.Warning);
 	}

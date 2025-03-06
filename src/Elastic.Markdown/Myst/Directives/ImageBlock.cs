@@ -33,9 +33,9 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	public string? Width { get; set; }
 
 	/// <summary>
-	/// The class of the image. Used to differentiate between different types of images.
+	/// When set, adds a custom screenshot class to the image.
 	/// </summary>
-	public string? Class { get; set; }
+	public string? Screenshot { get; set; }
 
 	/// <summary>
 	/// The uniform scaling factor of the image. The default is “100 %”, i.e. no scaling.
@@ -72,17 +72,10 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 		Scale = Prop("scale");
 		Target = Prop("target");
 
-		Class = Prop("class");
-
-		// Emit a warning if the class is not "screenshot"
-		if (!string.IsNullOrEmpty(Class) && Class != "screenshot")
-		{
-			this.EmitWarning($"The class '{Class}' is not allowed. Only 'screenshot' is allowed.");
-			Class = string.Empty;
-		}
+		// Set Screenshot to "screenshot" if the :screenshot: option is present
+		Screenshot = Prop("screenshot") != null ? "screenshot" : null;
 
 		ExtractImageUrl(context);
-
 	}
 
 	private void ExtractImageUrl(ParserContext context)

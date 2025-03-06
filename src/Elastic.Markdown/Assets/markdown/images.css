@@ -1,7 +1,7 @@
 @layer components {
     .markdown-content {
         .screenshot {
-            @apply border-2 border-grey-20 p-4 bg-grey-10 shadow-md;
+            @apply border-1 border-grey-20 p-4 bg-grey-10 shadow-md;
         }
     }
 }

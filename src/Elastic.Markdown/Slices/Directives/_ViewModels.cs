@@ -56,7 +56,7 @@ public class ImageViewModel
 	public required string? Width { get; init; }
 	public required string? ImageUrl { get; init; }
 
-	public required string? Class { get; init; }
+	public required string? Screenshot { get; init; }
 
 	public string Style
 	{

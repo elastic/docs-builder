@@ -107,7 +107,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			Scale = block.Scale,
 			Target = block.Target,
 			Width = block.Width,
-			Class = block.Class,
+			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl,
 		});
 		RenderRazorSlice(slice, renderer, block);
@@ -128,7 +128,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			Scale = block.Scale,
 			Target = block.Target,
 			Width = block.Width,
-			Class = block.Class,
+			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl,
 		});
 		RenderRazorSlice(slice, renderer, block);
