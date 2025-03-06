@@ -39,10 +39,9 @@ There are two ways to add callouts to a code block. When using callouts, you mus
 
 #### Explicit callouts
 
-Add `<\d+>` to the end of a line to explicitly create a code callout.
+Add one or more callouts to a code block by adding a comment (`#`  or `//` ) with a callout label at the end of the line. The callout label must be a number enclosed in angle brackets `<>`. 
 
 An ordered list with the same number of items as callouts must follow the code block. If the number of list items doesn’t match the callouts, docs-builder will throw an error.
-
 
 ::::{tab-set}
 
@@ -51,7 +50,7 @@ An ordered list with the same number of items as callouts must follow the code b
 ```yaml
 project:
   license:
-    content: CC-BY-4.0 <1>
+    content: CC-BY-4.0 # <1>
 ```
 
 1. The license
@@ -65,7 +64,7 @@ project:
 ```yaml
 project:
   license:
-    content: CC-BY-4.0 <1>
+    content: CC-BY-4.0 # <1>
 ```
 
 1. The license

@@ -53,9 +53,9 @@ var z = y - 2; // another callout
 
 public class ClassicCallOutsRequiresContent(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; <1>
+var x = 1; # <1>
 var y = x - 2;
-var z = y - 2; <2>
+var z = y - 2; # <2>
 """
 	)
 {
@@ -72,9 +72,9 @@ var z = y - 2; <2>
 
 public class ClassicCallOutsNotFollowedByList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; <1>
+var x = 1; # <1>
 var y = x - 2;
-var z = y - 2; <2>
+var z = y - 2; # <2>
 """,
 """
 ## hello world
@@ -96,9 +96,9 @@ var z = y - 2; <2>
 
 public class ClassicCallOutsFollowedByAListWithOneParagraph(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; <1>
+var x = 1; // <1>
 var y = x - 2;
-var z = y - 2; <2>
+var z = y - 2; // <2>
 """,
 """
 
@@ -122,9 +122,9 @@ var z = y - 2; <2>
 
 public class ClassicCallOutsFollowedByListButWithTwoParagraphs(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; <1>
+var x = 1; // <1>
 var y = x - 2;
-var z = y - 2; <2>
+var z = y - 2; // <2>
 """,
 """
 
@@ -153,9 +153,9 @@ BLOCK TWO
 
 public class ClassicCallOutsFollowedByListWithWrongCoung(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; <1>
+var x = 1; // <1>
 var y = x - 2;
-var z = y - 2; <2>
+var z = y - 2; // <2>
 """,
 """
 1. Only marking the first callout
@@ -176,9 +176,9 @@ var z = y - 2; <2>
 
 public class ClassicCallOutsReuseHighlights(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; <1>
-var y = x - 2; <2>
-var z = y - 2; <2>
+var x = 1; // <1>
+var y = x - 2; // <2>
+var z = y - 2; // <2>
 """,
 """
 1. The first
@@ -205,7 +205,7 @@ var z = y - 2; <2>
 
 public class ClassicCallOutWithTheRightListItems(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-receivers: <1>
+receivers: # <1>
   # ...
   otlp:
     protocols:
@@ -213,7 +213,7 @@ receivers: <1>
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-processors: <2>
+processors: # <2>
   # ...
   memory_limiter:
     check_interval: 1s
@@ -222,13 +222,13 @@ processors: <2>
 
 exporters:
   debug:
-    verbosity: detailed <3>
-  otlp: <4>
+    verbosity: detailed # <3>
+  otlp: # <4>
     # Elastic APM server https endpoint without the "https://" prefix
-    endpoint: "${env:ELASTIC_APM_SERVER_ENDPOINT}" <5> <7>
+    endpoint: "${env:ELASTIC_APM_SERVER_ENDPOINT}" # <5> <7>
     headers:
       # Elastic APM Server secret token
-      Authorization: "Bearer ${env:ELASTIC_APM_SECRET_TOKEN}" <6> <7>
+      Authorization: "Bearer ${env:ELASTIC_APM_SECRET_TOKEN}" # <6> <7>
 
 service:
   pipelines:
@@ -240,7 +240,7 @@ service:
       receivers: [otlp]
       processors: [..., memory_limiter, batch]
       exporters: [debug, otlp]
-    logs: <8>
+    logs: # <8>
       receivers: [otlp]
       processors: [..., memory_limiter, batch]
       exporters: [debug, otlp]
@@ -299,12 +299,12 @@ public class MultipleCalloutsInOneLine(ITestOutputHelper output) : CodeBlockCall
 
 public class CodeBlockWithChevronInsideCode(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 	"""
-	app.UseFilter<StopwatchFilter>(); <1>
-	app.UseFilter<CatchExceptionFilter>(); <2>
+	app.UseFilter<StopwatchFilter>(); # <1>
+	app.UseFilter<CatchExceptionFilter>(); # <2>
 
-	var x = 1; <1>
+	var x = 1; # <1>
 	var y = x - 2;
-	var z = y - 2; <1> <2>
+	var z = y - 2; # <1> <2>
 	""",
 	"""
 	1. First callout
