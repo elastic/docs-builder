@@ -117,6 +117,25 @@ var z = y - 2; <2>
 		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
+	public void RendersExpectedHtml() =>
+		Html.Should().Contain("""
+		                      <div class="highlight-csharp notranslate">
+		                      	<div class="highlight">
+		                      		<pre><code class="language-csharp">var x = 1; <span class="code-callout" data-index="1">1</span>
+		                      var y = x - 2;
+		                      var z = y - 2; <span class="code-callout" data-index="2">2</span>
+		                      </code></pre>
+		                      	</div>
+		                      </div>
+		                      <p><strong>OUTPUT:</strong></p>
+		                      <ol class="code-callouts">
+		                      <li>Marking the first callout</li>
+		                      <li>Marking the second callout</li>
+		                      </ol>
+		                      """);
+
+
+	[Fact]
 	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
 }
 

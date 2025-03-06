@@ -126,7 +126,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		});
 
 		RenderRazorSlice(slice, renderer, block);
-
 		if (!block.InlineAnnotations && callOuts.Count > 0)
 		{
 			var index = block.Parent!.IndexOf(block);
@@ -137,11 +136,18 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 				var siblingBlock = block.Parent[index + 1];
 				if (siblingBlock is not ListBlock)
 				{
-					//allow one block of content in between
-					if (index + 2 <= (block.Parent!.Count - 1))
-						siblingBlock = block.Parent[index + 2];
+					// allow one block of content in between
+					// render it immediately and remove it, so it's not rendered twice
+					if (index + 2 <= block.Parent.Count - 1)
+					{
+						_ = renderer.Render(block.Parent[index + 1]);
+						_ = block.Parent.Remove(block.Parent[index + 1]);
+						siblingBlock = block.Parent[index + 1];
+					}
 					if (siblingBlock is not ListBlock)
+					{
 						block.EmitError("Code block with annotations is not followed by a list");
+					}
 				}
 				if (siblingBlock is ListBlock l && l.Count < callOuts.Count)
 				{

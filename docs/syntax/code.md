@@ -58,7 +58,6 @@ project:
 
 :::
 
-
 :::{tab-item} Markdown
 
 ````markdown
@@ -74,6 +73,66 @@ project:
 :::
 
 ::::
+
+You can also have one block element in between the code block and the callout list:
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```javascript
+var input1 = "World"; // <1>
+var input2 = "Elastic"; // <2>
+
+function render(input) {
+    return `Hello, ${input}!`;
+}
+
+render(input1);
+render(input2);
+```
+
+**Inputs:**
+
+1. `World`
+2. `Elastic`
+
+**Outputs**:
+
+1. `Hello, World!`
+2. `Hello, Elastic!`
+:::
+
+
+:::{tab-item} Markdown
+
+````markdown
+```javascript
+var input1 = "World"; // <1>
+var input2 = "Elastic"; // <2>
+
+function render(input) {
+    return `Hello, ${input}!`;
+}
+
+render(input1);
+render(input2);
+```
+
+**Inputs:**
+
+1. Hello
+
+**Outputs**:
+
+1. Hello, World!
+````
+
+:::
+
+::::
+
+
 
 
 #### Magic Callouts
