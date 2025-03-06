@@ -101,6 +101,7 @@ render(input2);
 
 1. `Hello, World!`
 2. `Hello, Elastic!`
+
 :::
 
 
@@ -121,11 +122,13 @@ render(input2);
 
 **Inputs:**
 
-1. Hello
+1. `World`
+2. `Elastic`
 
 **Outputs**:
 
-1. Hello, World!
+1. `Hello, World!`
+2. `Hello, Elastic!`
 ````
 
 :::
