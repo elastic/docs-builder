@@ -165,7 +165,7 @@ BLOCK TWO
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+		.And.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
 }
 
 
