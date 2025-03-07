@@ -134,31 +134,22 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		EnhancedCodeBlock codeBlock,
 		ParserContext context)
 	{
-
-
 		string argsString;
-
 		if (codeBlock.Arguments == null)
 			argsString = "";
 		else if (codeBlock.Info?.IndexOf('{') == -1)
 			argsString = codeBlock.Arguments ?? "";
 		else
 		{
-			var tokens = codeBlock.Arguments.Split();
-			argsString = tokens.Length > 1 ? tokens[1] : "";
+			// if the code block starts with {code-block} and is followed by a language, we need to skip the language
+			var parts = codeBlock.Arguments.Split();
+			argsString = parts.Length > 1 && CodeBlock.Languages.Contains(parts[0])
+				? string.Join(" ", parts[1..])
+				: codeBlock.Arguments;
 		}
 
-		CodeBlockArguments codeBlockArgs;
-
-		try
-		{
-			codeBlockArgs = new CodeBlockArguments(argsString);
-		}
-		catch (InvalidCodeBlockArgumentException e)
-		{
-			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}", e);
-			codeBlockArgs = new CodeBlockArguments();
-		}
+		if (!CodeBlockArguments.TryParse(argsString, out var codeBlockArgs))
+			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}");
 
 		var callOutIndex = 0;
 		var originatingLine = 0;
@@ -175,7 +166,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			}
 
 			var span = line.Slice.AsSpan();
-			if (codeBlockArgs.IsSubstitutionsEnabled)
+			if (codeBlockArgs?.IsSubstitutionsEnabled == true)
 			{
 				if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterReplacement))
 				{
@@ -196,7 +187,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
 
-			if (codeBlockArgs.IsCalloutsEnabled)
+			if (codeBlockArgs?.IsCalloutsEnabled == true)
 			{
 				List<CallOut> callOuts = [];
 				var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;

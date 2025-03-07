@@ -17,39 +17,39 @@ public class CodeBlockArgumentsClassTests
 	{
 		const string codeBlockArguments = "callouts=true, subs=false";
 
-		var args = new CodeBlockArguments(codeBlockArguments);
-		args.IsSubstitutionsEnabled.Should().BeFalse();
-		args.IsCalloutsEnabled.Should().BeTrue();
+		var outcome = CodeBlockArguments.TryParse(codeBlockArguments, out var parsedArgs);
+
+		outcome.Should().BeTrue();
+		parsedArgs!.IsSubstitutionsEnabled.Should().BeFalse();
+		parsedArgs.IsCalloutsEnabled.Should().BeTrue();
 	}
 
 	[Fact]
 	public void CanHandleEmptyAndReturnsDefaultValues()
 	{
 		const string codeBlockArguments = "";
-
-		var args = new CodeBlockArguments(codeBlockArguments);
-		args.IsSubstitutionsEnabled.Should().BeFalse();
-		args.IsCalloutsEnabled.Should().BeTrue();
+		var outcome = CodeBlockArguments.TryParse(codeBlockArguments, out var parsedArgs);
+		outcome.Should().BeTrue();
+		parsedArgs!.IsSubstitutionsEnabled.Should().BeFalse();
+		parsedArgs.IsCalloutsEnabled.Should().BeTrue();
 	}
 
 	[Fact]
 	public void FailsOnTypo()
 	{
-		const string codeBlockArguments = "callout";
-		var act = () =>
-		{
-			_ = new CodeBlockArguments(codeBlockArguments);
-		};
-		act.Should().Throw<InvalidCodeBlockArgumentException>();
+		const string codeBlockArguments = "callout=what";
+		var result = CodeBlockArguments.TryParse(codeBlockArguments, out _);
+		result.Should().BeFalse();
 	}
 
 	[Fact]
 	public void ParsesPartiallyAndUsesDefaultOtherwise()
 	{
 		const string codeBlockArguments = "callouts=false";
-		var args = new CodeBlockArguments(codeBlockArguments);
-		args.IsSubstitutionsEnabled.Should().BeFalse();
-		args.IsCalloutsEnabled.Should().BeFalse();
+		var outcome = CodeBlockArguments.TryParse(codeBlockArguments, out var parsedArgs);
+		outcome.Should().BeTrue();
+		parsedArgs!.IsSubstitutionsEnabled.Should().BeFalse();
+		parsedArgs.IsCalloutsEnabled.Should().BeFalse();
 	}
 }
 
@@ -129,6 +129,24 @@ public class DisabledSubstitutions(ITestOutputHelper output) : CodeBlockArgument
 {
 	[Fact]
 	public void Render() => Html.Should().Contain("{{a-variable}}");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class MultipleArguments(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=true, callouts=false",
+	"""
+	{{a-variable}} <1>
+	""",
+	"""
+	1. This is a callout
+	"""
+)
+{
+	[Fact]
+	public void Render() => Html
+		.Should().Contain("This is a variable")
+		.And.Contain("&lt;1&gt;");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);

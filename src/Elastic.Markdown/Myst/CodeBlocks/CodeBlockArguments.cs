@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
@@ -11,48 +12,56 @@ namespace Elastic.Markdown.Myst.CodeBlocks;
 internal enum CodeBlockArgument
 {
 	Callouts,
-	Subs,
-	Unknown
+	Subs
 }
 
 public class InvalidCodeBlockArgumentException(string message) : ArgumentException(message);
 
 public class CodeBlockArguments
 {
+	public static bool TryParse(string args, [NotNullWhen(true)] out CodeBlockArguments? codeBlockArgs)
+	{
+		codeBlockArgs = null;
+
+		Dictionary<CodeBlockArgument, bool> arguments = [];
+
+		if (string.IsNullOrWhiteSpace(args))
+		{
+			codeBlockArgs = new CodeBlockArguments(ImmutableDictionary<CodeBlockArgument, bool>.Empty);
+			return true;
+		}
+
+		foreach (var i in args.Split(","))
+		{
+			var parts = i.Split("=");
+			switch (parts.Length)
+			{
+				case 1 when Enum.TryParse<CodeBlockArgument>(parts[0].Trim(), true, out var arg):
+					arguments[arg] = true;
+					break;
+				case 2 when Enum.TryParse<CodeBlockArgument>(parts[0].Trim(), true, out var arg):
+					{
+						if (bool.TryParse(parts[1].Trim(), out var value))
+							arguments[arg] = value;
+						else
+							return false;
+						break;
+					}
+				default:
+					return false;
+			}
+		}
+
+		codeBlockArgs = new CodeBlockArguments(arguments.ToImmutableDictionary());
+		return true;
+	}
+
 	public bool IsCalloutsEnabled { get; }
 	public bool IsSubstitutionsEnabled { get; }
 
-	public CodeBlockArguments() : this("") { }
-
-	// An example of a code block argument string is "callouts=true,substitutions=false"
-	public CodeBlockArguments(ReadOnlySpan<char> arguments)
+	private CodeBlockArguments(ImmutableDictionary<CodeBlockArgument, bool> arguments)
 	{
-		var parsedArguments = ParseArgumentsString(arguments);
-		IsCalloutsEnabled = parsedArguments.GetValueOrDefault(CodeBlockArgument.Callouts, true);
-		IsSubstitutionsEnabled = parsedArguments.GetValueOrDefault(CodeBlockArgument.Subs, false);
+		IsCalloutsEnabled = arguments.GetValueOrDefault(CodeBlockArgument.Callouts, true);
+		IsSubstitutionsEnabled = arguments.GetValueOrDefault(CodeBlockArgument.Subs, false);
 	}
-
-	private static ImmutableDictionary<CodeBlockArgument, bool> ParseArgumentsString(ReadOnlySpan<char> arguments) =>
-		arguments
-		.ToString()
-			.Split(",")
-			.Select(i => i.Split('='))
-			.Where(i =>
-			{
-				if (string.IsNullOrEmpty(i[0]))
-					return false;
-				if (!Enum.TryParse<CodeBlockArgument>(i[0].Trim(), true, out _))
-				{
-					var validArguments = string.Join(", ",
-						Enum.GetNames<CodeBlockArgument>().Where(n => n != CodeBlockArgument.Unknown.ToString()).Select(n => $"\"{n.ToLower()}\""));
-					throw new InvalidCodeBlockArgumentException(
-						$"Unknown code block argument \"{i[0]}\". Valid arguments are {validArguments}");
-				}
-				return true;
-			})
-			.ToDictionary(
-				i => Enum.TryParse<CodeBlockArgument>(i[0], true, out var key) ? key : CodeBlockArgument.Unknown,
-				i => i.Length >= 2 && bool.TryParse(i[1].Trim(), out var value) && value
-			)
-		.ToImmutableDictionary();
 }

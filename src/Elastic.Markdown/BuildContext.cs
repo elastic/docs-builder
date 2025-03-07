@@ -40,8 +40,6 @@ public record BuildContext
 
 	private readonly string? _urlPathPrefix;
 
-	public BuildContext() : this(new FileSystem()) { }
-
 	public BuildContext(IFileSystem fileSystem)
 		: this(new DiagnosticsCollector([]), fileSystem, fileSystem, null, null) { }
 
