@@ -107,6 +107,22 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		return indentCount;
 	}
 
+	private static bool IsCommentBlock(Block block)
+	{
+		if (block.GetType().Name == "CommentBlock")
+		{
+			return true;
+		}
+
+		if (block is HtmlBlock htmlBlock)
+		{
+			var content = htmlBlock.Lines.ToString();
+			return content.TrimStart().StartsWith('%');
+		}
+
+		return false;
+	}
+
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		if (block is AppliesToDirective appliesToDirective)
@@ -130,59 +146,82 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			var index = block.Parent!.IndexOf(block);
 			if (index == block.Parent!.Count - 1)
-				block.EmitError("Code block with annotations is not followed by any content, needs numbered list");
-			else
 			{
-				var siblingBlock = block.Parent[index + 1];
-				if (siblingBlock is not ListBlock)
+				block.EmitError("Code block with annotations is not followed by any content, needs numbered list");
+				return;
+			}
+
+			var nonCommentNonListCount = 0;
+			ListBlock? listBlock = null;
+			var currentIndex = index + 1;
+
+			// Process blocks between the code block and ordered list, removing comments and allowing only one non-comment block
+			while (currentIndex < block.Parent.Count)
+			{
+				var nextBlock = block.Parent[currentIndex];
+
+				if (nextBlock is ListBlock lb)
 				{
-					// allow one block of content in between
-					// render it immediately and remove it, so it's not rendered twice
-					if (index + 2 <= block.Parent.Count - 1)
-					{
-						_ = renderer.Render(block.Parent[index + 1]);
-						_ = block.Parent.Remove(block.Parent[index + 1]);
-						siblingBlock = block.Parent[index + 1];
-					}
-					if (siblingBlock is not ListBlock)
-					{
-						block.EmitError("Code block with annotations is not followed by a list");
-					}
+					listBlock = lb;
+					break;
 				}
-				if (siblingBlock is ListBlock l && l.Count < callOuts.Count)
+				else if (IsCommentBlock(nextBlock))
 				{
-					block.EmitError(
-						$"Code block has {callOuts.Count} callouts but the following list only has {l.Count}");
+					_ = renderer.Render(nextBlock);
+					_ = block.Parent.Remove(nextBlock);
 				}
-				else if (siblingBlock is ListBlock listBlock)
+				else
 				{
-					_ = block.Parent.Remove(listBlock);
-					_ = renderer.WriteLine("<ol class=\"code-callouts\">");
-					foreach (var child in listBlock)
+					nonCommentNonListCount++;
+					if (nonCommentNonListCount > 1)
 					{
-						var listItem = (ListItemBlock)child;
-						var previousImplicit = renderer.ImplicitParagraph;
-						renderer.ImplicitParagraph = !listBlock.IsLoose;
-
-						_ = renderer.EnsureLine();
-						if (renderer.EnableHtmlForBlock)
-						{
-							_ = renderer.Write("<li");
-							_ = renderer.WriteAttributes(listItem);
-							_ = renderer.Write('>');
-						}
-
-						renderer.WriteChildren(listItem);
-
-						if (renderer.EnableHtmlForBlock)
-							_ = renderer.WriteLine("</li>");
-
-						_ = renderer.EnsureLine();
-						renderer.ImplicitParagraph = previousImplicit;
+						block.EmitError("More than one content block between code block with annotations and its list");
+						return;
 					}
-					_ = renderer.WriteLine("</ol>");
+
+					_ = renderer.Render(nextBlock);
+					_ = block.Parent.Remove(nextBlock);
 				}
 			}
+
+			if (listBlock == null)
+			{
+				block.EmitError("Code block with annotations is not followed by a list");
+				return;
+			}
+
+			if (listBlock.Count < callOuts.Count)
+			{
+				block.EmitError($"Code block has {callOuts.Count} callouts but the following list only has {listBlock.Count}");
+				return;
+			}
+
+			_ = block.Parent.Remove(listBlock);
+
+			_ = renderer.WriteLine("<ol class=\"code-callouts\">");
+			foreach (var child in listBlock)
+			{
+				var listItem = (ListItemBlock)child;
+				var previousImplicit = renderer.ImplicitParagraph;
+				renderer.ImplicitParagraph = !listBlock.IsLoose;
+
+				_ = renderer.EnsureLine();
+				if (renderer.EnableHtmlForBlock)
+				{
+					_ = renderer.Write("<li");
+					_ = renderer.WriteAttributes(listItem);
+					_ = renderer.Write('>');
+				}
+
+				renderer.WriteChildren(listItem);
+
+				if (renderer.EnableHtmlForBlock)
+					_ = renderer.WriteLine("</li>");
+
+				_ = renderer.EnsureLine();
+				renderer.ImplicitParagraph = previousImplicit;
+			}
+			_ = renderer.WriteLine("</ol>");
 		}
 		else if (block.InlineAnnotations)
 		{
