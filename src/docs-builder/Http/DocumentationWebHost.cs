@@ -149,17 +149,17 @@ public class DocumentationWebHost
 	{
 		var generator = holder.Generator;
 
-		var s = slug.EndsWith('/')
-			? slug + "index.md"
-			: Path.GetExtension(slug) == string.Empty
-				? slug + ".md"
-				: slug;
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
-			foreach (var extension in generator.Context.Configuration.EnabledExtensions)
+			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace("/index.md", ".md");
+			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
 			{
-				if (extension.TryGetDocumentationFileBySlug(generator.DocumentationSet, slug, out documentationFile))
-					break;
+				foreach (var extension in generator.Context.Configuration.EnabledExtensions)
+				{
+					if (extension.TryGetDocumentationFileBySlug(generator.DocumentationSet, slug, out documentationFile))
+						break;
+				}
 			}
 		}
 

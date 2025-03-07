@@ -11,7 +11,7 @@ subs:
   eck:   "Elastic Cloud on Kubernetes"
   
 features:
-  primary-nav: true
+  primary-nav: false
   
 toc:
   - file: index.md
