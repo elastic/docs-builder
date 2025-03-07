@@ -109,7 +109,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static bool IsCommentBlock(Block block)
 	{
-		if (block is CommentBlock)
+		if (block.GetType().Name == "CommentBlock")
 		{
 			return true;
 		}
