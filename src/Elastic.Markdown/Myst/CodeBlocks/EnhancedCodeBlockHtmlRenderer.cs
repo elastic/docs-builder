@@ -113,8 +113,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			return true;
 		}
-
-
 		return false;
 	}
 
