@@ -82,6 +82,30 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				: codeBlock.Info
 		) ?? "unknown";
 
+		string argsString;
+
+		if (codeBlock.Arguments == null)
+			argsString = "";
+		else if (codeBlock.Info?.IndexOf('{') == -1)
+			argsString = codeBlock.Arguments ?? "";
+		else
+		{
+			var tokens = codeBlock.Arguments.Split();
+			argsString = tokens.Length > 1 ? tokens[1] : "";
+		}
+
+		CodeBlockArguments codeBlockArgs;
+
+		try
+		{
+			codeBlockArgs = new CodeBlockArguments(argsString);
+		}
+		catch (InvalidCodeBlockArgumentException e)
+		{
+			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}", e);
+			codeBlockArgs = new CodeBlockArguments();
+		}
+
 		var language = codeBlock.Language;
 		codeBlock.Language = language switch
 		{
@@ -101,7 +125,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			return base.Close(processor, block);
 
 		if (codeBlock is not AppliesToDirective appliesToDirective)
-			ProcessCallOuts(lines, language, codeBlock, context);
+			ProcessCodeBlock(lines, language, codeBlock, codeBlockArgs, context);
 		else
 			ProcessAppliesToDirective(appliesToDirective, lines);
 
@@ -128,7 +152,11 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		}
 	}
 
-	private static void ProcessCallOuts(StringLineGroup lines, string language, EnhancedCodeBlock codeBlock,
+	private static void ProcessCodeBlock(
+		StringLineGroup lines,
+		string language,
+		EnhancedCodeBlock codeBlock,
+		CodeBlockArguments args,
 		ParserContext context)
 	{
 		var callOutIndex = 0;
@@ -146,45 +174,48 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			}
 
 			var span = line.Slice.AsSpan();
-
-			if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterReplacement))
+			if (args.IsSubstitutionsEnabled)
 			{
-				var s = new StringSlice(frontMatterReplacement);
-				lines.Lines[index] = new StringLine(ref s);
-				span = lines.Lines[index].Slice.AsSpan();
-			}
+				if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterReplacement))
+				{
+					var s = new StringSlice(frontMatterReplacement);
+					lines.Lines[index] = new StringLine(ref s);
+					span = lines.Lines[index].Slice.AsSpan();
+				}
 
-			if (span.ReplaceSubstitutions(context.Substitutions, out var globalReplacement))
-			{
-				var s = new StringSlice(globalReplacement);
-				lines.Lines[index] = new StringLine(ref s);
-				span = lines.Lines[index].Slice.AsSpan();
-			}
+				if (span.ReplaceSubstitutions(context.Substitutions, out var globalReplacement))
+				{
+					var s = new StringSlice(globalReplacement);
+					lines.Lines[index] = new StringLine(ref s);
+					span = lines.Lines[index].Slice.AsSpan();
+				}
 
+			}
 
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
 
-			List<CallOut> callOuts = [];
-			var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
-			if (hasClassicCallout)
+			if (args.IsCalloutsEnabled)
 			{
-				var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
-				callOuts.AddRange(
-					EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
-				);
+				List<CallOut> callOuts = [];
+				var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
+				if (hasClassicCallout)
+				{
+					var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
+					callOuts.AddRange(
+						EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
+					);
+				}
+				// only support magic callouts for smaller line lengths
+				if (callOuts.Count == 0 && span.Length < 200)
+				{
+					var matchInline = CallOutParser.MathInlineAnnotation().EnumerateMatches(span);
+					callOuts.AddRange(
+						EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
+					);
+				}
+				codeBlock.CallOuts.AddRange(callOuts);
 			}
-
-			// only support magic callouts for smaller line lengths
-			if (callOuts.Count == 0 && span.Length < 200)
-			{
-				var matchInline = CallOutParser.MathInlineAnnotation().EnumerateMatches(span);
-				callOuts.AddRange(
-					EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
-				);
-			}
-
-			codeBlock.CallOuts.AddRange(callOuts);
 		}
 
 		//update string slices to ignore call outs

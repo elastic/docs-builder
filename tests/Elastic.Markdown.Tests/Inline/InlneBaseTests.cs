@@ -30,7 +30,7 @@ public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageIn
 }
 
 public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest(output, content)
+	: InlineTest(output, content, new Dictionary<string, string> { { "a-variable", "This is a variable" } })
 	where TDirective : Block
 {
 	protected TDirective? Block { get; private set; }

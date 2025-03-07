@@ -195,6 +195,40 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 ::::
 
+#### Disable callouts
+
+You can disable callouts by adding a code block argument `callout=false`.
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```yaml callout=false
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```yaml callout=false
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+````
+
+:::
+
+::::
+
 ### Console code blocks
 
 :::{note}
