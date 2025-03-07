@@ -109,16 +109,11 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static bool IsCommentBlock(Block block)
 	{
-		if (block.GetType().Name == "CommentBlock")
+		if (block is CommentBlock)
 		{
 			return true;
 		}
 
-		if (block is HtmlBlock htmlBlock)
-		{
-			var content = htmlBlock.Lines.ToString();
-			return content.TrimStart().StartsWith('%');
-		}
 
 		return false;
 	}
