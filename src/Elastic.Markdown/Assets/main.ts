@@ -6,7 +6,7 @@ import {initHighlight} from "./hljs";
 import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
-import {$$} from "select-dom"
+import {$, $$} from "select-dom"
 
 document.addEventListener('htmx:load', function() {
 	initTocNav();
@@ -24,18 +24,23 @@ document.body.addEventListener('htmx:oobBeforeSwap', function(event) {
 });
 
 document.body.addEventListener('htmx:pushedIntoHistory', function(event) {
-	const currentNavItem = $$('.current');
+	const pagesNav = $('#pages-nav');
+	const currentNavItem = $$('.current', pagesNav);
 	currentNavItem.forEach(el => {
 		el.classList.remove('current');
 	})
-	// @ts-ignore
-	const navItems = $$('a[href="' + event.detail.path + '"]');
+	const navItems = $$('a[href="' + event.detail.path + '"]', pagesNav);
 	navItems.forEach(navItem => {
 		navItem.classList.add('current');
 	});
 });
 
 document.body.addEventListener('htmx:responseError', function(event) {
+	// If you get a 404 error while clicking on a hx-get link, actually open the link
+	// This is needed because the browser doesn't update the URL when the response is a 404
+	// In production, cloudfront handles serving the 404 page.
+	// Locally, the DocumentationWebHost handles it.
+	// On previews, a generic 404 page is shown.
 	if (event.detail.xhr.status === 404) {
 		window.location.assign(event.detail.pathInfo.requestPath);
 	}
