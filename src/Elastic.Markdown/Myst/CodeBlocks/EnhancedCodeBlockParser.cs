@@ -149,7 +149,10 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		}
 
 		if (!CodeBlockArguments.TryParse(argsString, out var codeBlockArgs))
-			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}");
+		{
+			var validArgs = Enum.GetNames<CodeBlockArgument>().Select(i => $"\"{i.ToLower()}\"").Aggregate((acc, curr) => $"{acc}, {curr}");
+			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}. Valid arguments are {validArgs}.");
+		}
 
 		var callOutIndex = 0;
 		var originatingLine = 0;
