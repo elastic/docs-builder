@@ -78,7 +78,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 		codeBlock.Language = (
 			(codeBlock.Info?.IndexOf('{') ?? -1) != -1
-				? codeBlock.Arguments
+				? codeBlock.Arguments?.Split()[0]
 				: codeBlock.Info
 		) ?? "unknown";
 
