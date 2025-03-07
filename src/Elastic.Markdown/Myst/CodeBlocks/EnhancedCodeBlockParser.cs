@@ -82,30 +82,6 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				: codeBlock.Info
 		) ?? "unknown";
 
-		string argsString;
-
-		if (codeBlock.Arguments == null)
-			argsString = "";
-		else if (codeBlock.Info?.IndexOf('{') == -1)
-			argsString = codeBlock.Arguments ?? "";
-		else
-		{
-			var tokens = codeBlock.Arguments.Split();
-			argsString = tokens.Length > 1 ? tokens[1] : "";
-		}
-
-		CodeBlockArguments codeBlockArgs;
-
-		try
-		{
-			codeBlockArgs = new CodeBlockArguments(argsString);
-		}
-		catch (InvalidCodeBlockArgumentException e)
-		{
-			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}", e);
-			codeBlockArgs = new CodeBlockArguments();
-		}
-
 		var language = codeBlock.Language;
 		codeBlock.Language = language switch
 		{
@@ -125,7 +101,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			return base.Close(processor, block);
 
 		if (codeBlock is not AppliesToDirective appliesToDirective)
-			ProcessCodeBlock(lines, language, codeBlock, codeBlockArgs, context);
+			ProcessCodeBlock(lines, language, codeBlock, context);
 		else
 			ProcessAppliesToDirective(appliesToDirective, lines);
 
@@ -156,9 +132,34 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		StringLineGroup lines,
 		string language,
 		EnhancedCodeBlock codeBlock,
-		CodeBlockArguments args,
 		ParserContext context)
 	{
+
+
+		string argsString;
+
+		if (codeBlock.Arguments == null)
+			argsString = "";
+		else if (codeBlock.Info?.IndexOf('{') == -1)
+			argsString = codeBlock.Arguments ?? "";
+		else
+		{
+			var tokens = codeBlock.Arguments.Split();
+			argsString = tokens.Length > 1 ? tokens[1] : "";
+		}
+
+		CodeBlockArguments codeBlockArgs;
+
+		try
+		{
+			codeBlockArgs = new CodeBlockArguments(argsString);
+		}
+		catch (InvalidCodeBlockArgumentException e)
+		{
+			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}", e);
+			codeBlockArgs = new CodeBlockArguments();
+		}
+
 		var callOutIndex = 0;
 		var originatingLine = 0;
 		for (var index = 0; index < lines.Lines.Length; index++)
@@ -174,7 +175,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			}
 
 			var span = line.Slice.AsSpan();
-			if (args.IsSubstitutionsEnabled)
+			if (codeBlockArgs.IsSubstitutionsEnabled)
 			{
 				if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterReplacement))
 				{
@@ -195,7 +196,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
 
-			if (args.IsCalloutsEnabled)
+			if (codeBlockArgs.IsCalloutsEnabled)
 			{
 				List<CallOut> callOuts = [];
 				var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
