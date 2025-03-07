@@ -52,7 +52,7 @@ public class CodeBlockArguments
 			})
 			.ToDictionary(
 				i => Enum.TryParse<CodeBlockArgument>(i[0], true, out var key) ? key : CodeBlockArgument.Unknown,
-				i => i.Length >= 1 && bool.TryParse(i[1].Trim(), out var value) && value
+				i => i.Length >= 2 && bool.TryParse(i[1].Trim(), out var value) && value
 			)
 		.ToImmutableDictionary();
 }
