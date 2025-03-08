@@ -41,9 +41,6 @@ export function initNav() {
 		return;
 	}
 	const navItems = $$('a[href="' + window.location.pathname + '"], a[href="' + window.location.pathname + '/"]', pagesNav);
-	
-	console.log(navItems)
-	
 	navItems.forEach(el => {
 		el.classList.add('current');
 	});
