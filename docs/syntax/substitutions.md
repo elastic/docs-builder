@@ -36,13 +36,17 @@ Here are some variable substitutions:
 | {{a-key-with-dashes}} | Front Matter |
 | {{a-global-variable}} | `docset.yml` |
 
-Substitutions should work in code blocks too. But you need to explicitly enable them by adding `subs=true` to the code block.
+## Code blocks
+
+Substitutions are supported in code blocks but are disabled by default. Enable substitutions by adding `subs=true` to the code block.
 
 ````markdown
 ```bash subs=true
 # Your code with variables
 ```
 ````
+
+### Code directive with subs enabled
 
 ::::{tab-set}
 
@@ -74,6 +78,8 @@ cd elasticsearch-{{version}}/
 ::::
 
 
+### MD code block with subs enabled
+
 ::::{tab-set}
 
 :::{tab-item} Output
@@ -94,6 +100,8 @@ echo "{{a-global-variable}}"
 ````
 :::
 
+###  MD code block without subs enabled
+ 
 ::::
 
 ::::{tab-set}
