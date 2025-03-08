@@ -16,11 +16,14 @@ function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
 	expandAllParents(currentNavItem);
 	setTimeout(() => {
 		if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
-			currentNavItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			window.scrollTo(0, 0);
+			const navRect = nav.getBoundingClientRect();
+			const currentNavItemRect = currentNavItem.getBoundingClientRect();
+			const offset = currentNavItemRect.top - navRect.top - navRect.height / 3 + currentNavItemRect.height / 2;
+			nav.scrollTop = nav.scrollTop + offset;
 		}
 	}, delay);
 }
+
 function isElementInViewport(parent: HTMLElement, child: HTMLElement, ): boolean {
 	const childRect = child.getBoundingClientRect();
 	const parentRect = parent.getBoundingClientRect();
@@ -43,6 +46,3 @@ export function initNav() {
 	});
 	scrollCurrentNaviItemIntoView(pagesNav, 100);
 }
-
-
-// initNav();
