@@ -7,6 +7,20 @@ import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
 import {$, $$} from "select-dom"
+import { UAParser } from 'ua-parser-js';
+const { getOS } = new UAParser();
+
+document.addEventListener('htmx:beforeRequest', function(event) {
+	if (event.detail.requestConfig.verb === 'get' && event.detail.requestConfig.triggeringEvent) {
+		const { ctrlKey, metaKey }: PointerEvent = event.detail.requestConfig.triggeringEvent;
+		const { name: os } = getOS();
+		const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey;
+		if (modifierKey) {
+			event.preventDefault();
+			window.open(event.detail.requestConfig.path, '_blank', 'noopener noreferrer');
+		}
+	}
+});
 
 document.addEventListener('htmx:load', function() {
 	initTocNav();
