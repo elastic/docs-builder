@@ -1,0 +1,53 @@
+narrative:
+  checkout_strategy: full
+references:
+  apm-agent-android:
+  apm-agent-dotnet:
+  apm-agent-go:
+  apm-agent-ios:
+  apm-agent-java:
+  apm-agent-nodejs:
+  apm-agent-php:
+  apm-agent-python:
+  apm-agent-ruby:
+  apm-agent-rum-js:
+  apm-aws-lambda:
+  apm-k8s-attacher:
+  beats:
+  cloud-on-k8s:
+  cloud:
+    current: master
+  curator:
+    current: master
+  ecctl:
+    current: master
+  ecs-dotnet:
+  ecs-logging-go-logrus:
+  ecs-logging-go-zap:
+  ecs-logging-go-zerolog:
+  ecs-logging-java:
+  ecs-logging-nodejs:
+  ecs-logging-php:
+  ecs-logging-python:
+  ecs-logging-ruby:
+  ecs-logging:
+  ecs:
+  eland:
+  elastic-serverless-forwarder:
+  elasticsearch-hadoop:
+  elasticsearch-java:
+  elasticsearch-js:
+  elasticsearch-net:
+  elasticsearch-php:
+  elasticsearch-py:
+  elasticsearch-rs:
+  elasticsearch-ruby:
+  elasticsearch:
+  go-elasticsearch:
+  integrations:
+  kibana:
+  logstash-docs:
+  logstash:
+  search-ui:
+  integration-docs:
+  security-docs:

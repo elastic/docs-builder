@@ -4,11 +4,12 @@
 
 using YamlDotNet.Serialization;
 
-namespace Documentation.Assembler;
+namespace Documentation.Assembler.Configuration;
 
 [YamlStaticContext]
 [YamlSerializable(typeof(AssemblyConfiguration))]
 [YamlSerializable(typeof(Repository))]
+[YamlSerializable(typeof(NarrativeRepository))]
 public partial class YamlStaticContext;
 
 public record AssemblyConfiguration
@@ -34,16 +35,27 @@ public record AssemblyConfiguration
 		}
 	}
 
-	[YamlMember(Alias = "repos")]
-	public Dictionary<string, Repository> Repositories { get; set; } = [];
+	[YamlMember(Alias = "narrative")]
+	public NarrativeRepository Narrative { get; set; } = new();
+
+	[YamlMember(Alias = "references")]
+	public Dictionary<string, Repository?> ReferenceRepositories { get; set; } = [];
+}
+
+public record NarrativeRepository : Repository
+{
+	public static string Name { get; } = "docs-content";
 }
 
 public record Repository
 {
 	[YamlMember(Alias = "repo")]
-	public string Origin { get; set; } = string.Empty;
+	public string? Origin { get; set; }
 
-	[YamlMember(Alias = "branch")]
-	public string? Branch { get; set; }
+	[YamlMember(Alias = "current")]
+	public string? CurrentBranch { get; set; }
+
+	[YamlMember(Alias = "checkout_strategy")]
+	public string CheckoutStrategy { get; set; } = "partial";
 
 }
