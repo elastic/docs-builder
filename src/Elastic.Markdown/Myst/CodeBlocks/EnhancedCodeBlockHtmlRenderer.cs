@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Slices.Directives;
 using Markdig.Helpers;
 using Markdig.Renderers;
@@ -109,7 +110,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static bool IsCommentBlock(Block block)
 	{
-		if (block.GetType().Name == "CommentBlock")
+		if (block is CommentBlock)
 		{
 			return true;
 		}
