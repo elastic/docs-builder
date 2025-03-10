@@ -1,13 +1,11 @@
 name: preview-build
 
 on:
-  pull_request_target: 
+  pull_request_target:
     types:
       - opened
       - synchronize
       - reopened
-      - labeled
-      - unlabeled
   push:
     branches:
       - main
@@ -21,11 +19,16 @@ on:
         description: 'Do not fail to publish if build fails'
         type: string
         required: false
-        default: 'true'
+        default: 'false'
       path-pattern:
         description: 'Path pattern to filter files. Only if changed files match the pattern, the workflow will continue.'
         type: string
         default: '**'
+        required: false
+      free-disk-space:
+        description: 'Free disk space before running the build'
+        type: string
+        default: 'false'
         required: false
 
 permissions:
@@ -36,43 +39,56 @@ permissions:
 
 jobs:
   build:
-    concurrency: 
+    concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
+      cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
     runs-on: ubuntu-latest
     steps:
 
+      - name: Checkout
+        if:  contains(fromJSON('["push", "merge_group"]'), github.event_name)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
       - name: Get changed files
-        if: github.event_name == 'pull_request_target'
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         id: check-files
         uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
-            
+          
       - name: Checkout
-        if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
+        if: startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true'
         uses: actions/checkout@v4
-        with: 
+        with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          persist-credentials: false
-        
+          
+      - name: Free Disk Space
+        if: contains(fromJSON('["elastic/asciidocalypse", "elastic/security-docs"]'), github.repository)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          
       - name: Create Deployment
-        if: github.event_name == 'push' || steps.check-files.outputs.any_changed == 'true'
+        if: github.event_name == 'push' || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
         uses: actions/github-script@v7
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref_name }}
+          REF: ${{ startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha || github.ref_name }}
         with:
           result-encoding: string
           script: |
             const { owner, repo } = context.repo;
             const prNumber = process.env.PR_NUMBER;
             const environment = 'docs-preview';
+            const task = prNumber ? `docs-preview-${prNumber}` : undefined;
             const deployment = await github.rest.repos.createDeployment({
                 owner,
                 repo,
                 environment,
+                task,
                 ref: process.env.REF,
                 auto_merge: false,
                 transient_environment: true,
@@ -86,7 +102,7 @@ jobs:
                 log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
             return deployment.data.id
-            
+
       - name: Generate env.PATH_PREFIX
         if: steps.deployment.outputs.result
         env:
@@ -94,7 +110,7 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           case "${GITHUB_EVENT_NAME}" in
-            "pull_request_target")
+            "merge_group" | "pull_request" | "pull_request_target")
               echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
               ;;
             "push")
@@ -112,12 +128,7 @@ jobs:
 
       - name: Bootstrap Action Workspace
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
-
         uses: ./.github/actions/bootstrap
-        
-      - name: Set REDESIGN feature flag
-        if: contains(github.event.pull_request.labels.*.name, 'redesign') && steps.deployment.outputs.result
-        run: echo "REDESIGN=true" >> $GITHUB_ENV
 
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
@@ -127,19 +138,24 @@ jobs:
           dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder' && steps.deployment.outputs.result
+        if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
         uses: elastic/docs-builder@main
+        id: docs-build
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
 
+      - name: 'Validate Inbound Links'
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
+        uses: elastic/docs-builder/actions/validate-inbound-local@main
+
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: steps.deployment.outputs.result
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
 
       - name: Upload to S3
         id: s3-upload
-        if: steps.deployment.outputs.result
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete
           aws cloudfront create-invalidation \
@@ -147,21 +163,26 @@ jobs:
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update Link Index
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success' 
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
+
+      - name: Update Reference Index
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
+        uses: elastic/docs-builder/actions/update-reference-index@main
 
       - name: Update deployment status
         uses: actions/github-script@v7
         if: always() && steps.deployment.outputs.result
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ job.status == 'success' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`,
+              state: "${{ steps.docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
+              environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })

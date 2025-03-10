@@ -12,6 +12,11 @@ inputs:
   strict:
     description: 'Treat warnings as errors'
     required: false
+outputs:
+  landing-page-path:
+    description: 'Path to the landing page of the documentation'
+  skip:
+    description: "hint from the documentation tool to skip the docs build for this PR"
 
 runs:
   using: 'docker'

@@ -4,15 +4,13 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
-using Elastic.Markdown.CrossLinks;
-using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
@@ -21,131 +19,73 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public class MarkdownParser(
-	IDirectoryInfo sourcePath,
-	BuildContext context,
-	Func<IFileInfo, DocumentationFile?>? getDocumentationFile,
-	ConfigurationFile configuration,
-	ICrossLinkResolver linksResolver
-	)
+public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 {
-	public IDirectoryInfo SourcePath { get; } = sourcePath;
-
-	private BuildContext Context { get; } = context;
-
-	private ICrossLinkResolver LinksResolver { get; } = linksResolver;
-
-	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? _minimalPipeline;
-	public static MarkdownPipeline MinimalPipeline
-	{
-		get
-		{
-			if (_minimalPipeline is not null)
-				return _minimalPipeline;
-			var builder = new MarkdownPipelineBuilder()
-				.UseYamlFrontMatter()
-				.UseInlineAnchors()
-				.UseHeadingsWithSlugs()
-				.UseDirectives();
-
-			builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-			_minimalPipeline = builder.Build();
-			return _minimalPipeline;
-
-		}
-	}
-
-	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? _pipelineSoft;
-	private static MarkdownPipeline PipelineSoft
-	{
-		get
-		{
-			if (_pipelineSoft is not null)
-				return _pipelineSoft;
-
-			var builder = CreateDefaultBuilder()
-				.UseSoftlineBreakAsHardlineBreak();
-
-			_pipelineSoft = builder.Build();
-			return _pipelineSoft;
-		}
-	}
-	// ReSharper disable once InconsistentNaming
-	private static MarkdownPipeline? _pipelineHard;
-	private static MarkdownPipeline PipelineHard
-	{
-		get
-		{
-			if (_pipelineHard is not null)
-				return _pipelineHard;
-
-			var builder = CreateDefaultBuilder();
-
-			_pipelineHard = builder.Build();
-			return _pipelineHard;
-		}
-	}
-
-	private static MarkdownPipelineBuilder CreateDefaultBuilder()
-	{
-		var builder = new MarkdownPipelineBuilder()
-			.UseInlineAnchors()
-			.UsePreciseSourceLocation()
-			.UseDiagnosticLinks()
-			.UseHeadingsWithSlugs()
-			.UseEmphasisExtras(EmphasisExtraOptions.Default)
-			.UseSubstitution()
-			.UseComments()
-			.UseYamlFrontMatter()
-			.UseGridTables()
-			.UsePipeTables()
-			.UseDirectives()
-			.UseDefinitionLists()
-			.UseEnhancedCodeBlocks()
-			.DisableHtml()
-			.UseHardBreaks();
-		builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-		return builder;
-	}
-
-	// ReSharper disable once InconsistentNaming
-	private MarkdownPipeline? _pipeline;
-	public MarkdownPipeline Pipeline
-	{
-		get
-		{
-			if (_pipeline is not null)
-				return _pipeline;
-
-			_pipeline = Configuration.SoftLineEndings ? PipelineSoft : PipelineHard;
-			return _pipeline;
-		}
-	}
-
-	public ConfigurationFile Configuration { get; } = configuration;
+	private BuildContext Build { get; } = build;
+	private IParserResolvers Resolvers { get; } = resolvers;
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, null, Context, Configuration, LinksResolver)
+		var state = new ParserState(Build)
 		{
-			SkipValidation = true,
-			GetDocumentationFile = getDocumentationFile
+			MarkdownSourcePath = path,
+			YamlFrontMatter = null,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			SkipValidation = true
 		};
+		var context = new ParserContext(state);
 		return ParseAsync(path, context, MinimalPipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
 	{
-		var context = new ParserContext(this, path, matter, Context, Configuration, LinksResolver)
+		var state = new ParserState(Build)
 		{
-			GetDocumentationFile = getDocumentationFile
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver
 		};
+		var context = new ParserContext(state);
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-	private async Task<MarkdownDocument> ParseAsync(
+	public Task<MarkdownDocument> ParseSnippetAsync(IFileInfo path, IFileInfo parentPath, YamlFrontMatter? matter, Cancel ctx)
+	{
+		var state = new ParserState(Build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			ParentMarkdownPath = parentPath
+		};
+		var context = new ParserContext(state);
+		return ParseAsync(path, context, Pipeline, ctx);
+	}
+
+	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
+		ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
+
+	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
+		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
+
+	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
+	{
+		var state = new ParserState(Build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
+			CrossLinkResolver = Resolvers.CrossLinkResolver
+		};
+		var context = new ParserContext(state);
+		var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline, context);
+		return markdownDocument;
+	}
+
+	private static async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,
 		MarkdownParserContext context,
 		MarkdownPipeline pipeline,
@@ -167,13 +107,57 @@ public class MarkdownParser(
 		}
 	}
 
-	public MarkdownDocument Parse(string yaml, IFileInfo parent, YamlFrontMatter? matter)
+	// ReSharper disable once InconsistentNaming
+	private MarkdownPipeline? _minimalPipelineCached;
+
+	private MarkdownPipeline MinimalPipeline
 	{
-		var context = new ParserContext(this, parent, matter, Context, Configuration, LinksResolver)
+		get
 		{
-			GetDocumentationFile = getDocumentationFile
-		};
-		var markdownDocument = Markdig.Markdown.Parse(yaml, Pipeline, context);
-		return markdownDocument;
+			if (_minimalPipelineCached is not null)
+				return _minimalPipelineCached;
+			var builder = new MarkdownPipelineBuilder()
+				.UseYamlFrontMatter()
+				.UseInlineAnchors()
+				.UseHeadingsWithSlugs()
+				.UseDirectives(this);
+
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			_minimalPipelineCached = builder.Build();
+			return _minimalPipelineCached;
+		}
+	}
+
+	// ReSharper disable once InconsistentNaming
+	private MarkdownPipeline? _pipelineCached;
+
+	public MarkdownPipeline Pipeline
+	{
+		get
+		{
+			if (_pipelineCached is not null)
+				return _pipelineCached;
+
+			var builder = new MarkdownPipelineBuilder()
+				.UseInlineAnchors()
+				.UsePreciseSourceLocation()
+				.UseDiagnosticLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UseSubstitution()
+				.UseComments()
+				.UseYamlFrontMatter()
+				.UseGridTables()
+				.UsePipeTables()
+				.UseDirectives(this)
+				.UseDefinitionLists()
+				.UseEnhancedCodeBlocks()
+				.UseHtmxLinkInlineRenderer(Build)
+				.DisableHtml()
+				.UseHardBreaks();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			_pipelineCached = builder.Build();
+			return _pipelineCached;
+		}
 	}
 }

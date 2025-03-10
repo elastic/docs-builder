@@ -29,6 +29,8 @@ Nested content that will be parsed as markdown
 
 Defining directives with `:::` allows the nested markdown syntax to be highlighted properly by editors and web viewers.
 
+
+
 ### Nesting Directives
 
 Increase the number of leading semicolons to include nested directives.
@@ -46,6 +48,13 @@ Content displayed in the note admonition
 
 ## Literal directives
 
+All directive are indicated with semicolons except literal blocks. For these you need to use triple backticks.
+
+* [Code blocks](code.md)
+* [{applies-to} blocks](applies.md)
+
+Since their contents **should not** be parsed as markdown they use backticks. This also ensures maximum interopability with existing markdown editors and previews.
+
 Many Markdown editors support syntax highlighting for embedded code blocks. For compatibility with this feature, use triple backticks instead of triple colons for content that needs to be displayed literally:
 
 ````markdown
@@ -60,7 +69,7 @@ We support _some_ [GitHub Flavored Markdown (GFM) extensions](https://github.git
 
 ### Supported
 
-* [](tables.md#github-flavored-markdown-gfm-table)
+* [](tables.md#basic-table)
 * Strikethrough: ~~as seen here~~
 
 ### Not supported

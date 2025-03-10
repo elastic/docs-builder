@@ -63,7 +63,7 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
@@ -86,7 +86,7 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
@@ -114,7 +114,26 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
+
+	[Fact]
+	public void RendersExpectedHtml() =>
+		Html.Should().Contain("""
+		                      <div class="highlight-csharp notranslate">
+		                      	<div class="highlight">
+		                      		<pre><code class="language-csharp">var x = 1; <span class="code-callout" data-index="1">1</span>
+		                      var y = x - 2;
+		                      var z = y - 2; <span class="code-callout" data-index="2">2</span>
+		                      </code></pre>
+		                      	</div>
+		                      </div>
+		                      <p><strong>OUTPUT:</strong></p>
+		                      <ol class="code-callouts">
+		                      <li>Marking the first callout</li>
+		                      <li>Marking the second callout</li>
+		                      </ol>
+		                      """);
+
 
 	[Fact]
 	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
@@ -142,7 +161,7 @@ BLOCK TWO
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
@@ -167,7 +186,7 @@ var z = y - 2; <2>
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
@@ -191,13 +210,13 @@ var z = y - 2; <2>
 	public void SeesTwoUniqueCallouts() => Block!.UniqueCallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void ParsesAllForLineInformation() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(3)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().BeEmpty();
@@ -264,7 +283,7 @@ service:
 		Block!.CallOuts
 			.Should().NotBeNullOrEmpty()
 			.And.HaveCount(9)
-			.And.OnlyContain(c => c.Text.StartsWith("<"));
+			.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 		Block!.UniqueCallOuts
 			.Should().NotBeNullOrEmpty()
@@ -291,7 +310,7 @@ public class MultipleCalloutsInOneLine(ITestOutputHelper output) : CodeBlockCall
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(3)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -316,7 +335,7 @@ public class CodeBlockWithChevronInsideCode(ITestOutputHelper output) : CodeBloc
 	public void ParsesMagicCallOuts() => Block!.CallOuts
 		.Should().NotBeNullOrEmpty()
 		.And.HaveCount(5)
-		.And.OnlyContain(c => c.Text.StartsWith("<"));
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);

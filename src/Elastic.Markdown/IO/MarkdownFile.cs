@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -13,24 +14,39 @@ using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.IO;
-
 
 public record MarkdownFile : DocumentationFile
 {
 	private string? _navigationTitle;
 
-	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext context)
+	private readonly DocumentationSet _set;
+
+	private readonly IFileInfo _configurationFile;
+
+	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
+
+	public MarkdownFile(
+		IFileInfo sourceFile,
+		IDirectoryInfo rootPath,
+		MarkdownParser parser,
+		BuildContext build,
+		DocumentationSet set
+	)
 		: base(sourceFile, rootPath)
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		UrlPathPrefix = context.UrlPathPrefix;
+		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
-		Collector = context.Collector;
+		Collector = build.Collector;
+		_configurationFile = build.Configuration.SourceFile;
+		_globalSubstitutions = build.Configuration.Substitutions;
+		_set = set;
 	}
+
+	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
 	private DiagnosticsCollector Collector { get; }
 
@@ -42,19 +58,20 @@ public record MarkdownFile : DocumentationFile
 
 	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
-	private MarkdownParser MarkdownParser { get; }
+	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
-	public string? TitleRaw { get; private set; }
+	public string? TitleRaw { get; protected set; }
 
 	public string? Title
 	{
 		get => _title;
-		private set
+		protected set
 		{
 			_title = value?.StripMarkdown();
 			TitleRaw = value;
 		}
 	}
+
 	public string? NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
@@ -70,11 +87,23 @@ public record MarkdownFile : DocumentationFile
 
 	public string FilePath { get; }
 	public string FileName { get; }
-	public string Url => Path.GetFileName(RelativePath) == "index.md"
-		? $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
-		: $"{UrlPathPrefix}/{RelativePath.Remove(RelativePath.LastIndexOf(".md", StringComparison.Ordinal), 3)}";
+
+	protected virtual string RelativePathUrl => RelativePath;
+
+	public string Url
+	{
+		get
+		{
+			var relativePath = RelativePathUrl;
+			return Path.GetFileName(relativePath) == "index.md"
+				? $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
+				: $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
+		}
+	}
 
 	public int NavigationIndex { get; internal set; } = -1;
+
+	public string? GroupId { get; set; }
 
 	private bool _instructionsParsed;
 	private DocumentationGroup? _parent;
@@ -90,28 +119,71 @@ public record MarkdownFile : DocumentationFile
 				parents.Add(parent.Index);
 			parent = parent?.Parent;
 		} while (parent != null);
-		return parents.ToArray();
+
+		return [.. parents];
 	}
+
+	public string[] YieldParentGroups()
+	{
+		var parents = new List<string>();
+		if (GroupId is not null)
+			parents.Add(GroupId);
+		var parent = Parent;
+		do
+		{
+			if (parent is not null)
+				parents.Add(parent.Id);
+			parent = parent?.Parent;
+		} while (parent != null);
+
+		return [.. parents];
+	}
+
+	/// this get set by documentationset when validating redirects
+	/// because we need to minimally parse to see the anchors anchor validation is deferred.
+	public IReadOnlyDictionary<string, string?>? AnchorRemapping { get; set; }
+
+	private void ValidateAnchorRemapping()
+	{
+		if (AnchorRemapping is null)
+			return;
+		foreach (var (_, v) in AnchorRemapping)
+		{
+			if (v is null or "" or "!")
+				continue;
+			if (Anchors.Contains(v))
+				continue;
+
+			Collector.EmitError(_configurationFile.FullName, $"Bad anchor remap '{v}' does not exist in {RelativePath}");
+		}
+	}
+
+	protected virtual async Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx) =>
+		await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
+
+	protected virtual async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
+		await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 
 	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
 	{
-		var document = await MarkdownParser.MinimalParseAsync(SourceFile, ctx);
+		var document = await GetMinimalParseDocumentAsync(ctx);
 		ReadDocumentInstructions(document);
+		ValidateAnchorRemapping();
 		return document;
 	}
 
 	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
 	{
 		if (!_instructionsParsed)
-			await MinimalParseAsync(ctx);
+			_ = await MinimalParseAsync(ctx);
 
-		var document = await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
+		var document = await GetParseDocumentAsync(ctx);
 		return document;
 	}
 
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
-		var globalSubstitutions = MarkdownParser.Configuration.Substitutions;
+		var globalSubstitutions = _globalSubstitutions;
 		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;
@@ -122,9 +194,9 @@ public record MarkdownFile : DocumentationFile
 		return allProperties;
 	}
 
-	private void ReadDocumentInstructions(MarkdownDocument document)
+	protected void ReadDocumentInstructions(MarkdownDocument document)
 	{
-		Title = document
+		Title ??= document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
@@ -147,36 +219,74 @@ public record MarkdownFile : DocumentationFile
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
 			Title = replacement;
 
-		var contents = document
+		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
+
+		_tableOfContent.Clear();
+		foreach (var t in toc)
+			_tableOfContent[t.Slug] = t;
+
+
+		foreach (var label in anchors)
+			_ = _anchors.Add(label);
+
+		_instructionsParsed = true;
+	}
+
+	public static List<PageTocItem> GetAnchors(
+		DocumentationSet set,
+		MarkdownParser parser,
+		YamlFrontMatter? frontMatter,
+		MarkdownDocument document,
+		IReadOnlyDictionary<string, string> subs,
+		out string[] anchors)
+	{
+		var includeBlocks = document.Descendants<IncludeBlock>().ToArray();
+		var includes = includeBlocks
+			.Where(i => i.Found)
+			.Select(i =>
+			{
+				var relativePath = i.IncludePathRelativeToSource;
+				if (relativePath is null
+					|| !set.FlatMappedFiles.TryGetValue(relativePath, out var file)
+					|| file is not SnippetFile snippet)
+					return null;
+
+				return snippet.GetAnchors(set, parser, frontMatter);
+			})
+			.Where(i => i is not null)
+			.ToArray();
+
+		var includedTocs = includes.SelectMany(i => i!.TableOfContentItems).ToArray();
+		var toc = document
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
-				if (header.AsSpan().ReplaceSubstitutions(subs, out var replacement))
-					header = replacement;
-				return new PageTocItem { Heading = header!, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
+				return new PageTocItem { Heading = header, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
 			})
+			.Concat(includedTocs)
+			.Select(toc => subs.Count == 0
+				? toc
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, out var r)
+					? toc with { Heading = r }
+					: toc)
 			.ToList();
 
-		_tableOfContent.Clear();
-		foreach (var t in contents)
-			_tableOfContent[t.Slug] = t;
-
-		var anchors = document.Descendants<DirectiveBlock>()
-			.Select(b => b.CrossReferenceName)
-			.Where(l => !string.IsNullOrWhiteSpace(l))
-			.Select(s => s.Slugify())
-			.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
-			.Concat(_tableOfContent.Values.Select(t => t.Slug))
-			.Where(anchor => !string.IsNullOrEmpty(anchor))
-			.ToArray();
-
-		foreach (var label in anchors)
-			_anchors.Add(label);
-
-		_instructionsParsed = true;
+		var includedAnchors = includes.SelectMany(i => i!.Anchors).ToArray();
+		anchors =
+		[
+			..document.Descendants<DirectiveBlock>()
+				.Select(b => b.CrossReferenceName)
+				.Where(l => !string.IsNullOrWhiteSpace(l))
+				.Select(s => s.Slugify())
+				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
+				.Concat(toc.Select(t => t.Slug))
+				.Where(anchor => !string.IsNullOrEmpty(anchor))
+				.Concat(includedAnchors)
+		];
+		return toc;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
@@ -196,6 +306,7 @@ public record MarkdownFile : DocumentationFile
 			if (string.IsNullOrEmpty(Title))
 				Title = deprecatedTitle;
 		}
+
 		// set title on yaml front matter manually.
 		// frontmatter gets passed around as page information throughout
 		fm.Title = Title;
@@ -215,13 +326,12 @@ public record MarkdownFile : DocumentationFile
 		}
 	}
 
-
 	public string CreateHtml(MarkdownDocument document)
 	{
 		//we manually render title and optionally append an applies block embedded in yaml front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
 		if (h1 is not null)
-			document.Remove(h1);
+			_ = document.Remove(h1);
 		return document.ToHtml(MarkdownParser.Pipeline);
 	}
 }

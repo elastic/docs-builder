@@ -1,0 +1,35 @@
+@layer components {
+	.markdown-content {
+
+		details > summary::-webkit-details-marker {
+			display: none;
+		}
+		
+		details.dropdown {
+			@apply mt-4 block border-1 border-grey-20 rounded-sm shadow-xs;
+			summary.dropdown-title {
+				@apply flex 
+				justify-between
+				items-center
+				px-4
+				py-2
+				cursor-pointer
+				font-sans
+				font-bold
+				text-ink-dark
+				;
+			}
+			
+			&[open] .dropdown-title {
+				@apply border-b-1 border-b-grey-20;
+				svg {
+					transform: rotate(90deg);
+				}
+			}
+			
+			.dropdown-content {
+				@apply px-4 pb-4;
+			}
+		}
+	}
+}

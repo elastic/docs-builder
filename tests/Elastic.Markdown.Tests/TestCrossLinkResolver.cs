@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
@@ -11,16 +12,18 @@ namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
-	public Dictionary<string, LinkReference> LinkReferences { get; } = new();
-	public HashSet<string> DeclaredRepositories { get; } = new();
+	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
+	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
+	private HashSet<string> DeclaredRepositories { get; } = [];
 
-	public Task FetchLinks()
+	public Task<FetchedCrossLinks> FetchLinks()
 	{
+		// language=json
 		var json = """
 		           {
 		           	  "origin": {
 		           		"branch": "main",
-		           		"remote": " https://github.com/elastic/docs-conten",
+		           		"remote": " https://github.com/elastic/docs-content",
 		           		"ref": "76aac68d066e2af935c38bca8ce04d3ee67a8dd9"
 		           	  },
 		           	  "url_path_prefix": "/elastic/docs-content/tree/main",
@@ -39,13 +42,19 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           	  }
 		           	}
 		           """;
-		var reference = CrossLinkResolver.Deserialize(json);
+		var reference = CrossLinkFetcher.Deserialize(json);
 		LinkReferences.Add("docs-content", reference);
 		LinkReferences.Add("kibana", reference);
 		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
-		return Task.CompletedTask;
+		_crossLinks = new FetchedCrossLinks
+		{
+			DeclaredRepositories = DeclaredRepositories,
+			LinkReferences = LinkReferences.ToFrozenDictionary(),
+			FromConfiguration = true
+		};
+		return Task.FromResult(_crossLinks);
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, DeclaredRepositories, LinkReferences, crossLinkUri, out resolvedUri);
+	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, _crossLinks, crossLinkUri, out resolvedUri);
 }

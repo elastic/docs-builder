@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
-using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax.Inlines;
 
@@ -21,7 +20,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
-			File = processor.GetContext().Path.FullName,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -39,7 +38,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
-			File = processor.GetContext().Path.FullName,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -55,7 +54,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
-			File = context.Path.FullName,
+			File = context.MarkdownSourcePath.FullName,
 			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
 		};
 		context.Build.Collector.Channel.Write(d);
@@ -68,7 +67,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
-			File = context.Path.FullName,
+			File = context.MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -147,7 +146,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Error,
-			File = processor.GetContext().Path.FullName,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,
@@ -170,7 +169,7 @@ public static class ProcessorDiagnosticExtensions
 		var d = new Diagnostic
 		{
 			Severity = Severity.Warning,
-			File = processor.GetContext().Path.FullName,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,
 			Message = message,

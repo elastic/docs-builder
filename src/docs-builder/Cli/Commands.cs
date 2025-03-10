@@ -1,11 +1,14 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Documentation.Builder.Diagnostics.Console;
 using Documentation.Builder.Http;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Refactor;
@@ -13,8 +16,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal class Commands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
@@ -43,6 +47,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 
 	/// <summary>
 	/// Converts a source markdown folder or file to an output folder
+	/// <para>global options:</para>
+	/// --log-level level
 	/// </summary>
 	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
 	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
@@ -68,17 +74,43 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		var context = new BuildContext(fileSystem, fileSystem, path, output)
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		BuildContext context;
+		try
 		{
-			UrlPathPrefix = pathPrefix,
-			Force = force ?? false,
-			Collector = new ConsoleDiagnosticsCollector(logger, githubActionsService),
-			AllowIndexing = allowIndexing != null
-		};
+			context = new BuildContext(collector, fileSystem, fileSystem, path, output)
+			{
+				UrlPathPrefix = pathPrefix,
+				Force = force ?? false,
+				AllowIndexing = allowIndexing != null
+			};
+		}
+		// On CI, we are running on merge commit which may have changes against an older
+		// docs folder (this can happen on out of date PR's).
+		// At some point in the future we can remove this try catch
+		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in"))
+		{
+			var outputDirectory = !string.IsNullOrWhiteSpace(output)
+				? fileSystem.DirectoryInfo.New(output)
+				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+			// we temporarily do not error when pointed to a non documentation folder.
+			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
+
+			ConsoleApp.Log($"Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {e.Message}");
+
+			await githubActionsService.SetOutputAsync("skip", "true");
+			return 0;
+		}
+
+		if (runningOnCi)
+			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
-
+		if (runningOnCi)
+			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
 			strict ??= strictValue;
 
@@ -122,6 +154,9 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	/// <param name="dryRun">Dry run the move operation</param>
 	/// <param name="ctx"></param>
 	[Command("mv")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> Move(
 		[Argument] string source,
 		[Argument] string target,
@@ -132,10 +167,8 @@ internal class Commands(ILoggerFactory logger, ICoreService githubActionsService
 	{
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		var context = new BuildContext(fileSystem, fileSystem, path, null)
-		{
-			Collector = new ConsoleDiagnosticsCollector(logger, null),
-		};
+		await using var collector = new ConsoleDiagnosticsCollector(logger, null);
+		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		var set = new DocumentationSet(context, logger);
 
 		var moveCommand = new Move(fileSystem, fileSystem, set, logger);

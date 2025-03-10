@@ -36,7 +36,6 @@ This is where the content for tab #2 goes.
 
 ::::
 
----
 
 ## Tab Groups
 

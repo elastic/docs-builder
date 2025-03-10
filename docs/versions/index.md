@@ -34,10 +34,6 @@ There are multiple facets to versioning that we need to consider:
 | **Project type** | The Serverless project types where a feature can be used - either **Elasticsearch**, **Elastic Security**, or **Elastic Observability** |
 | **Other versioning schemes** | Elastic products or tools with a versioned component, where stack versioning is not followed.<br><br>E.g. clients, Elastic Common Schema |
 
-:::{warning}
-The self-managed deployment type and support for products or platforms other than {{stack}} does not exist yet. Contribute to the discussion in [#452](https://github.com/elastic/docs-builder/discussions/452)
-:::
-
 % TODO: Final term for "Stack"
 % TODO: Final term for "Self-managed"
 

@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information
 using System.Buffers;
 using System.Diagnostics;
-using System.Net.Mime;
 using System.Runtime.CompilerServices;
 using Elastic.Markdown.Diagnostics;
-using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Renderers;
@@ -55,7 +53,7 @@ internal struct LazySubstring
 		Length = length;
 	}
 
-	public ReadOnlySpan<char> AsSpan() => _text.AsSpan(Offset, Length);
+	public readonly ReadOnlySpan<char> AsSpan() => _text.AsSpan(Offset, Length);
 
 	public override string ToString()
 	{
@@ -69,7 +67,7 @@ internal struct LazySubstring
 	}
 }
 
-[DebuggerDisplay("{GetType().Name} Line: {Line}, {Lines} Level: {Level}")]
+[DebuggerDisplay("{GetType().Name} Line: {Line}, Found: {Found}, Replacement: {Replacement}")]
 public class SubstitutionLeaf(string content, bool found, string replacement) : CodeInline(content)
 {
 	public bool Found { get; } = found;
@@ -78,13 +76,8 @@ public class SubstitutionLeaf(string content, bool found, string replacement) : 
 
 public class SubstitutionRenderer : HtmlObjectRenderer<SubstitutionLeaf>
 {
-	protected override void Write(HtmlRenderer renderer, SubstitutionLeaf obj)
-	{
-		if (obj.Found)
-			renderer.Write(obj.Replacement);
-		else
-			renderer.Write(obj.Content);
-	}
+	protected override void Write(HtmlRenderer renderer, SubstitutionLeaf obj) =>
+		renderer.Write(obj.Found ? obj.Replacement : obj.Content);
 }
 
 public class SubstitutionParser : InlineParser
@@ -130,7 +123,7 @@ public class SubstitutionParser : InlineParser
 		if (closeSticks != 2)
 			return false;
 
-		var rawContent = slice.AsSpan().Slice(0, slice.Length - span.Length);
+		var rawContent = slice.AsSpan()[..(slice.Length - span.Length)];
 
 		var content = new LazySubstring(slice.Text, slice.Start, rawContent.Length);
 

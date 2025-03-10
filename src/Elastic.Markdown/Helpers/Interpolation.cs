@@ -22,9 +22,8 @@ public static class Interpolation
 	)
 	{
 		var span = input.AsSpan();
-		if (span.ReplaceSubstitutions([context.Substitutions, context.ContextSubstitutions], out var replacement))
-			return replacement;
-		return input;
+		return span.ReplaceSubstitutions([context.Substitutions, context.ContextSubstitutions], out var replacement)
+			? replacement : input;
 	}
 
 
@@ -42,13 +41,8 @@ public static class Interpolation
 	)
 	{
 		replacement = null;
-		if (properties is null || properties.Count == 0)
-			return false;
-
-		if (span.IndexOf("}}") < 0)
-			return false;
-
-		return span.ReplaceSubstitutions([properties], out replacement);
+		return properties is not null && properties.Count != 0 &&
+			span.IndexOf("}}") >= 0 && span.ReplaceSubstitutions([properties], out replacement);
 	}
 
 	public static bool ReplaceSubstitutions(

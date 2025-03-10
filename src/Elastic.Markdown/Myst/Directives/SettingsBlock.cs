@@ -2,11 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -14,21 +10,11 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 {
 	public override string Directive => "settings";
 
-	public Func<IFileInfo, DocumentationFile?>? GetDocumentationFile { get; } = context.GetDocumentationFile;
-
-	public ConfigurationFile Configuration { get; } = context.Configuration;
-
-	public ICrossLinkResolver LinksResolver { get; } = context.LinksResolver;
-
-	public IFileSystem FileSystem { get; } = context.Build.ReadFileSystem;
-
-	public IFileInfo IncludeFrom { get; } = context.Path;
-
-	public IDirectoryInfo DocumentationSourcePath { get; } = context.Parser.SourcePath;
-
-	public YamlFrontMatter? FrontMatter { get; } = context.FrontMatter;
+	public ParserContext Context { get; } = context;
 
 	public string? IncludePath { get; private set; }
+
+	public IFileInfo IncludeFrom { get; } = context.MarkdownSourcePath;
 
 	public bool Found { get; private set; }
 
@@ -46,12 +32,12 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			return;
 		}
 
-		var includeFrom = context.Path.Directory!.FullName;
+		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
-			includeFrom = DocumentationSourcePath.FullName;
+			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
 		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
-		if (FileSystem.File.Exists(IncludePath))
+		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");

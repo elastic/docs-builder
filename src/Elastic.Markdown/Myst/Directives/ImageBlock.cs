@@ -33,6 +33,11 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	public string? Width { get; set; }
 
 	/// <summary>
+	/// When set, adds a custom screenshot class to the image.
+	/// </summary>
+	public string? Screenshot { get; set; }
+
+	/// <summary>
 	/// The uniform scaling factor of the image. The default is “100 %”, i.e. no scaling.
 	/// </summary>
 	public string? Scale { get; set; }
@@ -67,8 +72,10 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 		Scale = Prop("scale");
 		Target = Prop("target");
 
-		ExtractImageUrl(context);
+		// Set Screenshot to "screenshot" if the :screenshot: option is present
+		Screenshot = Prop("screenshot") != null ? "screenshot" : null;
 
+		ExtractImageUrl(context);
 	}
 
 	private void ExtractImageUrl(ParserContext context)
@@ -88,9 +95,9 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 			return;
 		}
 
-		var includeFrom = context.Path.Directory!.FullName;
+		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (imageUrl.StartsWith('/'))
-			includeFrom = context.Parser.SourcePath.FullName;
+			includeFrom = context.Build.DocumentationSourceDirectory.FullName;
 
 		ImageUrl = imageUrl;
 		var imagePath = Path.Combine(includeFrom, imageUrl.TrimStart('/'));

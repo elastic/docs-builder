@@ -1,0 +1,122 @@
+project: 'doc-builder'
+cross_links:
+  - docs-content
+exclude:
+  - '_*.md'
+subs:
+  a-global-variable: "This was defined in docset.yml"
+  stack: Elastic Stack
+  serverless-short: Serverless
+  ece:   "Elastic Cloud Enterprise"
+  eck:   "Elastic Cloud on Kubernetes"
+  
+features:
+  primary-nav: false
+  
+toc:
+  - file: index.md
+  - hidden: 404.md
+  - hidden: developer-notes.md
+  - folder: contribute
+    children:
+      - file: index.md
+      - file: locally.md
+      - file: on-the-web.md
+      - file: move.md
+      - file: redirects.md
+  - folder: migration
+    children:
+      - file: index.md
+      - folder: freeze
+        children:
+          - file: index.md
+          - file: gh-action.md
+      - file: syntax.md
+      - file: ia.md
+      - file: versioning.md
+      - file: engineering.md
+      - folder: guide
+        children:
+          - file: index.md
+          - file: working-in-docs-content.md
+          - file: automated.md
+          - file: tooling.md
+          - file: move-ref-docs.md
+          - file: mapping.md
+          - file: how-to-set-up-docs-previews.md
+  - folder: configure
+    children:
+      - file: index.md
+      - folder: site
+        children:
+          - file: index.md
+          - file: content.md
+          - file: landing-page.md
+          - file: redirects.md
+      - folder: content-set
+        children:
+          - file: index.md
+          - file: file-structure.md
+          - file: attributes.md
+          - file: navigation.md
+          - file: extensions.md
+      - file: page.md
+  - folder: syntax
+    children:
+      - file: index.md
+      - file: headings.md
+      - file: admonitions.md
+      - file: applies.md
+      - file: automated_settings.md
+      - file: code.md
+      - file: comments.md
+      - file: conditionals.md
+      - file: dropdowns.md
+      - file: definition-lists.md
+      - file: example_blocks.md
+      - file: file_inclusion.md
+      - file: frontmatter.md
+      - file: images.md
+      - file: lists.md
+      - file: line_breaks.md
+      - file: links.md
+      - file: passthrough.md
+      - file: sidebars.md
+      - file: substitutions.md
+      - file: sundries.md
+      - file: tables.md
+      - file: tabs.md
+      - file: tagged_regions.md
+      - file: titles.md
+  - folder: versions
+    children:
+      - file: index.md
+      - file: content-patterns.md
+  # nested TOCs are only allowed from docset.yml
+  # to prevent them from being nested deeply arbitrarily
+  - toc: development
+  - folder: testing
+    children:
+      - file: index.md
+      - file: req.md
+      - folder: nested
+      - file: cross-links.md
+      - file: custom-highlighters.md
+      - folder: mover
+        children:
+          - file: first-page.md
+          - file: second-page.md
+      - folder: redirects
+        children:
+          - file: first-page.md
+          - file: second-page.md
+          - file: third-page.md
+          - file: 5th-page.md
+      - folder: deeply-nested
+        children:
+          - file: index.md
+          - file: foo.md 
+          - file: bar.md
+          - folder: baz
+            children:
+              - file: qux.md

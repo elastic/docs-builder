@@ -1,0 +1,71 @@
+@using Elastic.Markdown.Helpers
+@using Elastic.Markdown.Myst.FrontMatter
+@inherits RazorSlice<LayoutViewModel>
+<nav id="secondary-nav" class="bg-grey-10 border-b-1 border-grey-20 font-sans font-semibold text-sm md:text-base px-6 pt-6">
+	<div class="container flex mx-auto justify-between">
+		@if (Model.CurrentDocument.YamlFrontMatter?.Layout != LayoutName.LandingPage)
+		{
+			<label role="button" class="lg:hidden pb-2 cursor-pointer" for="pages-nav-hamburger">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+				</svg>
+			</label>
+		}
+		else
+		{
+			<div></div>
+		}
+		<ul class="flex gap-6">
+			@if (!Model.Features.IsPrimaryNavEnabled)
+			{
+				@foreach (var navItem in Model.TopLevelNavigationItems)
+				{
+					@if (navItem.Index != null)
+					{
+						var isCurrent = Htmx.HasSameTopLevelGroup(Model.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url);
+						<li class="border-b-2 text-nowrap pb-2 -mb-[1px] @(isCurrent ? "text-blue-elastic border-b-blue-elastic" : "border-b-transparent hover:text-black")">
+							<a
+								href="@navItem.Index.Url"
+								hx-get="@navItem.Index.Url"
+								hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, navItem.Index.Url)"
+								hx-swap="none"
+								hx-push-url="true"
+								hx-indicator="#htmx-indicator"
+								preload="@Htmx.GetPreload()">
+								@navItem.Index.NavigationTitle
+							</a>
+						</li>
+					}
+				}
+			}
+		</ul>
+		<ul class="flex gap-6">
+			<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
+				<a 
+					href="@Model.Link("/release-notes")"
+					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/release-notes"))
+					>
+					<span>Release notes</span>
+				</a>
+			</li>
+			<li class="border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
+				<a
+					href="@Model.Link("/troubleshoot")"
+					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/troubleshoot"))
+					>
+					<span>Troubleshoot</span>
+				</a>
+			</li>
+			<li class="hidden md:block border-b-2 text-nowrap pb-2 -mb-[1px] border-b-transparent hover:text-black">
+				<a href="https://elastic.co" class="flex gap-1" target="_blank" rel="noopener noreferrer">
+					<span>
+						elastic.co
+					</span>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+					</svg>
+				</a>
+			</li>
+		</ul>
+	</div>
+</nav>

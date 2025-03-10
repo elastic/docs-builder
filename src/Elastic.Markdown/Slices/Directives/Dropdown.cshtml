@@ -1,8 +1,18 @@
 @inherits RazorSlice<AdmonitionViewModel>
-<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3 @Model.Classes" id="@Model.CrossReferenceName" open="@Model.Open">
-	<summary class="sd-summary-title sd-card-header">
-		<span class="sd-summary-text">@Model.Title</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<details class="dropdown @Model.Classes" id="@Model.CrossReferenceName" open="@Model.Open">
+	<summary class="dropdown-title">
+		<span class="sd-summary-text">@Model.Title</span>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+			<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+		</svg>
+	</summary>
+	<div class="dropdown-content">
 		[CONTENT]
 	</div>
 </details>
-

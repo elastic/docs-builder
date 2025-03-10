@@ -1,21 +1,38 @@
 @import "tailwindcss";
 @import "./fonts.css";
 @import "./theme.css";
-@import "highlight.js/styles/atom-one-dark.css";
 @import "./markdown/typography.css";
 @import "./markdown/list.css";
 @import "./markdown/tabs.css";
+@import "./markdown/code.css";
+@import "./copybutton.css";
+@import "./markdown/admonition.css";
+@import "./markdown/dropdown.css";
+@import "./markdown/table.css";
+@import "./markdown/definition-list.css";
+@import "./markdown/images.css";
 
-#default-search::-webkit-search-cancel-button {
-	padding-right: calc(var(--spacing) * 2);
-	-webkit-appearance: none;
-	height: 16px;
-	width: 16px;
-	margin-left: .4em;
-	background-image: url("data:image/svg+xml;utf8,<svg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'><path stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18 17.94 6M18 18 6.06 6'/></svg>");
-	cursor: pointer;
-	background-repeat: no-repeat;
+
+:root {
+	--outline-size: max(2px, 0.08em);
+	--outline-style: auto;
+	--outline-color: var(--color-blue-elastic);
+	--outline-offset: 5;
+	--header-height: calc(var(--spacing) * 21);
+	--banner-height: calc(var(--spacing) * 9);
+	--offset-top: calc(var(--header-height) + var(--banner-height));
 }
+
+/*#default-search::-webkit-search-cancel-button {*/
+/*	padding-right: calc(var(--spacing) * 2);*/
+/*	-webkit-appearance: none;*/
+/*	height: 16px;*/
+/*	width: 16px;*/
+/*	margin-left: .4em;*/
+/*	background-image: url("data:image/svg+xml;utf8,<svg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'><path stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18 17.94 6M18 18 6.06 6'/></svg>");*/
+/*	cursor: pointer;*/
+/*	background-repeat: no-repeat;*/
+/*}*/
 
 #pages-nav li.current {
 	position: relative;
@@ -26,7 +43,7 @@
 		left: -1px;
 		width: calc(var(--spacing) * 6);
 		height: 1px;
-		background-color: var(--color-gray-200);
+		background-color: var(--color-grey-10);
 	}
 }
 
@@ -39,12 +56,12 @@
 
 @layer components {
 	.link {
-		font-family: "Mier B", "Inter", sans-serif;
 		@apply 
+			font-sans
 			text-blue-elastic 
 			text-nowrap
 			font-semibold
-			hover:text-blue-800
+			hover:text-blue-elastic-100
 			inline-flex
 			justify-center
 			items-center;
@@ -67,35 +84,57 @@
 	
 	.sidebar {
 		.sidebar-nav {
-			@apply sticky top-22 z-30 overflow-y-auto;
-			max-height: calc(100vh - var(--spacing) * 22);
+			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
+			max-height: calc(100vh - var(--offset-top));
+			scrollbar-gutter: stable;
 		}
 		
 		.sidebar-link {
 			@apply
 				text-ink-light
 				hover:text-black
-				text-sm
-			    leading-[1.2em]
-			    tracking-[-0.02em];
+				lg:text-sm
+				text-wrap
+				inline-block
+			    leading-[1.3em]
+			    tracking-[-0.02em]
 		}
 	}
 	
 	.content-container {
 		@apply w-full max-w-[80ch];
 	}
+
+	.applies {
+		@apply font-sans;
+		border-bottom: 1px solid var(--color-grey-20);
+		padding-bottom: calc(var(--spacing) * 3);
+
+		.applies-to-label {
+			display: block;
+			font-size: 1.5em;
+			font-weight: var(--font-weight-extrabold);
+			padding-bottom: calc(var(--spacing) * 3);
+		}
+		.applicable-info {
+			padding: calc(var(--spacing) * 0.5);
+			padding-left: calc(var(--spacing) * 2);
+			padding-right: calc(var(--spacing) * 2);
+			margin: calc(var(--spacing) * 0.5);
+			display: inline-block;
+			font-size: 0.8em;
+			border-radius: 0.4em;
+			background-color: var(--color-white);
+			border: 1px solid var(--color-grey-20);
+		}
+	}
 }
 
 * {
-	scroll-margin-top: calc(var(--spacing) * 26);
+	scroll-margin-top: calc(var(--offset-top) + var(--spacing) * 6);
 }
 
-:root {
-	--outline-size: max(2px, 0.08em);
-	--outline-style: auto;
-	--outline-color: var(--color-blue-elastic);
-	--outline-offset: 5;
-}
+
 
 :is(a, button, input, textarea, summary):focus {
 	outline: var(--outline-size) var(--outline-style) var(--outline-color);
@@ -109,4 +148,40 @@
 
 :is(a, button, input, textarea, summary):focus:not(:focus-visible) {
 	outline: none;
+}
+
+.htmx-indicator {
+	display:none;
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator{
+	display:block;
+	z-index: 9999;
+}
+
+.progress {
+	animation: progress 1s infinite linear;
+}
+
+.left-right {
+	transform-origin: 0% 50%;
+}
+@keyframes progress {
+	0% {
+		transform:  translateX(0) scaleX(0);
+	}
+	40% {
+		transform:  translateX(0) scaleX(0.4);
+	}
+	100% {
+		transform:  translateX(100%) scaleX(0.5);
+	}
+}
+
+#pages-nav .current {
+	@apply font-semibold text-blue-elastic!;
+}
+
+.markdown-content {
+	@apply font-body;
 }

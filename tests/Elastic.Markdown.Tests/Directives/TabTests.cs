@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
-using Markdig;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -48,10 +47,7 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 		var items = Block!.OfType<TabItemBlock>().ToArray();
 		items.Should().NotBeNull().And.HaveCount(3);
 		for (var i = 0; i < items.Length; i++)
-		{
 			items[i].Index.Should().Be(i);
-			items[i].TabSetIndex.Should().Be(0);
-		}
 	}
 }
 
@@ -89,7 +85,7 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 			for (var i = 0; i < items.Length; i++)
 			{
 				items[i].Index.Should().Be(i);
-				items[i].TabSetIndex.Should().Be(s);
+				items[i].TabSetIndex.Should().Be(sets[s].Line);
 			}
 		}
 	}
@@ -149,7 +145,7 @@ Content for C# tab
 			for (var i = 0; i < items.Length; i++)
 			{
 				items[i].Index.Should().Be(i);
-				items[i].TabSetIndex.Should().Be(s);
+				items[i].TabSetIndex.Should().Be(sets[s].Line);
 			}
 		}
 	}
@@ -161,9 +157,7 @@ Content for C# tab
 		sets.Length.Should().Be(2);
 
 		foreach (var t in sets)
-		{
 			t.GetGroupKey().Should().Be("languages");
-		}
 	}
 
 	[Fact]

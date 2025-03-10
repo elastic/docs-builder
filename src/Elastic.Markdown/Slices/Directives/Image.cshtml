@@ -1,5 +1,5 @@
 @inherits RazorSlice<ImageViewModel>
 <a class="reference internal image-reference" href="@Model.ImageUrl">
-	<img alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" />
+	<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	[CONTENT]
 </a>

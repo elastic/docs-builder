@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ConsoleAppFramework;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -21,8 +22,9 @@ public class ConsoleLineHandler(string prefix) : IConsoleLineHandler
 	public void Handle(Exception e) { }
 }
 
-internal class RepositoryCommands(ILoggerFactory logger)
+internal sealed class RepositoryCommands(ILoggerFactory logger)
 {
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
 		var log = logger.CreateLogger<Program>();
@@ -37,6 +39,7 @@ internal class RepositoryCommands(ILoggerFactory logger)
 	[Command("clone-all")]
 	public async Task CloneAll(Cancel ctx = default)
 	{
+		AssignOutputLogger();
 		var configFile = Path.Combine(Paths.Root.FullName, "src/docs-assembler/conf.yml");
 		var config = AssemblyConfiguration.Deserialize(File.ReadAllText(configFile));
 
@@ -52,14 +55,14 @@ internal class RepositoryCommands(ILoggerFactory logger)
 					var checkoutFolder = Path.Combine(Paths.Root.FullName, $".artifacts/assembly/{name}");
 
 					var sw = Stopwatch.StartNew();
-					dict.AddOrUpdate(name, sw, (_, _) => sw);
+					_ = dict.AddOrUpdate(name, sw, (_, _) => sw);
 					Console.WriteLine($"Checkout: {name}\t{repository}\t{checkoutFolder}");
 					var branch = repository.Branch ?? "main";
 					var args = new StartArguments(
 						"git", "clone", repository.Origin, checkoutFolder, "--depth", "1"
 						, "--single-branch", "--branch", branch
 					);
-					Proc.StartRedirected(args, new ConsoleLineHandler(name));
+					_ = Proc.StartRedirected(args, new ConsoleLineHandler(name));
 					sw.Stop();
 				}, c);
 			}).ConfigureAwait(false);
@@ -69,10 +72,10 @@ internal class RepositoryCommands(ILoggerFactory logger)
 	}
 
 	/// <summary> List all checked out repositories </summary>
-	/// <param name="ctx"></param>
 	[Command("list")]
-	public async Task ListRepositories(Cancel ctx = default)
+	public async Task ListRepositories()
 	{
+		AssignOutputLogger();
 		var assemblyPath = Path.Combine(Paths.Root.FullName, $".artifacts/assembly");
 		var dir = new DirectoryInfo(assemblyPath);
 		var dictionary = new Dictionary<string, string>();

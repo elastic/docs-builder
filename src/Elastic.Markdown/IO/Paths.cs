@@ -5,6 +5,10 @@ namespace Elastic.Markdown.IO;
 
 public static class Paths
 {
+	public static readonly DirectoryInfo Root = RootDirectoryInfo();
+
+	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
+
 	private static DirectoryInfo RootDirectoryInfo()
 	{
 		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
@@ -14,8 +18,6 @@ public static class Paths
 		return directory ?? new DirectoryInfo(Directory.GetCurrentDirectory());
 	}
 
-	public static readonly DirectoryInfo Root = RootDirectoryInfo();
-
 	/// Used in debug to locate static folder so we can change js/css files while the server is running
 	public static DirectoryInfo? GetSolutionDirectory()
 	{
@@ -24,4 +26,15 @@ public static class Paths
 			directory = directory.Parent;
 		return directory;
 	}
+
+	// ~/Library/Application\ Support/ on osx
+	// XDG_DATA_HOME or home/.local/share on linux
+	// %LOCAL_APPLICATION_DATA% windows
+	private static DirectoryInfo GetApplicationFolder()
+	{
+		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+		var elasticPath = Path.Combine(localPath, "elastic", "docs-builder");
+		return new DirectoryInfo(elasticPath);
+	}
+
 }

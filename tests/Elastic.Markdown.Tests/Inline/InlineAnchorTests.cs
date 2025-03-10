@@ -113,9 +113,8 @@ public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<Heading
 		// language=html
 		Html.Should().Be(
 			"""
-			<section id="hello-world"><h2>Hello world <a id="my-anchor"></a><a class="headerlink" href="#hello-world" title="Link to this heading">¶</a>
-			</h2>
-			</section>
+			<div class="heading-wrapper" id="hello-world"><h2><a class="headerlink" href="#hello-world">Hello world <a id="my-anchor"></a></a></h2>
+			</div>
 			""".TrimEnd()
 		);
 }
@@ -131,9 +130,8 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 		// language=html
 		Html.Should().Be(
 			"""
-			<section id="my-anchor"><h2>Hello world<a class="headerlink" href="#my-anchor" title="Link to this heading">¶</a>
-			</h2>
-			</section>
+			<div class="heading-wrapper" id="my-anchor"><h2><a class="headerlink" href="#my-anchor">Hello world</a></h2>
+			</div>
 			""".TrimEnd()
 		);
 }
@@ -202,7 +200,7 @@ public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : 
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#custom-anchor">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#custom-anchor" hx-get="/docs/testing/req#custom-anchor" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Sub Requirements</a></p>"""
 		);
 
 	[Fact]

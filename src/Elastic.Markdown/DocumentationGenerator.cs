@@ -9,12 +9,19 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Slices;
+using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown;
 
+public interface IConversionCollector
+{
+	void Collect(MarkdownFile file, MarkdownDocument document, string html);
+}
+
 public class DocumentationGenerator
 {
+	private readonly IConversionCollector? _conversionCollector;
 	private readonly IFileSystem _readFileSystem;
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
@@ -26,21 +33,23 @@ public class DocumentationGenerator
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
-		ILoggerFactory logger
+		ILoggerFactory logger,
+		IConversionCollector? conversionCollector = null
 	)
 	{
-		_readFileSystem = docSet.Context.ReadFileSystem;
-		_writeFileSystem = docSet.Context.WriteFileSystem;
+		_conversionCollector = conversionCollector;
+		_readFileSystem = docSet.Build.ReadFileSystem;
+		_writeFileSystem = docSet.Build.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
-		Context = docSet.Context;
+		Context = docSet.Build;
 		Resolver = docSet.LinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
 
-		_logger.LogInformation($"Created documentation set for: {DocumentationSet.Name}");
-		_logger.LogInformation($"Source directory: {docSet.SourcePath} Exists: {docSet.SourcePath.Exists}");
-		_logger.LogInformation($"Output directory: {docSet.OutputPath} Exists: {docSet.OutputPath.Exists}");
+		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
+		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
+		_logger.LogInformation("Output directory: {OutputPath} Exists: {OutputPathExists}", docSet.OutputDirectory, docSet.OutputDirectory.Exists);
 	}
 
 	public GenerationState? GetPreviousGenerationState()
@@ -71,7 +80,7 @@ public class DocumentationGenerator
 			return;
 
 		_logger.LogInformation($"Fetching external links");
-		await Resolver.FetchLinks();
+		_ = await Resolver.FetchLinks();
 
 		await ResolveDirectoryTree(ctx);
 
@@ -120,9 +129,9 @@ public class DocumentationGenerator
 			}
 
 			if (processedFiles % 100 == 0)
-				_logger.LogInformation($"-> Processed {processedFiles}/{totalFileCount} files");
+				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
 		});
-		_logger.LogInformation($"-> Processed {processedFileCount}/{totalFileCount} files");
+		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
 	}
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
@@ -144,24 +153,24 @@ public class DocumentationGenerator
 				outputFile.Directory.Create();
 			await using var stream = outputFile.OpenWrite();
 			await resourceStream.CopyToAsync(stream, ctx);
-			_logger.LogInformation($"Copied static embedded resource {path}");
+			_logger.LogDebug("Copied static embedded resource {Path}", path);
 		}
 	}
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CancellationToken token)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel token)
 	{
 		if (!Context.Force)
 		{
 			if (offendingFiles.Contains(file.SourceFile.FullName))
-				_logger.LogInformation($"Re-evaluating {file.SourceFile.FullName}");
+				_logger.LogInformation("Re-evaluating {FileName}", file.SourceFile.FullName);
 			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
 				return;
 		}
 
-		_logger.LogTrace($"--> {file.SourceFile.FullName}");
+		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
 		var outputFile = OutputFile(file.RelativePath);
 		if (file is MarkdownFile markdown)
-			await HtmlWriter.WriteAsync(outputFile, markdown, token);
+			await HtmlWriter.WriteAsync(outputFile, markdown, _conversionCollector, token);
 		else
 		{
 			if (outputFile.Directory is { Exists: false })
@@ -172,40 +181,40 @@ public class DocumentationGenerator
 
 	private IFileInfo OutputFile(string relativePath)
 	{
-		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputPath.FullName, relativePath));
+		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
 		return outputFile;
 	}
 
 	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,
 		out DateTimeOffset outputSeenChanges)
 	{
-		offendingFiles = new HashSet<string>(generationState?.InvalidFiles ?? []);
+		offendingFiles = [.. generationState?.InvalidFiles ?? []];
 		outputSeenChanges = generationState?.LastSeenChanges ?? DateTimeOffset.MinValue;
 		if (generationState == null)
 			return false;
 		if (Context.Force)
 		{
-			_logger.LogInformation($"Full compilation: --force was specified");
+			_logger.LogInformation("Full compilation: --force was specified");
 			return false;
 		}
 
 		if (Context.Git != generationState.Git)
 		{
-			_logger.LogInformation($"Full compilation: current git context: {Context.Git} differs from previous git context: {generationState.Git}");
+			_logger.LogInformation("Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}", Context.Git, generationState.Git);
 			return false;
 		}
 
 		if (offendingFiles.Count > 0)
 		{
-			_logger.LogInformation($"Incremental compilation. since: {DocumentationSet.LastWrite}");
-			_logger.LogInformation($"Incremental compilation. {offendingFiles.Count} files with errors/warnings");
+			_logger.LogInformation("Incremental compilation. since: {LastWrite}", DocumentationSet.LastWrite);
+			_logger.LogInformation("Incremental compilation. {FileCount} files with errors/warnings", offendingFiles.Count);
 		}
 		else if (DocumentationSet.LastWrite > outputSeenChanges)
-			_logger.LogInformation($"Incremental compilation. since: {generationState.LastSeenChanges}");
+			_logger.LogInformation("Incremental compilation. since: {LastSeenChanges}", generationState.LastSeenChanges);
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
-			_logger.LogInformation($"No compilation: no changes since last observed: {generationState.LastSeenChanges} "
-								   + "Pass --force to force a full regeneration");
+			_logger.LogInformation("No compilation: no changes since last observed: {LastSeenChanges}. " +
+								   "Pass --force to force a full regeneration", generationState.LastSeenChanges);
 			return true;
 		}
 
@@ -218,13 +227,13 @@ public class DocumentationGenerator
 		var state = LinkReference.Create(DocumentationSet);
 
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
-		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
 	}
 
 	private async Task GenerateDocumentationState(Cancel ctx)
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
-		_logger.LogInformation($"Writing documentation state {DocumentationSet.LastWrite} to {stateFile.FullName}");
+		_logger.LogInformation("Writing documentation state {LastWrite} to {StateFileName}", DocumentationSet.LastWrite, stateFile.FullName);
 		var badFiles = Context.Collector.OffendingFiles.ToArray();
 		var state = new GenerationState
 		{
@@ -233,7 +242,7 @@ public class DocumentationGenerator
 			Git = Context.Git
 		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);
-		await DocumentationSet.OutputPath.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
+		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
 	}
 
 	private async Task CopyFileFsAware(DocumentationFile file, IFileInfo outputFile, Cancel ctx)

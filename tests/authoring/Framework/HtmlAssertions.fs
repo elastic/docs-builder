@@ -9,6 +9,7 @@ open System.Diagnostics
 open System.IO
 open AngleSharp.Diffing
 open AngleSharp.Diffing.Core
+open AngleSharp.Dom
 open AngleSharp.Html
 open AngleSharp.Html.Parser
 open DiffPlex.DiffBuilder
@@ -82,12 +83,32 @@ actual: {actual}
         )
         |> String.concat "\n"
 
-    let private prettyHtml (html:string) =
+    let private prettyHtml (html:string) (querySelector: string option) =
         let parser = HtmlParser()
         let document = parser.ParseDocument(html)
+        let element =
+            match querySelector with
+            | Some q -> document.QuerySelector q
+            | None -> document.Body
+
+        let links = element.QuerySelectorAll("a")
+        links
+        |> Seq.iter(fun l ->
+            l.RemoveAttribute "hx-get" |> ignore
+            l.RemoveAttribute "hx-select-oob" |> ignore
+            l.RemoveAttribute "hx-swap" |> ignore
+            l.RemoveAttribute "hx-indicator" |> ignore
+            l.RemoveAttribute "hx-push-url" |> ignore
+            l.RemoveAttribute "preload" |> ignore
+        )
+
         use sw = new StringWriter()
-        document.Body.Children
-        |> Seq.iter _.ToHtml(sw, PrettyMarkupFormatter())
+        let formatter = PrettyMarkupFormatter()
+        element.Children
+        |> Seq.indexed
+        |> Seq.filter (fun (i, c) -> (not <| (i = 0 && c.TagName = "H1")))
+        |> Seq.map(fun (_, c) -> c)
+        |> Seq.iter _.ToHtml(sw, formatter)
         sw.ToString().TrimStart('\n')
 
     let private createDiff expected actual =
@@ -101,32 +122,34 @@ actual: {actual}
         match deepComparision with
         | s when String.IsNullOrEmpty s -> ()
         | s ->
-            let expectedHtml = prettyHtml expected
-            let actualHtml = prettyHtml actual
-            let textDiff = diff expectedHtml actualHtml
+            let textDiff = diff expected actual
             let msg = $"""Html was not equal
+-- DIFF --
 {textDiff}
 
+-- Comparison --
 {deepComparision}
 """
             raise (XunitException(msg))
 
     [<DebuggerStepThrough>]
     let toHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
-        createDiff expected actual.Html
+        let expectedHtml = prettyHtml expected None
+        let actualHtml = prettyHtml actual.Html (Some "section#elastic-docs-v3")
+        createDiff expectedHtml actualHtml
 
     [<DebuggerStepThrough>]
     let convertsToHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
         let actual = actual.Value
 
-        let defaultFile = actual.MarkdownResults |> Seq.head
+        let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         defaultFile |> toHtml expected
 
     [<DebuggerStepThrough>]
     let containsHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
 
-        let prettyExpected = prettyHtml expected
-        let prettyActual = prettyHtml actual.Html
+        let prettyExpected = prettyHtml expected None
+        let prettyActual = prettyHtml actual.Html (Some "section#elastic-docs-v3")
 
         if not <| prettyActual.Contains prettyExpected then
             let msg = $"""Expected html to contain:
@@ -143,5 +166,5 @@ But was not found in:
     let convertsToContainingHtml ([<LanguageInjection("html")>]expected: string) (actual: Lazy<GeneratorResults>) =
         let actual = actual.Value
 
-        let defaultFile = actual.MarkdownResults |> Seq.head
+        let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         defaultFile |> containsHtml expected

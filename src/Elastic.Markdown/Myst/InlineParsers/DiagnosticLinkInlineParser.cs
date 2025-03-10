@@ -36,7 +36,7 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) { }
 }
 
-internal partial class LinkRegexExtensions
+internal sealed partial class LinkRegexExtensions
 {
 	[GeneratedRegex(@"\s\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchTitleStylingInstructions();
@@ -55,6 +55,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return match;
 
 		var context = processor.GetContext();
+		link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
+
 		if (IsInCommentBlock(link) || context.SkipValidation)
 			return match;
 
@@ -66,7 +68,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	}
 
 
-	private void ParseStylingInstructions(LinkInline link)
+	private static void ParseStylingInstructions(LinkInline link)
 	{
 		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
 			return;
@@ -76,12 +78,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 
 		var width = matches.Groups["width"].Value;
-		if (!width.EndsWith("%"))
+		if (!width.EndsWith('%'))
 			width += "px";
 		var height = matches.Groups["height"].Value;
 		if (string.IsNullOrEmpty(height))
 			height = width;
-		else if (!height.EndsWith("%"))
+		else if (!height.EndsWith('%'))
 			height += "px";
 		var title = link.Title[..matches.Index];
 
@@ -94,7 +96,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static bool IsInCommentBlock(LinkInline link) =>
 		link.Parent?.ParentBlock is CommentBlock;
 
-	private void ValidateAndProcessLink(LinkInline link, InlineProcessor processor, ParserContext context)
+	private static void ValidateAndProcessLink(LinkInline link, InlineProcessor processor, ParserContext context)
 	{
 		var url = link.Url;
 
@@ -109,17 +111,17 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 		}
 
-		if (ValidateExternalUri(link, processor, context, uri))
+		if (ValidateExternalUri(link, processor, uri))
 			return;
 
 		ProcessInternalLink(link, processor, context);
 	}
 
-	private bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)
+	private static bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)
 	{
 		if (string.IsNullOrEmpty(url))
 		{
-			processor.EmitWarning(link, "Found empty url");
+			processor.EmitError(link, "Found empty url");
 			return false;
 		}
 
@@ -134,7 +136,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return true;
 	}
 
-	private bool ValidateExternalUri(LinkInline link, InlineProcessor processor, ParserContext context, Uri? uri)
+	private static bool ValidateExternalUri(LinkInline link, InlineProcessor processor, Uri? uri)
 	{
 		if (uri == null)
 			return false;
@@ -143,13 +145,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return false;
 
 		var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);
-		if (!context.Configuration.ExternalLinkHosts.Contains(baseDomain))
+		if (uri.Scheme == "mailto" && baseDomain != "elastic.co")
 		{
 			processor.EmitWarning(
 				link,
-				$"External URI '{uri}' is not allowed. Add '{baseDomain}' to the " +
-				$"'external_hosts' list in the configuration file '{context.Configuration.SourceFile}' " +
-				"to allow links to this domain."
+				$"mailto links should be to elastic.co domains. Found {uri.Host} in {link.Url}. "
 			);
 		}
 
@@ -162,7 +162,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.LinksResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
+		if (context.CrossLinkResolver.TryResolve(
+				s => processor.EmitError(link, s),
+				s => processor.EmitWarning(link, s),
+				uri, out var resolvedUri)
+		   )
 			link.Url = resolvedUri.ToString();
 	}
 
@@ -184,15 +188,15 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
 		url.StartsWith('/')
-			? context.Parser.SourcePath.FullName
-			: context.Path.Directory!.FullName;
+			? context.Build.DocumentationSourceDirectory.FullName
+			: context.MarkdownSourcePath.Directory!.FullName;
 
 	private static void ValidateInternalUrl(InlineProcessor processor, string url, string includeFrom, LinkInline link, ParserContext context)
 	{
 		if (string.IsNullOrWhiteSpace(url))
 			return;
 
-		var pathOnDisk = Path.Combine(includeFrom, url.TrimStart('/'));
+		var pathOnDisk = Path.GetFullPath(Path.Combine(includeFrom, url.TrimStart('/')));
 		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 			processor.EmitError(link, $"`{url}` does not exist. resolved to `{pathOnDisk}");
 	}
@@ -202,34 +206,35 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
-		var markdown = context.GetDocumentationFile?.Invoke(file) as MarkdownFile;
+		var markdown = context.DocumentationFileLookup(file) as MarkdownFile;
 
-		if (markdown == null)
+		if (markdown == null && link.FirstChild == null)
 		{
 			processor.EmitWarning(link,
 				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
 			return;
 		}
 
-		var title = markdown.Title;
+		var title = markdown?.Title;
 
 		if (!string.IsNullOrEmpty(anchor))
 		{
-			ValidateAnchor(processor, markdown, anchor, link);
-			if (link.FirstChild == null && markdown.TableOfContents.TryGetValue(anchor, out var heading))
+			if (markdown is not null)
+				ValidateAnchor(processor, markdown, anchor, link);
+			if (link.FirstChild == null && (markdown?.TableOfContents.TryGetValue(anchor, out var heading) ?? false))
 				title += " > " + heading.Heading;
 		}
 
 		if (link.FirstChild == null && !string.IsNullOrEmpty(title))
-			link.AppendChild(new LiteralInline(title));
+			_ = link.AppendChild(new LiteralInline(title));
 	}
 
 	private static IFileInfo ResolveFile(ParserContext context, string url) =>
 		string.IsNullOrWhiteSpace(url)
-			? context.Path
+			? context.MarkdownSourcePath
 			: url.StartsWith('/')
-				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.SourcePath.FullName, url.TrimStart('/')))
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Path.Directory!.FullName, url));
+				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.MarkdownSourcePath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{
@@ -260,7 +265,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static string GetRootRelativePath(ParserContext context, IFileInfo file)
 	{
 		var docsetDirectory = context.Configuration.SourceFile.Directory;
-		return file.FullName.Replace(docsetDirectory!.FullName, string.Empty);
+		return "/" + Path.GetRelativePath(docsetDirectory!.FullName, file.FullName);
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>

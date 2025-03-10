@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -45,7 +43,7 @@ public abstract class DirectiveTest : IAsyncLifetime
 	{
 		var logger = new TestLoggerFactory(output);
 
-		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---");
+		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 		var documentContents = TestingFullDocument ? content :
 // language=markdown
 $"""
@@ -69,13 +67,10 @@ $"""
 		FileSystem.GenerateDocSetYaml(root);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(FileSystem)
-		{
-			Collector = Collector
-		};
+		var context = new BuildContext(Collector, FileSystem);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
-		File = Set.GetMarkdownFile(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
+		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
 	}
@@ -99,6 +94,9 @@ $"""
 		await Collector.StopAsync(default);
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 }

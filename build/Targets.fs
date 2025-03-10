@@ -58,10 +58,6 @@ let private pristineCheck (arguments:ParseResults<Build>) =
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
     exec { run "dotnet" "publish" "src/docs-assembler/docs-assembler.csproj" }
-    Zip.zip
-        ".artifacts/publish/docs-builder/release"
-        $"docs-builder-%s{OS.Name}-{OS.Arch}.zip"
-        [".artifacts/publish/docs-builder/release/docs-builder"]
 
 let private publishZip _ =
     exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }

@@ -13,9 +13,9 @@ public class DirectiveParagraphParser : ParagraphBlockParser
 		var line = processor.Line.AsSpan();
 
 		// TODO Validate properties on directive.
-		if (line.StartsWith(":") && processor.CurrentBlock is DirectiveBlock directive)
+		if (line.StartsWith(":") && processor.CurrentBlock is DirectiveBlock)
 			return BlockState.None;
-		else if (line.StartsWith(":"))
+		if (line.StartsWith(":"))
 			return BlockState.None;
 
 		return base.TryOpen(processor);
@@ -26,15 +26,16 @@ public class DirectiveParagraphParser : ParagraphBlockParser
 		if (block is not ParagraphBlock paragraphBlock)
 			return base.TryContinue(processor, block);
 
-		var line = paragraphBlock.Lines.ToString();
-
 		if (block.Parent is not DirectiveBlock)
 			return base.TryContinue(processor, block);
 
-		// TODO only parse this if no content proceeds it (and not in a code fence)
-		if (line.StartsWith(":"))
-			return BlockState.BreakDiscard;
+		var lines = paragraphBlock.Lines.Lines;
+		if (lines.Length < 1)
+			return base.TryContinue(processor, block);
 
-		return base.TryContinue(processor, block);
+		var line = lines[0];
+		return line.Slice.AsSpan().StartsWith(':')
+			? BlockState.BreakDiscard
+			: base.TryContinue(processor, block);
 	}
 }

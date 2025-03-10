@@ -16,8 +16,9 @@ If the `path-pattern` input does not match any changes in the PR, the workflow w
 This way you only build and deploy the docs when there are changes to the docs and you can still set it as a required status check.
 
 
-::::{dropdown} .github/workflows/docs-build.yml
-:open:
+::::{tab-set}
+
+:::{tab-item} .github/workflows/docs-build.yml
 
 ```yaml
 ---
@@ -45,6 +46,8 @@ jobs:
 2. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
 3. his should be the path to your docs folder.
 
+:::
+
 ::::
 
 
@@ -57,8 +60,10 @@ We are aware of the security implications of using `pull_request_target` as desc
 The workflow never checks out the code and doesn't use any user modifiable inputs (e.g. PR title). 
 :::
 
-::::{dropdown} .github/workflows/docs-cleanup.yml
-:open:
+::::{tab-set}
+
+:::{tab-item} .github/workflows/docs-cleanup.yml
+
 ```yaml
 ---
 name: docs-cleanup
@@ -79,6 +84,8 @@ jobs:
 
 1. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-cleanup.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-cleanup.yml)
 2. No permissions to read content
+
+:::
 
 ::::
 

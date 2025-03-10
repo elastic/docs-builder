@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -30,7 +31,10 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-		var codeBlock = new EnhancedCodeBlock(this, context) { IndentCount = processor.Indent };
+		var lineSpan = processor.Line.AsSpan();
+		var codeBlock = lineSpan.IndexOf("{applies_to}") > -1
+			? new AppliesToDirective(this, context) { IndentCount = processor.Indent }
+			: new EnhancedCodeBlock(this, context) { IndentCount = processor.Indent };
 
 		if (processor.TrackTrivia)
 		{
@@ -73,7 +77,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			throw new Exception("Expected parser context to be of type ParserContext");
 
 		codeBlock.Language = (
-			(codeBlock.Info?.IndexOf("{") ?? -1) != -1
+			(codeBlock.Info?.IndexOf('{') ?? -1) != -1
 				? codeBlock.Arguments
 				: codeBlock.Info
 		) ?? "unknown";
@@ -85,14 +89,49 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			"console-response" => "json",
 			"console-result" => "json",
 			"terminal" => "bash",
+			"painless" => "java",
 			_ => codeBlock.Language
 		};
 		if (!string.IsNullOrEmpty(codeBlock.Language) && !CodeBlock.Languages.Contains(codeBlock.Language))
 			codeBlock.EmitWarning($"Unknown language: {codeBlock.Language}");
 
 		var lines = codeBlock.Lines;
-		var callOutIndex = 0;
+		// ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+		if (lines.Lines is null)
+			return base.Close(processor, block);
 
+		if (codeBlock is not AppliesToDirective appliesToDirective)
+			ProcessCallOuts(lines, language, codeBlock, context);
+		else
+			ProcessAppliesToDirective(appliesToDirective, lines);
+
+		return base.Close(processor, block);
+	}
+
+	private static void ProcessAppliesToDirective(AppliesToDirective appliesToDirective, StringLineGroup lines)
+	{
+		var yaml = lines.ToSlice().AsSpan().ToString();
+
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			appliesToDirective.AppliesTo = applicableTo;
+			if (appliesToDirective.AppliesTo.Warnings is null)
+				return;
+			foreach (var warning in appliesToDirective.AppliesTo.Warnings)
+				appliesToDirective.EmitWarning(warning);
+			applicableTo.Warnings = null;
+		}
+		catch (Exception e)
+		{
+			appliesToDirective.EmitError($"Unable to parse applies_to directive: {yaml}", e);
+		}
+	}
+
+	private static void ProcessCallOuts(StringLineGroup lines, string language, EnhancedCodeBlock codeBlock,
+		ParserContext context)
+	{
+		var callOutIndex = 0;
 		var originatingLine = 0;
 		for (var index = 0; index < lines.Lines.Length; index++)
 		{
@@ -108,12 +147,20 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 			var span = line.Slice.AsSpan();
 
-			if (span.ReplaceSubstitutions(context.FrontMatter?.Properties, out var replacement))
+			if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterReplacement))
 			{
-				var s = new StringSlice(replacement);
+				var s = new StringSlice(frontMatterReplacement);
 				lines.Lines[index] = new StringLine(ref s);
 				span = lines.Lines[index].Slice.AsSpan();
 			}
+
+			if (span.ReplaceSubstitutions(context.Substitutions, out var globalReplacement))
+			{
+				var s = new StringSlice(globalReplacement);
+				lines.Lines[index] = new StringLine(ref s);
+				span = lines.Lines[index].Slice.AsSpan();
+			}
+
 
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
@@ -127,6 +174,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 					EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
 				);
 			}
+
 			// only support magic callouts for smaller line lengths
 			if (callOuts.Count == 0 && span.Length < 200)
 			{
@@ -135,13 +183,13 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 					EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
 				);
 			}
+
 			codeBlock.CallOuts.AddRange(callOuts);
 		}
 
 		//update string slices to ignore call outs
 		if (codeBlock.CallOuts.Count > 0)
 		{
-
 			var callouts = codeBlock.CallOuts.Aggregate(new Dictionary<int, CallOut>(), (acc, curr) =>
 			{
 				if (acc.TryAdd(curr.Line, curr))
@@ -157,19 +205,16 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				var newSpan = line.Slice.AsSpan()[..callout.SliceStart];
 				var s = new StringSlice(newSpan.ToString());
 				lines.Lines[callout.Line - 1] = new StringLine(ref s);
-
 			}
 		}
 
-		var inlineAnnotations = codeBlock.CallOuts?.Where(c => c.InlineCodeAnnotation).Count() ?? 0;
-		var classicAnnotations = codeBlock.CallOuts?.Count - inlineAnnotations ?? 0;
+		var inlineAnnotations = codeBlock.CallOuts.Count(c => c.InlineCodeAnnotation);
+		var classicAnnotations = codeBlock.CallOuts.Count - inlineAnnotations;
 		if (inlineAnnotations > 0 && classicAnnotations > 0)
 			codeBlock.EmitError("Both inline and classic callouts are not supported");
 
 		if (inlineAnnotations > 0)
 			codeBlock.InlineAnnotations = true;
-
-		return base.Close(processor, block);
 	}
 
 	private static List<CallOut> EnumerateAnnotations(Regex.ValueMatchEnumerator matches,
@@ -201,7 +246,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 	private static CallOut? ParseMagicCallout(ValueMatch match, ref ReadOnlySpan<char> span, ref int callOutIndex, int originatingLine)
 	{
-		var startIndex = Math.Max(span.LastIndexOf("//"), span.LastIndexOf('#'));
+		var startIndex = Math.Max(span.LastIndexOf(" // "), span.LastIndexOf(" # "));
 		if (startIndex <= 0)
 			return null;
 
@@ -211,7 +256,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		return new CallOut
 		{
 			Index = callOutIndex,
-			Text = callout.TrimStart('/').TrimStart('#').TrimStart().ToString(),
+			Text = callout.TrimStart().TrimStart('/').TrimStart('#').TrimStart().ToString(),
 			InlineCodeAnnotation = true,
 			SliceStart = startIndex,
 			Line = originatingLine,
@@ -220,7 +265,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 	private static List<CallOut> ParseClassicCallOuts(ValueMatch match, ref ReadOnlySpan<char> span, ref int callOutIndex, int originatingLine)
 	{
-		var indexOfLastComment = Math.Max(span.LastIndexOf('#'), span.LastIndexOf("//"));
+		var indexOfLastComment = Math.Max(span.LastIndexOf(" # "), span.LastIndexOf(" // "));
 		var startIndex = span.LastIndexOf('<');
 		if (startIndex <= 0)
 			return [];
@@ -231,11 +276,12 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (span[i] == '<')
 				allStartIndices.Add(i);
 		}
+
 		var callOuts = new List<CallOut>();
 		foreach (var individualStartIndex in allStartIndices)
 		{
 			callOutIndex++;
-			var endIndex = span.Slice(match.Index + individualStartIndex).IndexOf('>') + 1;
+			var endIndex = span[(match.Index + individualStartIndex)..].IndexOf('>') + 1;
 			var callout = span.Slice(match.Index + individualStartIndex, endIndex);
 			if (int.TryParse(callout.Trim(['<', '>']), out var index))
 			{
@@ -249,6 +295,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				});
 			}
 		}
+
 		return callOuts;
 	}
 }

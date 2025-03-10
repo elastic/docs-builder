@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using FluentAssertions;
@@ -23,11 +22,10 @@ public class NavigationTestsBase : IAsyncLifetime
 			CurrentDirectory = Paths.Root.FullName
 		});
 		var collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(ReadFileSystem, WriteFileSystem)
+		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem)
 		{
 			Force = false,
-			UrlPathPrefix = null,
-			Collector = collector
+			UrlPathPrefix = null
 		};
 
 		var linkResolver = new TestCrossLinkResolver();
@@ -51,5 +49,9 @@ public class NavigationTestsBase : IAsyncLifetime
 		Configuration = Generator.DocumentationSet.Configuration;
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 }

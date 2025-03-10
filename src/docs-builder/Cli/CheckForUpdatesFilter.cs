@@ -5,22 +5,13 @@
 using System.Reflection;
 using ConsoleAppFramework;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO;
 
 namespace Documentation.Builder.Cli;
 
-internal class CheckForUpdatesFilter : ConsoleAppFilter
+internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {
-	private readonly FileInfo _stateFile;
-
-	public CheckForUpdatesFilter(ConsoleAppFilter next) : base(next)
-	{
-		// ~/Library/Application\ Support/ on osx
-		// XDG_DATA_HOME or home/.local/share on linux
-		// %LOCAL_APPLICATION_DATA% windows
-		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var elasticPath = Path.Combine(localPath, "elastic");
-		_stateFile = new FileInfo(Path.Combine(elasticPath, "docs-build-check.state"));
-	}
+	private readonly FileInfo _stateFile = new(Path.Combine(Paths.ApplicationData.FullName, "docs-build-check.state"));
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{
@@ -32,7 +23,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 			CompareWithAssemblyVersion(latestVersionUrl);
 	}
 
-	private void CompareWithAssemblyVersion(Uri latestVersionUrl)
+	private static void CompareWithAssemblyVersion(Uri latestVersionUrl)
 	{
 		var versionPath = latestVersionUrl.AbsolutePath.Split('/').Last();
 		if (!SemVersion.TryParse(versionPath, out var latestVersion))
@@ -53,7 +44,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 			ConsoleApp.Log($"	{latestVersionUrl}");
 			ConsoleApp.Log("");
 			ConsoleApp.Log("Read more about updating here:");
-			ConsoleApp.Log("	https://elastic.github.io/docs-builder/contribute/locally.html#step-one	");
+			ConsoleApp.Log("	https://elastic.github.io/docs-builder/contribute/locally#step-one	");
 			ConsoleApp.Log("");
 			return;
 		}
@@ -61,7 +52,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 		ConsoleApp.LogError($"Unable to parse current version from docs-builder binary");
 	}
 
-	private async ValueTask<Uri?> GetLatestVersion(CancellationToken ctx)
+	private async ValueTask<Uri?> GetLatestVersion(Cancel ctx)
 	{
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
 			return null;
@@ -83,7 +74,7 @@ internal class CheckForUpdatesFilter : ConsoleAppFilter
 			{
 				// ensure the 'elastic' folder exists.
 				if (!Directory.Exists(_stateFile.Directory.FullName))
-					Directory.CreateDirectory(_stateFile.Directory.FullName);
+					_ = Directory.CreateDirectory(_stateFile.Directory.FullName);
 				await File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ctx);
 			}
 			return redirectUrl;

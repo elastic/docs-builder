@@ -1,9 +1,6 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license.
-// See the license.txt file in the project root for more information.
 
 using System.Collections.Frozen;
 using Markdig.Parsers;
@@ -153,10 +150,17 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 				return BlockState.None;
 		}
 
-		if (line.IndexOf("{") == -1)
+		if (line.IndexOf("{") <= -1)
 			return BlockState.None;
 
 		if (line.IndexOf("}") == -1)
+			return BlockState.None;
+
+		var span = line.AsSpan();
+		var lastIndent = Math.Max(span.LastIndexOf("`"), span.LastIndexOf(":"));
+		var startApplies = span.IndexOf("{applies_to}");
+		var startOpen = span.IndexOf("{");
+		if (startOpen > lastIndent + 1 || startApplies != -1)
 			return BlockState.None;
 
 		return base.TryOpen(processor);

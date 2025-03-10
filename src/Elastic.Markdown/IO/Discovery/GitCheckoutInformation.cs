@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using SoftCircuits.IniFileParser;
 
 namespace Elastic.Markdown.IO.Discovery;
@@ -33,11 +34,11 @@ public record GitCheckoutInformation
 	public string? RepositoryName
 	{
 		get => _repositoryName ??= Remote.Split('/').Last();
-		set => _repositoryName = value;
+		init => _repositoryName = value;
 	}
 
 	// manual read because libgit2sharp is not yet AOT ready
-	public static GitCheckoutInformation Create(IFileSystem fileSystem)
+	public static GitCheckoutInformation Create(IDirectoryInfo source, IFileSystem fileSystem, ILogger? logger = null)
 	{
 		if (fileSystem is not FileSystem)
 		{
@@ -51,18 +52,21 @@ public record GitCheckoutInformation
 		}
 
 		var fakeRef = Guid.NewGuid().ToString()[..16];
-		var gitConfig = Git(".git/config");
+		var gitConfig = Git(source, ".git/config");
 		if (!gitConfig.Exists)
+		{
+			logger?.LogInformation("Git checkout information not available.");
 			return Unavailable;
+		}
 
-		var head = Read(".git/HEAD") ?? fakeRef;
+		var head = Read(source, ".git/HEAD") ?? fakeRef;
 		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
 		//not detached HEAD
 		if (head.StartsWith("ref:"))
 		{
 			head = head.Replace("ref: ", string.Empty);
-			gitRef = Read(".git/" + head) ?? fakeRef;
+			gitRef = Read(source, ".git/" + head) ?? fakeRef;
 			branch = branch.Replace("ref: ", string.Empty);
 		}
 		else
@@ -73,17 +77,32 @@ public record GitCheckoutInformation
 		using var streamReader = new StreamReader(stream);
 		ini.Load(streamReader);
 
-		var remote = BranchTrackingRemote(branch, ini);
+		var remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
 		if (string.IsNullOrEmpty(remote))
-			remote = BranchTrackingRemote("main", ini);
-		if (string.IsNullOrEmpty(remote))
-			remote = BranchTrackingRemote("master", ini);
-		if (string.IsNullOrEmpty(remote))
-			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "elastic/docs-builder-unknown";
+		{
+			remote = BranchTrackingRemote(branch, ini);
+			logger?.LogInformation("Remote from branch: {GitRemote}", remote);
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = BranchTrackingRemote("main", ini);
+				logger?.LogInformation("Remote from main branch: {GitRemote}", remote);
+			}
 
-		remote = remote.AsSpan().TrimEnd(".git").ToString();
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = BranchTrackingRemote("master", ini);
+				logger?.LogInformation("Remote from master branch: {GitRemote}", remote);
+			}
 
-		return new GitCheckoutInformation
+			if (string.IsNullOrEmpty(remote))
+			{
+				remote = "elastic/docs-builder-unknown";
+				logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
+			}
+			remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
+		}
+
+		var info = new GitCheckoutInformation
 		{
 			Ref = gitRef,
 			Branch = branch,
@@ -91,14 +110,19 @@ public record GitCheckoutInformation
 			RepositoryName = remote.Split('/').Last()
 		};
 
-		IFileInfo Git(string path) => fileSystem.FileInfo.New(Path.Combine(Paths.Root.FullName, path));
+		logger?.LogInformation("-> Remote Name: {GitRemote}", info.Remote);
+		logger?.LogInformation("-> Repository Name: {RepositoryName}", info.RepositoryName);
+		return info;
 
-		string? Read(string path)
+		IFileInfo Git(IDirectoryInfo directoryInfo, string path) =>
+			fileSystem.FileInfo.New(Path.Combine(directoryInfo.FullName, path));
+
+		string? Read(IDirectoryInfo directoryInfo, string path)
 		{
-			var gitPath = Git(path).FullName;
-			if (!fileSystem.File.Exists(gitPath))
-				return null;
-			return fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
+			var gitPath = Git(directoryInfo, path).FullName;
+			return !fileSystem.File.Exists(gitPath)
+				? null
+				: fileSystem.File.ReadAllText(gitPath).Trim(Environment.NewLine.ToCharArray());
 		}
 
 		string BranchTrackingRemote(string b, IniFile c)

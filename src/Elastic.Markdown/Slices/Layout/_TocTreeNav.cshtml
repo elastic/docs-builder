@@ -1,98 +1,82 @@
 @using Elastic.Markdown.Helpers
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
-@if (Model.IsRedesign)
+@{
+	var topLevelGroup = Model.IsRoot ? 1 : 2;
+	var topLevelFile = Model.IsRoot ? 0 : 1;
+}
+@foreach (var item in Model.SubTree.NavigationItems)
 {
-	@foreach (var item in Model.SubTree.NavigationItems)
+	var id = item.Id;
+	if (item is FileNavigation file)
 	{
-		if (item is FileNavigation file)
-		{
-			var f = file.File;
-			var isCurrent = f == Model.CurrentDocument;
-			<li class="block ml-2 pl-2 border-l-1 border-l-gray-200 group/li @(isCurrent ? "current" : string.Empty)">
-				<div class="flex">
-					<a
-						class="sidebar-link my-1 ml-5 group-[.current]/li:text-blue-elastic! @(isCurrent ? "" : string.Empty)"
-						href="@f.Url"
-						@(isCurrent ? "aria-current=page" : string.Empty)>
-						@f.NavigationTitle
-					</a>
-				</div>
-			</li>
-		}
-		else if (item is GroupNavigation folder)
-		{
-			var g = folder.Group;
-			var isCurrent = g.Index == Model.CurrentDocument;
-			var slug = g.Index?.Title.Slugify();
-			const int initialExpandLevel = 1;
-			var containsCurrent = g.HoldsCurrent(Model.CurrentDocument) || g.ContainsCurrentPage(Model.CurrentDocument);
-			var shouldInitiallyExpand = containsCurrent || g.Depth <= initialExpandLevel;
-			<li class="flex flex-wrap @(g.Depth > 1 ? "ml-2 pl-2 border-l-1 border-l-gray-200" : string.Empty)">
-				<label for="@slug" class="peer group/label flex items-center overflow-hidden @(g.Depth == 1 ? "mt-2" : "")">
+		var f = file.File;
+		<li class="flex group/li @(item.Depth == topLevelFile ? "font-semibold py-6 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
+				<a
+					hx-get="@f.Url"
+					hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
+					data-current-url="@Model.CurrentDocument.Url"
+					data-target-url="@f.Url"
+					data-path-prefix="@Model.CurrentDocument.UrlPathPrefix"
+					data-has-same-segment="@Htmx.HasSameTopLevelGroup(Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
+					hx-swap="none"
+					hx-push-url="true"
+					hx-indicator="#htmx-indicator"
+					preload
+					class="sidebar-link group-[.current]/li:text-blue-elastic!"
+					id="page-@id"
+					href="@f.Url">
+					@f.NavigationTitle
+				</a>
+		</li>
+	}
+	else if (item is GroupNavigation folder)
+	{
+		var g = folder.Group;
+		// const int initialExpandLevel = 3;
+		// var shouldInitiallyExpand = g.Depth <= initialExpandLevel;
+		<li class="flex flex-wrap group-navigation @(g.Depth == topLevelGroup ? "py-6 not-last:border-b-1 border-grey-20" : "mt-4 lg:mt-3")">
+			<div class="peer flex items-start gap-1">
+				<label for="@id" class="group/label">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
 						stroke="currentColor"
-						class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+						class="w-3 mt-[3px] shrink-0 -rotate-90 group-has-checked/label:rotate-0 cursor-pointer @(g.Depth == topLevelGroup ? "hidden" : "")">
 						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 					</svg>
 					<input
-						id="@slug"
+						id="@id"
 						type="checkbox"
 						class="hidden"
 						aria-hidden="true"
-						data-should-expand="@((containsCurrent).ToLowerString())"
-						@(shouldInitiallyExpand ? "checked" : string.Empty)
+						@(g.Depth <= topLevelGroup ? "checked" : "")
+						@(g.Depth <= topLevelGroup ? "disabled" : "")
 					>
-					<a
-						href="@g.Index?.Url"
-						class="sidebar-link inline-block my-1 @(g.Depth == 1 ? "uppercase tracking-[0.05em] text-ink-light font-semibold" : string.Empty) @(containsCurrent ? "font-semibold" : string.Empty) @(isCurrent ? "current text-blue-elastic!" : string.Empty)">
-						@g.Index?.NavigationTitle
-					</a>
 				</label>
-				@if (g.NavigationItems.Count > 0)
-				{
-					<ul class="h-0 w-full overflow-y-hidden peer-has-checked:h-auto peer-has-[:focus]:h-auto has-[:focus]:h-auto peer-has-checked:my-1" data-has-current="@g.ContainsCurrentPage(Model.CurrentDocument)">
-						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-						{
-							Level = g.Depth,
-							CurrentDocument = Model.CurrentDocument,
-							SubTree = g
-						}))
-					</ul>
-				}
-			</li>
-		}
-	}
-}
-else
-{
-	@foreach (var item in Model.SubTree.NavigationItems)
-	{
-		if (item is FileNavigation file)
-		{
-			var f = file.File;
-			var current = f == Model.CurrentDocument ? " current" : string.Empty;
-			<li class="toctree-l@(Model.SubTree.Depth + 1)@current"><a class="@(current.Trim()) reference internal" href="@f.Url">@f.NavigationTitle</a></li>
-		}
-		else if (item is GroupNavigation folder)
-		{
-			var g = folder.Group;
-			var current = g.HoldsCurrent(Model.CurrentDocument) ? " current" : string.Empty;
-			var currentFile = g.Index == Model.CurrentDocument ? " current" : string.Empty;
-			<li class="toctree-l@(g.Depth)@current"><a class="reference internal@(currentFile)" href="@g.Index?.Url">@g.Index?.NavigationTitle</a>@if (@g.NavigationItems.Count > 0) {<ul class="@(current.Trim())">
-					                                                                                                                                      @await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-					                                                                                                                                      {
-						                                                                                                                                      Level = g.Depth,
-						                                                                                                                                      CurrentDocument = Model.CurrentDocument,
-						                                                                                                                                      SubTree = g
-					                                                                                                                                      }))
-				                                                                                                                                      </ul>
-			                                                                                                                                      }
-			</li>
-		}
+				<a
+					href="@(g.Index?.Url ?? "")"
+					@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, g.Index?.Url ?? "")
+					id="page-@(g.Index?.Id ?? id)"
+					class="sidebar-link @(g.Depth == topLevelGroup ? "font-semibold mb-1" : "")">
+					@(g.Index?.NavigationTitle ?? "Untitled")
+				</a>
+			</div>
+			@if (g.NavigationItems.Count > 0)
+			{
+				<ul class="w-full hidden peer-has-checked:block @(g.Depth > topLevelGroup ? "ml-4": "")">
+					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+					{
+						Features = Model.Features,
+						Level = g.Depth,
+						CurrentDocument = Model.CurrentDocument,
+						SubTree = g,
+						IsRoot = Model.IsRoot
+					}))
+				</ul>
+			}
+		</li>
 	}
 }

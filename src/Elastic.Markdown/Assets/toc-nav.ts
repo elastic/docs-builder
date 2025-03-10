@@ -116,7 +116,7 @@ function setupSmoothScrolling(elements: TocElements) {
 			const href = link.getAttribute('href');
 			if (href?.charAt(0) === '#') {
 				e.preventDefault();
-				const target = $(href.replace('.', '\\.'));
+				const target = document.getElementById(href.slice(1));
 				if (target) {
 					target.scrollIntoView({ behavior: 'smooth' });
 					history.pushState(null, '', href);
@@ -128,8 +128,10 @@ function setupSmoothScrolling(elements: TocElements) {
 
 export function initTocNav() {
 	const elements = initializeTocElements();
-	elements.progressIndicator.style.height = '0';
-	elements.progressIndicator.style.top = '0';
+	if (elements.progressIndicator != null) {
+		elements.progressIndicator.style.height = '0';
+		elements.progressIndicator.style.top = '0';
+	}
 	const update = () => updateIndicator(elements)
 	update();
 	window.addEventListener('scroll', update);

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Markdown.Diagnostics;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
@@ -40,7 +41,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/_static/img/observability.png">Elasticsearch</a></p>"""
+			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Elasticsearch</a></p>"""
 		);
 
 	[Fact]
@@ -57,17 +58,14 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req">Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Requirements</a></p>"""
 		);
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(0);
-	}
+	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
 public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
@@ -80,17 +78,14 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req">Special Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></p>"""
 		);
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(0);
-	}
+	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
 public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
@@ -105,17 +100,14 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req">test</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">test</a></p>"""
 		);
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void EmitsCrossLink()
-	{
-		Collector.CrossLinks.Should().HaveCount(0);
-	}
+	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
 public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
@@ -186,9 +178,26 @@ public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestB
 	public void HasWarnings()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.First().Severity.Should().Be(Diagnostics.Severity.Warning);
+		Collector.Diagnostics.First().Severity.Should().Be(Severity.Warning);
 		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
 	}
+}
+
+public class NonExistingLinks(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[Non Existing Link](/non-existing.md)
+	"""
+)
+{
+	[Fact]
+	public void HasErrors() => Collector.Diagnostics
+		.Where(d => d.Severity == Severity.Error)
+		.Should().HaveCount(1);
+
+	[Fact]
+	public void HasNoWarning() => Collector.Diagnostics
+		.Where(d => d.Severity == Severity.Warning)
+		.Should().HaveCount(0);
 }
 
 public class CommentedNonExistingLinks(ITestOutputHelper output) : LinkTestBase(output,
@@ -222,10 +231,10 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 		Html.TrimEnd().Should().Be("""
 		<p>Links:</p>
 		<ul>
-		<li><a href="/docs/testing/req">Special Requirements</a></li>
+		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></li>
 		</ul>
 		<ul>
-		<li><a href="/docs/testing/req">Special Requirements</a></li>
+		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></li>
 		</ul>
 		""");
 

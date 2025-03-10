@@ -1,65 +1,58 @@
 .markdown-content {
 	
-	font-size: 16px;
+	@apply text-ink text-base font-body;
 
 	h1 {
-		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-5xl text-black mb-6 mt-5;
+		@apply text-5xl text-ink-dark font-semibold;
 		line-height: 1.2em;
-		letter-spacing: -0.04em;
 	}
 	
 	h2 {
-		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-4xl text-black mb-6 mt-8;
+
+		@apply text-4xl text-ink-dark font-bold mt-10;
 		line-height: 1.2em;
 		letter-spacing: -0.04em;
 	}
 	
 	h3 {
-		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-2xl text-black mb-6 mt-6;
+		@apply text-2xl text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 
 	h4 {
-		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-base text-black font-bold mb-5 mt-5;
+		@apply text-xl text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 
 	h5 {
-		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-sm text-black font-bold mb-4 mt-5;
+		@apply text-base text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 
 	h6 {
-		font-family: "Mier B", "Inter", sans-serif;
-		@apply text-xs text-black font-bold mb-3 mt-3;
+		@apply text-sm text-ink-dark font-bold mt-8;
 		line-height: 1.2em;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.04em;
 	}
 	
 	h1, h2, h3, h4, h5, h6 {
+		@apply font-sans;
 		a {
-			font-family: "Mier B", "Inter", sans-serif;
-			@apply text-black hover:text-black no-underline;
+			@apply font-sans text-ink-dark hover:text-ink-dark no-underline;
 		}
 	}
 	
 	p {
-		font-family: "Inter", sans-serif;
-		@apply text-base text-ink text-body mb-6;
-		line-height: 1.5em;
+		@apply mt-4;
 		letter-spacing: 0;
+		line-height: 1.5em;
+		/*text-wrap: pretty;*/
 	}
 	
 	a {
-		font-family: "Inter", sans-serif;
-		@apply text-blue-elastic hover:text-blue-800 underline;
+		@apply font-body text-blue-elastic hover:text-blue-elastic-100 underline;
 	}
 }
