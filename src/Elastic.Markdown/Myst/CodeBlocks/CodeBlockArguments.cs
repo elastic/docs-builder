@@ -8,27 +8,28 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
-
-internal enum CodeBlockArgument
-{
-	Callouts,
-	Subs
-}
-
 public record CodeBlockArguments
 {
+	public static CodeBlockArguments Default { get; } = new();
+	public static string[] KnownKeys { get; } = ["callouts", "subs"];
+	public static string KnownKeysString { get; } = string.Join(", ", KnownKeys);
+
+	public bool UseCallouts { get; private set; } = true;
+	public bool UseSubstitutions { get; private set; }
+
+	private CodeBlockArguments() { }
+
 	public static bool TryParse(ReadOnlySpan<char> args, [NotNullWhen(true)] out CodeBlockArguments? codeBlockArgs)
 	{
 		codeBlockArgs = null;
 
-		Dictionary<CodeBlockArgument, bool> arguments = [];
-
 		if (args.IsWhiteSpace())
 		{
-			codeBlockArgs = new CodeBlockArguments([]);
+			codeBlockArgs = Default;
 			return true;
 		}
 
+		var blockArgs = new CodeBlockArguments();
 		foreach (var part in args.Split(','))
 		{
 			var currentPart = args[part];
@@ -38,33 +39,35 @@ public record CodeBlockArguments
 				var key = currentPart[..equalIndex].Trim();
 				var value = currentPart[(equalIndex + 1)..].Trim();
 
-				if (!Enum.TryParse<CodeBlockArgument>(key, true, out var arg))
+				if (!Assign(key, blockArgs, bool.TryParse(value, out var b) ? b : null))
 					return false;
-
-				if (!bool.TryParse(value, out var boolValue))
-					return false;
-
-				arguments[arg] = boolValue;
 			}
 			else
 			{
-				var trimmed = currentPart.Trim();
-				if (Enum.TryParse<CodeBlockArgument>(trimmed, true, out var arg))
-					arguments[arg] = true;
-				else
+				var key = currentPart.Trim();
+				if (!Assign(key, blockArgs, true))
 					return false;
 			}
 		}
-		codeBlockArgs = new CodeBlockArguments(arguments);
+
+		codeBlockArgs = blockArgs;
 		return true;
 	}
 
-	public bool UseCallouts { get; }
-	public bool UseSubstitutions { get; }
-
-	private CodeBlockArguments(Dictionary<CodeBlockArgument, bool> arguments)
+	private static bool Assign(ReadOnlySpan<char> key, CodeBlockArguments blockArgs, bool? value = null)
 	{
-		UseCallouts = arguments.GetValueOrDefault(CodeBlockArgument.Callouts, true);
-		UseSubstitutions = arguments.GetValueOrDefault(CodeBlockArgument.Subs, false);
+		switch (key)
+		{
+			case "callouts":
+				blockArgs.UseCallouts = value ?? true;
+				break;
+			case "subs":
+				blockArgs.UseSubstitutions = value ?? false;
+				break;
+			default:
+				return false;
+		}
+
+		return true;
 	}
 }
