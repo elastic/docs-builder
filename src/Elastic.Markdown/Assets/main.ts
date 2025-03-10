@@ -12,12 +12,12 @@ const { getOS } = new UAParser();
 
 document.addEventListener('htmx:beforeRequest', function(event) {
 	if (event.detail.requestConfig.verb === 'get' && event.detail.requestConfig.triggeringEvent) {
-		const { ctrlKey, metaKey }: PointerEvent = event.detail.requestConfig.triggeringEvent;
+		const { ctrlKey, metaKey, shiftKey }: PointerEvent = event.detail.requestConfig.triggeringEvent;
 		const { name: os } = getOS();
 		const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey;
-		if (modifierKey) {
+		if (shiftKey || modifierKey) {
 			event.preventDefault();
-			window.open(event.detail.requestConfig.path, '_blank', 'noopener noreferrer');
+			window.open(event.detail.requestConfig.path, '_blank', 'noopener,noreferrer');
 		}
 	}
 });
