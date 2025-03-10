@@ -30,8 +30,7 @@ public class AssembleContext
 
 		var configPath = Path.Combine(Paths.Root.FullName, "src/docs-assembler/assembler.yml");
 		ConfigurationPath = ReadFileSystem.FileInfo.New(configPath);
-		Configuration = AssemblyConfiguration.Deserialize(File.ReadAllText(ConfigurationPath.FullName));
-
+		Configuration = AssemblyConfiguration.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationPath.FullName));
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? ".artifacts/assembly");
 	}
 }
