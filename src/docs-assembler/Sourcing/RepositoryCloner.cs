@@ -55,7 +55,7 @@ public class RepositoryCloner(ILoggerFactory logger, AssembleContext context)
 		var relativePath = Path.GetRelativePath(Paths.Root.FullName, checkoutFolder);
 		var sw = Stopwatch.StartNew();
 		_ = dict.AddOrUpdate(name, sw, (_, _) => sw);
-		if (Directory.Exists(checkoutFolder))
+		if (context.ReadFileSystem.Directory.Exists(checkoutFolder))
 		{
 			_logger.LogInformation("Pull: {Name}\t{Repository}\t{RelativePath}", name, repository, relativePath);
 			// --allow-unrelated-histories due to shallow clones not finding a common ancestor
