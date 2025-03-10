@@ -11,17 +11,15 @@ function expandAllParents(navItem: HTMLElement) {
 	}
 }
 
-function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
+function scrollCurrentNaviItemIntoView(nav: HTMLElement) {
 	const currentNavItem = $('.current', nav);
 	expandAllParents(currentNavItem);
-	setTimeout(() => {
-		if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
-			const navRect = nav.getBoundingClientRect();
-			const currentNavItemRect = currentNavItem.getBoundingClientRect();
-			const offset = currentNavItemRect.top - navRect.top - navRect.height / 3 + currentNavItemRect.height / 2;
-			nav.scrollTop = nav.scrollTop + offset;
-		}
-	}, delay);
+	if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
+		const navRect = nav.getBoundingClientRect();
+		const currentNavItemRect = currentNavItem.getBoundingClientRect();
+		const offset = currentNavItemRect.top - navRect.top - navRect.height / 3 + currentNavItemRect.height / 2;
+		nav.scrollTop = nav.scrollTop + offset;
+	}
 }
 
 function isElementInViewport(parent: HTMLElement, child: HTMLElement, ): boolean {
@@ -44,5 +42,5 @@ export function initNav() {
 	navItems.forEach(el => {
 		el.classList.add('current');
 	});
-	scrollCurrentNaviItemIntoView(pagesNav, 100);
+	scrollCurrentNaviItemIntoView(pagesNav);
 }
