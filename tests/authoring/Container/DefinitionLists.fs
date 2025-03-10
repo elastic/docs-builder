@@ -51,7 +51,6 @@ This is my `definition`
  	            <dd>
              		<p>And this is the definition
  			            <strong>body</strong>
- 			            <br>
  			            Which may contain multiple lines
  			        </p>
  		            <div class="admonition note">

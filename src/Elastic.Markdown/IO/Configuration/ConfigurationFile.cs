@@ -70,7 +70,7 @@ public record ConfigurationFile : DocumentationFile
 						Project = reader.ReadString(entry.Entry);
 						break;
 					case "soft_line_endings":
-						SoftLineEndings = bool.TryParse(ReadString(entry), out var softLineEndings) && softLineEndings;
+						SoftLineEndings = bool.TryParse(reader.ReadString(entry.Entry), out var softLineEndings) && softLineEndings;
 						break;
 					case "exclude":
 						Exclude = [.. YamlStreamReader.ReadStringArray(entry.Entry).Select(Glob.Parse)];
