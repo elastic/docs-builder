@@ -29,25 +29,14 @@ public record CodeBlockArguments
 			return true;
 		}
 
-		var remaining = args;
-		while (!remaining.IsEmpty)
+		foreach (var part in args.Split(','))
 		{
-			var commaIndex = remaining.IndexOf(',');
-			var current = commaIndex == -1 ? remaining : remaining[..commaIndex];
-
-			var equalIndex = current.IndexOf('=');
-			if (equalIndex == -1)
+			var currentPart = args[part];
+			if (currentPart.Contains('='))
 			{
-				var trimmed = current.Trim();
-				if (Enum.TryParse<CodeBlockArgument>(trimmed, true, out var arg))
-					arguments[arg] = true;
-				else
-					return false;
-			}
-			else
-			{
-				var key = current[..equalIndex].Trim();
-				var value = current[(equalIndex + 1)..].Trim();
+				var equalIndex = currentPart.IndexOf('=');
+				var key = currentPart[..equalIndex].Trim();
+				var value = currentPart[(equalIndex + 1)..].Trim();
 
 				if (!Enum.TryParse<CodeBlockArgument>(key, true, out var arg))
 					return false;
@@ -57,13 +46,15 @@ public record CodeBlockArguments
 
 				arguments[arg] = boolValue;
 			}
-
-			if (commaIndex == -1)
-				break;
-
-			remaining = remaining[(commaIndex + 1)..];
+			else
+			{
+				var trimmed = currentPart.Trim();
+				if (Enum.TryParse<CodeBlockArgument>(trimmed, true, out var arg))
+					arguments[arg] = true;
+				else
+					return false;
+			}
 		}
-
 		codeBlockArgs = new CodeBlockArguments(arguments);
 		return true;
 	}
