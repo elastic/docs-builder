@@ -20,8 +20,8 @@ public class CodeBlockArgumentsClassTests
 		var outcome = CodeBlockArguments.TryParse(codeBlockArguments, out var parsedArgs);
 
 		outcome.Should().BeTrue();
-		parsedArgs!.IsSubstitutionsEnabled.Should().BeFalse();
-		parsedArgs.IsCalloutsEnabled.Should().BeTrue();
+		parsedArgs!.UseSubstitutions.Should().BeFalse();
+		parsedArgs.UseCallouts.Should().BeTrue();
 	}
 
 	[Fact]
@@ -30,8 +30,8 @@ public class CodeBlockArgumentsClassTests
 		const string codeBlockArguments = "";
 		var outcome = CodeBlockArguments.TryParse(codeBlockArguments, out var parsedArgs);
 		outcome.Should().BeTrue();
-		parsedArgs!.IsSubstitutionsEnabled.Should().BeFalse();
-		parsedArgs.IsCalloutsEnabled.Should().BeTrue();
+		parsedArgs!.UseSubstitutions.Should().BeFalse();
+		parsedArgs.UseCallouts.Should().BeTrue();
 	}
 
 	[Fact]
@@ -48,8 +48,8 @@ public class CodeBlockArgumentsClassTests
 		const string codeBlockArguments = "callouts=false";
 		var outcome = CodeBlockArguments.TryParse(codeBlockArguments, out var parsedArgs);
 		outcome.Should().BeTrue();
-		parsedArgs!.IsSubstitutionsEnabled.Should().BeFalse();
-		parsedArgs.IsCalloutsEnabled.Should().BeFalse();
+		parsedArgs!.UseSubstitutions.Should().BeFalse();
+		parsedArgs.UseCallouts.Should().BeFalse();
 	}
 }
 

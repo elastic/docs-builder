@@ -64,7 +64,7 @@ public record CodeBlockArguments
 
 	private CodeBlockArguments(Dictionary<CodeBlockArgument, bool> arguments)
 	{
-		IsCalloutsEnabled = arguments.GetValueOrDefault(CodeBlockArgument.Callouts, true);
-		IsSubstitutionsEnabled = arguments.GetValueOrDefault(CodeBlockArgument.Subs, false);
+		UseCallouts = arguments.GetValueOrDefault(CodeBlockArgument.Callouts, true);
+		UseSubstitutions = arguments.GetValueOrDefault(CodeBlockArgument.Subs, false);
 	}
 }

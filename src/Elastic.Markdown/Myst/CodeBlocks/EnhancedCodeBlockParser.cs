@@ -169,7 +169,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			}
 
 			var span = line.Slice.AsSpan();
-			if (codeBlockArgs?.IsSubstitutionsEnabled == true)
+			if (codeBlockArgs?.UseSubstitutions == true)
 			{
 				if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, out var frontMatterReplacement))
 				{
@@ -190,7 +190,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			if (codeBlock.OpeningFencedCharCount > 3)
 				continue;
 
-			if (codeBlockArgs?.IsCalloutsEnabled == true)
+			if (codeBlockArgs?.UseCallouts == true)
 			{
 				List<CallOut> callOuts = [];
 				var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
