@@ -15,51 +15,63 @@ internal enum CodeBlockArgument
 	Subs
 }
 
-public class InvalidCodeBlockArgumentException(string message) : ArgumentException(message);
-
-public class CodeBlockArguments
+public record CodeBlockArguments
 {
-	public static bool TryParse(string args, [NotNullWhen(true)] out CodeBlockArguments? codeBlockArgs)
+	public static bool TryParse(ReadOnlySpan<char> args, [NotNullWhen(true)] out CodeBlockArguments? codeBlockArgs)
 	{
 		codeBlockArgs = null;
 
 		Dictionary<CodeBlockArgument, bool> arguments = [];
 
-		if (string.IsNullOrWhiteSpace(args))
+		if (args.IsWhiteSpace())
 		{
-			codeBlockArgs = new CodeBlockArguments(ImmutableDictionary<CodeBlockArgument, bool>.Empty);
+			codeBlockArgs = new CodeBlockArguments([]);
 			return true;
 		}
 
-		foreach (var i in args.Split(","))
+		var remaining = args;
+		while (!remaining.IsEmpty)
 		{
-			var parts = i.Split("=");
-			switch (parts.Length)
+			var commaIndex = remaining.IndexOf(',');
+			var current = commaIndex == -1 ? remaining : remaining[..commaIndex];
+
+			var equalIndex = current.IndexOf('=');
+			if (equalIndex == -1)
 			{
-				case 1 when Enum.TryParse<CodeBlockArgument>(parts[0].Trim(), true, out var arg):
+				var trimmed = current.Trim();
+				if (Enum.TryParse<CodeBlockArgument>(trimmed, true, out var arg))
 					arguments[arg] = true;
-					break;
-				case 2 when Enum.TryParse<CodeBlockArgument>(parts[0].Trim(), true, out var arg):
-					{
-						if (bool.TryParse(parts[1].Trim(), out var value))
-							arguments[arg] = value;
-						else
-							return false;
-						break;
-					}
-				default:
+				else
 					return false;
 			}
+			else
+			{
+				var key = current[..equalIndex].Trim();
+				var value = current[(equalIndex + 1)..].Trim();
+
+				if (!Enum.TryParse<CodeBlockArgument>(key, true, out var arg))
+					return false;
+
+				if (!bool.TryParse(value, out var boolValue))
+					return false;
+
+				arguments[arg] = boolValue;
+			}
+
+			if (commaIndex == -1)
+				break;
+
+			remaining = remaining[(commaIndex + 1)..];
 		}
 
-		codeBlockArgs = new CodeBlockArguments(arguments.ToImmutableDictionary());
+		codeBlockArgs = new CodeBlockArguments(arguments);
 		return true;
 	}
 
 	public bool IsCalloutsEnabled { get; }
 	public bool IsSubstitutionsEnabled { get; }
 
-	private CodeBlockArguments(ImmutableDictionary<CodeBlockArgument, bool> arguments)
+	private CodeBlockArguments(Dictionary<CodeBlockArgument, bool> arguments)
 	{
 		IsCalloutsEnabled = arguments.GetValueOrDefault(CodeBlockArgument.Callouts, true);
 		IsSubstitutionsEnabled = arguments.GetValueOrDefault(CodeBlockArgument.Subs, false);
