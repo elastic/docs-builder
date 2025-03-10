@@ -59,8 +59,8 @@ public record CodeBlockArguments
 		return true;
 	}
 
-	public bool IsCalloutsEnabled { get; }
-	public bool IsSubstitutionsEnabled { get; }
+	public bool UseCallouts { get; }
+	public bool UseSubstitutions { get; }
 
 	private CodeBlockArguments(Dictionary<CodeBlockArgument, bool> arguments)
 	{
