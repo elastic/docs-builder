@@ -17,7 +17,12 @@ function scrollCurrentNaviItemIntoView(nav: HTMLElement) {
 	if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
 		const navRect = nav.getBoundingClientRect();
 		const currentNavItemRect = currentNavItem.getBoundingClientRect();
+		// Calculate the offset needed to scroll the current navigation item into view.
+		// The offset is determined by the difference between the top of the current navigation item and the top of the navigation container,
+		// adjusted by one-third of the height of the navigation container and half the height of the current navigation item.
 		const offset = currentNavItemRect.top - navRect.top - navRect.height / 3 + currentNavItemRect.height / 2;
+		
+		// Scroll the navigation container by the calculated offset to bring the current navigation item into view.
 		nav.scrollTop = nav.scrollTop + offset;
 	}
 }
