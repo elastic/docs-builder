@@ -8,7 +8,7 @@
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	var id = item.Id;
-	if (item is FileNavigation file)
+	if (item is FileNavigation file && Model.SubTree.Index?.FileName != file.File.FileName)
 	{
 		var f = file.File;
 		<li class="flex group/li @(item.Depth == topLevelFile ? "font-semibold py-6 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">

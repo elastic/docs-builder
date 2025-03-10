@@ -90,7 +90,7 @@ type ``Scenario 2: Splitting a page into multiple smaller pages`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml $"""
-            <p><a href="{urlPrefix}/testing/redirects/second-page#zz">Scenario 2</a><br/>
+            <p><a href="{urlPrefix}/testing/redirects/second-page#zz">Scenario 2</a>
             <a href="{urlPrefix}/testing/redirects/third-page#bb">Scenario 2</a></p>
         """
 

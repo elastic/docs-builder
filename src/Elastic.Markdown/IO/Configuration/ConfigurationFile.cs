@@ -19,6 +19,7 @@ public record ConfigurationFile : DocumentationFile
 	private readonly int _depth;
 	public string? Project { get; }
 	public Glob[] Exclude { get; } = [];
+	public bool SoftLineEndings { get; }
 
 	public string[] CrossLinkRepositories { get; } = [];
 
@@ -67,6 +68,9 @@ public record ConfigurationFile : DocumentationFile
 				{
 					case "project":
 						Project = reader.ReadString(entry.Entry);
+						break;
+					case "soft_line_endings":
+						SoftLineEndings = bool.TryParse(reader.ReadString(entry.Entry), out var softLineEndings) && softLineEndings;
 						break;
 					case "exclude":
 						Exclude = [.. YamlStreamReader.ReadStringArray(entry.Entry).Select(Glob.Parse)];

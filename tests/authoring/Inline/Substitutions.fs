@@ -19,7 +19,7 @@ not a comment
     [<Fact>]
     let ``validate HTML: replace substitution`` () =
         markdown |> convertsToHtml """
-<p>The following should be subbed: Hello World!<br>
+<p>The following should be subbed: Hello World!
 not a comment</p>
         """
 
@@ -44,8 +44,8 @@ not a {substitution}
     [<Fact>]
     let ``validate HTML: leaves non subs alone`` () =
         markdown |> convertsToHtml """
- <p>The following should be subbed: Hello World!<br>
- 	not a comment</br>
- 	not a {{valid-key}}<br>
+ <p>The following should be subbed: Hello World!
+ 	not a comment
+ 	not a {{valid-key}}
  	not a {substitution}</p>
 """
