@@ -1,5 +1,5 @@
 // @ts-nocheck
-import "htmx.org"
+import htmx from "htmx.org"
 import "htmx-ext-preload"
 import {initTocNav} from "./toc-nav";
 import {initHighlight} from "./hljs";
@@ -7,20 +7,6 @@ import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
 import {$, $$} from "select-dom"
-import { UAParser } from 'ua-parser-js';
-const { getOS } = new UAParser();
-
-document.addEventListener('htmx:beforeRequest', function(event) {
-	if (event.detail.requestConfig.verb === 'get' && event.detail.requestConfig.triggeringEvent) {
-		const { ctrlKey, metaKey, shiftKey }: PointerEvent = event.detail.requestConfig.triggeringEvent;
-		const { name: os } = getOS();
-		const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey;
-		if (shiftKey || modifierKey) {
-			event.preventDefault();
-			window.open(event.detail.requestConfig.path, '_blank', 'noopener,noreferrer');
-		}
-	}
-});
 
 document.addEventListener('htmx:load', function() {
 	initTocNav();
@@ -28,6 +14,15 @@ document.addEventListener('htmx:load', function() {
 	initCopyButton();
 	initTabs();
 	initNav();
+
+
+	const docsetSelector = $('#docset-selector');
+
+	docsetSelector.addEventListener('change', (event) => {
+		console.log(event.target.value)
+		htmx.ajax('get', event.target.value, { target: '#pages-nav', select: '#pages-nav' }).then()
+	})
+
 });
 
 document.body.addEventListener('htmx:oobBeforeSwap', function(event) {
