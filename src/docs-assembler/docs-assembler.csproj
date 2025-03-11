@@ -7,7 +7,7 @@
     <RootNamespace>Documentation.Assembler</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
 
-    <PublishAot>false</PublishAot>
+    <PublishAot>true</PublishAot>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
 

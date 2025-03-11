@@ -77,10 +77,6 @@ let private publishContainers _ =
         let imageTag =
             match project with
             | "docs-builder" -> "jammy-chiseled-aot"
-            // When .NET 10 releases we can create a chiseled image with git more easily
-            // https://github.com/dotnet/dotnet-docker/blob/main/documentation/ubuntu-chiseled.md#how-do-i-install-additional-packages-on-chiseled-images
-            // For now we run with base jammy
-            | "docs-assembler" -> "jammy"
             | _ -> "jammy-chiseled-aot"
         let labels =
             let exitCode = exec {
