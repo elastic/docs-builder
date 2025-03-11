@@ -28,4 +28,8 @@
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="assembler.yml" />
+  </ItemGroup>
 </Project>
