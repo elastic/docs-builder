@@ -11,7 +11,15 @@ using Markdig.Syntax.Inlines;
 namespace Elastic.Markdown.Tests.Inline;
 
 public abstract class LinkTestBase(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest<LinkInline>(output, content)
+	: InlineTest<LinkInline>(
+		output,
+		content,
+		new Dictionary<string, string>
+		{
+			{ "some-url-with-a-version", "https://github.com/elastic/fake-repo/tree/v1.17.0" },
+			{ "some-url-path-prefix", "/something" },
+		}
+	)
 {
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();
@@ -182,6 +190,44 @@ public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestB
 		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
 	}
 }
+
+public class ExternalLinksWithInterpolationSuccess(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[link to app]({{some-url-with-a-version}})
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html
+		Html.Should().Contain(
+			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0">link to app</a></p>"""
+		);
+
+	[Fact]
+	public void HasWarnings()
+	{
+		Collector.Diagnostics.Should().HaveCount(0);
+	}
+}
+
+public class InternalLinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[link to app]({{some-url-path-prefix}}/hello-world)
+	"""
+)
+{
+	[Fact]
+	public void HasWarnings()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
+		Collector.Diagnostics.First().Message.Should().Contain("Link is resolved to '/something/hello-world'. Only external links are allowed to be resolved from template expressions.");
+	}
+}
+
+
+
 
 public class NonExistingLinks(ITestOutputHelper output) : LinkTestBase(output,
 	"""
