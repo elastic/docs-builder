@@ -171,7 +171,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 
 public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : LinkTestBase(output,
 	"""
-	[global search field]({{this-variable-does-not-exit}}/introduction.html#kibana-navigation-search)
+	[global search field]({{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search)
 	"""
 )
 {
@@ -180,7 +180,7 @@ public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : Li
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
 		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
-		Collector.Diagnostics.First().Message.Should().Contain("he url contains unresolved template expressions: '{{this-variable-does-not-exit}}/introduction.html#kibana-navigation-search'. Please check if there is an appropriate global or frontmatter subs variable.");
+		Collector.Diagnostics.First().Message.Should().Contain("he url contains unresolved template expressions: '{{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search'. Please check if there is an appropriate global or frontmatter subs variable.");
 	}
 }
 
