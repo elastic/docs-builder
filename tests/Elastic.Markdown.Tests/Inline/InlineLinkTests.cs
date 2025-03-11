@@ -169,25 +169,18 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	}
 }
 
-public class LinksWithInterpolationWarning(ITestOutputHelper output) : LinkTestBase(output,
+public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : LinkTestBase(output,
 	"""
-	[global search field]({{kibana-ref}}/introduction.html#kibana-navigation-search)
+	[global search field]({{this-variable-does-not-exit}}/introduction.html#kibana-navigation-search)
 	"""
 )
 {
 	[Fact]
-	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
-			"""<p><a href="%7B%7Bkibana-ref%7D%7D/introduction.html#kibana-navigation-search">global search field</a></p>"""
-		);
-
-	[Fact]
-	public void HasWarnings()
+	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.First().Severity.Should().Be(Severity.Warning);
-		Collector.Diagnostics.First().Message.Should().Contain("The url contains a template expression. Please do not use template expressions in links. See https://github.com/elastic/docs-builder/issues/182 for further information.");
+		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
+		Collector.Diagnostics.First().Message.Should().Contain("he url contains unresolved template expressions: '{{this-variable-does-not-exit}}/introduction.html#kibana-navigation-search'. Please check if there is an appropriate global or frontmatter subs variable.");
 	}
 }
 
@@ -205,7 +198,7 @@ public class ExternalLinksWithInterpolationSuccess(ITestOutputHelper output) : L
 		);
 
 	[Fact]
-	public void HasWarnings()
+	public void HasNoWarningsOrErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(0);
 	}

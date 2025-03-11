@@ -106,9 +106,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			var replacedUrl = url.ReplaceSubstitutions(processor.GetContext());
 			if (replacedUrl.Contains("{{"))
 			{
-				processor.EmitWarning(link,
-					"The url contains a template expression. Please do not use template expressions in links. " +
-					"See https://github.com/elastic/docs-builder/issues/182 for further information."
+				processor.EmitError(link,
+					$"The url contains unresolved template expressions: '{replacedUrl}'. Please check if there is an appropriate global or frontmatter subs variable."
 				);
 				return;
 			}
