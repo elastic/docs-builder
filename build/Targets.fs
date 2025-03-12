@@ -94,7 +94,7 @@ let private publishContainers _ =
                 "-p"; $"ContainerRepository=elastic/%s{project}"
             ]
         let registry =
-            match Environment.environVarOrNone "GITHUB_ACTION" with
+            match Environment.environVarOrNone "GITHUB_ACTIONS" with
             | None -> []
             | Some _ -> [
                 "-p"; "ContainerRegistry=ghcr.io"
