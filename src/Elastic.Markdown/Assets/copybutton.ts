@@ -243,7 +243,9 @@ var copyTargetText = (trigger) => {
   var target = document.querySelector(trigger.attributes['data-clipboard-target'].value);
   // get filtered text
   let excludes = ['.code-callout', '.linenos', '.language-apiheader'];
-  let text = filterText(target, excludes);
+  let text = Array.from(target.querySelectorAll('code'))
+    .map(code => filterText(code, excludes))
+    .join('\n');
   return formatCopyText(text, '', false, true, true, true, '', '')
 }
 
