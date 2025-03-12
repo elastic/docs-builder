@@ -52,9 +52,15 @@ public record AssemblyConfiguration
 			repository.CurrentBranch = "main";
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
-			repository.Origin = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"))
-				? $"https://github.com/elastic/{name}.git"
-				: $"git@github.com:elastic/{name}.git";
+			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+			{
+				var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+				repository.Origin = !string.IsNullOrEmpty(token)
+					? $"https://oath2:{token}@github.com/elastic/{name}.git"
+					: $"https://github.com/elastic/{name}.git";
+			}
+			else
+				repository.Origin = $"git@github.com:elastic/{name}.git";
 		}
 
 		return repository;
