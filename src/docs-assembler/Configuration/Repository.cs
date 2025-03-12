@@ -34,4 +34,7 @@ public record Repository
 		get => _pathPrefix ?? $"reference/{Name}";
 		set => _pathPrefix = value;
 	}
+
+	[YamlMember(Alias = "skip")]
+	public bool Skip { get; set; }
 }

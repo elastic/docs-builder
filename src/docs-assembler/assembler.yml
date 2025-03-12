@@ -7,20 +7,29 @@ references:
   apm-agent-ios:
   apm-agent-java:
   apm-agent-nodejs:
+    skip: true
   apm-agent-php:
+    skip: true
   apm-agent-python:
+    skip: true
   apm-agent-ruby:
+    skip: true
   apm-agent-rum-js:
+    skip: true
   apm-aws-lambda:
   apm-k8s-attacher:
   beats:
+    skip: true
   cloud-on-k8s:
   cloud:
     current: master
+    skip: true
   curator:
     current: master
+    skip: true
   ecctl:
     current: master
+    skip: true
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -32,22 +41,29 @@ references:
   ecs-logging-ruby:
   ecs-logging:
   ecs:
+    skip: true
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:
   elasticsearch-java:
   elasticsearch-js:
   elasticsearch-net:
+    # failures on main https://github.com/elastic/elasticsearch-net/actions/runs/13594875271/job/38009389173
+    skip: true
   elasticsearch-php:
   elasticsearch-py:
   elasticsearch-rs:
+    # needs a dummy PR to docs
+    skip: true
   elasticsearch-ruby:
   elasticsearch:
   go-elasticsearch:
   integrations:
   kibana:
   logstash-docs:
+    skip: true
   logstash:
   search-ui:
   integration-docs:
+    skip: true
   security-docs:

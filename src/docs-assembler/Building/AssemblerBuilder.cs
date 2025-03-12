@@ -4,6 +4,7 @@
 
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -15,11 +16,13 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 
 	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, Cancel ctx)
 	{
+		var crossLinkResolver = new CrossLinkResolver(new AssemblerCrossLinkFetcher(logger, context.Configuration));
+
 		foreach (var checkout in checkouts)
 		{
 			try
 			{
-				await BuildAsync(checkout, ctx);
+				await BuildAsync(checkout, crossLinkResolver, ctx);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
@@ -34,7 +37,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 		}
 	}
 
-	private async Task BuildAsync(Checkout checkout, Cancel ctx)
+	private async Task BuildAsync(Checkout checkout, CrossLinkResolver crossLinkResolver, Cancel ctx)
 	{
 		var path = checkout.Directory.FullName;
 		var pathPrefix = checkout.Repository.PathPrefix;
@@ -46,7 +49,8 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 			Force = true,
 			AllowIndexing = true
 		};
-		var set = new DocumentationSet(buildContext, logger);
+
+		var set = new DocumentationSet(buildContext, logger, crossLinkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 		await generator.GenerateAll(ctx);
 	}
