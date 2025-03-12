@@ -97,14 +97,14 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 			_logger.LogInformation("Checkout: {Name}\t{Repository}\t{RelativePath}", name, repository, relativePath);
 			if (repository.CheckoutStrategy == "full")
 			{
-				Exec("git", "clone", repository.Origin, checkoutFolder.FullName,
+				Exec(name, "git", "clone", repository.Origin, checkoutFolder.FullName,
 					"--depth", "1", "--single-branch",
 					"--branch", repository.CurrentBranch
 				);
 			}
 			else if (repository.CheckoutStrategy == "partial")
 			{
-				Exec(
+				Exec(name,
 					"git", "clone", "--filter=blob:none", "--no-checkout", repository.Origin, checkoutFolder.FullName
 				);
 
