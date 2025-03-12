@@ -49,7 +49,9 @@ public class RepositoryCloner(ILoggerFactory logger, AssembleContext context)
 	{
 		repository ??= new Repository();
 		repository.CurrentBranch ??= "main";
-		repository.Origin ??= $"git@github.com:elastic/{name}.git";
+		repository.Origin ??= !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTION"))
+			? $"https://github.com/elastic/{name}.git"
+			: $"git@github.com:elastic/{name}.git";
 
 		var checkoutFolder = Path.Combine(context.OutputDirectory.FullName, name);
 		var relativePath = Path.GetRelativePath(Paths.Root.FullName, checkoutFolder);
