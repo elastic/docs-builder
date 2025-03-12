@@ -49,7 +49,7 @@ public class RepositoryCloner(ILoggerFactory logger, AssembleContext context)
 	{
 		repository ??= new Repository();
 		repository.CurrentBranch ??= "main";
-		repository.Origin ??= !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTION"))
+		repository.Origin ??= !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"))
 			? $"https://github.com/elastic/{name}.git"
 			: $"git@github.com:elastic/{name}.git";
 
