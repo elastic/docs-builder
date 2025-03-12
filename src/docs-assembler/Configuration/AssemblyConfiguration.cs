@@ -25,6 +25,12 @@ public record AssemblyConfiguration
 		try
 		{
 			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
+			foreach (var (name, r) in config.ReferenceRepositories)
+			{
+				var repository = RepositoryDefaults(r, name);
+				config.ReferenceRepositories[name] = repository;
+			}
+			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
 			return config;
 		}
 		catch (Exception e)
@@ -35,27 +41,28 @@ public record AssemblyConfiguration
 		}
 	}
 
+	private static TRepository RepositoryDefaults<TRepository>(TRepository r, string name)
+		where TRepository : Repository, new()
+	{
+		// ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+		var repository = r ?? new TRepository();
+		// ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+		repository.Name = name;
+		if (string.IsNullOrEmpty(repository.CurrentBranch))
+			repository.CurrentBranch = "main";
+		if (string.IsNullOrEmpty(repository.Origin))
+		{
+			repository.Origin = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"))
+				? $"https://github.com/elastic/{name}.git"
+				: $"git@github.com:elastic/{name}.git";
+		}
+
+		return repository;
+	}
+
 	[YamlMember(Alias = "narrative")]
 	public NarrativeRepository Narrative { get; set; } = new();
 
 	[YamlMember(Alias = "references")]
-	public Dictionary<string, Repository?> ReferenceRepositories { get; set; } = [];
-}
-
-public record NarrativeRepository : Repository
-{
-	public static string Name { get; } = "docs-content";
-}
-
-public record Repository
-{
-	[YamlMember(Alias = "repo")]
-	public string? Origin { get; set; }
-
-	[YamlMember(Alias = "current")]
-	public string? CurrentBranch { get; set; }
-
-	[YamlMember(Alias = "checkout_strategy")]
-	public string CheckoutStrategy { get; set; } = "partial";
-
+	public Dictionary<string, Repository> ReferenceRepositories { get; set; } = [];
 }

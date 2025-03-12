@@ -21,9 +21,16 @@ public class AssembleContext
 
 	public IFileInfo ConfigurationPath { get; }
 
+	public IDirectoryInfo CheckoutDirectory { get; set; }
+
 	public IDirectoryInfo OutputDirectory { get; set; }
 
-	public AssembleContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem, string? output)
+	public bool Force { get; init; }
+
+	// This property is used to determine if the site should be indexed by search engines
+	public bool AllowIndexing { get; init; }
+
+	public AssembleContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem, string? checkoutDirectory, string? output)
 	{
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
@@ -37,6 +44,7 @@ public class AssembleContext
 
 		ConfigurationPath = ReadFileSystem.FileInfo.New(configPath);
 		Configuration = AssemblyConfiguration.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationPath.FullName));
+		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? ".artifacts/checkouts");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? ".artifacts/assembly");
 	}
 
@@ -55,7 +63,5 @@ public class AssembleContext
 			outputFile.Directory.Create();
 		using var stream = outputFile.OpenWrite();
 		resourceStream.CopyTo(stream);
-
-
 	}
 }
