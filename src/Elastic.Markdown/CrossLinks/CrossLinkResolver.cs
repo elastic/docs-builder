@@ -23,13 +23,17 @@ public record LinkIndex
 
 public record LinkIndexEntry
 {
-	[JsonPropertyName("repository")] public required string Repository { get; init; }
+	[JsonPropertyName("repository")]
+	public required string Repository { get; init; }
 
-	[JsonPropertyName("path")] public required string Path { get; init; }
+	[JsonPropertyName("path")]
+	public required string Path { get; init; }
 
-	[JsonPropertyName("branch")] public required string Branch { get; init; }
+	[JsonPropertyName("branch")]
+	public required string Branch { get; init; }
 
-	[JsonPropertyName("etag")] public required string ETag { get; init; }
+	[JsonPropertyName("etag")]
+	public required string ETag { get; init; }
 }
 
 public interface ICrossLinkResolver
@@ -38,9 +42,10 @@ public interface ICrossLinkResolver
 	bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 }
 
-public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
+public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
 {
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
+	private readonly IUriEnvironmentResolver _uriResolver = uriResolver ?? new PreviewEnvironmentUriResolver();
 
 	public async Task<FetchedCrossLinks> FetchLinks()
 	{
@@ -49,9 +54,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, warningEmitter, _crossLinks, crossLinkUri, out resolvedUri);
-
-	private static Uri BaseUri { get; } = new("https://docs-v3-preview.elastic.dev");
+		TryResolve(errorEmitter, warningEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, LinkReference linkReference)
 	{
@@ -68,6 +71,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		Action<string> errorEmitter,
 		Action<string> warningEmitter,
 		FetchedCrossLinks fetchedCrossLinks,
+		IUriEnvironmentResolver uriResolver,
 		Uri crossLinkUri,
 		[NotNullWhen(true)] out Uri? resolvedUri
 	)
@@ -75,7 +79,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		resolvedUri = null;
 		var lookup = fetchedCrossLinks.LinkReferences;
 		if (crossLinkUri.Scheme != "asciidocalypse" && lookup.TryGetValue(crossLinkUri.Scheme, out var linkReference))
-			return TryFullyValidate(errorEmitter, linkReference, crossLinkUri, out resolvedUri);
+			return TryFullyValidate(errorEmitter, uriResolver, linkReference, crossLinkUri, out resolvedUri);
 
 		// TODO this is temporary while we wait for all links.json to be published
 		// Here we just silently rewrite the cross_link to the url
@@ -95,13 +99,13 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		if (!string.IsNullOrEmpty(crossLinkUri.Fragment))
 			path += crossLinkUri.Fragment;
 
-		var branch = GetBranch(crossLinkUri);
-		resolvedUri = new Uri(BaseUri, $"elastic/{crossLinkUri.Scheme}/tree/{branch}/{path}");
+		resolvedUri = uriResolver.Resolve(crossLinkUri, path);
 		return true;
 	}
 
 	private static bool TryFullyValidate(
 		Action<string> errorEmitter,
+		IUriEnvironmentResolver uriResolver,
 		LinkReference linkReference,
 		Uri crossLinkUri,
 		[NotNullWhen(true)] out Uri? resolvedUri
@@ -134,8 +138,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 			path += "#" + lookupFragment.TrimStart('#');
 		}
 
-		var branch = GetBranch(crossLinkUri);
-		resolvedUri = new Uri(BaseUri, $"elastic/{crossLinkUri.Scheme}/tree/{branch}/{path}");
+		resolvedUri = uriResolver.Resolve(crossLinkUri, path);
 		return true;
 	}
 
@@ -223,19 +226,6 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher) : ICrossLinkResolver
 		errorEmitter($"'{failedLookup}' is set a redirect but none of redirect '{targets}' match or exist in links.json.");
 		return false;
 	}
-
-	/// Hardcoding these for now, we'll have an index.json pointing to all links.json files
-	/// at some point from which we can query the branch soon.
-	private static string GetBranch(Uri crossLinkUri)
-	{
-		var branch = crossLinkUri.Scheme switch
-		{
-			"docs-content" => "main",
-			_ => "main"
-		};
-		return branch;
-	}
-
 
 	private static string ToTargetUrlPath(string lookupPath)
 	{

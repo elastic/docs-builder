@@ -17,6 +17,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
     let references = Dictionary<string, LinkReference>()
     let declared = HashSet<string>()
+    let uriResolver = PreviewEnvironmentUriResolver()
 
     member this.LinkReferences = references
     member this.DeclaredRepositories = declared
@@ -77,6 +78,6 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                     LinkReferences=this.LinkReferences.ToFrozenDictionary(),
                     FromConfiguration=true
                 )
-            CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, crossLinks, crossLinkUri, &resolvedUri);
+            CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri);
 
 

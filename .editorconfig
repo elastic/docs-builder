@@ -195,6 +195,7 @@ resharper_csharp_braces_for_foreach=required_for_multiline
 resharper_csharp_braces_for_for=required_for_multiline
 resharper_csharp_braces_for_fixed=required_for_multiline
 resharper_csharp_braces_for_ifelse=required_for_multiline
+resharper_csharp_keep_existing_attribute_arrangement=true
 
 resharper_csharp_accessor_owner_body=expression_body
 
@@ -232,6 +233,11 @@ dotnet_diagnostic.IDE0059.severity = suggestion
 dotnet_diagnostic.CA1859.severity = none
 
 dotnet_diagnostic.IDE0305.severity = none
+
+# https://github.com/dotnet/roslyn/issues/60784
+# CS8509 already warns
+dotnet_diagnostic.IDE0072.severity = none
+
 
 
 [DocumentationWebHost.cs]

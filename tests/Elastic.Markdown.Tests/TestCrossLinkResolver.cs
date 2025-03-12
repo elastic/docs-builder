@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
+	private readonly IUriEnvironmentResolver _uriResolver = new PreviewEnvironmentUriResolver();
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];
@@ -56,5 +57,5 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, _crossLinks, crossLinkUri, out resolvedUri);
+		CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
 }

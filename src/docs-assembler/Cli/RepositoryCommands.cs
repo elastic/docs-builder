@@ -48,15 +48,19 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="environment"> The environment to resolve links to</param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
 		bool? force = null,
 		bool? strict = null,
 		bool? allowIndexing = null,
+		string? environment = null,
 		Cancel ctx = default)
 	{
 		AssignOutputLogger();
+		var githubEnvironmentInput = githubActionsService.GetInput("environment");
+		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "production";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 		_ = collector.StartAsync(ctx);
@@ -72,7 +76,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			throw new Exception("No checkouts found");
 
 		var builder = new AssemblerBuilder(logger, assembleContext);
-		await builder.BuildAllAsync(checkouts, ctx);
+		await builder.BuildAllAsync(checkouts, environment, ctx);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;

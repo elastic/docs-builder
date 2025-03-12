@@ -10,6 +10,7 @@ namespace Documentation.Assembler.Configuration;
 [YamlSerializable(typeof(AssemblyConfiguration))]
 [YamlSerializable(typeof(Repository))]
 [YamlSerializable(typeof(NarrativeRepository))]
+[YamlSerializable(typeof(PublishEnvironment))]
 public partial class YamlStaticContext;
 
 public record AssemblyConfiguration
@@ -30,6 +31,8 @@ public record AssemblyConfiguration
 				var repository = RepositoryDefaults(r, name);
 				config.ReferenceRepositories[name] = repository;
 			}
+			foreach (var (name, env) in config.Environments)
+				env.Name = name;
 			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
 			return config;
 		}
@@ -71,4 +74,19 @@ public record AssemblyConfiguration
 
 	[YamlMember(Alias = "references")]
 	public Dictionary<string, Repository> ReferenceRepositories { get; set; } = [];
+
+	[YamlMember(Alias = "environments")]
+	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
+}
+
+public record PublishEnvironment
+{
+	[YamlIgnore]
+	public string Name { get; set; } = string.Empty;
+
+	[YamlMember(Alias = "uri")]
+	public string Uri { get; set; } = string.Empty;
+
+	[YamlMember(Alias = "path_prefix")]
+	public string? PathPrefix { get; set; } = string.Empty;
 }

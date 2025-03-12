@@ -14,9 +14,11 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 {
 	private readonly ILogger<AssemblerBuilder> _logger = logger.CreateLogger<AssemblerBuilder>();
 
-	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, Cancel ctx)
+	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, string environment, Cancel ctx)
 	{
-		var crossLinkResolver = new CrossLinkResolver(new AssemblerCrossLinkFetcher(logger, context.Configuration));
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, context.Configuration);
+		var uriResolver = new PublishEnvironmentUriResolver(context.Configuration, environment);
+		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
 
 		foreach (var checkout in checkouts)
 		{
