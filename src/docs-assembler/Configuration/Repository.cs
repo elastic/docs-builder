@@ -10,7 +10,7 @@ public record NarrativeRepository : Repository
 {
 	public static string RepositoryName { get; } = "docs-content";
 	public override string Name { get; set; } = RepositoryName;
-	public override string PathPrefix { get; set; } = "guides";
+	public override string? PathPrefix { get; set; }
 }
 
 public record Repository
@@ -29,7 +29,7 @@ public record Repository
 
 	private string? _pathPrefix;
 	[YamlMember(Alias = "path_prefix")]
-	public virtual string PathPrefix
+	public virtual string? PathPrefix
 	{
 		get => _pathPrefix ?? $"reference/{Name}";
 		set => _pathPrefix = value;

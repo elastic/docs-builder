@@ -38,7 +38,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 	{
 		var path = checkout.Directory.FullName;
 		var pathPrefix = checkout.Repository.PathPrefix;
-		var output = Path.Combine(context.OutputDirectory.FullName, pathPrefix);
+		var output = pathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, pathPrefix) : context.OutputDirectory.FullName;
 
 		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output)
 		{

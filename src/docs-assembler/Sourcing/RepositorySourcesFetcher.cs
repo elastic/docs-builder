@@ -44,6 +44,13 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		var dict = new ConcurrentDictionary<string, Stopwatch>();
 		var checkouts = new ConcurrentBag<Checkout>();
 
+		if (context.OutputDirectory.Exists)
+		{
+			_logger.LogInformation("Cleaning output directory: {OutputDirectory}", context.OutputDirectory.FullName);
+			context.OutputDirectory.Delete(true);
+		}
+
+
 		_logger.LogInformation("Cloning narrative content: {Repository}", NarrativeRepository.RepositoryName);
 		var checkout = CloneOrUpdateRepository(Configuration.Narrative, NarrativeRepository.RepositoryName, dict);
 		checkouts.Add(checkout);
@@ -128,7 +135,7 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		};
 		var result = Proc.StartRedirected(arguments, new ConsoleLineHandler(_logger, name));
 		if (result.ExitCode != 0)
-			context.Collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", arguments)}");
+			context.Collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 	}
 
 	private string Capture(IDirectoryInfo? workingDirectory, string binary, params string[] args)
@@ -136,13 +143,14 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		var arguments = new StartArguments(binary, args)
 		{
 			WorkingDirectory = workingDirectory?.FullName,
-			WaitForStreamReadersTimeout = TimeSpan.FromSeconds(1),
-			Timeout = TimeSpan.FromSeconds(1),
+			WaitForStreamReadersTimeout = TimeSpan.FromSeconds(3),
+			Timeout = TimeSpan.FromSeconds(3),
+			WaitForExit = TimeSpan.FromSeconds(3),
 			ConsoleOutWriter = NoopConsoleWriter.Instance
 		};
 		var result = Proc.Start(arguments);
 		if (result.ExitCode != 0)
-			context.Collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", arguments)}");
+			context.Collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 		var line = result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
 		return line;
 	}
