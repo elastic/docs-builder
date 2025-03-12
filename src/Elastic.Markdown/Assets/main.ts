@@ -20,7 +20,7 @@ document.addEventListener('htmx:load', function() {
 
 	docsetSelector.addEventListener('change', (event) => {
 		console.log(event.target.value)
-		htmx.ajax('get', event.target.value, { target: '#pages-nav', select: '#pages-nav' }).then()
+		htmx.ajax('get', event.target.value, { target: '#main-container', select: '#main-container' }).then()
 	})
 
 });

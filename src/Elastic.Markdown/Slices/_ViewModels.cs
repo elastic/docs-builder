@@ -96,7 +96,7 @@ public class NavigationViewModel
 	public required bool IsRoot { get; init; }
 	public required FeatureFlags Features { get; init; }
 
-	public required IEnumerable<GroupNavigation> TopLevelTree { get; init; }
+	public required IEnumerable<GroupNavigation> TopLevelItems { get; init; }
 }
 
 public class NavigationTreeItem

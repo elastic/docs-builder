@@ -9,7 +9,7 @@
 	data-root-path="@Model.Link("/")"
 >
 @(await RenderPartialAsync(_Header.Create(Model)))
-<div id="main-container" class="flex flex-col items-center px-6">
+<div id="main-container" class="flex flex-col items-center px-6 border-t-1 border-grey-20">
 	@functions {
 		private async Task DefaultLayout()
 		{
