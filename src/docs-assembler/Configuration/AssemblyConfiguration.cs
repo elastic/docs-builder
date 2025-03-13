@@ -10,6 +10,7 @@ namespace Documentation.Assembler.Configuration;
 [YamlSerializable(typeof(AssemblyConfiguration))]
 [YamlSerializable(typeof(Repository))]
 [YamlSerializable(typeof(NarrativeRepository))]
+[YamlSerializable(typeof(PublishEnvironment))]
 public partial class YamlStaticContext;
 
 public record AssemblyConfiguration
@@ -25,6 +26,14 @@ public record AssemblyConfiguration
 		try
 		{
 			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
+			foreach (var (name, r) in config.ReferenceRepositories)
+			{
+				var repository = RepositoryDefaults(r, name);
+				config.ReferenceRepositories[name] = repository;
+			}
+			foreach (var (name, env) in config.Environments)
+				env.Name = name;
+			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
 			return config;
 		}
 		catch (Exception e)
@@ -35,27 +44,49 @@ public record AssemblyConfiguration
 		}
 	}
 
+	private static TRepository RepositoryDefaults<TRepository>(TRepository r, string name)
+		where TRepository : Repository, new()
+	{
+		// ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+		var repository = r ?? new TRepository();
+		// ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+		repository.Name = name;
+		if (string.IsNullOrEmpty(repository.CurrentBranch))
+			repository.CurrentBranch = "main";
+		if (string.IsNullOrEmpty(repository.Origin))
+		{
+			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+			{
+				var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+				repository.Origin = !string.IsNullOrEmpty(token)
+					? $"https://oath2:{token}@github.com/elastic/{name}.git"
+					: $"https://github.com/elastic/{name}.git";
+			}
+			else
+				repository.Origin = $"git@github.com:elastic/{name}.git";
+		}
+
+		return repository;
+	}
+
 	[YamlMember(Alias = "narrative")]
 	public NarrativeRepository Narrative { get; set; } = new();
 
 	[YamlMember(Alias = "references")]
-	public Dictionary<string, Repository?> ReferenceRepositories { get; set; } = [];
+	public Dictionary<string, Repository> ReferenceRepositories { get; set; } = [];
+
+	[YamlMember(Alias = "environments")]
+	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
 }
 
-public record NarrativeRepository : Repository
+public record PublishEnvironment
 {
-	public static string Name { get; } = "docs-content";
-}
+	[YamlIgnore]
+	public string Name { get; set; } = string.Empty;
 
-public record Repository
-{
-	[YamlMember(Alias = "repo")]
-	public string? Origin { get; set; }
+	[YamlMember(Alias = "uri")]
+	public string Uri { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "current")]
-	public string? CurrentBranch { get; set; }
-
-	[YamlMember(Alias = "checkout_strategy")]
-	public string CheckoutStrategy { get; set; } = "partial";
-
+	[YamlMember(Alias = "path_prefix")]
+	public string? PathPrefix { get; set; } = string.Empty;
 }

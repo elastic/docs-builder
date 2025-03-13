@@ -14,7 +14,7 @@ public class GithubAnnotationOutput(ICoreService? githubActions) : IDiagnosticsO
 	{
 		if (githubActions == null)
 			return;
-		if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_ACTION")))
+		if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
 			return;
 		var properties = new AnnotationProperties
 		{

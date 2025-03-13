@@ -13,7 +13,8 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 {
 	public override async Task<FetchedCrossLinks> Fetch()
 	{
-		var dictionary = new Dictionary<string, LinkReference>();
+		var linkReferences = new Dictionary<string, LinkReference>();
+		var linkIndexEntries = new Dictionary<string, LinkIndexEntry>();
 		var declaredRepositories = new HashSet<string>();
 		foreach (var repository in configuration.CrossLinkRepositories)
 		{
@@ -21,7 +22,9 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 			try
 			{
 				var linkReference = await Fetch(repository);
-				dictionary.Add(repository, linkReference);
+				linkReferences.Add(repository, linkReference);
+				var linkIndexReference = await GetLinkIndexEntry(repository);
+				linkIndexEntries.Add(repository, linkIndexReference);
 			}
 			catch when (repository == "docs-content")
 			{
@@ -36,7 +39,8 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,
-			LinkReferences = dictionary.ToFrozenDictionary(),
+			LinkReferences = linkReferences.ToFrozenDictionary(),
+			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			FromConfiguration = true
 		};
 	}

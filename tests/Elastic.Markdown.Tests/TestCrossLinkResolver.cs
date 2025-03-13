@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
+	private readonly IUriEnvironmentResolver _uriResolver = new PreviewEnvironmentUriResolver();
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];
@@ -46,15 +47,24 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		LinkReferences.Add("docs-content", reference);
 		LinkReferences.Add("kibana", reference);
 		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
+
+		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkIndexEntry
+		{
+			Repository = e.Key,
+			Path = $"elastic/asciidocalypse/{e.Key}/links.json",
+			Branch = "main",
+			ETag = Guid.NewGuid().ToString()
+		});
 		_crossLinks = new FetchedCrossLinks
 		{
 			DeclaredRepositories = DeclaredRepositories,
 			LinkReferences = LinkReferences.ToFrozenDictionary(),
-			FromConfiguration = true
+			FromConfiguration = true,
+			LinkIndexEntries = indexEntries.ToFrozenDictionary()
 		};
 		return Task.FromResult(_crossLinks);
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, _crossLinks, crossLinkUri, out resolvedUri);
+		CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
 }

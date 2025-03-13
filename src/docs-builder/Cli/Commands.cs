@@ -84,7 +84,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
-				AllowIndexing = allowIndexing != null
+				AllowIndexing = allowIndexing ?? false
 			};
 		}
 		// On CI, we are running on merge commit which may have changes against an older

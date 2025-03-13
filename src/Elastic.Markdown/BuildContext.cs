@@ -29,16 +29,15 @@ public record BuildContext
 
 	public bool Force { get; init; }
 
+	// This property is used to determine if the site should be indexed by search engines
+	public bool AllowIndexing { get; init; }
+
+	private readonly string? _urlPathPrefix;
 	public string? UrlPathPrefix
 	{
 		get => string.IsNullOrWhiteSpace(_urlPathPrefix) ? "" : $"/{_urlPathPrefix.Trim('/')}";
 		init => _urlPathPrefix = value;
 	}
-
-	// This property is used to determine if the site should be indexed by search engines
-	public bool AllowIndexing { get; init; }
-
-	private readonly string? _urlPathPrefix;
 
 	public BuildContext(IFileSystem fileSystem)
 		: this(new DiagnosticsCollector([]), fileSystem, fileSystem, null, null) { }
