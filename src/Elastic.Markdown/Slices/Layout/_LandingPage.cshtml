@@ -74,7 +74,7 @@
 	<section class="w-screen px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">Elastic products</h2>
-			<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
+			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
 				<div class="grow rounded-xl border-1 border-grey-20 p-6">
 					<div class="flex gap-6 h-full">
 						<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-9"/>
@@ -125,7 +125,7 @@
 			<section class="mt-9">
 				<h3 class="text-2xl font-bold">Manage all your data</h3>
 				<p class="text-ink-light mt-4 max-w-[80ch]">Learn how to ingest, enrich, and manage your data throughout its entire Elasticsearch lifecycle.</p>
-				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 					<li>
 						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="/manage-data/data-store">
 							Understand Elasticsearch data
@@ -156,7 +156,7 @@
 			<section class="mt-9">
 				<h3 class="text-2xl font-bold">Explore and analyze your data</h3>
 				<p class="text-ink-light mt-4 max-w-[80ch]">Discover the querying, shaping, and visualization tools of Elasticsearch and Kibana, available in every solution.</p>
-				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 					<li>
 						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="/explore-analyze/query-filter">
 							Query and filter data
@@ -202,7 +202,7 @@
 			<section class="mt-9">
 				<h3 class="text-2xl font-bold">Deploy and manage</h3>
 				<p class="text-ink-light mt-4 max-w-[80ch]">Learn about how to deploy and manage all aspects of your Elastic environment. Learn how to design resilient, highly available clusters and deployments, and maintain and scale your environment to grow with your use case.</p>
-				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 					<li>
 						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="/deploy-manage/deploy">
 							Deploy Elastic
@@ -266,7 +266,7 @@
 	<section class="w-screen px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">References</h2>
-			<div class="mt-6 grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+			<div class="mt-6 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 				<div class="flex flex-col rounded-xl bg-white border-1 border-grey-20 p-6">
 					<h3 class="font-sans font-bold text-ink-dark text-2xl">Elastic APIs</h3>
 					<p class="grow mt-3">Browse the API documentation.</p>
@@ -403,11 +403,11 @@
 	<section class="w-screen px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">Product resources</h2>
-			<div class="grid lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
+			<div class="grid lg:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
 				<div class="flex flex-col rounded-t-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Releases</h3>
 					<p class="grow mt-4">Explore the latest features and changes in Elastic.</p>
-					<div class="mt-6 grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-6 text-center">
+					<div class="mt-6 grid grid-cols-2 lg:grid-cols-1 2lg:grid-cols-2 gap-6 text-center">
 						<a href="@Model.Link("/release-notes/")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
 							View release notes
 						</a>
@@ -423,7 +423,7 @@
 				<div class="flex flex-col rounded-t-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Troubleshoot and support</h3>
 					<p class="grow mt-4">Check troubleshooting guides for common fixes or reach out to the experts.</p>
-					<div class="mt-6 grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-6 text-center">
+					<div class="mt-6 grid grid-cols-2 lg:grid-cols-1 2lg:grid-cols-2 gap-6 text-center">
 						<a href="@Model.Link("/troubleshoot/")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
 							Start troubleshooting
 						</a>
@@ -439,7 +439,7 @@
 				<div class="flex flex-col rounded-t-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Contribute and extend</h3>
 					<p class="grow mt-4">Learn how to contribute to Elastic products and extend Elastic capabilities.</p>
-					<div class="mt-6 grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-6 text-center">
+					<div class="mt-6 grid grid-cols-2 lg:grid-cols-1 2lg:grid-cols-2 gap-6 text-center">
 						<a href="https://docs-v3-preview.elastic.dev/elastic/asciidocalypse/tree/main/kibana/docs/extend/" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">
 							Start contributing
 						</a>

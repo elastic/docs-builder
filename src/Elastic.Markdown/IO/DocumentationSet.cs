@@ -109,7 +109,7 @@ public class DocumentationSet : INavigationLookups
 			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
-		Tree = new DocumentationGroup(Build, lookups, ref fileIndex)
+		Tree = new DocumentationGroup(Build, lookups, false, ref fileIndex)
 		{
 			Parent = null
 		};

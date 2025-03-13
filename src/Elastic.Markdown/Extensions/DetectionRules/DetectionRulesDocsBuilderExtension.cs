@@ -21,12 +21,13 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		List<DocumentationGroup> groups,
 		List<INavigationItem> navigationItems,
 		int depth,
+		bool inNav,
 		ref int fileIndex,
 		int index)
 	{
 		var detectionRulesFolder = (RulesFolderReference)tocItem;
 		var children = detectionRulesFolder.Children;
-		var group = new DocumentationGroup(Build, lookups with { TableOfContents = children }, ref fileIndex, depth + 1)
+		var group = new DocumentationGroup(Build, lookups with { TableOfContents = children }, ref fileIndex, depth + 1, inNav)
 		{
 			Parent = parent
 		};

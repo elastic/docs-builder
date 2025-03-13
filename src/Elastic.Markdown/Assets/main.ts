@@ -14,15 +14,6 @@ document.addEventListener('htmx:load', function() {
 	initCopyButton();
 	initTabs();
 	initNav();
-
-
-	const docsetSelector = $('#docset-selector');
-
-	docsetSelector.addEventListener('change', (event) => {
-		console.log(event.target.value)
-		htmx.ajax('get', event.target.value, { target: '#main-container', select: '#main-container' }).then()
-	})
-
 });
 
 document.body.addEventListener('htmx:oobBeforeSwap', function(event) {
