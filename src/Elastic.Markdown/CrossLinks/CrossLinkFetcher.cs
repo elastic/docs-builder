@@ -92,7 +92,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 
 	private void WriteLinksJsonCachedFile(string repository, LinkIndexEntry linkIndexEntry, string json)
 	{
-		var cachedFileName = $"links-elastic-{repository}-main-{linkIndexEntry.ETag}.json";
+		var cachedFileName = $"links-elastic-{repository}-{linkIndexEntry.Branch}-{linkIndexEntry.ETag}.json";
 		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
 		if (File.Exists(cachedPath))
 			return;
