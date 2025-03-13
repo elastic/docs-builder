@@ -55,7 +55,6 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		var resolver = new CrossLinkResolver(fetcher);
 		// ReSharper disable once RedundantAssignment
 		var crossLinks = await resolver.FetchLinks();
-
 		if (string.IsNullOrEmpty(repository))
 			throw new ArgumentNullException(nameof(repository));
 		if (string.IsNullOrEmpty(localLinksJson))
@@ -117,6 +116,8 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 					continue;
 
 				var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json";
+				if (crossLinks.LinkIndexEntries.TryGetValue(uri.Scheme, out var linkIndexEntry))
+					linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkIndexEntry.Path}";
 				_ = resolver.TryResolve(s =>
 				{
 					if (s.Contains("is not a valid link in the"))

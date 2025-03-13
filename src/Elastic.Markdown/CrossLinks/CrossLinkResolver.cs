@@ -79,7 +79,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		resolvedUri = null;
 		var lookup = fetchedCrossLinks.LinkReferences;
 		if (crossLinkUri.Scheme != "asciidocalypse" && lookup.TryGetValue(crossLinkUri.Scheme, out var linkReference))
-			return TryFullyValidate(errorEmitter, uriResolver, linkReference, crossLinkUri, out resolvedUri);
+			return TryFullyValidate(errorEmitter, uriResolver, fetchedCrossLinks, linkReference, crossLinkUri, out resolvedUri);
 
 		// TODO this is temporary while we wait for all links.json to be published
 		// Here we just silently rewrite the cross_link to the url
@@ -103,20 +103,19 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		return true;
 	}
 
-	private static bool TryFullyValidate(
-		Action<string> errorEmitter,
+	private static bool TryFullyValidate(Action<string> errorEmitter,
 		IUriEnvironmentResolver uriResolver,
+		FetchedCrossLinks fetchedCrossLinks,
 		LinkReference linkReference,
 		Uri crossLinkUri,
-		[NotNullWhen(true)] out Uri? resolvedUri
-	)
+		[NotNullWhen(true)] out Uri? resolvedUri)
 	{
 		resolvedUri = null;
 		var lookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
 		if (string.IsNullOrEmpty(lookupPath) && crossLinkUri.Host.EndsWith(".md"))
 			lookupPath = crossLinkUri.Host;
 
-		if (!LookupLink(errorEmitter, linkReference, crossLinkUri, ref lookupPath, out var link, out var lookupFragment))
+		if (!LookupLink(errorEmitter, fetchedCrossLinks, linkReference, crossLinkUri, ref lookupPath, out var link, out var lookupFragment))
 			return false;
 
 		var path = ToTargetUrlPath(lookupPath);
@@ -142,14 +141,13 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		return true;
 	}
 
-	private static bool LookupLink(
-		Action<string> errorEmitter,
+	private static bool LookupLink(Action<string> errorEmitter,
+		FetchedCrossLinks crossLinks,
 		LinkReference linkReference,
 		Uri crossLinkUri,
 		ref string lookupPath,
 		[NotNullWhen(true)] out LinkMetadata? link,
-		[NotNullWhen(true)] out string? lookupFragment
-	)
+		[NotNullWhen(true)] out string? lookupFragment)
 	{
 		lookupFragment = null;
 
@@ -171,6 +169,9 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		}
 
 		var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{crossLinkUri.Scheme}/main/links.json";
+		if (crossLinks.LinkIndexEntries.TryGetValue(crossLinkUri.Scheme, out var linkIndexEntry))
+			linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkIndexEntry.Path}";
+
 		errorEmitter($"'{lookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
 		return false;
 	}

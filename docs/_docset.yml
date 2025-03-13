@@ -1,6 +1,7 @@
 project: 'doc-builder'
 cross_links:
   - docs-content
+  - cloud
 exclude:
   - '_*.md'
 subs:

@@ -18,11 +18,14 @@ public record FetchedCrossLinks
 
 	public required bool FromConfiguration { get; init; }
 
+	public required FrozenDictionary<string, LinkIndexEntry> LinkIndexEntries { get; init; }
+
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
 		LinkReferences = new Dictionary<string, LinkReference>().ToFrozenDictionary(),
-		FromConfiguration = false
+		FromConfiguration = false,
+		LinkIndexEntries = new Dictionary<string, LinkIndexEntry>().ToFrozenDictionary()
 	};
 }
 
@@ -41,7 +44,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 	{
 		if (_linkIndex is not null)
 		{
-			_logger.LogInformation("Using cached link index");
+			_logger.LogTrace("Using cached link index");
 			return _linkIndex;
 		}
 		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json";
@@ -51,16 +54,26 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		return _linkIndex;
 	}
 
+	protected async Task<LinkIndexEntry> GetLinkIndexEntry(string repository)
+	{
+		var linkIndex = await FetchLinkIndex();
+		if (linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
+			return repositoryLinks.First().Value;
+		throw new Exception($"Repository {repository} not found in link index");
+	}
+
 	protected async Task<LinkReference> Fetch(string repository)
 	{
 		var linkIndex = await FetchLinkIndex();
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 
-		if (!repositoryLinks.TryGetValue("main", out var linkIndexEntry))
-			throw new Exception($"Repository {repository} not found in link index");
+		if (repositoryLinks.TryGetValue("main", out var linkIndexEntry))
+			return await FetchLinkIndexEntry(repository, linkIndexEntry);
+		if (repositoryLinks.TryGetValue("master", out linkIndexEntry))
+			return await FetchLinkIndexEntry(repository, linkIndexEntry);
+		throw new Exception($"Repository {repository} not found in link index");
 
-		return await FetchLinkIndexEntry(repository, linkIndexEntry);
 	}
 
 	protected async Task<LinkReference> FetchLinkIndexEntry(string repository, LinkIndexEntry linkIndexEntry)
@@ -69,7 +82,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		if (linkReference is not null)
 			return linkReference;
 
-		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{repository}/main/links.json";
+		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkIndexEntry.Path}";
 		_logger.LogInformation("Fetching links.json for '{Repository}': {Url}", repository, url);
 		var json = await _client.GetStringAsync(url);
 		linkReference = Deserialize(json);

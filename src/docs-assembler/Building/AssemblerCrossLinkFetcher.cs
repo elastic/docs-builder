@@ -14,7 +14,8 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 {
 	public override async Task<FetchedCrossLinks> Fetch()
 	{
-		var dictionary = new Dictionary<string, LinkReference>();
+		var linkReferences = new Dictionary<string, LinkReference>();
+		var linkIndexEntries = new Dictionary<string, LinkIndexEntry>();
 		var declaredRepositories = new HashSet<string>();
 		var repositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative]);
 
@@ -25,13 +26,16 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 			var repositoryName = repository.Name;
 			_ = declaredRepositories.Add(repositoryName);
 			var linkReference = await Fetch(repositoryName);
-			dictionary.Add(repositoryName, linkReference);
+			linkReferences.Add(repositoryName, linkReference);
+			var linkIndexReference = await GetLinkIndexEntry(repositoryName);
+			linkIndexEntries.Add(repositoryName, linkIndexReference);
 		}
 
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,
-			LinkReferences = dictionary.ToFrozenDictionary(),
+			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
+			LinkReferences = linkReferences.ToFrozenDictionary(),
 			FromConfiguration = true
 		};
 	}

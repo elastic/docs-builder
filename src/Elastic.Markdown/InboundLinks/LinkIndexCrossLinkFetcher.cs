@@ -13,21 +13,24 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetche
 {
 	public override async Task<FetchedCrossLinks> Fetch()
 	{
-		var dictionary = new Dictionary<string, LinkReference>();
+		var linkReferences = new Dictionary<string, LinkReference>();
+		var linkEntries = new Dictionary<string, LinkIndexEntry>();
 		var declaredRepositories = new HashSet<string>();
 		var linkIndex = await FetchLinkIndex();
 		foreach (var (repository, value) in linkIndex.Repositories)
 		{
 			var linkIndexEntry = value.First().Value;
+			linkEntries.Add(repository, linkIndexEntry);
 			var linkReference = await FetchLinkIndexEntry(repository, linkIndexEntry);
-			dictionary.Add(repository, linkReference);
+			linkReferences.Add(repository, linkReference);
 			_ = declaredRepositories.Add(repository);
 		}
 
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,
-			LinkReferences = dictionary.ToFrozenDictionary(),
+			LinkReferences = linkReferences.ToFrozenDictionary(),
+			LinkIndexEntries = linkEntries.ToFrozenDictionary(),
 			FromConfiguration = false
 		};
 	}

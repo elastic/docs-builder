@@ -21,11 +21,12 @@ public class PreviewEnvironmentUriResolver : IUriEnvironmentResolver
 
 	/// Hardcoding these for now, we'll have an index.json pointing to all links.json files
 	/// at some point from which we can query the branch soon.
-	private static string GetBranch(Uri crossLinkUri)
+	public static string GetBranch(Uri crossLinkUri)
 	{
 		var branch = crossLinkUri.Scheme switch
 		{
 			"docs-content" => "main",
+			"cloud" => "master",
 			_ => "main"
 		};
 		return branch;

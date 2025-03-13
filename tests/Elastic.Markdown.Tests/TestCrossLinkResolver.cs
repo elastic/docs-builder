@@ -47,11 +47,20 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		LinkReferences.Add("docs-content", reference);
 		LinkReferences.Add("kibana", reference);
 		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
+
+		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkIndexEntry
+		{
+			Repository = e.Key,
+			Path = $"elastic/asciidocalypse/{e.Key}/links.json",
+			Branch = "main",
+			ETag = Guid.NewGuid().ToString()
+		});
 		_crossLinks = new FetchedCrossLinks
 		{
 			DeclaredRepositories = DeclaredRepositories,
 			LinkReferences = LinkReferences.ToFrozenDictionary(),
-			FromConfiguration = true
+			FromConfiguration = true,
+			LinkIndexEntries = indexEntries.ToFrozenDictionary()
 		};
 		return Task.FromResult(_crossLinks);
 	}
