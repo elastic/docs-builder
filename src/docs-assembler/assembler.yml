@@ -77,3 +77,5 @@ references:
   integration-docs:
     skip: true
   security-docs:
+    # wait for move to https://github.com/elastic/detection-rules/pull/4507/files
+    skip: true
