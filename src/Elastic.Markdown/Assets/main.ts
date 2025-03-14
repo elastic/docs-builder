@@ -1,5 +1,5 @@
 // @ts-nocheck
-import htmx from "htmx.org"
+import "htmx.org"
 import "htmx-ext-preload"
 import {initTocNav} from "./toc-nav";
 import {initHighlight} from "./hljs";
