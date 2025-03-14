@@ -28,7 +28,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           git config --global core.autocrlf input
-          git config --global core.eol lf
           
       - uses: actions/checkout@v4
 
