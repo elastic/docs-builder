@@ -1,13 +1,58 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<NavigationViewModel>
 <div class="pt-6 pb-20">
-	<a
-		href="@Model.TitleUrl"
-		@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, Model.TitleUrl)
-		class="font-semibold text-ink hover:text-black"
-		>
-		@Model.Title
-	</a>
+
+	@{
+		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
+	} 
+	
+	@if (Model.Features.IsPrimaryNavEnabled)
+	{
+		<details class="block group border-b-1 border-grey-20 pb-6">
+			<summary class="inline-grid md:grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-2 hover:text-black">
+				<span>
+					@current?.Group.Index?.NavigationTitle
+				</span>
+				<div class="flex items-center justify-center size-6">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="w-4 group-open:rotate-180">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+					</svg>
+				</div>
+			</summary>
+			<ul>
+				@foreach (var item in Model.TopLevelItems)
+				{
+					if (item.Group.Index == null || !item.Group.InNav) continue;
+					<li class="block mt-2">
+						<a
+							class="hover:underline hover:text-black active:text-blue-elastic-100 font-semibold text-sm @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+							href="@item.Group.Index.Url"
+							hx-get="@item.Group.Index.Url"
+							hx-select-oob="#pages-nav,#content-container"
+							hx-push-url="true"
+							preload>@item.Group.Index.NavigationTitle</a>
+					</li>
+				}
+			</ul>
+		</details>
+	}
+	else
+	{
+		<a
+			href="@Model.TitleUrl"
+			@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, Model.TitleUrl)
+			class="font-semibold text-ink hover:text-black">
+			@Model.Title
+		</a>
+	}
+
+
 	<ul class="block">
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{

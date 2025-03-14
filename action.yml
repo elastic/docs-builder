@@ -12,6 +12,9 @@ inputs:
   strict:
     description: 'Treat warnings as errors'
     required: false
+  metadata-only:
+    description: 'Only generate documentation metadata files'
+    required: false
 outputs:
   landing-page-path:
     description: 'Path to the landing page of the documentation'

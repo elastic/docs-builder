@@ -9,7 +9,7 @@
 	data-root-path="@Model.Link("/")"
 >
 @(await RenderPartialAsync(_Header.Create(Model)))
-<div id="main-container" class="flex flex-col items-center px-6">
+<div id="main-container" class="flex flex-col items-center px-6 border-t-1 border-grey-20">
 	@functions {
 		private async Task DefaultLayout()
 		{
@@ -24,10 +24,10 @@
 							</div>
 							<div class="sr-only">Loading</div>
 						</div>
-						<div class="content-container lg:px-6">
+						<div class="content-container md:px-6">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 						</div>
-						<article id="markdown-content" class="content-container markdown-content lg:px-6">
+						<article id="markdown-content" class="content-container markdown-content md:px-6">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderBodyAsync()
 						</article>

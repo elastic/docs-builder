@@ -7,6 +7,8 @@ import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
 import {$, $$} from "select-dom"
+
+
 import { UAParser } from 'ua-parser-js';
 const { getOS } = new UAParser();
 

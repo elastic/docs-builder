@@ -169,6 +169,7 @@ public record ConfigurationFile : DocumentationFile
 		var folderFound = false;
 		var detectionRulesFound = false;
 		var hiddenFile = false;
+		var inNav = false;
 		IReadOnlyCollection<ITocItem>? children = null;
 		foreach (var entry in tocEntry.Children)
 		{
@@ -177,6 +178,10 @@ public record ConfigurationFile : DocumentationFile
 			{
 				case "toc":
 					toc = ReadNestedToc(reader, entry, out fileFound);
+					break;
+				case "in_nav":
+					if (!bool.TryParse(reader.ReadString(entry), out inNav))
+						throw new ArgumentException("in_nav must be a boolean");
 					break;
 				case "hidden":
 				case "file":
@@ -205,7 +210,7 @@ public record ConfigurationFile : DocumentationFile
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, toc.TableOfContents)];
+			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -234,7 +239,7 @@ public record ConfigurationFile : DocumentationFile
 			if (children is null)
 				_ = ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
 
-			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, children ?? [])];
+			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, children ?? [])];
 		}
 
 		return null;

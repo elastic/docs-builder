@@ -28,7 +28,8 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Tree = group ?? DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			IsRoot = topLevelGroupId == DocumentationSet.Tree.Id,
-			Features = DocumentationSet.Configuration.Features
+			Features = DocumentationSet.Configuration.Features,
+			TopLevelItems = DocumentationSet.Tree.NavigationItems.OfType<GroupNavigation>().ToList()
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -43,11 +44,14 @@ public class DocumentationGroup
 
 	public int Depth { get; }
 
+	public bool InNav { get; }
+
 	public DocumentationGroup(
 		BuildContext context,
 		NavigationLookups lookups,
+		bool inNav,
 		ref int fileIndex)
-		: this(context, lookups, ref fileIndex, depth: 0)
+		: this(context, lookups, ref fileIndex, depth: 0, inNav)
 	{
 	}
 
@@ -56,6 +60,7 @@ public class DocumentationGroup
 		NavigationLookups lookups,
 		ref int fileIndex,
 		int depth,
+		bool inNav,
 		MarkdownFile? index = null)
 	{
 		Depth = depth;
@@ -63,7 +68,7 @@ public class DocumentationGroup
 		if (Index is not null)
 			Index.GroupId = Id;
 
-
+		InNav = inNav;
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
@@ -119,9 +124,8 @@ public class DocumentationGroup
 				{
 					if (file.Hidden)
 						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.Path}");
-
 					var group = new DocumentationGroup(
-						context, lookups with { TableOfContents = file.Children }, ref fileIndex, depth + 1, virtualIndex)
+						context, lookups with { TableOfContents = file.Children }, ref fileIndex, depth + 1, InNav, virtualIndex)
 					{
 						Parent = this
 					};
@@ -153,7 +157,7 @@ public class DocumentationGroup
 					];
 				}
 
-				var group = new DocumentationGroup(context, lookups with { TableOfContents = children }, ref fileIndex, depth + 1)
+				var group = new DocumentationGroup(context, lookups with { TableOfContents = children }, ref fileIndex, depth + 1, folder.InNav)
 				{
 					Parent = this
 				};
@@ -165,7 +169,7 @@ public class DocumentationGroup
 				foreach (var extension in lookups.EnabledExtensions)
 				{
 					if (extension.InjectsIntoNavigation(tocItem))
-						extension.CreateNavigationItem(this, tocItem, lookups, groups, navigationItems, depth, ref fileIndex, index);
+						extension.CreateNavigationItem(this, tocItem, lookups, groups, navigationItems, depth, false, ref fileIndex, index);
 				}
 			}
 		}

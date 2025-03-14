@@ -20,7 +20,34 @@
 	--outline-offset: 5;
 	--header-height: calc(var(--spacing) * 21);
 	--banner-height: calc(var(--spacing) * 9);
-	--offset-top: calc(var(--header-height) + var(--banner-height));
+	/*--offset-top: calc(var(--header-height) + var(--banner-height));*/
+	--offset-top: 72px;
+}
+
+@media screen and (min-width: 767px) {
+	:root {
+		--offset-top: 123px;
+	}
+}
+
+@media screen and (min-width: 992px) {
+	:root {
+		--offset-top: 131px;
+	}
+}
+
+
+
+/*@media screen and (min-width: 767px) {*/
+/*	:root {*/
+/*		--offset-top: 131px;*/
+/*	}*/
+/*}*/
+
+@media screen and (min-width: 1200px) {
+	:root {
+		--offset-top: 72px;
+	}
 }
 
 /*#default-search::-webkit-search-cancel-button {*/
@@ -95,7 +122,7 @@
 			@apply
 				text-ink-light
 				hover:text-black
-				lg:text-sm
+				md:text-sm
 				text-wrap
 				inline-block
 			    leading-[1.3em]
@@ -186,4 +213,10 @@
 
 .markdown-content {
 	@apply font-body;
+}
+
+.container {
+	@apply lg:px-3;
+	
+	max-width: 1250px !important;
 }
