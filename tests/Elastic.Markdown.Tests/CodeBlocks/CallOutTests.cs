@@ -118,7 +118,7 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RendersExpectedHtml() =>
-		Html.Should().Contain("""
+		Html.ReplaceLineEndings().Should().Contain("""
 		                      <div class="highlight-csharp notranslate">
 		                      	<div class="highlight">
 		                      		<pre><code class="language-csharp">var x = 1; <span class="code-callout" data-index="1">1</span>
@@ -132,7 +132,7 @@ var z = y - 2; <2>
 		                      <li>Marking the first callout</li>
 		                      <li>Marking the second callout</li>
 		                      </ol>
-		                      """);
+		                      """.ReplaceLineEndings());
 
 
 	[Fact]
