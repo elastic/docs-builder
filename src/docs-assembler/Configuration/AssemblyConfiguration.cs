@@ -90,6 +90,6 @@ public record PublishEnvironment
 	[YamlMember(Alias = "path_prefix")]
 	public string? PathPrefix { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "allow_index")]
+	[YamlMember(Alias = "allow_indexing")]
 	public bool AllowIndexing { get; set; }
 }

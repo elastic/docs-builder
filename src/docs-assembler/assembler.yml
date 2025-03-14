@@ -2,7 +2,7 @@ environments:
   production:
     uri: https://elastic.co
     path_prefix: docs
-    allow_index: false
+    allow_indexing: false
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
