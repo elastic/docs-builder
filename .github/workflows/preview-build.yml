@@ -18,6 +18,7 @@ on:
         default: 'true'
       metadata-only:
         description: 'Only generate documentation metadata files'
+        type: string
         required: false
         default: 'false'
       continue-on-error:
