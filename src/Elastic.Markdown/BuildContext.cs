@@ -29,16 +29,15 @@ public record BuildContext
 
 	public bool Force { get; init; }
 
+	// This property is used to determine if the site should be indexed by search engines
+	public bool AllowIndexing { get; init; }
+
+	private readonly string? _urlPathPrefix;
 	public string? UrlPathPrefix
 	{
 		get => string.IsNullOrWhiteSpace(_urlPathPrefix) ? "" : $"/{_urlPathPrefix.Trim('/')}";
 		init => _urlPathPrefix = value;
 	}
-
-	// This property is used to determine if the site should be indexed by search engines
-	public bool AllowIndexing { get; init; }
-
-	private readonly string? _urlPathPrefix;
 
 	public BuildContext(IFileSystem fileSystem)
 		: this(new DiagnosticsCollector([]), fileSystem, fileSystem, null, null) { }
@@ -63,7 +62,7 @@ public record BuildContext
 
 		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, Path.Combine(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;

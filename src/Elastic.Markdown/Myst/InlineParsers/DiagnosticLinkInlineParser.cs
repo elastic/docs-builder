@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Comments;
 using Markdig;
@@ -100,6 +101,26 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		var url = link.Url;
 
+		if (url?.Contains("{{") == true)
+		{
+			var replacedUrl = url.ReplaceSubstitutions(processor.GetContext());
+			if (replacedUrl.Contains("{{"))
+			{
+				processor.EmitError(link,
+					$"The url contains unresolved template expressions: '{replacedUrl}'. Please check if there is an appropriate global or frontmatter subs variable."
+				);
+				return;
+			}
+
+			if (!replacedUrl.StartsWith("http"))
+			{
+				processor.EmitError(link, $"Link is resolved to '{replacedUrl}'. Only external links are allowed to be resolved from template expressions.");
+				return;
+			}
+			url = replacedUrl;
+			link.Url = replacedUrl;
+		}
+
 		if (!ValidateBasicUrl(link, processor, url))
 			return;
 
@@ -124,15 +145,6 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			processor.EmitError(link, "Found empty url");
 			return false;
 		}
-
-		if (url.Contains("{{") || url.Contains("}}"))
-		{
-			processor.EmitWarning(link,
-				"The url contains a template expression. Please do not use template expressions in links. " +
-				"See https://github.com/elastic/docs-builder/issues/182 for further information.");
-			return false;
-		}
-
 		return true;
 	}
 

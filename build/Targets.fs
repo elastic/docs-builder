@@ -74,7 +74,10 @@ let private publishZip _ =
 let private publishContainers _ =
 
     let createImage project =
-        let imageTag = match project with | "docs-builder" -> "jammy-chiseled-aot" | _ -> "jammy-chiseled"
+        let imageTag =
+            match project with
+            | "docs-builder" -> "jammy-chiseled-aot"
+            | _ -> "jammy-chiseled-aot"
         let labels =
             let exitCode = exec {
                 validExitCode (fun _ -> true)
@@ -91,7 +94,7 @@ let private publishContainers _ =
                 "-p"; $"ContainerRepository=elastic/%s{project}"
             ]
         let registry =
-            match Environment.environVarOrNone "GITHUB_ACTION" with
+            match Environment.environVarOrNone "GITHUB_ACTIONS" with
             | None -> []
             | Some _ -> [
                 "-p"; "ContainerRegistry=ghcr.io"

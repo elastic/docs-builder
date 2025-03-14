@@ -29,8 +29,14 @@
 					{
 						<a 
 							onclick="document.getElementById('primary-nav-hamburger').checked = false"
-							@navItem.HtmxAttributes 
-							class="grow p-6 xl:p-0 peer text-nowrap font-semibold flex justify-between items-center gap-1 hover:text-blue-elastic" href="@navItem.Url">
+							href="@navItem.Url"
+							hx-get="@navItem.Url"
+							hx-swap="none"
+							hx-select-oob="#primary-nav,#secondary-nav,#main-container"
+							hx-push-url="true"
+							preload="true"
+							class="grow p-6 xl:p-0 peer text-nowrap font-semibold flex justify-between items-center gap-1 hover:text-blue-elastic"
+						>
 							@navItem.Title
 							@if (navItem.DropdownItems.Count > 0)
 							{

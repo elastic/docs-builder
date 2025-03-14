@@ -28,7 +28,8 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Tree = group ?? DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			IsRoot = topLevelGroupId == DocumentationSet.Tree.Id,
-			Features = DocumentationSet.Configuration.Features
+			Features = DocumentationSet.Configuration.Features,
+			TopLevelItems = DocumentationSet.Tree.NavigationItems.OfType<GroupNavigation>().ToList()
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
@@ -84,8 +85,6 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var branch = DocumentationSet.Build.Git.Branch;
 		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
 		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
-
-
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",

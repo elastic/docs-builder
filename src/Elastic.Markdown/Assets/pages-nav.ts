@@ -11,16 +11,22 @@ function expandAllParents(navItem: HTMLElement) {
 	}
 }
 
-function scrollCurrentNaviItemIntoView(nav: HTMLElement, delay: number) {
+function scrollCurrentNaviItemIntoView(nav: HTMLElement) {
 	const currentNavItem = $('.current', nav);
 	expandAllParents(currentNavItem);
-	setTimeout(() => {
-		if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
-			currentNavItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			window.scrollTo(0, 0);
-		}
-	}, delay);
+	if (currentNavItem && !isElementInViewport(nav, currentNavItem)) {
+		const navRect = nav.getBoundingClientRect();
+		const currentNavItemRect = currentNavItem.getBoundingClientRect();
+		// Calculate the offset needed to scroll the current navigation item into view.
+		// The offset is determined by the difference between the top of the current navigation item and the top of the navigation container,
+		// adjusted by one-third of the height of the navigation container and half the height of the current navigation item.
+		const offset = currentNavItemRect.top - navRect.top - navRect.height / 3 + currentNavItemRect.height / 2;
+		
+		// Scroll the navigation container by the calculated offset to bring the current navigation item into view.
+		nav.scrollTop = nav.scrollTop + offset;
+	}
 }
+
 function isElementInViewport(parent: HTMLElement, child: HTMLElement, ): boolean {
 	const childRect = child.getBoundingClientRect();
 	const parentRect = parent.getBoundingClientRect();
@@ -41,8 +47,5 @@ export function initNav() {
 	navItems.forEach(el => {
 		el.classList.add('current');
 	});
-	scrollCurrentNaviItemIntoView(pagesNav, 100);
+	scrollCurrentNaviItemIntoView(pagesNav);
 }
-
-
-// initNav();

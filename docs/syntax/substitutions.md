@@ -36,9 +36,23 @@ Here are some variable substitutions:
 | {{a-key-with-dashes}} | Front Matter |
 | {{a-global-variable}} | `docset.yml` |
 
-Substitutions should work in code blocks too.
+## Code blocks
 
-```{code} sh
+Substitutions are supported in code blocks but are disabled by default. Enable substitutions by adding `subs=true` to the code block.
+
+````markdown
+```bash subs=true
+# Your code with variables
+```
+````
+
+### Code directive with subs enabled
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```{code} sh subs=true
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
 shasum -a 512 -c elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
@@ -46,5 +60,68 @@ tar -xzf elasticsearch-{{version}}-linux-x86_64.tar.gz
 cd elasticsearch-{{version}}/
 ```
 
+:::
 
-Here is a variable with dashes: {{a-key-with-dashes}}
+:::{tab-item} Markdown
+
+````markdown
+```{code} sh subs=true
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
+shasum -a 512 -c elasticsearch-{{version}}-linux-x86_64.tar.gz.sha512
+tar -xzf elasticsearch-{{version}}-linux-x86_64.tar.gz
+cd elasticsearch-{{version}}/
+```
+````
+:::
+
+::::
+
+
+### MD code block with subs enabled
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```bash subs=true
+echo "{{a-global-variable}}"
+```
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```bash subs=true
+echo "{{a-global-variable}}"
+```
+
+````
+:::
+
+###  MD code block without subs enabled
+ 
+::::
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```bash 
+echo "{{a-global-variable}}"
+```
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```bash
+echo "{{a-global-variable}}"
+```
+
+````
+:::
+
+::::

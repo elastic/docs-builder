@@ -2,27 +2,18 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Abstractions;
+using Actions.Core.Services;
 using ConsoleAppFramework;
-using Elastic.Markdown.IO;
+using Documentation.Assembler.Building;
+using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
-using ProcNet;
-using ProcNet.Std;
 
 namespace Documentation.Assembler.Cli;
 
-public class ConsoleLineHandler(string prefix) : IConsoleLineHandler
-{
-	public void Handle(LineOut lineOut) => lineOut.CharsOrString(
-		r => Console.Write(prefix + ": " + r),
-		l => Console.WriteLine(prefix + ": " + l));
-
-	public void Handle(Exception e) { }
-}
-
-internal sealed class RepositoryCommands(ILoggerFactory logger)
+internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger)
 {
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
@@ -35,63 +26,60 @@ internal sealed class RepositoryCommands(ILoggerFactory logger)
 	// would love to use libgit2 so there is no git dependency but
 	// libgit2 is magnitudes slower to clone repositories https://github.com/libgit2/libgit2/issues/4674
 	/// <summary> Clones all repositories </summary>
+	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="ctx"></param>
 	[Command("clone-all")]
-	public async Task CloneAll(Cancel ctx = default)
+	public async Task<int> CloneAll(bool? strict = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		var configFile = Path.Combine(Paths.Root.FullName, "src/docs-assembler/conf.yml");
-		var config = AssemblyConfiguration.Deserialize(File.ReadAllText(configFile));
 
-		Console.WriteLine(config.Repositories.Count);
-		var dict = new ConcurrentDictionary<string, Stopwatch>();
-		await Parallel.ForEachAsync(config.Repositories,
-			new ParallelOptions { CancellationToken = ctx, MaxDegreeOfParallelism = Environment.ProcessorCount / 4 }, async (kv, c) =>
-			{
-				await Task.Run(() =>
-				{
-					var name = kv.Key;
-					var repository = kv.Value;
-					var checkoutFolder = Path.Combine(Paths.Root.FullName, $".artifacts/assembly/{name}");
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 
-					var sw = Stopwatch.StartNew();
-					_ = dict.AddOrUpdate(name, sw, (_, _) => sw);
-					Console.WriteLine($"Checkout: {name}\t{repository}\t{checkoutFolder}");
-					var branch = repository.Branch ?? "main";
-					var args = new StartArguments(
-						"git", "clone", repository.Origin, checkoutFolder, "--depth", "1"
-						, "--single-branch", "--branch", branch
-					);
-					_ = Proc.StartRedirected(args, new ConsoleLineHandler(name));
-					sw.Stop();
-				}, c);
-			}).ConfigureAwait(false);
+		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null);
+		var cloner = new RepositoryCheckoutProvider(logger, assembleContext);
+		_ = await cloner.AcquireAllLatest(ctx);
 
-		foreach (var kv in dict.OrderBy(kv => kv.Value.Elapsed))
-			Console.WriteLine($"-> {kv.Key}\ttook: {kv.Value.Elapsed}");
+		if (strict ?? false)
+			return collector.Errors + collector.Warnings;
+		return collector.Errors;
 	}
 
-	/// <summary> List all checked out repositories </summary>
-	[Command("list")]
-	public async Task ListRepositories()
+	/// <summary> Builds all repositories </summary>
+	/// <param name="force"> Force a full rebuild of the destination folder</param>
+	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
+	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="environment"> The environment to resolve links to</param>
+	/// <param name="ctx"></param>
+	[Command("build-all")]
+	public async Task<int> BuildAll(
+		bool? force = null,
+		bool? strict = null,
+		bool? allowIndexing = null,
+		string? environment = null,
+		Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		var assemblyPath = Path.Combine(Paths.Root.FullName, $".artifacts/assembly");
-		var dir = new DirectoryInfo(assemblyPath);
-		var dictionary = new Dictionary<string, string>();
-		foreach (var d in dir.GetDirectories())
+		var githubEnvironmentInput = githubActionsService.GetInput("environment");
+		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "production";
+
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		_ = collector.StartAsync(ctx);
+
+		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null)
 		{
-			var checkoutFolder = Path.Combine(assemblyPath, d.Name);
+			Force = force ?? false,
+			AllowIndexing = allowIndexing ?? false,
+		};
+		var cloner = new RepositoryCheckoutProvider(logger, assembleContext);
+		var checkouts = cloner.GetAll().ToArray();
+		if (checkouts.Length == 0)
+			throw new Exception("No checkouts found");
 
-			var capture = Proc.Start(
-				new StartArguments("git", "rev-parse", "--abbrev-ref", "HEAD") { WorkingDirectory = checkoutFolder }
-			);
-			dictionary.Add(d.Name, capture.ConsoleOut.FirstOrDefault()?.Line ?? "unknown");
-		}
+		var builder = new AssemblerBuilder(logger, assembleContext);
+		await builder.BuildAllAsync(checkouts, environment, ctx);
 
-		foreach (var kv in dictionary.OrderBy(kv => kv.Value))
-			Console.WriteLine($"-> {kv.Key}\tbranch: {kv.Value}");
-
-		await Task.CompletedTask;
+		if (strict ?? false)
+			return collector.Errors + collector.Warnings;
+		return collector.Errors;
 	}
 }

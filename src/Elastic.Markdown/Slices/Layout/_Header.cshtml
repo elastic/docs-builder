@@ -101,81 +101,8 @@
 		]
 	};
 }
-<header id="main-header" class="sticky top-0 z-50 max-w-screen border-b-1 border-grey-20 group/header">
-	<section id="banner" class="bg-blue-developer py-2 px-6 h-(--banner-height)" xmlns="http://www.w3.org/1999/html">
-		<div class="container mx-auto flex justify-between">
-			<div></div>
-			<div class="flex items-center">
-				<ul class="grid grid-cols-3 gap-4 text-white text-sm">
-					<li>
-						<a href="https://www.elastic.co/about">About us</a>
-					</li>
-					<li>
-						<a href="https://www.elastic.co/partners">Partners</a>
-					</li>
-					<li>
-						<a href="https://support.elastic.co/">Support</a>
-					</li>
-				</ul>
-				<div class="w-[1px] h-4 bg-white/40 mx-4"></div>
-				<ul class="grid grid-cols-1 justify-end gap-4 text-white text-sm">
-					<li>
-						<a href="https://cloud.elastic.co/" class="flex gap-1 items-center">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-							</svg>
-							Login
-						</a>
-					</li>
-				</ul>
-			</div>
-		</div>
-	</section>
-	<section class="flex items-center justify-center h-(--header-height) bg-white px-6">
-		<div class="container flex gap-4 justify-start items-center">
-			<a href="@Model.Link("/")" class="mr-10 flex items-center">
-				<img src="@Model.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" height="40" width="116">
-			</a>
-			@if (Model.Features.IsPrimaryNavEnabled)
-			{
-				@await RenderPartialAsync(_PrimaryNav.Create(primaryNavViewModel))
-			}
-			else
-			{
-				<div class="grow"></div>
-			}
-			<div role="search" class="shrink-0 h-10 w-20 md:w-50" autocomplete="off">
-				<div class="relative h-10">
-					<div class="rounded-full bg-linear-65 from-pink/[.4] to-teal/[.4] p-[2px] h-10">
-						<button id="default-search" class="flex gap-2 items-center justify-center md:justify-start h-full w-full py-2 px-4 bg-grey-10 text-grey-80 rounded-full focus-visible:outline-[blue]/[.3] focus-visible:outline-2">
-							<svg class="shrink-0 size-5" fill="currentColor" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16">
-								<path d="M11.2709852,11.9779932 L15.14275,15.85075 C15.24075,15.94775 15.36875,15.99675 15.49675,15.99675 C15.62475,15.99675 15.75275,15.94775 15.85075,15.85075 C16.04575,15.65475 16.04575,15.33875 15.85075,15.14275 L12.2861494,11.5790625 C14.6668581,8.83239759 14.5527289,4.65636993 11.9437617,2.04675 C9.21444459,-0.68225 4.77355568,-0.68225 2.04623804,2.04675 C-0.682079347,4.77575 -0.682079347,9.21775 2.04623804,11.94675 C3.36890712,13.26875 5.12646738,13.99675 6.99499989,13.99675 C7.27093085,13.99675 7.49487482,13.77275 7.49487482,13.49675 C7.49487482,13.22075 7.27093085,12.99675 6.99499989,12.99675 C5.39240085,12.99675 3.88677755,12.37275 2.7530612,11.23975 C0.414646258,8.89975 0.414646258,5.09375 2.7530612,2.75375 C5.09047639,0.41375 8.89552438,0.41475 11.2369386,2.75375 C13.5753535,5.09375 13.5753535,8.89975 11.2369386,11.23975 C11.0419873,11.43475 11.0419873,11.75175 11.2369386,11.94675 C11.2479153,11.9577858 11.2592787,11.9682002 11.2709852,11.9779932 Z"/>
-							</svg>
-							<span class="hidden md:inline">Search</span>
-						</button>
-					</div>
-				</div>
-			</div>
-			<div class="hidden xl:flex grow xl:flex-none h-10">
-				<a href="https://cloud.elastic.co/registration" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-100 focus:ring-4 focus:ring-blue-elastic-30 font-semibold rounded-sm px-6 py-2.5 focus:outline-none h-10 flex items-center justify-center">Start free trial</a>
-				@* <a href="https://elastic.co/contact" class="grow cursor-pointer text-white text-nowrap border-2 border-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">Contact Sales</a> *@
-			</div>
-			<div class="xl:hidden">
-				<input id="primary-nav-hamburger" type="checkbox" class="hidden"/>
-
-				<label for="@(Model.Features.IsPrimaryNavEnabled ? "primary-nav-hamburger" : "pages-nav-hamburger")">
-					<div class="cursor-pointer hover:text-black p-2">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 @(Model.Features.IsPrimaryNavEnabled ? "group-has-[#primary-nav-hamburger:checked]/body:hidden" : "group-has-[#pages-nav-hamburger:checked]/body:hidden")">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
-						</svg>
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 hidden @(Model.Features.IsPrimaryNavEnabled ? "group-has-[#primary-nav-hamburger:checked]/body:block" : "group-has-[#pages-nav-hamburger:checked]/body:block")"> <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-						</svg>
-					</div>
-				</label>
-			</div>
-		</div>
-	</section>
-</header>
+<div id="elastic-nav"></div>
+<script src="https://www.elastic.co/elastic-nav.js"></script>
 @if (Model.Features.IsPrimaryNavEnabled)
 {
  	@await RenderPartialAsync(_SecondaryNav.Create(Model))

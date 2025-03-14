@@ -12,10 +12,10 @@ subs:
   
 features:
   primary-nav: false
-  landing-page: false
-
+  
 toc:
   - file: index.md
+  - hidden: 404.md
   - hidden: developer-notes.md
   - folder: contribute
     children:

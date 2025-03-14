@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -7,7 +7,7 @@
     <RootNamespace>Documentation.Assembler</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
 
-    <PublishAot>false</PublishAot>
+    <PublishAot>true</PublishAot>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
 
@@ -27,5 +27,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="assembler.yml" />
   </ItemGroup>
 </Project>

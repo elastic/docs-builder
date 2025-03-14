@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
@@ -19,6 +20,7 @@ public record ConfigurationFile : DocumentationFile
 	private readonly int _depth;
 	public string? Project { get; }
 	public Glob[] Exclude { get; } = [];
+	public bool SoftLineEndings { get; }
 
 	public string[] CrossLinkRepositories { get; } = [];
 
@@ -68,6 +70,9 @@ public record ConfigurationFile : DocumentationFile
 					case "project":
 						Project = reader.ReadString(entry.Entry);
 						break;
+					case "soft_line_endings":
+						SoftLineEndings = bool.TryParse(reader.ReadString(entry.Entry), out var softLineEndings) && softLineEndings;
+						break;
 					case "exclude":
 						Exclude = [.. YamlStreamReader.ReadStringArray(entry.Entry).Select(Glob.Parse)];
 						break;
@@ -110,7 +115,7 @@ public record ConfigurationFile : DocumentationFile
 			throw;
 		}
 
-		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
+		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}{Path.DirectorySeparatorChar}*.md"))];
 	}
 
 	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
@@ -164,6 +169,7 @@ public record ConfigurationFile : DocumentationFile
 		var folderFound = false;
 		var detectionRulesFound = false;
 		var hiddenFile = false;
+		var inNav = false;
 		IReadOnlyCollection<ITocItem>? children = null;
 		foreach (var entry in tocEntry.Children)
 		{
@@ -173,6 +179,10 @@ public record ConfigurationFile : DocumentationFile
 				case "toc":
 					toc = ReadNestedToc(reader, entry, out fileFound);
 					break;
+				case "in_nav":
+					if (!bool.TryParse(reader.ReadString(entry), out inNav))
+						throw new ArgumentException("in_nav must be a boolean");
+					break;
 				case "hidden":
 				case "file":
 					hiddenFile = key == "hidden";
@@ -180,13 +190,13 @@ public record ConfigurationFile : DocumentationFile
 					break;
 				case "folder":
 					folder = ReadFolder(reader, entry, parentPath, out folderFound);
-					parentPath += $"/{folder}";
+					parentPath += $"{Path.DirectorySeparatorChar}{folder}";
 					break;
 				case "detection_rules":
 					if (Extensions.IsDetectionRulesEnabled)
 					{
 						detectionRules = ReadDetectionRules(reader, entry, parentPath, out detectionRulesFound);
-						parentPath += $"/{folder}";
+						parentPath += $"{Path.DirectorySeparatorChar}{folder}";
 					}
 					break;
 				case "children":
@@ -200,7 +210,7 @@ public record ConfigurationFile : DocumentationFile
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, toc.TableOfContents)];
+			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -221,15 +231,15 @@ public record ConfigurationFile : DocumentationFile
 					children = extension.CreateTableOfContentItems(parentPath, detectionRules, Files);
 				}
 			}
-			return [new FileReference($"{parentPath}/{file}".TrimStart('/'), fileFound, hiddenFile, children ?? [])];
+			return [new FileReference($"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar), fileFound, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)
 		{
 			if (children is null)
-				_ = ImplicitFolders.Add(parentPath.TrimStart('/'));
+				_ = ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
 
-			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, children ?? [])];
+			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, children ?? [])];
 		}
 
 		return null;
@@ -241,7 +251,7 @@ public record ConfigurationFile : DocumentationFile
 		var folder = reader.ReadString(entry);
 		if (folder is not null)
 		{
-			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), folder);
+			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), folder);
 			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
 				reader.EmitError($"Directory '{path}' does not exist", entry.Key);
 			else
@@ -257,7 +267,7 @@ public record ConfigurationFile : DocumentationFile
 		var folder = reader.ReadString(entry);
 		if (folder is not null)
 		{
-			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), folder);
+			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), folder);
 			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
 				reader.EmitError($"Directory '{path}' does not exist", entry.Key);
 			else
@@ -273,13 +283,15 @@ public record ConfigurationFile : DocumentationFile
 		var file = reader.ReadString(entry);
 		if (file is null)
 			return null;
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			file = file.Replace('/', Path.DirectorySeparatorChar);
 
-		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), file);
+		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), file);
 		if (!_context.ReadFileSystem.FileInfo.New(path).Exists)
 			reader.EmitError($"File '{path}' does not exist", entry.Key);
 		else
 			found = true;
-		_ = Files.Add((parentPath + "/" + file).TrimStart('/'));
+		_ = Files.Add((parentPath + Path.DirectorySeparatorChar + file).TrimStart(Path.DirectorySeparatorChar));
 
 		return file;
 	}

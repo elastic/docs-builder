@@ -8,6 +8,7 @@ Example:
 
 ```yaml
 project: 'PROJECT_NAME'
+soft_line_endings: true
 
 external_hosts:
   - EXTERNAL_LINKS_HERE
@@ -40,6 +41,11 @@ Example:
 ```yaml
 project: 'APM Java agent reference'
 ```
+
+### `soft_line_endings`
+
+Optional key. Defaults to `false`. When enabled turns soft line endings in the markdown to hard HTML breaks `<br />`.
+
 
 ### `external_hosts`
 

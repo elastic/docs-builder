@@ -1,38 +1,54 @@
+@using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorLayoutSlice<LayoutViewModel>
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
 @await RenderPartialAsync(_Head.Create(Model))
-<body class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden" hx-ext="preload, head-support">
+<body 
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden" 
+	hx-ext="preload, head-support"
+	data-root-path="@Model.Link("/")"
+>
 @(await RenderPartialAsync(_Header.Create(Model)))
-<div id="main-container" class="flex flex-col items-center px-6">
-	@if (Model.IsLandingPage)
-	{
-		@await RenderPartialAsync(_LandingPage.Create(Model))
-	}
-	else
-	{
-		<div class="flex container">
-			@await RenderPartialAsync(_PagesNav.Create(Model))
-			<div id="content-container" class="order-2 flex w-full">
-				@await RenderPartialAsync(_TableOfContents.Create(Model))
-				<main class="w-full order-1 relative pb-30">
-					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-						<div class="h-[2px] w-full overflow-hidden">
-							<div class="progress w-full h-full bg-pink-70 left-right"></div>
+<div id="main-container" class="flex flex-col items-center px-6 border-t-1 border-grey-20">
+	@functions {
+		private async Task DefaultLayout()
+		{
+			<div class="flex container">
+				@await RenderPartialAsync(_PagesNav.Create(Model))
+				<div id="content-container" class="order-2 flex w-full">
+					@await RenderPartialAsync(_TableOfContents.Create(Model))
+					<main class="w-full order-1 relative pb-30">
+						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+							<div class="h-[2px] w-full overflow-hidden">
+								<div class="progress w-full h-full bg-pink-70 left-right"></div>
+							</div>
+							<div class="sr-only">Loading</div>
 						</div>
-						<div class="sr-only">Loading</div>
-					</div>
-					<div class="content-container lg:px-6">
-						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-					</div>
-					<article id="markdown-content" class="content-container markdown-content lg:px-6">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderBodyAsync()
-					</article>
-					@await RenderPartialAsync(_PrevNextNav.Create(Model))
-				</main>
+						<div class="content-container md:px-6">
+							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content md:px-6">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+						@await RenderPartialAsync(_PrevNextNav.Create(Model))
+					</main>
+				</div>
 			</div>
-		</div>
+		}
+	}
+	
+	@switch (Model.CurrentDocument.YamlFrontMatter?.Layout)
+	{
+		case LayoutName.NotFound:
+			await RenderPartialAsync(_NotFound.Create(Model));
+			break;
+		case LayoutName.LandingPage:
+			await RenderPartialAsync(_LandingPage.Create(Model));
+			break;
+		default:
+			await DefaultLayout();
+			break;
 	}
 </div>
 @await RenderPartialAsync(_Footer.Create(Model))

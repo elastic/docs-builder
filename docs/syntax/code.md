@@ -58,7 +58,6 @@ project:
 
 :::
 
-
 :::{tab-item} Markdown
 
 ````markdown
@@ -74,6 +73,69 @@ project:
 :::
 
 ::::
+
+You can also have one block element in between the code block and the callout list:
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```javascript
+var input1 = "World"; // <1>
+var input2 = "Elastic"; // <2>
+
+function render(input) {
+    return `Hello, ${input}!`;
+}
+
+render(input1);
+render(input2);
+```
+
+**Inputs:**
+
+1. `World`
+2. `Elastic`
+
+**Outputs**:
+
+1. `Hello, World!`
+2. `Hello, Elastic!`
+
+:::
+
+
+:::{tab-item} Markdown
+
+````markdown
+```javascript
+var input1 = "World"; // <1>
+var input2 = "Elastic"; // <2>
+
+function render(input) {
+    return `Hello, ${input}!`;
+}
+
+render(input1);
+render(input2);
+```
+
+**Inputs:**
+
+1. `World`
+2. `Elastic`
+
+**Outputs**:
+
+1. `Hello, World!`
+2. `Hello, Elastic!`
+````
+
+:::
+
+::::
+
+
 
 
 #### Magic Callouts
@@ -127,6 +189,40 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 var apiKey = new ApiKey("<API_KEY>"); // This is a callout
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
+````
+
+:::
+
+::::
+
+#### Disable callouts
+
+You can disable callouts by adding a code block argument `callouts=false`.
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```yaml callouts=false
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```yaml callouts=false
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
 ````
 
 :::

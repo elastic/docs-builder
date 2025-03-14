@@ -10,6 +10,7 @@ using Documentation.Builder.Http;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Refactor;
 using Microsoft.Extensions.Logging;
@@ -56,6 +57,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -68,6 +70,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? force = null,
 		bool? strict = null,
 		bool? allowIndexing = null,
+		bool? metadataOnly = null,
 		Cancel ctx = default
 	)
 	{
@@ -84,7 +87,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
-				AllowIndexing = allowIndexing != null
+				AllowIndexing = allowIndexing ?? false
 			};
 		}
 		// On CI, we are running on merge commit which may have changes against an older
@@ -107,7 +110,12 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
-		var generator = new DocumentationGenerator(set, logger);
+
+		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
+			metadataOnly ??= metaValue;
+		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
+
+		var generator = new DocumentationGenerator(set, logger, exporter);
 		await generator.GenerateAll(ctx);
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
@@ -128,6 +136,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -140,9 +149,10 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? force = null,
 		bool? strict = null,
 		bool? allowIndexing = null,
+		bool? metadataOnly = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, strict, allowIndexing, ctx);
+		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, ctx);
 
 
 	/// <summary>

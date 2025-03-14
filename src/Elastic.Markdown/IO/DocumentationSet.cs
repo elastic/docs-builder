@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
@@ -109,7 +110,7 @@ public class DocumentationSet : INavigationLookups
 			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
-		Tree = new DocumentationGroup(Build, lookups, ref fileIndex)
+		Tree = new DocumentationGroup(Build, lookups, false, ref fileIndex)
 		{
 			Parent = null
 		};
@@ -175,6 +176,9 @@ public class DocumentationSet : INavigationLookups
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				to = to.Replace('/', Path.DirectorySeparatorChar);
+
 			if (!FlatMappedFiles.TryGetValue(to, out var file))
 			{
 				Build.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
@@ -262,7 +266,7 @@ public class DocumentationSet : INavigationLookups
 			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
 
 		// we ignore files in folders that start with an underscore
-		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))
+		if (relativePath.IndexOf($"{Path.DirectorySeparatorChar}_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))
 			return new ExcludedFile(file, SourceDirectory);
 
 		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");

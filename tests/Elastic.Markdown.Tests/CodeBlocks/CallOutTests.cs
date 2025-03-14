@@ -117,6 +117,25 @@ var z = y - 2; <2>
 		.And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Fact]
+	public void RendersExpectedHtml() =>
+		Html.Should().Contain("""
+		                      <div class="highlight-csharp notranslate">
+		                      	<div class="highlight">
+		                      		<pre><code class="language-csharp">var x = 1; <span class="code-callout" data-index="1">1</span>
+		                      var y = x - 2;
+		                      var z = y - 2; <span class="code-callout" data-index="2">2</span>
+		                      </code></pre>
+		                      	</div>
+		                      </div>
+		                      <p><strong>OUTPUT:</strong></p>
+		                      <ol class="code-callouts">
+		                      <li>Marking the first callout</li>
+		                      <li>Marking the second callout</li>
+		                      </ol>
+		                      """);
+
+
+	[Fact]
 	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
 }
 
@@ -146,7 +165,7 @@ BLOCK TWO
 
 	[Fact]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+		.And.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
 }
 
 
@@ -320,4 +339,173 @@ public class CodeBlockWithChevronInsideCode(ITestOutputHelper output) : CodeBloc
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class CodeBlockWithCommentBlocksThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+%  TEST[s/"basque_keywords",//]
+%  TEST[s/\n$/\nstartyaml\n  - compare_analyzers: {index: basque_example, first: basque, second: rebuilt_basque}\nendyaml\n/]
+
+1. First callout
+2. Second callout
+"""
+)
+{
+	[Fact]
+	public void ParsesCallouts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2)
+		.And.OnlyContain(c => c.Text.StartsWith('<'));
+
+	[Fact]
+	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
+	public void RenderedHtmlContainsCallouts() =>
+		Html.Should().Contain("""
+                              <ol class="code-callouts">
+                              <li>First callout</li>
+                              <li>Second callout</li>
+                              </ol>
+                              """);
+}
+
+public class CodeBlockWithMultipleCommentTypesThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+% This is an HTML-style comment that starts with %
+%  TEST[catch:bad_request]
+
+1. First callout
+2. Second callout
+"""
+)
+{
+	[Fact]
+	public void ParsesCallouts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2);
+
+	[Fact]
+	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class CodeBlockWithCommentBlocksParagraphThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+%  TEST[s/"basque_keywords",//]
+%  TEST[catch:bad_request]
+
+**This is an intermediate paragraph**
+
+1. First callout
+2. Second callout
+"""
+)
+{
+	[Fact]
+	public void ParsesCallouts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2);
+
+	[Fact]
+	public void HandlesCommentBlocksAndParagraphCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
+	public void RendersIntermediateParagraph() =>
+		Html.Should().Contain("""
+                              <p><strong>This is an intermediate paragraph</strong></p>
+                              <ol class="code-callouts">
+                              """);
+}
+
+public class CodeBlockWithCommentBlocksTwoParagraphsThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+%  TEST[s/"basque_keywords",//]
+
+**This is an intermediate paragraph**
+
+**This is a second paragraph which should cause an error**
+
+1. First callout
+2. Second callout
+"""
+)
+{
+	[Fact]
+	public void ParsesCallouts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2);
+
+	[Fact]
+	public void EmitsErrorForTooManyParagraphs() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
+}
+
+public class CodeBlockWithManyCommentBlocksNoList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+%  TEST[s/"basque_keywords",//]
+%  TEST[s/\n$/\nstartyaml\n  - compare_analyzers: {index: basque_example, first: basque, second: rebuilt_basque}\nendyaml\n/]
+%  TEST[catch:bad_request]
+"""
+)
+{
+	[Fact]
+	public void ParsesCallouts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2);
+
+	[Fact]
+	public void EmitsErrorForNoList() => Collector.Diagnostics.Should().HaveCount(1)
+		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+}
+
+public class CodeBlockWithCommentsAfterList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; <1>
+var y = x - 2;
+var z = y - 2; <2>
+""",
+"""
+1. First callout
+2. Second callout
+
+%  TEST[s/"basque_keywords",//]
+"""
+)
+{
+	[Fact]
+	public void ParsesCallouts() => Block!.CallOuts
+		.Should().NotBeNullOrEmpty()
+		.And.HaveCount(2);
+
+	[Fact]
+	public void HandlesCommentsCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
+	public void RenderedHtmlDoesNotContainComments() =>
+		Html.Should().NotContain("basque_keywords");
 }

@@ -9,12 +9,18 @@ on:
   push:
     branches:
       - main
+      - master
   workflow_call:
     inputs:
       strict:
         description: 'Treat warnings as errors'
         type: string
         default: 'true'
+      metadata-only:
+        description: 'Only generate documentation metadata files'
+        type: string
+        required: false
+        default: 'false'
       continue-on-error:
         description: 'Do not fail to publish if build fails'
         type: string
@@ -65,7 +71,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           
       - name: Free Disk Space
-        if: contains(fromJSON('["elastic/asciidocalypse", "elastic/security-docs"]'), github.repository)
+        if: contains(fromJSON('["elastic/security-docs"]'), github.repository)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
@@ -145,6 +151,7 @@ jobs:
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
+          metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'true') }}
 
       - name: 'Validate Inbound Links'
         if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
@@ -163,11 +170,11 @@ jobs:
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update Link Index
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update Reference Index
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.s3-upload.outcome == 'success'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-reference-index@main
 
       - name: Update deployment status
