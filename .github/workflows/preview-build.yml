@@ -16,6 +16,10 @@ on:
         description: 'Treat warnings as errors'
         type: string
         default: 'true'
+      metadata-only:
+        description: 'Only generate documentation metadata files'
+        required: false
+        default: 'false'
       continue-on-error:
         description: 'Do not fail to publish if build fails'
         type: string

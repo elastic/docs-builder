@@ -110,7 +110,11 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
+
+		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
+			metadataOnly ??= metaValue;
 		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
+
 		var generator = new DocumentationGenerator(set, logger, exporter);
 		await generator.GenerateAll(ctx);
 		if (runningOnCi)
