@@ -114,7 +114,7 @@ public record ConfigurationFile : DocumentationFile
 			throw;
 		}
 
-		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}/*.md"))];
+		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}{Path.DirectorySeparatorChar}*.md"))];
 	}
 
 	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
@@ -184,13 +184,13 @@ public record ConfigurationFile : DocumentationFile
 					break;
 				case "folder":
 					folder = ReadFolder(reader, entry, parentPath, out folderFound);
-					parentPath += $"/{folder}";
+					parentPath += $"{Path.DirectorySeparatorChar}{folder}";
 					break;
 				case "detection_rules":
 					if (Extensions.IsDetectionRulesEnabled)
 					{
 						detectionRules = ReadDetectionRules(reader, entry, parentPath, out detectionRulesFound);
-						parentPath += $"/{folder}";
+						parentPath += $"{Path.DirectorySeparatorChar}{folder}";
 					}
 					break;
 				case "children":
@@ -204,7 +204,7 @@ public record ConfigurationFile : DocumentationFile
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, toc.TableOfContents)];
+			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -225,15 +225,15 @@ public record ConfigurationFile : DocumentationFile
 					children = extension.CreateTableOfContentItems(parentPath, detectionRules, Files);
 				}
 			}
-			return [new FileReference($"{parentPath}/{file}".TrimStart('/'), fileFound, hiddenFile, children ?? [])];
+			return [new FileReference($"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar), fileFound, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)
 		{
 			if (children is null)
-				_ = ImplicitFolders.Add(parentPath.TrimStart('/'));
+				_ = ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
 
-			return [new FolderReference($"{parentPath}".TrimStart('/'), folderFound, children ?? [])];
+			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, children ?? [])];
 		}
 
 		return null;
@@ -245,7 +245,7 @@ public record ConfigurationFile : DocumentationFile
 		var folder = reader.ReadString(entry);
 		if (folder is not null)
 		{
-			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), folder);
+			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), folder);
 			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
 				reader.EmitError($"Directory '{path}' does not exist", entry.Key);
 			else
@@ -261,7 +261,7 @@ public record ConfigurationFile : DocumentationFile
 		var folder = reader.ReadString(entry);
 		if (folder is not null)
 		{
-			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), folder);
+			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), folder);
 			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
 				reader.EmitError($"Directory '{path}' does not exist", entry.Key);
 			else
@@ -277,13 +277,15 @@ public record ConfigurationFile : DocumentationFile
 		var file = reader.ReadString(entry);
 		if (file is null)
 			return null;
+		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+			file = file.Replace('/', Path.DirectorySeparatorChar);
 
-		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart('/'), file);
+		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), file);
 		if (!_context.ReadFileSystem.FileInfo.New(path).Exists)
 			reader.EmitError($"File '{path}' does not exist", entry.Key);
 		else
 			found = true;
-		_ = Files.Add((parentPath + "/" + file).TrimStart('/'));
+		_ = Files.Add((parentPath + Path.DirectorySeparatorChar + file).TrimStart(Path.DirectorySeparatorChar));
 
 		return file;
 	}

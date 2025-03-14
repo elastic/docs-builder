@@ -80,7 +80,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		HashSet<string> files
 	)
 	{
-		var detectionRulesFolder = $"{Path.Combine(parentPath, detectionRules)}".TrimStart('/');
+		var detectionRulesFolder = Path.Combine(parentPath, detectionRules).TrimStart(Path.DirectorySeparatorChar);
 		var fs = Build.ReadFileSystem;
 		var sourceDirectory = Build.DocumentationSourceDirectory;
 		var path = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(sourceDirectory.FullName, detectionRulesFolder)));

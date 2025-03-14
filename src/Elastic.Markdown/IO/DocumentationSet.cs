@@ -175,6 +175,9 @@ public class DocumentationSet : INavigationLookups
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
+			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+				to = to.Replace('/', Path.DirectorySeparatorChar);
+
 			if (!FlatMappedFiles.TryGetValue(to, out var file))
 			{
 				Build.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
@@ -262,7 +265,7 @@ public class DocumentationSet : INavigationLookups
 			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
 
 		// we ignore files in folders that start with an underscore
-		if (relativePath.IndexOf("/_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))
+		if (relativePath.IndexOf($"{Path.DirectorySeparatorChar}_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))
 			return new ExcludedFile(file, SourceDirectory);
 
 		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");
