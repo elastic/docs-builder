@@ -143,7 +143,7 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		var arguments = new StartArguments(binary, args)
 		{
 			WorkingDirectory = workingDirectory?.FullName,
-			WaitForStreamReadersTimeout = TimeSpan.FromSeconds(3),
+			//WaitForStreamReadersTimeout = TimeSpan.FromSeconds(3),
 			Timeout = TimeSpan.FromSeconds(3),
 			WaitForExit = TimeSpan.FromSeconds(3),
 			ConsoleOutWriter = NoopConsoleWriter.Instance

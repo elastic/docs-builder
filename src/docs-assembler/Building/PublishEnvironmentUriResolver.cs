@@ -18,15 +18,13 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 	private FrozenDictionary<string, Repository> AllRepositories { get; }
 
-	public PublishEnvironmentUriResolver(AssemblyConfiguration configuration, string environment)
+	public PublishEnvironmentUriResolver(AssemblyConfiguration configuration, PublishEnvironment environment)
 	{
-		if (!configuration.Environments.TryGetValue(environment, out var e))
-			throw new Exception($"Could not find environment {environment}");
-		if (!Uri.TryCreate(e.Uri, UriKind.Absolute, out var uri))
-			throw new Exception($"Could not parse uri {e.Uri} in environment {environment}");
+		if (!Uri.TryCreate(environment.Uri, UriKind.Absolute, out var uri))
+			throw new Exception($"Could not parse uri {environment.Uri} in environment {environment}");
 
 		BaseUri = uri;
-		PublishEnvironment = e;
+		PublishEnvironment = environment;
 		PreviewResolver = new PreviewEnvironmentUriResolver();
 		AllRepositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative])
 			.ToFrozenDictionary(e => e.Name, e => e);
