@@ -23,6 +23,7 @@ public class IndexViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
+	public required string? StaticUrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
@@ -43,9 +44,10 @@ public class LayoutViewModel
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required MarkdownFile? Previous { get; init; }
 	public required MarkdownFile? Next { get; init; }
-	public required string NavigationHtml { get; set; }
-	public required string? UrlPathPrefix { get; set; }
-	public required string? GithubEditUrl { get; set; }
+	public required string NavigationHtml { get; init; }
+	public required string? StaticUrlPathPrefix { get; init; }
+	public required string? UrlPathPrefix { get; init; }
+	public required string? GithubEditUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required FeatureFlags Features { get; init; }
 
@@ -67,7 +69,7 @@ public class LayoutViewModel
 	public string Static(string path)
 	{
 		path = $"_static/{path.TrimStart('/')}";
-		return $"{UrlPathPrefix}/{path}";
+		return $"{StaticUrlPathPrefix}/{path}";
 	}
 
 	public string Link(string path)

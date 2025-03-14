@@ -30,13 +30,19 @@ public class AssembleContext
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
-	public AssembleContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem, string? checkoutDirectory, string? output)
+	public AssembleContext(
+		DiagnosticsCollector collector,
+		IFileSystem readFileSystem,
+		IFileSystem writeFileSystem,
+		string? checkoutDirectory,
+		string? output
+	)
 	{
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var configPath = Path.Combine(Paths.Root.FullName, "src/docs-assembler/assembler.yml");
+		var configPath = Path.Combine(Paths.Root.FullName, "src", "docs-assembler", "assembler.yml");
 		// temporarily fallback to embedded assembler.yml
 		// This will live in docs-content soon
 		if (!ReadFileSystem.File.Exists(configPath))

@@ -98,6 +98,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			TopLevelNavigationItems = [.. topLevelNavigationItems],
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
+			StaticUrlPathPrefix = DocumentationSet.Build.StaticUrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,

@@ -60,7 +60,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	{
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
-		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "production";
+		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 		_ = collector.StartAsync(ctx);
@@ -70,13 +70,17 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false,
 		};
+
+		if (!assembleContext.Configuration.Environments.TryGetValue(environment, out var env))
+			throw new Exception($"Could not find environment {environment}");
+
 		var cloner = new RepositoryCheckoutProvider(logger, assembleContext);
 		var checkouts = cloner.GetAll().ToArray();
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
 		var builder = new AssemblerBuilder(logger, assembleContext);
-		await builder.BuildAllAsync(checkouts, environment, ctx);
+		await builder.BuildAllAsync(checkouts, env, ctx);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;

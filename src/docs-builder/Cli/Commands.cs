@@ -47,6 +47,24 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	}
 
 	/// <summary>
+	/// Serve html files directly
+	/// </summary>
+	/// <param name="path">-p, Path to serve the documentation.
+	/// Defaults to the`{pwd}/docs` folder
+	/// </param>
+	/// <param name="port">Port to serve the documentation.</param>
+	/// <param name="ctx"></param>
+	[Command("serve-static")]
+	[ConsoleAppFilter<CheckForUpdatesFilter>]
+	public async Task ServeStatic(string? path = null, int port = 4000, Cancel ctx = default)
+	{
+		AssignOutputLogger();
+		var host = new StaticWebHost(path, port, new FileSystem());
+		await host.RunAsync(ctx);
+		await host.StopAsync(ctx);
+	}
+
+	/// <summary>
 	/// Converts a source markdown folder or file to an output folder
 	/// <para>global options:</para>
 	/// --log-level level

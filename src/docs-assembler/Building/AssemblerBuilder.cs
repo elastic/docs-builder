@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
 using Elastic.Markdown.CrossLinks;
@@ -14,7 +15,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 {
 	private readonly ILogger<AssemblerBuilder> _logger = logger.CreateLogger<AssemblerBuilder>();
 
-	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, string environment, Cancel ctx)
+	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, PublishEnvironment environment, Cancel ctx)
 	{
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, context.Configuration);
 		var uriResolver = new PublishEnvironmentUriResolver(context.Configuration, environment);
@@ -24,7 +25,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 		{
 			try
 			{
-				await BuildAsync(checkout, crossLinkResolver, ctx);
+				await BuildAsync(checkout, environment, crossLinkResolver, ctx);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
@@ -39,14 +40,22 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 		}
 	}
 
-	private async Task BuildAsync(Checkout checkout, CrossLinkResolver crossLinkResolver, Cancel ctx)
+	private async Task BuildAsync(Checkout checkout, PublishEnvironment environment, CrossLinkResolver crossLinkResolver, Cancel ctx)
 	{
 		var path = checkout.Directory.FullName;
-		var pathPrefix = checkout.Repository.PathPrefix;
-		var output = pathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, pathPrefix) : context.OutputDirectory.FullName;
+		var localPathPrefix = checkout.Repository.PathPrefix;
+		var pathPrefix = (environment.PathPrefix, localPathPrefix) switch
+		{
+			(null or "", null or "") => null,
+			(null or "", _) => localPathPrefix,
+			(_, null or "") => environment.PathPrefix,
+			var (globalPrefix, docsetPrefix) => $"{globalPrefix}/{docsetPrefix}"
+		};
+		var output = localPathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, localPathPrefix) : context.OutputDirectory.FullName;
 
 		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output)
 		{
+			StaticUrlPathPrefix = environment.PathPrefix,
 			UrlPathPrefix = pathPrefix,
 			Force = true,
 			AllowIndexing = true
