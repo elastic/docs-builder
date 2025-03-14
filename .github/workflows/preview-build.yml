@@ -150,6 +150,7 @@ jobs:
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
+          metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'true') }}
 
       - name: 'Validate Inbound Links'
         if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
