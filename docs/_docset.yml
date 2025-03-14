@@ -1,4 +1,5 @@
 project: 'doc-builder'
+max_toc_depth: 2
 cross_links:
   - docs-content
 exclude:
@@ -92,8 +93,9 @@ toc:
     children:
       - file: index.md
       - file: content-patterns.md
-  # nested TOCs are only allowed from docset.yml
+  # nested TOCs are only allowed from docset.yml by default
   # to prevent them from being nested deeply arbitrarily
+  # use max_toc_depth to allow deeper nesting (Expert mode, consult with docs team)
   - toc: development
   - folder: testing
     children:
