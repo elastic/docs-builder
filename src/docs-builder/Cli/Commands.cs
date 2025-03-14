@@ -10,6 +10,7 @@ using Documentation.Builder.Http;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Refactor;
 using Microsoft.Extensions.Logging;
@@ -56,6 +57,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -68,6 +70,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? force = null,
 		bool? strict = null,
 		bool? allowIndexing = null,
+		bool? metadataOnly = null,
 		Cancel ctx = default
 	)
 	{
@@ -107,7 +110,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 		var set = new DocumentationSet(context, logger);
-		var generator = new DocumentationGenerator(set, logger);
+		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
+		var generator = new DocumentationGenerator(set, logger, exporter);
 		await generator.GenerateAll(ctx);
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
@@ -128,6 +132,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -140,9 +145,10 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? force = null,
 		bool? strict = null,
 		bool? allowIndexing = null,
+		bool? metadataOnly = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, strict, allowIndexing, ctx);
+		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, ctx);
 
 
 	/// <summary>

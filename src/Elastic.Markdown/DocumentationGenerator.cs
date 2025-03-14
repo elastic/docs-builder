@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
 using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Slices;
@@ -21,10 +22,9 @@ public interface IConversionCollector
 
 public class DocumentationGenerator
 {
-	private readonly IConversionCollector? _conversionCollector;
-	private readonly IFileSystem _readFileSystem;
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
+	private readonly IDocumentationFileExporter _documentationFileExporter;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
@@ -34,11 +34,10 @@ public class DocumentationGenerator
 	public DocumentationGenerator(
 		DocumentationSet docSet,
 		ILoggerFactory logger,
+		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null
 	)
 	{
-		_conversionCollector = conversionCollector;
-		_readFileSystem = docSet.Build.ReadFileSystem;
 		_writeFileSystem = docSet.Build.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
@@ -46,6 +45,9 @@ public class DocumentationGenerator
 		Context = docSet.Build;
 		Resolver = docSet.LinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
+		_documentationFileExporter =
+			documentationExporter
+			?? new DocumentationFileExporter(docSet.Build.ReadFileSystem, _writeFileSystem, HtmlWriter, conversionCollector);
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
 		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
@@ -61,7 +63,6 @@ public class DocumentationGenerator
 		var contents = stateFile.FileSystem.File.ReadAllText(stateFile.FullName);
 		return JsonSerializer.Deserialize(contents, SourceGenerationContext.Default.GenerationState);
 	}
-
 
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
@@ -149,10 +150,7 @@ public class DocumentationGenerator
 			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", "_static/");
 
 			var outputFile = OutputFile(path);
-			if (outputFile.Directory is { Exists: false })
-				outputFile.Directory.Create();
-			await using var stream = outputFile.OpenWrite();
-			await resourceStream.CopyToAsync(stream, ctx);
+			await _documentationFileExporter.CopyEmbeddedResource(outputFile, resourceStream, ctx);
 			_logger.LogDebug("Copied static embedded resource {Path}", path);
 		}
 	}
@@ -169,14 +167,7 @@ public class DocumentationGenerator
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
 		var outputFile = OutputFile(file.RelativePath);
-		if (file is MarkdownFile markdown)
-			await HtmlWriter.WriteAsync(outputFile, markdown, _conversionCollector, token);
-		else
-		{
-			if (outputFile.Directory is { Exists: false })
-				outputFile.Directory.Create();
-			await CopyFileFsAware(file, outputFile, token);
-		}
+		await _documentationFileExporter.ProcessFile(file, outputFile, token);
 	}
 
 	private IFileInfo OutputFile(string relativePath)
@@ -200,7 +191,8 @@ public class DocumentationGenerator
 
 		if (Context.Git != generationState.Git)
 		{
-			_logger.LogInformation("Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}", Context.Git, generationState.Git);
+			_logger.LogInformation("Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}",
+				Context.Git, generationState.Git);
 			return false;
 		}
 
@@ -213,8 +205,10 @@ public class DocumentationGenerator
 			_logger.LogInformation("Incremental compilation. since: {LastSeenChanges}", generationState.LastSeenChanges);
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
-			_logger.LogInformation("No compilation: no changes since last observed: {LastSeenChanges}. " +
-								   "Pass --force to force a full regeneration", generationState.LastSeenChanges);
+			_logger.LogInformation(
+				"No compilation: no changes since last observed: {LastSeenChanges}. " +
+				"Pass --force to force a full regeneration", generationState.LastSeenChanges
+			);
 			return true;
 		}
 
@@ -239,23 +233,11 @@ public class DocumentationGenerator
 		{
 			LastSeenChanges = DocumentationSet.LastWrite,
 			InvalidFiles = badFiles,
-			Git = Context.Git
+			Git = Context.Git,
+			Exporter = _documentationFileExporter.Name
 		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
-	}
-
-	private async Task CopyFileFsAware(DocumentationFile file, IFileInfo outputFile, Cancel ctx)
-	{
-		// fast path, normal case.
-		if (_readFileSystem == _writeFileSystem)
-			_readFileSystem.File.Copy(file.SourceFile.FullName, outputFile.FullName, true);
-		//slower when we are mocking the write filesystem
-		else
-		{
-			var bytes = await file.SourceFile.FileSystem.File.ReadAllBytesAsync(file.SourceFile.FullName, ctx);
-			await outputFile.FileSystem.File.WriteAllBytesAsync(outputFile.FullName, bytes, ctx);
-		}
 	}
 
 	public async Task<string?> RenderLayout(MarkdownFile markdown, Cancel ctx)
