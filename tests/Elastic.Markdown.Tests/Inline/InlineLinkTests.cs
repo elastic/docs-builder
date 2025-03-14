@@ -267,7 +267,7 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 	[Fact]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.TrimEnd().Should().Be("""
+		Html.ReplaceLineEndings().TrimEnd().Should().Be("""
 		<p>Links:</p>
 		<ul>
 		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></li>
@@ -275,7 +275,7 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 		<ul>
 		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#primary-nav,#secondary-nav,#content-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Special Requirements</a></li>
 		</ul>
-		""");
+		""".ReplaceLineEndings());
 
 	[Fact]
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);
