@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
@@ -175,7 +176,7 @@ public class DocumentationSet : INavigationLookups
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
-			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
 
 			if (!FlatMappedFiles.TryGetValue(to, out var file))

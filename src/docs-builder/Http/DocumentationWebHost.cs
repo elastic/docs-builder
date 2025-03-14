@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Net;
+using System.Runtime.InteropServices;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
@@ -149,7 +150,7 @@ public class DocumentationWebHost
 	{
 		var generator = holder.Generator;
 
-		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;

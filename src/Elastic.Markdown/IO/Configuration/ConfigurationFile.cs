@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
@@ -277,7 +278,7 @@ public record ConfigurationFile : DocumentationFile
 		var file = reader.ReadString(entry);
 		if (file is null)
 			return null;
-		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			file = file.Replace('/', Path.DirectorySeparatorChar);
 
 		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), file);
