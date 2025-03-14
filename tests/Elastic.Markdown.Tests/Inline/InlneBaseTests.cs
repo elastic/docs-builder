@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
+using System.Runtime.InteropServices;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -103,8 +104,10 @@ $"""
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
-
-		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/"));
+		var baseRootPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+		 ? Paths.Root.FullName.Replace('\\', '/')
+		 : Paths.Root.FullName;
+		var root = FileSystem.DirectoryInfo.New($"{baseRootPath}/docs/");
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(output);
