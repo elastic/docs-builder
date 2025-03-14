@@ -6,7 +6,7 @@
 		</div>
 		<div class="sr-only">Loading</div>
 	</div>
-	<section class="w-screen px-8 lg:px-6 bg-grey-10 ">
+	<section class="w-screen px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16 grid lg:grid-cols-2 items-center gap-6">
 			<div class="lg:basis-[50%]">
 				<h1 class="text-4xl font-bold font-sans text-black">Elastic documentation</h1>
@@ -25,54 +25,69 @@
 
 	<section class="w-screen px-8 lg:px-6">
 		<div class="container mx-auto py-16">
-			<h2 class="font-bold text-3xl text-ink-dark">Elastic basics</h2>
-			<div class="grid gap-6 mt-6">
-				<div>
-					<p class="grow mt-2 lg:max-w-[80ch]">
-						Learn about Elasticsearch, the components at the heart of the Elastic Search AI Platform, and the solutions it powers.
-					</p>
-					<div class="mt-6">
-						<a href="@Model.Link("/get-started")" class="link">
-							Get started
-							<svg class="link-arrow"
-							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-							</svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
-	
-	<section class="w-screen px-8 lg:px-6 bg-grey-10">
-		<div class="container mx-auto py-16">
-			<h2 class="font-bold text-3xl text-ink-dark">Instant Elasticsearch</h2>
-			<div class="grid lg:grid-cols-2 gap-6 mt-6">
-				<div class="lg:basis-[50%]">
-					<p class="mt-2 font-body">For local testing, use Docker to install and run Elasticsearch.</p>
-				</div>
-				<div class="lg:basis-[50%] rounded-xl border-1 border-grey-20 p-6">
-					<p class="font-body">Try it locally now:</p>
-					<div class="mt-2">
-						<div class="highlight-bash notranslate">
-							<div class="highlight">
-								<pre>
-									<code class="language-yaml hljs" data-highlighted="yes">curl -fsSL https://elastic.co/start-local | sh</code>
-								</pre>
+			<h2 class="font-bold text-3xl text-ink-dark">How-to guides</h2>
+			<div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6">
+				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+					<div class="flex gap-6 h-full">
+						<img loading="lazy" alt="Graph icon" src="@Model.Static("icon-graph-64-color.svg")" class="size-9"/>
+						<div class="flex flex-col h-full">
+							<p class="font-sans font-bold text-xl">Manage all your data</p>
+							<p class="mt-2 grow">Learn how to ingest, enrich, and manage your data throughout its entire Elasticsearch lifecycle.</p>
+							<div class="grid grid-cols-2 mt-6">
+								<a href="@Model.Link("/manage-data")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
 				</div>
+
+				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+					<div class="flex gap-6 h-full">
+						<img loading="lazy" alt="Dashboards icon" src="@Model.Static("icon-dashboards-64-color.svg")" class="size-9"/>
+						<div class="flex flex-col h-full">
+							<p class="font-sans font-bold text-xl">Explore and analyze your data</p>
+							<p class="mt-2 grow">Discover the querying, shaping, and visualization tools of Elasticsearch and Kibana, available in every solution.</p>
+							<div class="grid grid-cols-2 mt-6">
+								<a href="@Model.Link("/explore-analyze")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+					<div class="flex gap-6 h-full">
+						<img loading="lazy" alt="Infra logo" src="@Model.Static("icon-infra-64-color.svg")" class="size-9"/>
+						<div class="flex flex-col h-full">
+							<p class="font-sans font-bold text-xl">Deploy and manage</p>
+							<p class="mt-2 grow">Learn about how to deploy and manage all aspects of your Elastic environment.</p>
+							<div class="grid grid-cols-2 mt-6">
+								<a href="@Model.Link("/deploy-manage")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+					<div class="flex gap-6 h-full">
+						<img loading="lazy" alt="Three people icon" src="@Model.Static("icon-three-people-64-color.svg")" class="size-9"/>
+						<div class="flex flex-col h-full">
+							<p class="font-sans font-bold text-xl">Manage your Elastic Cloud organization</p>
+							<p class="mt-2 grow">Manage the settings for your Elastic Cloud account.</p>
+							<div class="grid grid-cols-2 mt-6">
+								<a href="@Model.Link("/cloud-account")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				
 			</div>
 		</div>
 	</section>
 
-	<section class="w-screen px-8 lg:px-6">
+	<section class="w-screen px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">Elastic products</h2>
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+				<div class="grow rounded-xl border-1 border-grey-20 p-6 bg-white">
 					<div class="flex gap-6 h-full">
 						<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
@@ -80,12 +95,11 @@
 							<p class="mt-2 grow">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
 							<div class="grid grid-cols-2 mt-6">
 								<a href="@Model.Link("/solutions/search/get-started")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
-								<a href="@Model.Link("/solutions/search")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+				<div class="grow rounded-xl border-1 border-grey-20 p-6 bg-white">
 					<div class="flex gap-6 h-full">
 						<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
@@ -93,21 +107,19 @@
 							<p class="mt-2 grow">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
 							<div class="grid grid-cols-2 mt-6">
 								<a href="@Model.Link("/solutions/observability/get-started")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
-								<a href="@Model.Link("/solutions/observability")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<div class="grow rounded-xl border-1 border-grey-20 p-6">
+				<div class="grow rounded-xl border-1 border-grey-20 p-6 bg-white">
 					<div class="flex gap-6 h-full">
-					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-9"/>
+						<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
 							<p class="font-sans font-bold text-xl">Security</p>
 							<p class="mt-2 grow">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>
 							<div class="grid grid-cols-2 mt-6">
 								<a href="@Model.Link("/solutions/security/get-started")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">Get started</a>
-								<a href="@Model.Link("/solutions/security")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
@@ -116,150 +128,6 @@
 		</div>
 	</section>
 
-	<section class="w-screen px-8 lg:px-6 bg-grey-10">
-		<div class="container mx-auto py-16">
-			<h2 class="font-bold text-3xl text-ink-dark">Elastic how-to guides</h2>
-			<section class="mt-9">
-				<h3 class="text-2xl font-bold">Manage all your data</h3>
-				<p class="text-ink-light mt-4 max-w-[80ch]">Learn how to ingest, enrich, and manage your data throughout its entire Elasticsearch lifecycle.</p>
-				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/manage-data/data-store")">
-							Understand Elasticsearch data
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/manage-data/ingest")">
-							Ingest and enrich your data
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/manage-data/lifecycle")">
-							Manage the data lifecycle
-						</a>
-					</li>
-				</ul>
-				<div class="mt-6">
-					<a href="@Model.Link("/manage-data")" class="link">
-						View all docs
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-					</a>
-				</div>
-			</section>
-
-			<section class="mt-9">
-				<h3 class="text-2xl font-bold">Explore and analyze your data</h3>
-				<p class="text-ink-light mt-4 max-w-[80ch]">Discover the querying, shaping, and visualization tools of Elasticsearch and Kibana, available in every solution.</p>
-				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/explore-analyze/query-filter")">
-							Query and filter data
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/explore-analyze/discover")">
-							Explore with Discover
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/explore-analyze/dashboards")">
-							Build dashboards
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/explore-analyze/machine-learning")">
-							Machine Learning
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/explore-analyze/alerts-cases")">
-							Set up alerts
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/explore-analyze/report-and-share")">
-							Share data insights
-						</a>
-					</li>
-				</ul>
-				<div class="mt-6">
-					<a href="@Model.Link("/explore-analyze")" class="link">
-						View all docs
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-					</a>
-				</div>
-			</section>
-
-			<section class="mt-9">
-				<h3 class="text-2xl font-bold">Deploy and manage</h3>
-				<p class="text-ink-light mt-4 max-w-[80ch]">Learn about how to deploy and manage all aspects of your Elastic environment. Learn how to design resilient, highly available clusters and deployments, and maintain and scale your environment to grow with your use case.</p>
-				<ul class="mt-9 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/deploy-manage/deploy")">
-							Deploy Elastic
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/deploy-manage/production-guidance")">
-							Plan for production
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/deploy-manage/users-roles")">
-							Manage users and roles
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/deploy-manage/security")">
-							Secure your environment
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/deploy-manage/monitor")">
-							Monitor your environment
-						</a>
-					</li>
-					<li>
-						<a class="block px-6 py-8 rounded-xl border-1 border-grey-20 bg-white hover:underline hover:text-black" href="@Model.Link("/deploy-manage/cloud-organization")">
-							Manage your Elastic Cloud organization
-						</a>
-					</li>
-				</ul>
-				<div class="mt-6">
-					<a href="@Model.Link("/deploy-manage")" class="link">
-						View all docs
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-					</a>
-				</div>
-			</section>
-			
-		</div>
-	</section>
-
-	<section class="w-screen px-8 lg:px-6 bg-grey-10">
-		<div class="container mx-auto py-16">
-			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[auto_1fr_auto] gap-12 items-center justify-center text-center lg:text-left">
-				<img loading="lazy" class="mx-auto" alt="Elastic Community logo" src="@Model.Static("community-logo.png")" />
-				<div>
-					<h2 class="font-sans font-semibold text-4xl text-black -tracking-[0.04em] leading-[1.2em]">Welcome to our community of developers</h2>
-					<p class="mt-2">Learn from your peers and share code examples.</p>
-				</div>
-				<a href="https://discuss.elastic.co" target="_blank" rel="noopener noreferrer" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">
-					Join now
-				</a>
-			</div>
-		</div>
-	</section>
-	
 	<section class="w-screen px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">References</h2>
@@ -397,11 +265,11 @@
 		</div>
 	</section>
 
-	<section class="w-screen px-8 lg:px-6">
+	<section class="w-screen px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold text-3xl text-ink-dark">Product resources</h2>
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-				<div class="flex flex-col rounded-t-xl bg-black text-white p-6">
+				<div class="flex flex-col rounded-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Releases</h3>
 					<p class="grow mt-4">Explore the latest features and changes in Elastic.</p>
 					<div class="mt-6 grid grid-cols-1 gap-6 text-center">
@@ -417,7 +285,7 @@
 						</a>
 					</div>
 				</div>
-				<div class="flex flex-col rounded-t-xl bg-black text-white p-6">
+				<div class="flex flex-col rounded-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Troubleshoot and support</h3>
 					<p class="grow mt-4">Check troubleshooting guides for common fixes or reach out to the experts.</p>
 					<div class="mt-6 grid grid-cols-1 gap-6 text-center">
@@ -433,7 +301,7 @@
 						</a>
 					</div>
 				</div>
-				<div class="flex flex-col rounded-t-xl bg-black text-white p-6">
+				<div class="flex flex-col rounded-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Contribute and extend</h3>
 					<p class="grow mt-4">Learn how to contribute to Elastic products and extend Elastic capabilities.</p>
 					<div class="mt-6 grid grid-cols-1 gap-6 text-center">
@@ -452,4 +320,43 @@
 			</div>
 		</div>
 	</section>
+	
+	@* <section class="w-screen px-8 lg:px-6 bg-grey-10"> *@
+	@* 	<div class="container mx-auto py-16"> *@
+	@* 		<h2 class="font-bold text-3xl text-ink-dark">Instant Elasticsearch</h2> *@
+	@* 		<div class="grid lg:grid-cols-2 gap-6 mt-6"> *@
+	@* 			<div class="lg:basis-[50%]"> *@
+	@* 				<p class="mt-2 font-body">For local testing, use Docker to install and run Elasticsearch.</p> *@
+	@* 			</div> *@
+	@* 			<div class="lg:basis-[50%] rounded-xl border-1 border-grey-20 p-6"> *@
+	@* 				<p class="font-body">Try it locally now:</p> *@
+	@* 				<div class="mt-2"> *@
+	@* 					<div class="highlight-bash notranslate"> *@
+	@* 						<div class="highlight"> *@
+	@* 							<pre> *@
+	@* 								<code class="language-yaml hljs" data-highlighted="yes">curl -fsSL https://elastic.co/start-local | sh</code> *@
+	@* 							</pre> *@
+	@* 						</div> *@
+	@* 					</div> *@
+	@* 				</div> *@
+	@* 			</div> *@
+	@* 		</div> *@
+	@* 	</div> *@
+	@* </section> *@
+
+	<section class="w-screen px-8 lg:px-6">
+		<div class="container mx-auto py-16">
+			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[auto_1fr_auto] gap-12 items-center justify-center text-center lg:text-left">
+				<img loading="lazy" class="mx-auto" alt="Elastic Community logo" src="@Model.Static("community-logo.png")" />
+				<div>
+					<h2 class="font-sans font-semibold text-4xl text-black -tracking-[0.04em] leading-[1.2em]">Welcome to our community of developers</h2>
+					<p class="mt-2">Learn from your peers and share code examples.</p>
+				</div>
+				<a href="https://discuss.elastic.co" target="_blank" rel="noopener noreferrer" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-300 font-semibold rounded-sm px-6 py-2.5 text-center h-10 flex items-center justify-center">
+					Join now
+				</a>
+			</div>
+		</div>
+	</section>
+	
 </div>
