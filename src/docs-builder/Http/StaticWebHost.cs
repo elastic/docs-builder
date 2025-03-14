@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Net;
-using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
@@ -12,13 +10,8 @@ using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using Westwind.AspNetCore.LiveReload;
-using IFileInfo = Microsoft.Extensions.FileProviders.IFileInfo;
 
 namespace Documentation.Builder.Http;
 
