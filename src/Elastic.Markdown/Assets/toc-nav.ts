@@ -12,11 +12,11 @@ interface TocElements {
 const HEADING_OFFSET = 34 * 4; 
 
 function initializeTocElements(): TocElements {
-	const headings = $$('h2, h3');
+	const headings = $$('#markdown-content h2, #markdown-content h3');
 	const tocLinks = $$('#toc-nav li>a') as HTMLAnchorElement[];
-	const tocContainer = $('#toc-nav ul') as HTMLUListElement;
+	const tocContainer = $('#toc-nav .toc-progress-container') as HTMLUListElement;
 	const progressIndicator = $('.toc-progress-indicator', tocContainer) as HTMLDivElement;
-	return { headings, tocLinks, tocContainer,progressIndicator };
+	return { headings, tocLinks, tocContainer, progressIndicator };
 }
 
 // Find the current TOC links based on visible headings

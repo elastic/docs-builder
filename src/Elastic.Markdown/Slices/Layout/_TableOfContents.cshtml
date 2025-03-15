@@ -6,8 +6,9 @@
 			{
 				<div class="mb-4">
 					<div class="font-bold mb-2">On this page</div>
-					<ul class="block w-full relative">
-						<div class="toc-progress-indicator absolute top-0 h-0 left-2 w-[1px] bg-blue-elastic transition-all duration-200 ease-out "></div>
+					<div class="relative toc-progress-container">
+					<div class="toc-progress-indicator absolute top-0 h-0 left-2 w-[1px] bg-blue-elastic transition-all duration-200 ease-out "></div>
+					<ul class="block w-full">
 						@foreach (var item in Model.PageTocItems)
 						{
 							<li class="has-[:hover]:border-l-grey-80 items-center ml-2 pl-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
@@ -19,6 +20,7 @@
 							</li>
 						}
 					</ul>
+					</div>
 				</div>
 			}
 			<div class="edit-this-page">
