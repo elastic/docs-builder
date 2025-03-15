@@ -58,7 +58,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 			StaticUrlPathPrefix = environment.PathPrefix,
 			UrlPathPrefix = pathPrefix,
 			Force = true,
-			AllowIndexing = true
+			AllowIndexing = environment.AllowIndexing
 		};
 
 		var set = new DocumentationSet(buildContext, logger, crossLinkResolver);

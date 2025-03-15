@@ -1,6 +1,6 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<NavigationViewModel>
-<div class="pt-6 pb-20">
+<div class="pt-6 pb-20 font-body">
 
 	@{
 		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
@@ -8,7 +8,7 @@
 	
 	@if (Model.Features.IsPrimaryNavEnabled)
 	{
-		<details class="block group border-b-1 border-grey-20 pb-6">
+		<details class="block group border-b-1 border-grey-20 pb-8 font-sans">
 			<summary class="inline-grid md:grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-2 hover:text-black">
 				<span>
 					@current?.Group.Index?.NavigationTitle
