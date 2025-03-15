@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Navigation;
@@ -95,6 +96,8 @@ public record MarkdownFile : DocumentationFile
 		get
 		{
 			var relativePath = RelativePathUrl;
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				relativePath = relativePath.Replace('\\', '/');
 			return Path.GetFileName(relativePath) == "index.md"
 				? $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
 				: $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
