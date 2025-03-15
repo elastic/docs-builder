@@ -14,7 +14,7 @@ const HEADING_OFFSET = 34 * 4;
 function initializeTocElements(): TocElements {
 	const headings = $$('#markdown-content h2, #markdown-content h3');
 	const tocLinks = $$('#toc-nav li>a') as HTMLAnchorElement[];
-	const tocContainer = $('#toc-nav .toc-progress-container') as HTMLUListElement;
+	const tocContainer = $('#toc-nav .toc-progress-container') as HTMLDivElement;
 	const progressIndicator = $('.toc-progress-indicator', tocContainer) as HTMLDivElement;
 	return { headings, tocLinks, tocContainer, progressIndicator };
 }
