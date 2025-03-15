@@ -28,6 +28,7 @@ public class ReloadableGeneratorState(
 		SourcePath?.Refresh();
 		OutputPath?.Refresh();
 		var docSet = new DocumentationSet(context, logger);
+		_ = await docSet.LinkResolver.FetchLinks();
 		var generator = new DocumentationGenerator(docSet, logger);
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);

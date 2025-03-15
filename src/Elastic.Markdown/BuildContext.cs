@@ -77,7 +77,7 @@ public record BuildContext
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = GitCheckoutInformation.Create(DocumentationSourceDirectory, ReadFileSystem);
-		Configuration = new ConfigurationFile(ConfigurationPath, DocumentationSourceDirectory, this);
+		Configuration = new ConfigurationFile(this);
 
 	}
 
