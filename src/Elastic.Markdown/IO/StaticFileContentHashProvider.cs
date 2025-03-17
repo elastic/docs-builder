@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 namespace Elastic.Markdown.IO;
 
-public class ContentHashProvider(EmbeddedOrPhysicalFileProvider fileProvider)
+public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider fileProvider)
 {
 	private readonly Dictionary<string, string> _contentHashes = [];
 
