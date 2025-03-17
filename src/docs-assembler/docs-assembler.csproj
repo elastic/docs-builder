@@ -31,5 +31,6 @@
   
   <ItemGroup>
     <EmbeddedResource Include="assembler.yml" />
+    <EmbeddedResource Include="navigation.yml" />
   </ItemGroup>
 </Project>

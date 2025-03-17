@@ -22,7 +22,7 @@ public record RedirectFile
 		if (!source.Exists)
 			return;
 
-		var reader = new YamlStreamReader(Source, Context);
+		var reader = new YamlStreamReader(Source, Context.Collector);
 		try
 		{
 			foreach (var entry in reader.Read())

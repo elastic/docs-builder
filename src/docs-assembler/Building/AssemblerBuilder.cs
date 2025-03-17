@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Documentation.Assembler.Configuration;
+using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
 using Elastic.Markdown.CrossLinks;

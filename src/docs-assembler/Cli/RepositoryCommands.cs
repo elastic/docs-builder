@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
+using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
@@ -79,6 +80,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
+		var globalNavigation = GlobalNavigation.Deserialize(assembleContext, checkouts);
 		var builder = new AssemblerBuilder(logger, assembleContext);
 		await builder.BuildAllAsync(checkouts, env, ctx);
 

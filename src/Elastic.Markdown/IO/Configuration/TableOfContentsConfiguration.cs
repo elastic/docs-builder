@@ -229,7 +229,7 @@ public record TableOfContentsConfiguration
 		if (!found)
 			return null;
 
-		var tocYamlReader = new YamlStreamReader(source, _context);
+		var tocYamlReader = new YamlStreamReader(source, _context.Collector);
 		foreach (var kv in tocYamlReader.Read())
 		{
 			switch (kv.Key)
