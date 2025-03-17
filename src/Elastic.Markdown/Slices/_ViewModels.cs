@@ -28,6 +28,7 @@ public class IndexViewModel
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required FeatureFlags Features { get; init; }
+	public required Func<string, string> GetContentHashFunc { get; init; }
 }
 
 public class LayoutViewModel
@@ -68,9 +69,14 @@ public class LayoutViewModel
 
 	public string Static(string path)
 	{
-		path = $"_static/{path.TrimStart('/')}";
-		return $"{StaticUrlPathPrefix}/{path}";
+		var staticPath = $"_static/{path.TrimStart('/')}";
+		var contentHash = GetContentHashFunc(path.TrimStart('/'));
+		return string.IsNullOrEmpty(contentHash)
+			? $"{StaticUrlPathPrefix}/{staticPath}"
+			: $"{StaticUrlPathPrefix}/{staticPath}?v={contentHash}";
 	}
+
+	public required Func<string, string> GetContentHashFunc { get; init; }
 
 	public string Link(string path)
 	{

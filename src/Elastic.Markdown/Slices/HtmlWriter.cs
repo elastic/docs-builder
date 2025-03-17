@@ -8,12 +8,14 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Markdig.Syntax;
 using RazorSlices;
+using IFileInfo = System.IO.Abstractions.IFileInfo;
 
 namespace Elastic.Markdown.Slices;
 
 public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
+	private ContentHashProvider ContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
 
 	private async Task<string> RenderNavigation(string topLevelGroupId, MarkdownFile markdown, Cancel ctx = default)
 	{
@@ -102,7 +104,8 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
-			Features = DocumentationSet.Configuration.Features
+			Features = DocumentationSet.Configuration.Features,
+			GetContentHashFunc = filename => ContentHashProvider.GetContentHash(filename)
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
