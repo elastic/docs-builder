@@ -105,7 +105,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
 			Features = DocumentationSet.Configuration.Features,
-			GetContentHashFunc = filename => StaticFileContentHashProvider.GetContentHash(filename)
+			StaticFileContentHashProvider = StaticFileContentHashProvider
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
