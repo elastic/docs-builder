@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   destroy:
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     steps:
       - name: Delete GitHub environment
