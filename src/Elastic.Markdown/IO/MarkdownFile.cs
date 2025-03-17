@@ -210,7 +210,7 @@ public record MarkdownFile : DocumentationFile
 
 		if (!string.IsNullOrEmpty(NavigationTitle))
 		{
-			if (NavigationTitle.AsSpan().ReplaceSubstitutions(subs, out var replacement))
+			if (NavigationTitle.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 				NavigationTitle = replacement;
 		}
 
@@ -219,7 +219,7 @@ public record MarkdownFile : DocumentationFile
 			Title = RelativePath;
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		}
-		else if (Title.AsSpan().ReplaceSubstitutions(subs, out var replacement))
+		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
 		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
@@ -272,7 +272,7 @@ public record MarkdownFile : DocumentationFile
 			.Concat(includedTocs)
 			.Select(toc => subs.Count == 0
 				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, out var r)
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Build.Collector, out var r)
 					? toc with { Heading = r }
 					: toc)
 			.ToList();
