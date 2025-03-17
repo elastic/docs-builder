@@ -5,10 +5,6 @@ on:
 
 permissions:
   contents: read
-  packages: read
-  id-token: write
-  pull-requests: write
-  deployments: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,8 +15,15 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+         - ubuntu-latest
+         - macos-latest
+         - windows-latest
+    steps:          
       - uses: actions/checkout@v4
 
       - name: Bootstrap Action Workspace
@@ -28,17 +31,10 @@ jobs:
         uses: ./.github/actions/bootstrap
 
       - name: Build
-        run: ./build.sh
+        run: dotnet run --project build -c release
 
       - name: Test
-        run: ./build.sh test
+        run: dotnet run --project build -c release -- test
 
       - name: Publish AOT
-        run: ./build.sh publishbinaries
-        
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docs-builder-binary
-          path: .artifacts/publish/docs-builder/release/docs-builder
-          if-no-files-found: error
-          retention-days: 1
+        run: dotnet run --project build -c release -- publishbinaries

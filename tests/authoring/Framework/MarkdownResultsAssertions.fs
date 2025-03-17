@@ -11,6 +11,7 @@ open DiffPlex.DiffBuilder.Model
 open FsUnit.Xunit
 open JetBrains.Annotations
 open Xunit.Sdk
+open System.IO
 
 [<AutoOpen>]
 module ResultsAssertions =
@@ -50,7 +51,7 @@ module ResultsAssertions =
 
         let result =
             results.MarkdownResults
-            |> Seq.tryFind (fun m -> m.File.RelativePath = file)
+            |> Seq.tryFind (fun m -> m.File.RelativePath = (string file).Replace('/', Path.DirectorySeparatorChar))
 
         match result with
         | None ->

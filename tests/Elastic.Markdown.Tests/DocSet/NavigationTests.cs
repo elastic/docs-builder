@@ -17,14 +17,14 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	{
 		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
 		Configuration.ImplicitFolders.Should()
-			.Contain("testing/nested");
+			.Contain(Path.Combine("testing", "nested"));
 	}
 
 	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>
 		Configuration.Files.Should()
 			.Contain("index.md")
-			.And.Contain("syntax/index.md");
+			.And.Contain(Path.Combine("syntax", "index.md"));
 
 	[Fact]
 	public void ParsesRedirects()

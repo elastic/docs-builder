@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -270,6 +271,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
+
+		// When running on Windows, path traversal results must be normalized prior to being used in a URL
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			url = url.Replace('\\', '/');
 
 		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
 	}

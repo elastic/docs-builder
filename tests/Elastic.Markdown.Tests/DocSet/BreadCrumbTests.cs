@@ -12,7 +12,7 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 	[Fact]
 	public void ParsesATableOfContents()
 	{
-		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == "testing/nested/index.md") as MarkdownFile;
+		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == Path.Combine("testing", "nested", "index.md")) as MarkdownFile;
 
 		doc.Should().NotBeNull();
 

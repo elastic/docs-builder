@@ -118,7 +118,7 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RendersExpectedHtml() =>
-		Html.Should().Contain("""
+		Html.ReplaceLineEndings().Should().Contain("""
 		                      <div class="highlight-csharp notranslate">
 		                      	<div class="highlight">
 		                      		<pre><code class="language-csharp">var x = 1; <span class="code-callout" data-index="1">1</span>
@@ -132,7 +132,7 @@ var z = y - 2; <2>
 		                      <li>Marking the first callout</li>
 		                      <li>Marking the second callout</li>
 		                      </ol>
-		                      """);
+		                      """.ReplaceLineEndings());
 
 
 	[Fact]
@@ -367,12 +367,12 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RenderedHtmlContainsCallouts() =>
-		Html.Should().Contain("""
+		Html.ReplaceLineEndings().Should().Contain("""
                               <ol class="code-callouts">
                               <li>First callout</li>
                               <li>Second callout</li>
                               </ol>
-                              """);
+                              """.ReplaceLineEndings());
 }
 
 public class CodeBlockWithMultipleCommentTypesThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
@@ -426,10 +426,10 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RendersIntermediateParagraph() =>
-		Html.Should().Contain("""
+		Html.ReplaceLineEndings().Should().Contain("""
                               <p><strong>This is an intermediate paragraph</strong></p>
                               <ol class="code-callouts">
-                              """);
+                              """.ReplaceLineEndings());
 }
 
 public class CodeBlockWithCommentBlocksTwoParagraphsThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",

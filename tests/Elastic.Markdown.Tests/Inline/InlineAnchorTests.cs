@@ -111,11 +111,11 @@ public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<Heading
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Be(
+		Html.ReplaceLineEndings().TrimEnd().Should().Be(
 			"""
 			<div class="heading-wrapper" id="hello-world"><h2><a class="headerlink" href="#hello-world">Hello world <a id="my-anchor"></a></a></h2>
 			</div>
-			""".TrimEnd()
+			""".ReplaceLineEndings().TrimEnd()
 		);
 }
 
@@ -128,11 +128,11 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Be(
+		Html.ReplaceLineEndings().TrimEnd().Should().Be(
 			"""
 			<div class="heading-wrapper" id="my-anchor"><h2><a class="headerlink" href="#my-anchor">Hello world</a></h2>
 			</div>
-			""".TrimEnd()
+			""".ReplaceLineEndings().TrimEnd()
 		);
 }
 

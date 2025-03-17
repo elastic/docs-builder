@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -63,6 +64,9 @@ public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSyste
 				var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
 				var fullPath = Path.GetFullPath(Path.Combine(sourceDirectory, originalPath));
 				var relativePath = Path.GetRelativePath(targetDirectory, fullPath);
+
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+					relativePath = relativePath.Replace('\\', '/');
 
 				newPath = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativePath.StartsWith("./", OrdinalIgnoreCase)
 					? "./" + relativePath
@@ -258,6 +262,15 @@ public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSyste
 		var absolutStyleSource = $"/{relativeToDocsFolder}";
 		var relativeToDocsFolderTarget = Path.GetRelativePath(documentationSet.SourceDirectory.FullName, targetPath);
 		var absoluteStyleTarget = $"/{relativeToDocsFolderTarget}";
+
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			relativeSource = relativeSource.Replace('\\', '/');
+			relativeSourceWithDotSlash = relativeSourceWithDotSlash.Replace('\\', '/');
+			absolutStyleSource = absolutStyleSource.Replace('\\', '/');
+			absoluteStyleTarget = absoluteStyleTarget.Replace('\\', '/');
+		}
+
 		return (
 			relativeSource,
 			relativeSourceWithDotSlash,
@@ -297,6 +310,9 @@ public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSyste
 						? $"[{match.Groups[1].Value}](./{relativeTarget}{anchor})"
 						: $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
 				}
+
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+					newLink = newLink.Replace('\\', '/');
 
 				var lineNumber = content[..match.Index].Count(c => c == '\n') + 1;
 				var columnNumber = match.Index - content.LastIndexOf('\n', match.Index);
