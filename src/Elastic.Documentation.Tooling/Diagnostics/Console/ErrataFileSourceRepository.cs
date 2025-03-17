@@ -62,6 +62,9 @@ public class ErrataFileSourceRepository : ISourceRepository
 			else
 				d = d.WithNote(item.File);
 
+			if (item.Severity == Severity.Hint)
+				d = d.WithColor(Color.Yellow).WithCategory("Hint");
+
 			_ = report.AddDiagnostic(d);
 		}
 
