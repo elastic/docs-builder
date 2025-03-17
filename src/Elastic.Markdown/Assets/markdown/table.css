@@ -1,42 +1,24 @@
 @layer components {
 	.table-wrapper {
 
-		@apply max-w-full overflow-x-auto my-4;
+		@apply max-w-full overflow-x-scroll my-4;
 
 		table {
-			@apply w-full border-collapse;
+			@apply w-full border-collapse border-1 border-grey-20;
 		}
 		
 		th, td {
-			@apply py-2 px-4 min-w-30;
-		}
-
-		th:first-of-type {
-			border-top-left-radius: var(--radius-sm);
-		}
-		th:last-of-type {
-			border-top-right-radius: var(--radius-sm);
-		}
-		tr:last-of-type td:first-of-type {
-			border-bottom-left-radius: var(--radius-sm);
-		}
-		tr:last-of-type td:last-of-type {
-			border-bottom-right-radius: var(--radius-sm);
+			@apply py-2 px-4 min-w-30 not-first:border-l-1 border-grey-20;
 		}
 		
 		thead {
-			@apply font-semibold text-sm text-left align-top;
+			@apply font-sans font-semibold text-left align-top border-b-1 border-grey-20 bg-grey-10;
 		}
 		
 		tbody {
-			
-			font-family: "Inter", sans-serif;
-			
+			@apply align-top;
 			tr {
-				@apply not-last:border-b-1 border-grey-30 hover:bg-grey-10;
-				/*&:nth-child(odd) {*/
-				/*	@apply bg-grey-10;*/
-				/*}*/
+				@apply not-last:border-b-1 border-grey-20 hover:bg-grey-10;
 			}
 		}
 	}
