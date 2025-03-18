@@ -27,6 +27,7 @@ public class IndexViewModel
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required FeatureFlags Features { get; init; }
+	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 }
 
 public class LayoutViewModel
@@ -66,9 +67,14 @@ public class LayoutViewModel
 
 	public string Static(string path)
 	{
-		path = $"_static/{path.TrimStart('/')}";
-		return $"{UrlPathPrefix}/{path}";
+		var staticPath = $"_static/{path.TrimStart('/')}";
+		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
+		return string.IsNullOrEmpty(contentHash)
+			? $"{UrlPathPrefix}/{staticPath}"
+			: $"{UrlPathPrefix}/{staticPath}?v={contentHash}";
 	}
+
+	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
 	public string Link(string path)
 	{

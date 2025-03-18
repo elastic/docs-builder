@@ -95,6 +95,8 @@ public class DocumentationGenerator
 
 		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
 
+		HintUnusedSubstitutionKeys();
+
 		await ExtractEmbeddedStaticResources(ctx);
 
 		_logger.LogInformation($"Generating documentation compilation state");
@@ -143,6 +145,24 @@ public class DocumentationGenerator
 				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
 		});
 		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
+	}
+
+	private void HintUnusedSubstitutionKeys()
+	{
+		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
+		var keysNotInUse = definedKeys.Except(Context.Collector.InUseSubstitutionKeys).ToArray();
+		// If we have less than 20 unused keys emit them separately
+		// Otherwise emit one hint with all of them for brevity
+		if (keysNotInUse.Length >= 20)
+		{
+			var keys = string.Join(", ", keysNotInUse);
+			Context.Collector.EmitHint(Context.ConfigurationPath.FullName, $"The following keys: '{keys}' are not used in any file");
+		}
+		else
+		{
+			foreach (var key in keysNotInUse)
+				Context.Collector.EmitHint(Context.ConfigurationPath.FullName, $"Substitution key '{key}' is not used in any file");
+		}
 	}
 
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)

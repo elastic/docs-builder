@@ -13,12 +13,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 using Westwind.AspNetCore.LiveReload;
-using IFileInfo = Microsoft.Extensions.FileProviders.IFileInfo;
 
 namespace Documentation.Builder.Http;
 
@@ -182,76 +179,5 @@ public class DocumentationWebHost
 				}
 				return Results.NotFound();
 		}
-	}
-}
-
-
-public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
-{
-	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(BuildContext).Assembly, "Elastic.Markdown._static");
-	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
-
-	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
-
-	public EmbeddedOrPhysicalFileProvider(BuildContext context)
-	{
-		var documentationStaticFiles = Path.Combine(context.DocumentationSourceDirectory.FullName, "_static");
-#if DEBUG
-		// this attempts to serve files directly from their source rather than the embedded resources during development.
-		// this allows us to change js/css files without restarting the webserver
-		var solutionRoot = Paths.GetSolutionDirectory();
-		if (solutionRoot != null)
-		{
-
-			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
-			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
-		}
-#else
-		_staticWebFilesDuringDebug = null;
-#endif
-		if (context.ReadFileSystem.Directory.Exists(documentationStaticFiles))
-			_staticFilesInDocsFolder = new PhysicalFileProvider(documentationStaticFiles);
-	}
-
-	private T? FirstYielding<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate) =>
-		Yield(arg, predicate, _staticWebFilesDuringDebug) ?? Yield(arg, predicate, _staticFilesInDocsFolder);
-
-	private static T? Yield<T>(string arg, Func<string, PhysicalFileProvider, T?> predicate, PhysicalFileProvider? provider)
-	{
-		if (provider is null)
-			return default;
-		var result = predicate(arg, provider);
-		return result ?? default;
-	}
-
-	public IDirectoryContents GetDirectoryContents(string subpath)
-	{
-		var contents = FirstYielding(subpath, static (a, p) => p.GetDirectoryContents(a));
-		if (contents is null || !contents.Exists)
-			contents = _embeddedProvider.GetDirectoryContents(subpath);
-		return contents;
-	}
-
-	public IFileInfo GetFileInfo(string subpath)
-	{
-		var path = subpath.Replace($"{Path.DirectorySeparatorChar}_static", "");
-		var fileInfo = FirstYielding(path, static (a, p) => p.GetFileInfo(a));
-		if (fileInfo is null || !fileInfo.Exists)
-			fileInfo = _embeddedProvider.GetFileInfo(subpath);
-		return fileInfo;
-	}
-
-	public IChangeToken Watch(string filter)
-	{
-		var changeToken = FirstYielding(filter, static (f, p) => p.Watch(f));
-		if (changeToken is null or NullChangeToken)
-			changeToken = _embeddedProvider.Watch(filter);
-		return changeToken;
-	}
-
-	public void Dispose()
-	{
-		_staticFilesInDocsFolder?.Dispose();
-		_staticWebFilesDuringDebug?.Dispose();
 	}
 }

@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Helpers;
@@ -22,32 +23,26 @@ public static class Interpolation
 	)
 	{
 		var span = input.AsSpan();
-		return span.ReplaceSubstitutions([context.Substitutions, context.ContextSubstitutions], out var replacement)
+		return span.ReplaceSubstitutions([context.Substitutions, context.ContextSubstitutions], context.Build.Collector, out var replacement)
 			? replacement : input;
 	}
-
-
-	public static bool ReplaceSubstitutions(
-		this ReadOnlySpan<char> span,
-		ParserContext context,
-		[NotNullWhen(true)] out string? replacement
-	) =>
-		span.ReplaceSubstitutions([context.Substitutions, context.ContextSubstitutions], out replacement);
 
 	public static bool ReplaceSubstitutions(
 		this ReadOnlySpan<char> span,
 		IReadOnlyDictionary<string, string>? properties,
+		DiagnosticsCollector? collector,
 		[NotNullWhen(true)] out string? replacement
 	)
 	{
 		replacement = null;
 		return properties is not null && properties.Count != 0 &&
-			span.IndexOf("}}") >= 0 && span.ReplaceSubstitutions([properties], out replacement);
+			span.IndexOf("}}") >= 0 && span.ReplaceSubstitutions([properties], collector, out replacement);
 	}
 
-	public static bool ReplaceSubstitutions(
+	private static bool ReplaceSubstitutions(
 		this ReadOnlySpan<char> span,
 		IReadOnlyDictionary<string, string>[] properties,
+		DiagnosticsCollector? collector,
 		[NotNullWhen(true)] out string? replacement
 	)
 	{
@@ -77,6 +72,8 @@ public static class Interpolation
 			{
 				if (!lookup.TryGetValue(key, out var value))
 					continue;
+
+				collector?.CollectUsedSubstitutionKey(key);
 
 				replacement ??= span.ToString();
 				replacement = replacement.Replace(spanMatch.ToString(), value);

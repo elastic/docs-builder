@@ -58,7 +58,8 @@ Through various means $$$including-this-inline-syntax$$$
          "origin": {
            "branch": "test-e35fcb27-5f60-4e",
            "remote": "elastic/docs-builder",
-           "ref": "e35fcb27-5f60-4e"
+           "ref": "e35fcb27-5f60-4e",
+           "name": "docs-builder"
          },
          "url_path_prefix": "",
          "links": {
