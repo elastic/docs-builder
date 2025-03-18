@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -10,12 +11,12 @@ namespace Elastic.Markdown.Helpers;
 
 public static partial class FontPreloader
 {
-	private static List<string>? FontUriCache = null!;
+	private static IReadOnlyCollection<string>? FontUriCache = null!;
 
-	public static async Task<IEnumerable<string>> GetFontUrisAsync() => FontUriCache ??= await LoadFontUrisAsync();
-	public static async Task<List<string>> LoadFontUrisAsync()
+	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync() => FontUriCache ??= await LoadFontUrisAsync();
+	public static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync()
 	{
-		FontUriCache = [];
+		var cachedFontUris = new List<string>();
 		var assembly = Assembly.GetExecutingAssembly();
 		var stylesResourceName = assembly.GetManifestResourceNames().First(n => n.EndsWith("styles.css"));
 
@@ -27,11 +28,12 @@ public static partial class FontPreloader
 		foreach (Match match in matches)
 		{
 			if (match.Success)
-				FontUriCache.Add($"/_static/{match.Groups[1].Value}");
+				cachedFontUris.Add($"/_static/{match.Groups[1].Value}");
 		}
+		FontUriCache = cachedFontUris;
 		return FontUriCache;
 	}
 
-	[GeneratedRegex(@"url\([""']?([^""'\)]+)[""']?\)", RegexOptions.Multiline | RegexOptions.Compiled)]
+	[GeneratedRegex(@"url\([""']?([^""'\)]+?\.(woff2|ttf|otf))[""']?\)", RegexOptions.Multiline | RegexOptions.Compiled)]
 	private static partial Regex FontUriRegex();
 }
