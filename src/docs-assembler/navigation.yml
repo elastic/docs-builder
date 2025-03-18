@@ -218,9 +218,17 @@ toc:
       - toc: docs-content://reference/ingestion-tools
         path_prefix: reference/ingestion-tools
         children:
-          # Elasticsearch (TODO discuss with Colleen)
+          # I don't know (TODO discuss with Colleen)
           - toc: elasticsearch://reference/ingestion-tools/enrich-processor
             path_prefix: reference/elasticsearch/enrich-processor
+          - toc: elasticsearch://reference/ingestion-tools/search-connectors
+            path_prefix: reference/elasticsearch/search-connectors
+          - toc: elasticsearch://reference/data-analysis
+            path_prefix: reference/elasticsearch/data-analysis
+          - toc: security-docs://reference/prebuilt-rules
+            path_prefix: reference/prebuilt-rules
+          - toc: elasticsearch://reference
+            path_prefix: reference/elasticsearch
 
           # Fleet and Elastic Agent
           # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/fleet/toc.yml
