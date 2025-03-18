@@ -15,7 +15,6 @@ namespace Documentation.Assembler.Tests;
 
 public class GlobalNavigationTests
 {
-
 	[Fact]
 	public async Task ParsesGlobalNavigation()
 	{
@@ -25,7 +24,18 @@ public class GlobalNavigationTests
 		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null);
 		var globalNavigation = GlobalNavigationFile.Deserialize(assembleContext);
 		globalNavigation.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
+		var docsContentKeys = globalNavigation.IndexedTableOfContents.Keys
+			.Where(k => k.StartsWith("docs-content://", StringComparison.Ordinal)).ToArray();
+		docsContentKeys.Should().Contain("docs-content://solutions/");
 	}
+
+	public static Checkout CreateCheckout(IFileSystem fs, string name) =>
+		new()
+		{
+			Repository = new Repository { Name = name, Origin = $"elastic/{name}" },
+			HeadReference = Guid.NewGuid().ToString(),
+			Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", name))
+		};
 
 	[Fact]
 	public async Task UriResolving()
@@ -37,32 +47,9 @@ public class GlobalNavigationTests
 		var assembleContext = new AssembleContext(collector, fs, fs, null, null);
 		var globalNavigationFile = GlobalNavigationFile.Deserialize(assembleContext);
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
-		var globalNavigation = new GlobalNavigation(assembleContext, globalNavigationFile, [
-			new Checkout
-			{
-				Repository = new Repository { Name = "docs-content", Origin = "elastic/docs-content"},
-				HeadReference = Guid.NewGuid().ToString(),
-				Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", "docs-content"))
-			},
-			new Checkout
-			{
-				Repository = new Repository { Name = "curator", Origin = "elastic/curator"},
-				HeadReference = Guid.NewGuid().ToString(),
-				Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", "curator"))
-			},
-			new Checkout
-			{
-				Repository = new Repository { Name = "elasticsearch-net", Origin = "elastic/elasticsearch-net"},
-				HeadReference = Guid.NewGuid().ToString(),
-				Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", "elasticsearch-net"))
-			},
-			new Checkout
-			{
-				Repository = new Repository { Name = "elasticsearch", Origin = "elastic/elasticsearch"},
-				HeadReference = Guid.NewGuid().ToString(),
-				Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", "elasticsearch"))
-			}
-		]);
+		string[] repos = ["docs-content", "curator", "elasticsearch-net", "elasticsearch"];
+		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
+		var globalNavigation = new GlobalNavigation(assembleContext, globalNavigationFile, checkouts);
 
 		var env = assembleContext.Configuration.Environments["production"];
 		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, env);

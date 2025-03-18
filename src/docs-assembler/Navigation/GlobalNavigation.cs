@@ -4,13 +4,16 @@
 
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Sourcing;
+using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 
 namespace Documentation.Assembler.Navigation;
 
-public record GlobalNavigation
+public record GlobalNavigation : IDocumentationFileOutputProvider
 {
 	private readonly AssembleContext _context;
 	private readonly FrozenDictionary<string, Checkout>.AlternateLookup<ReadOnlySpan<char>> _checkoutsLookup;
@@ -45,13 +48,13 @@ public record GlobalNavigation
 
 	public string GetSubPath(Uri crossLinkUri, ref string path)
 	{
-		if (!_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out var checkout))
+		if (!_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out _))
 		{
-			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find checkout for repository: {crossLinkUri.Scheme}");
-			// fallback to repository path prefix
-			if (_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out var repository))
-				return repository.PathPrefix ?? $"reference/{repository.Name}";
-			return $"reference/{crossLinkUri.Scheme}";
+			_context.Collector.EmitError(_context.ConfigurationPath,
+				!_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out _)
+					? $"Repository: '{crossLinkUri.Scheme}' is not defined in assembler.yml"
+					: $"Unable to find checkout for repository: {crossLinkUri.Scheme}"
+			);
 		}
 		var lookup = crossLinkUri.ToString().AsSpan();
 		if (lookup.EndsWith(".md", StringComparison.Ordinal))
@@ -73,5 +76,22 @@ public record GlobalNavigation
 		path = path.AsSpan().TrimStart(toc.SourcePrefix).ToString();
 
 		return toc.PathPrefix;
+	}
+
+	public IFileInfo OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
+	{
+		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
+			return defaultOutputFile;
+
+		var outputDirectory = documentationSet.OutputDirectory;
+		var match = TableOfContentsPrefixes.FirstOrDefault(prefix => relativePath.StartsWith(prefix, StringComparison.Ordinal));
+		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
+		{
+			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for output file: {documentationSet.Name}://{relativePath}");
+			return defaultOutputFile;
+		}
+		var fs = defaultOutputFile.FileSystem;
+		var path = fs.Path.Combine(outputDirectory.FullName, toc.PathPrefix, relativePath);
+		return fs.FileInfo.New(path);
 	}
 }

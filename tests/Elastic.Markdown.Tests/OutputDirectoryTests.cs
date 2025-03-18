@@ -27,6 +27,7 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(TestContext.Current.CancellationToken);
+		await generator.StopDiagnosticCollection(TestContext.Current.CancellationToken);
 
 		fileSystem.Directory.Exists(".artifacts").Should().BeTrue();
 

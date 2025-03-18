@@ -39,15 +39,6 @@ public record BuildContext
 		init => _urlPathPrefix = value;
 	}
 
-	private readonly string? _staticUrlPathPrefix;
-	public string? StaticUrlPathPrefix
-	{
-		get => !string.IsNullOrWhiteSpace(_staticUrlPathPrefix)
-			? $"/{_staticUrlPathPrefix.Trim('/')}"
-			: UrlPathPrefix;
-		init => _staticUrlPathPrefix = value;
-	}
-
 	public BuildContext(IFileSystem fileSystem)
 		: this(new DiagnosticsCollector([]), fileSystem, fileSystem, null, null) { }
 

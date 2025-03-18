@@ -20,8 +20,14 @@ public interface IConversionCollector
 	void Collect(MarkdownFile file, MarkdownDocument document, string html);
 }
 
+public interface IDocumentationFileOutputProvider
+{
+	IFileInfo OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath);
+}
+
 public class DocumentationGenerator
 {
+	private readonly IDocumentationFileOutputProvider? _documentationFileOutputProvider;
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
@@ -34,10 +40,12 @@ public class DocumentationGenerator
 	public DocumentationGenerator(
 		DocumentationSet docSet,
 		ILoggerFactory logger,
+		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null
 	)
 	{
+		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_writeFileSystem = docSet.Build.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
@@ -89,17 +97,19 @@ public class DocumentationGenerator
 
 		await ExtractEmbeddedStaticResources(ctx);
 
-		_logger.LogInformation($"Completing diagnostics channel");
-		Context.Collector.Channel.TryComplete();
-
 		_logger.LogInformation($"Generating documentation compilation state");
 		await GenerateDocumentationState(ctx);
 
 		_logger.LogInformation($"Generating links.json");
 		await GenerateLinkReference(ctx);
+	}
+
+	public async Task StopDiagnosticCollection(Cancel ctx)
+	{
+		_logger.LogInformation($"Completing diagnostics channel");
+		Context.Collector.Channel.TryComplete();
 
 		_logger.LogInformation($"Completing diagnostics channel");
-
 		await Context.Collector.StopAsync(ctx);
 
 		_logger.LogInformation($"Completed diagnostics channel");
@@ -173,7 +183,12 @@ public class DocumentationGenerator
 	private IFileInfo OutputFile(string relativePath)
 	{
 		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
-		return outputFile;
+		if (relativePath.StartsWith("_static"))
+			return outputFile;
+
+		return _documentationFileOutputProvider is not null
+			? _documentationFileOutputProvider.OutputFile(DocumentationSet, outputFile, relativePath)
+			: outputFile;
 	}
 
 	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,

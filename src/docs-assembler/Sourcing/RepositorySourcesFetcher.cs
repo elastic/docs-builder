@@ -44,13 +44,6 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		var dict = new ConcurrentDictionary<string, Stopwatch>();
 		var checkouts = new ConcurrentBag<Checkout>();
 
-		if (context.OutputDirectory.Exists)
-		{
-			_logger.LogInformation("Cleaning output directory: {OutputDirectory}", context.OutputDirectory.FullName);
-			context.OutputDirectory.Delete(true);
-		}
-
-
 		_logger.LogInformation("Cloning narrative content: {Repository}", NarrativeRepository.RepositoryName);
 		var checkout = CloneOrUpdateRepository(Configuration.Narrative, NarrativeRepository.RepositoryName, dict);
 		checkouts.Add(checkout);

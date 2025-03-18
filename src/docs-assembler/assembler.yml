@@ -15,6 +15,9 @@ environments:
 narrative:
   checkout_strategy: full
 references:
+  #TODO TEMPORARY REMOVE
+  asciidocalypse:
+    skip: true
   apm-agent-android:
   apm-agent-dotnet:
   apm-agent-go:

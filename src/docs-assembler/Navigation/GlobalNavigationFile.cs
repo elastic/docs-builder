@@ -60,9 +60,9 @@ public record GlobalNavigationFile
 
 	private static IEnumerable<TableOfContentsReference> YieldAll(TableOfContentsReference toc)
 	{
+		yield return toc;
 		foreach (var tocEntry in toc.Children)
 		{
-			yield return tocEntry;
 			foreach (var child in YieldAll(tocEntry))
 				yield return child;
 		}
@@ -90,8 +90,6 @@ public record GlobalNavigationFile
 			if (child is not null)
 				entries.Add(child);
 		}
-
-		//TableOfContents = entries;
 		return entries;
 	}
 
@@ -100,7 +98,6 @@ public record GlobalNavigationFile
 		string? source = null;
 		string? pathPrefix = null;
 		IReadOnlyCollection<TableOfContentsReference>? children = null;
-		Uri? sourceUri;
 		foreach (var entry in tocEntry.Children)
 		{
 			var key = ((YamlScalarNode)entry.Key).Value;
@@ -123,11 +120,6 @@ public record GlobalNavigationFile
 						reader.EmitWarning("toc entry has no toc or path_prefix defined");
 						continue;
 					}
-					if (string.IsNullOrEmpty(pathPrefix) && !Uri.TryCreate(source, UriKind.Absolute, out sourceUri))
-					{
-						reader.EmitWarning($"Source toc entry is not a valid uri: {source}");
-						return null;
-					}
 					children = ReadChildren(reader, entry);
 					break;
 			}
@@ -136,7 +128,7 @@ public record GlobalNavigationFile
 		if (source is null)
 			return null;
 
-		if (!Uri.TryCreate(source, UriKind.Absolute, out sourceUri))
+		if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
 		{
 			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 			return null;

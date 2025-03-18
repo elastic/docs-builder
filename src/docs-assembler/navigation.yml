@@ -41,7 +41,9 @@ toc:
   - toc: release-notes
     children:
       - toc: elasticsearch://release-notes
+        path_prefix: release-notes/elasticsearch
       - toc: docs-content://release-notes/apm
+        path_prefix: release-notes/apm
 
   #############
   # REFERENCE #
@@ -338,6 +340,7 @@ toc:
       # ECS
       # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/ecs/toc.yml
       - toc: docs-content://reference/ecs
+        path_prefix: reference/ecs
         children:
           # ECS reference
           # ✅ https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
@@ -450,3 +453,4 @@ toc:
       # Glossary
       # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/glossary/toc.yml
       - toc: docs-content://reference/glossary
+        path_prefix: reference/glossary
