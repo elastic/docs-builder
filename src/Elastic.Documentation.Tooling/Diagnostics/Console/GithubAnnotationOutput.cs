@@ -27,5 +27,7 @@ public class GithubAnnotationOutput(ICoreService? githubActions) : IDiagnosticsO
 			githubActions.WriteError(diagnostic.Message, properties);
 		if (diagnostic.Severity == Severity.Warning)
 			githubActions.WriteWarning(diagnostic.Message, properties);
+		if (diagnostic.Severity == Severity.Hint)
+			githubActions.WriteNotice(diagnostic.Message, properties);
 	}
 }

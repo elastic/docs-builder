@@ -14,7 +14,7 @@ public class InterpolationTests
 	{
 		var span = "My text {{with-variables}} {{not-defined}}".AsSpan();
 		var replacements = new Dictionary<string, string> { { "with-variables", "With Variables" } };
-		var replaced = span.ReplaceSubstitutions(replacements, out var replacement);
+		var replaced = span.ReplaceSubstitutions(replacements, null, out var replacement);
 
 		replaced.Should().BeTrue();
 		replacement.Should().Be("My text With Variables {{not-defined}}");
@@ -25,7 +25,7 @@ public class InterpolationTests
 	{
 		var span = "My text {{not-defined}}".AsSpan();
 		var replacements = new Dictionary<string, string> { { "with-variables", "With Variables" } };
-		var replaced = span.ReplaceSubstitutions(replacements, out var replacement);
+		var replaced = span.ReplaceSubstitutions(replacements, null, out var replacement);
 
 		replaced.Should().BeFalse();
 		// no need to allocate replacement we can continue with span
