@@ -1,11 +1,11 @@
 
-## **How do I know where to contribute?**
+# **How do I know where to contribute?**
 
 The easiest way to find the source file for the page you want to update is to navigate to the page on the web and click **Edit this page**. This will take you to the source file in the correct repo.
 
 The following outlines the general guidelines though to help you determine where the content might be living.
 
-### **9.0+ content**
+## **9.0+ content**
 
 For all 9.0+ content, it lives in one of three spots:
 
@@ -13,7 +13,7 @@ For all 9.0+ content, it lives in one of three spots:
 2. **Narrative/conceptual and overview content** lives in [elastic/docs-content](https://github.com/elastic/docs-content). As an example the [ES|QL overview](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/explore-analyze/query-filter/languages/esql) lives in the **Explore & Analyze** section of the narrative docs. But the reference documentation lives in the reference section of the docs [ES|QL reference](https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/reference/query-languages/esql)  
 3. **API reference docs** live in the different OpenAPI spec repositories. This is where you need to update API docs published in the new API docs system
 
-### **All content prior to 9.0+**
+## **All content prior to 9.0+**
 
 If you are working in 8.x or below, you will use the existing asciidoc system. This means that if you need to update documentation for both 8.x and 9.x, you will have to work in two systems. See [What if I need to update both 8.x and 9.x docs?](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/on-the-web#what-if-i-need-to-update-both-8.x-and-9.x-docs) for the processes on updating docs across different versions.
 
