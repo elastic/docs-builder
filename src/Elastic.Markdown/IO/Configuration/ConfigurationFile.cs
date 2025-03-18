@@ -51,7 +51,7 @@ public record ConfigurationFile : DocumentationFile
 	// TODO ensure project key is `docs-content`
 	private bool IsNarrativeDocs =>
 		_context.Configuration.Project is not null
-	    && _context.Configuration.Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
+		&& _context.Configuration.Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
 	public ConfigurationFile(BuildContext context)
 		: base(context.ConfigurationPath, context.DocumentationSourceDirectory)
@@ -157,6 +157,4 @@ public record ConfigurationFile : DocumentationFile
 
 		return list.AsReadOnly();
 	}
-
-
 }
