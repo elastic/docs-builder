@@ -78,19 +78,36 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 		return toc.PathPrefix;
 	}
 
-	public IFileInfo OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
+	public IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
 	{
 		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
 			return defaultOutputFile;
 
 		var outputDirectory = documentationSet.OutputDirectory;
-		var match = TableOfContentsPrefixes.FirstOrDefault(prefix => relativePath.StartsWith(prefix, StringComparison.Ordinal));
+		var fs = defaultOutputFile.FileSystem;
+		var relativePathSpan = relativePath.AsSpan();
+
+		var lookup = $"{documentationSet.Name}://{relativePath}";
+		var match = TableOfContentsPrefixes.FirstOrDefault(prefix => lookup.StartsWith(prefix, StringComparison.Ordinal));
 		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
 		{
-			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for output file: {documentationSet.Name}://{relativePath}");
-			return defaultOutputFile;
+			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
+				return null;
+			if (relativePath.StartsWith("images/", StringComparison.Ordinal))
+				return null;
+			if (relativePath.StartsWith("examples/", StringComparison.Ordinal))
+				return null;
+			if (relativePath.StartsWith("docset.yml", StringComparison.Ordinal))
+				return null;
+			if (relativePath.StartsWith("doc_examples", StringComparison.Ordinal))
+				return null;
+			if (relativePath.EndsWith(".asciidoc", StringComparison.Ordinal))
+				return null;
+
+			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", documentationSet.Name, relativePath);
+			_context.Collector.EmitError(_context.NavigationPath, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
+			return fs.FileInfo.New(fallBack);
 		}
-		var fs = defaultOutputFile.FileSystem;
 		var path = fs.Path.Combine(outputDirectory.FullName, toc.PathPrefix, relativePath);
 		return fs.FileInfo.New(path);
 	}

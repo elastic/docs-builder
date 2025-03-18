@@ -22,7 +22,7 @@ public interface IConversionCollector
 
 public interface IDocumentationFileOutputProvider
 {
-	IFileInfo OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath);
+	IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath);
 }
 
 public class DocumentationGenerator
@@ -180,6 +180,8 @@ public class DocumentationGenerator
 			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			var outputFile = OutputFile(path);
+			if (outputFile is null)
+				continue;
 			await _documentationFileExporter.CopyEmbeddedResource(outputFile, resourceStream, ctx);
 			_logger.LogDebug("Copied static embedded resource {Path}", path);
 		}
@@ -197,10 +199,11 @@ public class DocumentationGenerator
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
 		var outputFile = OutputFile(file.RelativePath);
-		await _documentationFileExporter.ProcessFile(file, outputFile, token);
+		if (outputFile is not null)
+			await _documentationFileExporter.ProcessFile(file, outputFile, token);
 	}
 
-	private IFileInfo OutputFile(string relativePath)
+	private IFileInfo? OutputFile(string relativePath)
 	{
 		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
 		if (relativePath.StartsWith("_static"))

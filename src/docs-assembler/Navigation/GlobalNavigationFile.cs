@@ -35,7 +35,7 @@ public record GlobalNavigationFile
 				switch (entry.Key)
 				{
 					case "toc":
-						var toc = ReadChildren(reader, entry.Entry);
+						var toc = ReadChildren(reader, entry.Entry, null);
 						var indexed = toc
 							.SelectMany(YieldAll)
 							.ToDictionary(t => t.Source.ToString(), t => t)
@@ -68,33 +68,34 @@ public record GlobalNavigationFile
 		}
 	}
 
-	private static IReadOnlyCollection<TableOfContentsReference> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry)
+	private static IReadOnlyCollection<TableOfContentsReference> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parent)
 	{
 		var entries = new List<TableOfContentsReference>();
+		if (entry.Key is not YamlScalarNode { Value: { } key } scalarKey)
+		{
+			reader.EmitWarning($"key '{entry.Key}' is not string");
+			return [];
+		}
+
 		if (entry.Value is not YamlSequenceNode sequence)
 		{
-			if (entry.Key is YamlScalarNode scalarKey)
-			{
-				var key = scalarKey.Value;
-				reader.EmitWarning($"'{key}' is not an array");
-			}
-			else
-				reader.EmitWarning($"'{entry.Key}' is not an array");
-
-			return entries;
+			reader.EmitWarning($"'{scalarKey.Value}' is not an array");
+			return [];
 		}
 
 		foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
 		{
-			var child = ReadChild(reader, tocEntry);
+			var child = ReadChild(reader, tocEntry, parent);
 			if (child is not null)
 				entries.Add(child);
 		}
+
 		return entries;
 	}
 
-	private static TableOfContentsReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry)
+	private static TableOfContentsReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent)
 	{
+		string? repository = null;
 		string? source = null;
 		string? pathPrefix = null;
 		IReadOnlyCollection<TableOfContentsReference>? children = null;
@@ -107,9 +108,14 @@ public record GlobalNavigationFile
 					source = reader.ReadString(entry);
 					if (source.AsSpan().IndexOf("://") == -1)
 					{
+						parent = source;
 						source = $"{NarrativeRepository.RepositoryName}://{source}";
 						pathPrefix = source;
 					}
+
+					break;
+				case "repo":
+					repository = reader.ReadString(entry);
 					break;
 				case "path_prefix":
 					pathPrefix = reader.ReadString(entry);
@@ -120,9 +126,20 @@ public record GlobalNavigationFile
 						reader.EmitWarning("toc entry has no toc or path_prefix defined");
 						continue;
 					}
-					children = ReadChildren(reader, entry);
+
+					children = ReadChildren(reader, entry, parent);
 					break;
 			}
+		}
+
+		if (repository is not null)
+		{
+			if (source is not null)
+				reader.EmitError($"toc config defines 'repo' can not be combined with 'toc': {source}", tocEntry);
+			if (children is not null)
+				reader.EmitError($"toc config defines 'repo' can not be combined with 'children'", tocEntry);
+			pathPrefix = string.Join("/", [parent, repository]);
+			source = $"{repository}://{parent}";
 		}
 
 		if (source is null)
@@ -133,6 +150,7 @@ public record GlobalNavigationFile
 			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 			return null;
 		}
+
 		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
 		if (string.IsNullOrEmpty(pathPrefix))
 			reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
@@ -146,6 +164,5 @@ public record GlobalNavigationFile
 			Children = children ?? [],
 			PathPrefix = pathPrefix
 		};
-
 	}
 }

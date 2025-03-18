@@ -40,10 +40,14 @@ toc:
   # I didn't touch this section (yet?)
   - toc: release-notes
     children:
-      - toc: elasticsearch://release-notes
-        path_prefix: release-notes/elasticsearch
-      - toc: docs-content://release-notes/apm
-        path_prefix: release-notes/apm
+      # repo is short for
+      # - toc: <repo>://<parent_toc>
+      #   path_prefix: <parent_toc>/<repo>
+      - repo: elasticsearch
+      - repo: apm
+      - repo: apm-agent-android
+      - repo: apm-agent-go
+      - repo: apm-agent-dotnet
 
   #############
   # REFERENCE #
@@ -108,7 +112,7 @@ toc:
 
               # Eland
               # ✅ https://github.com/elastic/eland/blob/main/docs/reference/toc.yml
-              - toc: eland/docs/reference
+              - toc: eland://reference
                 path_prefix: reference/elasticsearch/clients/eland
                 # Children include the entire AsciiDoc book
 

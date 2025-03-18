@@ -46,21 +46,25 @@ public record GitCheckoutInformation
 		}
 
 		var fakeRef = Guid.NewGuid().ToString()[..16];
-		var gitConfig = Git(source, ".git/config");
+		var gitConfig = Git(source, Path.Combine(".git", "config"));
 		if (!gitConfig.Exists)
 		{
-			logger?.LogInformation("Git checkout information not available.");
-			return Unavailable;
+			gitConfig = Git(source, Path.Combine("..", ".git", "config"));
+			if (!gitConfig.Exists)
+			{
+				logger?.LogInformation("Git checkout information not available.");
+				return Unavailable;
+			}
 		}
 
-		var head = Read(source, ".git/HEAD") ?? fakeRef;
+		var head = Read(source, Path.Combine(".git", "HEAD")) ?? fakeRef;
 		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
 		//not detached HEAD
 		if (head.StartsWith("ref:"))
 		{
 			head = head.Replace("ref: ", string.Empty);
-			gitRef = Read(source, ".git/" + head) ?? fakeRef;
+			gitRef = Read(source, Path.Combine(".git", head)) ?? fakeRef;
 			branch = branch.Replace("ref: ", string.Empty);
 		}
 		else
