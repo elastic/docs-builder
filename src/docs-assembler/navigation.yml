@@ -25,10 +25,14 @@ toc:
   - toc: extend
     children:
       - toc: kibana://extend
+        path_prefix: extend/kibana
       - toc: logstash://extend
+        path_prefix: extend/logstash
       - toc: elasticsearch://extend
-      #- toc: beats://extend
+        path_prefix: extend/elasticsearch
       - toc: integrations://extend
+        path_prefix: extend/integrations
+      #- toc: beats://extend
 
   #################
   # RELEASE NOTES #
@@ -78,6 +82,7 @@ toc:
       # Elasticsearch and index management
       # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/elasticsearch/toc.yml
       - toc: docs-content://reference/elasticsearch
+        path_prefix: reference/elasticsearch
         children:
           # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
           # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/elasticsearch/toc.yml

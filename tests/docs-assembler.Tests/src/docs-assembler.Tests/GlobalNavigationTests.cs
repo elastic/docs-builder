@@ -55,6 +55,12 @@ public class GlobalNavigationTests
 				Repository = new Repository { Name = "elasticsearch-net", Origin = "elastic/elasticsearch-net"},
 				HeadReference = Guid.NewGuid().ToString(),
 				Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", "elasticsearch-net"))
+			},
+			new Checkout
+			{
+				Repository = new Repository { Name = "elasticsearch", Origin = "elastic/elasticsearch"},
+				HeadReference = Guid.NewGuid().ToString(),
+				Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", "elasticsearch"))
 			}
 		]);
 
@@ -69,8 +75,10 @@ public class GlobalNavigationTests
 		resolvedURi = uriResolver.Resolve(new Uri("curator://reference/a/file.md"), "/reference/a/file");
 		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/curator/a/file");
 
-		//path_prefix: reference/elasticsearch/clients/net
 		resolvedURi = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
 		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/net/b/file");
+
+		resolvedURi = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
+		resolvedURi.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
 }

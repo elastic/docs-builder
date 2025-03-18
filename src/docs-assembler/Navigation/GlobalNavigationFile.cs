@@ -100,7 +100,7 @@ public record GlobalNavigationFile
 		string? source = null;
 		string? pathPrefix = null;
 		IReadOnlyCollection<TableOfContentsReference>? children = null;
-		Uri? sourceUri = null;
+		Uri? sourceUri;
 		foreach (var entry in tocEntry.Children)
 		{
 			var key = ((YamlScalarNode)entry.Key).Value;
@@ -109,7 +109,10 @@ public record GlobalNavigationFile
 				case "toc":
 					source = reader.ReadString(entry);
 					if (source.AsSpan().IndexOf("://") == -1)
+					{
 						source = $"{NarrativeRepository.RepositoryName}://{source}";
+						pathPrefix = source;
+					}
 					break;
 				case "path_prefix":
 					pathPrefix = reader.ReadString(entry);
@@ -135,11 +138,13 @@ public record GlobalNavigationFile
 
 		if (!Uri.TryCreate(source, UriKind.Absolute, out sourceUri))
 		{
-			reader.EmitWarning($"Source toc entry is not a valid uri: {source}");
+			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 			return null;
 		}
-
 		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
+		if (string.IsNullOrEmpty(pathPrefix))
+			reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
+
 		pathPrefix ??= sourcePrefix;
 
 		return new TableOfContentsReference
