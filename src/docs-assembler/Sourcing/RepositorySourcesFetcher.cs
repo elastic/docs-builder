@@ -89,7 +89,7 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		{
 			_logger.LogInformation("Pull: {Name}\t{Repository}\t{RelativePath}", name, repository, relativePath);
 			// --allow-unrelated-histories due to shallow clones not finding a common ancestor
-			ExecIn(checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff");
+			ExecIn(name, checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff");
 			head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
 		}
 		else
@@ -97,20 +97,20 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 			_logger.LogInformation("Checkout: {Name}\t{Repository}\t{RelativePath}", name, repository, relativePath);
 			if (repository.CheckoutStrategy == "full")
 			{
-				Exec("git", "clone", repository.Origin, checkoutFolder.FullName,
+				Exec(name, "git", "clone", repository.Origin, checkoutFolder.FullName,
 					"--depth", "1", "--single-branch",
 					"--branch", repository.CurrentBranch
 				);
 			}
 			else if (repository.CheckoutStrategy == "partial")
 			{
-				Exec(
+				Exec(name,
 					"git", "clone", "--filter=blob:none", "--no-checkout", repository.Origin, checkoutFolder.FullName
 				);
 
-				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "--cone");
-				ExecIn(checkoutFolder, "git", "checkout", repository.CurrentBranch);
-				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
+				ExecIn(name, checkoutFolder, "git", "sparse-checkout", "set", "--cone");
+				ExecIn(name, checkoutFolder, "git", "checkout", repository.CurrentBranch);
+				ExecIn(name, checkoutFolder, "git", "sparse-checkout", "set", "docs");
 				head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
 			}
 		}
@@ -125,17 +125,17 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		};
 	}
 
-	private void Exec(string binary, params string[] args) => ExecIn(null, binary, args);
+	private void Exec(string name, string binary, params string[] args) => ExecIn(name, null, binary, args);
 
-	private void ExecIn(IDirectoryInfo? workingDirectory, string binary, params string[] args)
+	private void ExecIn(string name, IDirectoryInfo? workingDirectory, string binary, params string[] args)
 	{
-		var arguments = new ExecArguments(binary, args)
+		var arguments = new StartArguments(binary, args)
 		{
 			WorkingDirectory = workingDirectory?.FullName
 		};
-		var result = Proc.Exec(arguments);
-		if (result != 0)
-			context.Collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+		var result = Proc.StartRedirected(arguments, new ConsoleLineHandler(_logger, name));
+		if (result.ExitCode != 0)
+			context.Collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 	}
 
 	private string Capture(IDirectoryInfo? workingDirectory, string binary, params string[] args)
