@@ -44,6 +44,10 @@ public record ConfigurationFile : DocumentationFile
 	private FeatureFlags? _featureFlags;
 	public FeatureFlags Features => _featureFlags ??= new FeatureFlags(_features);
 
+	/// This is a documentation set that is not linked to by assembler.
+	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
+	public bool DevelopmentDocs { get; }
+
 	public ConfigurationFile(BuildContext context)
 		: base(context.ConfigurationPath, context.DocumentationSourceDirectory)
 	{
@@ -73,6 +77,9 @@ public record ConfigurationFile : DocumentationFile
 						break;
 					case "max_toc_depth":
 						MaxTocDepth = int.TryParse(reader.ReadString(entry.Entry), out var maxTocDepth) ? maxTocDepth : 1;
+						break;
+					case "dev_docs":
+						DevelopmentDocs = bool.TryParse(reader.ReadString(entry.Entry), out var devDocs) && devDocs;
 						break;
 					case "exclude":
 						var excludes = YamlStreamReader.ReadStringArray(entry.Entry);
@@ -111,8 +118,11 @@ public record ConfigurationFile : DocumentationFile
 				{
 					case "toc":
 						var toc = new TableOfContentsConfiguration(this, _context, 0, "");
-						var entries = toc.ReadChildren(reader, entry.Entry);
-						TableOfContents = entries;
+						var children = toc.ReadChildren(reader, entry.Entry);
+						var tocEntries = children.OfType<TocReference>().ToArray();
+						if (!DevelopmentDocs && tocEntries.Length > 0 && children.Count != tocEntries.Length)
+							reader.EmitError("toc links to other toc sections it may only contain other toc references", entry.Key);
+						TableOfContents = children;
 						Files = toc.Files; //side-effect ripe for refactor
 						break;
 				}
