@@ -70,7 +70,9 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 		}
 		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
 		{
-			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for url: {crossLinkUri}");
+			//TODO remove
+			if (crossLinkUri.Scheme != "asciidocalypse")
+				_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for url: {crossLinkUri}");
 			return $"reference/{crossLinkUri.Scheme}";
 		}
 		path = path.AsSpan().TrimStart(toc.SourcePrefix).ToString();
@@ -85,10 +87,22 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
-		var relativePathSpan = relativePath.AsSpan();
 
-		var lookup = $"{documentationSet.Name}://{relativePath}";
-		var match = TableOfContentsPrefixes.FirstOrDefault(prefix => lookup.StartsWith(prefix, StringComparison.Ordinal));
+		var lookup = $"{documentationSet.Name}://{relativePath}".AsSpan();
+		if (lookup.StartsWith("docs-content://serverless/", StringComparison.Ordinal))
+			return null;
+		if (lookup.StartsWith("eland://sphinx/", StringComparison.Ordinal))
+			return null;
+
+
+		string? match = null;
+		foreach (var prefix in TableOfContentsPrefixes)
+		{
+			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
+				continue;
+			match = prefix;
+			break;
+		}
 		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
 		{
 			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
@@ -108,7 +122,12 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 			_context.Collector.EmitError(_context.NavigationPath, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
 			return fs.FileInfo.New(fallBack);
 		}
-		var path = fs.Path.Combine(outputDirectory.FullName, toc.PathPrefix, relativePath);
+
+		var newPath = relativePath.AsSpan().TrimStart(toc.SourcePrefix.TrimEnd('/')).TrimStart('/').ToString();
+		var path = fs.Path.Combine(outputDirectory.FullName, toc.PathPrefix, newPath);
+		if (path.Contains("deploy-manage"))
+		{
+		}
 		return fs.FileInfo.New(path);
 	}
 }

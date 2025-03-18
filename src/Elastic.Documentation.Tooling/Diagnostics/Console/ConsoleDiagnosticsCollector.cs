@@ -24,7 +24,7 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreServ
 			_errors.Add(diagnostic);
 		else if (diagnostic.Severity == Severity.Warning)
 			_warnings.Add(diagnostic);
-		else
+		else if (!NoHints)
 			_hints.Add(diagnostic);
 	}
 

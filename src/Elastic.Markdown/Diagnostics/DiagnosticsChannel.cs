@@ -85,9 +85,11 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public HashSet<string> OffendingFiles { get; } = [];
 
-	public HashSet<string> InUseSubstitutionKeys { get; } = [];
+	public ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; } = [];
 
 	public ConcurrentBag<string> CrossLinks { get; } = [];
+
+	public bool NoHints { get; init; }
 
 	public Task StartAsync(Cancel cancellationToken)
 	{
@@ -117,6 +119,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		{
 			while (Channel.Reader.TryRead(out var item))
 			{
+				if (item.Severity == Severity.Hint && NoHints)
+					continue;
 				IncrementSeverityCount(item);
 				HandleItem(item);
 				_ = OffendingFiles.Add(item.File);
@@ -132,7 +136,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			_ = Interlocked.Increment(ref _errors);
 		else if (item.Severity == Severity.Warning)
 			_ = Interlocked.Increment(ref _warnings);
-		else if (item.Severity == Severity.Hint)
+		else if (item.Severity == Severity.Hint && !NoHints)
 			_ = Interlocked.Increment(ref _hints);
 	}
 
@@ -175,5 +179,5 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	}
 
 	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) =>
-		_ = InUseSubstitutionKeys.Add(key.ToString());
+		_ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
 }

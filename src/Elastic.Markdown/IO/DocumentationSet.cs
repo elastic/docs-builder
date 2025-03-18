@@ -91,7 +91,7 @@ public class DocumentationSet : INavigationLookups
 			.SelectMany(extension => extension.ScanDocumentationFiles(ScanDocumentationFiles, DefaultFileHandling))
 			.ToArray();
 
-		Files = files.Concat(additionalSources).ToArray();
+		Files = files.Concat(additionalSources).Where(f => f is not ExcludedFile).ToArray();
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
@@ -154,7 +154,7 @@ public class DocumentationSet : INavigationLookups
 			if (documentationFile is not null)
 				return documentationFile;
 		}
-		return new StaticFile(file, sourceDirectory);
+		return new ExcludedFile(file, sourceDirectory);
 	}
 
 	private void ValidateRedirectsExists()

@@ -43,11 +43,54 @@ toc:
       # repo is short for
       # - toc: <repo>://<parent_toc>
       #   path_prefix: <parent_toc>/<repo>
-      - repo: elasticsearch
-      - repo: apm
+      - repo: asciidocalypse
       - repo: apm-agent-android
-      - repo: apm-agent-go
       - repo: apm-agent-dotnet
+      - repo: apm-agent-go
+      - repo: apm-agent-ios
+      - repo: apm-agent-java
+      - repo: apm-agent-nodejs
+      - repo: apm-agent-php
+      - repo: apm-agent-python
+      - repo: apm-agent-ruby
+      - repo: apm-agent-rum-js
+      - repo: apm-aws-lambda
+      - repo: apm-k8s-attacher
+      - repo: beats
+      - repo: cloud-on-k8s
+      - repo: cloud
+      - repo: curator
+      - repo: ecctl
+      - repo: ecs-dotnet
+      - repo: ecs-logging-go-logrus
+      - repo: ecs-logging-go-zap
+      - repo: ecs-logging-go-zerolog
+      - repo: ecs-logging-java
+      - repo: ecs-logging-nodejs
+      - repo: ecs-logging-php
+      - repo: ecs-logging-python
+      - repo: ecs-logging-ruby
+      - repo: ecs-logging
+      - repo: ecs
+      - repo: eland
+      - repo: elastic-serverless-forwarder
+      - repo: elasticsearch-hadoop
+      - repo: elasticsearch-java
+      - repo: elasticsearch-js
+      - repo: elasticsearch-net
+      - repo: elasticsearch-php
+      - repo: elasticsearch-py
+      - repo: elasticsearch-rs
+      - repo: elasticsearch-ruby
+      - repo: elasticsearch
+      - repo: go-elasticsearch
+      - repo: integrations
+      - repo: kibana
+      - repo: logstash-docs
+      - repo: logstash
+      - repo: search-ui
+      - repo: integration-docs
+      - repo: security-docs
 
   #############
   # REFERENCE #
@@ -175,6 +218,9 @@ toc:
       - toc: docs-content://reference/ingestion-tools
         path_prefix: reference/ingestion-tools
         children:
+          # Elasticsearch (TODO discuss with Colleen)
+          - toc: elasticsearch://reference/ingestion-tools/enrich-processor
+            path_prefix: reference/elasticsearch/enrich-processor
 
           # Fleet and Elastic Agent
           # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/fleet/toc.yml

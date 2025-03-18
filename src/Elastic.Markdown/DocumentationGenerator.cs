@@ -82,7 +82,7 @@ public class DocumentationGenerator
 	public async Task GenerateAll(Cancel ctx)
 	{
 		var generationState = GetPreviousGenerationState();
-		if (Context.Force || generationState == null)
+		if (!Context.SkipMetadata && (Context.Force || generationState == null))
 			DocumentationSet.ClearOutputDirectory();
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
@@ -98,6 +98,9 @@ public class DocumentationGenerator
 		HintUnusedSubstitutionKeys();
 
 		await ExtractEmbeddedStaticResources(ctx);
+
+		if (Context.SkipMetadata)
+			return;
 
 		_logger.LogInformation($"Generating documentation compilation state");
 		await GenerateDocumentationState(ctx);
@@ -150,7 +153,8 @@ public class DocumentationGenerator
 	private void HintUnusedSubstitutionKeys()
 	{
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
-		var keysNotInUse = definedKeys.Except(Context.Collector.InUseSubstitutionKeys).ToArray();
+		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
+		var keysNotInUse = definedKeys.Except(inUse).ToArray();
 		// If we have less than 20 unused keys emit them separately
 		// Otherwise emit one hint with all of them for brevity
 		if (keysNotInUse.Length >= 20)

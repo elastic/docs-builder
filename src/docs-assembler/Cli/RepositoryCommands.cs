@@ -63,7 +63,11 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
+		{
+			NoHints = true
+		};
+
 		_ = collector.StartAsync(ctx);
 
 		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null)

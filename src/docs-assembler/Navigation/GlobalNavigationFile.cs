@@ -109,8 +109,8 @@ public record GlobalNavigationFile
 					if (source.AsSpan().IndexOf("://") == -1)
 					{
 						parent = source;
-						source = $"{NarrativeRepository.RepositoryName}://{source}";
 						pathPrefix = source;
+						source = $"{NarrativeRepository.RepositoryName}://{source}";
 					}
 
 					break;

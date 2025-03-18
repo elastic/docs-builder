@@ -29,6 +29,8 @@ public record BuildContext
 
 	public bool Force { get; init; }
 
+	public bool SkipMetadata { get; init; }
+
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 

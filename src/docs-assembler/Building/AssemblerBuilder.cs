@@ -20,11 +20,15 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
 
+		if (context.OutputDirectory.Exists)
+			context.OutputDirectory.Delete(true);
+		context.OutputDirectory.Create();
+
 		foreach (var checkout in checkouts)
 		{
 			if (checkout.Repository.Skip)
 			{
-				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its not yet been migrated to V3");
+				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
 				continue;
 			}
 
@@ -55,8 +59,9 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output)
 		{
 			UrlPathPrefix = environment.PathPrefix,
-			Force = true,
-			AllowIndexing = environment.AllowIndexing
+			Force = false,
+			AllowIndexing = environment.AllowIndexing,
+			SkipMetadata = true
 		};
 
 		var set = new DocumentationSet(buildContext, logger, crossLinkResolver);
