@@ -14,7 +14,7 @@ public static partial class FontPreloader
 	private static IReadOnlyCollection<string>? FontUriCache = null!;
 
 	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync() => FontUriCache ??= await LoadFontUrisAsync();
-	public static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync()
+	private static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync()
 	{
 		var cachedFontUris = new List<string>();
 		var assembly = Assembly.GetExecutingAssembly();
