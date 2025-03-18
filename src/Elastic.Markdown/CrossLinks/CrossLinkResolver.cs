@@ -45,7 +45,7 @@ public interface ICrossLinkResolver
 public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
 {
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
-	private readonly IUriEnvironmentResolver _uriResolver = uriResolver ?? new PreviewEnvironmentUriResolver();
+	private readonly IUriEnvironmentResolver _uriResolver = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
 	public async Task<FetchedCrossLinks> FetchLinks()
 	{

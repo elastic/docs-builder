@@ -18,7 +18,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
     let references = Dictionary<string, LinkReference>()
     let declared = HashSet<string>()
-    let uriResolver = PreviewEnvironmentUriResolver()
+    let uriResolver = IsolatedBuildEnvironmentUriResolver()
 
     member this.LinkReferences = references
     member this.DeclaredRepositories = declared

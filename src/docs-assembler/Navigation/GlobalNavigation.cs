@@ -2,122 +2,76 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using DotNet.Globbing;
-using Elastic.Markdown.IO.Configuration;
-using YamlDotNet.RepresentationModel;
-using YamlDotNet.Serialization;
+using System.Collections.Frozen;
+using System.Collections.Immutable;
+using Documentation.Assembler.Configuration;
+using Documentation.Assembler.Sourcing;
+using Elastic.Markdown.Diagnostics;
 
 namespace Documentation.Assembler.Navigation;
 
-public record TableOfContentsReference
-{
-	public required string Source { get; init; }
-	public required string? PathPrefix { get; init; }
-	public required IReadOnlyCollection<TableOfContentsReference> Children { get; init; }
-}
-
 public record GlobalNavigation
 {
-	public IReadOnlyCollection<TableOfContentsReference> References { get; init; } = [];
+	private readonly AssembleContext _context;
+	private readonly FrozenDictionary<string, Checkout>.AlternateLookup<ReadOnlySpan<char>> _checkoutsLookup;
+	private readonly FrozenDictionary<string, Repository>.AlternateLookup<ReadOnlySpan<char>> _repoConfigLookup;
+	private readonly FrozenDictionary<string, TableOfContentsReference>.AlternateLookup<ReadOnlySpan<char>> _tocLookup;
 
-	public static GlobalNavigation Deserialize(AssembleContext context)
+	private FrozenDictionary<string, Repository> ConfiguredRepositories { get; }
+	private FrozenDictionary<string, TableOfContentsReference> IndexedTableOfContents { get; }
+
+	public GlobalNavigationFile NavigationConfiguration { get; init; }
+
+	private FrozenDictionary<string, Checkout> Checkouts { get; init; }
+
+	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
+
+	public GlobalNavigation(AssembleContext context, GlobalNavigationFile navigationConfiguration, Checkout[] checkouts)
 	{
-		var globalConfig = new GlobalNavigation();
-		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
-		try
-		{
-			foreach (var entry in reader.Read())
-			{
-				switch (entry.Key)
-				{
-					case "toc":
-						globalConfig = globalConfig with
-						{
-							References = ReadChildren(reader, entry.Entry, new Queue<string>())
-						};
-						break;
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			reader.EmitError("Could not load docset.yml", e);
-			throw;
-		}
+		_context = context;
+		NavigationConfiguration = navigationConfiguration;
+		Checkouts = checkouts.ToDictionary(c => c.Repository.Name, c => c).ToFrozenDictionary();
+		_checkoutsLookup = Checkouts.GetAlternateLookup<ReadOnlySpan<char>>();
 
-		return globalConfig;
+		var configuration = context.Configuration;
+		ConfiguredRepositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative])
+			.ToFrozenDictionary(e => e.Name, e => e);
+		_repoConfigLookup = ConfiguredRepositories.GetAlternateLookup<ReadOnlySpan<char>>();
+
+		IndexedTableOfContents = navigationConfiguration.IndexedTableOfContents;
+		_tocLookup = IndexedTableOfContents.GetAlternateLookup<ReadOnlySpan<char>>();
+		TableOfContentsPrefixes = navigationConfiguration.IndexedTableOfContents.Keys.OrderByDescending(k => k.Length).ToImmutableSortedSet();
 	}
 
-	private static IReadOnlyCollection<TableOfContentsReference> ReadChildren(
-		YamlStreamReader reader,
-		KeyValuePair<YamlNode, YamlNode> entry,
-		Queue<string> parents
-	)
+	public string GetSubPath(Uri crossLinkUri, ref string path)
 	{
-		var entries = new List<TableOfContentsReference>();
-		if (entry.Value is not YamlSequenceNode sequence)
+		if (!_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out var checkout))
 		{
-			if (entry.Key is YamlScalarNode scalarKey)
-			{
-				var key = scalarKey.Value;
-				reader.EmitWarning($"'{key}' is not an array");
-			}
-			else
-				reader.EmitWarning($"'{entry.Key}' is not an array");
-
-			return entries;
+			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find checkout for repository: {crossLinkUri.Scheme}");
+			// fallback to repository path prefix
+			if (_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out var repository))
+				return repository.PathPrefix ?? $"reference/{repository.Name}";
+			return $"reference/{crossLinkUri.Scheme}";
 		}
+		var lookup = crossLinkUri.ToString().AsSpan();
+		if (lookup.EndsWith(".md", StringComparison.Ordinal))
+			lookup = lookup[..^3];
 
-		foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
+		string? match = null;
+		foreach (var prefix in TableOfContentsPrefixes)
 		{
-			var child = ReadChild(reader, tocEntry, parents);
-			if (child is not null)
-				entries.Add(child);
+			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
+				continue;
+			match = prefix;
+			break;
 		}
-
-		//TableOfContents = entries;
-		return entries;
-	}
-
-	private static TableOfContentsReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, Queue<string> parents)
-	{
-		string? source = null;
-		string? pathPrefix = null;
-		IReadOnlyCollection<TableOfContentsReference>? children = null;
-		foreach (var entry in tocEntry.Children)
+		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
 		{
-			var key = ((YamlScalarNode)entry.Key).Value;
-			switch (key)
-			{
-				case "toc":
-					source = reader.ReadString(entry);
-					break;
-				case "path_prefix":
-					pathPrefix = reader.ReadString(entry);
-					break;
-				case "children":
-					if (source is null && pathPrefix is null)
-					{
-						reader.EmitWarning("toc entry has no toc or path_prefix defined");
-						continue;
-					}
-					var path = source ?? pathPrefix;
-					parents.Enqueue(path!);
-					children = ReadChildren(reader, entry, parents);
-					break;
-			}
+			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for url: {crossLinkUri}");
+			return $"reference/{crossLinkUri.Scheme}";
 		}
+		path = path.AsSpan().TrimStart(toc.SourcePrefix).ToString();
 
-		if (source is not null)
-		{
-			return new TableOfContentsReference
-			{
-				Source = source,
-				Children = children ?? [],
-				PathPrefix = pathPrefix
-			};
-		}
-
-		return null;
+		return toc.PathPrefix;
 	}
 }

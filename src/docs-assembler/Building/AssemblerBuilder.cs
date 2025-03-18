@@ -12,14 +12,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
+public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigation globalNavigation)
 {
 	private readonly ILogger<AssemblerBuilder> _logger = logger.CreateLogger<AssemblerBuilder>();
 
 	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, PublishEnvironment environment, Cancel ctx)
 	{
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, context.Configuration);
-		var uriResolver = new PublishEnvironmentUriResolver(context.Configuration, environment);
+		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
 
 		foreach (var checkout in checkouts)

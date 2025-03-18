@@ -80,8 +80,10 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
-		var globalNavigation = GlobalNavigation.Deserialize(assembleContext, checkouts);
-		var builder = new AssemblerBuilder(logger, assembleContext);
+		var navigationFile = GlobalNavigationFile.Deserialize(assembleContext);
+		var globalNavigation = new GlobalNavigation(assembleContext, navigationFile, checkouts);
+
+		var builder = new AssemblerBuilder(logger, assembleContext, globalNavigation);
 		await builder.BuildAllAsync(checkouts, env, ctx);
 
 		if (strict ?? false)

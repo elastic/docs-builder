@@ -4,50 +4,45 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
+using Documentation.Assembler.Navigation;
 using Elastic.Markdown.CrossLinks;
 
 namespace Documentation.Assembler.Building;
 
 public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 {
+	private readonly GlobalNavigation _globalNavigation;
 	private Uri BaseUri { get; }
 
 	private PublishEnvironment PublishEnvironment { get; }
 
-	private PreviewEnvironmentUriResolver PreviewResolver { get; }
+	private IsolatedBuildEnvironmentUriResolver IsolatedBuildResolver { get; }
 
-	private FrozenDictionary<string, Repository> AllRepositories { get; }
-
-	public PublishEnvironmentUriResolver(AssemblyConfiguration configuration, PublishEnvironment environment)
+	public PublishEnvironmentUriResolver(GlobalNavigation globalNavigation, PublishEnvironment environment)
 	{
+		_globalNavigation = globalNavigation;
 		if (!Uri.TryCreate(environment.Uri, UriKind.Absolute, out var uri))
 			throw new Exception($"Could not parse uri {environment.Uri} in environment {environment}");
 
 		BaseUri = uri;
 		PublishEnvironment = environment;
-		PreviewResolver = new PreviewEnvironmentUriResolver();
-		AllRepositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative])
-			.ToFrozenDictionary(e => e.Name, e => e);
-		RepositoryLookup = AllRepositories.GetAlternateLookup<ReadOnlySpan<char>>();
+		IsolatedBuildResolver = new IsolatedBuildEnvironmentUriResolver();
 	}
-
-	private FrozenDictionary<string, Repository>.AlternateLookup<ReadOnlySpan<char>> RepositoryLookup { get; }
 
 	public Uri Resolve(Uri crossLinkUri, string path)
 	{
+		// TODO Maybe not needed
 		if (PublishEnvironment.Name == "preview")
-			return PreviewResolver.Resolve(crossLinkUri, path);
+			return IsolatedBuildResolver.Resolve(crossLinkUri, path);
 
-		var repositoryPath = crossLinkUri.Scheme;
-		if (RepositoryLookup.TryGetValue(crossLinkUri.Scheme, out var repository))
-			repositoryPath = repository.PathPrefix;
+		var subPath = _globalNavigation.GetSubPath(crossLinkUri, ref path);
 
-		var fullPath = (PublishEnvironment.PathPrefix, repositoryPath) switch
+		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch
 		{
 			(null or "", null or "") => path,
-			(null or "", var p) => $"{p}/{path}",
-			(var p, null or "") => $"{p}/{path}",
-			var (p, pp) => $"{p}/{pp}/{path}"
+			(null or "", var p) => $"{p}/{path.TrimStart('/')}",
+			(var p, null or "") => $"{p}/{path.TrimStart('/')}",
+			var (p, pp) => $"{p}/{pp}/{path.TrimStart('/')}"
 		};
 
 		return new Uri(BaseUri, fullPath);
