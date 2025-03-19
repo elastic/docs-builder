@@ -29,6 +29,8 @@ public record BuildContext
 
 	public bool Force { get; init; }
 
+	public bool SkipMetadata { get; init; }
+
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
@@ -37,15 +39,6 @@ public record BuildContext
 	{
 		get => string.IsNullOrWhiteSpace(_urlPathPrefix) ? "" : $"/{_urlPathPrefix.Trim('/')}";
 		init => _urlPathPrefix = value;
-	}
-
-	private readonly string? _staticUrlPathPrefix;
-	public string? StaticUrlPathPrefix
-	{
-		get => !string.IsNullOrWhiteSpace(_staticUrlPathPrefix)
-			? $"/{_staticUrlPathPrefix.Trim('/')}"
-			: UrlPathPrefix;
-		init => _staticUrlPathPrefix = value;
 	}
 
 	public BuildContext(IFileSystem fileSystem)

@@ -15,7 +15,13 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		var logger = new TestLoggerFactory(output);
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ "docs/docset.yml", new MockFileData("") },
+			{ "docs/docset.yml",
+				//language=yaml
+				new MockFileData("""
+project: test
+toc:
+- file: index.md
+""") },
 			{ "docs/index.md", new MockFileData("test") }
 		}, new MockFileSystemOptions
 		{
@@ -27,6 +33,7 @@ public class OutputDirectoryTests(ITestOutputHelper output)
 		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(TestContext.Current.CancellationToken);
+		await generator.StopDiagnosticCollection(TestContext.Current.CancellationToken);
 
 		fileSystem.Directory.Exists(".artifacts").Should().BeTrue();
 

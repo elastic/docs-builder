@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
+using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
@@ -62,7 +63,11 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
+		{
+			NoHints = true
+		};
+
 		_ = collector.StartAsync(ctx);
 
 		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null)
@@ -79,7 +84,10 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
-		var builder = new AssemblerBuilder(logger, assembleContext);
+		var navigationFile = GlobalNavigationFile.Deserialize(assembleContext);
+		var globalNavigation = new GlobalNavigation(assembleContext, navigationFile, checkouts);
+
+		var builder = new AssemblerBuilder(logger, assembleContext, globalNavigation);
 		await builder.BuildAllAsync(checkouts, env, ctx);
 
 		if (strict ?? false)

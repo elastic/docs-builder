@@ -1,5 +1,8 @@
 project: 'doc-builder'
 max_toc_depth: 2
+# indicates this documentation set is not linkable by assembler.
+# relaxes a few restrictions around toc building and file placement
+dev_docs: true
 cross_links:
   - docs-content
 exclude:

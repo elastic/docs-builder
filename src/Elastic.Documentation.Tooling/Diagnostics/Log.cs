@@ -16,15 +16,19 @@ public class Log(ILogger logger) : IDiagnosticsOutput
 		{
 			if (diagnostic.Severity == Severity.Error)
 				logger.LogError("{Message}", diagnostic.Message);
-			else
+			else if (diagnostic.Severity == Severity.Warning)
 				logger.LogWarning("{Message}", diagnostic.Message);
+			else
+				logger.LogInformation("{Message}", diagnostic.Message);
 		}
 		else
 		{
 			if (diagnostic.Severity == Severity.Error)
 				logger.LogError("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+			else if (diagnostic.Severity == Severity.Warning)
+				logger.LogWarning("{Message}", diagnostic.Message);
 			else
-				logger.LogWarning("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+				logger.LogInformation("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
 		}
 	}
 }

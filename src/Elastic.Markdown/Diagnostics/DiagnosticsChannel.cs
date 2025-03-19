@@ -8,6 +8,23 @@ using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Markdown.Diagnostics;
 
+public enum Severity
+{
+	Error,
+	Warning,
+	Hint
+}
+
+public readonly record struct Diagnostic
+{
+	public Severity Severity { get; init; }
+	public int? Line { get; init; }
+	public int? Column { get; init; }
+	public int? Length { get; init; }
+	public string File { get; init; }
+	public string Message { get; init; }
+}
+
 public sealed class DiagnosticsChannel : IDisposable
 {
 	private readonly Channel<Diagnostic> _channel;
@@ -18,7 +35,11 @@ public sealed class DiagnosticsChannel : IDisposable
 
 	public DiagnosticsChannel()
 	{
-		var options = new UnboundedChannelOptions { SingleReader = true, SingleWriter = false };
+		var options = new UnboundedChannelOptions
+		{
+			SingleReader = true,
+			SingleWriter = false
+		};
 		_ctxSource = new CancellationTokenSource();
 		_channel = Channel.CreateUnbounded<Diagnostic>(options);
 	}
@@ -43,18 +64,6 @@ public sealed class DiagnosticsChannel : IDisposable
 	public void Dispose() => _ctxSource.Dispose();
 }
 
-public enum Severity { Error, Warning }
-
-public readonly record struct Diagnostic
-{
-	public Severity Severity { get; init; }
-	public int? Line { get; init; }
-	public int? Column { get; init; }
-	public int? Length { get; init; }
-	public string File { get; init; }
-	public string Message { get; init; }
-}
-
 public interface IDiagnosticsOutput
 {
 	void Write(Diagnostic diagnostic);
@@ -67,14 +76,20 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	private int _errors;
 	private int _warnings;
+	private int _hints;
 	public int Warnings => _warnings;
 	public int Errors => _errors;
+	public int Hints => _hints;
 
 	private Task? _started;
 
 	public HashSet<string> OffendingFiles { get; } = [];
 
+	public ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; } = [];
+
 	public ConcurrentBag<string> CrossLinks { get; } = [];
+
+	public bool NoHints { get; init; }
 
 	public Task StartAsync(Cancel cancellationToken)
 	{
@@ -104,6 +119,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		{
 			while (Channel.Reader.TryRead(out var item))
 			{
+				if (item.Severity == Severity.Hint && NoHints)
+					continue;
 				IncrementSeverityCount(item);
 				HandleItem(item);
 				_ = OffendingFiles.Add(item.File);
@@ -119,6 +136,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			_ = Interlocked.Increment(ref _errors);
 		else if (item.Severity == Severity.Warning)
 			_ = Interlocked.Increment(ref _warnings);
+		else if (item.Severity == Severity.Hint && !NoHints)
+			_ = Interlocked.Increment(ref _hints);
 	}
 
 	protected virtual void HandleItem(Diagnostic diagnostic) { }
@@ -132,30 +151,25 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
 
-	public void EmitError(string file, string message, Exception? e = null)
-	{
-		var d = new Diagnostic
+	private void Emit(Severity severity, string file, string message) =>
+		Channel.Write(new Diagnostic
 		{
-			Severity = Severity.Error,
+			Severity = severity,
 			File = file,
 			Message = message
-					  + (e != null ? Environment.NewLine + e : string.Empty)
-					  + (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty),
+		});
 
-		};
-		Channel.Write(d);
-	}
-
-	public void EmitWarning(string file, string message)
+	public void EmitError(string file, string message, Exception? e = null)
 	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = file,
-			Message = message,
-		};
-		Channel.Write(d);
+		message = message
+				+ (e != null ? Environment.NewLine + e : string.Empty)
+				+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
+		Emit(Severity.Error, file, message);
 	}
+
+	public void EmitWarning(string file, string message) => Emit(Severity.Warning, file, message);
+
+	public void EmitHint(string file, string message) => Emit(Severity.Hint, file, message);
 
 	public async ValueTask DisposeAsync()
 	{
@@ -163,4 +177,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		await StopAsync(CancellationToken.None);
 		GC.SuppressFinalize(this);
 	}
+
+	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) =>
+		_ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
 }

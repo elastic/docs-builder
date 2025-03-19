@@ -21,10 +21,12 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 
 		foreach (var repository in repositories)
 		{
-			if (repository.Skip)
-				continue;
 			var repositoryName = repository.Name;
 			_ = declaredRepositories.Add(repositoryName);
+
+			if (repository.Skip)
+				continue;
+
 			var linkReference = await Fetch(repositoryName);
 			linkReferences.Add(repositoryName, linkReference);
 			var linkIndexReference = await GetLinkIndexEntry(repositoryName);
@@ -36,7 +38,7 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 			DeclaredRepositories = declaredRepositories,
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			LinkReferences = linkReferences.ToFrozenDictionary(),
-			FromConfiguration = true
+			FromConfiguration = false
 		};
 	}
 }

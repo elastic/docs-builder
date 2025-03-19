@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Documentation.Assembler.Configuration;
+using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
 using Elastic.Markdown.CrossLinks;
@@ -11,26 +12,33 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
+public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigation globalNavigation)
 {
-	private readonly ILogger<AssemblerBuilder> _logger = logger.CreateLogger<AssemblerBuilder>();
-
 	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, PublishEnvironment environment, Cancel ctx)
 	{
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, context.Configuration);
-		var uriResolver = new PublishEnvironmentUriResolver(context.Configuration, environment);
+		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
+
+		if (context.OutputDirectory.Exists)
+			context.OutputDirectory.Delete(true);
+		context.OutputDirectory.Create();
 
 		foreach (var checkout in checkouts)
 		{
+			if (checkout.Repository.Skip)
+			{
+				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
+				continue;
+			}
+
 			try
 			{
 				await BuildAsync(checkout, environment, crossLinkResolver, ctx);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
-				// TODO: we should only ignore this temporarily while migration is ongoing
-				_logger.LogWarning("Skipping {Checkout} as its not yet been migrated to V3", checkout.Directory.FullName);
+				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its not yet been migrated to V3");
 			}
 			catch (Exception e)
 			{
@@ -38,31 +46,26 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context)
 				throw;
 			}
 		}
+
+		context.Collector.Channel.TryComplete();
+		await context.Collector.StopAsync(ctx);
 	}
 
 	private async Task BuildAsync(Checkout checkout, PublishEnvironment environment, CrossLinkResolver crossLinkResolver, Cancel ctx)
 	{
 		var path = checkout.Directory.FullName;
-		var localPathPrefix = checkout.Repository.PathPrefix;
-		var pathPrefix = (environment.PathPrefix, localPathPrefix) switch
-		{
-			(null or "", null or "") => null,
-			(null or "", _) => localPathPrefix,
-			(_, null or "") => environment.PathPrefix,
-			var (globalPrefix, docsetPrefix) => $"{globalPrefix}/{docsetPrefix}"
-		};
-		var output = localPathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, localPathPrefix) : context.OutputDirectory.FullName;
+		var output = environment.PathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, environment.PathPrefix) : context.OutputDirectory.FullName;
 
 		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output)
 		{
-			StaticUrlPathPrefix = environment.PathPrefix,
-			UrlPathPrefix = pathPrefix,
-			Force = true,
-			AllowIndexing = environment.AllowIndexing
+			UrlPathPrefix = environment.PathPrefix,
+			Force = false,
+			AllowIndexing = environment.AllowIndexing,
+			SkipMetadata = true
 		};
 
 		var set = new DocumentationSet(buildContext, logger, crossLinkResolver);
-		var generator = new DocumentationGenerator(set, logger);
+		var generator = new DocumentationGenerator(set, logger, globalNavigation);
 		await generator.GenerateAll(ctx);
 	}
 }

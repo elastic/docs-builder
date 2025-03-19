@@ -9,7 +9,7 @@ public interface IUriEnvironmentResolver
 	Uri Resolve(Uri crossLinkUri, string path);
 }
 
-public class PreviewEnvironmentUriResolver : IUriEnvironmentResolver
+public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
 {
 	private static Uri BaseUri { get; } = new("https://docs-v3-preview.elastic.dev");
 

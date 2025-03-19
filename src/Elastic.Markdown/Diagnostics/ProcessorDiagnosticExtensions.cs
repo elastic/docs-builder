@@ -98,6 +98,28 @@ public static class ProcessorDiagnosticExtensions
 		context.Collector.Channel.Write(d);
 	}
 
+	public static void EmitError(this DiagnosticsCollector collector, IFileInfo file, string message, Exception? e = null)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Error,
+			File = file.FullName,
+			Message = message + (e != null ? Environment.NewLine + e : string.Empty),
+		};
+		collector.Channel.Write(d);
+	}
+
+	public static void EmitWarning(this DiagnosticsCollector collector, IFileInfo file, string message)
+	{
+		var d = new Diagnostic
+		{
+			Severity = Severity.Warning,
+			File = file.FullName,
+			Message = message,
+		};
+		collector.Channel.Write(d);
+	}
+
 	public static void EmitError(this IBlockExtension block, string message, Exception? e = null)
 	{
 		if (block.SkipValidation)
@@ -132,8 +154,7 @@ public static class ProcessorDiagnosticExtensions
 		block.Build.Collector.Channel.Write(d);
 	}
 
-
-	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message)
+	private static void LinkDiagnostic(InlineProcessor processor, Severity severity, LinkInline inline, string message)
 	{
 		var url = inline.Url;
 		var line = inline.Line + 1;
@@ -145,9 +166,9 @@ public static class ProcessorDiagnosticExtensions
 			return;
 		var d = new Diagnostic
 		{
-			Severity = Severity.Error,
+			Severity = severity,
 			File = processor.GetContext().MarkdownSourcePath.FullName,
-			Column = column,
+			Column = Math.Max(column, 1),
 			Line = line,
 			Message = message,
 			Length = length
@@ -155,26 +176,12 @@ public static class ProcessorDiagnosticExtensions
 		context.Build.Collector.Channel.Write(d);
 	}
 
+	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message) =>
+		LinkDiagnostic(processor, Severity.Error, inline, message);
 
-	public static void EmitWarning(this InlineProcessor processor, LinkInline inline, string message)
-	{
-		var url = inline.Url;
-		var line = inline.Line + 1;
-		var column = inline.Column;
-		var length = url?.Length ?? 1;
+	public static void EmitWarning(this InlineProcessor processor, LinkInline inline, string message) =>
+		LinkDiagnostic(processor, Severity.Warning, inline, message);
 
-		var context = processor.GetContext();
-		if (context.SkipValidation)
-			return;
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = processor.GetContext().MarkdownSourcePath.FullName,
-			Column = column,
-			Line = line,
-			Message = message,
-			Length = length
-		};
-		context.Build.Collector.Channel.Write(d);
-	}
+	public static void EmitHint(this InlineProcessor processor, LinkInline inline, string message) =>
+		LinkDiagnostic(processor, Severity.Hint, inline, message);
 }

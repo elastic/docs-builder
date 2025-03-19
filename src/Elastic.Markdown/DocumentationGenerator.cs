@@ -20,8 +20,14 @@ public interface IConversionCollector
 	void Collect(MarkdownFile file, MarkdownDocument document, string html);
 }
 
+public interface IDocumentationFileOutputProvider
+{
+	IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath);
+}
+
 public class DocumentationGenerator
 {
+	private readonly IDocumentationFileOutputProvider? _documentationFileOutputProvider;
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
@@ -34,10 +40,12 @@ public class DocumentationGenerator
 	public DocumentationGenerator(
 		DocumentationSet docSet,
 		ILoggerFactory logger,
+		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null
 	)
 	{
+		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_writeFileSystem = docSet.Build.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
@@ -74,7 +82,7 @@ public class DocumentationGenerator
 	public async Task GenerateAll(Cancel ctx)
 	{
 		var generationState = GetPreviousGenerationState();
-		if (Context.Force || generationState == null)
+		if (!Context.SkipMetadata && (Context.Force || generationState == null))
 			DocumentationSet.ClearOutputDirectory();
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
@@ -87,19 +95,26 @@ public class DocumentationGenerator
 
 		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
 
+		HintUnusedSubstitutionKeys();
+
 		await ExtractEmbeddedStaticResources(ctx);
 
-		_logger.LogInformation($"Completing diagnostics channel");
-		Context.Collector.Channel.TryComplete();
+		if (Context.SkipMetadata)
+			return;
 
 		_logger.LogInformation($"Generating documentation compilation state");
 		await GenerateDocumentationState(ctx);
 
 		_logger.LogInformation($"Generating links.json");
 		await GenerateLinkReference(ctx);
+	}
 
+	public async Task StopDiagnosticCollection(Cancel ctx)
+	{
 		_logger.LogInformation($"Completing diagnostics channel");
+		Context.Collector.Channel.TryComplete();
 
+		_logger.LogInformation($"Stopping diagnostics collector");
 		await Context.Collector.StopAsync(ctx);
 
 		_logger.LogInformation($"Completed diagnostics channel");
@@ -135,6 +150,25 @@ public class DocumentationGenerator
 		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
 	}
 
+	private void HintUnusedSubstitutionKeys()
+	{
+		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
+		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
+		var keysNotInUse = definedKeys.Except(inUse).ToArray();
+		// If we have less than 20 unused keys emit them separately
+		// Otherwise emit one hint with all of them for brevity
+		if (keysNotInUse.Length >= 20)
+		{
+			var keys = string.Join(", ", keysNotInUse);
+			Context.Collector.EmitHint(Context.ConfigurationPath.FullName, $"The following keys: '{keys}' are not used in any file");
+		}
+		else
+		{
+			foreach (var key in keysNotInUse)
+				Context.Collector.EmitHint(Context.ConfigurationPath.FullName, $"Substitution key '{key}' is not used in any file");
+		}
+	}
+
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
 		_logger.LogInformation($"Copying static files to output directory");
@@ -150,6 +184,8 @@ public class DocumentationGenerator
 			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			var outputFile = OutputFile(path);
+			if (outputFile is null)
+				continue;
 			await _documentationFileExporter.CopyEmbeddedResource(outputFile, resourceStream, ctx);
 			_logger.LogDebug("Copied static embedded resource {Path}", path);
 		}
@@ -166,14 +202,21 @@ public class DocumentationGenerator
 		}
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
+		//TODO send file to OutputFile() so we can validate its scope is defined in navigation.yml
 		var outputFile = OutputFile(file.RelativePath);
-		await _documentationFileExporter.ProcessFile(file, outputFile, token);
+		if (outputFile is not null)
+			await _documentationFileExporter.ProcessFile(file, outputFile, token);
 	}
 
-	private IFileInfo OutputFile(string relativePath)
+	private IFileInfo? OutputFile(string relativePath)
 	{
 		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
-		return outputFile;
+		if (relativePath.StartsWith("_static"))
+			return outputFile;
+
+		return _documentationFileOutputProvider is not null
+			? _documentationFileOutputProvider.OutputFile(DocumentationSet, outputFile, relativePath)
+			: outputFile;
 	}
 
 	private bool CompilationNotNeeded(GenerationState? generationState, out HashSet<string> offendingFiles,

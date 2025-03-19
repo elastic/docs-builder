@@ -112,13 +112,15 @@ public class DocumentationGroup
 					continue;
 
 
-				foreach (var extension in context.Configuration.EnabledExtensions)
-					extension.Visit(d, tocItem);
-
 				md.Parent = this;
 				md.Hidden = file.Hidden;
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
 				md.NavigationIndex = navigationIndex;
+				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
+
+				foreach (var extension in context.Configuration.EnabledExtensions)
+					extension.Visit(d, tocItem);
+
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
@@ -153,7 +155,7 @@ public class DocumentationGroup
 					children =
 					[
 						.. documentationFiles
-							.Select(d => new FileReference(d.RelativePath, true, false, []))
+							.Select(d => new FileReference(folder.TableOfContentsScope, d.RelativePath, true, false, []))
 					];
 				}
 

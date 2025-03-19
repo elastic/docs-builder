@@ -6,20 +6,13 @@ using YamlDotNet.Serialization;
 
 namespace Documentation.Assembler.Configuration;
 
-[YamlStaticContext]
-[YamlSerializable(typeof(AssemblyConfiguration))]
-[YamlSerializable(typeof(Repository))]
-[YamlSerializable(typeof(NarrativeRepository))]
-[YamlSerializable(typeof(PublishEnvironment))]
-public partial class YamlStaticContext;
-
 public record AssemblyConfiguration
 {
 	public static AssemblyConfiguration Deserialize(string yaml)
 	{
 		var input = new StringReader(yaml);
 
-		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
+		var deserializer = new StaticDeserializerBuilder(new Assembler.YamlStaticContext())
 			.IgnoreUnmatchedProperties()
 			.Build();
 

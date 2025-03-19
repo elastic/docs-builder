@@ -1,6 +1,6 @@
 environments:
   production:
-    uri: https://elastic.co
+    uri: https://www.elastic.co
     path_prefix: docs
     allow_indexing: false
   staging:
@@ -15,6 +15,9 @@ environments:
 narrative:
   checkout_strategy: full
 references:
+  #TODO TEMPORARY REMOVE
+  asciidocalypse:
+    skip: true
   apm-agent-android:
   apm-agent-dotnet:
   apm-agent-go:
@@ -77,6 +80,7 @@ references:
   logstash-docs:
     skip: true
   logstash:
+    skip: true
   search-ui:
   integration-docs:
     skip: true

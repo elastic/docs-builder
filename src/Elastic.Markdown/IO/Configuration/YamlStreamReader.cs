@@ -16,10 +16,10 @@ public record YamlToplevelKey
 	public required KeyValuePair<YamlNode, YamlNode> Entry { get; init; }
 }
 
-public class YamlStreamReader(IFileInfo source, BuildContext context)
+public class YamlStreamReader(IFileInfo source, DiagnosticsCollector collector)
 {
-	public IFileInfo Source { get; init; } = source;
-	public BuildContext Context { get; init; } = context;
+	private IFileInfo Source { get; init; } = source;
+	private DiagnosticsCollector Collector { get; init; } = collector;
 
 	public IEnumerable<YamlToplevelKey> Read()
 	{
@@ -30,7 +30,7 @@ public class YamlStreamReader(IFileInfo source, BuildContext context)
 
 		if (yaml.Documents.Count == 0)
 		{
-			Context.EmitWarning(Source, "empty redirect file");
+			Collector.EmitWarning(Source, "empty redirect file");
 			yield break;
 		}
 		// Examine the stream
@@ -171,7 +171,7 @@ public class YamlStreamReader(IFileInfo source, BuildContext context)
 		EmitWarning(message, node?.Start, node?.End, (node as YamlScalarNode)?.Value?.Length);
 
 	public void EmitError(string message, Exception e) =>
-		Context.Collector.EmitError(Source.FullName, message, e);
+		Collector.EmitError(Source.FullName, message, e);
 
 	private void EmitError(string message, Mark? start = null, Mark? end = null, int? length = null)
 	{
@@ -185,7 +185,7 @@ public class YamlStreamReader(IFileInfo source, BuildContext context)
 			Column = start.HasValue ? (int)start.Value.Column : null,
 			Length = length
 		};
-		Context.Collector.Channel.Write(d);
+		Collector.Channel.Write(d);
 	}
 	public void EmitWarning(string message, Mark? start = null, Mark? end = null, int? length = null)
 	{
@@ -199,6 +199,6 @@ public class YamlStreamReader(IFileInfo source, BuildContext context)
 			Column = start.HasValue ? (int)start.Value.Column : null,
 			Length = length
 		};
-		Context.Collector.Channel.Write(d);
+		Collector.Channel.Write(d);
 	}
 }

@@ -21,6 +21,8 @@ public class AssembleContext
 
 	public IFileInfo ConfigurationPath { get; }
 
+	public IFileInfo NavigationPath { get; }
+
 	public IDirectoryInfo CheckoutDirectory { get; set; }
 
 	public IDirectoryInfo OutputDirectory { get; set; }
@@ -47,9 +49,14 @@ public class AssembleContext
 		// This will live in docs-content soon
 		if (!ReadFileSystem.File.Exists(configPath))
 			ExtractAssemblerConfiguration(configPath);
-
 		ConfigurationPath = ReadFileSystem.FileInfo.New(configPath);
 		Configuration = AssemblyConfiguration.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationPath.FullName));
+
+		var navigationPath = Path.Combine(Paths.Root.FullName, "src", "docs-assembler", "navigation.yml");
+		if (!ReadFileSystem.File.Exists(navigationPath))
+			ExtractAssemblerConfiguration(navigationPath);
+		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
+
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? ".artifacts/checkouts");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? ".artifacts/assembly");
 	}

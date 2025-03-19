@@ -23,12 +23,18 @@ public class ErrataFileSourceRepository : ISourceRepository
 		return true;
 	}
 
-	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> errors, IReadOnlyCollection<Diagnostic> warnings)
+	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> errors, IReadOnlyCollection<Diagnostic> warnings, List<Diagnostic> hints)
 	{
 		var report = new Report(this);
-		var limitedErrors = errors.Take(100).ToArray();
-		var limitedWarnings = warnings.Take(100 - limitedErrors.Length);
-		var limited = limitedWarnings.Concat(limitedErrors).ToArray();
+		var limited = errors
+			.Concat(warnings)
+			.OrderBy(d => d.Severity switch { Severity.Error => 0, Severity.Warning => 1, Severity.Hint => 2, _ => 3 })
+			.Take(100)
+			.ToArray();
+
+		// show hints if we don't have plenty of errors/warnings to show
+		if (limited.Length < 100)
+			limited = limited.Concat(hints).Take(100).ToArray();
 
 		foreach (var item in limited)
 		{
@@ -36,6 +42,7 @@ public class ErrataFileSourceRepository : ISourceRepository
 			{
 				Severity.Error => Errata.Diagnostic.Error(item.Message),
 				Severity.Warning => Errata.Diagnostic.Warning(item.Message),
+				Severity.Hint => Errata.Diagnostic.Info(item.Message),
 				_ => Errata.Diagnostic.Info(item.Message)
 			};
 			if (item is { Line: not null, Column: not null })
@@ -44,10 +51,19 @@ public class ErrataFileSourceRepository : ISourceRepository
 				d = d.WithLabel(new Label(item.File, location, "")
 					.WithLength(item.Length == null ? 1 : Math.Clamp(item.Length.Value, 1, item.Length.Value + 3))
 					.WithPriority(1)
-					.WithColor(item.Severity == Severity.Error ? Color.Red : Color.Blue));
+					.WithColor(item.Severity switch
+					{
+						Severity.Error => Color.Red,
+						Severity.Warning => Color.Blue,
+						Severity.Hint => Color.Yellow,
+						_ => Color.Blue
+					}));
 			}
 			else
 				d = d.WithNote(item.File);
+
+			if (item.Severity == Severity.Hint)
+				d = d.WithColor(Color.Yellow).WithCategory("Hint");
 
 			_ = report.AddDiagnostic(d);
 		}
@@ -56,7 +72,33 @@ public class ErrataFileSourceRepository : ISourceRepository
 
 		AnsiConsole.WriteLine();
 		if (totalErrorCount <= 0)
+		{
+			if (hints.Count > 0)
+				DisplayHintsOnly(report, hints);
 			return;
+		}
+		DisplayErrorAndWarningSummary(report, totalErrorCount, limited);
+	}
+
+	private static void DisplayHintsOnly(Report report, List<Diagnostic> hints)
+	{
+		AnsiConsole.Write(new Markup($"	[bold]The following improvement hints found in the documentation[/]"));
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
+		// Render the report
+		report.Render(AnsiConsole.Console);
+
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
+
+		if (hints.Count >= 100)
+			AnsiConsole.Write(new Markup($"	[bold]Only shown the first [yellow]{100}[/] hints out of [yellow]{hints.Count}[/][/]"));
+
+		AnsiConsole.WriteLine();
+	}
+
+	private static void DisplayErrorAndWarningSummary(Report report, int totalErrorCount, Diagnostic[] limited)
+	{
 		AnsiConsole.Write(new Markup($"	[bold]The following errors and warnings were found in the documentation[/]"));
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();

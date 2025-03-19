@@ -12,7 +12,7 @@ namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
-	private readonly IUriEnvironmentResolver _uriResolver = new PreviewEnvironmentUriResolver();
+	private readonly IUriEnvironmentResolver _uriResolver = new IsolatedBuildEnvironmentUriResolver();
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];

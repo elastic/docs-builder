@@ -10,6 +10,7 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
@@ -81,7 +82,7 @@ public class DocumentationSet : INavigationLookups
 		};
 		MarkdownParser = new MarkdownParser(build, resolver);
 
-		Name = SourceDirectory.FullName;
+		Name = Build.Git.RepositoryName ?? "unavailable";
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
 
@@ -90,7 +91,7 @@ public class DocumentationSet : INavigationLookups
 			.SelectMany(extension => extension.ScanDocumentationFiles(ScanDocumentationFiles, DefaultFileHandling))
 			.ToArray();
 
-		Files = files.Concat(additionalSources).ToArray();
+		Files = files.Concat(additionalSources).Where(f => f is not ExcludedFile).ToArray();
 
 		LastWrite = Files.Max(f => f.SourceFile.LastWriteTimeUtc);
 
@@ -153,7 +154,7 @@ public class DocumentationSet : INavigationLookups
 			if (documentationFile is not null)
 				return documentationFile;
 		}
-		return new StaticFile(file, sourceDirectory);
+		return new ExcludedFile(file, sourceDirectory);
 	}
 
 	private void ValidateRedirectsExists()

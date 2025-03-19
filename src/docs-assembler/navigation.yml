@@ -1,0 +1,514 @@
+#############################################
+# KEY FOR REFERENCE SECTION
+# ✅ = toc should be ready to go!
+# 🔜 = ready in a PR/branch,
+#      but needs to be approved and merged
+# 📝 = no PR started yet
+#############################################
+
+toc:
+  #############
+  # NARRATIVE #
+  #############
+  - toc: get-started
+  - toc: solutions
+  - toc: manage-data
+  - toc: explore-analyze
+  - toc: deploy-manage
+  - toc: cloud-account
+  - toc: troubleshoot
+
+  ##########
+  # EXTEND #
+  ##########
+  # I didn't touch this section (yet?)
+  - toc: extend
+    children:
+      - toc: kibana://extend
+        path_prefix: extend/kibana
+      - toc: logstash://extend
+        path_prefix: extend/logstash
+      - toc: elasticsearch://extend
+        path_prefix: extend/elasticsearch
+      - toc: integrations://extend
+        path_prefix: extend/integrations
+      #- toc: beats://extend
+
+  #################
+  # RELEASE NOTES #
+  #################
+  # I didn't touch this section (yet?)
+  - toc: release-notes
+    children:
+      # repo is short for
+      # - toc: <repo>://<parent_toc>
+      #   path_prefix: <parent_toc>/<repo>
+      - repo: asciidocalypse
+      - repo: apm-agent-android
+      - repo: apm-agent-dotnet
+      - repo: apm-agent-go
+      - repo: apm-agent-ios
+      - repo: apm-agent-java
+      - repo: apm-agent-nodejs
+      - repo: apm-agent-php
+      - repo: apm-agent-python
+      - repo: apm-agent-ruby
+      - repo: apm-agent-rum-js
+      - repo: apm-aws-lambda
+      - repo: apm-k8s-attacher
+      - repo: beats
+      - repo: cloud-on-k8s
+      - repo: cloud
+      - repo: curator
+      - repo: ecctl
+      - repo: ecs-dotnet
+      - repo: ecs-logging-go-logrus
+      - repo: ecs-logging-go-zap
+      - repo: ecs-logging-go-zerolog
+      - repo: ecs-logging-java
+      - repo: ecs-logging-nodejs
+      - repo: ecs-logging-php
+      - repo: ecs-logging-python
+      - repo: ecs-logging-ruby
+      - repo: ecs-logging
+      - repo: ecs
+      - repo: eland
+      - repo: elastic-serverless-forwarder
+      - repo: elasticsearch-hadoop
+      - repo: elasticsearch-java
+      - repo: elasticsearch-js
+      - repo: elasticsearch-net
+      - repo: elasticsearch-php
+      - repo: elasticsearch-py
+      - repo: elasticsearch-rs
+      - repo: elasticsearch-ruby
+      - repo: elasticsearch
+      - repo: go-elasticsearch
+      - repo: integrations
+      - repo: kibana
+      - repo: logstash-docs
+      - repo: logstash
+      - repo: search-ui
+      - repo: integration-docs
+      - repo: security-docs
+
+  #############
+  # REFERENCE #
+  #############
+  - toc: reference
+    children:
+      # Security
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/security/toc.yml
+      - toc: docs-content://reference/security
+        path_prefix: reference/security
+        # Children include: Endpoint command reference, Elastic Defend,
+        # Fields and object schemas
+        children:
+          # 📝 TO DO: I don't remember the repo name
+          # 📝 TO DO: toc.yml needs to be created
+          - toc: that-other-sec-repo://reference
+            path_prefix: reference/security/prebuilt-rules
+            # Children include the entire AsciiDoc book
+
+      # Observability
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/observability/toc.yml
+      - toc: docs-content://reference/observability
+        path_prefix: reference/observability
+        # Children include: Fields and object schemas, Elastic Entity Model,
+        # Infrastructure app fields
+
+      # Search
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/search/toc.yml
+      - toc: docs-content://reference/search
+        path_prefix: reference/search
+        children:
+          # Search UI
+          # ✅ https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
+          - toc: search-ui://reference
+            path_prefix: reference/search-ui
+            # Children include the entire AsciiDoc book
+
+      # Elasticsearch and index management
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/elasticsearch/toc.yml
+      - toc: docs-content://reference/elasticsearch
+        path_prefix: reference/elasticsearch
+        children:
+          # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+          # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/elasticsearch/toc.yml
+          - toc: elasticsearch://reference/elasticsearch
+            path_prefix: reference/elasticsearch
+            # Children include: Configuration, JVM settings, Roles,
+            # Elasticsearch privileges, Index settings, Index lifecycle actions,
+            # REST APIs, Mapping, Elasticsearch audit events, Command line tools
+
+          # Curator
+          # ✅ https://github.com/elastic/curator/blob/master/docs/reference/toc.yml
+          - toc: curator://reference
+            path_prefix: reference/elasticsearch/curator
+            # Children include the entire AsciiDoc book
+
+          # Clients
+          # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/elasticsearch-clients/toc.yml
+          - toc: docs-content://reference/elasticsearch/clients
+            path_prefix: reference/elasticsearch/clients
+            children:
+
+              # Eland
+              # ✅ https://github.com/elastic/eland/blob/main/docs/reference/toc.yml
+              - toc: eland://reference
+                path_prefix: reference/elasticsearch/clients/eland
+                # Children include the entire AsciiDoc book
+
+              # Go
+              # ✅ https://github.com/elastic/go-elasticsearch/blob/main/docs/reference/toc.yml
+              - toc: go-elasticsearch://reference
+                path_prefix: reference/elasticsearch/clients/go
+                # Children include the entire AsciiDoc book
+
+              # Java
+              # ✅ https://github.com/elastic/elasticsearch-java/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-java://reference
+                path_prefix: reference/elasticsearch/clients/java
+                # Children include the entire AsciiDoc book
+
+              # JavaScript
+              # ✅ https://github.com/elastic/elasticsearch-js/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-js://reference
+                path_prefix: reference/elasticsearch/clients/js
+                # Children include the entire AsciiDoc book
+
+              # .NET
+              # ✅ https://github.com/elastic/elasticsearch-net/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-net://reference
+                path_prefix: reference/elasticsearch/clients/net
+                # Children include the entire AsciiDoc book
+
+              # PHP
+              # ✅ https://github.com/elastic/elasticsearch-php/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-php://reference
+                path_prefix: reference/elasticsearch/clients/php
+                # Children include the entire AsciiDoc book
+
+              # Python
+              # ✅ https://github.com/elastic/elasticsearch-py/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-py://reference
+                path_prefix: reference/elasticsearch/clients/py
+                # Children include the entire AsciiDoc book
+
+              # Ruby
+              # ✅ https://github.com/elastic/elasticsearch-ruby/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-ruby://reference
+                path_prefix: reference/elasticsearch/clients/ruby
+                # Children include the entire AsciiDoc book
+
+              # Rust
+              # ✅ https://github.com/elastic/elasticsearch-rs/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-rs://reference
+                path_prefix: reference/elasticsearch/clients/rs
+                # Children include the entire AsciiDoc book
+
+              # Community-contributed clients
+              # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+              # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/community-contributed/toc.yml
+              - toc: elasticsearch://reference/community-contributed
+                path_prefix: reference/elasticsearch/clients/community-contributed
+
+      # Ingestion tools
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/ingestion-tools/toc.yml
+      - toc: docs-content://reference/ingestion-tools
+        path_prefix: reference/ingestion-tools
+        children:
+          # I don't know (TODO discuss with Colleen)
+          - toc: elasticsearch://reference/ingestion-tools/enrich-processor
+            path_prefix: reference/elasticsearch/enrich-processor
+          - toc: elasticsearch://reference/ingestion-tools/search-connectors
+            path_prefix: reference/elasticsearch/search-connectors
+          - toc: elasticsearch://reference/data-analysis
+            path_prefix: reference/elasticsearch/data-analysis
+          - toc: security-docs://reference/prebuilt-rules
+            path_prefix: reference/prebuilt-rules
+          - toc: elasticsearch://reference
+            path_prefix: reference/elasticsearch
+
+          # Fleet and Elastic Agent
+          # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/fleet/toc.yml
+          - toc: docs-content://reference/fleet
+            path_prefix: reference/fleet
+            # Children include the entire AsciiDoc book
+
+          # APM
+          # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/apm/toc.yml
+          - toc: docs-content://reference/apm
+            path_prefix: reference/apm
+            # Children include: APM settings, APM settings for Elastic Cloud,
+            # APM settings for Elastic Cloud Enterprise
+            children:
+              # APM Attacher for Kubernetes
+              # ✅ https://github.com/elastic/apm-k8s-attacher/blob/main/docs/reference/toc.yml
+              - toc: apm-k8s-attacher://reference
+                path_prefix: reference/apm/k8s-attacher
+                # Children include the entire AsciiDoc book
+
+              # APM Architecture for AWS Lambda
+              # ✅ https://github.com/elastic/apm-aws-lambda/blob/main/docs/reference/toc.yml
+              - toc: apm-aws-lambda://reference
+                path_prefix: reference/apm/aws-lambda
+                # Children include the entire AsciiDoc book
+
+              # APM agents
+              # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/apm-agents/toc.yml
+              - toc: docs-content://reference/ingestion-tools/apm/agents
+                path_prefix: reference/apm/agents
+                children:
+                  # APM Android agent
+                  # ✅ https://github.com/elastic/apm-agent-android/blob/main/docs/reference/toc.yml
+                  - toc: apm-agent-android://reference
+                    path_prefix: reference/apm/agents/android
+                    # Children include the entire AsciiDoc book
+
+                  # APM .NET agent
+                  # ✅ https://github.com/elastic/apm-agent-dotnet/blob/main/docs/reference/toc.yml
+                  - toc: apm-agent-dotnet://reference
+                    path_prefix: reference/apm/agents/dotnet
+                    # Children include the entire AsciiDoc book
+
+                  # APM Go agent
+                  # ✅ https://github.com/elastic/apm-agent-go/blob/main/docs/reference/toc.yml
+                  - toc: apm-agent-go://reference
+                    path_prefix: reference/apm/agents/go
+                    # Children include the entire AsciiDoc book
+
+                  # APM iOS agent
+                  # ✅ https://github.com/elastic/apm-agent-ios/blob/main/docs/reference/toc.yml
+                  - toc: apm-agent-ios://reference
+                    path_prefix: reference/apm/agents/ios
+                    # Children include the entire AsciiDoc book
+
+                  # APM Java agent
+                  # ✅ https://github.com/elastic/apm-agent-java/blob/main/docs/reference/toc.yml
+                  - toc: apm-agent-java://reference
+                    path_prefix: reference/apm/agents/java
+                    # Children include the entire AsciiDoc book
+
+                  # APM Node.js agent
+                  # 🔜 https://github.com/colleenmcginnis/apm-agent-nodejs/blob/migrate-docs/docs/reference/toc.yml
+                  - toc: apm-agent-nodejs://reference
+                    path_prefix: reference/apm/agents/nodejs
+                    # Children include the entire AsciiDoc book
+
+                  # APM PHP agent
+                  # 🔜 https://github.com/colleenmcginnis/apm-agent-php/blob/migrate-docs/docs/reference/toc.yml
+                  - toc: apm-agent-php://reference
+                    path_prefix: reference/apm/agents/php
+                    # Children include the entire AsciiDoc book
+
+                  # APM Python agent
+                  # 🔜 https://github.com/colleenmcginnis/apm-agent-python/blob/migrate-docs/docs/reference/toc.yml
+                  - toc: apm-agent-python://reference
+                    path_prefix: reference/apm/agents/python
+                    # Children include the entire AsciiDoc book
+
+                  # APM Ruby agent
+                  # 🔜 https://github.com/colleenmcginnis/apm-agent-ruby/blob/migrate-docs/docs/reference/toc.yml
+                  - toc: apm-agent-ruby://reference
+                    path_prefix: reference/apm/agents/ruby
+                    # Children include the entire AsciiDoc book
+
+                  # APM RUM JavaScript agent
+                  # ✅ https://github.com/elastic/apm-agent-rum-js/blob/main/docs/reference/toc.yml
+                  - toc: apm-agent-rum-js://reference
+                    path_prefix: reference/apm/agents/rum-js
+                    # Children include the entire AsciiDoc book
+
+          # Beats
+          # 🔜 https://github.com/colleenmcginnis/beats/blob/migrate-docs/docs/reference/toc.yml
+          - toc: beats://reference
+            path_prefix: reference/beats
+            # Children include all entire AsciiDoc books: Beats, Auditbeat,
+            # Filebeat, Heartbeat, Metricbeat, Packetbeat, Winlogbeat,
+            # Elastic logging plugin for Docker
+
+          # Processor reference
+          # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+          # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/enrich-processor/toc.yml
+          - toc: elasticsearch://reference/enrich-processor
+            path_prefix: reference/enrich-processor
+
+          # Logstash
+          # ✅ https://github.com/elastic/logstash/blob/main/docs/reference/toc.yml
+          - toc: logstash://reference
+            path_prefix: reference/logstash
+            # Children include the entire AsciiDoc book
+
+          # Logstash plugins
+          # 📝 TO DO: Migrate all files and create toc.yml
+          - toc: logstash-docs://reference
+            path_prefix: reference/logstash/plugins
+            # Children include the entire AsciiDoc book
+
+          # Elastic Serverless Forwarder for AWS
+          # ✅ https://github.com/elastic/elastic-serverless-forwarder/blob/main/docs/reference/toc.yml
+          - toc: elastic-serverless-forwarder://reference
+            path_prefix: reference/elastic-serverless-forwarder
+            # Children include the entire AsciiDoc book
+
+          # Search connectors
+          # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+          # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/search-connectors/toc.yml
+          - toc: elasticsearch://reference/search-connectors
+            path_prefix: reference/search-connectors
+
+          # Elasticsearch Hadoop
+          # ✅ https://github.com/elastic/elasticsearch-hadoop/blob/main/docs/reference/toc.yml
+          - toc: elasticsearch-hadoop://reference
+            path_prefix: reference/elasticsearch-hadoop
+            # Children include the entire AsciiDoc book
+
+          # Elastic Integrations
+          # 📝 TO DO: Waiting on integration devs to support 9.0 in all integrations
+          - toc: integration-docs://reference
+            path_prefix: reference/integrations
+            # Children include the entire AsciiDoc book
+
+      # Kibana
+      # ✅ https://github.com/elastic/kibana/blob/main/docs/reference/toc.yml
+      - toc: kibana://reference
+        path_prefix: reference/kibana
+        # Children include the entire AsciiDoc book
+        # (minus pages moved to docs-content)
+
+      # Elasticsearch plugins
+      # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+      # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/elasticsearch-plugins/toc.yml
+      - toc: elasticsearch://reference/elasticsearch-plugins
+        path_prefix: reference/elasticsearch-plugins
+
+      # Query languages
+      # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+      # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/query-languages/toc.yml
+      - toc: elasticsearch://reference/query-languages
+        path_prefix: reference/query-languages
+
+      # Scripting languages
+      # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+      # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/scripting-languages/toc.yml
+      - toc: elasticsearch://reference/scripting-languages
+        path_prefix: reference/scripting-languages
+
+      # ECS
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/ecs/toc.yml
+      - toc: docs-content://reference/ecs
+        path_prefix: reference/ecs
+        children:
+          # ECS reference
+          # ✅ https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
+          - toc: ecs://reference
+            path_prefix: reference/ecs
+            # Children include the entire AsciiDoc book
+
+          # ECS logging libraries
+          # ✅ https://github.com/elastic/ecs-logging/blob/main/docs/reference/toc.yml
+          - toc: ecs-logging://reference
+            path_prefix: reference/ecs/logging
+            children:
+              # ECS Logging .NET
+              # ✅ https://github.com/elastic/ecs-dotnet/blob/main/docs/reference/toc.yml
+              - toc: ecs-dotnet://reference
+                path_prefix: reference/ecs/logging/dotnet
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Go (Logrus)
+              # ✅ https://github.com/elastic/ecs-logging-go-logrus/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-go-logrus://reference
+                path_prefix: reference/ecs/logging/go-logrus
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Go (Zap)
+              # ✅ https://github.com/elastic/ecs-logging-go-zap/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-go-zap://reference
+                path_prefix: reference/ecs/logging/go-zap
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Go (Zerolog)
+              # ✅ https://github.com/elastic/ecs-logging-go-zerolog/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-go-zerolog://reference
+                path_prefix: reference/ecs/logging/go-zerolog
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Java
+              # ✅ https://github.com/elastic/ecs-logging-java/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-java://reference
+                path_prefix: reference/ecs/logging/java
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Node.js
+              # ✅ https://github.com/elastic/ecs-logging-nodejs/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-nodejs://reference
+                path_prefix: reference/ecs/logging/nodejs
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging PHP
+              # ✅ https://github.com/elastic/ecs-logging-php/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-php://reference
+                path_prefix: reference/ecs/logging/php
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Python
+              # ✅ https://github.com/elastic/ecs-logging-python/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-python://reference
+                path_prefix: reference/ecs/logging/python
+                # Children include the entire AsciiDoc book
+
+              # ECS Logging Ruby
+              # ✅ https://github.com/elastic/ecs-logging-ruby/blob/main/docs/reference/toc.yml
+              - toc: ecs-logging-ruby://reference
+                path_prefix: reference/ecs/logging/ruby
+                # Children include the entire AsciiDoc book
+
+      # Data analysis
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/data-analysis/toc.yml
+      - toc: docs-content://reference/data-analysis
+        path_prefix: reference/data-analysis
+        # Children include: Supplied configurations, Function reference,
+        # Metrics reference, Canvas function reference
+        children:
+          # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+          # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/text-analysis/toc.yml
+          - toc: elasticsearch://reference/text-analysis
+            path_prefix: reference/text-analysis
+          # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
+          # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/aggregations/toc.yml
+          - toc: elasticsearch://reference/aggregations
+            path_prefix: reference/aggregations
+
+      # Cloud
+      # 📝 TO DO: toc.yml needs to be created with one file / no children
+      - toc: docs-content://reference/cloud
+        path_prefix: reference/cloud
+        children:
+          # Elastic Cloud Enterprise
+          # Elastic Cloud Hosted
+          # ✅ https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
+          - toc: cloud://reference
+            path_prefix: reference/cloud
+            # Children include the entire AsciiDoc book
+            # (minus pages moved to docs-content)
+
+          # Elastic Cloud on Kubernetes
+          # ✅ https://github.com/elastic/cloud-on-k8s/blob/main/docs/reference/toc.yml
+          - toc: cloud-on-k8s://reference
+            path_prefix: reference/cloud-on-k8s
+            # Children include the entire AsciiDoc book
+            # (minus pages moved to docs-content)
+
+          # Elastic cloud control (ECCTL)
+          # ✅ https://github.com/elastic/ecctl/blob/master/docs/reference/toc.yml
+          - toc: ecctl://reference
+            path_prefix: reference/ecctl
+            # Children include the entire AsciiDoc book
+            # (minus pages moved to docs-content)
+
+      # Glossary
+      # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/glossary/toc.yml
+      - toc: docs-content://reference/glossary
+        path_prefix: reference/glossary

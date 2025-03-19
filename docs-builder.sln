@@ -73,6 +73,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "update-reference-index", "u
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-lambda-index-publisher", "src\docs-lambda-index-publisher\docs-lambda-index-publisher.csproj", "{C559D52D-100B-4B2B-BE87-2344D835761D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-assembler.Tests", "tests\docs-assembler.Tests\src\docs-assembler.Tests\docs-assembler.Tests.csproj", "{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -122,6 +124,10 @@ Global
 		{C559D52D-100B-4B2B-BE87-2344D835761D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C559D52D-100B-4B2B-BE87-2344D835761D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C559D52D-100B-4B2B-BE87-2344D835761D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
@@ -138,5 +144,6 @@ Global
 		{6554F917-73CE-4B3D-9101-F28EAA762C6B} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{9FEC15F6-13F8-40B1-A66A-EB054E49E680} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{C559D52D-100B-4B2B-BE87-2344D835761D} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
 	EndGlobalSection
 EndGlobal
