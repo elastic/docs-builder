@@ -1,12 +1,17 @@
 @inherits RazorSlice<LayoutViewModel>
 @using Elastic.Markdown.Helpers
 <head>
-	<title>@Model.Title</title>
 	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.UrlPathPrefix))
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
 	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
+	<title>@Model.Title</title>
+	
+	@if (Model.CanonicalBaseUrl is not null)
+	{
+		<link rel="canonical" href="@(Model.CanonicalBaseUrl + Model.CurrentDocument.Url)">
+	}
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	@await RenderPartialAsync(_Favicon.Create())

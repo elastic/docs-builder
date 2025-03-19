@@ -76,6 +76,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
+	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -89,6 +90,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? strict = null,
 		bool? allowIndexing = null,
 		bool? metadataOnly = null,
+		string? canonicalBaseUrl = null,
 		Cancel ctx = default
 	)
 	{
@@ -105,7 +107,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
-				AllowIndexing = allowIndexing ?? false
+				AllowIndexing = allowIndexing ?? false,
+				CanonicalBaseUrl = canonicalBaseUrl
 			};
 		}
 		// On CI, we are running on merge commit which may have changes against an older
@@ -156,6 +159,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
+	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -169,9 +173,10 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? strict = null,
 		bool? allowIndexing = null,
 		bool? metadataOnly = null,
+		string? canonicalBaseUrl = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, ctx);
+		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, canonicalBaseUrl, ctx);
 
 
 	/// <summary>

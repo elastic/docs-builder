@@ -34,6 +34,9 @@ public record BuildContext
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
+	// This property is used for the canonical URL
+	public string? CanonicalBaseUrl { get; init; }
+
 	private readonly string? _urlPathPrefix;
 	public string? UrlPathPrefix
 	{
