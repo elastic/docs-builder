@@ -4,8 +4,6 @@
 	<nav
 		id="pages-nav"
 		class="sidebar-nav pr-6"
-		data-current-page-id="@Model.CurrentDocument.Id"
-		data-current-page-parent-ids="@(string.Join(",",Model.ParentIds))"
 		@* used to invalidate session storage *@
 		data-current-navigation="@LayoutViewModel.CurrentNavigationId">
 		@(new HtmlString(Model.NavigationHtml))

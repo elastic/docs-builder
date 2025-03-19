@@ -12,8 +12,8 @@ public interface ITocItem
 public record FileReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, bool Hidden, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
-public record FolderReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, bool InNav, IReadOnlyCollection<ITocItem> Children)
+public record FolderReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
-public record TocReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, bool InNav, IReadOnlyCollection<ITocItem> Children)
-	: FolderReference(TableOfContentsScope, Path, Found, InNav, Children);
+public record TocReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
+	: FolderReference(TableOfContentsScope, Path, Found, Children);

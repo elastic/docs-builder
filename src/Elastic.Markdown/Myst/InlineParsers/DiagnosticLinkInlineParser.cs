@@ -192,14 +192,23 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var file = ResolveFile(context, url);
 		ValidateInternalUrl(processor, url, includeFrom, link, context);
 
-		if (link.IsImage && context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			//TODO make this an error once all offending repositories have been updated
-			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
-				processor.EmitHint(link, $"Image '{url}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+			link.SetData(nameof(currentMarkdown.RootNavigation), currentMarkdown.RootNavigation);
+
+			if (link.IsImage)
+			{
+				//TODO make this an error once all offending repositories have been updated
+				if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
+					processor.EmitHint(link, $"Image '{url}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+			}
 		}
 
+
 		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
+		if (linkMarkdown is not null)
+			link.SetData($"Target{nameof(currentMarkdown.RootNavigation)}", linkMarkdown.RootNavigation);
+
 		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
 		UpdateLinkUrl(link, url, context, anchor, file);
 	}

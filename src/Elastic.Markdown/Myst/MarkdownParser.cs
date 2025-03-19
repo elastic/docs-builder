@@ -152,7 +152,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseDirectives(this)
 				.UseDefinitionLists()
 				.UseEnhancedCodeBlocks()
-				.UseHtmxLinkInlineRenderer(Build)
+				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();

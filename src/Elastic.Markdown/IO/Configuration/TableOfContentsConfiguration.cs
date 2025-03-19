@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Markdown.Extensions.DetectionRules;
+using Elastic.Markdown.IO.Navigation;
 using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Markdown.IO.Configuration;
@@ -81,7 +82,6 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		var folderFound = false;
 		var detectionRulesFound = false;
 		var hiddenFile = false;
-		var inNav = false;
 		IReadOnlyCollection<ITocItem>? children = null;
 		foreach (var entry in tocEntry.Children)
 		{
@@ -90,10 +90,6 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			{
 				case "toc":
 					toc = ReadNestedToc(reader, entry, parentPath, out fileFound);
-					break;
-				case "in_nav":
-					if (!bool.TryParse(reader.ReadString(entry), out inNav))
-						throw new ArgumentException("in_nav must be a boolean");
 					break;
 				case "hidden":
 				case "file":
@@ -122,7 +118,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new TocReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
+			return [new TocReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -151,7 +147,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			if (children is null)
 				_ = _configuration.ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
 
-			return [new FolderReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, children ?? [])];
+			return [new FolderReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, children ?? [])];
 		}
 
 		return null;
