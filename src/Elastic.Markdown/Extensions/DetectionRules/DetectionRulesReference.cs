@@ -6,8 +6,6 @@ using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
-public record RulesFolderReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children) : ITocItem;
-
 public record RuleReference(
 	ITableOfContentsScope TableOfContentsScope,
 	string Path,
