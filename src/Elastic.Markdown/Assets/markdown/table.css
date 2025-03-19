@@ -3,13 +3,17 @@
 
 	.table-wrapper {
 
-		@apply w-full overflow-x-auto my-4 relative;
-		
+		@apply w-full overflow-x-scroll my-4;
+
 		&::-webkit-scrollbar {
 			@apply h-2 bg-grey-10 border-b-1 border-grey-20;
 		}
 		&::-webkit-scrollbar-thumb {
-			@apply bg-grey-80 rounded-full m-[2px];
+			@apply bg-grey-80 rounded-full;
+		}
+
+		&::-webkit-scrollbar-thumb:hover {
+			@apply bg-grey-100;
 		}
 		
 		table {
