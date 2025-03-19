@@ -47,6 +47,15 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 
 	public IDirectoryInfo ScopeDirectory { get; }
 
+	/// This is a documentation set that is not linked to by assembler.
+	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
+	public bool DevelopmentDocs { get; }
+
+	// TODO ensure project key is `docs-content`
+	private bool IsNarrativeDocs =>
+		Project is not null
+		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
+
 	public ConfigurationFile(BuildContext context)
 		: base(context.ConfigurationPath, context.DocumentationSourceDirectory)
 	{
@@ -77,6 +86,9 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 						break;
 					case "max_toc_depth":
 						MaxTocDepth = int.TryParse(reader.ReadString(entry.Entry), out var maxTocDepth) ? maxTocDepth : 1;
+						break;
+					case "dev_docs":
+						DevelopmentDocs = bool.TryParse(reader.ReadString(entry.Entry), out var devDocs) && devDocs;
 						break;
 					case "exclude":
 						var excludes = YamlStreamReader.ReadStringArray(entry.Entry);
@@ -115,8 +127,11 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 				{
 					case "toc":
 						var toc = new TableOfContentsConfiguration(this, ScopeDirectory, _context, 0, "");
-						var entries = toc.ReadChildren(reader, entry.Entry);
-						TableOfContents = entries;
+						var children = toc.ReadChildren(reader, entry.Entry);
+						var tocEntries = children.OfType<TocReference>().ToArray();
+						if (!DevelopmentDocs && !IsNarrativeDocs && tocEntries.Length > 0 && children.Count != tocEntries.Length)
+							reader.EmitError("toc links to other toc sections it may only contain other toc references", entry.Key);
+						TableOfContents = children;
 						Files = toc.Files; //side-effect ripe for refactor
 						break;
 				}
@@ -146,6 +161,4 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 
 		return list.AsReadOnly();
 	}
-
-
 }
