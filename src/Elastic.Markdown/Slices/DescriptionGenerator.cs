@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -19,16 +20,18 @@ public class DescriptionGenerator : IDescriptionGenerator
 {
 	private const int MaxLength = 150;
 
-	public string GenerateDescription(MarkdownDocument? document)
+	public string GenerateDescription(MarkdownDocument document)
 	{
-		if (document == null)
-			return string.Empty;
-
 		var description = new StringBuilder();
 		foreach (var block in document.TakeWhile(_ => description.Length < MaxLength))
 		{
 			switch (block)
 			{
+				case IncludeBlock include:
+					{
+						ProcessIncludeBlock(include, description);
+						break;
+					}
 				case ParagraphBlock paragraph:
 					{
 						ProcessParagraph(paragraph, description);
@@ -41,14 +44,24 @@ public class DescriptionGenerator : IDescriptionGenerator
 					}
 			}
 		}
-		var result = description.ToString().TrimEnd('.').Trim();
+
+		var result = description.ToString().TrimEnd('.');
 		// It can happen that the last parsed block is longer, hence the result is longer than maxLength
-		// Hence we need to trim it to maxLength
+		// Hence we need to shorten it. In this case it will be shorted to until the next space after `MaxLength`
 		if (result.Length > MaxLength)
-			result = string.Concat(result.AsSpan(0, MaxLength), "...");
+		{
+			var endIndex = result.IndexOf(' ', MaxLength - 1);
+			if (endIndex == -1)
+				endIndex = MaxLength;
+			result = string.Concat(result.AsSpan(0, endIndex + 1).Trim(), "...");
+		}
 
 		return result;
 	}
+
+#pragma warning disable IDE0060
+	private static void ProcessIncludeBlock(IncludeBlock include, StringBuilder description) => Console.WriteLine("Not implemented: ProcessIncludeBlock");
+#pragma warning restore IDE0060
 
 	private static void ProcessParagraph(ParagraphBlock paragraph, StringBuilder description)
 	{

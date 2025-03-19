@@ -9,7 +9,6 @@
 	}
 	<link rel="stylesheet"  type="text/css" href="@Model.Static("styles.css")">
 	<meta charset="utf-8">
-	<meta name="description" content="@Model.Description">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	@await RenderPartialAsync(_Favicon.Create())
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
