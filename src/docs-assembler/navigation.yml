@@ -219,14 +219,46 @@ toc:
         path_prefix: reference/ingestion-tools
         children:
           # I don't know (TODO discuss with Colleen)
+
+          # In https://github.com/elastic/elasticsearch/pull/125118 I'm proposing we move
+          # reference/ingestion-tools/enrich-processor/toc.yml to
+          # reference/enrich-processor/toc.yml AND move all the related Markdown files from
+          # reference/ingestion-tools/enrich-processor/*.md to
+          # reference/enrich-processor/*.md
+          #
+          # If we merge that PR, would that remove the need for this item?
           - toc: elasticsearch://reference/ingestion-tools/enrich-processor
             path_prefix: reference/elasticsearch/enrich-processor
+
+          # In https://github.com/elastic/elasticsearch/pull/125118 I'm proposing we move
+          # reference/ingestion-tools/search-connectors/toc.yml to
+          # reference/search-connectors/toc.yml AND move all the related Markdown files from
+          # reference/ingestion-tools/search-connectors/*.md to
+          # reference/search-connectors/*.md
+          #
+          # If we merge that PR, would that remove the need for this item?
           - toc: elasticsearch://reference/ingestion-tools/search-connectors
             path_prefix: reference/elasticsearch/search-connectors
+
+          # I'm not sure what's going on with this one because there is no
+          # toc.yml in reference/elasticsearch/data-analysis/* on `main`.
+          # Currently these pages are captured in the higher level reference/toc.yml.
+          # In https://github.com/elastic/elasticsearch/pull/125118 I'm proposing we remove
+          # reference/toc.yml and distribute the contents across 9 individual toc.yml files.
           - toc: elasticsearch://reference/data-analysis
             path_prefix: reference/elasticsearch/data-analysis
+
+          # This makes sense for now. I'm not sure when these files will be
+          # moved to https://github.com/elastic/detection-rules.
           - toc: security-docs://reference/prebuilt-rules
             path_prefix: reference/prebuilt-rules
+
+          # In https://github.com/elastic/elasticsearch/pull/125118 I'm proposing we remove
+          # reference/toc.yml altogether because the contents of that file will be
+          # distributed across 9 individual toc.yml files in subdirectories alongside the
+          # related Markdown files.
+          #
+          # If we merge that PR, would that remove the need for this item?
           - toc: elasticsearch://reference
             path_prefix: reference/elasticsearch
 
