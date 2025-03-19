@@ -106,6 +106,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
+			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider
 		});

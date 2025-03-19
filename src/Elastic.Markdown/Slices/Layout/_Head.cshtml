@@ -7,7 +7,11 @@
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
-	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
+	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>	
+	@if (Model.CanonicalBaseUrl is not null)
+	{
+		<link rel="canonical" href="@(new Uri(Model.CanonicalBaseUrl, Model.CurrentDocument.Url).ToString())">
+	}
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	@await RenderPartialAsync(_Favicon.Create())

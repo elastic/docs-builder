@@ -58,8 +58,15 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
+      - name: Get changed files
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        id: check-files
+        uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
+        with:
+          files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
+          
       - name: Checkout
-        if: startsWith(github.event_name, 'pull_request')
+        if: startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
@@ -71,7 +78,7 @@ jobs:
           tool-cache: false
           
       - name: Create Deployment
-        if: github.event_name == 'push' || startsWith(github.event_name, 'pull_request')
+        if: github.event_name == 'push' || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
         uses: actions/github-script@v7
         id: deployment
         env:
@@ -138,7 +145,7 @@ jobs:
           dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || github.event_name == 'merge_group')
+        if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
         uses: elastic/docs-builder@main
         id: docs-build
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
@@ -148,7 +155,7 @@ jobs:
           metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'true') }}
 
       - name: 'Validate Inbound Links'
-        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || github.event_name == 'merge_group') }}
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
         uses: elastic/docs-builder/actions/validate-inbound-local@main
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
