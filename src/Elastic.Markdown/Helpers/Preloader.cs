@@ -13,8 +13,8 @@ public static partial class FontPreloader
 {
 	private static IReadOnlyCollection<string>? FontUriCache = null!;
 
-	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync(string staticUrlPrefix) => FontUriCache ??= await LoadFontUrisAsync(staticUrlPrefix);
-	private static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync(string staticUrlPrefix)
+	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync(string? urlPrefix) => FontUriCache ??= await LoadFontUrisAsync(urlPrefix);
+	private static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync(string? urlPrefix)
 	{
 		var cachedFontUris = new List<string>();
 		var assembly = Assembly.GetExecutingAssembly();
@@ -28,7 +28,7 @@ public static partial class FontPreloader
 		foreach (Match match in matches)
 		{
 			if (match.Success)
-				cachedFontUris.Add($"{staticUrlPrefix}{match.Groups[1].Value}");
+				cachedFontUris.Add($"{urlPrefix}/_static/{match.Groups[1].Value}");
 		}
 		FontUriCache = cachedFontUris;
 		return FontUriCache;

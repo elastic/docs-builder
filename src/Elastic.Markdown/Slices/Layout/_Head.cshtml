@@ -2,7 +2,7 @@
 @using Elastic.Markdown.Helpers
 <head>
 	<title>@Model.Title</title>
-	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.Static(string.Empty)))
+	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.UrlPathPrefix))
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
