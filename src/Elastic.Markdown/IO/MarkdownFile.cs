@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -45,6 +46,9 @@ public record MarkdownFile : DocumentationFile
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
+		//may be updated by DocumentationGroup.ProcessTocItems
+		//todo refactor mutability of MarkdownFile as a whole
+		ScopeDirectory = build.Configuration.ScopeDirectory;
 	}
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
@@ -80,8 +84,8 @@ public record MarkdownFile : DocumentationFile
 	}
 
 	//indexed by slug
-	private readonly Dictionary<string, PageTocItem> _tableOfContent = new(StringComparer.OrdinalIgnoreCase);
-	public IReadOnlyDictionary<string, PageTocItem> TableOfContents => _tableOfContent;
+	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
+	public IReadOnlyDictionary<string, PageTocItem> PageTableOfContent => _pageTableOfContent;
 
 	private readonly HashSet<string> _anchors = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlySet<string> Anchors => _anchors;
@@ -145,6 +149,8 @@ public record MarkdownFile : DocumentationFile
 	/// this get set by documentationset when validating redirects
 	/// because we need to minimally parse to see the anchors anchor validation is deferred.
 	public IReadOnlyDictionary<string, string?>? AnchorRemapping { get; set; }
+
+	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	private void ValidateAnchorRemapping()
 	{
@@ -224,9 +230,9 @@ public record MarkdownFile : DocumentationFile
 
 		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
-		_tableOfContent.Clear();
+		_pageTableOfContent.Clear();
 		foreach (var t in toc)
-			_tableOfContent[t.Slug] = t;
+			_pageTableOfContent[t.Slug] = t;
 
 
 		foreach (var label in anchors)

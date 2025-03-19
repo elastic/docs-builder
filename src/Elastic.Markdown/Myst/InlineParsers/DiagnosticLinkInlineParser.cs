@@ -52,7 +52,6 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
 		var match = base.Match(processor, ref slice);
-
 		if (!match || processor.Inline is not LinkInline link)
 			return match;
 
@@ -72,6 +71,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static void ParseStylingInstructions(LinkInline link)
 	{
+		if (!link.IsImage)
+			return;
+
 		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
 			return;
 
@@ -189,7 +191,15 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var includeFrom = GetIncludeFromPath(url, context);
 		var file = ResolveFile(context, url);
 		ValidateInternalUrl(processor, url, includeFrom, link, context);
-		ProcessLinkText(processor, link, context, url, anchor, file);
+
+		if (link.IsImage && context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		{
+			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
+				processor.EmitHint(link, $"Image '{url}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+		}
+
+		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
+		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
 		UpdateLinkUrl(link, url, context, anchor, file);
 	}
 
@@ -214,14 +224,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			processor.EmitError(link, $"`{url}` does not exist. resolved to `{pathOnDisk}");
 	}
 
-	private static void ProcessLinkText(InlineProcessor processor, LinkInline link, ParserContext context, string url, string? anchor, IFileInfo file)
+	private static void ProcessLinkText(InlineProcessor processor, LinkInline link, MarkdownFile? markdown, string? anchor, string url, IFileInfo file)
 	{
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
-		var markdown = context.DocumentationFileLookup(file) as MarkdownFile;
-
-		if (markdown == null && link.FirstChild == null)
+		if (markdown is null && link.FirstChild == null)
 		{
 			processor.EmitWarning(link,
 				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
@@ -234,7 +242,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			if (markdown is not null)
 				ValidateAnchor(processor, markdown, anchor, link);
-			if (link.FirstChild == null && (markdown?.TableOfContents.TryGetValue(anchor, out var heading) ?? false))
+			if (link.FirstChild == null && (markdown?.PageTableOfContent.TryGetValue(anchor, out var heading) ?? false))
 				title += " > " + heading.Heading;
 		}
 
