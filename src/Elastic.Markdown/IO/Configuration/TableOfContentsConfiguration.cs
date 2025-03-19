@@ -112,7 +112,7 @@ public record TableOfContentsConfiguration
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
+			return [new TocReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
 		}
 
 		if (file is not null)
