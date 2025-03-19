@@ -35,6 +35,7 @@ references:
     skip: true
   apm-aws-lambda:
   apm-k8s-attacher:
+  apm-server:
   beats:
     skip: true
   cloud-on-k8s:
