@@ -23,7 +23,6 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		List<DocumentationGroup> groups,
 		List<INavigationItem> navigationItems,
 		int depth,
-		bool inNav,
 		ref int fileIndex,
 		int index)
 	{

@@ -200,7 +200,7 @@ public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : 
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="/docs/testing/req#custom-anchor" hx-get="/docs/testing/req#custom-anchor" hx-select-oob="#primary-nav,#secondary-nav,#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#custom-anchor" hx-get="/docs/testing/req#custom-anchor" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="true">Sub Requirements</a></p>"""
 		);
 
 	[Fact]
