@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Substitution;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -25,13 +24,10 @@ public class DescriptionGenerator : IDescriptionGenerator
 		var description = new StringBuilder();
 		foreach (var block in document.TakeWhile(_ => description.Length < MaxLength))
 		{
+			// TODO: Add support for IncludeBlock
+			// This is needed when the first block is an IncludeBlock.
 			switch (block)
 			{
-				case IncludeBlock include:
-					{
-						ProcessIncludeBlock(include, description);
-						break;
-					}
 				case ParagraphBlock paragraph:
 					{
 						ProcessParagraph(paragraph, description);
@@ -58,10 +54,6 @@ public class DescriptionGenerator : IDescriptionGenerator
 
 		return result;
 	}
-
-#pragma warning disable IDE0060
-	private static void ProcessIncludeBlock(IncludeBlock include, StringBuilder description) => Console.WriteLine("Not implemented: ProcessIncludeBlock");
-#pragma warning restore IDE0060
 
 	private static void ProcessParagraph(ParagraphBlock paragraph, StringBuilder description)
 	{
