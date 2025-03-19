@@ -12,31 +12,63 @@ using IFileInfo = System.IO.Abstractions.IFileInfo;
 
 namespace Elastic.Markdown.Slices;
 
-public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
+public interface INavigationHtmlWriter
 {
-	private DocumentationSet DocumentationSet { get; } = documentationSet;
-	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
+	Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default);
 
-	private async Task<string> RenderNavigation(string topLevelGroupId, MarkdownFile markdown, Cancel ctx = default)
+	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
-		var group = DocumentationSet.Tree.NavigationItems
-			.OfType<GroupNavigation>()
-			.FirstOrDefault(i => i.Group.Id == topLevelGroupId)?.Group;
-
-		var slice = Layout._TocTree.Create(new NavigationViewModel
-		{
-			Title = group?.Index?.NavigationTitle ?? DocumentationSet.Tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = group?.Index?.Url ?? DocumentationSet.Tree.Index?.Url ?? DocumentationSet.Build.UrlPathPrefix ?? "/",
-			Tree = group ?? DocumentationSet.Tree,
-			CurrentDocument = markdown,
-			IsRoot = topLevelGroupId == DocumentationSet.Tree.Id,
-			Features = DocumentationSet.Configuration.Features,
-			TopLevelItems = DocumentationSet.Tree.NavigationItems.OfType<GroupNavigation>().ToList()
-		});
+		var slice = Layout._TocTree.Create(model);
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
+}
+
+public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigationHtmlWriter
+{
+	private DocumentationSet Set { get; } = set;
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
+
+	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
+	{
+		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
+			? currentRootNavigation
+			: Set.Tree;
+
+		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
+			return value;
+
+		var model = CreateNavigationModel(navigation);
+		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
+		_renderedNavigationCache[navigation.Id] = value;
+		return value;
+	}
+
+	private NavigationViewModel CreateNavigationModel(INavigation navigation)
+	{
+		if (navigation is not DocumentationGroup tree)
+			throw new InvalidOperationException("Expected a documentation group");
+
+		var isRoot = navigation.Id == tree.Id;
+
+		return new NavigationViewModel
+		{
+			Title = tree.Index?.NavigationTitle ?? "Docs",
+			TitleUrl = tree.Index?.Url ?? Set.Build.UrlPathPrefix ?? "/",
+			Tree = tree,
+			IsRoot = isRoot,
+			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
+			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigation>().ToList()
+		};
+	}
+}
+
+public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem, INavigationHtmlWriter? navigationHtmlWriter = null)
+{
+	private DocumentationSet DocumentationSet { get; } = documentationSet;
+	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
+	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
+
 
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
@@ -44,41 +76,12 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		return await RenderLayout(markdown, document, ctx);
 	}
 
-	private static string GetTopLevelGroupId(MarkdownFile markdown) =>
-		markdown.YieldParentGroups().Length > 1
-			? markdown.YieldParentGroups()[^2]
-			: markdown.YieldParentGroups()[0];
-
-	public async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
+	private async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
 		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var topLevelNavigationItems = DocumentationSet.Tree.NavigationItems
-			.OfType<GroupNavigation>()
-			.Select(i => i.Group);
-
-		string? navigationHtml;
-
-		if (DocumentationSet.Configuration.Features.IsPrimaryNavEnabled)
-		{
-			var topLevelGroupId = GetTopLevelGroupId(markdown);
-			if (!_renderedNavigationCache.TryGetValue(topLevelGroupId, out var value))
-			{
-				value = await RenderNavigation(topLevelGroupId, markdown, ctx);
-				_renderedNavigationCache[topLevelGroupId] = value;
-			}
-			navigationHtml = value;
-		}
-		else
-		{
-			if (!_renderedNavigationCache.TryGetValue("root", out var value))
-			{
-				value = await RenderNavigation(DocumentationSet.Tree.Id, markdown, ctx);
-				_renderedNavigationCache["root"] = value;
-			}
-			navigationHtml = value;
-		}
+		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.RootNavigation, ctx);
 
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);
@@ -97,7 +100,6 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
-			TopLevelNavigationItems = [.. topLevelNavigationItems],
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			Applies = markdown.YamlFrontMatter?.AppliesTo,
@@ -136,5 +138,4 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		collector?.Collect(markdown, document, rendered);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
 	}
-
 }

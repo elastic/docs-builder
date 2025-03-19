@@ -2,11 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Extensions;
-using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.IO.Navigation;
@@ -28,9 +24,24 @@ public record FileNavigation(int Order, int Depth, MarkdownFile File) : INavigat
 	public string Id { get; } = File.Id;
 }
 
-public class DocumentationGroup
+public interface INavigation
+{
+	string Id { get; }
+	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	int Depth { get; }
+	string? IndexFileName { get; }
+}
+
+public interface INavigationScope
+{
+	INavigation RootNavigation { get; }
+}
+
+public class DocumentationGroup : INavigation
 {
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
+
+	public string NavigationRootId { get; }
 
 	public MarkdownFile? Index { get; set; }
 
@@ -40,18 +51,14 @@ public class DocumentationGroup
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 
-	public required DocumentationGroup? Parent { get; init; }
+	public string? IndexFileName => Index?.FileName;
 
 	public int Depth { get; }
 
-	public bool InNav { get; }
+	public DocumentationGroup? Parent { get; }
 
-	public DocumentationGroup(
-		BuildContext context,
-		NavigationLookups lookups,
-		bool inNav,
-		ref int fileIndex)
-		: this(context, lookups, ref fileIndex, depth: 0, inNav)
+	public DocumentationGroup(BuildContext context, NavigationLookups lookups, ref int fileIndex)
+		: this(context, lookups, ref fileIndex, depth: 0, null, null)
 	{
 	}
 
@@ -60,15 +67,21 @@ public class DocumentationGroup
 		NavigationLookups lookups,
 		ref int fileIndex,
 		int depth,
-		bool inNav,
-		MarkdownFile? index = null)
+		DocumentationGroup? topLevelGroup,
+		DocumentationGroup? parent,
+		MarkdownFile? index = null
+	)
 	{
 		Depth = depth;
-		Index = ProcessTocItems(context, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
+		Parent = parent;
+		topLevelGroup ??= this;
+		if (parent?.Depth == 0)
+			topLevelGroup = this;
+		NavigationRootId = topLevelGroup.Id;
+		Index = ProcessTocItems(context, topLevelGroup, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
 		if (Index is not null)
 			Index.GroupId = Id;
 
-		InNav = inNav;
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
@@ -79,6 +92,7 @@ public class DocumentationGroup
 
 	private MarkdownFile? ProcessTocItems(
 		BuildContext context,
+		DocumentationGroup topLevelGroup,
 		MarkdownFile? configuredIndex,
 		NavigationLookups lookups,
 		int depth,
@@ -117,20 +131,20 @@ public class DocumentationGroup
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
 				md.NavigationIndex = navigationIndex;
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
+				md.RootNavigation = topLevelGroup;
 
 				foreach (var extension in context.Configuration.EnabledExtensions)
 					extension.Visit(d, tocItem);
-
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
 					if (file.Hidden)
 						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.Path}");
 					var group = new DocumentationGroup(
-						context, lookups with { TableOfContents = file.Children }, ref fileIndex, depth + 1, InNav, virtualIndex)
-					{
-						Parent = this
-					};
+						context, lookups with
+						{
+							TableOfContents = file.Children
+						}, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
 					navigationItems.Add(new GroupNavigation(index, depth, group));
 					continue;
@@ -159,10 +173,10 @@ public class DocumentationGroup
 					];
 				}
 
-				var group = new DocumentationGroup(context, lookups with { TableOfContents = children }, ref fileIndex, depth + 1, folder.InNav)
+				var group = new DocumentationGroup(context, lookups with
 				{
-					Parent = this
-				};
+					TableOfContents = children
+				}, ref fileIndex, depth + 1, topLevelGroup, this);
 				groups.Add(group);
 				navigationItems.Add(new GroupNavigation(index, depth, group));
 			}
@@ -171,7 +185,7 @@ public class DocumentationGroup
 				foreach (var extension in lookups.EnabledExtensions)
 				{
 					if (extension.InjectsIntoNavigation(tocItem))
-						extension.CreateNavigationItem(this, tocItem, lookups, groups, navigationItems, depth, false, ref fileIndex, index);
+						extension.CreateNavigationItem(this, tocItem, lookups, groups, navigationItems, depth, ref fileIndex, index);
 				}
 			}
 		}

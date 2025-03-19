@@ -19,7 +19,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile
+public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope
 {
 	private string? _navigationTitle;
 
@@ -49,7 +49,12 @@ public record MarkdownFile : DocumentationFile
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
+		RootNavigation = set.Tree;
 	}
+
+	public IDirectoryInfo ScopeDirectory { get; set; }
+
+	public INavigation RootNavigation { get; set; }
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
@@ -130,27 +135,9 @@ public record MarkdownFile : DocumentationFile
 		return [.. parents];
 	}
 
-	public string[] YieldParentGroups()
-	{
-		var parents = new List<string>();
-		if (GroupId is not null)
-			parents.Add(GroupId);
-		var parent = Parent;
-		do
-		{
-			if (parent is not null)
-				parents.Add(parent.Id);
-			parent = parent?.Parent;
-		} while (parent != null);
-
-		return [.. parents];
-	}
-
 	/// this get set by documentationset when validating redirects
 	/// because we need to minimally parse to see the anchors anchor validation is deferred.
 	public IReadOnlyDictionary<string, string?>? AnchorRemapping { get; set; }
-
-	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	private void ValidateAnchorRemapping()
 	{
@@ -343,4 +330,5 @@ public record MarkdownFile : DocumentationFile
 			_ = document.Remove(h1);
 		return document.ToHtml(MarkdownParser.Pipeline);
 	}
+
 }
