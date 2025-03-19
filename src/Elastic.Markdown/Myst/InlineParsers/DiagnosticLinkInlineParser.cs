@@ -194,6 +194,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (link.IsImage && context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
+			//TODO make this an error once all offending repositories have been updated
 			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
 				processor.EmitHint(link, $"Image '{url}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
 		}
