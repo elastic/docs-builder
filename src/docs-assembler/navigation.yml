@@ -174,7 +174,7 @@ toc:
               # JavaScript
               # ✅ https://github.com/elastic/elasticsearch-js/blob/main/docs/reference/toc.yml
               - toc: elasticsearch-js://reference
-                path_prefix: reference/elasticsearch/clients/js
+                path_prefix: reference/elasticsearch/clients/javascript
                 # Children include the entire AsciiDoc book
 
               # .NET
@@ -192,7 +192,7 @@ toc:
               # Python
               # ✅ https://github.com/elastic/elasticsearch-py/blob/main/docs/reference/toc.yml
               - toc: elasticsearch-py://reference
-                path_prefix: reference/elasticsearch/clients/py
+                path_prefix: reference/elasticsearch/clients/python
                 # Children include the entire AsciiDoc book
 
               # Ruby
@@ -204,14 +204,14 @@ toc:
               # Rust
               # ✅ https://github.com/elastic/elasticsearch-rs/blob/main/docs/reference/toc.yml
               - toc: elasticsearch-rs://reference
-                path_prefix: reference/elasticsearch/clients/rs
+                path_prefix: reference/elasticsearch/clients/rust
                 # Children include the entire AsciiDoc book
 
               # Community-contributed clients
               # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
               # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/community-contributed/toc.yml
               - toc: elasticsearch://reference/community-contributed
-                path_prefix: reference/elasticsearch/clients/community-contributed
+                path_prefix: reference/elasticsearch/clients/community
 
       # Ingestion tools
       # 🔜 https://github.com/elastic/docs-content/blob/prepare-for-assembler/reference/ingestion-tools/toc.yml
@@ -372,16 +372,30 @@ toc:
             path_prefix: reference/logstash
             # Children include the entire AsciiDoc book
 
-          # Logstash plugins
-          # 📝 TO DO: Migrate all files and create toc.yml
-          - toc: logstash-docs://reference
-            path_prefix: reference/logstash/plugins
-            # Children include the entire AsciiDoc book
+          # Commenting out because these don't exist yet!!
+          # 📝 TO DO: Get @karenzone's thoughts
+          #
+          # # Logstash plugins (LSR)
+          # # 📝 TO DO: Migrate all files and create toc.yml
+          # - toc: logstash-docs-md://lsr
+          #   path_prefix: reference/logstash/plugins
+          #   # Children include the entire AsciiDoc book
+
+          # # Logstash versioned plugins (VPR)
+          # # 📝 TO DO: Migrate all files and create toc.yml
+          # - toc: logstash-docs-md://vpr
+          #   path_prefix: reference/logstash/versioned-plugins
+          #   # Children include the entire AsciiDoc book
 
           # Elastic Serverless Forwarder for AWS
           # ✅ https://github.com/elastic/elastic-serverless-forwarder/blob/main/docs/reference/toc.yml
+          # 📝 TO DO: Answer the question below
+          # This is the first URL that has "serverless" in the path. It's
+          # https://www.elastic.co/guide/en/esf/current/aws-elastic-serverless-forwarder.html
+          # so not really the first thing we want folks to land on if path has a lot of impact
+          # on search results. @KOTungseth WDYT?
           - toc: elastic-serverless-forwarder://reference
-            path_prefix: reference/elastic-serverless-forwarder
+            path_prefix: reference/aws-forwarder
             # Children include the entire AsciiDoc book
 
           # Search connectors
@@ -413,7 +427,7 @@ toc:
       # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
       # 🔜 https://github.com/colleenmcginnis/elasticsearch/blob/docs-assembler-prep/docs/reference/elasticsearch-plugins/toc.yml
       - toc: elasticsearch://reference/elasticsearch-plugins
-        path_prefix: reference/elasticsearch-plugins
+        path_prefix: reference/elasticsearch/plugins
 
       # Query languages
       # 📝 TO DO: Directory depth in elasticsearch repo: would require toc 2 levels down
