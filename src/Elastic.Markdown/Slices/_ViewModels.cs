@@ -47,6 +47,8 @@ public class LayoutViewModel
 	public required string? GithubEditUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
+
+	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
 	public required FeatureFlags Features { get; init; }
 
 	private MarkdownFile[]? _parents;
