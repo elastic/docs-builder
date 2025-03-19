@@ -63,7 +63,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 	}
 }
 
-public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem,  IDescriptionGenerator descriptionGenerator, INavigationHtmlWriter? navigationHtmlWriter = null)
+public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem, IDescriptionGenerator descriptionGenerator, INavigationHtmlWriter? navigationHtmlWriter = null)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
