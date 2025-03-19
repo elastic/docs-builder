@@ -4,6 +4,8 @@ Every Markdown file referenced in the TOC may optionally define a frontmatter bl
 Frontmatter is YAML-formatted metadata about a page, at the beginning of each file
 and wrapped by `---` lines.
 
+In the frontmatter block, you can define the following fields:
+
 ```yaml
 ---
 navigation_title: This is the navigation title <1>
