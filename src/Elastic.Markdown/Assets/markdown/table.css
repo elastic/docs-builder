@@ -1,8 +1,21 @@
+
 @layer components {
+
 	.table-wrapper {
 
-		@apply max-w-full overflow-x-scroll my-4;
+		@apply w-full overflow-x-scroll my-4;
 
+		&::-webkit-scrollbar {
+			@apply h-2 bg-grey-10 border-b-1 border-grey-20;
+		}
+		&::-webkit-scrollbar-thumb {
+			@apply bg-grey-80 rounded-full;
+		}
+
+		&::-webkit-scrollbar-thumb:hover {
+			@apply bg-grey-100;
+		}
+		
 		table {
 			@apply w-full border-collapse border-1 border-grey-20;
 		}
@@ -13,6 +26,9 @@
 		
 		thead {
 			@apply font-sans font-semibold text-left align-top border-b-1 border-grey-20 bg-grey-10;
+			:empty {
+				display: none;
+			}
 		}
 		
 		tbody {

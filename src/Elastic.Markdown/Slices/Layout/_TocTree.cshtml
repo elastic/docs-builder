@@ -34,7 +34,7 @@
 							class="hover:underline hover:text-black active:text-blue-elastic-100 font-semibold text-sm @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 							href="@item.Group.Index.Url"
 							hx-get="@item.Group.Index.Url"
-							hx-select-oob="#pages-nav,#content-container"
+							hx-select-oob="#pages-nav,#content-container,#toc-nav"
 							hx-push-url="true"
 							preload>@item.Group.Index.NavigationTitle</a>
 					</li>

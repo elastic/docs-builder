@@ -14,7 +14,7 @@ public static class Htmx
 		if (features.IsPrimaryNavEnabled && currentUrl == pathPrefix + "/")
 			return "#main-container,#primary-nav,#secondary-nav";
 
-		var selectTargets = "#primary-nav,#secondary-nav,#content-container";
+		var selectTargets = "#primary-nav,#secondary-nav,#content-container,#toc-nav";
 		if (!HasSameTopLevelGroup(pathPrefix, currentUrl, targetUrl) && features.IsPrimaryNavEnabled)
 			selectTargets += ",#pages-nav";
 		return selectTargets;
