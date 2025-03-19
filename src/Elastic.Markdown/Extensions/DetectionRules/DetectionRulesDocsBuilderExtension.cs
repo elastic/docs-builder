@@ -97,11 +97,11 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 				if (f.Extension == ".toml")
 				{
 					var rule = DetectionRule.From(f);
-					return new RuleReference(relativePath, detectionRules, true, [], rule);
+					return new RuleReference(Build.Configuration, relativePath, detectionRules, true, [], rule);
 				}
 
 				_ = files.Add(relativePath);
-				return new FileReference(relativePath, true, false, []);
+				return new FileReference(Build.Configuration, relativePath, true, false, []);
 			})
 			.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
 			.ToArray();

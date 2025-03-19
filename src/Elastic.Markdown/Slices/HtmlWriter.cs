@@ -92,7 +92,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
-			PageTocItems = [.. markdown.TableOfContents.Values],
+			PageTocItems = [.. markdown.PageTableOfContent.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			PreviousDocument = previous,

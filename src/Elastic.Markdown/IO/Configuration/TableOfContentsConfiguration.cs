@@ -9,22 +9,32 @@ using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Markdown.IO.Configuration;
 
-public record TableOfContentsConfiguration
+public interface ITableOfContentsScope
 {
-	private readonly ConfigurationFile _configuration;
+	IDirectoryInfo ScopeDirectory { get; }
+}
+
+public record TableOfContentsConfiguration : ITableOfContentsScope
+{
 	private readonly BuildContext _context;
+	private readonly int _maxTocDepth;
 	private readonly int _depth;
 	private readonly string _parentPath;
 	private readonly IDirectoryInfo _rootPath;
+	private readonly ConfigurationFile _configuration;
 
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; private set; } = [];
 
-	public TableOfContentsConfiguration(ConfigurationFile configuration, BuildContext context, int depth, string parentPath)
+	public IDirectoryInfo ScopeDirectory { get; }
+
+	public TableOfContentsConfiguration(ConfigurationFile configuration, IDirectoryInfo scope, BuildContext context, int depth, string parentPath)
 	{
-		_rootPath = context.DocumentationSourceDirectory;
 		_configuration = configuration;
+		ScopeDirectory = scope;
+		_maxTocDepth = configuration.MaxTocDepth;
+		_rootPath = context.DocumentationSourceDirectory;
 		_context = context;
 		_depth = depth;
 		_parentPath = parentPath;
@@ -33,7 +43,7 @@ public record TableOfContentsConfiguration
 	public IReadOnlyCollection<ITocItem> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parentPath = null)
 	{
 		parentPath ??= _parentPath;
-		if (_depth > _configuration.MaxTocDepth)
+		if (_depth > _maxTocDepth)
 		{
 			reader.EmitError($"toc.yml files may only be linked from docset.yml", entry.Key);
 			return [];
@@ -112,7 +122,7 @@ public record TableOfContentsConfiguration
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new TocReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
+			return [new TocReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -133,7 +143,7 @@ public record TableOfContentsConfiguration
 					children = extension.CreateTableOfContentItems(parentPath, detectionRules, Files);
 				}
 			}
-			return [new FileReference($"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar), fileFound, hiddenFile, children ?? [])];
+			return [new FileReference(this, $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar), fileFound, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)
@@ -141,7 +151,7 @@ public record TableOfContentsConfiguration
 			if (children is null)
 				_ = _configuration.ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
 
-			return [new FolderReference($"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, children ?? [])];
+			return [new FolderReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, inNav, children ?? [])];
 		}
 
 		return null;
@@ -235,7 +245,7 @@ public record TableOfContentsConfiguration
 			switch (kv.Key)
 			{
 				case "toc":
-					var nestedConfiguration = new TableOfContentsConfiguration(_configuration, _context, _depth + 1, fullTocPath);
+					var nestedConfiguration = new TableOfContentsConfiguration(_configuration, source.Directory!, _context, _depth + 1, fullTocPath);
 					_ = nestedConfiguration.ReadChildren(reader, kv.Entry);
 					return nestedConfiguration;
 			}

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
@@ -10,7 +11,7 @@ using Elastic.Markdown.IO.State;
 
 namespace Elastic.Markdown.IO.Configuration;
 
-public record ConfigurationFile : DocumentationFile
+public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 {
 	private readonly BuildContext _context;
 
@@ -44,6 +45,8 @@ public record ConfigurationFile : DocumentationFile
 	private FeatureFlags? _featureFlags;
 	public FeatureFlags Features => _featureFlags ??= new FeatureFlags(_features);
 
+	public IDirectoryInfo ScopeDirectory { get; }
+
 	/// This is a documentation set that is not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
@@ -57,6 +60,7 @@ public record ConfigurationFile : DocumentationFile
 		: base(context.ConfigurationPath, context.DocumentationSourceDirectory)
 	{
 		_context = context;
+		ScopeDirectory = context.ConfigurationPath.Directory!;
 		if (!context.ConfigurationPath.Exists)
 		{
 			Project = "unknown";
@@ -122,7 +126,7 @@ public record ConfigurationFile : DocumentationFile
 				switch (entry.Key)
 				{
 					case "toc":
-						var toc = new TableOfContentsConfiguration(this, _context, 0, "");
+						var toc = new TableOfContentsConfiguration(this, ScopeDirectory, _context, 0, "");
 						var children = toc.ReadChildren(reader, entry.Entry);
 						var tocEntries = children.OfType<TocReference>().ToArray();
 						if (!DevelopmentDocs && !IsNarrativeDocs && tocEntries.Length > 0 && children.Count != tocEntries.Length)

@@ -52,8 +52,8 @@ type ``include hoists anchors and table of contents`` () =
     [<Fact>]
     let ``validate index.md includes table of contents`` () =
         let page = generator |> converts "index.md" |> markdownFile
-        test <@ page.TableOfContents.Count = 1 @>
-        test <@ page.TableOfContents.ContainsKey("aa") @>
+        test <@ page.PageTableOfContent.Count = 1 @>
+        test <@ page.PageTableOfContent.ContainsKey("aa") @>
 
     [<Fact>]
     let ``has no errors`` () = generator |> hasNoErrors
