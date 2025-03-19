@@ -80,6 +80,7 @@ references:
   logstash-docs:
     skip: true
   logstash:
+    skip: true
   search-ui:
   integration-docs:
     skip: true

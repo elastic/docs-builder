@@ -56,9 +56,16 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 					: $"Unable to find checkout for repository: {crossLinkUri.Scheme}"
 			);
 		}
+
 		var lookup = crossLinkUri.ToString().AsSpan();
 		if (lookup.EndsWith(".md", StringComparison.Ordinal))
 			lookup = lookup[..^3];
+
+		// temporary fix only spotted two instances of this:
+		// Error: Unable to find defined toc for url: docs-content:///manage-data/ingest/transform-enrich/set-up-an-enrich-processor.md
+		// Error: Unable to find defined toc for url: kibana:///reference/configuration-reference.md
+		if (lookup.IndexOf(":///") >= 0)
+			lookup = lookup.ToString().Replace(":///", "://").AsSpan();
 
 		string? match = null;
 		foreach (var prefix in TableOfContentsPrefixes)
@@ -68,6 +75,7 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 			match = prefix;
 			break;
 		}
+
 		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
 		{
 			//TODO remove
@@ -75,6 +83,7 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 				_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for url: {crossLinkUri}");
 			return $"reference/{crossLinkUri.Scheme}";
 		}
+
 		path = path.AsSpan().TrimStart(toc.SourcePrefix).ToString();
 
 		return toc.PathPrefix;
@@ -88,12 +97,20 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
-		var lookup = $"{documentationSet.Name}://{relativePath}".AsSpan();
+		var l = $"{documentationSet.Name}://{relativePath.TrimStart('/')}";
+		var lookup = l.AsSpan();
 		if (lookup.StartsWith("docs-content://serverless/", StringComparison.Ordinal))
 			return null;
 		if (lookup.StartsWith("eland://sphinx/", StringComparison.Ordinal))
 			return null;
+		if (lookup.StartsWith("elasticsearch-py://sphinx/", StringComparison.Ordinal))
+			return null;
+		if (lookup.StartsWith("elastic-serverless-forwarder://", StringComparison.Ordinal) && lookup.EndsWith(".png"))
+			return null;
 
+		//allow files at root for `docs-content` (index.md 404.md)
+		if (lookup.StartsWith("docs-content://") && !relativePath.Contains('/'))
+			return defaultOutputFile;
 
 		string? match = null;
 		foreach (var prefix in TableOfContentsPrefixes)
@@ -103,6 +120,7 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 			match = prefix;
 			break;
 		}
+
 		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
 		{
 			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
@@ -128,6 +146,7 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 		if (path.Contains("deploy-manage"))
 		{
 		}
+
 		return fs.FileInfo.New(path);
 	}
 }

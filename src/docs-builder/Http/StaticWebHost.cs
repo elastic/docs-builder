@@ -49,10 +49,7 @@ public class StaticWebHost
 
 		_ = _webApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
 
-		_ = _webApplication.MapGet("docs/", (Cancel ctx) =>
-			ServeDocumentationFile("index.html", ctx));
-
-		_ = _webApplication.MapGet("docs/{**slug}", (string slug, Cancel ctx) =>
+		_ = _webApplication.MapGet("{**slug}", (string slug, Cancel ctx) =>
 			ServeDocumentationFile(slug, ctx));
 	}
 

@@ -27,12 +27,12 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		foreach (var repo in repositories)
 		{
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
-			var head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+			//var head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
 			var checkout = new Checkout
 			{
 				Repository = repo,
 				Directory = checkoutFolder,
-				HeadReference = head
+				HeadReference = Guid.NewGuid().ToString("N")
 			};
 			checkouts.Add(checkout);
 		}
@@ -83,7 +83,8 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 			_logger.LogInformation("Pull: {Name}\t{Repository}\t{RelativePath}", name, repository, relativePath);
 			// --allow-unrelated-histories due to shallow clones not finding a common ancestor
 			ExecIn(checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff");
-			head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+			//head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+			head = Guid.NewGuid().ToString("N");
 		}
 		else
 		{
@@ -104,7 +105,8 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "--cone");
 				ExecIn(checkoutFolder, "git", "checkout", repository.CurrentBranch);
 				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
-				head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+				//head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+				head = Guid.NewGuid().ToString("N");
 			}
 		}
 

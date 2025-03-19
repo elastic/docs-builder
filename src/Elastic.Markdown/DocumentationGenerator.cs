@@ -114,7 +114,7 @@ public class DocumentationGenerator
 		_logger.LogInformation($"Completing diagnostics channel");
 		Context.Collector.Channel.TryComplete();
 
-		_logger.LogInformation($"Completing diagnostics channel");
+		_logger.LogInformation($"Stopping diagnostics collector");
 		await Context.Collector.StopAsync(ctx);
 
 		_logger.LogInformation($"Completed diagnostics channel");
@@ -202,6 +202,7 @@ public class DocumentationGenerator
 		}
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
+		//TODO send file to OutputFile() so we can validate its scope is defined in navigation.yml
 		var outputFile = OutputFile(file.RelativePath);
 		if (outputFile is not null)
 			await _documentationFileExporter.ProcessFile(file, outputFile, token);
