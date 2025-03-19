@@ -20,6 +20,9 @@ public class YamlFrontMatter
 	[YamlMember(Alias = "title")]
 	public string? Title { get; set; }
 
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
+
 	[YamlMember(Alias = "navigation_title")]
 	public string? NavigationTitle { get; set; }
 

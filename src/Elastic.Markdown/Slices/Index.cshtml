@@ -5,6 +5,7 @@
 	public LayoutViewModel LayoutModel => new()
 	{
 		Title = $"Elastic Documentation: {Model.Title}",
+		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
 		Tree = Model.Tree,
 		CurrentDocument = Model.CurrentDocument,

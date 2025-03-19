@@ -12,7 +12,7 @@ using IFileInfo = System.IO.Abstractions.IFileInfo;
 
 namespace Elastic.Markdown.Slices;
 
-public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem)
+public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem, IDescriptionGenerator descriptionGenerator)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
@@ -90,6 +90,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",
+			Description = markdown.YamlFrontMatter?.Description ?? descriptionGenerator.GenerateDescription(document),
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
 			PageTocItems = [.. markdown.PageTableOfContent.Values],

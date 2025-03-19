@@ -2,12 +2,14 @@
 @using Elastic.Markdown.Helpers
 <head>
 	<title>@Model.Title</title>
+	<meta name="description" content="@Model.Description">
 	@foreach (var fontFile in await FontPreloader.GetFontUrisAsync(@Model.UrlPathPrefix))
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
-	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
+	<link rel="stylesheet"  type="text/css" href="@Model.Static("styles.css")">
 	<meta charset="utf-8">
+	<meta name="description" content="@Model.Description">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	@await RenderPartialAsync(_Favicon.Create())
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">

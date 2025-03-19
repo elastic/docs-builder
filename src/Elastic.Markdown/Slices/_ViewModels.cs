@@ -11,6 +11,7 @@ namespace Elastic.Markdown.Slices;
 public class IndexViewModel
 {
 	public required string Title { get; init; }
+	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }
 	public required DocumentationGroup Tree { get; init; }
@@ -38,6 +39,7 @@ public class LayoutViewModel
 	public static string CurrentNavigationId { get; } = Guid.NewGuid().ToString("N")[..8];
 	public string Title { get; set; } = "Elastic Documentation";
 	public string RawTitle { get; set; } = "Elastic Documentation";
+	public required string Description { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required DocumentationGroup Tree { get; init; }
 	public string[] ParentIds => [.. CurrentDocument.YieldParentGroups()];
