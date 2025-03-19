@@ -10,7 +10,7 @@
 	
 	@if (Model.CanonicalBaseUrl is not null)
 	{
-		<link rel="canonical" href="@(Model.CanonicalBaseUrl + Model.CurrentDocument.Url)">
+		<link rel="canonical" href="@(new Uri(Model.CanonicalBaseUrl, Model.CurrentDocument.Url).ToString())">
 	}
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">

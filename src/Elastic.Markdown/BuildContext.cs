@@ -35,7 +35,7 @@ public record BuildContext
 	public bool AllowIndexing { get; init; }
 
 	// This property is used for the canonical URL
-	public string? CanonicalBaseUrl { get; init; }
+	public Uri? CanonicalBaseUrl { get; init; }
 
 	private readonly string? _urlPathPrefix;
 	public string? UrlPathPrefix

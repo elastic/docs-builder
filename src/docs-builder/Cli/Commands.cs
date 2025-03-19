@@ -101,6 +101,10 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
+
+		if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out var canonicalBaseUri))
+			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
+
 		try
 		{
 			context = new BuildContext(collector, fileSystem, fileSystem, path, output)
@@ -108,7 +112,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
 				AllowIndexing = allowIndexing ?? false,
-				CanonicalBaseUrl = canonicalBaseUrl
+				CanonicalBaseUrl = canonicalBaseUri
 			};
 		}
 		// On CI, we are running on merge commit which may have changes against an older
