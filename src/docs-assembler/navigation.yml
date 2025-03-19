@@ -180,7 +180,7 @@ toc:
               # .NET
               # ✅ https://github.com/elastic/elasticsearch-net/blob/main/docs/reference/toc.yml
               - toc: elasticsearch-net://reference
-                path_prefix: reference/elasticsearch/clients/net
+                path_prefix: reference/elasticsearch/clients/dotnet
                 # Children include the entire AsciiDoc book
 
               # PHP
