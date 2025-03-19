@@ -1,14 +1,23 @@
+
 @layer components {
+
 	.table-wrapper {
 
-		@apply w-full overflow-x-auto my-4;
-
+		@apply w-full overflow-x-auto my-4 relative;
+		
+		&::-webkit-scrollbar {
+			@apply h-2 bg-grey-10 border-b-1 border-grey-20;
+		}
+		&::-webkit-scrollbar-thumb {
+			@apply bg-grey-80 rounded-full m-[2px];
+		}
+		
 		table {
-			@apply w-full border-collapse border-1 border-grey-30;
+			@apply w-full border-collapse border-1 border-grey-20;
 		}
 		
 		th, td {
-			@apply py-2 px-4 min-w-30 not-first:border-l-1 border-grey-30;
+			@apply py-2 px-4 min-w-30 not-first:border-l-1 border-grey-20;
 		}
 		
 		thead {
@@ -21,7 +30,7 @@
 		tbody {
 			@apply align-top;
 			tr {
-				@apply not-last:border-b-1 border-grey-30 hover:bg-grey-10;
+				@apply not-last:border-b-1 border-grey-20 hover:bg-grey-10;
 			}
 		}
 	}
