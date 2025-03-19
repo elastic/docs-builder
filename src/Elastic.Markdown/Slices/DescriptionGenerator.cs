@@ -41,7 +41,7 @@ public class DescriptionGenerator : IDescriptionGenerator
 			}
 		}
 
-		var result = description.ToString().TrimEnd('.');
+		var result = description.ToString();
 		// It can happen that the last parsed block is longer, hence the result is longer than maxLength
 		// Hence we need to shorten it. In this case it will be shorted to until the next space after `MaxLength`
 		if (result.Length > MaxLength)
@@ -49,7 +49,7 @@ public class DescriptionGenerator : IDescriptionGenerator
 			var endIndex = result.IndexOf(' ', MaxLength - 1);
 			if (endIndex == -1)
 				endIndex = MaxLength;
-			result = string.Concat(result.AsSpan(0, endIndex + 1).Trim(), "...");
+			result = string.Concat(result.AsSpan(0, endIndex + 1).Trim().TrimEnd('.'), "...");
 		}
 
 		return result;
