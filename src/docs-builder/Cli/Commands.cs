@@ -102,7 +102,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
 
-		if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out var canonicalBaseUri))
+		Uri? canonicalBaseUri = null;
+
+		if (canonicalBaseUrl != null && !Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
 			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
 
 		try
