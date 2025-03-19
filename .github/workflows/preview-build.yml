@@ -64,6 +64,7 @@ jobs:
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
+          files_separator: ','
           
       - name: Checkout
         if: startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true'
