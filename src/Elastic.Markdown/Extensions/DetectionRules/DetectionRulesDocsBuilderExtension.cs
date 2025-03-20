@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
@@ -15,6 +16,8 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	private BuildContext Build { get; } = build;
 
 	public bool InjectsIntoNavigation(ITocItem tocItem) => false;
+
+	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
 
 	public void CreateNavigationItem(
 		DocumentationGroup? parent,
