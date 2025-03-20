@@ -32,7 +32,8 @@ toc:
         path_prefix: extend/elasticsearch
       - toc: integrations://extend
         path_prefix: extend/integrations
-      #- toc: beats://extend
+      - toc: beats://extend
+        path_prefix: extend/beats
 
   #################
   # RELEASE NOTES #

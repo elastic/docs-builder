@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Navigation;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html.Inlines;
@@ -11,11 +13,11 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Renderers;
 
-public class HtmxLinkInlineRenderer(BuildContext build) : LinkInlineRenderer
+public class HtmxLinkInlineRenderer : LinkInlineRenderer
 {
 	protected override void Write(HtmlRenderer renderer, LinkInline link)
 	{
-		if (renderer.EnableHtmlForInline && !link.IsImage && link.Url?.StartsWith('/') == true)
+		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
 			// ReSharper disable once UnusedVariable
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
@@ -24,18 +26,32 @@ public class HtmxLinkInlineRenderer(BuildContext build) : LinkInlineRenderer
 				return;
 			}
 
+			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
+
 			_ = renderer.Write("<a href=\"");
-			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
+			_ = renderer.WriteEscapeUrl(url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
-			_ = renderer.Write(" hx-get=\"");
-			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() ?? link.Url : link.Url);
-			_ = renderer.Write('"');
-			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(build.Configuration.Features, build.UrlPathPrefix, currentUrl, link.Url)}\"");
-			_ = renderer.Write(" hx-swap=\"none\"");
-			_ = renderer.Write(" hx-push-url=\"true\"");
-			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
-			_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
+
+
+			if (link.Url?.StartsWith('/') == true)
+			{
+				var currentRootNavigation = link.GetData(nameof(MarkdownFile.RootNavigation)) as INavigation;
+				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.RootNavigation)}") as INavigation;
+				_ = renderer.Write(" hx-get=\"");
+				_ = renderer.WriteEscapeUrl(url);
+				_ = renderer.Write('"');
+				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
+				_ = renderer.Write(" hx-swap=\"none\"");
+				_ = renderer.Write(" hx-push-url=\"true\"");
+				_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
+				_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
+			}
+			else if (link.Url?.StartsWith("http") == true && (link.GetData("isCrossLink") as bool?) == false)
+			{
+				_ = renderer.Write(" target=\"_blank\"");
+				_ = renderer.Write(" rel=\"noopener noreferrer\"");
+			}
 
 			if (!string.IsNullOrEmpty(link.Title))
 			{
@@ -44,7 +60,7 @@ public class HtmxLinkInlineRenderer(BuildContext build) : LinkInlineRenderer
 				_ = renderer.Write('"');
 			}
 
-			if (!string.IsNullOrWhiteSpace(Rel))
+			if (!string.IsNullOrWhiteSpace(Rel) && link.Url?.StartsWith('/') == false)
 			{
 				_ = renderer.Write(" rel=\"");
 				_ = renderer.Write(Rel);
@@ -63,14 +79,14 @@ public class HtmxLinkInlineRenderer(BuildContext build) : LinkInlineRenderer
 
 public static class CustomLinkInlineRendererExtensions
 {
-	public static MarkdownPipelineBuilder UseHtmxLinkInlineRenderer(this MarkdownPipelineBuilder pipeline, BuildContext build)
+	public static MarkdownPipelineBuilder UseHtmxLinkInlineRenderer(this MarkdownPipelineBuilder pipeline)
 	{
-		pipeline.Extensions.AddIfNotAlready(new HtmxLinkInlineRendererExtension(build));
+		pipeline.Extensions.AddIfNotAlready(new HtmxLinkInlineRendererExtension());
 		return pipeline;
 	}
 }
 
-public class HtmxLinkInlineRendererExtension(BuildContext build) : IMarkdownExtension
+public class HtmxLinkInlineRendererExtension : IMarkdownExtension
 {
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{
@@ -82,7 +98,7 @@ public class HtmxLinkInlineRendererExtension(BuildContext build) : IMarkdownExte
 		if (renderer is HtmlRenderer htmlRenderer)
 		{
 			_ = htmlRenderer.ObjectRenderers.RemoveAll(x => x is LinkInlineRenderer);
-			htmlRenderer.ObjectRenderers.Add(new HtmxLinkInlineRenderer(build));
+			htmlRenderer.ObjectRenderers.Add(new HtmxLinkInlineRenderer());
 		}
 	}
 }

@@ -52,7 +52,7 @@ public class DocumentationGenerator
 		DocumentationSet = docSet;
 		Context = docSet.Build;
 		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator());
 		_documentationFileExporter =
 			documentationExporter
 			?? new DocumentationFileExporter(docSet.Build.ReadFileSystem, _writeFileSystem, HtmlWriter, conversionCollector);

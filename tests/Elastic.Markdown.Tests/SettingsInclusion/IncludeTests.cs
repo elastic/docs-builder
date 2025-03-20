@@ -23,7 +23,7 @@ $$"""
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		var realSettingsPath = Path.Combine(Paths.Root.FullName, SettingsPath);
+		var realSettingsPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, SettingsPath);
 		// language=markdown
 		var inclusion = System.IO.File.ReadAllText(realSettingsPath);
 		fileSystem.AddFile(SettingsPath, inclusion);

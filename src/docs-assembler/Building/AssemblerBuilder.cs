@@ -8,6 +8,7 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Discovery;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
@@ -56,11 +57,20 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 		var path = checkout.Directory.FullName;
 		var output = environment.PathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, environment.PathPrefix) : context.OutputDirectory.FullName;
 
-		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output)
+		var gitConfiguration = new GitCheckoutInformation
+		{
+			RepositoryName = checkout.Repository.Name,
+			Ref = checkout.HeadReference,
+			Remote = $"elastic/${checkout.Repository.Name}",
+			Branch = checkout.Repository.CurrentBranch
+		};
+
+		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output, gitConfiguration)
 		{
 			UrlPathPrefix = environment.PathPrefix,
 			Force = false,
 			AllowIndexing = environment.AllowIndexing,
+			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 			SkipMetadata = true
 		};
 

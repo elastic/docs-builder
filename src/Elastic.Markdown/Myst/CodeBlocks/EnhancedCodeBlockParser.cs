@@ -96,6 +96,9 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			"console-result" => "json",
 			"terminal" => "bash",
 			"painless" => "java",
+			//TODO support these natively
+			"kuery" => "json",
+			"lucene" => "json",
 			_ => codeBlock.Language
 		};
 		if (!string.IsNullOrEmpty(codeBlock.Language) && !CodeBlock.Languages.Contains(codeBlock.Language))

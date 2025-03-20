@@ -2,39 +2,29 @@
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @{
-	var topLevelGroup = Model.IsRoot ? 1 : 2;
-	var topLevelFile = Model.IsRoot ? 0 : 1;
+	var topLevelGroup = Model.IsPrimaryNavEnabled ? 2 : 1;
+	var topLevelFile = Model.IsPrimaryNavEnabled ? 1 : 0;
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	var id = item.Id;
-	if (item is FileNavigation file && Model.SubTree.Index?.FileName != file.File.FileName)
+	if (item is FileNavigation file && Model.SubTree.IndexFileName != file.File.FileName)
 	{
 		var f = file.File;
 		<li class="flex group/li @(item.Depth == topLevelFile ? "font-semibold py-8 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
-				<a
-					hx-get="@f.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
-					data-current-url="@Model.CurrentDocument.Url"
-					data-target-url="@f.Url"
-					data-path-prefix="@Model.CurrentDocument.UrlPathPrefix"
-					data-has-same-segment="@Htmx.HasSameTopLevelGroup(Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, f.Url)"
-					hx-swap="none"
-					hx-push-url="true"
-					hx-indicator="#htmx-indicator"
-					preload
-					class="sidebar-link group-[.current]/li:text-blue-elastic!"
-					id="page-@id"
-					href="@f.Url">
-					@f.NavigationTitle
-				</a>
+			<a
+				href="@f.Url"
+				@Htmx.GetHxAttributes(f.Url, Model.IsPrimaryNavEnabled && f.RootNavigation.Id == Model.RootNavigationId || true)
+				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				id="page-@id"
+				>
+				@f.NavigationTitle
+			</a>
 		</li>
 	}
 	else if (item is GroupNavigation folder)
 	{
 		var g = folder.Group;
-		// const int initialExpandLevel = 3;
-		// var shouldInitiallyExpand = g.Depth <= initialExpandLevel;
 		<li class="flex flex-wrap group-navigation @(g.Depth == topLevelGroup ? "py-8 not-last:border-b-1 border-grey-20" : "mt-4 lg:mt-3")">
 			<div class="peer flex items-start gap-1">
 				<label for="@id" class="group/label">
@@ -58,7 +48,7 @@
 				</label>
 				<a
 					href="@(g.Index?.Url ?? "")"
-					@Htmx.GetHxAttributes(Model.Features, Model.CurrentDocument.UrlPathPrefix, Model.CurrentDocument.Url, g.Index?.Url ?? "")
+					@Htmx.GetHxAttributes(g.Index?.Url ?? "", Model.IsPrimaryNavEnabled && g.NavigationRootId == Model.RootNavigationId || true)
 					id="page-@(g.Index?.Id ?? id)"
 					class="sidebar-link @(g.Depth == topLevelGroup ? "font-semibold font-sans mb-1 text-base" : "")">
 					@(g.Index?.NavigationTitle ?? "Untitled")
@@ -69,11 +59,10 @@
 				<ul class="w-full hidden peer-has-checked:block @(g.Depth > topLevelGroup ? "ml-4": "")">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
-						Features = Model.Features,
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
 						Level = g.Depth,
-						CurrentDocument = Model.CurrentDocument,
 						SubTree = g,
-						IsRoot = Model.IsRoot
+						RootNavigationId = Model.RootNavigationId
 					}))
 				</ul>
 			}

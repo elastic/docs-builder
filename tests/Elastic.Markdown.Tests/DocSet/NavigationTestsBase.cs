@@ -19,7 +19,7 @@ public class NavigationTestsBase : IAsyncLifetime
 		ReadFileSystem = new FileSystem(); //use real IO to read docs.
 		WriteFileSystem = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
 		{
-			CurrentDirectory = Paths.Root.FullName
+			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
 		var collector = new TestDiagnosticsCollector(output);
 		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem)

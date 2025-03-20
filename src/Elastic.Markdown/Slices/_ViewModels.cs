@@ -10,7 +10,9 @@ namespace Elastic.Markdown.Slices;
 
 public class IndexViewModel
 {
+	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
+	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }
 	public required DocumentationGroup Tree { get; init; }
@@ -19,28 +21,27 @@ public class IndexViewModel
 	public required MarkdownFile? PreviousDocument { get; init; }
 	public required MarkdownFile? NextDocument { get; init; }
 
-	public required DocumentationGroup[] TopLevelNavigationItems { get; init; }
-
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
+	public required Uri? CanonicalBaseUrl { get; init; }
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 }
 
 public class LayoutViewModel
 {
+	public required string DocSetName { get; init; }
+
 	/// Used to identify the navigation for the current compilation
 	/// We want to reset users sessionStorage every time this changes to invalidate
 	/// the guids that no longer exist
 	public static string CurrentNavigationId { get; } = Guid.NewGuid().ToString("N")[..8];
 	public string Title { get; set; } = "Elastic Documentation";
-	public string RawTitle { get; set; } = "Elastic Documentation";
+	public required string Description { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
-	public required DocumentationGroup Tree { get; init; }
-	public string[] ParentIds => [.. CurrentDocument.YieldParentGroups()];
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required MarkdownFile? Previous { get; init; }
 	public required MarkdownFile? Next { get; init; }
@@ -48,9 +49,10 @@ public class LayoutViewModel
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
-	public required FeatureFlags Features { get; init; }
+	public required Uri? CanonicalBaseUrl { get; init; }
 
-	public required DocumentationGroup[] TopLevelNavigationItems { get; init; }
+	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
+	public required FeatureFlags Features { get; init; }
 
 	private MarkdownFile[]? _parents;
 	public MarkdownFile[] Parents
@@ -97,21 +99,19 @@ public class NavigationViewModel
 {
 	public required string Title { get; init; }
 	public required string TitleUrl { get; init; }
-	public required DocumentationGroup Tree { get; init; }
-	public required MarkdownFile CurrentDocument { get; init; }
-	public required bool IsRoot { get; init; }
-	public required FeatureFlags Features { get; init; }
-
+	public required INavigation Tree { get; init; }
+	//public required MarkdownFile CurrentDocument { get; init; }
+	public required bool IsPrimaryNavEnabled { get; init; }
 	public required IEnumerable<GroupNavigation> TopLevelItems { get; init; }
 }
 
 public class NavigationTreeItem
 {
 	public required int Level { get; init; }
-	public required MarkdownFile CurrentDocument { get; init; }
-	public required DocumentationGroup SubTree { get; init; }
-	public required bool IsRoot { get; init; }
-	public required FeatureFlags Features { get; init; }
+	//public required MarkdownFile CurrentDocument { get; init; }
+	public required INavigation SubTree { get; init; }
+	public required bool IsPrimaryNavEnabled { get; init; }
+	public required string RootNavigationId { get; set; }
 }
 
 public class PrimaryNavViewModel

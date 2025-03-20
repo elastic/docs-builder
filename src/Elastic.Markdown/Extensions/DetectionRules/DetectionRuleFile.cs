@@ -27,46 +27,123 @@ public record DetectionRuleFile : MarkdownFile
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		var document = MarkdownParser.MinimalParseStringAsync(Rule?.Note ?? string.Empty, SourceFile, null);
 		Title = Rule?.Name;
+		var markdown = GetMarkdown();
+		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
-		if (Rule == null)
-			return Task.FromResult(MarkdownParser.ParseStringAsync($"# {Title}", SourceFile, null));
-
-		// language=markdown
-		var markdown = $"""
-# {Rule.Name}
-
-**Rule type**: {Rule.Type}
-**Rule indices**: {RenderArray(Rule.Indices)}
-**Rule Severity**: {Rule.Severity}
-**Risk Score**: {Rule.RiskScore}
-**Runs every**: {Rule.RunsEvery}
-**Searches indices from**: `{Rule.IndicesFromDateMath}`
-**Maximum alerts per execution**: {Rule.MaximumAlertsPerExecution}
-**References**: {RenderArray(Rule.References)}
-**Tags**: {RenderArray(Rule.Tags)}
-**Version**: {Rule.Version}
-**Rule authors**: {RenderArray(Rule.Authors)}
-**Rule license**: {Rule.License}
-
-## Investigation guide
-
-{Rule.Note}
-
-## Rule Query
-
-```{Rule.Language ?? Rule.Type}
-{Rule.Query}
-```
-""";
+		var markdown = GetMarkdown();
 		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
+
+	private string GetMarkdown()
+	{
+		if (Rule is null)
+			return $"# {Title}";
+		// language=markdown
+		var markdown =
+$"""
+# {Rule.Name}
+
+{Rule.Description}
+
+**Rule type**: {Rule.Type}
+
+**Rule indices**: {RenderArray(Rule.Indices)}
+
+**Rule Severity**: {Rule.Severity}
+
+**Risk Score**: {Rule.RiskScore}
+
+**Runs every**: {Rule.RunsEvery}
+
+**Searches indices from**: `{Rule.IndicesFromDateMath}`
+
+**Maximum alerts per execution**: {Rule.MaximumAlertsPerExecution}
+
+**References**: {RenderArray((Rule.References ?? []).Select(r => $"[{r}]({r})").ToArray())}
+
+**Tags**: {RenderArray(Rule.Tags)}
+
+**Version**: {Rule.Version}
+
+**Rule authors**: {RenderArray(Rule.Authors)}
+
+**Rule license**: {Rule.License}
+""";
+		// language=markdown
+		if (!string.IsNullOrWhiteSpace(Rule.Setup))
+		{
+			markdown +=
+$"""
+
+ {Rule.Setup}
+""";
+		}
+
+		// language=markdown
+		if (!string.IsNullOrWhiteSpace(Rule.Note))
+		{
+			markdown +=
+$"""
+
+ ## Investigation guide
+
+ {Rule.Note}
+""";
+		}
+		// language=markdown
+		if (!string.IsNullOrWhiteSpace(Rule.Query))
+		{
+			markdown +=
+$"""
+
+ ## Rule Query
+
+ ```{Rule.Language ?? Rule.Type}
+ {Rule.Query}
+ ```
+ """;
+		}
+
+		foreach (var threat in Rule.Threats)
+		{
+			// language=markdown
+			markdown +=
+$"""
+
+**Framework:** {threat.Framework}
+
+* Tactic:
+  * Name: {threat.Tactic.Name}
+  * Id: {threat.Tactic.Id}
+  * Reference URL: [{threat.Tactic.Reference}]({threat.Tactic.Reference})
+
+""";
+			foreach (var technique in threat.Techniques)
+			{
+				// language=markdown
+				markdown += TechniqueMarkdown(technique, "Technique");
+				foreach (var subTechnique in technique.SubTechniques)
+					markdown += TechniqueMarkdown(subTechnique, "Sub Technique");
+			}
+		}
+		return markdown;
+	}
+
+	private static string TechniqueMarkdown(DetectionRuleSubTechnique technique, string header) =>
+$"""
+
+* {header}:
+  * Name: {technique.Name}
+  * Id: {technique.Id}
+  * Reference URL: [{technique.Reference}]({technique.Reference})
+
+""";
 
 	private static string RenderArray(string[]? values)
 	{

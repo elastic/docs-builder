@@ -97,7 +97,9 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
-		var l = $"{documentationSet.Name}://{relativePath.TrimStart('/')}";
+		var repositoryName = documentationSet.Build.Git.RepositoryName;
+
+		var l = $"{repositoryName}://{relativePath.TrimStart('/')}";
 		var lookup = l.AsSpan();
 		if (lookup.StartsWith("docs-content://serverless/", StringComparison.Ordinal))
 			return null;
@@ -136,7 +138,7 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 			if (relativePath.EndsWith(".asciidoc", StringComparison.Ordinal))
 				return null;
 
-			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", documentationSet.Name, relativePath);
+			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", repositoryName, relativePath);
 			_context.Collector.EmitError(_context.NavigationPath, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
 			return fs.FileInfo.New(fallBack);
 		}

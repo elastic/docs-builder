@@ -56,10 +56,10 @@ Through various means $$$including-this-inline-syntax$$$
     let ``validate links.json`` () =
         generator |> convertsToJson ".artifacts/docs/html/links.json" """{
          "origin": {
-           "branch": "test-e35fcb27-5f60-4e",
-           "remote": "elastic/docs-builder",
-           "ref": "e35fcb27-5f60-4e",
-           "name": "docs-builder"
+           "branch": "unavailable",
+           "remote": "unavailable",
+           "ref": "unavailable",
+           "name": "unavailable"
          },
          "url_path_prefix": "",
          "links": {

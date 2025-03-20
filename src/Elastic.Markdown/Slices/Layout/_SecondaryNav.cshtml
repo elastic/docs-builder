@@ -18,21 +18,21 @@
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a
 					href="@Model.Link("/release-notes")"
-					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/release-notes"))>
+					@Htmx.GetHxAttributes(Model.Link("/release-notes"), false)>
 					Release notes
 				</a>
 			</li>
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a
 					href="@Model.Link("/troubleshoot")"
-					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/troubleshoot"))>
+					@Htmx.GetHxAttributes(Model.Link("/troubleshoot"), false)>
 					Troubleshoot
 				</a>
 			</li>
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a
 					href="@Model.Link("/reference")"
-					@Htmx.GetHxAttributes(Model.Features, Model.UrlPathPrefix, Model.CurrentDocument.Url, @Model.Link("/reference"))>
+					@Htmx.GetHxAttributes(Model.Link("/reference"), false)>
 					Reference
 				</a>
 			</li>

@@ -1,6 +1,8 @@
 // @ts-nocheck
 import "htmx.org"
 import "htmx-ext-preload"
+import "htmx-ext-head-support"
+
 import {initTocNav} from "./toc-nav";
 import {initHighlight} from "./hljs";
 import {initTabs} from "./tabs";

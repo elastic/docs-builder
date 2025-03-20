@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
@@ -12,7 +13,8 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
 {
 	private BuildContext Build { get; } = build;
-	public bool InjectsIntoNavigation(ITocItem tocItem) => tocItem is RulesFolderReference;
+
+	public bool InjectsIntoNavigation(ITocItem tocItem) => false;
 
 	public void CreateNavigationItem(
 		DocumentationGroup? parent,
@@ -21,18 +23,9 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		List<DocumentationGroup> groups,
 		List<INavigationItem> navigationItems,
 		int depth,
-		bool inNav,
 		ref int fileIndex,
 		int index)
 	{
-		var detectionRulesFolder = (RulesFolderReference)tocItem;
-		var children = detectionRulesFolder.Children;
-		var group = new DocumentationGroup(Build, lookups with { TableOfContents = children }, ref fileIndex, depth + 1, inNav)
-		{
-			Parent = parent
-		};
-		groups.Add(group);
-		navigationItems.Add(new GroupNavigation(index, depth, group));
 	}
 
 	public void Visit(DocumentationFile file, ITocItem tocItem)
@@ -75,13 +68,25 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		}).ToArray();
 	}
 
-	public IReadOnlyCollection<ITocItem> CreateTableOfContentItems(
-		string parentPath,
-		string detectionRules,
-		HashSet<string> files
-	)
+	public IReadOnlyCollection<ITocItem> CreateTableOfContentItems(ConfigurationFile configuration, string parentPath,
+		string[] detectionRuleFolders,
+		HashSet<string> files)
 	{
-		var detectionRulesFolder = Path.Combine(parentPath, detectionRules).TrimStart(Path.DirectorySeparatorChar);
+		var tocItems = new List<ITocItem>();
+		foreach (var detectionRuleFolder in detectionRuleFolders)
+		{
+			var children = ReadDetectionRuleFolder(configuration, parentPath, files, detectionRuleFolder);
+			tocItems.AddRange(children);
+		}
+		return tocItems
+			.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
+			.ToArray();
+	}
+
+	private IReadOnlyCollection<ITocItem> ReadDetectionRuleFolder(ConfigurationFile configuration, string parentPath, HashSet<string> files,
+		string detectionRuleFolder)
+	{
+		var detectionRulesFolder = Path.Combine(parentPath, detectionRuleFolder).TrimStart(Path.DirectorySeparatorChar);
 		var fs = Build.ReadFileSystem;
 		var sourceDirectory = Build.DocumentationSourceDirectory;
 		var path = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(sourceDirectory.FullName, detectionRulesFolder)));
@@ -91,22 +96,21 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => f.Extension is ".md" or ".toml")
 			.Where(f => f.Name != "README.md")
+			.Where(f => !f.FullName.Contains("_deprecated"))
 			.Select(f =>
 			{
 				var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
 				if (f.Extension == ".toml")
 				{
 					var rule = DetectionRule.From(f);
-					return new RuleReference(Build.Configuration, relativePath, detectionRules, true, [], rule);
+					return new RuleReference(configuration, relativePath, detectionRuleFolder, true, [], rule);
 				}
 
 				_ = files.Add(relativePath);
-				return new FileReference(Build.Configuration, relativePath, true, false, []);
+				return new FileReference(configuration, relativePath, true, false, []);
 			})
-			.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 
-		//return [new RulesFolderReference(detectionRulesFolder, true, children)];
 		return children;
 	}
 }

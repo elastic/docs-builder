@@ -76,6 +76,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
+	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -89,6 +90,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? strict = null,
 		bool? allowIndexing = null,
 		bool? metadataOnly = null,
+		string? canonicalBaseUrl = null,
 		Cancel ctx = default
 	)
 	{
@@ -99,13 +101,20 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
+
+		Uri? canonicalBaseUri = null;
+
+		if (canonicalBaseUrl != null && !Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
+			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
+
 		try
 		{
 			context = new BuildContext(collector, fileSystem, fileSystem, path, output)
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
-				AllowIndexing = allowIndexing ?? false
+				AllowIndexing = allowIndexing ?? false,
+				CanonicalBaseUrl = canonicalBaseUri
 			};
 		}
 		// On CI, we are running on merge commit which may have changes against an older
@@ -115,7 +124,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		{
 			var outputDirectory = !string.IsNullOrWhiteSpace(output)
 				? fileSystem.DirectoryInfo.New(output)
-				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non documentation folder.
 			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
 
@@ -156,6 +165,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
+	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	[ConsoleAppFilter<StopwatchFilter>]
@@ -169,9 +179,10 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		bool? strict = null,
 		bool? allowIndexing = null,
 		bool? metadataOnly = null,
+		string? canonicalBaseUrl = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, ctx);
+		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, canonicalBaseUrl, ctx);
 
 
 	/// <summary>

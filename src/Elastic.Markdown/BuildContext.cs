@@ -16,10 +16,11 @@ public record BuildContext
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
 
+	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public IDirectoryInfo DocumentationOutputDirectory { get; }
 
-	public ConfigurationFile Configuration { get; set; }
+	public ConfigurationFile Configuration { get; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -34,6 +35,9 @@ public record BuildContext
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
+	// This property is used for the canonical URL
+	public Uri? CanonicalBaseUrl { get; init; }
+
 	private readonly string? _urlPathPrefix;
 	public string? UrlPathPrefix
 	{
@@ -47,10 +51,14 @@ public record BuildContext
 	public BuildContext(DiagnosticsCollector collector, IFileSystem fileSystem)
 		: this(collector, fileSystem, fileSystem, null, null) { }
 
-	public BuildContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem)
-		: this(collector, readFileSystem, writeFileSystem, null, null) { }
-
-	public BuildContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem, string? source, string? output)
+	public BuildContext(
+		DiagnosticsCollector collector,
+		IFileSystem readFileSystem,
+		IFileSystem writeFileSystem,
+		string? source = null,
+		string? output = null,
+		GitCheckoutInformation? gitCheckoutInformation = null
+	)
 	{
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
@@ -58,19 +66,20 @@ public record BuildContext
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName));
+			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName));
 
 		(DocumentationSourceDirectory, ConfigurationPath) = FindDocsFolderFromRoot(rootFolder);
 
+		DocumentationCheckoutDirectory = Paths.DetermineSourceDirectoryRoot(DocumentationSourceDirectory);
+
 		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, Path.Combine(".artifacts", "docs", "html")));
+			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, Path.Combine(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-
-		Git = GitCheckoutInformation.Create(DocumentationSourceDirectory, ReadFileSystem);
+		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 		Configuration = new ConfigurationFile(this);
 	}
 

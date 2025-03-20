@@ -99,14 +99,14 @@ $"""
 			{ "docs/index.md", new MockFileData(documentContents) }
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Paths.Root.FullName,
+			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName,
 		});
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
 		var baseRootPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-		 ? Paths.Root.FullName.Replace('\\', '/')
-		 : Paths.Root.FullName;
+		 ? Paths.WorkingDirectoryRoot.FullName.Replace('\\', '/')
+		 : Paths.WorkingDirectoryRoot.FullName;
 		var root = FileSystem.DirectoryInfo.New($"{baseRootPath}/docs/");
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 

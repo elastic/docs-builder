@@ -42,7 +42,7 @@ type Setup =
         fileSystem: MockFileSystem,
         globalVariables: Dictionary<string, string> option
     ) =
-        let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/"));
+        let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let yaml = new StringWriter();
         yaml.WriteLine("cross_links:");
         yaml.WriteLine("  - docs-content");
@@ -91,7 +91,7 @@ type Setup =
                 )
                 |> Map.ofSeq
 
-        let opts = MockFileSystemOptions(CurrentDirectory=Paths.Root.FullName)
+        let opts = MockFileSystemOptions(CurrentDirectory=Paths.WorkingDirectoryRoot.FullName)
         let fileSystem = MockFileSystem(d, opts)
 
         GenerateDocSetYaml (fileSystem, None)

@@ -63,7 +63,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		_logger.LogInformation("Checking '{Repository}' with local '{LocalLinksJson}'", repository, localLinksJson);
 
 		if (!Path.IsPathRooted(localLinksJson))
-			localLinksJson = Path.Combine(Paths.Root.FullName, localLinksJson);
+			localLinksJson = Path.Combine(Paths.WorkingDirectoryRoot.FullName, localLinksJson);
 
 		try
 		{

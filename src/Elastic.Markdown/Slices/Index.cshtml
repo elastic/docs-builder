@@ -4,17 +4,18 @@
 @functions {
 	public LayoutViewModel LayoutModel => new()
 	{
+		DocSetName = Model.DocSetName,
 		Title = $"Elastic Documentation: {Model.Title}",
+		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
-		Tree = Model.Tree,
 		CurrentDocument = Model.CurrentDocument,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
 		NavigationHtml = Model.NavigationHtml,
-		TopLevelNavigationItems = Model.TopLevelNavigationItems,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
 		AllowIndexing = Model.AllowIndexing,
+		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
 	};
