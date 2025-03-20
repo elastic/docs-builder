@@ -12,18 +12,14 @@
 	{
 		var f = file.File;
 		<li class="flex group/li @(item.Depth == topLevelFile ? "font-semibold py-8 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
-				<a
-					hx-get="@f.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob(!Model.IsPrimaryNavEnabled || f.RootNavigation.Id == Model.RootNavigationId)"
-					hx-swap="none"
-					hx-push-url="true"
-					hx-indicator="#htmx-indicator"
-					preload
-					class="sidebar-link group-[.current]/li:text-blue-elastic!"
-					id="page-@id"
-					href="@f.Url">
-					@f.NavigationTitle
-				</a>
+			<a
+				href="@f.Url"
+				@Htmx.GetHxAttributes(f.Url, !Model.IsPrimaryNavEnabled && f.RootNavigation.Id == Model.RootNavigationId)
+				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				id="page-@id"
+				>
+				@f.NavigationTitle
+			</a>
 		</li>
 	}
 	else if (item is GroupNavigation folder)
