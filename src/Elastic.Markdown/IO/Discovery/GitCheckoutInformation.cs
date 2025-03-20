@@ -29,7 +29,7 @@ public record GitCheckoutInformation
 	public required string Ref { get; init; }
 
 	[JsonPropertyName("name")]
-	public string? RepositoryName { get; init; }
+	public string RepositoryName { get; init; } = "unavailable";
 
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitCheckoutInformation Create(IDirectoryInfo? source, IFileSystem fileSystem, ILogger? logger = null)
@@ -52,12 +52,8 @@ public record GitCheckoutInformation
 		var gitConfig = Git(source, Path.Combine(".git", "config"));
 		if (!gitConfig.Exists)
 		{
-			gitConfig = Git(source, Path.Combine("..", ".git", "config"));
-			if (!gitConfig.Exists)
-			{
-				logger?.LogInformation("Git checkout information not available.");
-				return Unavailable;
-			}
+			logger?.LogInformation("Git checkout information not available.");
+			return Unavailable;
 		}
 
 		var head = Read(source, Path.Combine(".git", "HEAD")) ?? fakeRef;

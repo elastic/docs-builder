@@ -51,10 +51,14 @@ public record BuildContext
 	public BuildContext(DiagnosticsCollector collector, IFileSystem fileSystem)
 		: this(collector, fileSystem, fileSystem, null, null) { }
 
-	public BuildContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem)
-		: this(collector, readFileSystem, writeFileSystem, null, null) { }
-
-	public BuildContext(DiagnosticsCollector collector, IFileSystem readFileSystem, IFileSystem writeFileSystem, string? source, string? output)
+	public BuildContext(
+		DiagnosticsCollector collector,
+		IFileSystem readFileSystem,
+		IFileSystem writeFileSystem,
+		string? source = null,
+		string? output = null,
+		GitCheckoutInformation? gitCheckoutInformation = null
+	)
 	{
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
@@ -75,8 +79,7 @@ public record BuildContext
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-
-		Git = GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
+		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 		Configuration = new ConfigurationFile(this);
 	}
 

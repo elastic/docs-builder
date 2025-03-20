@@ -77,7 +77,7 @@ public class DocumentationSet : INavigationLookups
 		};
 		MarkdownParser = new MarkdownParser(build, resolver);
 
-		Name = Build.Git.RepositoryName ?? "unavailable";
+		Name = Build.Git.RepositoryName ?? Build.DocumentationCheckoutDirectory?.Name ?? "unavailable";
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
 
