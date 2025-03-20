@@ -29,18 +29,31 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			var currentRootNavigation = link.GetData(nameof(MarkdownFile.RootNavigation)) as INavigation;
 			var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.RootNavigation)}") as INavigation;
 
+			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
+			var isExternalLink = url.StartsWith("http");
+
 			_ = renderer.Write("<a href=\"");
-			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url);
+			_ = renderer.WriteEscapeUrl(url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
-			_ = renderer.Write(" hx-get=\"");
-			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url);
-			_ = renderer.Write('"');
-			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
-			_ = renderer.Write(" hx-swap=\"none\"");
-			_ = renderer.Write(" hx-push-url=\"true\"");
-			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
-			_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
+
+			if (isExternalLink)
+			{
+				_ = renderer.Write(" target=\"_blank\"");
+				_ = renderer.Write(" rel=\"noopener noreferrer\"");
+			}
+			else
+			{
+				_ = renderer.Write(" hx-get=\"");
+				_ = renderer.WriteEscapeUrl(url);
+				_ = renderer.Write('"');
+				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
+				_ = renderer.Write(" hx-swap=\"none\"");
+				_ = renderer.Write(" hx-push-url=\"true\"");
+				_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
+				_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
+			}
+
 
 			if (!string.IsNullOrEmpty(link.Title))
 			{
