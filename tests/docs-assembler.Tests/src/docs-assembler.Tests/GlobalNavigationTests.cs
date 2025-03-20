@@ -51,7 +51,7 @@ public class GlobalNavigationTests
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
 		var globalNavigation = new GlobalNavigation(assembleContext, globalNavigationFile, checkouts);
 
-		var env = assembleContext.Configuration.Environments["production"];
+		var env = assembleContext.Configuration.Environments["prod"];
 		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, env);
 
 		// docs-content://reference/apm/something.md - url hasn't changed
