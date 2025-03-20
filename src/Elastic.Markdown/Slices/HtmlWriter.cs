@@ -100,6 +100,7 @@ public class HtmlWriter(
 
 		var slice = Index.Create(new IndexViewModel
 		{
+			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			Description = markdown.YamlFrontMatter?.Description ?? descriptionGenerator.GenerateDescription(document),
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
