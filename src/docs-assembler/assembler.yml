@@ -1,5 +1,5 @@
 environments:
-  production:
+  prod:
     uri: https://www.elastic.co
     path_prefix: docs
     allow_indexing: false
