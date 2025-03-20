@@ -69,85 +69,84 @@ public record DetectionRuleFile : MarkdownFile
 			return $"# {Title}";
 		// language=markdown
 		var markdown =
-			$"""
-			 # {Rule.Name}
+$"""
+# {Rule.Name}
 
-			 {Rule.Description}
+{Rule.Description}
 
-			 **Rule type**: {Rule.Type}
+**Rule type**: {Rule.Type}
 
-			 **Rule indices**: {RenderArray(Rule.Indices)}
+**Rule indices**: {RenderArray(Rule.Indices)}
 
-			 **Rule Severity**: {Rule.Severity}
+**Rule Severity**: {Rule.Severity}
 
-			 **Risk Score**: {Rule.RiskScore}
+**Risk Score**: {Rule.RiskScore}
 
-			 **Runs every**: {Rule.RunsEvery}
+**Runs every**: {Rule.RunsEvery}
 
-			 **Searches indices from**: `{Rule.IndicesFromDateMath}`
+**Searches indices from**: `{Rule.IndicesFromDateMath}`
 
-			 **Maximum alerts per execution**: {Rule.MaximumAlertsPerExecution}
+**Maximum alerts per execution**: {Rule.MaximumAlertsPerExecution}
 
-			 **References**: {RenderArray((Rule.References ?? []).Select(r => $"[{r}]({r})").ToArray())}
+**References**: {RenderArray((Rule.References ?? []).Select(r => $"[{r}]({r})").ToArray())}
 
-			 **Tags**: {RenderArray(Rule.Tags)}
+**Tags**: {RenderArray(Rule.Tags)}
 
-			 **Version**: {Rule.Version}
+**Version**: {Rule.Version}
 
-			 **Rule authors**: {RenderArray(Rule.Authors)}
+**Rule authors**: {RenderArray(Rule.Authors)}
 
-			 **Rule license**: {Rule.License}
-			 """;
+**Rule license**: {Rule.License}
+""";
 		// language=markdown
 		if (!string.IsNullOrWhiteSpace(Rule.Setup))
 		{
 			markdown +=
-				$"""
+$"""
 
-				  {Rule.Setup}
-				 """;
+ {Rule.Setup}
+""";
 		}
 
 		// language=markdown
 		if (!string.IsNullOrWhiteSpace(Rule.Note))
 		{
 			markdown +=
-				$"""
+$"""
 
-				  ## Investigation guide
+ ## Investigation guide
 
-				  {Rule.Note}
-				 """;
+ {Rule.Note}
+""";
 		}
-
 		// language=markdown
 		if (!string.IsNullOrWhiteSpace(Rule.Query))
 		{
 			markdown +=
-				$"""
+$"""
 
-				 ## Rule Query
+ ## Rule Query
 
-				 ```{Rule.Language ?? Rule.Type}
-				 {Rule.Query}
-				 ```
-				 """;
+ ```{Rule.Language ?? Rule.Type}
+ {Rule.Query}
+ ```
+ """;
 		}
 
 		foreach (var threat in Rule.Threats)
 		{
 			// language=markdown
 			markdown +=
-				$"""
+$"""
 
-				 **Framework:** {threat.Framework}
+**Framework:** {threat.Framework}
 
-				 * Tactic:
-				   * Name: {threat.Tactic.Name}
-				   * Id: {threat.Tactic.Id}
-				   * Reference URL: [{threat.Tactic.Reference}]({threat.Tactic.Reference})
+* Tactic:
+  * Name: {threat.Tactic.Name}
+  * Id: {threat.Tactic.Id}
+  * Reference URL: [{threat.Tactic.Reference}]({threat.Tactic.Reference})
 
-				 """;
+""";
 			foreach (var technique in threat.Techniques)
 			{
 				// language=markdown
@@ -156,19 +155,18 @@ public record DetectionRuleFile : MarkdownFile
 					markdown += TechniqueMarkdown(subTechnique, "Sub Technique");
 			}
 		}
-
 		return markdown;
 	}
 
 	private static string TechniqueMarkdown(DetectionRuleSubTechnique technique, string header) =>
-		$"""
+$"""
 
-		 * {header}:
-		   * Name: {technique.Name}
-		   * Id: {technique.Id}
-		   * Reference URL: [{technique.Reference}]({technique.Reference})
+* {header}:
+  * Name: {technique.Name}
+  * Id: {technique.Id}
+  * Reference URL: [{technique.Reference}]({technique.Reference})
 
-		 """;
+""";
 
 	private static string RenderArray(string[]? values)
 	{
