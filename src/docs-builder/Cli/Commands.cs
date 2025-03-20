@@ -124,7 +124,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		{
 			var outputDirectory = !string.IsNullOrWhiteSpace(output)
 				? fileSystem.DirectoryInfo.New(output)
-				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, ".artifacts/docs/html"));
+				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non documentation folder.
 			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
 

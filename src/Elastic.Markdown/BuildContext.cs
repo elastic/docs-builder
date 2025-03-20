@@ -16,10 +16,11 @@ public record BuildContext
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
 
+	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public IDirectoryInfo DocumentationOutputDirectory { get; }
 
-	public ConfigurationFile Configuration { get; set; }
+	public ConfigurationFile Configuration { get; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -61,19 +62,21 @@ public record BuildContext
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName));
+			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName));
 
 		(DocumentationSourceDirectory, ConfigurationPath) = FindDocsFolderFromRoot(rootFolder);
 
+		DocumentationCheckoutDirectory = Paths.DetermineSourceDirectoryRoot(DocumentationSourceDirectory);
+
 		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, Path.Combine(".artifacts", "docs", "html")));
+			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, Path.Combine(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 
-		Git = GitCheckoutInformation.Create(DocumentationSourceDirectory, ReadFileSystem);
+		Git = GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 		Configuration = new ConfigurationFile(this);
 	}
 

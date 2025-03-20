@@ -41,8 +41,6 @@ public class DocumentationSet : INavigationLookups
 	public IDirectoryInfo SourceDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 
-	public string RelativeSourcePath { get; }
-
 	public DateTimeOffset LastWrite { get; }
 
 	public ConfigurationFile Configuration { get; }
@@ -68,7 +66,6 @@ public class DocumentationSet : INavigationLookups
 		Build = build;
 		SourceDirectory = build.DocumentationSourceDirectory;
 		OutputDirectory = build.DocumentationOutputDirectory;
-		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourceDirectory.FullName);
 		LinkResolver =
 			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(build.Configuration, logger));
 		Configuration = build.Configuration;

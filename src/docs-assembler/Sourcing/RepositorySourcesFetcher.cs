@@ -74,7 +74,7 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 	{
 		var fs = context.ReadFileSystem;
 		var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, name));
-		var relativePath = Path.GetRelativePath(Paths.Root.FullName, checkoutFolder.FullName);
+		var relativePath = Path.GetRelativePath(Paths.WorkingDirectoryRoot.FullName, checkoutFolder.FullName);
 		var sw = Stopwatch.StartNew();
 		_ = dict.AddOrUpdate(name, sw, (_, _) => sw);
 		var head = string.Empty;

@@ -44,7 +44,7 @@ public class AssembleContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var configPath = Path.Combine(Paths.Root.FullName, "src", "docs-assembler", "assembler.yml");
+		var configPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "assembler.yml");
 		// temporarily fallback to embedded assembler.yml
 		// This will live in docs-content soon
 		if (!ReadFileSystem.File.Exists(configPath))
@@ -52,7 +52,7 @@ public class AssembleContext
 		ConfigurationPath = ReadFileSystem.FileInfo.New(configPath);
 		Configuration = AssemblyConfiguration.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationPath.FullName));
 
-		var navigationPath = Path.Combine(Paths.Root.FullName, "src", "docs-assembler", "navigation.yml");
+		var navigationPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "navigation.yml");
 		if (!ReadFileSystem.File.Exists(navigationPath))
 			ExtractAssemblerConfiguration(navigationPath);
 		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
