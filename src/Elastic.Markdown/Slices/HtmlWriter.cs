@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Slices;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(INavigation currentRootNavigation, bool isRoot, Cancel ctx = default);
+	Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
@@ -29,7 +29,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(INavigation currentRootNavigation, bool isRoot, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
 	{
 		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -38,13 +38,13 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
 			return value;
 
-		var model = CreateNavigationModel(navigation, isRoot);
+		var model = CreateNavigationModel(navigation);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
 		_renderedNavigationCache[navigation.Id] = value;
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(INavigation navigation, bool isRoot)
+	private NavigationViewModel CreateNavigationModel(INavigation navigation)
 	{
 		if (navigation is not DocumentationGroup tree)
 			throw new InvalidOperationException("Expected a documentation group");
@@ -54,7 +54,6 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 			Title = tree.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = tree.Index?.Url ?? Set.Build.UrlPathPrefix ?? "/",
 			Tree = tree,
-			IsRoot = isRoot,
 			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
 			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigation>().ToList()
 		};
@@ -79,8 +78,7 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var isRoot = DocumentationSet.Tree.Id == markdown.RootNavigation.Id;
-		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.RootNavigation, isRoot, ctx);
+		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.RootNavigation, ctx);
 
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);
