@@ -68,7 +68,7 @@ public record GitCheckoutInformation
 			branch = branch.Replace("ref: ", string.Empty);
 		}
 		else
-			branch = "detached/head";
+			branch = Environment.GetEnvironmentVariable("GITHUB_REF_NAME") ?? "detached/head";
 
 		var ini = new IniFile();
 		using var stream = gitConfig.OpenRead();
