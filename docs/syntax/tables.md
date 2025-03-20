@@ -42,7 +42,7 @@ A table is an arrangement of data with rows and columns. Each row consists of ce
 :::
 
 
-### Table without header
+## Table without header
 
 ::::{tab-set}
 
