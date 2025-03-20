@@ -25,7 +25,7 @@ toc:
 			{ "docs/index.md", new MockFileData("test") }
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Paths.Root.FullName
+			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
 		var context = new BuildContext(fileSystem);
 		var linkResolver = new TestCrossLinkResolver();

@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.Navigation;
 using Markdig.Syntax;
 using RazorSlices;
@@ -60,7 +61,11 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 	}
 }
 
-public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFileSystem, IDescriptionGenerator descriptionGenerator, INavigationHtmlWriter? navigationHtmlWriter = null)
+public class HtmlWriter(
+	DocumentationSet documentationSet,
+	IFileSystem writeFileSystem,
+	IDescriptionGenerator descriptionGenerator,
+	INavigationHtmlWriter? navigationHtmlWriter = null)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
@@ -85,8 +90,14 @@ public class HtmlWriter(DocumentationSet documentationSet, IFileSystem writeFile
 
 		var remote = DocumentationSet.Build.Git.RepositoryName;
 		var branch = DocumentationSet.Build.Git.Branch;
-		var path = Path.Combine(DocumentationSet.RelativeSourcePath, markdown.RelativePath);
-		var editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
+		string? editUrl = null;
+		if (DocumentationSet.Build.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Build.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		{
+			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Build.DocumentationSourceDirectory.FullName);
+			var path = Path.Combine(relativeSourcePath, markdown.RelativePath);
+			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
+		}
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			Title = markdown.Title ?? "[TITLE NOT SET]",

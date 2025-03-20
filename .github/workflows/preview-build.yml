@@ -115,6 +115,7 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
         run: |
           case "${GITHUB_EVENT_NAME}" in
             "merge_group" | "pull_request" | "pull_request_target")
