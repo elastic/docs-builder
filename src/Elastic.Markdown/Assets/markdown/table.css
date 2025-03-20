@@ -3,11 +3,12 @@
 
 	.table-wrapper {
 
-		@apply w-full overflow-x-scroll my-4;
+		@apply w-full overflow-x-auto my-4;
 
 		&::-webkit-scrollbar {
 			@apply h-2 bg-grey-10 border-b-1 border-grey-20;
 		}
+		
 		&::-webkit-scrollbar-thumb {
 			@apply bg-grey-80 rounded-full;
 		}

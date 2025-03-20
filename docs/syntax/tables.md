@@ -42,6 +42,32 @@ A table is an arrangement of data with rows and columns. Each row consists of ce
 :::
 
 
+### Table without header
+
+::::{tab-set}
+
+:::{tab-item} Output
+|                   |         |
+|-------------------|---------|
+| **Country**       | Austria |
+| **Capital**       | Vienna  |
+| **Calling code**  | +43     |
+| **ISO 3166 code** | AT      |
+:::
+
+:::{tab-item} Markdown
+```markdown
+|                   |         |
+|-------------------|---------|
+| **Country**       | Austria |
+| **Capital**       | Vienna  |
+| **Calling code**  | +43     |
+| **ISO 3166 code** | AT      |
+```
+:::
+
+::::
+
 ## Responsive Table
 
 Every table is responsive by default. The table will automatically scroll horizontally when the content is wider than the viewport.
