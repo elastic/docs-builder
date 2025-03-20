@@ -53,6 +53,7 @@ public record GlobalNavigation
 	private static void FindToc(TableOfContentsReference entry)
 	{
 		var toc = _pathProvider.LocateDocSetYaml(entry.Source);
+		var toctoc = new TableOfContentsConfiguration()
 
 	}
 }
@@ -130,15 +131,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 	public string GetSubPath(Uri crossLinkUri, ref string path)
 	{
-		if (!_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out _))
-		{
-			_context.Collector.EmitError(_context.ConfigurationPath,
-				!_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out _)
-					? $"Repository: '{crossLinkUri.Scheme}' is not defined in assembler.yml"
-					: $"Unable to find checkout for repository: {crossLinkUri.Scheme}"
-			);
-		}
-
+		_ = _checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out _);
 		var lookup = crossLinkUri.ToString().AsSpan();
 		if (lookup.EndsWith(".md", StringComparison.Ordinal))
 			lookup = lookup[..^3];
