@@ -72,8 +72,7 @@ public record BuildContext
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-
-		Git = GitCheckoutInformation.Create(DocumentationSourceDirectory, ReadFileSystem);
+		Git = GitCheckoutInformation.Create(rootFolder, ReadFileSystem);
 		Configuration = new ConfigurationFile(this);
 	}
 
