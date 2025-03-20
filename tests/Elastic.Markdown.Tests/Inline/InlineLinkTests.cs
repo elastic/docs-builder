@@ -194,7 +194,7 @@ public class ExternalLinksWithInterpolationSuccess(ITestOutputHelper output) : L
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0">link to app</a></p>"""
+			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a></p>"""
 		);
 
 	[Fact]

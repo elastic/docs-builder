@@ -33,6 +33,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
+
 			if (link.Url?.StartsWith('/') == true)
 			{
 				var currentRootNavigation = link.GetData(nameof(MarkdownFile.RootNavigation)) as INavigation;
@@ -46,7 +47,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
 				_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
 			}
-			else
+			else if (link.Url?.StartsWith("http") == true && (link.GetData("isCrossLink") as bool?) == false)
 			{
 				_ = renderer.Write(" target=\"_blank\"");
 				_ = renderer.Write(" rel=\"noopener noreferrer\"");

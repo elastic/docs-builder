@@ -131,9 +131,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (IsCrossLink(uri))
 		{
+			link.SetData("isCrossLink", true);
 			ProcessCrossLink(link, processor, context, uri);
 			return;
 		}
+		link.SetData("isCrossLink", false);
 
 		if (ValidateExternalUri(link, processor, uri))
 			return;
