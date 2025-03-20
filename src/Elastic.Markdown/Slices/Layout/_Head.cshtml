@@ -1,6 +1,6 @@
 @inherits RazorSlice<LayoutViewModel>
 @using Elastic.Markdown.Helpers
-<head>
+<head hx-head="merge">
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
 	<meta name="description" content="@Model.Description">
