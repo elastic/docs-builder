@@ -11,16 +11,16 @@ namespace Documentation.Assembler.Building;
 
 public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 {
-	private readonly GlobalNavigation _globalNavigation;
+	private readonly GlobalNavigationPathProvider _globalNavigationPathProvider;
 	private Uri BaseUri { get; }
 
 	private PublishEnvironment PublishEnvironment { get; }
 
 	private IsolatedBuildEnvironmentUriResolver IsolatedBuildResolver { get; }
 
-	public PublishEnvironmentUriResolver(GlobalNavigation globalNavigation, PublishEnvironment environment)
+	public PublishEnvironmentUriResolver(GlobalNavigationPathProvider globalNavigationPathProvider, PublishEnvironment environment)
 	{
-		_globalNavigation = globalNavigation;
+		_globalNavigationPathProvider = globalNavigationPathProvider;
 		if (!Uri.TryCreate(environment.Uri, UriKind.Absolute, out var uri))
 			throw new Exception($"Could not parse uri {environment.Uri} in environment {environment}");
 
@@ -35,7 +35,7 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		if (PublishEnvironment.Name == "preview")
 			return IsolatedBuildResolver.Resolve(crossLinkUri, path);
 
-		var subPath = _globalNavigation.GetSubPath(crossLinkUri, ref path);
+		var subPath = _globalNavigationPathProvider.GetSubPath(crossLinkUri, ref path);
 
 		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch
 		{

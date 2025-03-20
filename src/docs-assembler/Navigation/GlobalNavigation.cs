@@ -4,34 +4,80 @@
 
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
 
-public record GlobalNavigation : IDocumentationFileOutputProvider
+
+public record GlobalNavigationItem : INavigationItem
+{
+	public int Order { get; init; }
+	public int Depth { get; init; }
+	public string Id { get; init; }
+	public required IReadOnlyCollection<GlobalNavigationItem> Children { get; init; }
+}
+
+public record GlobalNavigation
+{
+	private readonly GlobalNavigationPathProvider _pathProvider;
+	public IReadOnlyCollection<GlobalNavigationItem> TableOfContents { get; init; }
+
+	public GlobalNavigation(GlobalNavigationConfiguration navigationFile, GlobalNavigationPathProvider pathProvider)
+	{
+		_pathProvider = pathProvider;
+		TableOfContents = BuildNavigation(navigationFile.TableOfContents, 0);
+	}
+
+	private static IReadOnlyCollection<GlobalNavigationItem> BuildNavigation(IReadOnlyCollection<TableOfContentsReference> node, int depth)
+	{
+		var list = new List<GlobalNavigationItem>();
+		foreach (var entry in node)
+		{
+			FindToc(entry);
+			var children = BuildNavigation(entry.Children, depth + 1);
+			var item = new GlobalNavigationItem { Order = 0, Depth = depth, Id = entry.Source.ToString(), Children = children };
+			list.Add(item);
+		}
+
+		return list.ToArray().AsReadOnly();
+	}
+
+	private static void FindToc(TableOfContentsReference entry)
+	{
+		var toc = _pathProvider.LocateDocSetYaml(entry.Source);
+
+	}
+}
+
+public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 {
 	private readonly AssembleContext _context;
 	private readonly FrozenDictionary<string, Checkout>.AlternateLookup<ReadOnlySpan<char>> _checkoutsLookup;
 	private readonly FrozenDictionary<string, Repository>.AlternateLookup<ReadOnlySpan<char>> _repoConfigLookup;
 	private readonly FrozenDictionary<string, TableOfContentsReference>.AlternateLookup<ReadOnlySpan<char>> _tocLookup;
+	private readonly IFileSystem _readFs;
 
 	private FrozenDictionary<string, Repository> ConfiguredRepositories { get; }
 	private FrozenDictionary<string, TableOfContentsReference> IndexedTableOfContents { get; }
 
-	public GlobalNavigationFile NavigationConfiguration { get; init; }
+	public GlobalNavigationConfiguration NavigationConfiguration { get; init; }
 
 	private FrozenDictionary<string, Checkout> Checkouts { get; init; }
 
 	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
 
-	public GlobalNavigation(AssembleContext context, GlobalNavigationFile navigationConfiguration, Checkout[] checkouts)
+	public GlobalNavigationPathProvider(AssembleContext context, GlobalNavigationConfiguration navigationConfiguration, Checkout[] checkouts)
 	{
 		_context = context;
+		_readFs = context.ReadFileSystem;
 		NavigationConfiguration = navigationConfiguration;
 		Checkouts = checkouts.ToDictionary(c => c.Repository.Name, c => c).ToFrozenDictionary();
 		_checkoutsLookup = Checkouts.GetAlternateLookup<ReadOnlySpan<char>>();
@@ -44,6 +90,42 @@ public record GlobalNavigation : IDocumentationFileOutputProvider
 		IndexedTableOfContents = navigationConfiguration.IndexedTableOfContents;
 		_tocLookup = IndexedTableOfContents.GetAlternateLookup<ReadOnlySpan<char>>();
 		TableOfContentsPrefixes = navigationConfiguration.IndexedTableOfContents.Keys.OrderByDescending(k => k.Length).ToImmutableSortedSet();
+	}
+
+	public IFileInfo? LocateDocSetYaml(Uri crossLinkUri)
+	{
+		if (!TryGetCheckout(crossLinkUri, out var checkout))
+			return null;
+
+		var tocDirectory = _readFs.DirectoryInfo.New(Path.Combine(checkout.Directory.FullName, crossLinkUri.Host, crossLinkUri.AbsolutePath.TrimStart('/')));
+		if (!tocDirectory.Exists)
+		{
+			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find toc directory: {tocDirectory.FullName}");
+			return null;
+
+		}
+
+		var docsetYaml = _readFs.FileInfo.New(Path.Combine(tocDirectory.FullName, "docset.yml"));
+		var tocYaml = _readFs.FileInfo.New(Path.Combine(tocDirectory.FullName, "toc.yml"));
+		if (!docsetYaml.Exists && !tocYaml.Exists)
+		{
+			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find docset.yml or toc.yml in: {tocDirectory.FullName}");
+			return null;
+		}
+		return docsetYaml.Exists ? docsetYaml : tocYaml;
+	}
+
+	private bool TryGetCheckout(Uri crossLinkUri, [NotNullWhen(true)] out Checkout? checkout)
+	{
+		if (_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out checkout))
+			return true;
+
+		_context.Collector.EmitError(_context.ConfigurationPath,
+			!_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out _)
+				? $"Repository: '{crossLinkUri.Scheme}' is not defined in assembler.yml"
+				: $"Unable to find checkout for repository: {crossLinkUri.Scheme}"
+		);
+		return false;
 	}
 
 	public string GetSubPath(Uri crossLinkUri, ref string path)

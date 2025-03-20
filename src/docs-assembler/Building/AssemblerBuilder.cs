@@ -13,12 +13,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigation globalNavigation)
+public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigationPathProvider globalNavigationPathProvider)
 {
 	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, PublishEnvironment environment, Cancel ctx)
 	{
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, context.Configuration);
-		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, environment);
+		var uriResolver = new PublishEnvironmentUriResolver(globalNavigationPathProvider, environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
 
 		if (context.OutputDirectory.Exists)
@@ -74,7 +74,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 		};
 
 		var set = new DocumentationSet(buildContext, logger, crossLinkResolver);
-		var generator = new DocumentationGenerator(set, logger, globalNavigation);
+		var generator = new DocumentationGenerator(set, logger, globalNavigationPathProvider);
 		await generator.GenerateAll(ctx);
 	}
 }

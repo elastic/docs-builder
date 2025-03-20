@@ -13,7 +13,7 @@ using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;
 
-public class GlobalNavigationTests
+public class GlobalNavigationPathProviderTests
 {
 	[Fact]
 	public async Task ParsesGlobalNavigation()
@@ -22,7 +22,7 @@ public class GlobalNavigationTests
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null);
-		var globalNavigation = GlobalNavigationFile.Deserialize(assembleContext);
+		var globalNavigation = GlobalNavigationConfiguration.Deserialize(assembleContext);
 		globalNavigation.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
 		var docsContentKeys = globalNavigation.IndexedTableOfContents.Keys
 			.Where(k => k.StartsWith("docs-content://", StringComparison.Ordinal)).ToArray();
@@ -45,11 +45,11 @@ public class GlobalNavigationTests
 
 		var fs = new FileSystem();
 		var assembleContext = new AssembleContext(collector, fs, fs, null, null);
-		var globalNavigationFile = GlobalNavigationFile.Deserialize(assembleContext);
+		var globalNavigationFile = GlobalNavigationConfiguration.Deserialize(assembleContext);
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
 		string[] repos = ["docs-content", "curator", "elasticsearch-net", "elasticsearch"];
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
-		var globalNavigation = new GlobalNavigation(assembleContext, globalNavigationFile, checkouts);
+		var globalNavigation = new GlobalNavigationPathProvider(assembleContext, globalNavigationFile, checkouts);
 
 		var env = assembleContext.Configuration.Environments["prod"];
 		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, env);

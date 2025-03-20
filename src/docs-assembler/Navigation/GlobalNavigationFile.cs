@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO.Configuration;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler.Navigation;
 
-public record TableOfContentsReference
+public record TableOfContentsReference(IDirectoryInfo ScopeDirectory) : ITableOfContentsScope
 {
 	public required Uri Source { get; init; }
 	public required string SourcePrefix { get; init; }
@@ -17,16 +18,16 @@ public record TableOfContentsReference
 	public required IReadOnlyCollection<TableOfContentsReference> Children { get; init; }
 }
 
-public record GlobalNavigationFile
+public record GlobalNavigationConfiguration
 {
 	public IReadOnlyCollection<TableOfContentsReference> TableOfContents { get; init; } = [];
 
 	public FrozenDictionary<string, TableOfContentsReference> IndexedTableOfContents { get; init; } =
 		new Dictionary<string, TableOfContentsReference>().ToFrozenDictionary();
 
-	public static GlobalNavigationFile Deserialize(AssembleContext context)
+	public static GlobalNavigationConfiguration Deserialize(AssembleContext context)
 	{
-		var globalConfig = new GlobalNavigationFile();
+		var globalConfig = new GlobalNavigationConfiguration();
 		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
 		try
 		{
