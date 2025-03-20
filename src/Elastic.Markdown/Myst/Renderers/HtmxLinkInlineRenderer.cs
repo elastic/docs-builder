@@ -17,7 +17,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 {
 	protected override void Write(HtmlRenderer renderer, LinkInline link)
 	{
-		if (renderer.EnableHtmlForInline && !link.IsImage && link.Url?.StartsWith('/') == true)
+		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
 			// ReSharper disable once UnusedVariable
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
@@ -26,24 +26,17 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				return;
 			}
 
-			var currentRootNavigation = link.GetData(nameof(MarkdownFile.RootNavigation)) as INavigation;
-			var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.RootNavigation)}") as INavigation;
-
 			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
-			var isExternalLink = url.StartsWith("http");
 
 			_ = renderer.Write("<a href=\"");
 			_ = renderer.WriteEscapeUrl(url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
-			if (isExternalLink)
+			if (link.Url?.StartsWith('/') == true)
 			{
-				_ = renderer.Write(" target=\"_blank\"");
-				_ = renderer.Write(" rel=\"noopener noreferrer\"");
-			}
-			else
-			{
+				var currentRootNavigation = link.GetData(nameof(MarkdownFile.RootNavigation)) as INavigation;
+				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.RootNavigation)}") as INavigation;
 				_ = renderer.Write(" hx-get=\"");
 				_ = renderer.WriteEscapeUrl(url);
 				_ = renderer.Write('"');
@@ -53,7 +46,11 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
 				_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
 			}
-
+			else
+			{
+				_ = renderer.Write(" target=\"_blank\"");
+				_ = renderer.Write(" rel=\"noopener noreferrer\"");
+			}
 
 			if (!string.IsNullOrEmpty(link.Title))
 			{
@@ -62,7 +59,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				_ = renderer.Write('"');
 			}
 
-			if (!string.IsNullOrWhiteSpace(Rel))
+			if (!string.IsNullOrWhiteSpace(Rel) && link.Url?.StartsWith('/') == false)
 			{
 				_ = renderer.Write(" rel=\"");
 				_ = renderer.Write(Rel);
