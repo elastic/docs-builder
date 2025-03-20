@@ -60,7 +60,7 @@ public class StaticWebHost
 			return Results.NotFound();
 
 		await Task.CompletedTask;
-		var path = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly");
+		var path = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var localPath = Path.Combine(path, slug.Replace('/', Path.DirectorySeparatorChar));
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);

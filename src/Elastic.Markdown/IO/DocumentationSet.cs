@@ -9,6 +9,7 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
@@ -41,8 +42,6 @@ public class DocumentationSet : INavigationLookups
 	public IDirectoryInfo SourceDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 
-	public string RelativeSourcePath { get; }
-
 	public DateTimeOffset LastWrite { get; }
 
 	public ConfigurationFile Configuration { get; }
@@ -68,7 +67,6 @@ public class DocumentationSet : INavigationLookups
 		Build = build;
 		SourceDirectory = build.DocumentationSourceDirectory;
 		OutputDirectory = build.DocumentationOutputDirectory;
-		RelativeSourcePath = Path.GetRelativePath(Paths.Root.FullName, SourceDirectory.FullName);
 		LinkResolver =
 			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(build.Configuration, logger));
 		Configuration = build.Configuration;
@@ -80,7 +78,9 @@ public class DocumentationSet : INavigationLookups
 		};
 		MarkdownParser = new MarkdownParser(build, resolver);
 
-		Name = Build.Git.RepositoryName ?? "unavailable";
+		Name = Build.Git != GitCheckoutInformation.Unavailable
+			? Build.Git.RepositoryName
+			: Build.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Build.DocumentationSourceDirectory.Name}";
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
 

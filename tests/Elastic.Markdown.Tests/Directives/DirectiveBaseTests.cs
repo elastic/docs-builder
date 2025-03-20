@@ -57,13 +57,13 @@ $"""
 			{ "docs/index.md", new MockFileData(documentContents) }
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Paths.Root.FullName
+			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
 
-		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.Root.FullName, "docs/"));
+		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		FileSystem.GenerateDocSetYaml(root);
 
 		Collector = new TestDiagnosticsCollector(output);

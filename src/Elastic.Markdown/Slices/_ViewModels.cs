@@ -47,6 +47,8 @@ public class LayoutViewModel
 	public required string? GithubEditUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
+
+	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
 	public required FeatureFlags Features { get; init; }
 
 	private MarkdownFile[]? _parents;
@@ -96,9 +98,7 @@ public class NavigationViewModel
 	public required string TitleUrl { get; init; }
 	public required INavigation Tree { get; init; }
 	//public required MarkdownFile CurrentDocument { get; init; }
-	public required bool IsRoot { get; init; }
 	public required bool IsPrimaryNavEnabled { get; init; }
-
 	public required IEnumerable<GroupNavigation> TopLevelItems { get; init; }
 }
 
@@ -107,7 +107,6 @@ public class NavigationTreeItem
 	public required int Level { get; init; }
 	//public required MarkdownFile CurrentDocument { get; init; }
 	public required INavigation SubTree { get; init; }
-	public required bool IsRoot { get; init; }
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required string RootNavigationId { get; set; }
 }

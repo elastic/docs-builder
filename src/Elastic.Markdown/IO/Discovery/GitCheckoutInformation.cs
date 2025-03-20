@@ -11,7 +11,7 @@ namespace Elastic.Markdown.IO.Discovery;
 
 public record GitCheckoutInformation
 {
-	private static GitCheckoutInformation Unavailable { get; } = new()
+	public static GitCheckoutInformation Unavailable { get; } = new()
 	{
 		Branch = "unavailable",
 		Remote = "unavailable",
@@ -29,11 +29,14 @@ public record GitCheckoutInformation
 	public required string Ref { get; init; }
 
 	[JsonPropertyName("name")]
-	public string? RepositoryName { get; init; }
+	public string RepositoryName { get; init; } = "unavailable";
 
 	// manual read because libgit2sharp is not yet AOT ready
-	public static GitCheckoutInformation Create(IDirectoryInfo source, IFileSystem fileSystem, ILogger? logger = null)
+	public static GitCheckoutInformation Create(IDirectoryInfo? source, IFileSystem fileSystem, ILogger? logger = null)
 	{
+		if (source is null)
+			return Unavailable;
+
 		if (fileSystem is not FileSystem)
 		{
 			return new GitCheckoutInformation
@@ -49,12 +52,8 @@ public record GitCheckoutInformation
 		var gitConfig = Git(source, Path.Combine(".git", "config"));
 		if (!gitConfig.Exists)
 		{
-			gitConfig = Git(source, Path.Combine("..", ".git", "config"));
-			if (!gitConfig.Exists)
-			{
-				logger?.LogInformation("Git checkout information not available.");
-				return Unavailable;
-			}
+			logger?.LogInformation("Git checkout information not available.");
+			return Unavailable;
 		}
 
 		var head = Read(source, Path.Combine(".git", "HEAD")) ?? fakeRef;

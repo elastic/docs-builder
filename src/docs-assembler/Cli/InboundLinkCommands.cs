@@ -45,7 +45,7 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	{
 		AssignOutputLogger();
 		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
+		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		if (from == null && to == null)
 		{
 			from ??= GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
@@ -67,7 +67,7 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		AssignOutputLogger();
 		file ??= ".artifacts/docs/html/links.json";
 		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.Root.FullName);
+		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
