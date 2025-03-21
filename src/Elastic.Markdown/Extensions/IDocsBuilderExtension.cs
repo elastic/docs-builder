@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
@@ -11,6 +12,8 @@ namespace Elastic.Markdown.Extensions;
 
 public interface IDocsBuilderExtension
 {
+	IDocumentationFileExporter? FileExporter { get; }
+
 	///  Inject items into the current navigation
 	void CreateNavigationItem(
 		DocumentationGroup? parent,

@@ -42,10 +42,10 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				_ = renderer.WriteEscapeUrl(url);
 				_ = renderer.Write('"');
 				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
-				_ = renderer.Write(" hx-swap=\"none\"");
-				_ = renderer.Write(" hx-push-url=\"true\"");
-				_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
-				_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
+				_ = renderer.Write($" hx-swap=\"{Htmx.HxSwap}\"");
+				_ = renderer.Write($" hx-push-url=\"{Htmx.HxPushUrl}\"");
+				_ = renderer.Write($" hx-indicator=\"{Htmx.HxIndicator}\"");
+				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			}
 			else if (link.Url?.StartsWith("http") == true && (link.GetData("isCrossLink") as bool?) == false)
 			{

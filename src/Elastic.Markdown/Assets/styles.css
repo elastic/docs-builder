@@ -227,3 +227,8 @@
 	
 	max-width: 1250px !important;
 }
+
+
+#elastic-nav {
+	min-height: var(--offset-top);
+}

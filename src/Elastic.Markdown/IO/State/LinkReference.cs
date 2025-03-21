@@ -70,10 +70,10 @@ public record LinkReference
 		var redirects = set.Configuration.Redirects;
 		var crossLinks = set.Build.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = set.MarkdownFiles.Values
-			.Select(m => (m.RelativePath, File: m))
+			.Select(m => (m.LinkReferenceRelativePath, File: m))
 			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-			? k.RelativePath.Replace('\\', '/')
-			: k.RelativePath, v =>
+			? k.LinkReferenceRelativePath.Replace('\\', '/')
+			: k.LinkReferenceRelativePath, v =>
 			{
 				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
 				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
