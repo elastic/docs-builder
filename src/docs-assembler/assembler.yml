@@ -26,19 +26,14 @@ references:
   apm-agent-ios:
   apm-agent-java:
   apm-agent-nodejs:
-    skip: true
   apm-agent-php:
-    skip: true
   apm-agent-python:
-    skip: true
   apm-agent-ruby:
-    skip: true
   apm-agent-rum-js:
-    skip: true
   apm-aws-lambda:
   apm-k8s-attacher:
+  apm-server:
   beats:
-    skip: true
   cloud-on-k8s:
   cloud:
     current: master
@@ -60,7 +55,6 @@ references:
   ecs-logging-ruby:
   ecs-logging:
   ecs:
-    skip: true
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:
@@ -79,10 +73,9 @@ references:
   go-elasticsearch:
   integrations:
   kibana:
-  logstash-docs:
+  logstash-docs-md:
     skip: true
   logstash:
-    skip: true
   search-ui:
   integration-docs:
     skip: true
