@@ -29,10 +29,13 @@ public class AssembleContext
 
 	public bool Force { get; init; }
 
-	// This property is used to determine if the site should be indexed by search engines
+	/// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
+	public PublishEnvironment Environment { get; set; }
+
 	public AssembleContext(
+		string environment,
 		DiagnosticsCollector collector,
 		IFileSystem readFileSystem,
 		IFileSystem writeFileSystem,
@@ -59,6 +62,11 @@ public class AssembleContext
 
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? ".artifacts/checkouts");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? ".artifacts/assembly");
+
+
+		if (!Configuration.Environments.TryGetValue(environment, out var env))
+			throw new Exception($"Could not find environment {environment}");
+		Environment = env;
 	}
 
 	private void ExtractAssemblerConfiguration(string configPath, string file)

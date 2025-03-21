@@ -2,31 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Documentation.Assembler.Configuration;
+using System.Collections.Frozen;
 using Documentation.Assembler.Navigation;
-using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
-using Elastic.Markdown.CrossLinks;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Discovery;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigationPathProvider globalNavigationPathProvider)
+public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigationPathProvider pathProvider)
 {
-	public async Task BuildAllAsync(IReadOnlyCollection<Checkout> checkouts, PublishEnvironment environment, Cancel ctx)
+	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, Cancel ctx)
 	{
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, context.Configuration);
-		var uriResolver = new PublishEnvironmentUriResolver(globalNavigationPathProvider, environment);
-		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
-
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
 		context.OutputDirectory.Create();
 
-		foreach (var checkout in checkouts)
+		foreach (var (_, set) in assembleSets)
 		{
+			var checkout = set.Checkout;
 			if (checkout.Repository.Skip)
 			{
 				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
@@ -35,7 +28,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 
 			try
 			{
-				await BuildAsync(checkout, environment, crossLinkResolver, ctx);
+				await BuildAsync(set, ctx);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
@@ -52,29 +45,10 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 		await context.Collector.StopAsync(ctx);
 	}
 
-	private async Task BuildAsync(Checkout checkout, PublishEnvironment environment, CrossLinkResolver crossLinkResolver, Cancel ctx)
+	private async Task BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
 	{
-		var path = checkout.Directory.FullName;
-		var output = environment.PathPrefix != null ? Path.Combine(context.OutputDirectory.FullName, environment.PathPrefix) : context.OutputDirectory.FullName;
-
-		var gitConfiguration = new GitCheckoutInformation
-		{
-			RepositoryName = checkout.Repository.Name,
-			Ref = checkout.HeadReference,
-			Remote = $"elastic/${checkout.Repository.Name}",
-			Branch = checkout.Repository.CurrentBranch
-		};
-
-		var buildContext = new BuildContext(context.Collector, context.ReadFileSystem, context.WriteFileSystem, path, output, gitConfiguration)
-		{
-			UrlPathPrefix = environment.PathPrefix,
-			Force = false,
-			AllowIndexing = environment.AllowIndexing,
-			SkipMetadata = true
-		};
-
-		var set = new DocumentationSet(buildContext, logger, crossLinkResolver);
-		var generator = new DocumentationGenerator(set, logger, globalNavigationPathProvider);
+		var generator = new DocumentationGenerator(set.DocumentationSet, logger, pathProvider);
 		await generator.GenerateAll(ctx);
 	}
+
 }

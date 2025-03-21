@@ -16,45 +16,83 @@ using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
 
-
-public record GlobalNavigationItem : INavigationItem
+public record GlobalNavigationProvider
 {
-	public int Order { get; init; }
-	public int Depth { get; init; }
-	public string Id { get; init; }
-	public required IReadOnlyCollection<GlobalNavigationItem> Children { get; init; }
-}
+	private readonly FrozenDictionary<string, AssemblerDocumentationSet> _assembleSets;
+	private readonly GlobalNavigationConfiguration _navigationFile;
+	public FrozenDictionary<Uri, TableOfContentsTree> TreeLookup { get; }
+	public IReadOnlyCollection<INavigationItem> TableOfContents { get; init; }
 
-public record GlobalNavigation
-{
-	private readonly GlobalNavigationPathProvider _pathProvider;
-	public IReadOnlyCollection<GlobalNavigationItem> TableOfContents { get; init; }
-
-	public GlobalNavigation(GlobalNavigationConfiguration navigationFile, GlobalNavigationPathProvider pathProvider)
+	public GlobalNavigationProvider(
+		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets,
+		GlobalNavigationConfiguration navigationFile
+	)
 	{
-		_pathProvider = pathProvider;
+		_assembleSets = assembleSets;
+		_navigationFile = navigationFile;
+		TreeLookup = assembleSets
+			.SelectMany(s => s.Value.DocumentationSet.Tree.NestedTableOfContentsTrees)
+			.ToDictionary()
+			.ToFrozenDictionary();
 		TableOfContents = BuildNavigation(navigationFile.TableOfContents, 0);
 	}
 
-	private static IReadOnlyCollection<GlobalNavigationItem> BuildNavigation(IReadOnlyCollection<TableOfContentsReference> node, int depth)
+	public async Task<IReadOnlyCollection<INavigationItem>> BuildNavigation(Cancel ctx)
 	{
-		var list = new List<GlobalNavigationItem>();
+		foreach (var (_, set) in _assembleSets)
+			await set.DocumentationSet.ResolveDirectoryTree(ctx);
+
+		return BuildNavigation(_navigationFile.TableOfContents, 0);
+	}
+
+	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<INavigationItem> node, int depth)
+	{
+		var list = new List<INavigationItem>();
+		var i = 0;
 		foreach (var entry in node)
 		{
-			FindToc(entry);
-			var children = BuildNavigation(entry.Children, depth + 1);
-			var item = new GlobalNavigationItem { Order = 0, Depth = depth, Id = entry.Source.ToString(), Children = children };
-			list.Add(item);
+			if (entry is FileNavigation file)
+			{
+				var f = file with { Depth = depth, Order = i };
+				list.Add(f);
+			}
+			if (entry is GroupNavigation groupNavigation)
+			{
+				groupNavigation = groupNavigation with
+				{
+					Depth = depth,
+					Order = i,
+					Group = groupNavigation.Group
+				};
+				list.Add(groupNavigation);
+			}
+
+			if (entry is TableOfContentsReference toc)
+			{
+				var tree = FindToc(toc);
+				if (tree is not null)
+				{
+					var group = new GroupNavigation(i, depth, tree);
+					list.Add(group);
+				}
+				var tocChildren = BuildNavigation(toc.Children, depth + 1);
+				list.AddRange(tocChildren);
+			}
+			i++;
 		}
 
 		return list.ToArray().AsReadOnly();
 	}
 
-	private static void FindToc(TableOfContentsReference entry)
+	private TableOfContentsTree? FindToc(TableOfContentsReference entry)
 	{
-		var toc = _pathProvider.LocateDocSetYaml(entry.Source);
-		var toctoc = new TableOfContentsConfiguration()
+		if (!TreeLookup.TryGetValue(entry.Source, out var tree))
+			return null;
 
+		//checkout.Directory;
+		//var toctoc = new TableOfContentsConfiguration()
+
+		return tree;
 	}
 }
 
@@ -103,7 +141,6 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		{
 			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find toc directory: {tocDirectory.FullName}");
 			return null;
-
 		}
 
 		var docsetYaml = _readFs.FileInfo.New(Path.Combine(tocDirectory.FullName, "docset.yml"));
@@ -113,10 +150,11 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find docset.yml or toc.yml in: {tocDirectory.FullName}");
 			return null;
 		}
+
 		return docsetYaml.Exists ? docsetYaml : tocYaml;
 	}
 
-	private bool TryGetCheckout(Uri crossLinkUri, [NotNullWhen(true)] out Checkout? checkout)
+	public bool TryGetCheckout(Uri crossLinkUri, [NotNullWhen(true)] out Checkout? checkout)
 	{
 		if (_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out checkout))
 			return true;

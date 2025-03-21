@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
+using Elastic.Markdown;
 
 namespace Documentation.Assembler.Sourcing;
 

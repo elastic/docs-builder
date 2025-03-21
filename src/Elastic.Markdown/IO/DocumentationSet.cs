@@ -50,7 +50,7 @@ public class DocumentationSet : INavigationLookups
 
 	public ICrossLinkResolver LinkResolver { get; }
 
-	public DocumentationGroup Tree { get; }
+	public TableOfContentsTree Tree { get; }
 
 	public IReadOnlyCollection<DocumentationFile> Files { get; }
 
@@ -62,7 +62,11 @@ public class DocumentationSet : INavigationLookups
 
 	IReadOnlyCollection<IDocsBuilderExtension> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
 
-	public DocumentationSet(BuildContext build, ILoggerFactory logger, ICrossLinkResolver? linkResolver = null)
+	public DocumentationSet(
+		BuildContext build,
+		ILoggerFactory logger,
+		ICrossLinkResolver? linkResolver = null
+	)
 	{
 		Build = build;
 		SourceDirectory = build.DocumentationSourceDirectory;
@@ -109,7 +113,7 @@ public class DocumentationSet : INavigationLookups
 			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
-		Tree = new DocumentationGroup(Build, lookups, ref fileIndex);
+		Tree = new TableOfContentsTree(Build, lookups, new TableOfContentsTreeCollector(Build), ref fileIndex);
 
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 

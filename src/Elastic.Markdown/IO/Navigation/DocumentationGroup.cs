@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 
@@ -14,11 +15,19 @@ public interface INavigationItem
 	string Id { get; }
 }
 
+[DebuggerDisplay("Toc >{Depth} #{Order} {Group.FolderName}")]
+public record TocNavigation(int Order, int Depth, TableOfContentsTree group) :
+	GroupNavigation(Order, Depth, group)
+{
+}
+
+[DebuggerDisplay("Group >{Depth} #{Order} {Group.FolderName}")]
 public record GroupNavigation(int Order, int Depth, DocumentationGroup Group) : INavigationItem
 {
 	public string Id { get; } = Group.Id;
 }
 
+[DebuggerDisplay("File >{Depth} #{Order} {File.RelativePath}")]
 public record FileNavigation(int Order, int Depth, MarkdownFile File) : INavigationItem
 {
 	public string Id { get; } = File.Id;
@@ -37,8 +46,48 @@ public interface INavigationScope
 	INavigation RootNavigation { get; }
 }
 
+public class TableOfContentsTreeCollector(BuildContext context)
+{
+	public Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
+
+	public void Collect(TocReference tocReference, TableOfContentsTree tree)
+	{
+		var tocPath = tocReference.TableOfContentsScope.ScopeDirectory.FullName;
+		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, tocPath);
+		var moniker = $"{context.Git.RepositoryName}://{relativePath}";
+		NestedTableOfContentsTrees[new Uri(moniker)] = tree;
+	}
+}
+
+[DebuggerDisplay("Toc >{Depth} {FolderName} ({NavigationItems.Count} items)")]
+public class TableOfContentsTree : DocumentationGroup
+{
+	public Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; }
+
+	public TableOfContentsTree(BuildContext context, NavigationLookups lookups, TableOfContentsTreeCollector treeCollector, ref int fileIndex)
+		: base(treeCollector, context, lookups, ref fileIndex) =>
+		NestedTableOfContentsTrees = treeCollector.NestedTableOfContentsTrees;
+
+	internal TableOfContentsTree(
+		string folderName,
+		TableOfContentsTreeCollector treeCollector,
+		BuildContext context,
+		NavigationLookups lookups,
+		ref int fileIndex,
+		int depth,
+		DocumentationGroup? topLevelGroup,
+		DocumentationGroup? parent,
+		MarkdownFile? index = null
+	) : base(folderName, treeCollector, context, lookups, ref fileIndex, depth, topLevelGroup, parent, index) =>
+		NestedTableOfContentsTrees = treeCollector.NestedTableOfContentsTrees;
+
+}
+
+[DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
 public class DocumentationGroup : INavigation
 {
+	private readonly TableOfContentsTreeCollector _treeCollector;
+
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
 	public string NavigationRootId { get; }
@@ -53,16 +102,24 @@ public class DocumentationGroup : INavigation
 
 	public string? IndexFileName => Index?.FileName;
 
-	public int Depth { get; }
+	public int Depth { get; set; }
 
 	public DocumentationGroup? Parent { get; }
 
-	public DocumentationGroup(BuildContext context, NavigationLookups lookups, ref int fileIndex)
-		: this(context, lookups, ref fileIndex, depth: 0, null, null)
-	{
-	}
+	public string FolderName { get; }
+
+	public DocumentationGroup(
+		TableOfContentsTreeCollector treeCollector,
+		BuildContext context,
+		NavigationLookups lookups,
+		ref int fileIndex
+	)
+		: this(".", treeCollector, context, lookups, ref fileIndex, depth: 0, null, null) =>
+		_treeCollector = treeCollector;
 
 	internal DocumentationGroup(
+		string folderName,
+		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
 		NavigationLookups lookups,
 		ref int fileIndex,
@@ -72,6 +129,8 @@ public class DocumentationGroup : INavigation
 		MarkdownFile? index = null
 	)
 	{
+		FolderName = folderName;
+		_treeCollector = treeCollector;
 		Depth = depth;
 		Parent = parent;
 		topLevelGroup ??= this;
@@ -140,8 +199,8 @@ public class DocumentationGroup : INavigation
 				{
 					if (file.Hidden)
 						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.Path}");
-					var group = new DocumentationGroup(
-						context, lookups with
+					var group = new DocumentationGroup(virtualIndex.RelativePath,
+						_treeCollector, context, lookups with
 						{
 							TableOfContents = file.Children
 						}, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
@@ -173,10 +232,24 @@ public class DocumentationGroup : INavigation
 					];
 				}
 
-				var group = new DocumentationGroup(context, lookups with
+				DocumentationGroup group;
+				if (folder is TocReference tocReference)
 				{
-					TableOfContents = children
-				}, ref fileIndex, depth + 1, topLevelGroup, this);
+					var toc = new TableOfContentsTree(folder.Path, _treeCollector, context, lookups with
+					{
+						TableOfContents = children
+					}, ref fileIndex, depth + 1, topLevelGroup, this);
+					_treeCollector.Collect(tocReference, toc);
+					group = toc;
+				}
+				else
+				{
+					group = new DocumentationGroup(folder.Path, _treeCollector, context, lookups with
+					{
+						TableOfContents = children
+					}, ref fileIndex, depth + 1, topLevelGroup, this);
+				}
+
 				groups.Add(group);
 				navigationItems.Add(new GroupNavigation(index, depth, group));
 			}

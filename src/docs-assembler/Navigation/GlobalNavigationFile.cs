@@ -3,19 +3,25 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.IO.Abstractions;
+using System.Diagnostics;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Navigation;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler.Navigation;
 
-public record TableOfContentsReference(IDirectoryInfo ScopeDirectory) : ITableOfContentsScope
+[DebuggerDisplay("Toc >{Depth} #{Order} {Source}")]
+public record TableOfContentsReference : INavigationItem
 {
 	public required Uri Source { get; init; }
 	public required string SourcePrefix { get; init; }
 	public required string PathPrefix { get; init; }
 	public required IReadOnlyCollection<TableOfContentsReference> Children { get; init; }
+
+	public required int Order { get; init; }
+	public required int Depth { get; init; }
+	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 }
 
 public record GlobalNavigationConfiguration
@@ -36,7 +42,7 @@ public record GlobalNavigationConfiguration
 				switch (entry.Key)
 				{
 					case "toc":
-						var toc = ReadChildren(reader, entry.Entry, null);
+						var toc = ReadChildren(reader, entry.Entry, null, 0);
 						var indexed = toc
 							.SelectMany(YieldAll)
 							.ToDictionary(t => t.Source.ToString(), t => t)
@@ -69,7 +75,12 @@ public record GlobalNavigationConfiguration
 		}
 	}
 
-	private static IReadOnlyCollection<TableOfContentsReference> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parent)
+	private static IReadOnlyCollection<TableOfContentsReference> ReadChildren(
+		YamlStreamReader reader,
+		KeyValuePair<YamlNode, YamlNode> entry,
+		string? parent,
+		int depth
+	)
 	{
 		var entries = new List<TableOfContentsReference>();
 		if (entry.Key is not YamlScalarNode { Value: { } key } scalarKey)
@@ -84,17 +95,19 @@ public record GlobalNavigationConfiguration
 			return [];
 		}
 
+		var i = 0;
 		foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
 		{
-			var child = ReadChild(reader, tocEntry, parent);
+			var child = ReadChild(reader, tocEntry, parent, depth, i);
 			if (child is not null)
 				entries.Add(child);
+			i++;
 		}
 
 		return entries;
 	}
 
-	private static TableOfContentsReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent)
+	private static TableOfContentsReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth, int order)
 	{
 		string? repository = null;
 		string? source = null;
@@ -128,7 +141,7 @@ public record GlobalNavigationConfiguration
 						continue;
 					}
 
-					children = ReadChildren(reader, entry, parent);
+					children = ReadChildren(reader, entry, parent, depth + 1);
 					break;
 			}
 		}
@@ -163,7 +176,9 @@ public record GlobalNavigationConfiguration
 			Source = sourceUri,
 			SourcePrefix = sourcePrefix,
 			Children = children ?? [],
-			PathPrefix = pathPrefix
+			PathPrefix = pathPrefix,
+			Depth = depth,
+			Order = order
 		};
 	}
 }

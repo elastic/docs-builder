@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
@@ -10,6 +11,7 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Markdown.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -36,8 +38,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 
-		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null);
-		var cloner = new RepositoryCheckoutProvider(logger, assembleContext);
+		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		_ = await cloner.AcquireAllLatest(ctx);
 
 		if (strict ?? false)
@@ -70,25 +72,36 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		_ = collector.StartAsync(ctx);
 
-		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null)
+		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
 		{
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false,
 		};
 
-		if (!assembleContext.Configuration.Environments.TryGetValue(environment, out var env))
-			throw new Exception($"Could not find environment {environment}");
-
-		var cloner = new RepositoryCheckoutProvider(logger, assembleContext);
+		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkouts = cloner.GetAll().ToArray();
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
-		var navigationFile = GlobalNavigationConfiguration.Deserialize(assembleContext);
-		var globalNavigation = new GlobalNavigationPathProvider(assembleContext, navigationFile, checkouts);
 
-		var builder = new AssemblerBuilder(logger, assembleContext, globalNavigation);
-		await builder.BuildAllAsync(checkouts, env, ctx);
+		var navigationFile = GlobalNavigationConfiguration.Deserialize(assembleContext);
+		var pathProvider = new GlobalNavigationPathProvider(assembleContext, navigationFile, checkouts);
+
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, assembleContext.Configuration);
+		var uriResolver = new PublishEnvironmentUriResolver(pathProvider, assembleContext.Environment);
+		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
+
+		var assembleSets = checkouts
+			.Select(c => new AssemblerDocumentationSet(logger, assembleContext, c, crossLinkResolver))
+			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
+			.ToFrozenDictionary();
+
+		var navigation = new GlobalNavigationProvider(assembleSets, navigationFile);
+		_ = await navigation.BuildNavigation(ctx);
+
+		var builder = new AssemblerBuilder(logger, assembleContext, pathProvider);
+
+		await builder.BuildAllAsync(assembleSets, ctx);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
