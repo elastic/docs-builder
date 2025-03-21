@@ -3,11 +3,22 @@
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
 @await RenderPartialAsync(_Head.Create(Model))
-<body 
-	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden" 
+<body
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
-	data-root-path="@Model.Link("/")"
->
+	data-root-path="@Model.Link("/")">
+@if (Model.EnableGoogleTagManager)
+{
+	<!-- Google Tag Manager (noscript) -->
+	<noscript>
+		<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNJMG2M&gtm_auth=nPocPUG0wiH68jsVeyRSxA&gtm_preview=env-507&gtm_cookies_win=x"
+		        height="0"
+		        width="0"
+		        style="display:none;visibility:hidden">
+		</iframe>
+	</noscript>
+	<!-- End Google Tag Manager (noscript) -->
+}
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div id="main-container" class="flex flex-col items-center px-6 border-t-1 border-grey-20">
 	@functions {
@@ -35,7 +46,6 @@
 			</div>
 		}
 	}
-	
 	@switch (Model.CurrentDocument.YamlFrontMatter?.Layout)
 	{
 		case LayoutName.NotFound:
