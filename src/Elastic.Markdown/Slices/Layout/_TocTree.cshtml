@@ -39,8 +39,9 @@
 							<a
 								class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 								href="@item.Group.Index.Url"
-								@Htmx.GetHxAttributes(item.Group.Index.Url, false, "mouseover")
-								preload="mouseover">@item.Group.Index.NavigationTitle</a>
+								@Htmx.GetHxAttributes(item.Group.Index.Url, false, "mouseover")>
+								@item.Group.Index.NavigationTitle
+							</a>
 						</li>
 					}
 				</ul>
