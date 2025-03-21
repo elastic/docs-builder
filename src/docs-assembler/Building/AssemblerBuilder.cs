@@ -70,6 +70,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 			UrlPathPrefix = environment.PathPrefix,
 			Force = false,
 			AllowIndexing = environment.AllowIndexing,
+			EnableGoogleTagManager = environment.EnableGoogleTagManager ?? false,
 			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 			SkipMetadata = true
 		};

@@ -13,7 +13,8 @@ public interface IDocumentationFileExporter
 	/// Used in documentation state to ensure we break the build cache if a different exporter is chosen
 	string Name { get; }
 
-	Task ProcessFile(DocumentationFile file, IFileInfo outputFile, Cancel token);
+	Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter, IConversionCollector? conversionCollector,
+		Cancel token);
 
 	Task CopyEmbeddedResource(IFileInfo outputFile, Stream resourceStream, Cancel ctx);
 }
@@ -21,7 +22,10 @@ public interface IDocumentationFileExporter
 public abstract class DocumentationFileExporterBase(IFileSystem readFileSystem, IFileSystem writeFileSystem) : IDocumentationFileExporter
 {
 	public abstract string Name { get; }
-	public abstract Task ProcessFile(DocumentationFile file, IFileInfo outputFile, Cancel token);
+
+	public abstract Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter,
+		IConversionCollector? conversionCollector,
+		Cancel token);
 
 	protected async Task CopyFileFsAware(DocumentationFile file, IFileInfo outputFile, Cancel ctx)
 	{
@@ -47,14 +51,16 @@ public abstract class DocumentationFileExporterBase(IFileSystem readFileSystem, 
 
 public class DocumentationFileExporter(
 	IFileSystem readFileSystem,
-	IFileSystem writeFileSystem,
-	HtmlWriter htmlWriter,
-	IConversionCollector? conversionCollector
+	IFileSystem writeFileSystem
 ) : DocumentationFileExporterBase(readFileSystem, writeFileSystem)
 {
 	public override string Name { get; } = nameof(DocumentationFileExporter);
 
-	public override async Task ProcessFile(DocumentationFile file, IFileInfo outputFile, Cancel token)
+	public override async Task ProcessFile(BuildContext context, DocumentationFile file,
+		IFileInfo outputFile,
+		HtmlWriter htmlWriter,
+		IConversionCollector? conversionCollector,
+		Cancel token)
 	{
 		if (file is MarkdownFile markdown)
 			await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, token);

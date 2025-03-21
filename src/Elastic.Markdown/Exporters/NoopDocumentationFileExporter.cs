@@ -4,12 +4,17 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.Exporters;
 
 public class NoopDocumentationFileExporter : IDocumentationFileExporter
 {
 	public string Name { get; } = nameof(NoopDocumentationFileExporter);
-	public Task ProcessFile(DocumentationFile file, IFileInfo outputFile, Cancel token) => Task.CompletedTask;
+
+	public Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter,
+		IConversionCollector? conversionCollector, Cancel token) =>
+		Task.CompletedTask;
+
 	public Task CopyEmbeddedResource(IFileInfo outputFile, Stream resourceStream, Cancel ctx) => Task.CompletedTask;
 }

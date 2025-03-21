@@ -61,7 +61,7 @@ public record DetectionRule
 	public required string Type { get; init; }
 	public required string? Language { get; init; }
 	public required string[]? Indices { get; init; }
-	public required string RunsEvery { get; init; }
+	public required string? RunsEvery { get; init; }
 	public required string? IndicesFromDateMath { get; init; }
 	public required string MaximumAlertsPerExecution { get; init; }
 	public required string[]? References { get; init; }
@@ -108,7 +108,7 @@ public record DetectionRule
 			Query = TryGetString(rule, "query"),
 			Note = TryGetString(rule, "note"),
 			Name = rule.GetString("name"),
-			RunsEvery = "?",
+			RunsEvery = TryGetString(rule, "interval"),
 			MaximumAlertsPerExecution = "?",
 			Version = "?",
 			Threats = threats
