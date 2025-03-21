@@ -93,7 +93,15 @@
 			inline-flex
 			justify-center
 			items-center;
-		
+
+		.link-icon {
+			@apply 
+				shrink-0 
+				size-4
+				ml-0
+				mr-1
+			}
+			
 		.link-arrow {
 			@apply 
 				shrink-0 
@@ -104,7 +112,7 @@
 		}
 
 		&:hover{
-			svg {
+			svg:not(.link-icon) {
 				@apply translate-x-2;
 			}
 		}
