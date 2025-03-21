@@ -6,14 +6,19 @@
 		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
 	} 
 	
-	@if (Model.IsPrimaryNavEnabled)
+	@if (Model.IsPrimaryNavEnabled && current is { Group.Index: not null })
 	{
-		<details class="block group border-b-1 border-grey-20 pb-8 font-sans">
-			<summary class="inline-grid md:grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-2 hover:text-black">
+		<details class="block group border-1 border-grey-20 rounded-sm font-sans">
+			<summary class="inline-grid md:grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-2 hover:text-black px-4 py-2 group-open:border-b-1 border-grey-20">
 				<span>
-					@current?.Group.Index?.NavigationTitle
+					<a 
+						href="@current.Group.Index?.Url"
+						@Htmx.GetHxAttributes(current.Group.Index?.Url!, true)
+					>
+						@current.Group.Index?.NavigationTitle
+					</a>
 				</span>
-				<div class="flex items-center justify-center size-6">
+				<div class="flex items-center justify-center size-6 hover:bg-grey-10">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -29,9 +34,10 @@
 				@foreach (var item in Model.TopLevelItems)
 				{
 					if (item.Group.Index == null) continue;
-					<li class="block mt-2">
+					if (item.Id == current?.Id) continue;
+					<li class="block py-2 px-4 hover:bg-grey-10 ">
 						<a
-							class="hover:underline hover:text-black active:text-blue-elastic-100 font-semibold text-sm @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+							class="hover:underline hover:text-black active:text-blue-elastic-100 font-semibold @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 							href="@item.Group.Index.Url"
 							hx-get="@item.Group.Index.Url"
 							hx-select-oob="#pages-nav,#content-container,#toc-nav"
