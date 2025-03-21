@@ -17,21 +17,20 @@ public static class Htmx
 		return selectTargets;
 	}
 
-	public static string GetPreload() => "true";
+	public const string Preload = "mousedown";
+	public const string HxSwap = "none";
+	public const string HxPushUrl = "true";
+	public const string HxIndicator = "#htmx-indicator";
 
-	private static string GetHxSwap() => "none";
-	private static string GetHxPushUrl() => "true";
-	private static string GetHxIndicator() => "#htmx-indicator";
-
-	public static string GetHxAttributes(string targetUrl, bool hasSameTopLevelGroup)
+	public static string GetHxAttributes(string targetUrl, bool hasSameTopLevelGroup, string? preload = Preload)
 	{
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-get={targetUrl}");
 		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
-		_ = attributes.Append($" hx-swap={GetHxSwap()}");
-		_ = attributes.Append($" hx-push-url={GetHxPushUrl()}");
-		_ = attributes.Append($" hx-indicator={GetHxIndicator()}");
-		_ = attributes.Append($" preload={GetPreload()}");
+		_ = attributes.Append($" hx-swap={HxSwap}");
+		_ = attributes.Append($" hx-push-url={HxPushUrl}");
+		_ = attributes.Append($" hx-indicator={HxIndicator}");
+		_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
 	}
 }
