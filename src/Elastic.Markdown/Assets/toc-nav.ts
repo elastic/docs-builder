@@ -144,5 +144,5 @@ function setupReportIssue() {
 	var currentPage = window.location.href;
 	var reportIssue = document.getElementById('report-issue-link');
 	if (reportIssue)
-		reportIssue.setAttribute('href', `https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link=${currentPage}`);
+		reportIssue.setAttribute('href', `https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link=${currentPage}&labels=source%3Aweb`);
 }
