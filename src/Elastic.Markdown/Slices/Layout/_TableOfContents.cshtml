@@ -1,5 +1,5 @@
 @inherits RazorSlice<LayoutViewModel>
-<aside class="sidebar hidden lg:block order-3 border-l-1 border-l-grey-20">
+<aside class="sidebar hidden lg:block order-3">
 	<nav id="toc-nav" class="sidebar-nav pl-4">
 		<div class="pt-6 pb-20">
 			@if (Model.PageTocItems.Count > 0)
@@ -13,7 +13,7 @@
 						  {
 							  <li class="has-[:hover]:border-l-grey-80 items-center ml-2 pl-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
 								  <a
-									  class="sidebar-link inline-block my-1 @(item.Level == 3 ? "ml-4" : string.Empty)"
+									  class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)"
 									  href="#@item.Slug">
 									  @item.Heading
 								  </a>
