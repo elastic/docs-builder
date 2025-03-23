@@ -56,7 +56,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 			TitleUrl = tree.Index?.Url ?? Set.Build.UrlPathPrefix ?? "/",
 			Tree = tree,
 			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
-			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigation>().ToList()
+			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigationItem>().ToList()
 		};
 	}
 }
@@ -83,7 +83,7 @@ public class HtmlWriter(
 		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.RootNavigation, ctx);
+		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, ctx);
 
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);

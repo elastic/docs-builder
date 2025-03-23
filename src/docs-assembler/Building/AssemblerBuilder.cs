@@ -5,12 +5,15 @@
 using System.Collections.Frozen;
 using Documentation.Assembler.Navigation;
 using Elastic.Markdown;
+using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigationPathProvider pathProvider)
+public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigation navigation, GlobalNavigationPathProvider pathProvider)
 {
+	public GlobalNavigationHtmlWriter HtmlWriter { get; } = new(navigation);
+
 	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
@@ -47,7 +50,7 @@ public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, Gl
 
 	private async Task BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
 	{
-		var generator = new DocumentationGenerator(set.DocumentationSet, logger, pathProvider);
+		var generator = new DocumentationGenerator(set.DocumentationSet, logger, HtmlWriter, pathProvider);
 		await generator.GenerateAll(ctx);
 	}
 

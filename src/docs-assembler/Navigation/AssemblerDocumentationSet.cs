@@ -7,6 +7,7 @@ using Elastic.Markdown;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
+using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Navigation;
@@ -21,7 +22,13 @@ public record AssemblerDocumentationSet
 
 	public DocumentationSet DocumentationSet { get; }
 
-	public AssemblerDocumentationSet(ILoggerFactory logger, AssembleContext context, Checkout checkout, CrossLinkResolver crossLinkResolver)
+	public AssemblerDocumentationSet(
+		ILoggerFactory logger,
+		AssembleContext context,
+		Checkout checkout,
+		CrossLinkResolver crossLinkResolver,
+		TableOfContentsTreeCollector treeCollector
+	)
 	{
 		AssembleContext = context;
 		Checkout = checkout;
@@ -57,6 +64,6 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logger, crossLinkResolver);
+		DocumentationSet = new DocumentationSet(buildContext, logger, crossLinkResolver, treeCollector);
 	}
 }

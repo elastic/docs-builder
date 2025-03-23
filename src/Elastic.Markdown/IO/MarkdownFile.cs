@@ -49,12 +49,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
-		RootNavigation = set.Tree;
+		NavigationRoot = set.Tree;
 	}
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigation RootNavigation { get; set; }
+	public INavigation NavigationRoot { get; set; }
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 

@@ -8,13 +8,13 @@
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	var id = item.Id;
-	if (item is FileNavigation file && Model.SubTree.IndexFileName != file.File.FileName)
+	if (item is FileNavigationItem file && Model.SubTree.IndexFileName != file.File.FileName)
 	{
 		var f = file.File;
 		<li class="flex group/li @(item.Depth == topLevelFile ? "font-semibold py-8 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
 			<a
 				href="@f.Url"
-				@Htmx.GetHxAttributes(f.Url, Model.IsPrimaryNavEnabled && f.RootNavigation.Id == Model.RootNavigationId || true)
+				@Htmx.GetHxAttributes(f.Url, Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
 				id="page-@id"
 				>
@@ -22,7 +22,7 @@
 			</a>
 		</li>
 	}
-	else if (item is GroupNavigation folder)
+	else if (item is GroupNavigationItem folder)
 	{
 		var g = folder.Group;
 		<li class="flex flex-wrap group-navigation @(g.Depth == topLevelGroup ? "py-8 not-last:border-b-1 border-grey-20" : "mt-4 lg:mt-3")">

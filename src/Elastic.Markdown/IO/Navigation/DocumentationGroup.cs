@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 
@@ -15,20 +16,20 @@ public interface INavigationItem
 	string Id { get; }
 }
 
-[DebuggerDisplay("Toc >{Depth} #{Order} {Group.FolderName}")]
-public record TocNavigation(int Order, int Depth, TableOfContentsTree group) :
-	GroupNavigation(Order, Depth, group)
+[DebuggerDisplay("Group >{Depth} #{Order} {Group.FolderName}")]
+public record TocNavigationItem(int Order, int Depth, DocumentationGroup Group, Uri Source)
+	: GroupNavigationItem(Order, Depth, Group)
 {
 }
 
 [DebuggerDisplay("Group >{Depth} #{Order} {Group.FolderName}")]
-public record GroupNavigation(int Order, int Depth, DocumentationGroup Group) : INavigationItem
+public record GroupNavigationItem(int Order, int Depth, DocumentationGroup Group) : INavigationItem
 {
 	public string Id { get; } = Group.Id;
 }
 
 [DebuggerDisplay("File >{Depth} #{Order} {File.RelativePath}")]
-public record FileNavigation(int Order, int Depth, MarkdownFile File) : INavigationItem
+public record FileNavigationItem(int Order, int Depth, MarkdownFile File) : INavigationItem
 {
 	public string Id { get; } = File.Id;
 }
@@ -43,44 +44,60 @@ public interface INavigation
 
 public interface INavigationScope
 {
-	INavigation RootNavigation { get; }
+	INavigation NavigationRoot { get; }
 }
 
-public class TableOfContentsTreeCollector(BuildContext context)
+public class TableOfContentsTreeCollector
 {
-	public Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
+	private Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
 
-	public void Collect(TocReference tocReference, TableOfContentsTree tree)
-	{
-		var tocPath = tocReference.TableOfContentsScope.ScopeDirectory.FullName;
-		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, tocPath);
-		var moniker = $"{context.Git.RepositoryName}://{relativePath}";
-		NestedTableOfContentsTrees[new Uri(moniker)] = tree;
-	}
+	public void Collect(TocReference tocReference, TableOfContentsTree tree) =>
+		NestedTableOfContentsTrees[tocReference.Source] = tree;
+
+	public bool TryGetTableOfContentsTree(Uri source, [NotNullWhen(true)] out TableOfContentsTree? tree) =>
+		NestedTableOfContentsTrees.TryGetValue(source, out tree);
 }
 
 [DebuggerDisplay("Toc >{Depth} {FolderName} ({NavigationItems.Count} items)")]
 public class TableOfContentsTree : DocumentationGroup
 {
-	public Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; }
+	public Uri Source { get; }
 
-	public TableOfContentsTree(BuildContext context, NavigationLookups lookups, TableOfContentsTreeCollector treeCollector, ref int fileIndex)
-		: base(treeCollector, context, lookups, ref fileIndex) =>
-		NestedTableOfContentsTrees = treeCollector.NestedTableOfContentsTrees;
+	public TableOfContentsTreeCollector TreeCollector { get; }
+
+	public TableOfContentsTree(
+		Uri source,
+		BuildContext context,
+		NavigationLookups lookups,
+		TableOfContentsTreeCollector treeCollector,
+		ref int fileIndex)
+		: base(treeCollector, context, lookups, ref fileIndex)
+	{
+		TreeCollector = treeCollector;
+		NavigationRoot = this;
+
+		Source = source;
+	}
 
 	internal TableOfContentsTree(
+		Uri source,
 		string folderName,
 		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
 		NavigationLookups lookups,
 		ref int fileIndex,
 		int depth,
-		DocumentationGroup? topLevelGroup,
+		DocumentationGroup? toplevelTree,
 		DocumentationGroup? parent,
 		MarkdownFile? index = null
-	) : base(folderName, treeCollector, context, lookups, ref fileIndex, depth, topLevelGroup, parent, index) =>
-		NestedTableOfContentsTrees = treeCollector.NestedTableOfContentsTrees;
+	) : base(folderName, treeCollector, context, lookups, ref fileIndex, depth, toplevelTree, parent, index)
+	{
+		Source = source;
+		TreeCollector = treeCollector;
+		NavigationRoot = this;
+	}
 
+	protected override DocumentationGroup DefaultNavigation => this;
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
@@ -90,7 +107,9 @@ public class DocumentationGroup : INavigation
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
-	public string NavigationRootId { get; }
+	public string NavigationRootId => NavigationRoot.Id;
+
+	public INavigation NavigationRoot { get; set; }
 
 	public MarkdownFile? Index { get; set; }
 
@@ -98,7 +117,7 @@ public class DocumentationGroup : INavigation
 
 	private IReadOnlyCollection<DocumentationGroup> GroupsInOrder { get; }
 
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; }
 
 	public string? IndexFileName => Index?.FileName;
 
@@ -107,6 +126,8 @@ public class DocumentationGroup : INavigation
 	public DocumentationGroup? Parent { get; }
 
 	public string FolderName { get; }
+
+	protected virtual DocumentationGroup DefaultNavigation => this;
 
 	public DocumentationGroup(
 		TableOfContentsTreeCollector treeCollector,
@@ -124,7 +145,7 @@ public class DocumentationGroup : INavigation
 		NavigationLookups lookups,
 		ref int fileIndex,
 		int depth,
-		DocumentationGroup? topLevelGroup,
+		DocumentationGroup? toplevelTree,
 		DocumentationGroup? parent,
 		MarkdownFile? index = null
 	)
@@ -133,11 +154,14 @@ public class DocumentationGroup : INavigation
 		_treeCollector = treeCollector;
 		Depth = depth;
 		Parent = parent;
-		topLevelGroup ??= this;
+		// Virtual call on purpose, implementations use no state
+		// ReSharper disable VirtualMemberCallInConstructor
+		toplevelTree ??= DefaultNavigation;
 		if (parent?.Depth == 0)
-			topLevelGroup = this;
-		NavigationRootId = topLevelGroup.Id;
-		Index = ProcessTocItems(context, topLevelGroup, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
+			toplevelTree = DefaultNavigation;
+		NavigationRoot = toplevelTree;
+		// ReSharper restore VirtualMemberCallInConstructor
+		Index = ProcessTocItems(context, toplevelTree, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
 		if (Index is not null)
 			Index.GroupId = Id;
 
@@ -190,7 +214,7 @@ public class DocumentationGroup : INavigation
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
 				md.NavigationIndex = navigationIndex;
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
-				md.RootNavigation = topLevelGroup;
+				md.NavigationRoot = topLevelGroup;
 
 				foreach (var extension in context.Configuration.EnabledExtensions)
 					extension.Visit(d, tocItem);
@@ -205,7 +229,7 @@ public class DocumentationGroup : INavigation
 							TableOfContents = file.Children
 						}, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
-					navigationItems.Add(new GroupNavigation(index, depth, group));
+					navigationItems.Add(new GroupNavigationItem(index, depth, group));
 					continue;
 				}
 
@@ -218,7 +242,7 @@ public class DocumentationGroup : INavigation
 				// explicit index page. E.g. when grouping related files together.
 				// if the page is referenced as hidden in the TOC do not include it in the navigation
 				if (indexFile != md && !md.Hidden)
-					navigationItems.Add(new FileNavigation(index, depth, md));
+					navigationItems.Add(new FileNavigationItem(index, depth, md));
 			}
 			else if (tocItem is FolderReference folder)
 			{
@@ -231,14 +255,17 @@ public class DocumentationGroup : INavigation
 							.Select(d => new FileReference(folder.TableOfContentsScope, d.RelativePath, true, false, []))
 					];
 				}
-
 				DocumentationGroup group;
 				if (folder is TocReference tocReference)
 				{
-					var toc = new TableOfContentsTree(folder.Path, _treeCollector, context, lookups with
+					var toc = new TableOfContentsTree(tocReference.Source, folder.Path, _treeCollector, context, lookups with
 					{
 						TableOfContents = children
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
+
+					//if (lookups.IndexedTableOfContents.TryGetValue(tocReference.Source, out var indexedToc))
+					//	toc.NavigationItems = toc.NavigationItems.Concat(indexedToc.Children).ToArray();
+
 					_treeCollector.Collect(tocReference, toc);
 					group = toc;
 				}
@@ -251,7 +278,7 @@ public class DocumentationGroup : INavigation
 				}
 
 				groups.Add(group);
-				navigationItems.Add(new GroupNavigation(index, depth, group));
+				navigationItems.Add(new GroupNavigationItem(index, depth, group));
 			}
 			else
 			{
@@ -280,4 +307,40 @@ public class DocumentationGroup : INavigation
 
 		_resolved = true;
 	}
+
+	private DocumentationGroup(IReadOnlyCollection<INavigationItem> tocChildren,
+		DocumentationGroup cloneFrom,
+		TableOfContentsTreeCollector treeCollector, INavigation navigationRoot)
+	{
+		_treeCollector = treeCollector;
+		NavigationItems = cloneFrom.NavigationItems.Concat(tocChildren).ToArray();
+		FolderName = cloneFrom.FolderName;
+		foreach (var item in NavigationItems)
+		{
+			if (item is GroupNavigationItem g)
+				g.Group.NavigationRoot = navigationRoot;
+			else if (item is FileNavigationItem f)
+				f.File.NavigationRoot = navigationRoot;
+			else
+				throw new Exception($"Unknown navigation item type {item.GetType()}");
+		}
+
+		FilesInOrder = NavigationItems
+			.OfType<FileNavigationItem>()
+			.OrderBy(i => i.Order)
+			.Select(i => i.File)
+			.ToArray();
+		GroupsInOrder = NavigationItems
+			.OfType<GroupNavigationItem>()
+			.OrderBy(i => i.Order)
+			.Select(i => i.Group)
+			.ToArray();
+		Index = cloneFrom.Index;
+		Depth = cloneFrom.Depth;
+		Id = cloneFrom.Id;
+		NavigationRoot = navigationRoot;
+	}
+
+	public DocumentationGroup CloneWithExtraChildren(IReadOnlyCollection<INavigationItem> tocChildren, INavigation navigationRoot) =>
+		new(tocChildren, this, _treeCollector, navigationRoot);
 }

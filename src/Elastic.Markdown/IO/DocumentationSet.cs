@@ -30,6 +30,7 @@ public record NavigationLookups : INavigationLookups
 	public required IReadOnlyCollection<ITocItem> TableOfContents { get; init; }
 	public required IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; init; }
 	public required FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; init; }
+	//public required FrozenDictionary<Uri, TableOfContentsReference> IndexedTableOfContents { get; init; }
 }
 
 public class DocumentationSet : INavigationLookups
@@ -52,6 +53,8 @@ public class DocumentationSet : INavigationLookups
 
 	public TableOfContentsTree Tree { get; }
 
+	public Uri Source { get; }
+
 	public IReadOnlyCollection<DocumentationFile> Files { get; }
 
 	public FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
@@ -62,18 +65,22 @@ public class DocumentationSet : INavigationLookups
 
 	IReadOnlyCollection<IDocsBuilderExtension> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
 
+	// FrozenDictionary<Uri, TableOfContentsReference>? indexedTableOfContents = null
 	public DocumentationSet(
 		BuildContext build,
 		ILoggerFactory logger,
-		ICrossLinkResolver? linkResolver = null
+		ICrossLinkResolver? linkResolver = null,
+		TableOfContentsTreeCollector? treeCollector = null
 	)
 	{
 		Build = build;
+		Source = new Uri($"{build.Git.RepositoryName}://");
 		SourceDirectory = build.DocumentationSourceDirectory;
 		OutputDirectory = build.DocumentationOutputDirectory;
 		LinkResolver =
 			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(build.Configuration, logger));
 		Configuration = build.Configuration;
+		treeCollector ??= new TableOfContentsTreeCollector();
 
 		var resolver = new ParserResolvers
 		{
@@ -110,10 +117,11 @@ public class DocumentationSet : INavigationLookups
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
 			EnabledExtensions = Configuration.EnabledExtensions,
-			FilesGroupedByFolder = FilesGroupedByFolder
+			FilesGroupedByFolder = FilesGroupedByFolder,
+			//IndexedTableOfContents = indexedTableOfContents ?? new Dictionary<Uri, TableOfContentsReference>().ToFrozenDictionary()
 		};
 
-		Tree = new TableOfContentsTree(Build, lookups, new TableOfContentsTreeCollector(Build), ref fileIndex);
+		Tree = new TableOfContentsTree(Source, Build, lookups, treeCollector, ref fileIndex);
 
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 

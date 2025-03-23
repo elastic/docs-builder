@@ -8,7 +8,7 @@
 				<a 
 					href="@Model.Previous.Url"
 					hx-get="@Model.Previous.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob(Model.CurrentDocument.RootNavigation.Id == Model.Previous.RootNavigation.Id)"
+					hx-select-oob="@Htmx.GetHxSelectOob(Model.CurrentDocument.NavigationRoot.Id == Model.Previous.NavigationRoot.Id)"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"
@@ -31,7 +31,7 @@
 				<a 
 					href="@Model.Next.Url"
 					hx-get="@Model.Next.Url"
-					hx-select-oob="@Htmx.GetHxSelectOob(Model.CurrentDocument.RootNavigation.Id == Model.Next.RootNavigation.Id)"
+					hx-select-oob="@Htmx.GetHxSelectOob(Model.CurrentDocument.NavigationRoot.Id == Model.Next.NavigationRoot.Id)"
 					hx-swap="none"
 					hx-push-url="true"
 					hx-indicator="#htmx-indicator"

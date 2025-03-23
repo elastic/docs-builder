@@ -99,7 +99,7 @@ public class NavigationViewModel
 	public required INavigation Tree { get; init; }
 	//public required MarkdownFile CurrentDocument { get; init; }
 	public required bool IsPrimaryNavEnabled { get; init; }
-	public required IEnumerable<GroupNavigation> TopLevelItems { get; init; }
+	public required IEnumerable<GroupNavigationItem> TopLevelItems { get; init; }
 }
 
 public class NavigationTreeItem

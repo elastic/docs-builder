@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Diagnostics;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
@@ -11,30 +10,23 @@ using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler.Navigation;
 
-[DebuggerDisplay("Toc >{Depth} #{Order} {Source}")]
-public record TableOfContentsReference : INavigationItem
+public record GlobalNavigationFile
 {
-	public required Uri Source { get; init; }
-	public required string SourcePrefix { get; init; }
-	public required string PathPrefix { get; init; }
-	public required IReadOnlyCollection<TableOfContentsReference> Children { get; init; }
+	private readonly AssembleContext _context;
+	private readonly AssembleSources _assembleSources;
 
-	public required int Order { get; init; }
-	public required int Depth { get; init; }
-	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
-}
+	public IReadOnlyCollection<TocReference> TableOfContents { get; }
 
-public record GlobalNavigationConfiguration
-{
-	public IReadOnlyCollection<TableOfContentsReference> TableOfContents { get; init; } = [];
-
-	public FrozenDictionary<string, TableOfContentsReference> IndexedTableOfContents { get; init; } =
-		new Dictionary<string, TableOfContentsReference>().ToFrozenDictionary();
-
-	public static GlobalNavigationConfiguration Deserialize(AssembleContext context)
+	public GlobalNavigationFile(AssembleContext context, AssembleSources assembleSources)
 	{
-		var globalConfig = new GlobalNavigationConfiguration();
-		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
+		_context = context;
+		_assembleSources = assembleSources;
+		TableOfContents = Deserialize();
+	}
+
+	private IReadOnlyCollection<TocReference> Deserialize()
+	{
+		var reader = new YamlStreamReader(_context.NavigationPath, _context.Collector);
 		try
 		{
 			foreach (var entry in reader.Read())
@@ -42,17 +34,7 @@ public record GlobalNavigationConfiguration
 				switch (entry.Key)
 				{
 					case "toc":
-						var toc = ReadChildren(reader, entry.Entry, null, 0);
-						var indexed = toc
-							.SelectMany(YieldAll)
-							.ToDictionary(t => t.Source.ToString(), t => t)
-							.ToFrozenDictionary();
-						globalConfig = globalConfig with
-						{
-							TableOfContents = toc,
-							IndexedTableOfContents = indexed
-						};
-						break;
+						return ReadChildren(reader, entry.Entry, null, 0);
 				}
 			}
 		}
@@ -62,28 +44,13 @@ public record GlobalNavigationConfiguration
 			throw;
 		}
 
-		return globalConfig;
+		return [];
 	}
 
-	private static IEnumerable<TableOfContentsReference> YieldAll(TableOfContentsReference toc)
+	private IReadOnlyCollection<TocReference> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parent, int depth)
 	{
-		yield return toc;
-		foreach (var tocEntry in toc.Children)
-		{
-			foreach (var child in YieldAll(tocEntry))
-				yield return child;
-		}
-	}
-
-	private static IReadOnlyCollection<TableOfContentsReference> ReadChildren(
-		YamlStreamReader reader,
-		KeyValuePair<YamlNode, YamlNode> entry,
-		string? parent,
-		int depth
-	)
-	{
-		var entries = new List<TableOfContentsReference>();
-		if (entry.Key is not YamlScalarNode { Value: { } key } scalarKey)
+		var entries = new List<TocReference>();
+		if (entry.Key is not YamlScalarNode { Value: not null } scalarKey)
 		{
 			reader.EmitWarning($"key '{entry.Key}' is not string");
 			return [];
@@ -101,18 +68,18 @@ public record GlobalNavigationConfiguration
 			var child = ReadChild(reader, tocEntry, parent, depth, i);
 			if (child is not null)
 				entries.Add(child);
+
 			i++;
 		}
 
 		return entries;
 	}
 
-	private static TableOfContentsReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth, int order)
+	private TocReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth, int order)
 	{
 		string? repository = null;
 		string? source = null;
 		string? pathPrefix = null;
-		IReadOnlyCollection<TableOfContentsReference>? children = null;
 		foreach (var entry in tocEntry.Children)
 		{
 			var key = ((YamlScalarNode)entry.Key).Value;
@@ -134,15 +101,6 @@ public record GlobalNavigationConfiguration
 				case "path_prefix":
 					pathPrefix = reader.ReadString(entry);
 					break;
-				case "children":
-					if (source is null && pathPrefix is null)
-					{
-						reader.EmitWarning("toc entry has no toc or path_prefix defined");
-						continue;
-					}
-
-					children = ReadChildren(reader, entry, parent, depth + 1);
-					break;
 			}
 		}
 
@@ -150,8 +108,6 @@ public record GlobalNavigationConfiguration
 		{
 			if (source is not null)
 				reader.EmitError($"toc config defines 'repo' can not be combined with 'toc': {source}", tocEntry);
-			if (children is not null)
-				reader.EmitError($"toc config defines 'repo' can not be combined with 'children'", tocEntry);
 			pathPrefix = string.Join("/", [parent, repository]);
 			source = $"{repository}://{parent}";
 		}
@@ -165,20 +121,45 @@ public record GlobalNavigationConfiguration
 			return null;
 		}
 
+
 		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
 		if (string.IsNullOrEmpty(pathPrefix))
 			reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
 
 		pathPrefix ??= sourcePrefix;
 
-		return new TableOfContentsReference
+		if (!_assembleSources.TocConfigurationMapping.TryGetValue(sourceUri, out var mapping))
 		{
-			Source = sourceUri,
-			SourcePrefix = sourcePrefix,
-			Children = children ?? [],
-			PathPrefix = pathPrefix,
-			Depth = depth,
-			Order = order
-		};
+			reader.EmitError($"Toc entry '{sourceUri}' is could not be located", tocEntry);
+			return null;
+		}
+
+		var navigationItems = new List<ITocItem>();
+		//TODO not needed
+		var tocChildren = mapping.TableOfContentsConfiguration.TableOfContents;
+		navigationItems.AddRange(tocChildren);
+
+		foreach (var entry in tocEntry.Children)
+		{
+			var key = ((YamlScalarNode)entry.Key).Value;
+			switch (key)
+			{
+				case "children":
+					if (source is null && pathPrefix is null)
+					{
+						reader.EmitWarning("toc entry has no toc or path_prefix defined");
+						continue;
+					}
+
+					var children = ReadChildren(reader, entry, parent, depth + 1);
+					navigationItems.AddRange(children);
+					break;
+			}
+		}
+
+		var rootConfig = mapping.RepositoryConfigurationFile.SourceFile.Directory!;
+		var path = Path.GetRelativePath(rootConfig.FullName, mapping.TableOfContentsConfiguration.ScopeDirectory.FullName);
+		var tocReference = new TocReference(sourceUri, mapping.TableOfContentsConfiguration, path, true, navigationItems);
+		return tocReference;
 	}
 }

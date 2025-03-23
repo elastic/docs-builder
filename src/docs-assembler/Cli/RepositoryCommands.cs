@@ -83,25 +83,15 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
+		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, ctx);
+		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
-		var navigationFile = GlobalNavigationConfiguration.Deserialize(assembleContext);
-		var pathProvider = new GlobalNavigationPathProvider(assembleContext, navigationFile, checkouts);
+		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, assembleContext.Configuration);
-		var uriResolver = new PublishEnvironmentUriResolver(pathProvider, assembleContext.Environment);
-		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
+		var pathProvider = new GlobalNavigationPathProvider(assembleSources, assembleContext, navigationFile);
+		var builder = new AssemblerBuilder(logger, assembleContext, navigation, pathProvider);
 
-		var assembleSets = checkouts
-			.Select(c => new AssemblerDocumentationSet(logger, assembleContext, c, crossLinkResolver))
-			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
-			.ToFrozenDictionary();
-
-		var navigation = new GlobalNavigationProvider(assembleSets, navigationFile);
-		_ = await navigation.BuildNavigation(ctx);
-
-		var builder = new AssemblerBuilder(logger, assembleContext, pathProvider);
-
-		await builder.BuildAllAsync(assembleSets, ctx);
+		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;

@@ -26,8 +26,8 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				return;
 			}
 
-			var currentRootNavigation = link.GetData(nameof(MarkdownFile.RootNavigation)) as INavigation;
-			var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.RootNavigation)}") as INavigation;
+			var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INavigation;
+			var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INavigation;
 
 			_ = renderer.Write("<a href=\"");
 			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url);
