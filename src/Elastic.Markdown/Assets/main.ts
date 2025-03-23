@@ -1,5 +1,5 @@
 // @ts-nocheck
-import "htmx.org"
+import htmx from "htmx.org"
 import "htmx-ext-preload"
 import "htmx-ext-head-support"
 
@@ -13,6 +13,8 @@ import {$, $$} from "select-dom"
 
 import { UAParser } from 'ua-parser-js';
 const { getOS } = new UAParser();
+
+// htmx.logAll();
 
 document.addEventListener('htmx:pushedIntoHistory', function(event) {
 	window.dataLayer = window.dataLayer || [];
@@ -77,4 +79,10 @@ document.body.addEventListener('htmx:responseError', function(event) {
 	if (event.detail.xhr.status === 404) {
 		window.location.assign(event.detail.pathInfo.requestPath);
 	}
+});
+
+
+document.body.addEventListener('htmx:swapError', function(event) {
+	console.log("hello");
+	console.log(event);
 });
