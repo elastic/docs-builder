@@ -37,7 +37,7 @@ public class SitemapBuilder(IReadOnlyCollection<INavigationItem> navigationItems
 
 		doc.Add(root);
 
-		using var fileStream = _fileSystem.File.Create(Path.Combine(_outputFolder.ToString() ?? string.Empty, "sitemap.xml"));
+		using var fileStream = _fileSystem.File.Create(Path.Combine(_outputFolder.ToString() ?? string.Empty, "docs", "sitemap.xml"));
 		doc.Save(fileStream);
 	}
 
