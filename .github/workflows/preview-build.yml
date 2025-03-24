@@ -55,7 +55,7 @@ jobs:
     steps:
 
       - name: Checkout
-        if:  contains(fromJSON('["push", "merge_group"]'), github.event_name)
+        if:  contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
@@ -80,7 +80,7 @@ jobs:
           tool-cache: false
           
       - name: Create Deployment
-        if: github.event_name == 'push' || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
+        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
         uses: actions/github-script@v7
         id: deployment
         env:
