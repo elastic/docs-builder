@@ -12,7 +12,6 @@ namespace Elastic.Markdown.IO.Navigation;
 public interface INavigationItem
 {
 	int Order { get; }
-	int Depth { get; }
 	string Id { get; }
 }
 
@@ -41,7 +40,6 @@ public interface INavigation
 {
 	string Id { get; }
 	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
-	int Depth { get; }
 	string? IndexFileName { get; }
 }
 
@@ -53,8 +51,6 @@ public interface INavigationScope
 public class TableOfContentsTreeCollector
 {
 	private Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
-
-	public IReadOnlyDictionary<Uri, TableOfContentsTree> Trees => NestedTableOfContentsTrees;
 
 	public void Collect(Uri source, TableOfContentsTree tree) =>
 		NestedTableOfContentsTrees[source] = tree;
@@ -137,7 +133,7 @@ public class DocumentationGroup : INavigation
 
 	public string? IndexFileName => Index?.FileName;
 
-	public int Depth { get; set; }
+	private int Depth { get; set; }
 
 	public DocumentationGroup? Parent { get; }
 

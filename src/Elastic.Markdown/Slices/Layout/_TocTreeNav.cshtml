@@ -8,10 +8,11 @@
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	var id = item.Id;
+	var navLevel = Model.Level;
 	if (item is FileNavigationItem file && Model.SubTree.IndexFileName != file.File.FileName)
 	{
 		var f = file.File;
-		<li class="flex group/li pr-4 @(item.Depth == topLevelFile ? "font-semibold py-8 pr-4 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
+		<li class="flex group/li pr-4 @(Model.Level == topLevelFile ? "font-semibold py-8 pr-4 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
 			<a
 				href="@f.Url"
 				@Htmx.GetHxAttributes(f.Url, Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
@@ -25,7 +26,7 @@
 	else if (item is GroupNavigationItem folder)
 	{
 		var g = folder.Group;
-		<li class="flex flex-wrap group-navigation @(g.Depth == topLevelGroup ? "py-8 not-last:border-b-1 border-grey-20 pr-4" : "mt-4 lg:mt-3")">
+		<li class="flex flex-wrap group-navigation @(Model.Level == topLevelGroup ? "py-8 not-last:border-b-1 border-grey-20 pr-4" : "mt-4 lg:mt-3")">
 			<div class="peer flex items-start gap-1">
 				<label for="@id" class="group/label">
 					<svg
@@ -34,7 +35,7 @@
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
 						stroke="currentColor"
-						class="w-3 mt-[3px] shrink-0 -rotate-90 group-has-checked/label:rotate-0 cursor-pointer @(g.Depth == topLevelGroup ? "hidden" : "")">
+						class="w-3 mt-[3px] shrink-0 -rotate-90 group-has-checked/label:rotate-0 cursor-pointer @(Model.Level == topLevelGroup ? "hidden" : "")">
 						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 					</svg>
 					<input
@@ -42,26 +43,26 @@
 						type="checkbox"
 						class="hidden"
 						aria-hidden="true"
-						@(g.Depth <= topLevelGroup ? "checked" : "")
-						@(g.Depth <= topLevelGroup ? "disabled" : "")
+						@(Model.Level <= topLevelGroup ? "checked" : "")
+						@(Model.Level <= topLevelGroup ? "disabled" : "")
 					>
 				</label>
 				<a
 					href="@(g.Index?.Url ?? "")"
 					@Htmx.GetHxAttributes(g.Index?.Url ?? "", Model.IsPrimaryNavEnabled && g.NavigationRootId == Model.RootNavigationId || true)
 					id="page-@(g.Index?.Id ?? id)"
-					class="sidebar-link @(g.Depth == topLevelGroup ? "font-semibold font-sans mb-1 text-base" : "")">
+					class="sidebar-link @(Model.Level == topLevelGroup ? "font-semibold font-sans mb-1 text-base" : "")">
 					@(g.Index?.NavigationTitle ?? (g as TableOfContentsTree)?.Source.ToString() ?? "Untitled")
 				</a>
 			</div>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="w-full hidden peer-has-checked:block @(g.Depth > topLevelGroup ? "ml-4": "")">
+				<ul class="w-full hidden peer-has-checked:block @(Model.Level > topLevelGroup ? "ml-4": "")">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
 						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-						Level = g.Depth,
+						Level = Model.Level + 1,
 						SubTree = g,
 						RootNavigationId = Model.RootNavigationId
 					}))
