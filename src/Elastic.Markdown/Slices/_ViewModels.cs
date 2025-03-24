@@ -10,6 +10,7 @@ namespace Elastic.Markdown.Slices;
 
 public class IndexViewModel
 {
+	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
@@ -26,12 +27,15 @@ public class IndexViewModel
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
+	public required bool EnableGoogleTagManager { get; init; }
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 }
 
 public class LayoutViewModel
 {
+	public required string DocSetName { get; init; }
+
 	/// Used to identify the navigation for the current compilation
 	/// We want to reset users sessionStorage every time this changes to invalidate
 	/// the guids that no longer exist
@@ -47,6 +51,7 @@ public class LayoutViewModel
 	public required string? GithubEditUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
+	public required bool EnableGoogleTagManager { get; init; }
 
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
 	public required FeatureFlags Features { get; init; }

@@ -1,59 +1,64 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<NavigationViewModel>
-<div class="pt-6 pb-20 font-body">
-
+<div class="pb-20 font-body">
 	@{
 		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
 	} 
-	
-	@if (Model.IsPrimaryNavEnabled)
+	@if (Model.IsPrimaryNavEnabled && current is { Group.Index: not null })
 	{
-		<details class="block group border-b-1 border-grey-20 pb-8 font-sans">
-			<summary class="inline-grid md:grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-2 hover:text-black">
-				<span>
-					@current?.Group.Index?.NavigationTitle
-				</span>
-				<div class="flex items-center justify-center size-6">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						class="w-4 group-open:rotate-180">
-						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-					</svg>
-				</div>
-			</summary>
-			<ul>
-				@foreach (var item in Model.TopLevelItems)
-				{
-					if (item.Group.Index == null) continue;
-					<li class="block mt-2">
-						<a
-							class="hover:underline hover:text-black active:text-blue-elastic-100 font-semibold text-sm @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
-							href="@item.Group.Index.Url"
-							hx-get="@item.Group.Index.Url"
-							hx-select-oob="#pages-nav,#content-container,#toc-nav"
-							hx-push-url="true"
-							preload>@item.Group.Index.NavigationTitle</a>
-					</li>
-				}
-			</ul>
-		</details>
+		<div class="sticky top-0 py-6 bg-white z-10 border-b-1 border-grey-20 pr-4">
+			<details class="block group border-1 border-grey-20 rounded-sm font-sans ">
+				<summary class="grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+					<span>
+						<a 
+							class="hover:underline text-blue-elastic hover:text-blue-elastic-100"
+							href="@current.Group.Index?.Url"
+							@Htmx.GetHxAttributes(current.Group.Index?.Url!)
+						>
+							@current.Group.Index?.NavigationTitle
+						</a>
+					</span>
+					<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="w-4 group-open:rotate-180">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+						</svg>
+					</div>
+				</summary>
+				<ul class="py-2">
+					@foreach (var item in Model.TopLevelItems)
+					{
+						if (item.Group.Index == null) continue;
+						if (item.Id == current?.Id) continue;
+						<li class="block">
+							<a
+								class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+								href="@item.Group.Index.Url"
+								@Htmx.GetHxAttributes(item.Group.Index.Url, false, "mouseover")>
+								@item.Group.Index.NavigationTitle
+							</a>
+						</li>
+					}
+				</ul>
+			</details>
+		</div>
 	}
 	else
 	{
 		<a
 			href="@Model.TitleUrl"
 			@Htmx.GetHxAttributes(Model.TitleUrl, current is null || Model.Tree.Id == current?.Id)
-			class="font-semibold text-ink hover:text-black">
+			class="inline-block mx-4 mt-6 font-semibold text-ink hover:text-black">
 			@Model.Title
 		</a>
 	}
-
-
-	<ul class="block">
+	
+	<ul class="block pl-4">
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{
 			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,

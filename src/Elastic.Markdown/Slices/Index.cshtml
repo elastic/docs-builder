@@ -4,6 +4,7 @@
 @functions {
 	public LayoutViewModel LayoutModel => new()
 	{
+		DocSetName = Model.DocSetName,
 		Title = $"Elastic Documentation: {Model.Title}",
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
@@ -15,6 +16,7 @@
 		GithubEditUrl = Model.GithubEditUrl,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
+		EnableGoogleTagManager = Model.EnableGoogleTagManager,
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
 	};

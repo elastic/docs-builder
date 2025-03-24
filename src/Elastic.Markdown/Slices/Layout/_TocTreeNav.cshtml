@@ -11,7 +11,7 @@
 	if (item is FileNavigationItem file && Model.SubTree.IndexFileName != file.File.FileName)
 	{
 		var f = file.File;
-		<li class="flex group/li @(item.Depth == topLevelFile ? "font-semibold py-8 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
+		<li class="flex group/li pr-4 @(item.Depth == topLevelFile ? "font-semibold py-8 pr-4 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
 			<a
 				href="@f.Url"
 				@Htmx.GetHxAttributes(f.Url, Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
@@ -25,7 +25,7 @@
 	else if (item is GroupNavigationItem folder)
 	{
 		var g = folder.Group;
-		<li class="flex flex-wrap group-navigation @(g.Depth == topLevelGroup ? "py-8 not-last:border-b-1 border-grey-20" : "mt-4 lg:mt-3")">
+		<li class="flex flex-wrap group-navigation @(g.Depth == topLevelGroup ? "py-8 not-last:border-b-1 border-grey-20 pr-4" : "mt-4 lg:mt-3")">
 			<div class="peer flex items-start gap-1">
 				<label for="@id" class="group/label">
 					<svg

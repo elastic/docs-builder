@@ -17,7 +17,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 {
 	protected override void Write(HtmlRenderer renderer, LinkInline link)
 	{
-		if (renderer.EnableHtmlForInline && !link.IsImage && link.Url?.StartsWith('/') == true)
+		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
 			// ReSharper disable once UnusedVariable
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
@@ -26,21 +26,32 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				return;
 			}
 
-			var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INavigation;
-			var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INavigation;
+			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
 
 			_ = renderer.Write("<a href=\"");
-			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url);
+			_ = renderer.WriteEscapeUrl(url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
-			_ = renderer.Write(" hx-get=\"");
-			_ = renderer.WriteEscapeUrl(link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url);
-			_ = renderer.Write('"');
-			_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
-			_ = renderer.Write(" hx-swap=\"none\"");
-			_ = renderer.Write(" hx-push-url=\"true\"");
-			_ = renderer.Write(" hx-indicator=\"#htmx-indicator\"");
-			_ = renderer.Write($" preload=\"{Htmx.GetPreload()}\"");
+
+
+			if (link.Url?.StartsWith('/') == true)
+			{
+				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INavigation;
+				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INavigation;
+				_ = renderer.Write(" hx-get=\"");
+				_ = renderer.WriteEscapeUrl(url);
+				_ = renderer.Write('"');
+				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
+				_ = renderer.Write($" hx-swap=\"{Htmx.HxSwap}\"");
+				_ = renderer.Write($" hx-push-url=\"{Htmx.HxPushUrl}\"");
+				_ = renderer.Write($" hx-indicator=\"{Htmx.HxIndicator}\"");
+				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
+			}
+			else if (link.Url?.StartsWith("http") == true && (link.GetData("isCrossLink") as bool?) == false)
+			{
+				_ = renderer.Write(" target=\"_blank\"");
+				_ = renderer.Write(" rel=\"noopener noreferrer\"");
+			}
 
 			if (!string.IsNullOrEmpty(link.Title))
 			{
@@ -49,7 +60,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				_ = renderer.Write('"');
 			}
 
-			if (!string.IsNullOrWhiteSpace(Rel))
+			if (!string.IsNullOrWhiteSpace(Rel) && link.Url?.StartsWith('/') == false)
 			{
 				_ = renderer.Write(" rel=\"");
 				_ = renderer.Write(Rel);

@@ -147,6 +147,8 @@ public class SubstitutionParser : InlineParser
 			found = true;
 			replacement = value;
 		}
+		if (found)
+			context.Build.Collector.CollectUsedSubstitutionKey(key);
 
 		var start = processor.GetSourcePosition(startPosition, out var line, out var column);
 		var end = processor.GetSourcePosition(slice.Start);
