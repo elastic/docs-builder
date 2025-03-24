@@ -173,11 +173,11 @@ jobs:
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update Link Index
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
+        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update Reference Index
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
+        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-reference-index@main
 
       - name: Update deployment status
