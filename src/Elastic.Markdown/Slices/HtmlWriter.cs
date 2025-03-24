@@ -98,8 +98,11 @@ public class HtmlWriter(
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
+		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
+
 		var slice = Index.Create(new IndexViewModel
 		{
+			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
 			Description = markdown.YamlFrontMatter?.Description ?? descriptionGenerator.GenerateDescription(document),

@@ -5,7 +5,7 @@
 	public LayoutViewModel LayoutModel => new()
 	{
 		DocSetName = Model.DocSetName,
-		Title =  Model.CurrentDocument.Url.AsSpan().TrimStart(Model.UrlPathPrefix) is "/" ?  Model.Title : $"{Model.Title} | Elastic documentation",
+		Title = Model.CurrentDocument.Parent == null ? Model.Title : $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
 		CurrentDocument = Model.CurrentDocument,
