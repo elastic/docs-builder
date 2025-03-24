@@ -82,11 +82,37 @@ public record GlobalNavigation
 
 			var tocChildren = toc.Children.OfType<TocReference>().ToArray();
 			var tocNavigationItems = BuildNavigation(tocChildren, depth + 1);
-			tree.Depth = depth;
 
-			tree.NavigationItems = tree.NavigationItems.Concat(tocNavigationItems).ToArray();
+			var allNavigationItems = tree.NavigationItems.Concat(tocNavigationItems);
+			var cleanNavigationItems = new List<INavigationItem>();
+			var seenSources = new HashSet<Uri>();
+			foreach (var allNavigationItem in allNavigationItems)
+			{
+				if (allNavigationItem is not TocNavigationItem tocNav)
+				{
+					cleanNavigationItems.Add(allNavigationItem);
+					continue;
+				}
+				if (seenSources.Contains(tocNav.Source))
+					continue;
 
-			list.Add(new TocNavigationItem(i, depth, tree, toc.Source));
+				if (!_assembleSources.TocTopLevelMappings.TryGetValue(tocNav.Source, out var mapping))
+					continue;
+
+				if (mapping.ParentSource != tree.Source)
+					continue;
+
+				_ = seenSources.Add(tocNav.Source);
+				cleanNavigationItems.Add(allNavigationItem);
+			}
+
+			tree.NavigationItems = cleanNavigationItems.ToArray();
+			var navigationItem = new TocNavigationItem(i, depth, tree, toc.Source);
+
+			list.Add(navigationItem);
+			if (toc.Source == new Uri("docs-content://reference/"))
+			{
+			}
 
 			//list.AddRange(tocNavigationItems);
 			i++;

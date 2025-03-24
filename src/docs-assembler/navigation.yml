@@ -82,7 +82,7 @@ toc:
       - repo: elasticsearch-php
       - repo: elasticsearch-py
       # - repo: elasticsearch-rs
-      # - repo: elasticsearch-ruby
+      - repo: elasticsearch-ruby
       - repo: elasticsearch
       # - repo: go-elasticsearch
       #- repo: integrations

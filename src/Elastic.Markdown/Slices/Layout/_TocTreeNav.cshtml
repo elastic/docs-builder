@@ -51,7 +51,7 @@
 					@Htmx.GetHxAttributes(g.Index?.Url ?? "", Model.IsPrimaryNavEnabled && g.NavigationRootId == Model.RootNavigationId || true)
 					id="page-@(g.Index?.Id ?? id)"
 					class="sidebar-link @(g.Depth == topLevelGroup ? "font-semibold font-sans mb-1 text-base" : "")">
-					@(g.Index?.NavigationTitle ?? "Untitled")
+					@(g.Index?.NavigationTitle ?? (g as TableOfContentsTree)?.Source.ToString() ?? "Untitled")
 				</a>
 			</div>
 			@if (g.NavigationItems.Count > 0)

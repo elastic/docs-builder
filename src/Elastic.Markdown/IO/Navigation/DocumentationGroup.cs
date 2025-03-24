@@ -20,7 +20,8 @@ public interface INavigationItem
 public record TocNavigationItem(int Order, int Depth, DocumentationGroup Group, Uri Source)
 	: GroupNavigationItem(Order, Depth, Group)
 {
-	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup { get; } =
+	/// Only used for tests
+	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup =>
 		Group.NavigationItems.OfType<TocNavigationItem>().ToDictionary(i => i.Source, i => i);
 }
 
@@ -281,6 +282,7 @@ public class DocumentationGroup : INavigation
 					//if (lookups.IndexedTableOfContents.TryGetValue(tocReference.Source, out var indexedToc))
 					//	toc.NavigationItems = toc.NavigationItems.Concat(indexedToc.Children).ToArray();
 					group = toc;
+					navigationItems.Add(new TocNavigationItem(index, depth, toc, tocReference.Source));
 				}
 				else
 				{
@@ -288,10 +290,10 @@ public class DocumentationGroup : INavigation
 					{
 						TableOfContents = children
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
+					navigationItems.Add(new GroupNavigationItem(index, depth, group));
 				}
 
 				groups.Add(group);
-				navigationItems.Add(new GroupNavigationItem(index, depth, group));
 			}
 			else
 			{
@@ -320,40 +322,4 @@ public class DocumentationGroup : INavigation
 
 		_resolved = true;
 	}
-
-	private DocumentationGroup(IReadOnlyCollection<INavigationItem> tocChildren,
-		DocumentationGroup cloneFrom,
-		TableOfContentsTreeCollector treeCollector, INavigation navigationRoot)
-	{
-		_treeCollector = treeCollector;
-		NavigationItems = cloneFrom.NavigationItems.Concat(tocChildren).ToArray();
-		FolderName = cloneFrom.FolderName;
-		foreach (var item in NavigationItems)
-		{
-			if (item is GroupNavigationItem g)
-				g.Group.NavigationRoot = navigationRoot;
-			else if (item is FileNavigationItem f)
-				f.File.NavigationRoot = navigationRoot;
-			else
-				throw new Exception($"Unknown navigation item type {item.GetType()}");
-		}
-
-		FilesInOrder = NavigationItems
-			.OfType<FileNavigationItem>()
-			.OrderBy(i => i.Order)
-			.Select(i => i.File)
-			.ToArray();
-		GroupsInOrder = NavigationItems
-			.OfType<GroupNavigationItem>()
-			.OrderBy(i => i.Order)
-			.Select(i => i.Group)
-			.ToArray();
-		Index = cloneFrom.Index;
-		Depth = cloneFrom.Depth;
-		Id = cloneFrom.Id;
-		NavigationRoot = navigationRoot;
-	}
-
-	public DocumentationGroup CloneWithExtraChildren(IReadOnlyCollection<INavigationItem> tocChildren, INavigation navigationRoot) =>
-		new(tocChildren, this, _treeCollector, navigationRoot);
 }

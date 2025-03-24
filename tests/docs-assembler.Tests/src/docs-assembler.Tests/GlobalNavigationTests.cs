@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Documentation.Assembler.Building;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
@@ -24,6 +23,7 @@ public class GlobalNavigationPathProviderTests
 		var expectedRoot = new Uri("docs-content://reference/");
 		var expectedParent = new Uri("docs-content://reference/ingestion-tools/apm/agents/");
 		var sut = new Uri("apm-agent-dotnet://reference/");
+		var clients = new Uri("docs-content://reference/elasticsearch-clients/");
 		var fs = new FileSystem();
 		var (assembleContext, assembleSources) = await Setup(fs);
 
@@ -35,8 +35,9 @@ public class GlobalNavigationPathProviderTests
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
 		referenceToc.Should().NotBeNull();
+		referenceToc!.TocReferences.Should().NotContainKey(clients);
 
-		var ingestTools = referenceToc!.TocReferences[new Uri("docs-content://reference/ingestion-tools/")];
+		var ingestTools = referenceToc.TocReferences[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestTools.Should().NotBeNull();
 
 		var apmReference = ingestTools.TocReferences[new Uri("docs-content://reference/apm/")];
@@ -50,10 +51,21 @@ public class GlobalNavigationPathProviderTests
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		var referenceNav = navigation.NavigationLookup[expectedRoot];
+		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
+
 		referenceNav.Should().NotBeNull();
+		referenceNav.NavigationLookup.Should().NotContainKey(clients);
+		referenceNav.Group.NavigationItems.OfType<TocNavigationItem>()
+			.Select(n => n.Source)
+			.Should().NotContain(clients);
+		referenceNav.Group.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
 
 		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestNav.Should().NotBeNull();
+		ingestNav.NavigationLookup.Should().NotContainKey(clients);
+		ingestNav.Group.NavigationItems.OfType<TocNavigationItem>()
+			.Select(n => n.Source)
+			.Should().NotContain(clients);
 
 		var apmNav = ingestNav.NavigationLookup[new Uri("docs-content://reference/apm/")];
 		apmNav.Should().NotBeNull();
