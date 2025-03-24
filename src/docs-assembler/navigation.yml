@@ -131,17 +131,13 @@ toc:
             # Children include the entire AsciiDoc book
 
       # Elasticsearch and index management
-      # ✅ https://github.com/elastic/docs-content/blob/main/reference/elasticsearch/toc.yml
-      - toc: docs-content://reference/elasticsearch
-        path_prefix: reference/elasticsearch/overview
+      # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
+      - toc: elasticsearch://reference/elasticsearch
+        path_prefix: reference/elasticsearch
+        # Children include: Configuration, JVM settings, Roles,
+        # Elasticsearch privileges, Index settings, Index lifecycle actions,
+        # REST APIs, Mapping, Elasticsearch audit events, Command line tools
         children:
-
-          # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
-          - toc: elasticsearch://reference/elasticsearch
-            path_prefix: reference/elasticsearch
-            # Children include: Configuration, JVM settings, Roles,
-            # Elasticsearch privileges, Index settings, Index lifecycle actions,
-            # REST APIs, Mapping, Elasticsearch audit events, Command line tools
 
           # Curator
           # ✅ https://github.com/elastic/curator/blob/master/docs/reference/toc.yml
@@ -247,7 +243,7 @@ toc:
 
               # APM agents
               # ✅ https://github.com/elastic/docs-content/blob/main/reference/apm-agents/toc.yml
-              - toc: docs-content://reference/ingestion-tools/apm/agents
+              - toc: docs-content://reference/apm-agents
                 path_prefix: reference/apm/agents
                 children:
                   # APM Android agent
