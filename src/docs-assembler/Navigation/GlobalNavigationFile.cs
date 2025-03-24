@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
@@ -10,18 +11,23 @@ using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler.Navigation;
 
-public record GlobalNavigationFile
+public record GlobalNavigationFile : ITableOfContentsScope
 {
 	private readonly AssembleContext _context;
 	private readonly AssembleSources _assembleSources;
 
 	public IReadOnlyCollection<TocReference> TableOfContents { get; }
+	public IReadOnlyCollection<TocReference> Phantoms { get; }
+
+	public IDirectoryInfo ScopeDirectory { get; }
 
 	public GlobalNavigationFile(AssembleContext context, AssembleSources assembleSources)
 	{
 		_context = context;
 		_assembleSources = assembleSources;
-		TableOfContents = Deserialize();
+		TableOfContents = Deserialize("toc");
+		Phantoms = Deserialize("phantoms");
+		ScopeDirectory = _context.NavigationPath.Directory!;
 	}
 
 	public void EmitWarning(string message) =>
@@ -31,18 +37,15 @@ public record GlobalNavigationFile
 		_context.Collector.EmitWarning(_context.NavigationPath.FullName, message);
 
 
-	private IReadOnlyCollection<TocReference> Deserialize()
+	private IReadOnlyCollection<TocReference> Deserialize(string key)
 	{
 		var reader = new YamlStreamReader(_context.NavigationPath, _context.Collector);
 		try
 		{
 			foreach (var entry in reader.Read())
 			{
-				switch (entry.Key)
-				{
-					case "toc":
-						return ReadChildren(reader, entry.Entry, null, 0);
-				}
+				if (entry.Key == key)
+					return ReadChildren(key, reader, entry.Entry, null, 0);
 			}
 		}
 		catch (Exception e)
@@ -54,7 +57,8 @@ public record GlobalNavigationFile
 		return [];
 	}
 
-	private IReadOnlyCollection<TocReference> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parent, int depth)
+	private IReadOnlyCollection<TocReference> ReadChildren(string key, YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parent,
+		int depth)
 	{
 		var entries = new List<TocReference>();
 		if (entry.Key is not YamlScalarNode { Value: not null } scalarKey)
@@ -71,7 +75,11 @@ public record GlobalNavigationFile
 
 		foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
 		{
-			var child = ReadChild(reader, tocEntry, parent, depth);
+
+			var child =
+				key == "toc"
+					? ReadTocDefinition(reader, tocEntry, parent, depth)
+					: ReadPhantomDefinition(reader, tocEntry);
 			if (child is not null)
 				entries.Add(child);
 		}
@@ -79,7 +87,27 @@ public record GlobalNavigationFile
 		return entries;
 	}
 
-	private TocReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth)
+	private TocReference? ReadPhantomDefinition(YamlStreamReader reader, YamlMappingNode tocEntry)
+	{
+		foreach (var entry in tocEntry.Children)
+		{
+			var key = ((YamlScalarNode)entry.Key).Value;
+			switch (key)
+			{
+				case "toc":
+					var source = reader.ReadString(entry);
+					if (source != null && !source.Contains("://"))
+						source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
+					var sourceUri = new Uri(source!);
+					var tocReference = new TocReference(sourceUri, this, "", true, []);
+					return tocReference;
+			}
+		}
+
+		return null;
+	}
+
+	private TocReference? ReadTocDefinition(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth)
 	{
 		string? repository = null;
 		string? source = null;
@@ -139,9 +167,6 @@ public record GlobalNavigationFile
 		}
 
 		var navigationItems = new List<ITocItem>();
-		//TODO not needed
-		//var tocChildren = mapping.TableOfContentsConfiguration.TableOfContents;
-		//navigationItems.AddRange(tocChildren);
 
 		foreach (var entry in tocEntry.Children)
 		{
@@ -155,7 +180,7 @@ public record GlobalNavigationFile
 						continue;
 					}
 
-					var children = ReadChildren(reader, entry, parent, depth + 1);
+					var children = ReadChildren("toc", reader, entry, parent, depth + 1);
 					navigationItems.AddRange(children);
 					break;
 			}
@@ -166,4 +191,5 @@ public record GlobalNavigationFile
 		var tocReference = new TocReference(sourceUri, mapping.TableOfContentsConfiguration, path, true, navigationItems);
 		return tocReference;
 	}
+
 }

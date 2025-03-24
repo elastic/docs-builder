@@ -88,8 +88,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
-		var pathProvider = new GlobalNavigationPathProvider(assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(assembleContext, navigation, assembleSources);
+		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
+		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
 		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);

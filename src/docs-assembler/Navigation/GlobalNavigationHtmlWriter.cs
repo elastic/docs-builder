@@ -3,53 +3,50 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Slices;
 
 namespace Documentation.Assembler.Navigation;
 
-public class GlobalNavigationHtmlWriter(AssembleContext assembleContext, GlobalNavigation navigation, AssembleSources assembleSources) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(
+	GlobalNavigationFile navigationFile,
+	AssembleContext assembleContext,
+	GlobalNavigation globalNavigation,
+	AssembleSources assembleSources) : INavigationHtmlWriter
 {
 	private readonly AssembleContext _assembleContext = assembleContext;
 	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
 
-	private (DocumentationGroup, Uri) GetRealNavigationRoot(INavigation navigation)
+	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
+
+	private (DocumentationGroup, Uri) GetRealNavigationRoot(TableOfContentsTree tree)
 	{
-		if (navigation is not DocumentationGroup group)
-			throw new InvalidOperationException($"Expected a {nameof(DocumentationGroup)}");
-
-
-		if (group.NavigationRoot is TableOfContentsTree tree)
+		if (!assembleSources.TocTopLevelMappings.TryGetValue(tree.Source, out var topLevelUri))
 		{
-			if (!assembleSources.TocTopLevelMappings.TryGetValue(tree.Source, out var topLevelUri))
-			{
-				_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {tree.Source}");
-				return (tree, tree.Source);
-			}
+			_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {tree.Source}");
+			return (tree, tree.Source);
+		}
 
-			if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelUri.TopLevelSource, out var topLevel))
-			{
-				_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
-				return (tree, tree.Source);
-
-			}
-			return (topLevel, topLevelUri.TopLevelSource);
+		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelUri.TopLevelSource, out var topLevel))
+		{
+			_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
+			return (tree, tree.Source);
 
 		}
-		else if (group.NavigationRoot is DocumentationGroup)
-		{
-			var source = group.FolderName == "reference/index.md"
-				? new Uri("docs-content://reference/")
-				: throw new InvalidOperationException($"{group.FolderName} is not a valid navigation root");
-			return (group, source);
-		}
-		throw new InvalidOperationException($"Unknown navigation root {group.NavigationRoot}");
+		return (topLevel, topLevelUri.TopLevelSource);
 	}
 
 	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
 	{
-		var (navigation, source) = GetRealNavigationRoot(currentRootNavigation);
+		if (currentRootNavigation is not TableOfContentsTree tree)
+			throw new InvalidOperationException($"Expected a {nameof(DocumentationGroup)}");
+
+		if (Phantoms.Contains(tree.Source))
+			return string.Empty;
+
+		var (navigation, source) = GetRealNavigationRoot(tree);
 		if (_renderedNavigationCache.TryGetValue(source, out var value))
 			return value;
 
@@ -64,17 +61,13 @@ public class GlobalNavigationHtmlWriter(AssembleContext assembleContext, GlobalN
 		var model = CreateNavigationModel(navigation);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
 		_renderedNavigationCache[source] = value;
-		if (source == new Uri("docs-content://extend"))
-		{
-		}
-
 
 		return value;
 	}
 
 	private NavigationViewModel CreateNavigationModel(DocumentationGroup group)
 	{
-		var topLevelItems = navigation.TopLevelItems;
+		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
 		{
 			Title = group.Index?.NavigationTitle ?? "Docs",

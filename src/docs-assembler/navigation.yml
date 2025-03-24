@@ -6,6 +6,11 @@
 # 📝 = no PR started yet
 #############################################
 
+# Use sparingly, makes assembler aware of toc container folders
+# That are not linked in the global toc but all the children toc they define are.
+phantoms:
+  - toc: elasticsearch://reference
+
 toc:
   #############
   # NARRATIVE #
