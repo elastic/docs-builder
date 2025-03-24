@@ -98,7 +98,9 @@ public class HtmlWriter(
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
-		var reportLinkParameter = new Uri(DocumentationSet.Build.CanonicalBaseUrl!, Path.Combine(DocumentationSet.Build.UrlPathPrefix ?? string.Empty, markdown.Url));
+		Uri? reportLinkParameter = null;
+		if (DocumentationSet.Build.CanonicalBaseUrl is not null)
+			reportLinkParameter = new Uri(DocumentationSet.Build.CanonicalBaseUrl!, Path.Combine(DocumentationSet.Build.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue_report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var slice = Index.Create(new IndexViewModel
