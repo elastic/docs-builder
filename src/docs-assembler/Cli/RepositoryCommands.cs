@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Xml;
 using System.Xml.Linq;
 using Actions.Core.Services;
 using ConsoleAppFramework;
@@ -79,7 +80,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false,
 		};
-
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkouts = cloner.GetAll().ToArray();
 		if (checkouts.Length == 0)
@@ -90,31 +90,48 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
-		var navigationItems = GetNavigationItems(navigation.NavigationItems);
-
-		var doc = new XDocument();
-		var root = new XElement(
-				"urlset",
-				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-				navigationItems.Select(n => (n as FileNavigationItem)?.File.Url)
-					.Select(u => new XElement("url", new XElement("loc", u)))
-			);
-
-		doc.Add(root);
-
 		var pathProvider = new GlobalNavigationPathProvider(assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(assembleContext, navigation, assembleSources);
-		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 
+		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
+
+		GenerateSitemap(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
 		return collector.Errors;
 	}
 
+	private static void GenerateSitemap(IReadOnlyCollection<INavigationItem> navigationItems, IFileSystem fileSystem, IDirectoryInfo outputFolder)
+	{
+		Uri baseUri = new("https://www.elastic.co");
+		var flattenedNavigationItems = GetNavigationItems(navigationItems);
 
-	private static List<INavigationItem> GetNavigationItems(IReadOnlyCollection<INavigationItem> items)
+		var doc = new XDocument()
+		{
+			Declaration = new XDeclaration("1.0", "utf-8", "yes"),
+		};
+
+		var root = new XElement(
+				"urlset",
+				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
+				flattenedNavigationItems
+					.OfType<FileNavigationItem>()
+					.Select(n => n.File.Url)
+					.Distinct()
+					.Select(u => new Uri(baseUri, u))
+					.Select(u => new XElement("url", new XElement("loc", u)))
+			);
+
+		doc.Add(root);
+
+		using var fileStream = fileSystem.File.Create(Path.Combine(outputFolder.ToString() ?? string.Empty, "sitemap.xml"));
+		doc.Save(fileStream);
+	}
+
+
+	private static IReadOnlyCollection<INavigationItem> GetNavigationItems(IReadOnlyCollection<INavigationItem> items)
 	{
 		var result = new List<INavigationItem>();
 		foreach (var item in items)
