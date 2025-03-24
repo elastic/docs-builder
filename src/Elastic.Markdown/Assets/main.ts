@@ -8,7 +8,7 @@ import {initHighlight} from "./hljs";
 import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
-import {OpenDetailsWithAnchor} from "./open-details-with-anchor";
+import {openDetailsWithAnchor} from "./open-details-with-anchor";
 import {$, $$} from "select-dom"
 
 import { UAParser } from 'ua-parser-js';
@@ -20,7 +20,7 @@ document.addEventListener('htmx:load', function() {
 	initCopyButton();
 	initTabs();
 	initNav()
-	OpenDetailsWithAnchor();
+	openDetailsWithAnchor();
 });
 
 
