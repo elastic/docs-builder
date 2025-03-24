@@ -30,17 +30,16 @@ references:
   apm-agent-rum-js:
   apm-aws-lambda:
   apm-k8s-attacher:
-  apm-server:
   beats:
   cloud-on-k8s:
   cloud:
     current: master
-  curator:
-    skip: true
-    current: master
-  ecctl:
-    current: master
-    skip: true
+  # curator:
+  #   skip: true
+  #   current: master
+  # ecctl:
+  #   current: master
+  #   skip: true
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -61,8 +60,8 @@ references:
   elasticsearch-php:
   elasticsearch-py:
     # https://github.com/elastic/elasticsearch-rs ci checks not running?
-  elasticsearch-rs:
-    skip: true
+  # elasticsearch-rs:
+  #   skip: true
   elasticsearch-ruby:
   elasticsearch:
   go-elasticsearch:
@@ -73,6 +72,6 @@ references:
   logstash:
   search-ui:
   integration-docs:
-  security-docs:
-    # wait for move to https://github.com/elastic/detection-rules/pull/4507/files
-    skip: true
+  # security-docs:
+  #   # wait for move to https://github.com/elastic/detection-rules/pull/4507/files
+  #   skip: true

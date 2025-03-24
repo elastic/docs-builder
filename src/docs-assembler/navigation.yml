@@ -133,12 +133,12 @@ toc:
       # Elasticsearch and index management
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/elasticsearch/toc.yml
       - toc: docs-content://reference/elasticsearch
-        path_prefix: reference/elasticsearch
+        path_prefix: reference/elasticsearch/overview
         children:
 
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
-          #- toc: elasticsearch://reference/elasticsearch
-          #  path_prefix: reference/elasticsearch
+          - toc: elasticsearch://reference/elasticsearch
+            path_prefix: reference/elasticsearch
             # Children include: Configuration, JVM settings, Roles,
             # Elasticsearch privileges, Index settings, Index lifecycle actions,
             # REST APIs, Mapping, Elasticsearch audit events, Command line tools
@@ -318,11 +318,6 @@ toc:
             # Filebeat, Heartbeat, Metricbeat, Packetbeat, Winlogbeat,
             # Elastic logging plugin for Docker
 
-          # 📝 TO DO: Delete this item
-          # This should be replaced by `elasticsearch://reference/enrich-processor` below
-          - toc: elasticsearch://reference/ingestion-tools/enrich-processor
-            path_prefix: reference/elasticsearch/enrich-processor
-
           # Processor reference
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/enrich-processor/toc.yml
           - toc: elasticsearch://reference/enrich-processor
@@ -358,11 +353,6 @@ toc:
           - toc: elastic-serverless-forwarder://reference
             path_prefix: reference/aws-forwarder
             # Children include the entire AsciiDoc book
-
-          # 📝 TO DO: Delete this item
-          # This should be replaced by `elasticsearch://reference/search-connectors` below
-          - toc: elasticsearch://reference/ingestion-tools/search-connectors
-            path_prefix: reference/elasticsearch/search-connectors
 
           # Search connectors
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/search-connectors/toc.yml
@@ -406,13 +396,13 @@ toc:
       # ECS
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/ecs/toc.yml
       - toc: docs-content://reference/ecs
-        path_prefix: reference/ecs
+        path_prefix: reference/ecs/overview
         children:
           # ECS reference
           # ✅ https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
           # TODO MARTIJN conflicting path_prefix
           - toc: ecs://reference
-            path_prefix: reference/ecs/ref
+            path_prefix: reference/ecs
             # Children include the entire AsciiDoc book
 
           # ECS logging libraries
@@ -482,12 +472,6 @@ toc:
         # Metrics reference, Canvas function reference
         children:
 
-          # 📝 TO DO: Delete this item
-          # This should be replaced by `elasticsearch://reference/text-analysis` and
-          # `elasticsearch://reference/aggregations` below.
-          - toc: elasticsearch://reference/data-analysis
-            path_prefix: reference/elasticsearch/data-analysis
-
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/text-analysis/toc.yml
           - toc: elasticsearch://reference/text-analysis
             path_prefix: reference/text-analysis
@@ -498,14 +482,14 @@ toc:
       # Cloud
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/cloud/toc.yml
       - toc: docs-content://reference/cloud
-        path_prefix: reference/cloud
+        path_prefix: reference/cloud/overview
         children:
           # Elastic Cloud Enterprise
           # Elastic Cloud Hosted
           # ✅ https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
           # TODO Martijn: conflicting path_prefix
           - toc: cloud://reference
-            path_prefix: reference/cloud/ref
+            path_prefix: reference/cloud
             # Children include the entire AsciiDoc book
             # (minus pages moved to docs-content)
 
