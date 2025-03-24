@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Xml.Linq;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
@@ -12,6 +13,7 @@ using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -88,6 +90,18 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
+		var navigationItems = GetNavigationItems(navigation.NavigationItems);
+
+		var doc = new XDocument();
+		var root = new XElement(
+				"urlset",
+				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
+				navigationItems.Select(n => (n as FileNavigationItem)?.File.Url)
+					.Select(u => new XElement("url", new XElement("loc", u)))
+			);
+
+		doc.Add(root);
+
 		var pathProvider = new GlobalNavigationPathProvider(assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(assembleContext, navigation, assembleSources);
 		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
@@ -97,5 +111,24 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
 		return collector.Errors;
+	}
+
+
+	private static List<INavigationItem> GetNavigationItems(IReadOnlyCollection<INavigationItem> items)
+	{
+		var result = new List<INavigationItem>();
+		foreach (var item in items)
+		{
+			switch (item)
+			{
+				case FileNavigationItem file:
+					result.Add(file);
+					break;
+				case GroupNavigationItem group:
+					result.AddRange(GetNavigationItems(group.Group.NavigationItems));
+					break;
+			}
+		}
+		return result;
 	}
 }
