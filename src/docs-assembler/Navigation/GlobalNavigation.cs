@@ -34,11 +34,15 @@ public record GlobalNavigation
 				continue;
 			}
 
-			list.Add(new TocNavigationItem(i, depth, tree, toc.Source));
 			var tocChildren = toc.Children.OfType<TocReference>().ToArray();
-
 			var tocNavigationItems = BuildNavigation(tocChildren, depth + 1);
-			list.AddRange(tocNavigationItems);
+			tree.Depth = depth;
+
+			tree.NavigationItems = tree.NavigationItems.Concat(tocNavigationItems).ToArray();
+
+			list.Add(new TocNavigationItem(i, depth, tree, toc.Source));
+
+			//list.AddRange(tocNavigationItems);
 			i++;
 		}
 

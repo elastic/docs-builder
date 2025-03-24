@@ -33,9 +33,11 @@ references:
   cloud:
     current: master
   curator:
+    skip: true
     current: master
   ecctl:
     current: master
+    skip: true
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -55,7 +57,9 @@ references:
   elasticsearch-net:
   elasticsearch-php:
   elasticsearch-py:
+    # https://github.com/elastic/elasticsearch-rs ci checks not running?
   elasticsearch-rs:
+    skip: true
   elasticsearch-ruby:
   elasticsearch:
   go-elasticsearch:

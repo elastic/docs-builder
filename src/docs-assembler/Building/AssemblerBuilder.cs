@@ -10,9 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerBuilder(ILoggerFactory logger, AssembleContext context, GlobalNavigation navigation, GlobalNavigationPathProvider pathProvider)
+public class AssemblerBuilder(
+	ILoggerFactory logger,
+	AssembleContext context,
+	GlobalNavigationHtmlWriter writer,
+	GlobalNavigationPathProvider pathProvider
+)
 {
-	public GlobalNavigationHtmlWriter HtmlWriter { get; } = new(navigation);
+	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
 
 	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, Cancel ctx)
 	{

@@ -8,28 +8,32 @@ using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown.CrossLinks;
+using Markdig.Helpers;
 
 namespace Documentation.Assembler.Building;
 
 public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 {
+	private readonly FrozenDictionary<Uri, TocTopLevelMapping> _topLevelMappings;
 	private Uri BaseUri { get; }
 
 	private PublishEnvironment PublishEnvironment { get; }
 
 	private IsolatedBuildEnvironmentUriResolver IsolatedBuildResolver { get; }
 
-	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
+	private IReadOnlyList<string> TableOfContentsPrefixes { get; }
 
-	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, TocTopLevelMapping> configuredSources, PublishEnvironment environment)
+	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, TocTopLevelMapping> topLevelMappings, PublishEnvironment environment)
 	{
+		_topLevelMappings = topLevelMappings;
 		PublishEnvironment = environment;
 		IsolatedBuildResolver = new IsolatedBuildEnvironmentUriResolver();
 
-		TableOfContentsPrefixes = configuredSources.Values
-			.Select(kv => kv.SourcePathPrefix)
-			.OrderByDescending(k => k.Length)
-			.ToImmutableSortedSet();
+		TableOfContentsPrefixes = [..topLevelMappings
+			.Values
+			.Select(v => v.Source.ToString())
+			.OrderByDescending(v => v.Length)
+		];
 
 		if (!Uri.TryCreate(environment.Uri, UriKind.Absolute, out var uri))
 			throw new Exception($"Could not parse uri {environment.Uri} in environment {environment}");
@@ -68,27 +72,27 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		if (lookup.IndexOf(":///") >= 0)
 			lookup = lookup.ToString().Replace(":///", "://").AsSpan();
 
-		string? match = null;
+		Uri? match = null;
 		foreach (var prefix in TableOfContentsPrefixes)
 		{
 			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
 				continue;
-			match = prefix;
+			match = new Uri(prefix);
 			break;
 		}
 
-		/*
-		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
-		{
-			//TODO remove
-			if (crossLinkUri.Scheme != "asciidocalypse")
-				_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for url: {crossLinkUri}");
-			return $"reference/{crossLinkUri.Scheme}";
-		}*/
+		if (match is null || !_topLevelMappings.TryGetValue(match, out var toc))
+			return string.Empty;
 
-		//path = path.AsSpan().TrimStart(toc.SourcePrefix).ToString();
 
-		return path;
+		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/'));
+		if (originalPath == toc.SourcePathPrefix)
+			return string.Empty;
+
+		var newRelativePath = path.TrimStart('/').AsSpan().TrimStart(originalPath).ToString();
+		path = Path.Combine(toc.SourcePathPrefix, newRelativePath.TrimStart('/'));
+
+		return string.Empty;
 	}
 
 }

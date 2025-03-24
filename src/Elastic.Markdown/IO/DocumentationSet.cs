@@ -74,7 +74,7 @@ public class DocumentationSet : INavigationLookups
 	)
 	{
 		Build = build;
-		Source = new Uri($"{build.Git.RepositoryName}://");
+		Source = ContentSourceMoniker.Create(build.Git.RepositoryName, null);
 		SourceDirectory = build.DocumentationSourceDirectory;
 		OutputDirectory = build.DocumentationOutputDirectory;
 		LinkResolver =

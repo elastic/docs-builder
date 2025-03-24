@@ -51,6 +51,11 @@ public class TableOfContentsTreeCollector
 {
 	private Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
 
+	public IReadOnlyDictionary<Uri, TableOfContentsTree> Trees => NestedTableOfContentsTrees;
+
+	public void Collect(Uri source, TableOfContentsTree tree) =>
+		NestedTableOfContentsTrees[source] = tree;
+
 	public void Collect(TocReference tocReference, TableOfContentsTree tree) =>
 		NestedTableOfContentsTrees[tocReference.Source] = tree;
 
@@ -77,6 +82,7 @@ public class TableOfContentsTree : DocumentationGroup
 		NavigationRoot = this;
 
 		Source = source;
+		TreeCollector.Collect(source, this);
 	}
 
 	internal TableOfContentsTree(
@@ -95,6 +101,7 @@ public class TableOfContentsTree : DocumentationGroup
 		Source = source;
 		TreeCollector = treeCollector;
 		NavigationRoot = this;
+		TreeCollector.Collect(source, this);
 	}
 
 	protected override DocumentationGroup DefaultNavigation => this;
@@ -265,8 +272,6 @@ public class DocumentationGroup : INavigation
 
 					//if (lookups.IndexedTableOfContents.TryGetValue(tocReference.Source, out var indexedToc))
 					//	toc.NavigationItems = toc.NavigationItems.Concat(indexedToc.Children).ToArray();
-
-					_treeCollector.Collect(tocReference, toc);
 					group = toc;
 				}
 				else

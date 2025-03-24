@@ -13,6 +13,7 @@ using Elastic.Markdown;
 using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -20,19 +21,23 @@ namespace Documentation.Assembler.Navigation;
 
 public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 {
+	private readonly AssembleSources _assembleSources;
 	private readonly AssembleContext _context;
+
 	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
 
-	public GlobalNavigationPathProvider(AssembleSources assembleSources, AssembleContext context, GlobalNavigationFile navigationFile)
+	public GlobalNavigationPathProvider(AssembleSources assembleSources, AssembleContext context)
 	{
+		_assembleSources = assembleSources;
 		_context = context;
 
-		TableOfContentsPrefixes = assembleSources.TocTopLevelMappings
+		TableOfContentsPrefixes = [..assembleSources.TocTopLevelMappings
 			.Values
-			.Select(v => v.SourcePathPrefix)
-			.OrderBy(k => k.Length)
-			.ToImmutableSortedSet();
+			.Select(v => v.Source.ToString())
+			.OrderByDescending(v => v.Length)
+		];
 	}
+
 	/*
 	public IFileInfo? LocateDocSetYaml(Uri crossLinkUri)
 	{
@@ -80,7 +85,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		var repositoryName = documentationSet.Build.Git.RepositoryName;
 
-		var l = $"{repositoryName}://{relativePath.TrimStart('/')}";
+		var l = ContentSourceMoniker.CreateString(repositoryName, relativePath).TrimEnd('/');
 		var lookup = l.AsSpan();
 		if (lookup.StartsWith("docs-content://serverless/", StringComparison.Ordinal))
 			return null;
@@ -95,16 +100,16 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		if (lookup.StartsWith("docs-content://") && !relativePath.Contains('/'))
 			return defaultOutputFile;
 
-		string? match = null;
+		Uri? match = null;
 		foreach (var prefix in TableOfContentsPrefixes)
 		{
 			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
 				continue;
-			match = prefix;
+			match = new Uri(prefix);
 			break;
 		}
 
-		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
+		if (match is null || !_assembleSources.TocTopLevelMappings.TryGetValue(match, out var toc))
 		{
 			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
 				return null;
@@ -124,11 +129,9 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			return fs.FileInfo.New(fallBack);
 		}
 
-		var newPath = relativePath.AsSpan().TrimStart(toc.SourcePrefix.TrimEnd('/')).TrimStart('/').ToString();
-		var path = fs.Path.Combine(outputDirectory.FullName, toc.PathPrefix, newPath);
-		if (path.Contains("deploy-manage"))
-		{
-		}
+		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')) + "/";
+		var newRelativePath = relativePath.AsSpan().TrimStart(originalPath).ToString();
+		var path = fs.Path.Combine(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
 
 		return fs.FileInfo.New(path);
 	}

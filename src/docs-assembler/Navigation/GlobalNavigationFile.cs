@@ -62,20 +62,17 @@ public record GlobalNavigationFile
 			return [];
 		}
 
-		var i = 0;
 		foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
 		{
-			var child = ReadChild(reader, tocEntry, parent, depth, i);
+			var child = ReadChild(reader, tocEntry, parent, depth);
 			if (child is not null)
 				entries.Add(child);
-
-			i++;
 		}
 
 		return entries;
 	}
 
-	private TocReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth, int order)
+	private TocReference? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth)
 	{
 		string? repository = null;
 		string? source = null;
@@ -87,11 +84,11 @@ public record GlobalNavigationFile
 			{
 				case "toc":
 					source = reader.ReadString(entry);
-					if (source.AsSpan().IndexOf("://") == -1)
+					if (source != null && !source.Contains("://"))
 					{
 						parent = source;
 						pathPrefix = source;
-						source = $"{NarrativeRepository.RepositoryName}://{source}";
+						source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
 					}
 
 					break;
@@ -109,13 +106,13 @@ public record GlobalNavigationFile
 			if (source is not null)
 				reader.EmitError($"toc config defines 'repo' can not be combined with 'toc': {source}", tocEntry);
 			pathPrefix = string.Join("/", [parent, repository]);
-			source = $"{repository}://{parent}";
+			source = ContentSourceMoniker.CreateString(repository, parent);
 		}
 
 		if (source is null)
 			return null;
 
-		if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
+		if (!Uri.TryCreate(source.TrimEnd('/') + "/", UriKind.Absolute, out var sourceUri))
 		{
 			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 			return null;

@@ -60,7 +60,7 @@ public record AssemblerDocumentationSet
 			UrlPathPrefix = env.PathPrefix,
 			Force = false,
 			AllowIndexing = env.AllowIndexing,
-			SkipMetadata = true
+			SkipMetadata = true,
 		};
 		BuildContext = buildContext;
 

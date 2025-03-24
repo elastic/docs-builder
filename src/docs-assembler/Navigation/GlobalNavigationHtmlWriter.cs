@@ -9,9 +9,9 @@ using Elastic.Markdown.Slices;
 
 namespace Documentation.Assembler.Navigation;
 
-public class GlobalNavigationHtmlWriter(GlobalNavigation navigation) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(AssembleContext assembleContext, GlobalNavigation navigation, AssembleSources assembleSources) : INavigationHtmlWriter
 {
-	private readonly GlobalNavigation _navigation = navigation;
+	private readonly AssembleContext _assembleContext = assembleContext;
 	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
 
 	private (DocumentationGroup, Uri) GetRealNavigationRoot(INavigation navigation)
@@ -19,25 +19,32 @@ public class GlobalNavigationHtmlWriter(GlobalNavigation navigation) : INavigati
 		if (navigation is not DocumentationGroup group)
 			throw new InvalidOperationException($"Expected a {nameof(DocumentationGroup)}");
 
-		Uri? source = null;
+
 		if (group.NavigationRoot is TableOfContentsTree tree)
-			source = _navigation.TopLevelLookup.TryGetValue(tree.Source, out var s) ? s : tree.Source;
-		else if (group.NavigationRoot is DocumentationGroup groupParent)
 		{
-			source = group.FolderName == "reference/index.md"
+			if (!assembleSources.TocTopLevelMappings.TryGetValue(tree.Source, out var topLevelUri))
+			{
+				_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {tree.Source}");
+				return (tree, tree.Source);
+			}
+
+			if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelUri.TopLevelSource, out var topLevel))
+			{
+				_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
+				return (tree, tree.Source);
+
+			}
+			return (topLevel, topLevelUri.TopLevelSource);
+
+		}
+		else if (group.NavigationRoot is DocumentationGroup)
+		{
+			var source = group.FolderName == "reference/index.md"
 				? new Uri("docs-content://reference/")
-				: throw new InvalidOperationException($"Expected a {nameof(TableOfContentsTree)}");
-		}
-
-		if (source == new Uri("docs-content:///") || source == new Uri("docs-content://reference/"))
+				: throw new InvalidOperationException($"{group.FolderName} is not a valid navigation root");
 			return (group, source);
-
-		if (!_navigation.TreeLookup.TryGetValue(source!, out var topLevel))
-		{
 		}
-
-
-		return (topLevel!, source!);
+		throw new InvalidOperationException($"Unknown navigation root {group.NavigationRoot}");
 	}
 
 	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
@@ -67,13 +74,13 @@ public class GlobalNavigationHtmlWriter(GlobalNavigation navigation) : INavigati
 
 	private NavigationViewModel CreateNavigationModel(DocumentationGroup group)
 	{
-		var topLevelItems = _navigation.TopLevelItems;
+		var topLevelItems = navigation.TopLevelItems;
 		return new NavigationViewModel
 		{
 			Title = group.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = group.Index?.Url ?? "/",
 			Tree = group,
-			IsPrimaryNavEnabled = true,
+			IsPrimaryNavEnabled = false,
 			TopLevelItems = topLevelItems
 		};
 	}

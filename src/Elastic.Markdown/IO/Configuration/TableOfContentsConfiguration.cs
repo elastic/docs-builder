@@ -14,6 +14,18 @@ public interface ITableOfContentsScope
 	IDirectoryInfo ScopeDirectory { get; }
 }
 
+public static class ContentSourceMoniker
+{
+	public static Uri Create(string repo, string? path) => new(CreateString(repo, path));
+
+	public static string CreateString(string repo, string? path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return $"{repo}://";
+		return $"{repo}://{path.Trim('/')}/";
+	}
+}
+
 public record TableOfContentsConfiguration : ITableOfContentsScope
 {
 	private readonly BuildContext _context;
@@ -51,8 +63,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 
 		var tocPath = scope.FullName;
 		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, tocPath);
-		var moniker = $"{context.Git.RepositoryName}://{relativePath}";
-		Source = new Uri(moniker);
+		var moniker = ContentSourceMoniker.Create(context.Git.RepositoryName, relativePath);
+		Source = moniker;
 
 		TableOfContents = ReadChildren();
 

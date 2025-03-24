@@ -40,6 +40,8 @@ public class AssembleSources
 
 	public TableOfContentsTreeCollector TreeCollector { get; } = new();
 
+	public PublishEnvironmentUriResolver UriResolver { get; }
+
 	public static async Task<AssembleSources> AssembleAsync(AssembleContext context, Checkout[] checkouts, Cancel ctx)
 	{
 		var sources = new AssembleSources(context, checkouts);
@@ -53,8 +55,8 @@ public class AssembleSources
 		TocTopLevelMappings = GetConfiguredSources(context);
 
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, context.Configuration);
-		var uriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, context.Environment);
-		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, uriResolver);
+		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, context.Environment);
+		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => !c.Repository.Skip)
 			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, context, c, crossLinkResolver, TreeCollector))
@@ -71,6 +73,7 @@ public class AssembleSources
 				var fs = set.BuildContext.ReadFileSystem;
 				var config = set.BuildContext.Configuration;
 				var tocDirectory = Path.Combine(config.ScopeDirectory.FullName, kv.Value.Source.Host, kv.Value.Source.AbsolutePath.TrimStart('/'));
+				var relative = Path.GetRelativePath(config.ScopeDirectory.FullName, tocDirectory);
 				IFileInfo[] tocFiles =
 				[
 					fs.FileInfo.New(Path.Combine(tocDirectory, "toc.yml")),
@@ -85,7 +88,7 @@ public class AssembleSources
 					file = tocFiles.First();
 				}
 
-				var toc = new TableOfContentsConfiguration(config, file, fs.DirectoryInfo.New(tocDirectory), set.BuildContext, 0, "");
+				var toc = new TableOfContentsConfiguration(config, file, fs.DirectoryInfo.New(tocDirectory), set.BuildContext, 0, relative);
 				var mapping = new TocConfigurationMapping
 				{
 					TopLevel = kv.Value,
@@ -166,7 +169,7 @@ public class AssembleSources
 						{
 							parent = source;
 							pathPrefix = source;
-							source = $"{NarrativeRepository.RepositoryName}://{source}";
+							source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
 						}
 
 						break;
@@ -184,13 +187,13 @@ public class AssembleSources
 				if (source is not null)
 					reader.EmitError($"toc config defines 'repo' can not be combined with 'toc': {source}", tocEntry);
 				pathPrefix = string.Join("/", [parent, repository]);
-				source = $"{repository}://{parent}";
+				source = ContentSourceMoniker.CreateString(repository, parent);
 			}
 
 			if (source is null)
 				return;
 
-			if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
+			if (!Uri.TryCreate(source.TrimEnd('/') + '/', UriKind.Absolute, out var sourceUri))
 			{
 				reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 				return;
