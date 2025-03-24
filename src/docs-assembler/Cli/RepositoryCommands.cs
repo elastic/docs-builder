@@ -12,6 +12,7 @@ using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -77,7 +78,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false,
 		};
-
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkouts = cloner.GetAll().ToArray();
 		if (checkouts.Length == 0)
@@ -90,9 +90,12 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
-		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 
+		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
+
+		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+		sitemapBuilder.Generate();
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
