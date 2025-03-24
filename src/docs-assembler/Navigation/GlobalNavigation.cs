@@ -3,152 +3,121 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Collections.Immutable;
-using System.IO.Abstractions;
-using Documentation.Assembler.Configuration;
-using Documentation.Assembler.Sourcing;
-using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
 
-public record GlobalNavigation : IDocumentationFileOutputProvider
+public record GlobalNavigation
 {
-	private readonly AssembleContext _context;
-	private readonly FrozenDictionary<string, Checkout>.AlternateLookup<ReadOnlySpan<char>> _checkoutsLookup;
-	private readonly FrozenDictionary<string, Repository>.AlternateLookup<ReadOnlySpan<char>> _repoConfigLookup;
-	private readonly FrozenDictionary<string, TableOfContentsReference>.AlternateLookup<ReadOnlySpan<char>> _tocLookup;
+	private readonly AssembleSources _assembleSources;
+	private readonly GlobalNavigationFile _navigationFile;
 
-	private FrozenDictionary<string, Repository> ConfiguredRepositories { get; }
-	private FrozenDictionary<string, TableOfContentsReference> IndexedTableOfContents { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 
-	public GlobalNavigationFile NavigationConfiguration { get; init; }
+	public IReadOnlyCollection<TocNavigationItem> TopLevelItems { get; }
 
-	private FrozenDictionary<string, Checkout> Checkouts { get; init; }
+	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup { get; }
 
-	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
-
-	public GlobalNavigation(AssembleContext context, GlobalNavigationFile navigationConfiguration, Checkout[] checkouts)
+	public GlobalNavigation(AssembleSources assembleSources, GlobalNavigationFile navigationFile)
 	{
-		_context = context;
-		NavigationConfiguration = navigationConfiguration;
-		Checkouts = checkouts.ToDictionary(c => c.Repository.Name, c => c).ToFrozenDictionary();
-		_checkoutsLookup = Checkouts.GetAlternateLookup<ReadOnlySpan<char>>();
-
-		var configuration = context.Configuration;
-		ConfiguredRepositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative])
-			.ToFrozenDictionary(e => e.Name, e => e);
-		_repoConfigLookup = ConfiguredRepositories.GetAlternateLookup<ReadOnlySpan<char>>();
-
-		IndexedTableOfContents = navigationConfiguration.IndexedTableOfContents;
-		_tocLookup = IndexedTableOfContents.GetAlternateLookup<ReadOnlySpan<char>>();
-		TableOfContentsPrefixes = navigationConfiguration.IndexedTableOfContents.Keys.OrderByDescending(k => k.Length).ToImmutableSortedSet();
+		_assembleSources = assembleSources;
+		_navigationFile = navigationFile;
+		NavigationItems = BuildNavigation(navigationFile.TableOfContents, 0);
+		TopLevelItems = NavigationItems.OfType<TocNavigationItem>().ToList();
+		NavigationLookup = TopLevelItems.ToDictionary(kv => kv.Source, kv => kv);
 	}
 
-	public string GetSubPath(Uri crossLinkUri, ref string path)
+	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<TocReference> node, int depth)
 	{
-		if (!_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out _))
+		var list = new List<INavigationItem>();
+		var i = 0;
+		foreach (var toc in node)
 		{
-			_context.Collector.EmitError(_context.ConfigurationPath,
-				!_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out _)
-					? $"Repository: '{crossLinkUri.Scheme}' is not defined in assembler.yml"
-					: $"Unable to find checkout for repository: {crossLinkUri.Scheme}"
-			);
+			if (toc.Source == new Uri("docs-content://reference/apm/"))
+			{
+			}
+
+			if (!_assembleSources.TreeCollector.TryGetTableOfContentsTree(toc.Source, out var tree))
+			{
+				_navigationFile.EmitWarning($"No {nameof(TableOfContentsTree)} found for {toc.Source}");
+				if (!_assembleSources.TocTopLevelMappings.TryGetValue(toc.Source, out var topLevel))
+				{
+					_navigationFile.EmitError(
+						$"Can not create temporary {nameof(TableOfContentsTree)} for {toc.Source} since no top level source could be located for it"
+					);
+					continue;
+				}
+
+				// TODO passing DocumentationSet to TableOfContentsTree constructr is temporary
+				// We only build this fallback in order to aid with bootstrapping the navigaton
+				if (!_assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevel.TopLevelSource, out tree))
+				{
+					_navigationFile.EmitError(
+						$"Can not create temporary {nameof(TableOfContentsTree)} for {topLevel.TopLevelSource} since no top level source could be located for it"
+					);
+					continue;
+				}
+
+				var documentationSet = tree.DocumentationSet ?? (tree.Parent as TableOfContentsTree)?.DocumentationSet
+					?? throw new InvalidOperationException($"Can not fall back for {toc.Source} because no documentation set is available");
+
+				var lookups = new NavigationLookups
+				{
+					FlatMappedFiles = new Dictionary<string, DocumentationFile>().ToFrozenDictionary(),
+					TableOfContents = [],
+					EnabledExtensions = documentationSet.Configuration.EnabledExtensions,
+					FilesGroupedByFolder = new Dictionary<string, DocumentationFile[]>().ToFrozenDictionary(),
+				};
+
+				var fileIndex = 0;
+				tree = new TableOfContentsTree(
+					documentationSet,
+					toc.Source,
+					documentationSet.Build,
+					lookups,
+					_assembleSources.TreeCollector, ref fileIndex);
+			}
+
+			var tocChildren = toc.Children.OfType<TocReference>().ToArray();
+			var tocNavigationItems = BuildNavigation(tocChildren, depth + 1);
+
+			var allNavigationItems = tree.NavigationItems.Concat(tocNavigationItems);
+			var cleanNavigationItems = new List<INavigationItem>();
+			var seenSources = new HashSet<Uri>();
+			foreach (var allNavigationItem in allNavigationItems)
+			{
+				if (allNavigationItem is not TocNavigationItem tocNav)
+				{
+					cleanNavigationItems.Add(allNavigationItem);
+					continue;
+				}
+				if (seenSources.Contains(tocNav.Source))
+					continue;
+
+				if (!_assembleSources.TocTopLevelMappings.TryGetValue(tocNav.Source, out var mapping))
+					continue;
+
+				if (mapping.ParentSource != tree.Source)
+					continue;
+
+				_ = seenSources.Add(tocNav.Source);
+				cleanNavigationItems.Add(allNavigationItem);
+			}
+
+			tree.NavigationItems = cleanNavigationItems.ToArray();
+			var navigationItem = new TocNavigationItem(i, depth, tree, toc.Source);
+
+			list.Add(navigationItem);
+			if (toc.Source == new Uri("docs-content://reference/"))
+			{
+			}
+
+			//list.AddRange(tocNavigationItems);
+			i++;
 		}
 
-		var lookup = crossLinkUri.ToString().AsSpan();
-		if (lookup.EndsWith(".md", StringComparison.Ordinal))
-			lookup = lookup[..^3];
-
-		// temporary fix only spotted two instances of this:
-		// Error: Unable to find defined toc for url: docs-content:///manage-data/ingest/transform-enrich/set-up-an-enrich-processor.md
-		// Error: Unable to find defined toc for url: kibana:///reference/configuration-reference.md
-		if (lookup.IndexOf(":///") >= 0)
-			lookup = lookup.ToString().Replace(":///", "://").AsSpan();
-
-		string? match = null;
-		foreach (var prefix in TableOfContentsPrefixes)
-		{
-			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
-				continue;
-			match = prefix;
-			break;
-		}
-
-		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
-		{
-			//TODO remove
-			if (crossLinkUri.Scheme != "asciidocalypse")
-				_context.Collector.EmitError(_context.NavigationPath, $"Unable to find defined toc for url: {crossLinkUri}");
-			return $"reference/{crossLinkUri.Scheme}";
-		}
-
-		path = path.AsSpan().TrimStart(toc.SourcePrefix).ToString();
-
-		return toc.PathPrefix;
-	}
-
-	public IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
-	{
-		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
-			return defaultOutputFile;
-
-		var outputDirectory = documentationSet.OutputDirectory;
-		var fs = defaultOutputFile.FileSystem;
-
-		var repositoryName = documentationSet.Build.Git.RepositoryName;
-
-		var l = $"{repositoryName}://{relativePath.TrimStart('/')}";
-		var lookup = l.AsSpan();
-		if (lookup.StartsWith("docs-content://serverless/", StringComparison.Ordinal))
-			return null;
-		if (lookup.StartsWith("eland://sphinx/", StringComparison.Ordinal))
-			return null;
-		if (lookup.StartsWith("elasticsearch-py://sphinx/", StringComparison.Ordinal))
-			return null;
-		if (lookup.StartsWith("elastic-serverless-forwarder://", StringComparison.Ordinal) && lookup.EndsWith(".png"))
-			return null;
-
-		//allow files at root for `docs-content` (index.md 404.md)
-		if (lookup.StartsWith("docs-content://") && !relativePath.Contains('/'))
-			return defaultOutputFile;
-
-		string? match = null;
-		foreach (var prefix in TableOfContentsPrefixes)
-		{
-			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
-				continue;
-			match = prefix;
-			break;
-		}
-
-		if (match is null || !_tocLookup.TryGetValue(match, out var toc))
-		{
-			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
-				return null;
-			if (relativePath.StartsWith("images/", StringComparison.Ordinal))
-				return null;
-			if (relativePath.StartsWith("examples/", StringComparison.Ordinal))
-				return null;
-			if (relativePath.StartsWith("docset.yml", StringComparison.Ordinal))
-				return null;
-			if (relativePath.StartsWith("doc_examples", StringComparison.Ordinal))
-				return null;
-			if (relativePath.EndsWith(".asciidoc", StringComparison.Ordinal))
-				return null;
-
-			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", repositoryName, relativePath);
-			_context.Collector.EmitError(_context.NavigationPath, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
-			return fs.FileInfo.New(fallBack);
-		}
-
-		var newPath = relativePath.AsSpan().TrimStart(toc.SourcePrefix.TrimEnd('/')).TrimStart('/').ToString();
-		var path = fs.Path.Combine(outputDirectory.FullName, toc.PathPrefix, newPath);
-		if (path.Contains("deploy-manage"))
-		{
-		}
-
-		return fs.FileInfo.New(path);
+		return list.ToArray().AsReadOnly();
 	}
 }

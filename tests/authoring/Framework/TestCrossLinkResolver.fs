@@ -24,6 +24,9 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
     member this.DeclaredRepositories = declared
 
     interface ICrossLinkResolver with
+
+        member this.UriResolver = uriResolver
+
         member this.FetchLinks() =
             let redirects = LinkReference.SerializeRedirects config.Redirects
             // language=json

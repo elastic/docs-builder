@@ -17,9 +17,7 @@ environments:
 narrative:
   checkout_strategy: full
 references:
-  #TODO TEMPORARY REMOVE
-  asciidocalypse:
-    skip: true
+  apm-server:
   apm-agent-android:
   apm-agent-dotnet:
   apm-agent-go:
@@ -37,10 +35,9 @@ references:
   cloud-on-k8s:
   cloud:
     current: master
-    skip: true
   curator:
-    current: master
     skip: true
+    current: master
   ecctl:
     current: master
     skip: true
@@ -61,12 +58,10 @@ references:
   elasticsearch-java:
   elasticsearch-js:
   elasticsearch-net:
-    # failures on main https://github.com/elastic/elasticsearch-net/actions/runs/13594875271/job/38009389173
-    skip: true
   elasticsearch-php:
   elasticsearch-py:
+    # https://github.com/elastic/elasticsearch-rs ci checks not running?
   elasticsearch-rs:
-    # needs a dummy PR to docs
     skip: true
   elasticsearch-ruby:
   elasticsearch:
@@ -78,7 +73,6 @@ references:
   logstash:
   search-ui:
   integration-docs:
-    skip: true
   security-docs:
     # wait for move to https://github.com/elastic/detection-rules/pull/4507/files
     skip: true

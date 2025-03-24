@@ -44,7 +44,6 @@ toc:
       # repo is short for
       # - toc: <repo>://<parent_toc>
       #   path_prefix: <parent_toc>/<repo>
-      - repo: asciidocalypse
       - repo: apm-agent-android
       - repo: apm-agent-dotnet
       - repo: apm-agent-go
@@ -56,48 +55,49 @@ toc:
       - repo: apm-agent-ruby
       - repo: apm-agent-rum-js
       - repo: apm-aws-lambda
-      - repo: apm-k8s-attacher
+      # - repo: apm-k8s-attacher
       - repo: apm-server
       - repo: beats
       - repo: cloud-on-k8s
       - repo: cloud
-      - repo: curator
-      - repo: ecctl
-      - repo: ecs-dotnet
-      - repo: ecs-logging-go-logrus
-      - repo: ecs-logging-go-zap
-      - repo: ecs-logging-go-zerolog
-      - repo: ecs-logging-java
-      - repo: ecs-logging-nodejs
-      - repo: ecs-logging-php
-      - repo: ecs-logging-python
-      - repo: ecs-logging-ruby
-      - repo: ecs-logging
-      - repo: ecs
-      - repo: eland
-      - repo: elastic-serverless-forwarder
+      # - repo: curator
+      #- repo: ecctl
+      # - repo: ecs-dotnet
+      # - repo: ecs-logging-go-logrus
+      # - repo: ecs-logging-go-zap
+      # - repo: ecs-logging-go-zerolog
+      #- repo: ecs-logging-java
+      # - repo: ecs-logging-nodejs
+      #- repo: ecs-logging-php
+      # - repo: ecs-logging-python
+      # - repo: ecs-logging-ruby
+      # - repo: ecs-logging
+      # - repo: ecs
+      #- repo: eland
+      #- repo: elastic-serverless-forwarder
       - repo: elasticsearch-hadoop
       - repo: elasticsearch-java
       - repo: elasticsearch-js
       - repo: elasticsearch-net
       - repo: elasticsearch-php
       - repo: elasticsearch-py
-      - repo: elasticsearch-rs
+      # - repo: elasticsearch-rs
       - repo: elasticsearch-ruby
       - repo: elasticsearch
-      - repo: go-elasticsearch
-      - repo: integrations
+      # - repo: go-elasticsearch
+      #- repo: integrations
       - repo: kibana
-      - repo: logstash-docs
+      # - repo: logstash-docs
       - repo: logstash
-      - repo: search-ui
-      - repo: integration-docs
-      - repo: security-docs
+      # - repo: search-ui
+      # - repo: integration-docs
+      # - repo: security-docs
 
   #############
   # REFERENCE #
   #############
   - toc: reference
+    path_prefix: reference
     children:
       # Security
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
@@ -105,12 +105,12 @@ toc:
         path_prefix: reference/security
         # Children include: Endpoint command reference, Elastic Defend,
         # Fields and object schemas
-        children:
+        #children:
           # 📝 TO DO: Update when rules are moved to elastic/detection-rules
           # This makes sense for now. I'm not sure when these files will be
           # moved to https://github.com/elastic/detection-rules.
-          - toc: security-docs://reference/prebuilt-rules
-            path_prefix: reference/security/prebuilt-rules
+        #  - toc: security-docs://reference/prebuilt-rules
+        #    path_prefix: reference/security/prebuilt-rules
 
       # Observability
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/observability/toc.yml
@@ -136,27 +136,18 @@ toc:
         path_prefix: reference/elasticsearch
         children:
 
-          # 📝 TO DO: Delete this item
-          # This should be replaced by:
-          # * `elasticsearch://reference/elasticsearch`
-          # * `elasticsearch://reference/community-contributed`
-          # * `elasticsearch://reference/elasticsearch-plugins`
-          # * `elasticsearch://reference/query-languages`
-          # * `elasticsearch://reference/scripting-languages`
-          - toc: elasticsearch://reference
-            path_prefix: reference/elasticsearch
-
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
-          - toc: elasticsearch://reference/elasticsearch
-            path_prefix: reference/elasticsearch
+          #- toc: elasticsearch://reference/elasticsearch
+          #  path_prefix: reference/elasticsearch
             # Children include: Configuration, JVM settings, Roles,
             # Elasticsearch privileges, Index settings, Index lifecycle actions,
             # REST APIs, Mapping, Elasticsearch audit events, Command line tools
 
           # Curator
           # ✅ https://github.com/elastic/curator/blob/master/docs/reference/toc.yml
-          - toc: curator://reference
-            path_prefix: reference/elasticsearch/curator
+          # TODO MARTIJN: needs to run once more on master for the link index
+          #- toc: curator://reference
+          #  path_prefix: reference/elasticsearch/curator
             # Children include the entire AsciiDoc book
 
           # Clients
@@ -215,8 +206,8 @@ toc:
 
               # Rust
               # ✅ https://github.com/elastic/elasticsearch-rs/blob/main/docs/reference/toc.yml
-              - toc: elasticsearch-rs://reference
-                path_prefix: reference/elasticsearch/clients/rust
+              #- toc: elasticsearch-rs://reference
+              #  path_prefix: reference/elasticsearch/clients/rust
                 # Children include the entire AsciiDoc book
 
               # Community-contributed clients
@@ -419,8 +410,9 @@ toc:
         children:
           # ECS reference
           # ✅ https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
+          # TODO MARTIJN conflicting path_prefix
           - toc: ecs://reference
-            path_prefix: reference/ecs
+            path_prefix: reference/ecs/ref
             # Children include the entire AsciiDoc book
 
           # ECS logging libraries
@@ -511,8 +503,9 @@ toc:
           # Elastic Cloud Enterprise
           # Elastic Cloud Hosted
           # ✅ https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
+          # TODO Martijn: conflicting path_prefix
           - toc: cloud://reference
-            path_prefix: reference/cloud
+            path_prefix: reference/cloud/ref
             # Children include the entire AsciiDoc book
             # (minus pages moved to docs-content)
 
@@ -525,8 +518,8 @@ toc:
 
           # Elastic cloud control (ECCTL)
           # ✅ https://github.com/elastic/ecctl/blob/master/docs/reference/toc.yml
-          - toc: ecctl://reference
-            path_prefix: reference/ecctl
+          #- toc: ecctl://reference
+          #  path_prefix: reference/ecctl
             # Children include the entire AsciiDoc book
             # (minus pages moved to docs-content)
 

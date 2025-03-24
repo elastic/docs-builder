@@ -3,69 +3,190 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
-using Documentation.Assembler.Building;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;
 
-public class GlobalNavigationTests
+#pragma warning disable xUnit1004
+
+public class GlobalNavigationPathProviderTests
 {
-	[Fact]
+
+	[Fact(Skip = "Requires local checkout folder")]
+	public async Task ParsesReferences()
+	{
+		var expectedRoot = new Uri("docs-content://reference/");
+		var expectedParent = new Uri("docs-content://reference/ingestion-tools/apm/agents/");
+		var sut = new Uri("apm-agent-dotnet://reference/");
+		var clients = new Uri("docs-content://reference/elasticsearch-clients/");
+		var fs = new FileSystem();
+		var (assembleContext, assembleSources) = await Setup(fs);
+
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(sut);
+		assembleSources.TocTopLevelMappings[sut].TopLevelSource.Should().Be(expectedRoot);
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(expectedRoot);
+		assembleSources.TocTopLevelMappings[sut].ParentSource.Should().Be(expectedParent);
+
+		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
+		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
+		referenceToc.Should().NotBeNull();
+		referenceToc!.TocReferences.Should().NotContainKey(clients);
+
+		var ingestTools = referenceToc.TocReferences[new Uri("docs-content://reference/ingestion-tools/")];
+		ingestTools.Should().NotBeNull();
+
+		var apmReference = ingestTools.TocReferences[new Uri("docs-content://reference/apm/")];
+		apmReference.Should().NotBeNull();
+
+		var agentsRef = apmReference.TocReferences[expectedParent];
+		apmReference.Should().NotBeNull();
+
+		var agentsRefTocReference = agentsRef.TocReferences[sut];
+		agentsRefTocReference.Should().NotBeNull();
+
+		var navigation = new GlobalNavigation(assembleSources, navigationFile);
+		var referenceNav = navigation.NavigationLookup[expectedRoot];
+		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
+
+		referenceNav.Should().NotBeNull();
+		referenceNav.NavigationLookup.Should().NotContainKey(clients);
+		referenceNav.Group.NavigationItems.OfType<TocNavigationItem>()
+			.Select(n => n.Source)
+			.Should().NotContain(clients);
+		referenceNav.Group.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
+
+		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
+		ingestNav.Should().NotBeNull();
+		ingestNav.NavigationLookup.Should().NotContainKey(clients);
+		ingestNav.Group.NavigationItems.OfType<TocNavigationItem>()
+			.Select(n => n.Source)
+			.Should().NotContain(clients);
+
+		var apmNav = ingestNav.NavigationLookup[new Uri("docs-content://reference/apm/")];
+		apmNav.Should().NotBeNull();
+
+		var apmAgentsNav = apmNav.NavigationLookup[expectedParent];
+		apmAgentsNav.Should().NotBeNull();
+
+		var dotnetAgentNav = apmAgentsNav.NavigationLookup[sut];
+		dotnetAgentNav.Should().NotBeNull();
+
+		var resolved = navigation.NavigationItems;
+
+	}
+
+
+
+	[Fact(Skip = "Requires local checkout folder")]
 	public async Task ParsesGlobalNavigation()
+	{
+		var expectedRoot = new Uri("docs-content://extend");
+		var kibanaExtendMoniker = new Uri("kibana://extend/");
+		var fs = new FileSystem();
+
+		var (assembleContext, assembleSources) = await Setup(fs);
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(kibanaExtendMoniker);
+		assembleSources.TocTopLevelMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
+
+		var uri = new Uri("integration-docs://reference/");
+		assembleSources.TreeCollector.Should().NotBeNull();
+		_ = assembleSources.TreeCollector.TryGetTableOfContentsTree(uri, out var tree);
+		tree.Should().NotBeNull();
+
+		_ = assembleSources.TreeCollector.TryGetTableOfContentsTree(new Uri("docs-content://reference/"), out tree);
+		tree.Should().NotBeNull();
+
+		assembleSources.AssembleSets.Should().NotBeEmpty();
+
+		assembleSources.TocConfigurationMapping.Should().NotBeEmpty().And.ContainKey(kibanaExtendMoniker);
+		var kibanaConfigMapping = assembleSources.TocConfigurationMapping[kibanaExtendMoniker];
+		kibanaConfigMapping.Should().NotBeNull();
+		kibanaConfigMapping.TableOfContentsConfiguration.Should().NotBeNull();
+		assembleSources.TocConfigurationMapping[kibanaExtendMoniker].Should().NotBeNull();
+
+		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
+		navigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
+		navigationFile.TableOfContents.Count.Should().BeLessThan(20);
+
+		var navigation = new GlobalNavigation(assembleSources, navigationFile);
+		navigation.TopLevelItems.Count.Should().BeLessThan(20);
+		var resolved = navigation.NavigationItems;
+	}
+
+	private static async Task<(AssembleContext assembleContext, AssembleSources assembleSources)> Setup(FileSystem fs)
 	{
 		await using var collector = new DiagnosticsCollector([]);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var assembleContext = new AssembleContext(collector, new FileSystem(), new FileSystem(), null, null);
-		var globalNavigation = GlobalNavigationFile.Deserialize(assembleContext);
-		globalNavigation.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
-		var docsContentKeys = globalNavigation.IndexedTableOfContents.Keys
-			.Where(k => k.StartsWith("docs-content://", StringComparison.Ordinal)).ToArray();
-		docsContentKeys.Should().Contain("docs-content://solutions/");
+		var assembleContext = new AssembleContext("dev", collector, fs, fs, null, null);
+
+		string[] nar = [NarrativeRepository.RepositoryName];
+		var repos = nar.Concat(assembleContext.Configuration.ReferenceRepositories
+				.Where(kv => !kv.Value.Skip)
+				.Select(kv => kv.Value.Name)
+			)
+			.ToArray();
+		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
+
+		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
+		return (assembleContext, assembleSources);
 	}
 
 	public static Checkout CreateCheckout(IFileSystem fs, string name) =>
 		new()
 		{
-			Repository = new Repository { Name = name, Origin = $"elastic/{name}" },
+			Repository = new Repository
+			{
+				Name = name,
+				Origin = $"elastic/{name}"
+			},
 			HeadReference = Guid.NewGuid().ToString(),
-			Directory = fs.DirectoryInfo.New(fs.Path.Combine(".artifacts", "checkouts", name))
+			Directory = fs.DirectoryInfo.New(fs.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts", name))
 		};
 
-	[Fact]
+	[Fact(Skip = "Requires local checkout folder")]
 	public async Task UriResolving()
 	{
 		await using var collector = new DiagnosticsCollector([]);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(collector, fs, fs, null, null);
-		var globalNavigationFile = GlobalNavigationFile.Deserialize(assembleContext);
-		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
-		string[] repos = ["docs-content", "curator", "elasticsearch-net", "elasticsearch"];
+		var assembleContext = new AssembleContext("prod", collector, fs, fs, null, null);
+		var repos = assembleContext.Configuration.ReferenceRepositories
+			.Where(kv => !kv.Value.Skip)
+			.Select(kv => kv.Value.Name)
+			.Concat([NarrativeRepository.RepositoryName])
+			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
-		var globalNavigation = new GlobalNavigation(assembleContext, globalNavigationFile, checkouts);
 
-		var env = assembleContext.Configuration.Environments["prod"];
-		var uriResolver = new PublishEnvironmentUriResolver(globalNavigation, env);
+		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
+		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
+
+		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
+
+		var uriResolver = assembleSources.UriResolver;
 
 		// docs-content://reference/apm/something.md - url hasn't changed
-		var resolvedURi = uriResolver.Resolve(new Uri("docs-content://reference/apm/something.md"), "/reference/apm/something");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/apm/something");
+		var resolvedUri = uriResolver.Resolve(new Uri("docs-content://reference/apm/something.md"), "/reference/apm/something");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/something");
 
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-ios://reference/instrumentation.md"), "/reference/instrumentation");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/ios/instrumentation");
 
-		resolvedURi = uriResolver.Resolve(new Uri("curator://reference/a/file.md"), "/reference/a/file");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/curator/a/file");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-android://reference/a/file.md"), "/reference/a/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/android/a/file");
 
-		resolvedURi = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/net/b/file");
+		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet/b/file");
 
-		resolvedURi = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
+		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
 }

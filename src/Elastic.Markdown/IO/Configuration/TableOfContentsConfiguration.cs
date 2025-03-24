@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Markdown.Extensions.DetectionRules;
-using Elastic.Markdown.IO.Navigation;
 using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Markdown.IO.Configuration;
@@ -13,6 +12,18 @@ namespace Elastic.Markdown.IO.Configuration;
 public interface ITableOfContentsScope
 {
 	IDirectoryInfo ScopeDirectory { get; }
+}
+
+public static class ContentSourceMoniker
+{
+	public static Uri Create(string repo, string? path) => new(CreateString(repo, path));
+
+	public static string CreateString(string repo, string? path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return $"{repo}://";
+		return $"{repo}://{path.Replace("\\", "/").Trim('/')}/";
+	}
 }
 
 public record TableOfContentsConfiguration : ITableOfContentsScope
@@ -24,24 +35,64 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 	private readonly IDirectoryInfo _rootPath;
 	private readonly ConfigurationFile _configuration;
 
+	public Uri Source { get; }
+
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; private set; } = [];
 
+	public IFileInfo DefinitionFile { get; }
 	public IDirectoryInfo ScopeDirectory { get; }
 
-	public TableOfContentsConfiguration(ConfigurationFile configuration, IDirectoryInfo scope, BuildContext context, int depth, string parentPath)
+	public TableOfContentsConfiguration(
+		ConfigurationFile configuration,
+		IFileInfo definitionFile,
+		IDirectoryInfo scope,
+		BuildContext context,
+		int depth,
+		string parentPath)
 	{
 		_configuration = configuration;
+		DefinitionFile = definitionFile;
 		ScopeDirectory = scope;
 		_maxTocDepth = configuration.MaxTocDepth;
 		_rootPath = context.DocumentationSourceDirectory;
 		_context = context;
 		_depth = depth;
 		_parentPath = parentPath;
+
+		var tocPath = scope.FullName;
+		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, tocPath);
+		var moniker = ContentSourceMoniker.Create(context.Git.RepositoryName, relativePath);
+		Source = moniker;
+
+		TableOfContents = ReadChildren();
+
 	}
 
-	public IReadOnlyCollection<ITocItem> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parentPath = null)
+	private IReadOnlyCollection<ITocItem> ReadChildren()
+	{
+		if (!DefinitionFile.Exists)
+			return [];
+		var reader = new YamlStreamReader(DefinitionFile, _context.Collector);
+		foreach (var entry in reader.Read())
+		{
+			switch (entry.Key)
+			{
+				case "toc":
+					var children = ReadChildren(reader, entry.Entry);
+					var tocEntries = TableOfContents.OfType<TocReference>().ToArray();
+					if (!_configuration.DevelopmentDocs && !_configuration.IsNarrativeDocs && tocEntries.Length > 0 && TableOfContents.Count != tocEntries.Length)
+						reader.EmitError("toc links to other toc sections it may only contain other toc references", entry.Key);
+					return children;
+			}
+		}
+
+
+		return [];
+	}
+
+	private IReadOnlyCollection<ITocItem> ReadChildren(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string? parentPath = null)
 	{
 		parentPath ??= _parentPath;
 		if (_depth > _maxTocDepth)
@@ -118,7 +169,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new TocReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, toc.TableOfContents)];
+			return [new TocReference(toc.Source, toc, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -244,7 +295,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			switch (kv.Key)
 			{
 				case "toc":
-					var nestedConfiguration = new TableOfContentsConfiguration(_configuration, source.Directory!, _context, _depth + 1, fullTocPath);
+					var nestedConfiguration = new TableOfContentsConfiguration(_configuration, source, source.Directory!, _context, _depth + 1, fullTocPath);
 					_ = nestedConfiguration.ReadChildren(reader, kv.Entry);
 					return nestedConfiguration;
 			}

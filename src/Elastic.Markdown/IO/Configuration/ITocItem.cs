@@ -15,5 +15,10 @@ public record FileReference(ITableOfContentsScope TableOfContentsScope, string P
 public record FolderReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
-public record TocReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
-	: FolderReference(TableOfContentsScope, Path, Found, Children);
+public record TocReference(Uri Source, ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
+	: FolderReference(TableOfContentsScope, Path, Found, Children)
+
+{
+	public IReadOnlyDictionary<Uri, TocReference> TocReferences { get; } =
+		Children.OfType<TocReference>().ToDictionary(kv => kv.Source, kv => kv);
+};

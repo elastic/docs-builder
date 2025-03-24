@@ -102,7 +102,7 @@ type Setup =
         let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)
         let set = DocumentationSet(context, logger, linkResolver);
-        let generator = DocumentationGenerator(set, logger, null, null, conversionCollector)
+        let generator = DocumentationGenerator(set, logger, null, null, null, conversionCollector)
 
         let context = {
             Collector = collector

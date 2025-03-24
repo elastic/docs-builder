@@ -52,7 +52,7 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 	public bool DevelopmentDocs { get; }
 
 	// TODO ensure project key is `docs-content`
-	private bool IsNarrativeDocs =>
+	public bool IsNarrativeDocs =>
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
@@ -119,23 +119,9 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 				}
 			}
 
-			//we read it twice to ensure we read 'toc' last
-			reader = new YamlStreamReader(sourceFile, _context.Collector);
-			foreach (var entry in reader.Read())
-			{
-				switch (entry.Key)
-				{
-					case "toc":
-						var toc = new TableOfContentsConfiguration(this, ScopeDirectory, _context, 0, "");
-						var children = toc.ReadChildren(reader, entry.Entry);
-						var tocEntries = children.OfType<TocReference>().ToArray();
-						if (!DevelopmentDocs && !IsNarrativeDocs && tocEntries.Length > 0 && children.Count != tocEntries.Length)
-							reader.EmitError("toc links to other toc sections it may only contain other toc references", entry.Key);
-						TableOfContents = children;
-						Files = toc.Files; //side-effect ripe for refactor
-						break;
-				}
-			}
+			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");
+			TableOfContents = toc.TableOfContents;
+			Files = toc.Files;
 		}
 		catch (Exception e)
 		{
