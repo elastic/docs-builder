@@ -55,26 +55,26 @@ toc:
       - repo: apm-agent-ruby
       - repo: apm-agent-rum-js
       - repo: apm-aws-lambda
-      - repo: apm-k8s-attacher
+      # - repo: apm-k8s-attacher
       - repo: apm-server
       - repo: beats
       - repo: cloud-on-k8s
       - repo: cloud
       # - repo: curator
       #- repo: ecctl
-      - repo: ecs-dotnet
-      - repo: ecs-logging-go-logrus
-      - repo: ecs-logging-go-zap
-      - repo: ecs-logging-go-zerolog
-      - repo: ecs-logging-java
-      - repo: ecs-logging-nodejs
-      - repo: ecs-logging-php
-      - repo: ecs-logging-python
-      - repo: ecs-logging-ruby
-      - repo: ecs-logging
-      - repo: ecs
-      - repo: eland
-      - repo: elastic-serverless-forwarder
+      # - repo: ecs-dotnet
+      # - repo: ecs-logging-go-logrus
+      # - repo: ecs-logging-go-zap
+      # - repo: ecs-logging-go-zerolog
+      #- repo: ecs-logging-java
+      # - repo: ecs-logging-nodejs
+      #- repo: ecs-logging-php
+      # - repo: ecs-logging-python
+      # - repo: ecs-logging-ruby
+      # - repo: ecs-logging
+      # - repo: ecs
+      #- repo: eland
+      #- repo: elastic-serverless-forwarder
       - repo: elasticsearch-hadoop
       - repo: elasticsearch-java
       - repo: elasticsearch-js
@@ -82,15 +82,15 @@ toc:
       - repo: elasticsearch-php
       - repo: elasticsearch-py
       # - repo: elasticsearch-rs
-      - repo: elasticsearch-ruby
+      # - repo: elasticsearch-ruby
       - repo: elasticsearch
-      - repo: go-elasticsearch
-      - repo: integrations
+      # - repo: go-elasticsearch
+      #- repo: integrations
       - repo: kibana
       # - repo: logstash-docs
       - repo: logstash
-      - repo: search-ui
-      - repo: integration-docs
+      # - repo: search-ui
+      # - repo: integration-docs
       # - repo: security-docs
 
   #############

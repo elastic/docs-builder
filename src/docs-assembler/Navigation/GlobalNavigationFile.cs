@@ -24,6 +24,13 @@ public record GlobalNavigationFile
 		TableOfContents = Deserialize();
 	}
 
+	public void EmitWarning(string message) =>
+		_context.Collector.EmitWarning(_context.NavigationPath.FullName, message);
+
+	public void EmitError(string message) =>
+		_context.Collector.EmitWarning(_context.NavigationPath.FullName, message);
+
+
 	private IReadOnlyCollection<TocReference> Deserialize()
 	{
 		var reader = new YamlStreamReader(_context.NavigationPath, _context.Collector);
@@ -133,8 +140,8 @@ public record GlobalNavigationFile
 
 		var navigationItems = new List<ITocItem>();
 		//TODO not needed
-		var tocChildren = mapping.TableOfContentsConfiguration.TableOfContents;
-		navigationItems.AddRange(tocChildren);
+		//var tocChildren = mapping.TableOfContentsConfiguration.TableOfContents;
+		//navigationItems.AddRange(tocChildren);
 
 		foreach (var entry in tocEntry.Children)
 		{

@@ -121,7 +121,7 @@ public class DocumentationSet : INavigationLookups
 			//IndexedTableOfContents = indexedTableOfContents ?? new Dictionary<Uri, TableOfContentsReference>().ToFrozenDictionary()
 		};
 
-		Tree = new TableOfContentsTree(Source, Build, lookups, treeCollector, ref fileIndex);
+		Tree = new TableOfContentsTree(this, Source, Build, lookups, treeCollector, ref fileIndex);
 
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 

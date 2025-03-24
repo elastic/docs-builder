@@ -9,6 +9,7 @@ using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 
@@ -16,6 +17,59 @@ namespace Documentation.Assembler.Tests;
 
 public class GlobalNavigationPathProviderTests
 {
+
+	[Fact]
+	public async Task ParsesReferences()
+	{
+		var expectedRoot = new Uri("docs-content://reference/");
+		var expectedParent = new Uri("docs-content://reference/ingestion-tools/apm/agents/");
+		var sut = new Uri("apm-agent-dotnet://reference/");
+		var fs = new FileSystem();
+		var (assembleContext, assembleSources) = await Setup(fs);
+
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(sut);
+		assembleSources.TocTopLevelMappings[sut].TopLevelSource.Should().Be(expectedRoot);
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(expectedRoot);
+		assembleSources.TocTopLevelMappings[sut].ParentSource.Should().Be(expectedParent);
+
+		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
+		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
+		referenceToc.Should().NotBeNull();
+
+		var ingestTools = referenceToc!.TocReferences[new Uri("docs-content://reference/ingestion-tools/")];
+		ingestTools.Should().NotBeNull();
+
+		var apmReference = ingestTools.TocReferences[new Uri("docs-content://reference/apm/")];
+		apmReference.Should().NotBeNull();
+
+		var agentsRef = apmReference.TocReferences[expectedParent];
+		apmReference.Should().NotBeNull();
+
+		var agentsRefTocReference = agentsRef.TocReferences[sut];
+		agentsRefTocReference.Should().NotBeNull();
+
+		var navigation = new GlobalNavigation(assembleSources, navigationFile);
+		var referenceNav = navigation.NavigationLookup[expectedRoot];
+		referenceNav.Should().NotBeNull();
+
+		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
+		ingestNav.Should().NotBeNull();
+
+		var apmNav = ingestNav.NavigationLookup[new Uri("docs-content://reference/apm/")];
+		apmNav.Should().NotBeNull();
+
+		var apmAgentsNav = apmNav.NavigationLookup[expectedParent];
+		apmAgentsNav.Should().NotBeNull();
+
+		var dotnetAgentNav = apmAgentsNav.NavigationLookup[sut];
+		dotnetAgentNav.Should().NotBeNull();
+
+		var resolved = navigation.NavigationItems;
+
+	}
+
+
+
 	[Fact]
 	public async Task ParsesGlobalNavigation()
 	{
@@ -23,20 +77,7 @@ public class GlobalNavigationPathProviderTests
 		var kibanaExtendMoniker = new Uri("kibana://extend/");
 		var fs = new FileSystem();
 
-		await using var collector = new DiagnosticsCollector([]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
-
-		var assembleContext = new AssembleContext("dev", collector, fs, fs, null, null);
-
-		string[] nar = [NarrativeRepository.RepositoryName];
-		var repos = nar.Concat(assembleContext.Configuration.ReferenceRepositories
-				.Where(kv => !kv.Value.Skip)
-				.Select(kv => kv.Value.Name)
-			)
-			.ToArray();
-		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
-
-		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
+		var (assembleContext, assembleSources) = await Setup(fs);
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(kibanaExtendMoniker);
 		assembleSources.TocTopLevelMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
@@ -64,6 +105,25 @@ public class GlobalNavigationPathProviderTests
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		navigation.TopLevelItems.Count.Should().BeLessThan(20);
 		var resolved = navigation.NavigationItems;
+	}
+
+	private static async Task<(AssembleContext assembleContext, AssembleSources assembleSources)> Setup(FileSystem fs)
+	{
+		await using var collector = new DiagnosticsCollector([]);
+		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+
+		var assembleContext = new AssembleContext("dev", collector, fs, fs, null, null);
+
+		string[] nar = [NarrativeRepository.RepositoryName];
+		var repos = nar.Concat(assembleContext.Configuration.ReferenceRepositories
+				.Where(kv => !kv.Value.Skip)
+				.Select(kv => kv.Value.Name)
+			)
+			.ToArray();
+		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
+
+		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
+		return (assembleContext, assembleSources);
 	}
 
 	public static Checkout CreateCheckout(IFileSystem fs, string name) =>

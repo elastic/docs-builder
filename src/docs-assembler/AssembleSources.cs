@@ -21,6 +21,7 @@ public record TocTopLevelMapping
 	public required Uri Source { get; init; }
 	public required string SourcePathPrefix { get; init; }
 	public required Uri TopLevelSource { get; init; }
+	public required Uri ParentSource { get; init; }
 }
 
 public record TocConfigurationMapping
@@ -111,7 +112,7 @@ public class AssembleSources
 			switch (entry.Key)
 			{
 				case "toc":
-					ReadTocBlocks(entries, reader, entry.Entry, null, 0, null);
+					ReadTocBlocks(entries, reader, entry.Entry, null, 0, null, null);
 					break;
 			}
 		}
@@ -125,7 +126,9 @@ public class AssembleSources
 			KeyValuePair<YamlNode, YamlNode> entry,
 			string? parent,
 			int depth,
-			Uri? topLevelSource)
+			Uri? topLevelSource,
+			Uri? parentSource
+		)
 		{
 			if (entry.Key is not YamlScalarNode { Value: not null } scalarKey)
 			{
@@ -142,7 +145,7 @@ public class AssembleSources
 			var i = 0;
 			foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
 			{
-				ReadBlock(entries, reader, tocEntry, parent, depth, i, topLevelSource);
+				ReadBlock(entries, reader, tocEntry, parent, depth, i, topLevelSource, parentSource);
 				i++;
 			}
 		}
@@ -153,7 +156,9 @@ public class AssembleSources
 			string? parent,
 			int depth,
 			int order,
-			Uri? topLevelSource)
+			Uri? topLevelSource,
+			Uri? parentSource
+		)
 		{
 			string? repository = null;
 			string? source = null;
@@ -205,13 +210,16 @@ public class AssembleSources
 
 			pathPrefix ??= sourcePrefix;
 			topLevelSource ??= sourceUri;
+			parentSource ??= sourceUri;
 
-			entries.Add(new KeyValuePair<Uri, TocTopLevelMapping>(sourceUri, new TocTopLevelMapping
+			var tocTopLevelMapping = new TocTopLevelMapping
 			{
 				Source = sourceUri,
 				SourcePathPrefix = pathPrefix,
-				TopLevelSource = topLevelSource
-			}));
+				TopLevelSource = topLevelSource,
+				ParentSource = parentSource
+			};
+			entries.Add(new KeyValuePair<Uri, TocTopLevelMapping>(sourceUri, tocTopLevelMapping));
 
 			foreach (var entry in tocEntry.Children)
 			{
@@ -225,7 +233,7 @@ public class AssembleSources
 							continue;
 						}
 
-						ReadTocBlocks(entries, reader, entry, parent, depth + 1, topLevelSource);
+						ReadTocBlocks(entries, reader, entry, parent, depth + 1, topLevelSource, tocTopLevelMapping.Source);
 						break;
 				}
 			}

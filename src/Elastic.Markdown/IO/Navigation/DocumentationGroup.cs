@@ -20,6 +20,8 @@ public interface INavigationItem
 public record TocNavigationItem(int Order, int Depth, DocumentationGroup Group, Uri Source)
 	: GroupNavigationItem(Order, Depth, Group)
 {
+	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup { get; } =
+		Group.NavigationItems.OfType<TocNavigationItem>().ToDictionary(i => i.Source, i => i);
 }
 
 [DebuggerDisplay("Group >{Depth} #{Order} {Group.FolderName}")]
@@ -70,7 +72,12 @@ public class TableOfContentsTree : DocumentationGroup
 
 	public TableOfContentsTreeCollector TreeCollector { get; }
 
+	public DocumentationSet? DocumentationSet { get; }
+
+	//TODO remove documentation set argument once navigation.yml fully bootstraps.
+	//See GlobalNavigation.BuildNavigation which has fallback logic that needs to be removed
 	public TableOfContentsTree(
+		DocumentationSet documentationSet,
 		Uri source,
 		BuildContext context,
 		NavigationLookups lookups,
@@ -83,6 +90,7 @@ public class TableOfContentsTree : DocumentationGroup
 
 		Source = source;
 		TreeCollector.Collect(source, this);
+		DocumentationSet = documentationSet;
 	}
 
 	internal TableOfContentsTree(
