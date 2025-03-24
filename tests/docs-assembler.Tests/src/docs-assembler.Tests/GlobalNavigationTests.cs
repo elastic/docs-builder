@@ -97,22 +97,23 @@ public class GlobalNavigationPathProviderTests
 		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
-		var globalNavigation = new GlobalNavigationPathProvider(assembleSources, assembleContext);
 
 		var uriResolver = assembleSources.UriResolver;
 
 		// docs-content://reference/apm/something.md - url hasn't changed
-		var resolvedURi = uriResolver.Resolve(new Uri("docs-content://reference/apm/something.md"), "/reference/apm/something");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/apm/something");
+		var resolvedUri = uriResolver.Resolve(new Uri("docs-content://reference/apm/something.md"), "/reference/apm/something");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/something");
 
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-ios://reference/instrumentation.md"), "/reference/instrumentation");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/ios/instrumentation");
 
-		resolvedURi = uriResolver.Resolve(new Uri("apm-agent-android://reference/a/file.md"), "/reference/a/file");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/apm/agents/android/a/file");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-android://reference/a/file.md"), "/reference/a/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/android/a/file");
 
-		resolvedURi = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet/b/file");
+		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet/b/file");
 
-		resolvedURi = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
-		resolvedURi.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
+		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch://extend/c/file.md"), "/extend/c/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
 }

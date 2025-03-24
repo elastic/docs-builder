@@ -3,12 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using System.Collections.Immutable;
 using Documentation.Assembler.Configuration;
-using Documentation.Assembler.Navigation;
-using Documentation.Assembler.Sourcing;
 using Elastic.Markdown.CrossLinks;
-using Markdig.Helpers;
 
 namespace Documentation.Assembler.Building;
 

@@ -40,12 +40,13 @@ public interface ICrossLinkResolver
 {
 	Task<FetchedCrossLinks> FetchLinks();
 	bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	IUriEnvironmentResolver UriResolver { get; }
 }
 
 public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
 {
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
-	private readonly IUriEnvironmentResolver _uriResolver = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
+	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
 	public async Task<FetchedCrossLinks> FetchLinks()
 	{
@@ -54,7 +55,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, warningEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
+		TryResolve(errorEmitter, warningEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, LinkReference linkReference)
 	{
