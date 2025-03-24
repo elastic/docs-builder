@@ -82,8 +82,26 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				case "toc":
 					var children = ReadChildren(reader, entry.Entry);
 					var tocEntries = TableOfContents.OfType<TocReference>().ToArray();
-					if (!_configuration.DevelopmentDocs && !_configuration.IsNarrativeDocs && tocEntries.Length > 0 && TableOfContents.Count != tocEntries.Length)
-						reader.EmitError("toc links to other toc sections it may only contain other toc references", entry.Key);
+
+					// if no nested toc sections simply return
+					if (tocEntries.Length == 0)
+						return children;
+
+					// dev docs may mix and match as they please because they publish in isolation
+					if (_configuration.DevelopmentDocs)
+						return children;
+
+					// narrative docs may put files at the root as they please.
+					if (_configuration.IsNarrativeDocs && _depth == 0)
+						return children;
+
+					var filePaths = children.OfType<FileReference>().ToArray();
+					if (filePaths.Length == 0 && _depth == 0)
+						return children;
+					if (filePaths.Length is > 1 or 0)
+						reader.EmitError("toc with nested toc sections must only link a single file: index.md", entry.Key);
+					else if (!filePaths[0].Path.EndsWith("index.md"))
+						reader.EmitError($"toc with nested toc sections must only link a single file: 'index.md' actually linked {filePaths[0].Path}", entry.Key);
 					return children;
 			}
 		}
@@ -97,7 +115,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		parentPath ??= _parentPath;
 		if (_depth > _maxTocDepth)
 		{
-			reader.EmitError($"toc.yml files may only be linked from docset.yml", entry.Key);
+			reader.EmitError($"toc.yml files may not be linked deeper than {_maxTocDepth} current depth {_depth}", entry.Key);
 			return [];
 		}
 
