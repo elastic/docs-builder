@@ -2,8 +2,8 @@
 @using Elastic.Markdown.IO.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @{
-	var topLevelGroup = Model.IsPrimaryNavEnabled ? 2 : 1;
-	var topLevelFile = Model.IsPrimaryNavEnabled ? 1 : 0;
+	var topLevelGroup = Model is { IsPrimaryNavEnabled: true, IsGlobalAssemblyBuild: false } ? 2 : 1;
+	var topLevelFile = Model is { IsPrimaryNavEnabled: true, IsGlobalAssemblyBuild: false } ? 1 : 0;
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
@@ -60,6 +60,7 @@
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
 						Level = g.Depth,
 						SubTree = g,
 						RootNavigationId = Model.RootNavigationId

@@ -80,7 +80,8 @@ public class GlobalNavigationHtmlWriter(AssembleContext assembleContext, GlobalN
 			Title = group.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = group.Index?.Url ?? "/",
 			Tree = group,
-			IsPrimaryNavEnabled = false,
+			IsPrimaryNavEnabled = true,
+			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems
 		};
 	}

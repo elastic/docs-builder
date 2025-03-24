@@ -129,7 +129,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			return fs.FileInfo.New(fallBack);
 		}
 
-		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')) + "/";
+		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/'));
 		var newRelativePath = relativePath.AsSpan().TrimStart(originalPath).ToString();
 		var path = fs.Path.Combine(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
 
