@@ -28,6 +28,7 @@ public interface IDocumentationFileOutputProvider
 public class DocumentationGenerator
 {
 	private readonly IDocumentationFileOutputProvider? _documentationFileOutputProvider;
+	private readonly IConversionCollector? _conversionCollector;
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
@@ -46,6 +47,7 @@ public class DocumentationGenerator
 	)
 	{
 		_documentationFileOutputProvider = documentationFileOutputProvider;
+		_conversionCollector = conversionCollector;
 		_writeFileSystem = docSet.Build.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
@@ -55,7 +57,8 @@ public class DocumentationGenerator
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator());
 		_documentationFileExporter =
 			documentationExporter
-			?? new DocumentationFileExporter(docSet.Build.ReadFileSystem, _writeFileSystem, HtmlWriter, conversionCollector);
+			?? docSet.Build.Configuration.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
+			?? new DocumentationFileExporter(docSet.Build.ReadFileSystem, _writeFileSystem);
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
 		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
@@ -205,7 +208,7 @@ public class DocumentationGenerator
 		//TODO send file to OutputFile() so we can validate its scope is defined in navigation.yml
 		var outputFile = OutputFile(file.RelativePath);
 		if (outputFile is not null)
-			await _documentationFileExporter.ProcessFile(file, outputFile, token);
+			await _documentationFileExporter.ProcessFile(Context, file, outputFile, HtmlWriter, _conversionCollector, token);
 	}
 
 	private IFileInfo? OutputFile(string relativePath)

@@ -13,6 +13,10 @@ public record DetectionRuleFile : MarkdownFile
 {
 	public DetectionRule? Rule { get; set; }
 
+	public override string LinkReferenceRelativePath { get; }
+
+	public IFileInfo RuleSourceMarkdownPath { get; }
+
 	public DetectionRuleFile(
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
@@ -21,6 +25,25 @@ public record DetectionRuleFile : MarkdownFile
 		DocumentationSet set
 	) : base(sourceFile, rootPath, parser, build, set)
 	{
+		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
+		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
+	}
+
+	private static IFileInfo SourcePath(IFileInfo rulePath, BuildContext build)
+	{
+		var relative = Path.GetRelativePath(build.DocumentationCheckoutDirectory!.FullName, rulePath.FullName);
+		var newPath = Path.Combine(build.DocumentationSourceDirectory.FullName, relative);
+		var md = Path.ChangeExtension(newPath, ".md");
+		return rulePath.FileSystem.FileInfo.New(md);
+	}
+
+	public static IFileInfo OutputPath(IFileInfo rulePath, BuildContext build)
+	{
+		var relative = Path.GetRelativePath(build.DocumentationOutputDirectory.FullName, rulePath.FullName);
+		if (relative.StartsWith("../"))
+			relative = relative[3..];
+		var newPath = Path.Combine(build.DocumentationOutputDirectory.FullName, relative);
+		return rulePath.FileSystem.FileInfo.New(newPath);
 	}
 
 	protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
@@ -29,14 +52,14 @@ public record DetectionRuleFile : MarkdownFile
 	{
 		Title = Rule?.Name;
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
+		var document = MarkdownParser.MinimalParseStringAsync(markdown, RuleSourceMarkdownPath, null);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
+		var document = MarkdownParser.ParseStringAsync(markdown, RuleSourceMarkdownPath, null);
 		return Task.FromResult(document);
 	}
 

@@ -3,9 +3,11 @@ environments:
     uri: https://www.elastic.co
     path_prefix: docs
     allow_indexing: false
+    enable_google_tag_manager: true
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
+    enable_google_tag_manager: true
   preview:
     uri: https://docs-v3-preview.elastic.dev
     path_prefix:

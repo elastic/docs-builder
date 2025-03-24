@@ -14,6 +14,13 @@ import {$, $$} from "select-dom"
 import { UAParser } from 'ua-parser-js';
 const { getOS } = new UAParser();
 
+// Don't remove style tags because they are used by the elastic global nav.
+document.addEventListener('htmx:removingHeadElement', function(event) {
+	if (event.detail.headElement.tagName === 'STYLE') {
+		event.preventDefault();
+	}
+});
+
 document.addEventListener('htmx:beforeRequest', function(event) {
 	if (event.detail.requestConfig.verb === 'get' && event.detail.requestConfig.triggeringEvent) {
 		const { ctrlKey, metaKey, shiftKey }: PointerEvent = event.detail.requestConfig.triggeringEvent;

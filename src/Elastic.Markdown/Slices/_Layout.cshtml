@@ -3,30 +3,41 @@
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
 @await RenderPartialAsync(_Head.Create(Model))
-<body 
-	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden" 
+<body
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
-	data-root-path="@Model.Link("/")"
->
+	data-root-path="@Model.Link("/")">
+@if (Model.EnableGoogleTagManager)
+{
+	<!-- Google Tag Manager (noscript) -->
+	<noscript>
+		<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNJMG2M&gtm_auth=nPocPUG0wiH68jsVeyRSxA&gtm_preview=env-507&gtm_cookies_win=x"
+		        height="0"
+		        width="0"
+		        style="display:none;visibility:hidden">
+		</iframe>
+	</noscript>
+	<!-- End Google Tag Manager (noscript) -->
+}
 @(await RenderPartialAsync(_Header.Create(Model)))
-<div id="main-container" class="flex flex-col items-center px-6 border-t-1 border-grey-20">
+<div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
 	@functions {
 		private async Task DefaultLayout()
 		{
-			<div class="grid grid-cols-1 md:grid-cols-[calc(var(--spacing)*60)_auto] lg:grid-cols-[1fr_3fr_1fr] gap-4 container">
+			<div class="container grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
 				@await RenderPartialAsync(_TableOfContents.Create(Model))
-				<main id="content-container" class="w-full order-2 relative pb-30 overflow-x-hidden">
+				<main id="content-container" class="w-full flex flex-col order-2 relative pb-30 overflow-x-hidden">
 					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
 						<div class="h-[2px] w-full overflow-hidden">
 							<div class="progress w-full h-full bg-pink-70 left-right"></div>
 						</div>
 						<div class="sr-only">Loading</div>
 					</div>
-					<div class="content-container md:px-6">
+					<div class="content-container md:px-4">
 						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 					</div>
-					<article id="markdown-content" class="content-container markdown-content md:px-6">
+					<article id="markdown-content" class="content-container markdown-content md:px-4">
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						@await RenderBodyAsync()
 					</article>
@@ -35,7 +46,6 @@
 			</div>
 		}
 	}
-	
 	@switch (Model.CurrentDocument.YamlFrontMatter?.Layout)
 	{
 		case LayoutName.NotFound:
