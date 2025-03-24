@@ -53,7 +53,7 @@ public class GlobalNavigationHtmlWriter(AssembleContext assembleContext, GlobalN
 		if (_renderedNavigationCache.TryGetValue(source, out var value))
 			return value;
 
-		if (source == new Uri("docs-content:///") || source == new Uri("docs-content://reference/"))
+		if (source == new Uri("docs-content:///"))
 		{
 			_renderedNavigationCache[source] = string.Empty;
 			return string.Empty;
