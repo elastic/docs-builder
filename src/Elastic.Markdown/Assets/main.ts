@@ -16,7 +16,8 @@ const { getOS } = new UAParser();
 
 // Don't remove style tags because they are used by the elastic global nav.
 document.addEventListener('htmx:removingHeadElement', function(event) {
-	if (event.detail.headElement.tagName === 'STYLE') {
+	const tagName = event.detail.headElement.tagName;
+	if (tagName === 'STYLE') {
 		event.preventDefault();
 	}
 });

@@ -58,7 +58,7 @@ public record AssemblerDocumentationSet
 		)
 		{
 			UrlPathPrefix = env.PathPrefix,
-			Force = false,
+			Force = true,
 			AllowIndexing = env.AllowIndexing,
 			EnableGoogleTagManager = env.EnableGoogleTagManager ?? false,
 			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
