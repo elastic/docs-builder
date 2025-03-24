@@ -53,12 +53,12 @@ toc:
         # Elasticsearch JavaScript Client
         # ✅ https://github.com/elastic/elasticsearch-js/blob/main/docs/release-notes/toc.yml
         - toc: elasticsearch-js://release-notes
-          path_prefix: release-notes/elasticsearch/clients/js
+          path_prefix: release-notes/elasticsearch/clients/javascript
 
         # Elasticsearch .NET Client
         # ✅ https://github.com/elastic/elasticsearch-net/blob/main/docs/release-notes/toc.yml
         - toc: elasticsearch-net://release-notes
-          path_prefix: release-notes/elasticsearch/clients/net
+          path_prefix: release-notes/elasticsearch/clients/dotnet
 
         # Elasticsearch PHP Client
         # ✅ https://github.com/elastic/elasticsearch-php/blob/main/docs/release-notes/toc.yml
@@ -68,7 +68,7 @@ toc:
         # Elasticsearch Python Client
         # ✅ https://github.com/elastic/elasticsearch-py/blob/main/docs/release-notes/toc.yml
         - toc: elasticsearch-py://release-notes
-          path_prefix: release-notes/elasticsearch/clients/py
+          path_prefix: release-notes/elasticsearch/clients/python
 
         # Elasticsearch Ruby Client
         # ✅ https://github.com/elastic/elasticsearch-ruby/blob/main/docs/release-notes/toc.yml
