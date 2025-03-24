@@ -8,16 +8,17 @@ using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;
 
+#pragma warning disable xUnit1004
+
 public class GlobalNavigationPathProviderTests
 {
 
-	[Fact]
+	[Fact(Skip = "Requires local checkout folder")]
 	public async Task ParsesReferences()
 	{
 		var expectedRoot = new Uri("docs-content://reference/");
@@ -82,7 +83,7 @@ public class GlobalNavigationPathProviderTests
 
 
 
-	[Fact]
+	[Fact(Skip = "Requires local checkout folder")]
 	public async Task ParsesGlobalNavigation()
 	{
 		var expectedRoot = new Uri("docs-content://extend");
@@ -150,7 +151,7 @@ public class GlobalNavigationPathProviderTests
 			Directory = fs.DirectoryInfo.New(fs.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts", name))
 		};
 
-	[Fact]
+	[Fact(Skip = "Requires local checkout folder")]
 	public async Task UriResolving()
 	{
 		await using var collector = new DiagnosticsCollector([]);
