@@ -22,7 +22,7 @@ public static class ContentSourceMoniker
 	{
 		if (string.IsNullOrWhiteSpace(path))
 			return $"{repo}://";
-		return $"{repo}://{path.Trim('/')}/";
+		return $"{repo}://{path.Replace("\\", "/").Trim('/')}/";
 	}
 }
 
