@@ -5,8 +5,6 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using System.Xml;
-using System.Xml.Linq;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
@@ -96,56 +94,11 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
 
-		GenerateSitemap(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+		sitemapBuilder.Generate();
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
 		return collector.Errors;
-	}
-
-	private static void GenerateSitemap(IReadOnlyCollection<INavigationItem> navigationItems, IFileSystem fileSystem, IDirectoryInfo outputFolder)
-	{
-		Uri baseUri = new("https://www.elastic.co");
-		var flattenedNavigationItems = GetNavigationItems(navigationItems);
-
-		var doc = new XDocument()
-		{
-			Declaration = new XDeclaration("1.0", "utf-8", "yes"),
-		};
-
-		var root = new XElement(
-				"urlset",
-				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-				flattenedNavigationItems
-					.OfType<FileNavigationItem>()
-					.Select(n => n.File.Url)
-					.Distinct()
-					.Select(u => new Uri(baseUri, u))
-					.Select(u => new XElement("url", new XElement("loc", u)))
-			);
-
-		doc.Add(root);
-
-		using var fileStream = fileSystem.File.Create(Path.Combine(outputFolder.ToString() ?? string.Empty, "sitemap.xml"));
-		doc.Save(fileStream);
-	}
-
-
-	private static IReadOnlyCollection<INavigationItem> GetNavigationItems(IReadOnlyCollection<INavigationItem> items)
-	{
-		var result = new List<INavigationItem>();
-		foreach (var item in items)
-		{
-			switch (item)
-			{
-				case FileNavigationItem file:
-					result.Add(file);
-					break;
-				case GroupNavigationItem group:
-					result.AddRange(GetNavigationItems(group.Group.NavigationItems));
-					break;
-			}
-		}
-		return result;
 	}
 }
