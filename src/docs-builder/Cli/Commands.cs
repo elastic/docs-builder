@@ -104,7 +104,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		Uri? canonicalBaseUri = null;
 
-		if (canonicalBaseUrl != null && !Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
+		if (canonicalBaseUrl is null)
+			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");
+		else if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
 			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
 
 		try

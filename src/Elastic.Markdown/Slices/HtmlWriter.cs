@@ -98,6 +98,9 @@ public class HtmlWriter(
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
+		var reportLinkParameter = new Uri(DocumentationSet.Build.CanonicalBaseUrl!, Path.Combine(DocumentationSet.Build.UrlPathPrefix ?? string.Empty, markdown.Url));
+		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue_report.yaml&link={reportLinkParameter}&labels=source:web";
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			DocSetName = DocumentationSet.Name,
@@ -118,7 +121,8 @@ public class HtmlWriter(
 			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
 			EnableGoogleTagManager = DocumentationSet.Build.EnableGoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
-			StaticFileContentHashProvider = StaticFileContentHashProvider
+			StaticFileContentHashProvider = StaticFileContentHashProvider,
+			ReportIssueUrl = reportUrl
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
