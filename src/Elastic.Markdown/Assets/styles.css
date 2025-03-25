@@ -224,3 +224,12 @@
 #elastic-nav {
 	min-height: var(--offset-top);
 }
+
+html, body {
+	height: 100%;
+}
+
+body {
+	display: grid;
+	grid-template-rows: auto auto 1fr auto;
+}
