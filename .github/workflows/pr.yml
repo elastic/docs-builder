@@ -14,6 +14,16 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
+  build-lambda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Amazon Linux 2023 build
+        run: |
+          docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
+      - name: Get bootstrap binary
+        run: |
+          docker cp (docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:

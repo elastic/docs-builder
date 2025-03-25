@@ -25,7 +25,7 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.414.5"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Elastic.Markdown\Elastic.Markdown.csproj"/>
+    <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj"/>
   </ItemGroup>
 </Project>
 
