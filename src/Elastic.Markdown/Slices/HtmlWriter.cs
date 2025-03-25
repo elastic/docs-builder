@@ -104,7 +104,7 @@ public class HtmlWriter(
 			reportLinkParameter = new Uri(DocumentationSet.Build.CanonicalBaseUrl, Path.Combine(DocumentationSet.Build.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-    var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
 		var slice = Index.Create(new IndexViewModel
 		{
