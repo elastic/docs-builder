@@ -23,7 +23,7 @@ jobs:
           docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
       - name: Get bootstrap binary
         run: |
-          docker cp (docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+          docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
 
   build:
     runs-on: ${{ matrix.os }}
