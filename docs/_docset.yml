@@ -68,6 +68,7 @@ toc:
   - folder: syntax
     children:
       - file: index.md
+      - file: quick-ref.md
       - file: headings.md
       - file: admonitions.md
       - file: applies.md
