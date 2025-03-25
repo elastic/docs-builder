@@ -75,6 +75,15 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false,
 		};
+
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
+		{
+			assembleContext.Collector.Channel.TryComplete();
+			await assembleContext.Collector.StopAsync(ctx);
+			return 1;
+		}
+
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkouts = cloner.GetAll().ToArray();
 		if (checkouts.Length == 0)

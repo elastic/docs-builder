@@ -61,6 +61,19 @@ public class GlobalNavigationPathProviderTests
 	}
 
 	[Fact]
+	public async Task ReadAllPathPrefixes()
+	{
+		await using var collector = new DiagnosticsCollector([]);
+
+		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+
+		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
+
+		pathPrefixes.Should().NotBeEmpty();
+		pathPrefixes.Should().Contain(new Uri("eland://reference/elasticsearch/clients/eland/"));
+	}
+
+	[Fact]
 	public async Task ParsesReferences()
 	{
 		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
