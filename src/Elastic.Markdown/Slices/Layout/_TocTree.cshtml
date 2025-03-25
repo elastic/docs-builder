@@ -11,6 +11,7 @@
 				<summary class="grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
 					<span>
 						<a 
+							onclick="this.closest('details').removeAttribute('open')"
 							class="hover:underline text-blue-elastic hover:text-blue-elastic-100"
 							href="@current.Group.Index?.Url"
 							@Htmx.GetHxAttributes(current.Group.Index?.Url!, true)

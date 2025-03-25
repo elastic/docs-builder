@@ -18,9 +18,9 @@
 		<ul class="flex gap-6">
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a
-					href="@Model.Link("/release-notes")"
+					href="@Model.Link("/release-notes/")"
 					@Htmx.GetHxAttributes(
-						targetUrl: Model.Link("/release-notes"), 
+						targetUrl: Model.Link("/release-notes/"), 
 						hxSwapOob: "#main-container"
 					)
 				>
@@ -29,9 +29,9 @@
 			</li>
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a
-					href="@Model.Link("/troubleshoot")"
+					href="@Model.Link("/troubleshoot/")"
 					@Htmx.GetHxAttributes(
-						targetUrl: Model.Link("/troubleshoot"),
+						targetUrl: Model.Link("/troubleshoot/"),
 						hxSwapOob: "#main-container"
 					)
 				>
@@ -40,9 +40,9 @@
 			</li>
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a
-					href="@Model.Link("/reference")"
+					href="@Model.Link("/reference/")"
 					@Htmx.GetHxAttributes(
-						Model.Link("/reference"), 
+						Model.Link("/reference/"), 
 						hxSwapOob: "#main-container"
 					)
 				>
