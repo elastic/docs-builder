@@ -181,7 +181,7 @@ toc:
           # Clients
           # ✅ https://github.com/elastic/docs-content/blob/main/reference/elasticsearch-clients/toc.yml
           - toc: docs-content://reference/elasticsearch-clients
-            path_prefix: reference/elasticsearch/clients
+            path_prefix: reference/elasticsearch-clients
             children:
 
               # Eland
@@ -276,7 +276,7 @@ toc:
               # APM agents
               # ✅ https://github.com/elastic/docs-content/blob/main/reference/apm-agents/toc.yml
               - toc: docs-content://reference/apm-agents
-                path_prefix: reference/apm/agents
+                path_prefix: reference/apm-agents
                 children:
                   # APM Android agent
                   # ✅ https://github.com/elastic/apm-agent-android/blob/main/docs/reference/toc.yml
@@ -413,16 +413,11 @@ toc:
         path_prefix: reference/scripting-languages
 
       # ECS
-      # ✅ https://github.com/elastic/docs-content/blob/main/reference/ecs/toc.yml
-      - toc: docs-content://reference/ecs
-        path_prefix: reference/ecs/overview
+      # ✅ https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
+      - toc: ecs://reference
+        path_prefix: reference/ecs
+        # Children include the entire AsciiDoc book
         children:
-          # ECS reference
-          # ✅ https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
-          - toc: ecs://reference
-            path_prefix: reference/ecs
-            # Children include the entire AsciiDoc book
-
           # ECS logging libraries
           # ✅ https://github.com/elastic/ecs-logging/blob/main/docs/reference/toc.yml
           - toc: ecs-logging://reference
