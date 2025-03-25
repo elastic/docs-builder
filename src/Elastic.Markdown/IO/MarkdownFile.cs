@@ -281,6 +281,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
+			.Where(h => h.Item1 is not null)
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
