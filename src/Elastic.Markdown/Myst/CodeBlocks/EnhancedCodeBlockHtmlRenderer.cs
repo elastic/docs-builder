@@ -108,14 +108,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		return indentCount;
 	}
 
-	private static bool IsCommentBlock(Block block)
-	{
-		if (block is CommentBlock)
-		{
-			return true;
-		}
-		return false;
-	}
+	private static bool IsCommentBlock(Block block) => block is CommentBlock;
 
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{

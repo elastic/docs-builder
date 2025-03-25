@@ -57,10 +57,13 @@ static async Task<string> Handler(ILambdaContext context)
 				if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
 					existingEntry[branch] = entry;
 				else
+				{
 					linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
 					{
 						{ branch, entry }
 					});
+				}
+
 				Console.WriteLine(entry);
 			}
 

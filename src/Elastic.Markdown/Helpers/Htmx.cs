@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.Helpers;
 

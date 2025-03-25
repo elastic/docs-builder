@@ -7,12 +7,14 @@
 		data-current-navigation="@LayoutViewModel.CurrentNavigationId">
 		@(new HtmlString(Model.NavigationHtml))
 	</nav>
+	@* ReSharper disable once Html.IdNotResolved *@
 	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
 		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
 			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
 		</svg>
 	</label>
 </aside>
+@* ReSharper disable once Html.IdNotResolved *@
 <label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-30 ">
 	
 </label>

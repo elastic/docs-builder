@@ -78,6 +78,7 @@ public class GlobalNavigationPathProviderTests
 		dotnetAgentNav.Should().NotBeNull();
 
 		var resolved = navigation.NavigationItems;
+		resolved.Should().NotBeNull();
 
 	}
 
@@ -118,6 +119,7 @@ public class GlobalNavigationPathProviderTests
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		navigation.TopLevelItems.Count.Should().BeLessThan(20);
 		var resolved = navigation.NavigationItems;
+		resolved.Should().NotBeNull();
 	}
 
 	private static async Task<(AssembleContext assembleContext, AssembleSources assembleSources)> Setup(FileSystem fs)
@@ -139,7 +141,7 @@ public class GlobalNavigationPathProviderTests
 		return (assembleContext, assembleSources);
 	}
 
-	public static Checkout CreateCheckout(IFileSystem fs, string name) =>
+	private static Checkout CreateCheckout(IFileSystem fs, string name) =>
 		new()
 		{
 			Repository = new Repository
