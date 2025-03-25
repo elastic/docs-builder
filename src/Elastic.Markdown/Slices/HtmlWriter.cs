@@ -125,7 +125,9 @@ public class HtmlWriter(
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
 			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
-			EnableGoogleTagManager = DocumentationSet.Build.EnableGoogleTagManager,
+			GoogleTagManagerEnabled = DocumentationSet.Build.GoogleTagManagerEnabled,
+			GoogleTagManagerScript = DocumentationSet.Build.GoogleTagManagerScript,
+			GoogleTagManagerNoScript = DocumentationSet.Build.GoogleTagManagerNoScript,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl

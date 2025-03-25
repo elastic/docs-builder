@@ -7,17 +7,9 @@
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
 	data-root-path="@Model.Link("/")">
-@if (Model.EnableGoogleTagManager)
+@if (Model.GoogleTagManagerEnabled == true)
 {
-	<!-- Google Tag Manager (noscript) -->
-	<noscript>
-		<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNJMG2M&gtm_auth=nPocPUG0wiH68jsVeyRSxA&gtm_preview=env-507&gtm_cookies_win=x"
-		        height="0"
-		        width="0"
-		        style="display:none;visibility:hidden">
-		</iframe>
-	</noscript>
-	<!-- End Google Tag Manager (noscript) -->
+	WriteLiteral(Model.GoogleTagManagerNoScript);
 }
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">

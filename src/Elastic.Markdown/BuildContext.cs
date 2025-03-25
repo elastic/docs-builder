@@ -34,7 +34,9 @@ public record BuildContext
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
-	public bool EnableGoogleTagManager { get; init; }
+	public bool? GoogleTagManagerEnabled { get; init; }
+	public string? GoogleTagManagerScript { get; init; }
+	public string? GoogleTagManagerNoScript { get; init; }
 
 	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }

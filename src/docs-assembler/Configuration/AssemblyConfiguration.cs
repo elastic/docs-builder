@@ -86,6 +86,18 @@ public record PublishEnvironment
 	[YamlMember(Alias = "allow_indexing")]
 	public bool AllowIndexing { get; set; }
 
-	[YamlMember(Alias = "enable_google_tag_manager")]
-	public bool? EnableGoogleTagManager { get; set; }
+	[YamlMember(Alias = "google_tag_manager")]
+	public GoogleTagManager GoogleTagManager { get; set; } = new();
+}
+
+public record GoogleTagManager
+{
+	[YamlMember(Alias = "enabled")]
+	public bool Enabled { get; set; }
+
+	[YamlMember(Alias = "script")]
+	public string Script { get; set; } = string.Empty;
+
+	[YamlMember(Alias = "noscript")]
+	public string NoScript { get; set; } = string.Empty;
 }
