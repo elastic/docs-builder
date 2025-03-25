@@ -1,12 +1,12 @@
 @inherits RazorSlice<LayoutViewModel>
-<div class="font-body text-ink relative">
+<div class="w-full font-body text-ink relative">
 	<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
 		<div class="h-[2px] w-full overflow-hidden">
 			<div class="progress w-full h-full bg-pink-70 left-right"></div>
 		</div>
 		<div class="sr-only">Loading</div>
 	</div>
-	<section class="w-screen px-8 lg:px-6 bg-grey-10">
+	<section class="w-full px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16 grid md:grid-cols-2 items-center gap-6">
 			<div class="lg:basis-[50%]">
 				<h1 class="text-4xl font-bold font-sans text-black">Elastic documentation</h1>
@@ -23,7 +23,7 @@
 		</div>
 	</section>
 
-	<section class="w-screen px-8 lg:px-6 bg-grey-10">
+	<section class="w-full px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold font-sans text-3xl text-ink-dark">Elastic products</h2>
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
@@ -68,7 +68,7 @@
 		</div>
 	</section>
 
-	<section class="w-screen px-8 lg:px-6">
+	<section class="w-full px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold font-sans text-3xl text-ink-dark">How-to guides</h2>
 			<div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6">
@@ -128,7 +128,7 @@
 		</div>
 	</section>
 	
-	<section class="w-screen px-8 lg:px-6">
+	<section class="w-full px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold font-sans text-3xl text-ink-dark">References</h2>
 			<div class="mt-6 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -265,7 +265,7 @@
 		</div>
 	</section>
 
-	<section class="w-screen px-8 lg:px-6 bg-grey-10">
+	<section class="w-full px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
 			<h2 class="font-bold font-sans text-3xl text-ink-dark">Product resources</h2>
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
@@ -321,7 +321,7 @@
 		</div>
 	</section>
 	
-	@* <section class="w-screen px-8 lg:px-6 bg-grey-10"> *@
+	@* <section class="w-full px-8 lg:px-6 bg-grey-10"> *@
 	@* 	<div class="container mx-auto py-16"> *@
 	@* 		<h2 class="font-bold text-3xl text-ink-dark">Instant Elasticsearch</h2> *@
 	@* 		<div class="grid lg:grid-cols-2 gap-6 mt-6"> *@
@@ -344,7 +344,7 @@
 	@* 	</div> *@
 	@* </section> *@
 
-	<section class="w-screen px-8 lg:px-6">
+	<section class="w-full px-8 lg:px-6">
 		<div class="container mx-auto py-16">
 			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[auto_1fr_auto] gap-12 items-center justify-center text-center lg:text-left">
 				<img loading="lazy" class="mx-auto" alt="Elastic Community logo" src="@Model.Static("community-logo.png")" />

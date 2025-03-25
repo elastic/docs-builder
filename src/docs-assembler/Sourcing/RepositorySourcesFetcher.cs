@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
+using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using ProcNet;
@@ -13,9 +14,9 @@ using ProcNet.Std;
 
 namespace Documentation.Assembler.Sourcing;
 
-public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext context)
+public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext context)
 {
-	private readonly ILogger<RepositoryCheckoutProvider> _logger = logger.CreateLogger<RepositoryCheckoutProvider>();
+	private readonly ILogger<AssemblerRepositorySourcer> _logger = logger.CreateLogger<AssemblerRepositorySourcer>();
 
 	private AssemblyConfiguration Configuration => context.Configuration;
 
@@ -149,16 +150,6 @@ public class RepositoryCheckoutProvider(ILoggerFactory logger, AssembleContext c
 		var line = result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
 		return line;
 	}
-}
-
-public class ConsoleLineHandler(ILogger<RepositoryCheckoutProvider> logger, string prefix) : IConsoleLineHandler
-{
-	public void Handle(LineOut lineOut) => lineOut.CharsOrString(
-		r => Console.Write(prefix + ": " + r),
-		l => logger.LogInformation("{RepositoryName}: {Message}", prefix, l)
-	);
-
-	public void Handle(Exception e) { }
 }
 
 public class NoopConsoleWriter : IConsoleOutWriter

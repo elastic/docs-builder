@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Configuration;
@@ -49,12 +50,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
-		RootNavigation = set.Tree;
+		NavigationRoot = set.Tree;
 	}
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigation RootNavigation { get; set; }
+	public INavigation NavigationRoot { get; set; }
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
@@ -100,7 +101,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	protected virtual string RelativePathUrl => RelativePath;
 
-	public string Url
+	private string DefaultUrlPathSuffix
 	{
 		get
 		{
@@ -108,8 +109,31 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				relativePath = relativePath.Replace('\\', '/');
 			return Path.GetFileName(relativePath) == "index.md"
-				? $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
-				: $"{UrlPathPrefix}/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
+				? $"/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
+				: $"/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
+		}
+	}
+
+	private string DefaultUrlPath => $"{UrlPathPrefix}{DefaultUrlPathSuffix}";
+
+	private string? _url;
+	public string Url
+	{
+		get
+		{
+			if (_url is not null)
+				return _url;
+			if (_set.LinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
+			{
+				_url = DefaultUrlPath;
+				return _url;
+			}
+			var path = RelativePath;
+			var crossLink = new Uri($"{_set.Build.Git.RepositoryName}://{path}");
+			var uri = _set.LinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
+			_url = uri.AbsolutePath;
+			return _url;
+
 		}
 	}
 

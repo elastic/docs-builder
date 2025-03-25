@@ -13,7 +13,7 @@
 						<a 
 							class="hover:underline text-blue-elastic hover:text-blue-elastic-100"
 							href="@current.Group.Index?.Url"
-							@Htmx.GetHxAttributes(current.Group.Index?.Url!, false)
+							@Htmx.GetHxAttributes(current.Group.Index?.Url!)
 						>
 							@current.Group.Index?.NavigationTitle
 						</a>
@@ -62,7 +62,8 @@
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{
 			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-			Level = Model.Tree.Depth,
+			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+			Level = 0,
 			SubTree = Model.Tree,
 			RootNavigationId = Model.Tree.Id,
 		}))

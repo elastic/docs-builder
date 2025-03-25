@@ -7,7 +7,7 @@
 			{
 				<a 
 					href="@Model.Previous.Url"
-					@Htmx.GetHxAttributes(Model.Previous.Url, Model.CurrentDocument.RootNavigation.Id == Model.Previous.RootNavigation.Id)
+					@Htmx.GetHxAttributes(Model.Previous.Url, Model.CurrentDocument.NavigationRoot.Id == Model.Previous.NavigationRoot.Id)
 					class="flex h-full items-center text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md"
 				>
 					<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -25,7 +25,7 @@
 			{
 				<a 
 					href="@Model.Next.Url"
-					@Htmx.GetHxAttributes(Model.Next.Url, Model.CurrentDocument.RootNavigation.Id == Model.Next.RootNavigation.Id)
+					@Htmx.GetHxAttributes(Model.Next.Url, Model.CurrentDocument.NavigationRoot.Id == Model.Next.NavigationRoot.Id)
 					class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md text-right"
 				>
 					<div>

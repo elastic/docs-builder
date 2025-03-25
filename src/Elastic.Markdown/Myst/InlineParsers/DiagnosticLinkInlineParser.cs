@@ -196,7 +196,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			link.SetData(nameof(currentMarkdown.RootNavigation), currentMarkdown.RootNavigation);
+			link.SetData(nameof(currentMarkdown.NavigationRoot), currentMarkdown.NavigationRoot);
 
 			if (link.IsImage)
 			{
@@ -209,7 +209,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
 		if (linkMarkdown is not null)
-			link.SetData($"Target{nameof(currentMarkdown.RootNavigation)}", linkMarkdown.RootNavigation);
+			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
 
 		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
 		UpdateLinkUrl(link, url, context, anchor, file);

@@ -22,14 +22,22 @@ public static class Htmx
 	public const string HxPushUrl = "true";
 	public const string HxIndicator = "#htmx-indicator";
 
-	public static string GetHxAttributes(string targetUrl, bool hasSameTopLevelGroup, string? preload = Preload)
+	public static string GetHxAttributes(
+		string targetUrl,
+		bool hasSameTopLevelGroup = false,
+		string? preload = Preload,
+		string? hxSwapOob = null,
+		string? hxSwap = HxSwap,
+		string? hxPushUrl = HxPushUrl,
+		string? hxIndicator = HxIndicator
+	)
 	{
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-get={targetUrl}");
-		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
-		_ = attributes.Append($" hx-swap={HxSwap}");
-		_ = attributes.Append($" hx-push-url={HxPushUrl}");
-		_ = attributes.Append($" hx-indicator={HxIndicator}");
+		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
+		_ = attributes.Append($" hx-swap={hxSwap}");
+		_ = attributes.Append($" hx-push-url={hxPushUrl}");
+		_ = attributes.Append($" hx-indicator={hxIndicator}");
 		_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
 	}
