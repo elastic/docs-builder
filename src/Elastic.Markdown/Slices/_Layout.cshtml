@@ -27,17 +27,29 @@
 			<div class="container grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
 				@await RenderPartialAsync(_TableOfContents.Create(Model))
-				<main id="content-container" class="w-full flex flex-col order-2 relative pb-30 overflow-x-hidden">
-					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-						<div class="h-[2px] w-full overflow-hidden">
-							<div class="progress w-full h-full bg-pink-70 left-right"></div>
+				<main id="content-container" class="group/main w-full flex flex-col order-2 pb-30 overflow-x-hidden">
+					<div class="w-full h-screen htmx-indicator transition-opacity delay-700" id="htmx-indicator" role="status">
+						<div class="animate-pulse ml-4 w-full">
+							<p class="mt-8 h-2.5 bg-grey-20 w-48 mb-4"></p>
+							<h1 class="mt-11 h-9 bg-grey-20 max-w-[380px]"></h1>
+							<p class="mt-8 h-3 bg-grey-20 max-w-[640px]"></p>
+							<p class="mt-3 h-3 bg-grey-20 max-w-[320px]"></p>
+							<p class="mt-6.5 h-3 bg-grey-20 max-w-[420px]"></p>
+							<p class="mt-6.5 h-3 bg-grey-20 max-w-[480px]"></p>
+							<p class="mt-3 h-3 bg-grey-20 max-w-[280px]"></p>
+							<p class="mt-6.5 h-3 bg-grey-20 max-w-[460px]"></p>
+							<ul>
+								<li class="ml-5 mt-6.5 h-3 bg-grey-20 max-w-[300px]"></li>
+								<li class="ml-5 mt-6.5 h-3 bg-grey-20 max-w-[320px]"></li>
+								<li class="ml-5 mt-6.5 h-3 bg-grey-20 max-w-[280px]"></li>
+							</ul>
 						</div>
 						<div class="sr-only">Loading</div>
 					</div>
-					<div class="content-container md:px-4">
+					<div class="content-container md:px-4 group-has-[.htmx-indicator.htmx-request]/main:hidden">
 						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 					</div>
-					<article id="markdown-content" class="content-container markdown-content md:px-4">
+					<article id="markdown-content" class="content-container markdown-content md:px-4 group-has-[.htmx-indicator.htmx-request]/main:hidden">
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						@await RenderBodyAsync()
 					</article>

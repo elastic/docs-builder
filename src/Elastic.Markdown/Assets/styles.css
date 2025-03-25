@@ -179,11 +179,15 @@
 }
 
 .htmx-indicator {
+	transition-delay: 500ms;
 	display:none;
+	opacity: 0;
+	transition: opacity 1s;
 }
 .htmx-request .htmx-indicator,
 .htmx-request.htmx-indicator{
 	display:block;
+	opacity: 1;
 	z-index: 9999;
 }
 
