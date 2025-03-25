@@ -24,6 +24,7 @@ jobs:
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+          stat .artifacts/publish/docs-lambda-index-publisher/release_linux-x64/bootstrap
 
   build:
     runs-on: ${{ matrix.os }}
