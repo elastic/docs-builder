@@ -36,6 +36,7 @@ jobs:
   release-lambda:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Amazon Linux 2023 build
         run: |
           docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
