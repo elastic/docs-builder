@@ -12,7 +12,6 @@ using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
-using Spectre.Console;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler;

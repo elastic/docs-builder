@@ -12,7 +12,7 @@ public record AssemblyConfiguration
 	{
 		var input = new StringReader(yaml);
 
-		var deserializer = new StaticDeserializerBuilder(new Assembler.YamlStaticContext())
+		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
 			.IgnoreUnmatchedProperties()
 			.Build();
 

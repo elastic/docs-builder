@@ -5,7 +5,6 @@
 using System.Collections.Frozen;
 using Documentation.Assembler.Navigation;
 using Elastic.Markdown;
-using Elastic.Markdown.Slices;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;

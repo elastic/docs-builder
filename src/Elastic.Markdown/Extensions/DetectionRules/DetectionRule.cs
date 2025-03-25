@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Tomlet;
 using Tomlet.Models;
@@ -82,7 +81,7 @@ public record DetectionRule
 			throw new Exception($"Could not parse toml in: {source.FullName}", e);
 		}
 
-		if (!model.TryGetValue("metadata", out var node) || node is not TomlTable metadata)
+		if (!model.TryGetValue("metadata", out var node) || node is not TomlTable)
 			throw new Exception($"Could not find metadata section in {source.FullName}");
 
 		if (!model.TryGetValue("rule", out node) || node is not TomlTable rule)

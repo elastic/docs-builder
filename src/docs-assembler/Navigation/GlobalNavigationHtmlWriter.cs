@@ -4,7 +4,6 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Slices;
 
@@ -16,7 +15,6 @@ public class GlobalNavigationHtmlWriter(
 	GlobalNavigation globalNavigation,
 	AssembleSources assembleSources) : INavigationHtmlWriter
 {
-	private readonly AssembleContext _assembleContext = assembleContext;
 	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
 
 	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
@@ -25,13 +23,13 @@ public class GlobalNavigationHtmlWriter(
 	{
 		if (!assembleSources.TocTopLevelMappings.TryGetValue(tree.Source, out var topLevelUri))
 		{
-			_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {tree.Source}");
+			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {tree.Source}");
 			return (tree, tree.Source);
 		}
 
 		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelUri.TopLevelSource, out var topLevel))
 		{
-			_assembleContext.Collector.EmitWarning(_assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
+			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
 			return (tree, tree.Source);
 
 		}

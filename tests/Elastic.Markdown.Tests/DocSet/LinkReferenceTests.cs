@@ -6,7 +6,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.State;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Tests.DocSet;
 

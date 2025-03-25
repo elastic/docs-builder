@@ -106,15 +106,10 @@ public record GlobalNavigation
 				cleanNavigationItems.Add(allNavigationItem);
 			}
 
-			tree.NavigationItems = cleanNavigationItems.ToArray();
+			tree.NavigationItems = cleanNavigationItems.OrderBy(n => n.Order).ToArray();
 			var navigationItem = new TocNavigationItem(i, depth, tree, toc.Source);
 
 			list.Add(navigationItem);
-			if (toc.Source == new Uri("docs-content://reference/"))
-			{
-			}
-
-			//list.AddRange(tocNavigationItems);
 			i++;
 		}
 

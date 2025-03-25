@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;

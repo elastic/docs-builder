@@ -2,11 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.IO.Navigation;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler.Navigation;
