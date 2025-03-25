@@ -25,7 +25,7 @@ public record GlobalNavigation
 		_assembleSources = assembleSources;
 		_navigationFile = navigationFile;
 		NavigationItems = BuildNavigation(navigationFile.TableOfContents, 0);
-		TopLevelItems = NavigationItems.OfType<TocNavigationItem>().OrderBy(n => n.Order).ToList();
+		TopLevelItems = NavigationItems.OfType<TocNavigationItem>().ToList();
 		NavigationLookup = TopLevelItems.ToDictionary(kv => kv.Source, kv => kv);
 	}
 
