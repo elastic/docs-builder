@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;

@@ -12,4 +12,5 @@ namespace Documentation.Assembler;
 [YamlSerializable(typeof(Repository))]
 [YamlSerializable(typeof(NarrativeRepository))]
 [YamlSerializable(typeof(PublishEnvironment))]
+[YamlSerializable(typeof(GoogleTagManager))]
 public partial class YamlStaticContext;

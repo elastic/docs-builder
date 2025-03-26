@@ -3,11 +3,18 @@ environments:
     uri: https://www.elastic.co
     path_prefix: docs
     allow_indexing: false
-    enable_google_tag_manager: true
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
-    enable_google_tag_manager: true
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
+      auth: nPocPUG0wiH68jsVeyRSxA
+      preview: env-507
+      cookies_win: x
   preview:
     uri: https://docs-v3-preview.elastic.dev
     path_prefix:

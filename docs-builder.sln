@@ -77,6 +77,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-assembler.Tests", "tes
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infra", "infra", "{4894063D-0DEF-4B7E-97D0-0D0A5B85C608}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-path-prefixes-local", "validate-path-prefixes-local", "{BB789671-B262-43DD-91DB-39F9186B8257}"
+	ProjectSection(SolutionItems) = preProject
+		actions\validate-path-prefixes-local\action.yml = actions\validate-path-prefixes-local\action.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -148,5 +153,6 @@ Global
 		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
 		{4894063D-0DEF-4B7E-97D0-0D0A5B85C608} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{C559D52D-100B-4B2B-BE87-2344D835761D} = {4894063D-0DEF-4B7E-97D0-0D0A5B85C608}
+		{BB789671-B262-43DD-91DB-39F9186B8257} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 	EndGlobalSection
 EndGlobal

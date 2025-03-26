@@ -8,9 +8,9 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.RepresentationModel;
 

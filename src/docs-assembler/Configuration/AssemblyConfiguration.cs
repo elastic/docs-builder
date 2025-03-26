@@ -86,6 +86,33 @@ public record PublishEnvironment
 	[YamlMember(Alias = "allow_indexing")]
 	public bool AllowIndexing { get; set; }
 
-	[YamlMember(Alias = "enable_google_tag_manager")]
-	public bool? EnableGoogleTagManager { get; set; }
+	[YamlMember(Alias = "google_tag_manager")]
+	public GoogleTagManager GoogleTagManager { get; set; } = new();
+}
+
+public record GoogleTagManager
+{
+	[YamlMember(Alias = "enabled")]
+	public bool Enabled { get; set; }
+
+	private string _id = string.Empty;
+	[YamlMember(Alias = "id")]
+	public string Id
+	{
+		get => _id;
+		set
+		{
+			if (Enabled && string.IsNullOrEmpty(value))
+				throw new ArgumentException("Id is required when Enabled is true.");
+			_id = value;
+		}
+	}
+	[YamlMember(Alias = "auth")]
+	public string? Auth { get; set; }
+
+	[YamlMember(Alias = "preview")]
+	public string? Preview { get; set; }
+
+	[YamlMember(Alias = "cookies_win")]
+	public string? CookiesWin { get; set; }
 }

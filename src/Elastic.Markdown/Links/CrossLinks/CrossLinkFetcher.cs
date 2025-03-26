@@ -8,7 +8,7 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.CrossLinks;
+namespace Elastic.Markdown.Links.CrossLinks;
 
 public record FetchedCrossLinks
 {
