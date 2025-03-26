@@ -100,6 +100,15 @@ toc:
   # to prevent them from being nested deeply arbitrarily
   # use max_toc_depth to allow deeper nesting (Expert mode, consult with docs team)
   - toc: development
+  - folder: infrastructure
+    children:
+      - file: index.md
+      - folder: environments
+        children:
+          - file: index.md
+          - file: production.md
+          - file: staging.md
+          - file: preview.md
   - folder: testing
     children:
       - file: index.md
