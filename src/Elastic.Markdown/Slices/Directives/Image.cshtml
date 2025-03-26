@@ -1,5 +1,18 @@
 @inherits RazorSlice<ImageViewModel>
-<a class="reference internal image-reference" href="@Model.ImageUrl">
+<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-@Model.GetHashCode()').style.display='flex'">
 	<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	[CONTENT]
 </a>
+
+<div id="modal-@Model.GetHashCode()" class="modal"
+	onclick="document.querySelector('#modal-@Model.GetHashCode() .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-@Model.GetHashCode()').style.display='none'">
+	<div class="modal-content">
+		<span class="modal-close">
+			<a href="javascript:void(0);" class="close-button"
+				onclick="document.getElementById('modal-@Model.GetHashCode()').style.display='none'">
+				&times;
+			</a>
+		</span>
+		<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl" />	
+	</div>
+</div>

@@ -11,6 +11,7 @@
 @import "./markdown/table.css";
 @import "./markdown/definition-list.css";
 @import "./markdown/images.css";
+@import "./modal.css";
 
 
 :root {
