@@ -38,12 +38,10 @@ references:
   cloud-on-k8s:
   cloud:
     current: master
-  # curator:
-  #   skip: true
-  #   current: master
-  # ecctl:
-  #   current: master
-  #   skip: true
+  curator:
+    current: master
+  ecctl:
+    current: master
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -72,7 +70,6 @@ references:
   integrations:
   kibana:
   logstash-docs-md:
-    skip: true
   logstash:
   search-ui:
   integration-docs:
