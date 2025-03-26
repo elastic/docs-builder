@@ -98,7 +98,6 @@ public class NavigationPrefixChecker(ILoggerFactory logger, ImmutableHashSet<Uri
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
-		//todo add ctx
 		var crossLinks = await resolver.FetchLinks(ctx);
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
@@ -110,7 +109,7 @@ public class NavigationPrefixChecker(ILoggerFactory logger, ImmutableHashSet<Uri
 				if (byRepository == repository)
 					continue;
 
-				collector.EmitError(repository, $"path_prefix: '{repository}://{relativeLink}' already in use by: '{byRepository}://{reservedPathPrefix}' in global navigation.yml");
+				collector.EmitError(repository, $"'{byRepository}://{reservedPathPrefix}' in navigation.yml conflicts with already published '{repository}://{relativeLink}'");
 			}
 
 		}
