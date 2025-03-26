@@ -241,3 +241,7 @@ body {
 	display: grid;
 	grid-template-rows: auto auto 1fr auto;
 }
+
+#pages-nav details > summary::-webkit-details-marker {
+	display: none;
+}
