@@ -1,6 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
@@ -29,9 +31,9 @@ public class IndexViewModel
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
-	public required bool? GoogleTagManagerEnabled { get; init; }
-	public required string? GoogleTagManagerScript { get; init; }
-	public required string? GoogleTagManagerNoScript { get; init; }
+
+	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 }
@@ -56,10 +58,7 @@ public class LayoutViewModel
 	public required string? ReportIssueUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
-	public required bool? GoogleTagManagerEnabled { get; init; }
-	public required string? GoogleTagManagerScript { get; init; }
-	public required string? GoogleTagManagerNoScript { get; init; }
-
+	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
 	public required FeatureFlags Features { get; init; }
 

@@ -95,9 +95,24 @@ public record GoogleTagManager
 	[YamlMember(Alias = "enabled")]
 	public bool Enabled { get; set; }
 
-	[YamlMember(Alias = "script")]
-	public string Script { get; set; } = string.Empty;
+	private string _id = string.Empty;
+	[YamlMember(Alias = "id")]
+	public string Id
+	{
+		get => _id;
+		set
+		{
+			if (Enabled && string.IsNullOrEmpty(value))
+				throw new ArgumentException("Id is required when Enabled is true.");
+			_id = value;
+		}
+	}
+	[YamlMember(Alias = "auth")]
+	public string? Auth { get; set; }
 
-	[YamlMember(Alias = "noscript")]
-	public string NoScript { get; set; } = string.Empty;
+	[YamlMember(Alias = "preview")]
+	public string? Preview { get; set; }
+
+	[YamlMember(Alias = "cookies_win")]
+	public string? CookiesWin { get; set; }
 }

@@ -60,9 +60,14 @@ public record AssemblerDocumentationSet
 			UrlPathPrefix = env.PathPrefix,
 			Force = true,
 			AllowIndexing = env.AllowIndexing,
-			GoogleTagManagerEnabled = env.GoogleTagManager.Enabled,
-			GoogleTagManagerScript = env.GoogleTagManager.Script,
-			GoogleTagManagerNoScript = env.GoogleTagManager.NoScript,
+			GoogleTagManager = new GoogleTagManagerConfiguration
+			{
+				Enabled = env.GoogleTagManager.Enabled,
+				Id = env.GoogleTagManager.Id,
+				Auth = env.GoogleTagManager.Auth,
+				Preview = env.GoogleTagManager.Preview,
+				CookiesWin = env.GoogleTagManager.CookiesWin
+			},
 			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
 			SkipMetadata = true,
 		};

@@ -7,9 +7,10 @@
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
 	data-root-path="@Model.Link("/")">
-@if (Model.GoogleTagManagerEnabled == true)
+@if (Model.GoogleTagManager.Enabled)
 {
-	WriteLiteral(Model.GoogleTagManagerNoScript);
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
+	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 }
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
