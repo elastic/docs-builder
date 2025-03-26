@@ -10,6 +10,8 @@
 # That are not linked in the global toc but all the children toc they define are.
 phantoms:
   - toc: elasticsearch://reference
+  - toc: docs-content://release-notes
+  - toc: cloud://release-notes
 
 toc:
   #############
