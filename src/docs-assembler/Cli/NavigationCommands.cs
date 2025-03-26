@@ -6,21 +6,20 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Assembler.Building;
+using Documentation.Assembler.Links;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.Links.InboundLinks;
-using Elastic.Markdown.Links.LinkNamespaces;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
 internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
-	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logger);
-
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
@@ -49,7 +48,13 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 			return 1;
 		}
 
-		return 0;
+		var namespaceChecker = new NavigationPrefixChecker(logger, assembleContext);
+
+		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);
+
+		assembleContext.Collector.Channel.TryComplete();
+		await assembleContext.Collector.StopAsync(ctx);
+		return collector.Errors;
 	}
 
 	/// <summary> Validate all published links in links.json do not collide with navigation path_prefixes. </summary>
@@ -73,13 +78,13 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
-		var prefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
-
-		var namespaceChecker = new LinkGlobalNamespaceChecker(logger, prefixes);
+		var namespaceChecker = new NavigationPrefixChecker(logger, assembleContext);
 
 		await namespaceChecker.CheckWithLocalLinksJson(assembleContext.Collector, repository, file, ctx);
 
-		return await _linkIndexLinkChecker.CheckAll(collector, ctx);
+		assembleContext.Collector.Channel.TryComplete();
+		await assembleContext.Collector.StopAsync(ctx);
+		return collector.Errors;
 	}
 
 }

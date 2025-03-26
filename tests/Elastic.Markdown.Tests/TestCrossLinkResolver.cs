@@ -17,7 +17,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];
 
-	public Task<FetchedCrossLinks> FetchLinks()
+	public Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
 	{
 		// language=json
 		var json = """
