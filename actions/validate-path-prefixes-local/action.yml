@@ -1,0 +1,10 @@
+name: 'Validate Global Path Prefixes'
+description: 'Validates local path prefixes in local links.json against claimed prefixes in assemblers navigation.yml '
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate Inbound Links
+      uses: elastic/docs-builder/actions/assembler@main
+      with:
+        command: "navigation validate-link-reference"
