@@ -2,6 +2,7 @@ environments:
   prod:
     uri: https://www.elastic.co
     path_prefix: docs
+    content_source: current # current | next
     allow_indexing: false
     google_tag_manager:
       enabled: true
@@ -9,6 +10,7 @@ environments:
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
+    content_source: next
     google_tag_manager:
       enabled: true
       id: GTM-KNJMG2M
@@ -17,12 +19,36 @@ environments:
       cookies_win: x
   preview:
     uri: https://docs-v3-preview.elastic.dev
+    content_source: next
     path_prefix:
   dev:
     uri: http://localhost:4000
+    content_source: next
     path_prefix: docs
+
+###
+# 'narrative' shares the same keys as keys in 'references' (<repository_config>)
+# 'narrative' defines the docs-content repository
+###
 narrative:
   checkout_strategy: full
+
+###
+# 'references' defines a map of `elastic/<repository_name> * <repository_config>
+# repository_config:
+#   skip: bool
+#             # skip repository from cloning and building.
+#   checkout_strategy: full | partial
+#             # 'full' git clone --depth-1 --single-branch
+#             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
+#   current: <git_ref>
+#             # defines
+#             # defaults to 'main'
+#   next: <git_ref>
+#             # defaults to 'main'
+#
+###
+
 references:
   apm-server:
   apm-agent-android:
