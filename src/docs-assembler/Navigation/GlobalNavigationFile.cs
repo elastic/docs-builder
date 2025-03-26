@@ -36,7 +36,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 		var valid = true;
 		foreach (var pathPrefix in sourcePathPrefixes)
 		{
-			var prefix = $"{pathPrefix.Host}/{pathPrefix.AbsolutePath.TrimStart('/')}/";
+			var prefix = $"{pathPrefix.Host}/{pathPrefix.AbsolutePath.Trim('/')}/";
 			if (pathPrefixSet.Add(prefix))
 				continue;
 			var duplicateOf = sourcePathPrefixes.First(p => p.Host == pathPrefix.Host && p.AbsolutePath == pathPrefix.AbsolutePath);

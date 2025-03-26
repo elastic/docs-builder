@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.InboundLinks;
+namespace Elastic.Markdown.Links.InboundLinks;
 
 public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetcher(logger)
 {

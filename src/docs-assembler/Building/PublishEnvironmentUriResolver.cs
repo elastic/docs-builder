@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
-using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Links.CrossLinks;
 
 namespace Documentation.Assembler.Building;
 

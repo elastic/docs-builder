@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Markdown.IO.State;
 
-namespace Elastic.Markdown.CrossLinks;
+namespace Elastic.Markdown.Links.CrossLinks;
 
 public record LinkIndex
 {

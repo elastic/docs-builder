@@ -5,12 +5,12 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 
