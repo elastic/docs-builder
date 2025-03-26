@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Web;
