@@ -140,12 +140,9 @@ toc:
         path_prefix: reference/security
         # Children include: Endpoint command reference, Elastic Defend,
         # Fields and object schemas
-        #children:
-          # 📝 TO DO: Update when rules are moved to elastic/detection-rules
-          # This makes sense for now. I'm not sure when these files will be
-          # moved to https://github.com/elastic/detection-rules.
-        #  - toc: security-docs://reference/prebuilt-rules
-        #    path_prefix: reference/security/prebuilt-rules
+        children:
+         - repo: detection-rules
+          #  path_prefix: reference/security/prebuilt-rules
 
       # Observability
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/observability/toc.yml
