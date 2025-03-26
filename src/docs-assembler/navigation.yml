@@ -141,8 +141,8 @@ toc:
         # Children include: Endpoint command reference, Elastic Defend,
         # Fields and object schemas
         children:
-         - repo: detection-rules
-          #  path_prefix: reference/security/prebuilt-rules
+         - toc: detection-rules://
+           path_prefix: reference/security/prebuilt-rules
 
       # Observability
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/observability/toc.yml

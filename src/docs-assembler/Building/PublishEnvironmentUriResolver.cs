@@ -27,7 +27,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 		TableOfContentsPrefixes = [..topLevelMappings
 			.Values
-			.Select(v => v.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
 		];
 

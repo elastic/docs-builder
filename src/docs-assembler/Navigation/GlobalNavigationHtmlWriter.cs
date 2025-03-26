@@ -31,15 +31,41 @@ public class GlobalNavigationHtmlWriter(
 		{
 			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
 			return (tree, tree.Source);
-
 		}
+
 		return (topLevel, topLevelUri.TopLevelSource);
+	}
+
+	public static TableOfContentsTree? GetCurrentTree(INavigation navigation)
+	{
+		if (navigation is TableOfContentsTree tree)
+			return tree;
+		if (navigation is not DocumentationGroup group)
+			return null;
+		if (group.NavigationRoot is TableOfContentsTree root)
+			return root;
+		var i = 0;
+		while (group.Parent != null)
+		{
+			group = group.Parent;
+			if (group.Parent is TableOfContentsTree groupTree)
+				return groupTree;
+			if (group.NavigationRoot is TableOfContentsTree treeRoot)
+				return treeRoot;
+			i++;
+			if (i > 100)
+				throw new InvalidOperationException("Could not find parent");
+		}
+
+		return null;
 	}
 
 	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
 	{
-		if (currentRootNavigation is not TableOfContentsTree tree)
-			throw new InvalidOperationException($"Expected a {nameof(DocumentationGroup)}");
+		var tree = GetCurrentTree(currentRootNavigation)
+			?? throw new InvalidOperationException(
+				$"Expected a {nameof(TableOfContentsTree)} but got {currentRootNavigation.GetType().Name} for {nameof(currentRootNavigation)}"
+			);
 
 		if (Phantoms.Contains(tree.Source))
 			return string.Empty;
