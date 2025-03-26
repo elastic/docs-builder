@@ -280,7 +280,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
 
 		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
-			url = context.CurrentUrlPath[urlPathPrefix.Length..].TrimEnd('/') + url;
+			url = context.CurrentUrlPath[urlPathPrefix.Length..].TrimEnd('/') + '/' + url;
 
 		if (url.EndsWith(".md"))
 		{
