@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Markdown.Links.InboundLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.LinkNamespaces;
@@ -26,12 +28,12 @@ namespace Elastic.Markdown.Links.LinkNamespaces;
 /// since that is already claimed by `docs-content://reference/elasticsearch/clients`
 ///
 /// </summary>
-public class LinkGlobalNamespaceChecker(ILoggerFactory logger, ImmutableHashSet<Uri> namespaces)
+public class NavigationPrefixChecker(ILoggerFactory logger, ImmutableHashSet<Uri> namespaces)
 {
 	private readonly Dictionary<string, string> _pathPrefixes = namespaces
 		.ToDictionary(n => $"{n.Host}/{n.AbsolutePath.Trim('/')}/", n => n.Scheme);
 
-	private readonly ILogger _logger = logger.CreateLogger<LinkGlobalNamespaceChecker>();
+	private readonly ILogger _logger = logger.CreateLogger<NavigationPrefixChecker>();
 
 	public async Task CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository, string? localLinksJson, CancellationToken ctx)
 	{
@@ -78,7 +80,7 @@ public class LinkGlobalNamespaceChecker(ILoggerFactory logger, ImmutableHashSet<
 		return false;
 	}
 
-	private async Task<LinkReference> ReadLocalLinksJsonAsync(string localLinksJson, CancellationToken ctx)
+	private async Task<LinkReference> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{
 		try
 		{
@@ -89,6 +91,28 @@ public class LinkGlobalNamespaceChecker(ILoggerFactory logger, ImmutableHashSet<
 		{
 			_logger.LogError(e, "Failed to read {LocalLinksJson}", localLinksJson);
 			throw;
+		}
+	}
+
+	public async Task CheckAllPublishedLinks(DiagnosticsCollector collector, Cancel ctx)
+	{
+		var fetcher = new LinksIndexCrossLinkFetcher(logger);
+		var resolver = new CrossLinkResolver(fetcher);
+		//todo add ctx
+		var crossLinks = await resolver.FetchLinks(ctx);
+		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
+		{
+			foreach (var (relativeLink, _) in linkReference.Links)
+			{
+
+				if (!TryGetReservedPathPrefix(relativeLink, out var reservedPathPrefix, out var byRepository))
+					continue;
+				if (byRepository == repository)
+					continue;
+
+				collector.EmitError(repository, $"path_prefix: '{repository}://{relativeLink}' already in use by: '{byRepository}://{reservedPathPrefix}' in global navigation.yml");
+			}
+
 		}
 	}
 }

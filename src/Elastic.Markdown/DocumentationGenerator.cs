@@ -93,7 +93,7 @@ public class DocumentationGenerator
 			return;
 
 		_logger.LogInformation($"Fetching external links");
-		_ = await Resolver.FetchLinks();
+		_ = await Resolver.FetchLinks(ctx);
 
 		await ResolveDirectoryTree(ctx);
 

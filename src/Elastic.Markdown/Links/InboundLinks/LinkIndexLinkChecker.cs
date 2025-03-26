@@ -26,8 +26,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
-		//todo add ctx
-		var crossLinks = await resolver.FetchLinks();
+		var crossLinks = await resolver.FetchLinks(ctx);
 
 		return await ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None, ctx);
 	}
@@ -36,8 +35,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
-		//todo add ctx
-		var crossLinks = await resolver.FetchLinks();
+		var crossLinks = await resolver.FetchLinks(ctx);
 		var filter = new RepositoryFilter
 		{
 			LinksTo = toRepository,
@@ -52,7 +50,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		// ReSharper disable once RedundantAssignment
-		var crossLinks = await resolver.FetchLinks();
+		var crossLinks = await resolver.FetchLinks(ctx);
 		if (string.IsNullOrEmpty(repository))
 			throw new ArgumentNullException(nameof(repository));
 		if (string.IsNullOrEmpty(localLinksJson))
