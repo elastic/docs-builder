@@ -5,7 +5,7 @@ From a linux `x86_64` machine you can use the followint to build a AOT binary th
 on a vanilla `Amazon Linux 2023` without any dependencies.
 
 ```bash
-docker build . -t publish-links-index:latest -f src/docs-lambda-index-publisher/lambda.DockerFile
+docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
 ```
 
 Then you can copy the published artifacts from the image using:

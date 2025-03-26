@@ -5,10 +5,10 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Slices;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;

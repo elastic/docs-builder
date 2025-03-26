@@ -2,13 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.InboundLinks;
+namespace Elastic.Markdown.Links.InboundLinks;
 
 public class LinkIndexLinkChecker(ILoggerFactory logger)
 {
@@ -47,9 +47,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
 	}
 
-	public async Task<int> CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository,
-		string localLinksJson,
-		Cancel ctx)
+	public async Task<int> CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);

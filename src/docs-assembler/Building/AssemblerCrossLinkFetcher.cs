@@ -4,8 +4,8 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;

@@ -4,11 +4,11 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -281,6 +281,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
+			.Where(h => h.Item1 is not null)
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();

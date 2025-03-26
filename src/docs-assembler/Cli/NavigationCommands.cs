@@ -6,15 +6,18 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Assembler.Navigation;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.Links.InboundLinks;
+using Elastic.Markdown.Links.LinkNamespaces;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logger);
 
@@ -26,52 +29,57 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		ConsoleApp.LogError = msg => log.LogError(msg);
 	}
 
-	/// <summary> Validate all published cross_links in all published links.json files. </summary>
-	/// <param name="ctx"></param>
-	[Command("validate-all")]
-	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
-	{
-		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		return await _linkIndexLinkChecker.CheckAll(collector, ctx);
-	}
-
-	/// <summary> Validate all published cross_links in all published links.json files. </summary>
-	/// <param name="from"></param>
-	/// <param name="to"></param>
+	/// <summary> Validates navigation.yml does not contain colliding path prefixes </summary>
 	/// <param name="ctx"></param>
 	[Command("validate")]
-	public async Task<int> ValidateRepoInboundLinks(string? from = null, string? to = null, Cancel ctx = default)
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
+	public async Task<int> Validate(Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		if (from == null && to == null)
-		{
-			from ??= GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
-			if (from == null)
-				throw new Exception("Unable to determine repository name");
-		}
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		return await _linkIndexLinkChecker.CheckRepository(collector, to, from, ctx);
+		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+		_ = collector.StartAsync(ctx);
+
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
+		{
+			assembleContext.Collector.Channel.TryComplete();
+			await assembleContext.Collector.StopAsync(ctx);
+			return 1;
+		}
+
+		return 0;
 	}
 
-	/// <summary>
-	/// Validate a locally published links.json file against all published links.json files in the registry
-	/// </summary>
+	/// <summary> Validate all published links in links.json do not collide with navigation path_prefixes. </summary>
 	/// <param name="file">Path to `links.json` defaults to '.artifacts/docs/html/links.json'</param>
 	/// <param name="ctx"></param>
 	[Command("validate-link-reference")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateLocalLinkReference([Argument] string? file = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
 		file ??= ".artifacts/docs/html/links.json";
+
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		_ = collector.StartAsync(ctx);
+
+		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		return await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, file, ctx);
+		var prefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
+
+		var namespaceChecker = new LinkGlobalNamespaceChecker(logger, prefixes);
+
+		await namespaceChecker.CheckWithLocalLinksJson(assembleContext.Collector, repository, file, ctx);
+
+		return await _linkIndexLinkChecker.CheckAll(collector, ctx);
 	}
+
 }
