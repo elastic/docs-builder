@@ -55,7 +55,7 @@ public class ImageViewModel
 	public required string? Target { get; init; }
 	public required string? Width { get; init; }
 	public required string? ImageUrl { get; init; }
-
+	public string UniqueImageId { get; } = Guid.NewGuid().ToString("N")[..8];
 	public required string? Screenshot { get; init; }
 
 	public string Style

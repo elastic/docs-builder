@@ -51,11 +51,14 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
 		NavigationRoot = set.Tree;
+		NavigationSource = set.Source;
 	}
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	public INavigation NavigationRoot { get; set; }
+
+	public Uri NavigationSource { get; set; }
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
