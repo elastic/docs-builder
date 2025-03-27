@@ -80,7 +80,7 @@ public class TableOfContentsTree : DocumentationGroup
 		NavigationLookups lookups,
 		TableOfContentsTreeCollector treeCollector,
 		ref int fileIndex)
-		: base(treeCollector, context, lookups, ref fileIndex)
+		: base(treeCollector, context, lookups, source, ref fileIndex)
 	{
 		TreeCollector = treeCollector;
 		NavigationRoot = this;
@@ -101,7 +101,7 @@ public class TableOfContentsTree : DocumentationGroup
 		DocumentationGroup? toplevelTree,
 		DocumentationGroup? parent,
 		MarkdownFile? index = null
-	) : base(folderName, treeCollector, context, lookups, ref fileIndex, depth, toplevelTree, parent, index)
+	) : base(folderName, treeCollector, context, lookups, source, ref fileIndex, depth, toplevelTree, parent, index)
 	{
 		Source = source;
 		TreeCollector = treeCollector;
@@ -123,6 +123,8 @@ public class DocumentationGroup : INavigation
 
 	public INavigation NavigationRoot { get; set; }
 
+	public Uri NavigationSource { get; set; }
+
 	public MarkdownFile? Index { get; set; }
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
@@ -141,20 +143,25 @@ public class DocumentationGroup : INavigation
 
 	protected virtual DocumentationGroup DefaultNavigation => this;
 
-	public DocumentationGroup(
+	protected DocumentationGroup(
 		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
 		NavigationLookups lookups,
+		Uri navigationSource,
 		ref int fileIndex
 	)
-		: this(".", treeCollector, context, lookups, ref fileIndex, depth: 0, null, null) =>
+		: this(".", treeCollector, context, lookups, navigationSource, ref fileIndex, depth: 0, null, null)
+	{
+		NavigationSource = navigationSource;
 		_treeCollector = treeCollector;
+	}
 
 	internal DocumentationGroup(
 		string folderName,
 		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
 		NavigationLookups lookups,
+		Uri navigationSource,
 		ref int fileIndex,
 		int depth,
 		DocumentationGroup? toplevelTree,
@@ -163,6 +170,7 @@ public class DocumentationGroup : INavigation
 	)
 	{
 		FolderName = folderName;
+		NavigationSource = navigationSource;
 		_treeCollector = treeCollector;
 		Depth = depth;
 		Parent = parent;
@@ -227,6 +235,7 @@ public class DocumentationGroup : INavigation
 				md.NavigationIndex = navigationIndex;
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
 				md.NavigationRoot = topLevelGroup;
+				md.NavigationSource = NavigationSource;
 
 				foreach (var extension in context.Configuration.EnabledExtensions)
 					extension.Visit(d, tocItem);
@@ -239,7 +248,7 @@ public class DocumentationGroup : INavigation
 						_treeCollector, context, lookups with
 						{
 							TableOfContents = file.Children
-						}, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
+						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
 					navigationItems.Add(new GroupNavigationItem(index, depth, group));
 					continue;
@@ -267,6 +276,7 @@ public class DocumentationGroup : INavigation
 							.Select(d => new FileReference(folder.TableOfContentsScope, d.RelativePath, true, false, []))
 					];
 				}
+
 				DocumentationGroup group;
 				if (folder is TocReference tocReference)
 				{
@@ -275,8 +285,6 @@ public class DocumentationGroup : INavigation
 						TableOfContents = children
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
 
-					//if (lookups.IndexedTableOfContents.TryGetValue(tocReference.Source, out var indexedToc))
-					//	toc.NavigationItems = toc.NavigationItems.Concat(indexedToc.Children).ToArray();
 					group = toc;
 					navigationItems.Add(new TocNavigationItem(index, depth, toc, tocReference.Source));
 				}
@@ -285,7 +293,7 @@ public class DocumentationGroup : INavigation
 					group = new DocumentationGroup(folder.Path, _treeCollector, context, lookups with
 					{
 						TableOfContents = children
-					}, ref fileIndex, depth + 1, topLevelGroup, this);
+					}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this);
 					navigationItems.Add(new GroupNavigationItem(index, depth, group));
 				}
 
