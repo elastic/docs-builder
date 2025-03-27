@@ -301,17 +301,22 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (url.EndsWith(".md"))
 		{
-			url = url.EndsWith("/index.md")
+			url = url.EndsWith($"{Path.DirectorySeparatorChar}index.md")
 				? url.Remove(url.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
 				: url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
 
+		// When running on Windows, path traversal results must be normalized prior to being used in a URL
+		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			url = url.Replace('\\', '/');
+			if (url.Length > 2 && url[1] == ':')
+				url = url[2..];
+		}
+
 		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
-
-		// When running on Windows, path traversal results must be normalized prior to being used in a URL
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-			url = url.Replace('\\', '/');
 
 		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
 	}
