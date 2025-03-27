@@ -106,6 +106,8 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
+		var previousVersionUrl = markdown.YamlFrontMatter?.MappedPages?.FirstOrDefault();
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,

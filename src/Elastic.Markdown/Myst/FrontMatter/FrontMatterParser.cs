@@ -34,4 +34,7 @@ public class YamlFrontMatter
 
 	[YamlMember(Alias = "applies_to")]
 	public ApplicableTo? AppliesTo { get; set; }
+
+	[YamlMember(Alias = "mapped_pages")]
+	public IReadOnlyCollection<string>? MappedPages { get; set; }
 }
