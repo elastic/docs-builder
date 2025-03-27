@@ -44,8 +44,10 @@ public static class CodeBlock
 		{ "yml", "yaml" }, // YAML
 
 		//CUSTOM, Elastic language we wrote highlighters for
+		{ "apiheader", "" },
 		{ "eql", "" },
-		{ "esql", "" }
+		{ "esql", "" },
+		{ "painless", "" }
 	};
 
 	public static HashSet<string> Languages { get; } = new(
