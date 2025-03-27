@@ -251,6 +251,7 @@ public class DocumentationGroup : INavigation
 						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
 					navigationItems.Add(new GroupNavigationItem(index, depth, group));
+					indexFile ??= virtualIndex;
 					continue;
 				}
 

@@ -263,22 +263,33 @@ public class DocumentationSet : INavigationLookups
 		if (Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
 			return new ExcludedFile(file, SourceDirectory);
 
-		// we ignore files in folders that start with an underscore
 		if (relativePath.Contains("_snippets"))
 			return new SnippetFile(file, SourceDirectory);
-
-		if (Configuration.Files.Contains(relativePath))
-			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
-
-		if (Configuration.Globs.Any(g => g.IsMatch(relativePath)))
-			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
 
 		// we ignore files in folders that start with an underscore
 		if (relativePath.IndexOf($"{Path.DirectorySeparatorChar}_", StringComparison.Ordinal) > 0 || relativePath.StartsWith('_'))
 			return new ExcludedFile(file, SourceDirectory);
 
+		if (Configuration.Files.Contains(relativePath))
+			return ExtensionOrDefaultMarkdown();
+
+		if (Configuration.Globs.Any(g => g.IsMatch(relativePath)))
+			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
+
+
 		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");
 		return new ExcludedFile(file, SourceDirectory);
+
+		MarkdownFile ExtensionOrDefaultMarkdown()
+		{
+			foreach (var extension in Configuration.EnabledExtensions)
+			{
+				var documentationFile = extension.CreateMarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
+				if (documentationFile is not null)
+					return documentationFile;
+			}
+			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
+		}
 	}
 	public void ClearOutputDirectory()
 	{

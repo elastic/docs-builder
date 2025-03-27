@@ -318,6 +318,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
 
+		// TODO this is hardcoded should be part of extension system
+		if (url.EndsWith(".toml"))
+			url = url[..^5];
+
 		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
 	}
 
