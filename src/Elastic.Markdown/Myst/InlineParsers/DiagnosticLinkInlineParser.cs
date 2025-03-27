@@ -280,7 +280,24 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
 
 		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
-			url = context.CurrentUrlPath[urlPathPrefix.Length..].TrimEnd('/') + '/' + url;
+		{
+			// eat overall path prefix since its gets appended later
+			var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
+				? context.CurrentUrlPath[urlPathPrefix.Length..]
+				: urlPathPrefix;
+
+			var markdownPath = context.MarkdownSourcePath.Name;
+
+			// if the current path is an index e.g /reference/cloud-k8s/
+			// './' current path lookups should be relative to sub-path.
+			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
+			var siblingsGoToCurrent = url.StartsWith("./") && markdownPath == "index.md";
+			if (!siblingsGoToCurrent)
+				subPrefix = subPrefix[..subPrefix.LastIndexOf('/')];
+
+			var combined = '/' + Path.Combine(subPrefix, url).TrimStart('/');
+			url = Path.GetFullPath(combined);
+		}
 
 		if (url.EndsWith(".md"))
 		{
