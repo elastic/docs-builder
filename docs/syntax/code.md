@@ -316,3 +316,8 @@ This `code` is inline.
 :::
 
 ::::
+
+## Supported Languages
+
+Please refer to [hljs.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Markdown/Assets/hljs.ts)
+for a complete list of supported languages.
