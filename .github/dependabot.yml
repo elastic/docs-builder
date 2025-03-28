@@ -1,0 +1,8 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "src/Elastic.Markdown"
+    schedule:
+      interval: "weekly"
+    labels:
+      - chore
