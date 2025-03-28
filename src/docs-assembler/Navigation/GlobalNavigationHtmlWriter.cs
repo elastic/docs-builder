@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Slices;
 
@@ -19,72 +20,51 @@ public class GlobalNavigationHtmlWriter(
 
 	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
 
-	private (DocumentationGroup, Uri) GetRealNavigationRoot(TableOfContentsTree tree)
+	private bool TryGetNavigationRoot(
+		Uri navigationSource,
+		[NotNullWhen(true)] out TableOfContentsTree? navigationRoot,
+		[NotNullWhen(true)] out Uri? navigationRootSource
+	)
 	{
-		if (!assembleSources.TocTopLevelMappings.TryGetValue(tree.Source, out var topLevelUri))
+		navigationRoot = null;
+		navigationRootSource = null;
+		if (!assembleSources.TocTopLevelMappings.TryGetValue(navigationSource, out var topLevelMapping))
 		{
-			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {tree.Source}");
-			return (tree, tree.Source);
+			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {navigationSource}");
+			return false;
 		}
 
-		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelUri.TopLevelSource, out var topLevel))
+		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelMapping.TopLevelSource, out navigationRoot))
 		{
-			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelUri.TopLevelSource}");
-			return (tree, tree.Source);
+			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelMapping.TopLevelSource}");
+			return false;
 		}
-
-		return (topLevel, topLevelUri.TopLevelSource);
+		navigationRootSource = topLevelMapping.TopLevelSource;
+		return true;
 	}
 
-	public static TableOfContentsTree? GetCurrentTree(INavigation navigation)
+	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
-		if (navigation is TableOfContentsTree tree)
-			return tree;
-		if (navigation is not DocumentationGroup group)
-			return null;
-		if (group.NavigationRoot is TableOfContentsTree root)
-			return root;
-		var i = 0;
-		while (group.Parent != null)
-		{
-			group = group.Parent;
-			if (group.Parent is TableOfContentsTree groupTree)
-				return groupTree;
-			if (group.NavigationRoot is TableOfContentsTree treeRoot)
-				return treeRoot;
-			i++;
-			if (i > 100)
-				throw new InvalidOperationException("Could not find parent");
-		}
-
-		return null;
-	}
-
-	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
-	{
-		var tree = GetCurrentTree(currentRootNavigation)
-			?? throw new InvalidOperationException(
-				$"Expected a {nameof(TableOfContentsTree)} but got {currentRootNavigation.GetType().Name} for {nameof(currentRootNavigation)}"
-			);
-
-		if (Phantoms.Contains(tree.Source))
+		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
 
-		var (navigation, source) = GetRealNavigationRoot(tree);
-		if (_renderedNavigationCache.TryGetValue(source, out var value))
+		if (Phantoms.Contains(navigationRootSource))
+			return string.Empty;
+
+		if (_renderedNavigationCache.TryGetValue(navigationRootSource, out var value))
 			return value;
 
-		if (source == new Uri("docs-content:///"))
+		if (navigationRootSource == new Uri("docs-content:///"))
 		{
-			_renderedNavigationCache[source] = string.Empty;
+			_renderedNavigationCache[navigationRootSource] = string.Empty;
 			return string.Empty;
 		}
 
-		Console.WriteLine($"Rendering navigation for {source}");
+		Console.WriteLine($"Rendering navigation for {navigationRootSource}");
 
-		var model = CreateNavigationModel(navigation);
+		var model = CreateNavigationModel(navigationRoot);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[source] = value;
+		_renderedNavigationCache[navigationRootSource] = value;
 
 		return value;
 	}

@@ -156,9 +156,13 @@ jobs:
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
           metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'true') }}
 
-      - name: 'Validate Inbound Links'
+      - name: 'Validate inbound links'
         if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
         uses: elastic/docs-builder/actions/validate-inbound-local@main
+
+      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
+        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
+        uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}

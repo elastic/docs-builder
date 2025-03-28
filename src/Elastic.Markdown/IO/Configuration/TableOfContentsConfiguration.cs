@@ -207,9 +207,14 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				{
 					var extension = _configuration.EnabledExtensions.OfType<DetectionRulesDocsBuilderExtension>().First();
 					children = extension.CreateTableOfContentItems(_configuration, parentPath, detectionRules, Files);
+					var overviewPath = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
+					var landingPage = new RuleOverviewReference(this, overviewPath, fileFound, children, detectionRules);
+					return [landingPage];
 				}
 			}
-			return [new FileReference(this, $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar), fileFound, hiddenFile, children ?? [])];
+
+			var path = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
+			return [new FileReference(this, path, fileFound, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)

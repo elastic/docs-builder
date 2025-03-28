@@ -49,16 +49,51 @@ public record GlobalNavigationFile : ITableOfContentsScope
 	}
 
 
-	public static ImmutableHashSet<Uri> GetAllPathPrefixes(AssembleContext context)
+	public static ImmutableHashSet<Uri> GetAllPathPrefixes(AssembleContext context) =>
+		GetSourceUris("toc", context);
+
+	public static ImmutableHashSet<Uri> GetPhantomPrefixes(AssembleContext context) =>
+		GetSourceUris("phantoms", context);
+
+	private static ImmutableHashSet<Uri> GetSourceUris(string key, AssembleContext context)
 	{
 		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
 		var set = new HashSet<Uri>();
 		foreach (var entry in reader.Read())
 		{
-			if (entry.Key == "toc")
+			if (entry.Key == key && key == "toc")
 				ReadPathPrefixes(reader, entry.Entry, set);
+			if (entry.Key == key && key == "phantoms")
+				ReadPhantomTocs(reader, entry.Entry, set);
 		}
 		return set.ToImmutableHashSet();
+
+		static void ReadPhantomTocs(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, HashSet<Uri> hashSet)
+		{
+			if (entry.Value is not YamlSequenceNode sequence)
+			{
+				reader.EmitWarning($"'{entry.Value}' is not an array");
+				return;
+			}
+
+			foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
+			{
+				foreach (var child in tocEntry.Children)
+				{
+					var key = ((YamlScalarNode)child.Key).Value;
+					switch (key)
+					{
+						case "toc":
+							var source = reader.ReadString(child);
+							if (source != null && !source.Contains("://"))
+								source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
+							if (source is not null)
+								_ = hashSet.Add(new Uri(source));
+							break;
+					}
+				}
+			}
+		}
 
 		static void ReadPathPrefixes(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, HashSet<Uri> hashSet, string? parent = null)
 		{

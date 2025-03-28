@@ -126,12 +126,12 @@ $"""
 
 	public virtual async ValueTask InitializeAsync()
 	{
-		_ = Collector.StartAsync(default);
+		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		await Set.ResolveDirectoryTree(default);
-		await Set.LinkResolver.FetchLinks();
+		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
+		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
 
-		Document = await File.ParseFullAsync(default);
+		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
 		var html = File.CreateHtml(Document).AsSpan();
 		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
@@ -139,7 +139,7 @@ $"""
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
 		Collector.Channel.TryComplete();
-		await Collector.StopAsync(default);
+		await Collector.StopAsync(TestContext.Current.CancellationToken);
 	}
 
 	public ValueTask DisposeAsync()

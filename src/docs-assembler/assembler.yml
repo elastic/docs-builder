@@ -15,9 +15,6 @@ environments:
       auth: nPocPUG0wiH68jsVeyRSxA
       preview: env-507
       cookies_win: x
-  preview:
-    uri: https://docs-v3-preview.elastic.dev
-    path_prefix:
   dev:
     uri: http://localhost:4000
     path_prefix: docs

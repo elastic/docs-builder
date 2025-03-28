@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Links.CrossLinks;
 
 public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILoggerFactory logger) : CrossLinkFetcher(logger)
 {
-	public override async Task<FetchedCrossLinks> Fetch()
+	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
 		var linkReferences = new Dictionary<string, LinkReference>();
 		var linkIndexEntries = new Dictionary<string, LinkIndexEntry>();
@@ -21,9 +21,9 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 			_ = declaredRepositories.Add(repository);
 			try
 			{
-				var linkReference = await Fetch(repository);
+				var linkReference = await Fetch(repository, ctx);
 				linkReferences.Add(repository, linkReference);
-				var linkIndexReference = await GetLinkIndexEntry(repository);
+				var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
 				linkIndexEntries.Add(repository, linkIndexReference);
 			}
 			catch when (repository == "docs-content")
