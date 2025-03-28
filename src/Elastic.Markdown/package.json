@@ -6,7 +6,8 @@
   "source": "Assets/index.js",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build"
+    "build": "parcel build",
+    "lint": "eslint ."
   },
   "targets": {
     "js": {
