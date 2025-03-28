@@ -88,7 +88,7 @@ hljs.registerLanguage('apiheader', function() {
 			hljs.HASH_COMMENT_MODE,
 			{
 				className: "subst", // (pathname: path1/path2/dothis) color #ab5656
-				begin: /(?<=(?:\/|GET |POST |PUT |DELETE |HEAD |OPTIONS |PATH))[^?\n\r\/]+/,
+				begin: /(?<=(?:\/|GET |POST |PUT |DELETE |HEAD |OPTIONS |PATH))[^?\n\r/]+/,
 			}
 		],		}
 })

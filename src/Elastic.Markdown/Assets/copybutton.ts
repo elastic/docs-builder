@@ -61,13 +61,13 @@ const messages = {
   }
 }
 
-let locale = 'en'
+const locale = 'en'
 if( document.documentElement.lang !== undefined
     && messages[document.documentElement.lang] !== undefined ) {
   locale = document.documentElement.lang
 }
 
-let doc_url_root = DOCUMENTATION_OPTIONS.URL_ROOT;
+const doc_url_root = DOCUMENTATION_OPTIONS.URL_ROOT;
 if (doc_url_root == '#') {
     doc_url_root = '';
 }
@@ -75,14 +75,14 @@ if (doc_url_root == '#') {
 /**
  * SVG files for our copy buttons
  */
-let iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="44" height="44" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round">
+const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="44" height="44" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <title>${messages[locale]['copy_success']}</title>
   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
   <path d="M5 12l5 5l10 -10" />
 </svg>`
 
 // If the user specified their own SVG use that, otherwise use the default
-let iconCopy = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+const iconCopy = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
 </svg>
 `;
@@ -93,22 +93,6 @@ if (!iconCopy) {
   <rect x="8" y="8" width="12" height="12" rx="2" />
   <path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
 </svg>`
-}
-
-/**
- * Set up copy/paste for code blocks
- */
-
-const runWhenDOMLoaded = cb => {
-  if (document.readyState != 'loading') {
-    cb()
-  } else if (document.addEventListener) {
-    document.addEventListener('DOMContentLoaded', cb)
-  } else {
-    document.attachEvent('onreadystatechange', function() {
-      if (document.readyState == 'complete') cb()
-    })
-  }
 }
 
 const codeCellId = index => `codecell${index}`
@@ -125,8 +109,8 @@ const clearSelection = () => {
 // Changes tooltip text for a moment, then changes it back
 // We want the timeout of our `success` class to be a bit shorter than the
 // tooltip and icon change, so that we can hide the icon before changing back.
-var timeoutIcon = 1500;
-var timeoutSuccessClass = 1500;
+const timeoutIcon = 1500;
+const timeoutSuccessClass = 1500;
 
 const temporarilyChangeTooltip = (el, oldText, newText) => {
   el.setAttribute('data-tooltip', newText)
@@ -152,7 +136,7 @@ const addCopyButtonToCodeCells = () => {
   const codeCells = document.querySelectorAll(COPYBUTTON_SELECTOR)
   codeCells.forEach((codeCell, index) => {
 	if (codeCell.id) {
-	  return
+		return
 	}
   
     const id = codeCellId(index)
@@ -169,30 +153,21 @@ function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-/**
- * Removes excluded text from a Node.
- *
- * @param {Node} target Node to filter.
- * @param {string[]} excludes CSS selector of nodes to exclude.
- * @returns {DOMString} Text from `target` with text removed.
- */
 function filterText(target, excludes) {
     const clone = target.cloneNode(true);  // clone as to not modify the live DOM
-    excludes.forEach(exclude => {
-      clone.querySelectorAll(excludes).forEach(node => node.remove());
-    })
+	clone.querySelectorAll(excludes).forEach(node => node.remove());
     return clone.innerText;
 }
 
 // Callback when a copy button is clicked. Will be passed the node that was clicked
 // should then grab the text and replace pieces of text that shouldn't be used in output
 function formatCopyText(textContent, copybuttonPromptText, isRegexp = false, onlyCopyPromptLines = true, removePrompts = true, copyEmptyLines = true, lineContinuationChar = "", hereDocDelim = "") {
-    var regexp;
-    var match;
+    let regexp;
+    let match;
 
     // Do we check for line continuation characters and "HERE-documents"?
-    var useLineCont = !!lineContinuationChar
-    var useHereDoc = !!hereDocDelim
+    const useLineCont = !!lineContinuationChar
+    const useHereDoc = !!hereDocDelim
 
     // create regexp to capture prompt and remaining line
     if (isRegexp) {
@@ -202,9 +177,9 @@ function formatCopyText(textContent, copybuttonPromptText, isRegexp = false, onl
     }
 
     const outputLines = [];
-    var promptFound = false;
-    var gotLineCont = false;
-    var gotHereDoc = false;
+    const promptFound = false;
+    const gotLineCont = false;
+    const gotHereDoc = false;
     const lineGotPrompt = [];
     for (const line of textContent.split('\n')) {
         match = line.match(regexp)
@@ -239,11 +214,11 @@ function formatCopyText(textContent, copybuttonPromptText, isRegexp = false, onl
 }
 
 
-var copyTargetText = (trigger) => {
-  var target = document.querySelector(trigger.attributes['data-clipboard-target'].value);
+const copyTargetText = (trigger) => {
+  const target = document.querySelector(trigger.attributes['data-clipboard-target'].value);
   // get filtered text
-  let excludes = ['.code-callout', '.linenos', '.language-apiheader'];
-  let text = Array.from(target.querySelectorAll('code'))
+  const excludes = ['.code-callout', '.linenos', '.language-apiheader'];
+  const text = Array.from(target.querySelectorAll('code'))
     .map(code => filterText(code, excludes))
     .join('\n');
   return formatCopyText(text, '', false, true, true, true, '', '')
