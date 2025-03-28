@@ -101,8 +101,22 @@ You can also specify a custom anchor link using the following syntax.
 
 ::::
 
+## Admonitions
 
+Use admonitions to draw attention to content that is different than the main body.
+(Include examples: Markdown and Rendered)
 
+- **Note**: Is relevant but can be ignored.
+- **Warning**: Warn the user against decisions they might regret.
+- **Tip**: Helps the user make better choices.
+- **Important**: Could impact system performance or stability.
+- **Plain**: When none of the above apply.
+
+**DOs**
+- ✅ Use :open: <bool> to collapse long content that takes too much space.
+
+**DON'Ts**
+- ❌ Overload the page with too many admonitions. 
 
 
 
