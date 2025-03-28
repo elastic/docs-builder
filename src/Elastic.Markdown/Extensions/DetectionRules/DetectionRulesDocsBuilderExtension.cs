@@ -32,17 +32,23 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 
 	}
 
+	private DetectionRuleOverviewFile? _overviewFile;
 	public void Visit(DocumentationFile file, ITocItem tocItem)
 	{
 		// TODO the parsing of rules should not happen at ITocItem reading time.
 		// ensure the file has an instance of the rule the reference parsed.
 		if (file is DetectionRuleFile df && tocItem is RuleReference r)
+		{
 			df.Rule = r.Rule;
+			_overviewFile?.AddDetectionRuleFile(df, r);
+
+		}
 
 		if (file is DetectionRuleOverviewFile of && tocItem is RuleOverviewReference or)
 		{
 			var rules = or.Children.OfType<RuleReference>().ToArray();
 			of.Rules = rules;
+			_overviewFile = of;
 		}
 	}
 

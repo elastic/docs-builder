@@ -18,6 +18,10 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	public RuleReference[] Rules { get; set; } = [];
 
+	private Dictionary<string, DetectionRuleFile> Files { get; } = [];
+
+	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.Path] = df;
+
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
 		Title = "Detection Rules Overview";
@@ -57,9 +61,10 @@ $"""
 """;
 			foreach (var r in group.OrderBy(r => r.Rule.Name))
 			{
+				var url = Files[r.Path].Url;
 				markdown +=
 $"""
-[{r.Rule.Name}]({r.Path}) <br>
+[{r.Rule.Name}](!{url}) <br>
 """;
 
 			}
@@ -69,6 +74,7 @@ $"""
 
 		return markdown;
 	}
+
 }
 
 public record DetectionRuleFile : MarkdownFile

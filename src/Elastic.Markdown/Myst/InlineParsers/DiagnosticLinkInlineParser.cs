@@ -189,11 +189,30 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static void ProcessInternalLink(LinkInline link, InlineProcessor processor, ParserContext context)
 	{
+		if (link.Url != null && link.Url.StartsWith('!'))
+		{
+			// [](!/already/resolved/url) internal syntax to allow markdown embedding already resolved links
+			var verbatimUrl = link.Url[1..];
+			link.Url = verbatimUrl;
+			var md = ResolveFile(context, verbatimUrl);
+			_ = SetLinkData(link, processor, context, md, verbatimUrl);
+			return;
+		}
+
 		var (url, anchor) = SplitUrlAndAnchor(link.Url ?? string.Empty);
 		var includeFrom = GetIncludeFromPath(url, context);
 		var file = ResolveFile(context, url);
 		ValidateInternalUrl(processor, url, includeFrom, link, context);
 
+		var linkMarkdown = SetLinkData(link, processor, context, file, url);
+
+		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
+		UpdateLinkUrl(link, url, context, anchor);
+	}
+
+	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,
+		IFileInfo file, string url)
+	{
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
 			link.SetData(nameof(currentMarkdown.NavigationRoot), currentMarkdown.NavigationRoot);
@@ -210,15 +229,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
 		if (linkMarkdown is not null)
 			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
-
-		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
-		UpdateLinkUrl(link, url, context, anchor);
+		return linkMarkdown;
 	}
 
 	private static (string url, string? anchor) SplitUrlAndAnchor(string fullUrl)
 	{
 		var parts = fullUrl.Split('#');
-		return (parts[0], parts.Length > 1 ? parts[1].Trim() : null);
+		return (parts[0].TrimStart('!'), parts.Length > 1 ? parts[1].Trim() : null);
 	}
 
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
