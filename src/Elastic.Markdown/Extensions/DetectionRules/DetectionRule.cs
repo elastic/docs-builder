@@ -48,6 +48,8 @@ public record DetectionRule
 
 	public required string[]? Tags { get; init; }
 
+	public string? Domain => Tags?.FirstOrDefault(t => t.StartsWith("Domain:"))?[7..]?.Trim();
+
 	public required string Severity { get; init; }
 
 	public required string RuleId { get; init; }

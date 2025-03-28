@@ -38,7 +38,7 @@ public record LinkIndexEntry
 
 public interface ICrossLinkResolver
 {
-	Task<FetchedCrossLinks> FetchLinks();
+	Task<FetchedCrossLinks> FetchLinks(Cancel ctx);
 	bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 	IUriEnvironmentResolver UriResolver { get; }
 }
@@ -48,9 +48,9 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
-	public async Task<FetchedCrossLinks> FetchLinks()
+	public async Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
 	{
-		_crossLinks = await fetcher.Fetch();
+		_crossLinks = await fetcher.Fetch(ctx);
 		return _crossLinks;
 	}
 

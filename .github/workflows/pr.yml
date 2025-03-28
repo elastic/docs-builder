@@ -14,6 +14,18 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
+  validate-navigation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap Action Workspace
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+
+      - name: Build
+        run: dotnet run --project src/docs-assembler -c release -- navigation validate
+
   build-lambda:
     runs-on: ubuntu-latest
     steps:

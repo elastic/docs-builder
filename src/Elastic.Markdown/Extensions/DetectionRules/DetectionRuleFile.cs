@@ -9,6 +9,68 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
+public record DetectionRuleOverviewFile : MarkdownFile
+{
+	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build, DocumentationSet set)
+		: base(sourceFile, rootPath, parser, build, set)
+	{
+	}
+
+	public RuleReference[] Rules { get; set; } = [];
+
+	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
+	{
+		Title = "Detection Rules Overview";
+		var markdown = GetMarkdown();
+		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
+		return Task.FromResult(document);
+	}
+
+	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
+	{
+		var markdown = GetMarkdown();
+		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
+		return Task.FromResult(document);
+	}
+
+	private string GetMarkdown()
+	{
+		var groupedRules =
+			Rules
+				.GroupBy(r => r.Rule.Domain ?? "Unspecified")
+				.OrderBy(g => g.Key)
+				.ToArray();
+		// language=markdown
+		var markdown =
+"""
+# Detection Rules Overview
+
+""";
+
+		foreach (var group in groupedRules)
+		{
+			markdown +=
+$"""
+
+## {group.Key}
+
+""";
+			foreach (var r in group.OrderBy(r => r.Rule.Name))
+			{
+				markdown +=
+$"""
+[{r.Rule.Name}]({r.Path}) <br>
+""";
+
+			}
+
+		}
+
+
+		return markdown;
+	}
+}
+
 public record DetectionRuleFile : MarkdownFile
 {
 	public DetectionRule? Rule { get; set; }
@@ -74,29 +136,22 @@ $"""
 
 {Rule.Description}
 
-**Rule type**: {Rule.Type}
-
+**Rule type**: {Rule.Type}<br>
 **Rule indices**: {RenderArray(Rule.Indices)}
 
-**Rule Severity**: {Rule.Severity}
-
-**Risk Score**: {Rule.RiskScore}
-
-**Runs every**: {Rule.RunsEvery}
-
-**Searches indices from**: `{Rule.IndicesFromDateMath}`
-
-**Maximum alerts per execution**: {Rule.MaximumAlertsPerExecution}
-
+**Rule Severity**: {Rule.Severity}<br>
+**Risk Score**: {Rule.RiskScore}<br>
+**Runs every**: {Rule.RunsEvery}<br>
+**Searches indices from**: `{Rule.IndicesFromDateMath}`<br>
+**Maximum alerts per execution**: {Rule.MaximumAlertsPerExecution}<br>
 **References**: {RenderArray((Rule.References ?? []).Select(r => $"[{r}]({r})").ToArray())}
 
 **Tags**: {RenderArray(Rule.Tags)}
 
-**Version**: {Rule.Version}
-
+**Version**: {Rule.Version}<br>
 **Rule authors**: {RenderArray(Rule.Authors)}
 
-**Rule license**: {Rule.License}
+**Rule license**: {Rule.License}<br>
 """;
 		// language=markdown
 		if (!string.IsNullOrWhiteSpace(Rule.Setup))

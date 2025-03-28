@@ -11,17 +11,17 @@ namespace Elastic.Markdown.Links.InboundLinks;
 
 public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetcher(logger)
 {
-	public override async Task<FetchedCrossLinks> Fetch()
+	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
 		var linkReferences = new Dictionary<string, LinkReference>();
 		var linkEntries = new Dictionary<string, LinkIndexEntry>();
 		var declaredRepositories = new HashSet<string>();
-		var linkIndex = await FetchLinkIndex();
+		var linkIndex = await FetchLinkIndex(ctx);
 		foreach (var (repository, value) in linkIndex.Repositories)
 		{
 			var linkIndexEntry = value.First().Value;
 			linkEntries.Add(repository, linkIndexEntry);
-			var linkReference = await FetchLinkIndexEntry(repository, linkIndexEntry);
+			var linkReference = await FetchLinkIndexEntry(repository, linkIndexEntry, ctx);
 			linkReferences.Add(repository, linkReference);
 			_ = declaredRepositories.Add(repository);
 		}

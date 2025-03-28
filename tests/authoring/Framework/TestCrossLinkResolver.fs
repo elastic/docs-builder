@@ -27,7 +27,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
         member this.UriResolver = uriResolver
 
-        member this.FetchLinks() =
+        member this.FetchLinks(ctx) =
             let redirects = LinkReference.SerializeRedirects config.Redirects
             // language=json
             let json = $$"""{

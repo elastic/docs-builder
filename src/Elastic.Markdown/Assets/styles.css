@@ -11,6 +11,7 @@
 @import "./markdown/table.css";
 @import "./markdown/definition-list.css";
 @import "./markdown/images.css";
+@import "./modal.css";
 
 
 :root {
@@ -240,4 +241,8 @@ html, body {
 body {
 	display: grid;
 	grid-template-rows: auto auto 1fr auto;
+}
+
+#pages-nav details > summary::-webkit-details-marker {
+	display: none;
 }
