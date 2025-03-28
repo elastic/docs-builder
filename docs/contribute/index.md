@@ -58,13 +58,13 @@ You can use the following sections to help you determine where the content you m
 
 Public-facing narrative and conceptual docs have moved. Most can now be found under the following directories in the new docs:
 
-* explore-analyze: Discover, Dashboards, Visualizations, Reporting, Alerting, dev tools...  
-* deploy-manage: Stack management (Spaces, user management, remote clusters...)  
-* troubleshooting: troubleshooting pages
+* **explore-analyze**: Discover, Dashboards, Visualizations, Reporting, Alerting, dev tools...  
+* **deploy-manage**: Stack management (Spaces, user management, remote clusters...)  
+* **troubleshooting**: troubleshooting pages
 
 #### What is staying in the Kibana repo?
 
-* Reference content (= anything that is or could be auto-generated): Settings, syntax references, functions lists...  
+* Reference content, anything that is or could be auto-generated: Settings, syntax references, functions lists...  
 * Release notes  
 * Developer guide
 
@@ -74,11 +74,11 @@ Public-facing narrative and conceptual docs have moved. Most can now be found un
 
 Public-facing narrative and conceptual docs have moved. Most can now be found under the following directories in the new docs:
 
-* explore-analyze: query languages, scripting, machine learning (NLP)
-* deploy-manage: deploying elastic, production guidance, security, and Management  
-* Manage-data: data store, migration, data lifecycle  
-* solutions: core search, playground, hybrid search  
-* troubleshooting: troubleshooting pages
+* **explore-analyze**: query languages, scripting, machine learning (NLP)
+* **deploy-manage**: deploying elastic, production guidance, security, and Management  
+* **manage-data**: data store, migration, data lifecycle  
+* **solutions**: core search, playground, hybrid search  
+* **troubleshooting**: troubleshooting pages
 
 #### What is staying in the Elasticsearch repo?
 
@@ -92,8 +92,9 @@ Public-facing narrative and conceptual docs have moved. Most can now be found un
 
 Public-facing narrative and conceptual docs have moved. Most can now be found under the following directories in the new docs:
 
-* deploy-manage: deploying cloud, managing your cloud organization  
-* troubleshooting: troubleshooting pages
+* **deploy-manage**: deploying cloud
+* **cloud-account**: managing your cloud organization  
+* **troubleshooting**: troubleshooting pages
 
 #### **What is staying in the Cloud repo?**
 
@@ -106,12 +107,12 @@ Public-facing narrative and conceptual docs have moved. Most can now be found un
 
 Public-facing narrative and conceptual docs have moved. Most can now be found under the following directories in the new docs:
 
-* deploy-manage: deploying cloud, managing your cloud organization  
-* troubleshooting: troubleshooting pages
+* **deploy-manage**: deploying cloud, managing your cloud organization  
+* **troubleshooting**: troubleshooting pages
 
 #### What is staying in the Elasticsearch repo?
 
-* Reference content (= anything that is or could be auto-generated): Settings, syntax references, functions lists…  
+* Reference content, anything that is or could be auto-generated): Settings, syntax references, functions lists…  
 * Release notes
 
 ## IA Sections to product areas
@@ -120,12 +121,12 @@ The following section shows a mapping of the different areas in the docs IA to t
 
 | **Area** | **Description** | **Sources (Area / Topic)** |
 | ----- | ----- | ----- |
-| **Get started** | Content in this section focuses on learning about Elasticsearch and the stack, learning about how it can be deployed, and basic environment setup for initial exploration. |  |
-| **Solutions and use cases** | Content in this section focuses on the core solutions themselves and their user cases. | **Search:** core search solution content, playground, hybrid search **Observability:** core observability content **Security:** core security content  |
-| **Manage data** | Content in this section focuses on learning about Elastic data store primitives, evaluating and implementing ingestion and data enrichment technologies, managing the lifecycle of your data and migrating data between clusters. | **Elasticsearch:** data store, migration, data lifecycle **Ingest:** ingesting data into Elasticsearch **Kibana**: Discover, Dashboards, Visualizations, Reporting, Alerting, dev tools. |
-| **Explore and analyze** | Content in this section focusing on querying, visualizing, and exploring data. Additionally it focusing on leveraging machine learning for data analysis and defining and responding to alerts |  **Elasticsearch:**  query languages, scripting, machine learning (NLP)  **Machine Learning:** Anomaly detection, data frame analytics, NLP **Kibana**: Discover, Dashboards, Visualizations, Reporting, Alerting, dev tools. **ResponseOps:** Alerts and Cases |
-| **Deploy and manage** | Content in this section focuses on evaluating deployment options and setting your environment up. This section also contains content around managing, securing, and monitoring your cluster.  | **Elasticsearch:** deploying elastic, production guidance, security, and Management |
-| **Manage your Cloud account** | Content in this section focuses specifically on managing Cloud accounts. |  |
-| **Troubleshoot** | Content in this section is troubleshooting content for the different products as well as how to contact support. | **All troubleshooting content** |
-| **Extend and contribute** | Content in this section focuses on contributing to Elastic products and building plugins, clients, and beats modules. | **Contributions guides for:** Kibana Logstash Beats **Developer guides for:** Integrations Elasticsearch Plugins |
-| **Reference** | Content in this section focuses on manuals for optional products as well as reference materials like query language references, configuration references, etc. | **Elastic APIS Elastic Clients Query Languages APM Agents Kibana:** Reference content, Release notes, Developer guide |
+| **Get started** | Content in this section focuses on learning about Elasticsearch and the stack, learning about how it can be deployed, and basic environment setup for initial exploration. | Overview of Elastic and various topics |
+| **Solutions and use cases** | Content in this section focuses on the core solutions themselves and their user cases. | **Search:** core search solution content, playground, hybrid search <br/>**Observability:** core observability content <br/>**Security:** core security content  |
+| **Manage data** | Content in this section focuses on learning about Elastic data store primitives, evaluating and implementing ingestion and data enrichment technologies, managing the lifecycle of your data and migrating data between clusters. | **Elasticsearch:** data store, migration, data lifecycle <br/>**Ingest:** ingesting data into Elasticsearch <br/>**Kibana**: Discover, Dashboards, Visualizations, Reporting, Alerting, dev tools. |
+| **Explore and analyze** | Content in this section focusing on querying, visualizing, and exploring data. Additionally it focusing on leveraging machine learning for data analysis and defining and responding to alerts |  **Elasticsearch:**  query languages, scripting, machine learning (NLP)  <br/>**Machine Learning:** Anomaly detection, data frame analytics, NLP <br/>**Kibana**: Discover, Dashboards, Visualizations, Reporting, Alerting, dev tools. <br/>**ResponseOps:** Alerts and Cases |
+| **Deploy and manage** | Content in this section focuses on evaluating deployment options and setting your environment up. This section also contains content around managing, securing, and monitoring your cluster.  | **Elasticsearch:** deploying elastic, production guidance, security, and Management <br/>**Cloud:** deploying and managing Elastic Cloud, Elastic Cloud Enterprise, Serverless, and ECK. |
+| **Manage your Cloud account** | Content in this section focuses specifically on managing Cloud accounts. | **Cloud:** Managing your cloud account |
+| **Troubleshoot** | Content in this section is troubleshooting content for the different products as well as how to contact support. | All troubleshooting content |
+| **Extend and contribute** | Content in this section focuses on contributing to Elastic products and building plugins, clients, and beats modules. | **Contributions guides for:** Kibana Logstash Beats <br/>**Developer guides for:** Integrations Elasticsearch Plugins |
+| **Reference** | Content in this section focuses on manuals for optional products as well as reference materials like query language references, configuration references, etc. | Reference content, Release notes, Developer guide |
