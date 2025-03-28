@@ -13,7 +13,7 @@ public record RuleOverviewReference(
 	IReadOnlyCollection<ITocItem> Children,
 	IReadOnlyCollection<string> DetectionRuleFolders
 )
-	: FileReference(TableOfContentsScope, Path, Found, true, Children);
+	: FileReference(TableOfContentsScope, Path, Found, false, Children);
 
 public record RuleReference(
 	ITableOfContentsScope TableOfContentsScope,
