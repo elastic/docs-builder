@@ -100,6 +100,22 @@ public record Applicability
 		Version = AllVersions.Instance
 	};
 
+
+	public string GetLifeCycleName() =>
+		Lifecycle switch
+		{
+			ProductLifecycle.TechnicalPreview => "Technical Preview",
+			ProductLifecycle.Beta => "Beta",
+			ProductLifecycle.Development => "Development",
+			ProductLifecycle.Deprecated => "Deprecated",
+			ProductLifecycle.Coming => "Coming",
+			ProductLifecycle.Discontinued => "Discontinued",
+			ProductLifecycle.Unavailable => "Unavailable",
+			ProductLifecycle.GenerallyAvailable => "GA",
+			_ => throw new ArgumentOutOfRangeException(nameof(Lifecycle), Lifecycle, null)
+		};
+
+
 	public override string ToString()
 	{
 		if (this == GenerallyAvailable)

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using Elastic.Markdown.Myst.Substitution;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 

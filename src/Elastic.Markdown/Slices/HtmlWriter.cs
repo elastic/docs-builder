@@ -121,7 +121,7 @@ public class HtmlWriter(
 			NextDocument = next,
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
-			Applies = markdown.YamlFrontMatter?.AppliesTo,
+			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
 			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,

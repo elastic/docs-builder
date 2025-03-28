@@ -4,6 +4,7 @@
 
 module ``product availability``.``yaml directive``
 
+open Elastic.Markdown.Myst.Directives
 open Elastic.Markdown.Myst.FrontMatter
 open authoring
 open authoring.MarkdownDocumentAssertions

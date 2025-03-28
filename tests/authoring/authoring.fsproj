@@ -43,7 +43,8 @@
 
   <ItemGroup>
     <Compile Include="Inline\Comments.fs"/>
-    <Compile Include="Inline\InlineImages.fs"/>
+    <Compile Include="Inline\AppliesToRole.fs" />
+    <Compile Include="Inline\InlineAppliesTo.fs" />
     <Compile Include="Inline\InlineAnchors.fs"/>
   </ItemGroup>
 

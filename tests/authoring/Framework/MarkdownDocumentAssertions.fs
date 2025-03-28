@@ -40,8 +40,10 @@ module MarkdownDocumentAssertions =
 
 
     [<DebuggerStepThrough>]
-    let appliesToDirective (expectedAvailability: ApplicableTo) (actual: AppliesToDirective array) =
+    let appliesToDirective<'element when 'element :> IApplicableToElement>
+        (expectedAvailability: ApplicableTo) (actual: 'element array) =
         let actual = actual |> Array.tryHead
+
         match actual with
         | Some d ->
             let apply = d.AppliesTo

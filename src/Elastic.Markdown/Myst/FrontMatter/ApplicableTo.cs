@@ -28,6 +28,11 @@ public class WarningCollection : IEquatable<WarningCollection>, IReadOnlyCollect
 	public int Count => _list.Count;
 }
 
+public interface IApplicableToElement
+{
+	ApplicableTo? AppliesTo { get; }
+}
+
 [YamlSerializable]
 public record ApplicableTo
 {
