@@ -37,6 +37,8 @@ public class AssembleSources
 
 	public FrozenDictionary<Uri, TocTopLevelMapping> TocTopLevelMappings { get; }
 
+	public FrozenDictionary<string, string> HistoryMappings { get; }
+
 	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
 
 	public TableOfContentsTreeCollector TreeCollector { get; } = new();
@@ -55,13 +57,14 @@ public class AssembleSources
 	{
 		AssembleContext = assembleContext;
 		TocTopLevelMappings = GetConfiguredSources(assembleContext);
+		HistoryMappings = GetHistoryMapping(assembleContext);
 
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration);
 		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => !c.Repository.Skip)
-			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, assembleContext, c, crossLinkResolver, TreeCollector))
+			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, assembleContext, c, crossLinkResolver, TreeCollector, HistoryMappings))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 
@@ -100,6 +103,55 @@ public class AssembleSources
 				return new KeyValuePair<Uri, TocConfigurationMapping>(kv.Value.Source, mapping);
 			})
 			.ToFrozenDictionary();
+	}
+
+	private static FrozenDictionary<string, string> GetHistoryMapping(AssembleContext context)
+	{
+		var dictionary = new Dictionary<string, string>();
+		var reader = new YamlStreamReader(context.HistoryMappingPath, context.Collector);
+		string? stack = null;
+		foreach (var entry in reader.Read())
+		{
+			switch (entry.Key)
+			{
+				case "stack":
+					stack = reader.ReadString(entry.Entry);
+					break;
+
+				case "mappings":
+					ReadHistoryMappings(dictionary, reader, entry, stack);
+					break;
+			}
+		}
+
+		return dictionary.OrderByDescending(x => x.Key.Length).ToFrozenDictionary();
+
+		static void ReadHistoryMappings(IDictionary<string, string> dictionary, YamlStreamReader reader, YamlToplevelKey entry, string? newStack)
+		{
+			if (entry.Entry.Value is not YamlMappingNode mappings)
+			{
+				reader.EmitWarning($"It wasn't possible to read the mappings");
+				return;
+			}
+
+			foreach (var mapping in mappings)
+			{
+				var mappingKey = $"{((YamlScalarNode)mapping.Key).Value}/";
+				var mappingValue = ((YamlScalarNode)mapping.Value).Value;
+				if (mappingKey.Length == 1 || mappingValue is null)
+				{
+					reader.EmitWarning($"'{mapping.Key}' or '{mapping.Value}' is not a valid mapping");
+					continue;
+				}
+
+				if (mappingValue.Equals("stack", StringComparison.OrdinalIgnoreCase) && newStack is not null)
+					mappingValue = newStack;
+				if (dictionary.TryGetValue(mappingKey, out _))
+					reader.EmitWarning($"'{mappingKey}' is already mapped to '{mappingValue}'");
+				else
+					dictionary[mappingKey] = mappingValue;
+			}
+		}
 	}
 
 

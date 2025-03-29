@@ -7,6 +7,7 @@ using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.IO.PageHistoryMapping;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
@@ -27,8 +28,8 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
-		TableOfContentsTreeCollector treeCollector
-	)
+		TableOfContentsTreeCollector treeCollector,
+		IReadOnlyDictionary<string, string> historyMappings)
 	{
 		AssembleContext = context;
 		Checkout = checkout;
@@ -48,13 +49,16 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.CurrentBranch
 		};
 
+		var historyMapper = new PageHistoryMapper(historyMappings);
+
 		var buildContext = new BuildContext(
 			context.Collector,
 			context.ReadFileSystem,
 			context.WriteFileSystem,
 			path,
 			output,
-			gitConfiguration
+			gitConfiguration,
+			historyMapper
 		)
 		{
 			UrlPathPrefix = env.PathPrefix,

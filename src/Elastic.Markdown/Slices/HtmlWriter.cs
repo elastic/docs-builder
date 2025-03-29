@@ -106,6 +106,8 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
+		var previousVersionUrl = DocumentationSet.Build.HistoryMapper.MapPreviousUrl(markdown.YamlFrontMatter?.MappedPages?.FirstOrDefault());
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,
@@ -128,7 +130,8 @@ public class HtmlWriter(
 			GoogleTagManager = DocumentationSet.Build.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
-			ReportIssueUrl = reportUrl
+			ReportIssueUrl = reportUrl,
+			PreviousVersionUrl = previousVersionUrl
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

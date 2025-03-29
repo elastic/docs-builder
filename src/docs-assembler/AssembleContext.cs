@@ -23,6 +23,8 @@ public class AssembleContext
 
 	public IFileInfo NavigationPath { get; }
 
+	public IFileInfo HistoryMappingPath { get; }
+
 	public IDirectoryInfo CheckoutDirectory { get; set; }
 
 	public IDirectoryInfo OutputDirectory { get; set; }
@@ -59,6 +61,11 @@ public class AssembleContext
 		if (!ReadFileSystem.File.Exists(navigationPath))
 			ExtractAssemblerConfiguration(navigationPath, "navigation.yml");
 		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
+
+		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "historymapping.yml");
+		if (!ReadFileSystem.File.Exists(historyMappingPath))
+			ExtractAssemblerConfiguration(historyMappingPath, "historymapping.yml");
+		HistoryMappingPath = ReadFileSystem.FileInfo.New(historyMappingPath);
 
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? ".artifacts/checkouts");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? ".artifacts/assembly");

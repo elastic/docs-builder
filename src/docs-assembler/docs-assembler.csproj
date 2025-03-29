@@ -32,5 +32,6 @@
   <ItemGroup>
     <EmbeddedResource Include="assembler.yml" />
     <EmbeddedResource Include="navigation.yml" />
+    <EmbeddedResource Include="historymapping.yml" />
   </ItemGroup>
 </Project>
