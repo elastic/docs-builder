@@ -6,6 +6,28 @@ navigation_title: "Quick reference"
 
 Quick guidance on Elastic Docs V3 syntax. 
 
+## Example quick ref entry
+Prose description of this syntax element (note: the heading should link to the full syntax guide entry)
+
+**DOs**<br>
+✅ First _do_ -- not in a bulleted list; use the checkmark as a bullet character and use line breaks<br>
+✅ Second _do_
+
+**DON'Ts**<br>
+❌ First _don't_<br>
+❌ Second _don't_
+
+:::{dropdown} Markdown
+```markdown
+some markdown, **strong**
+```
+:::
+
+:::{dropdown} Output
+some output, **strong**
+:::
+
+
 
 ## Headings
 Title of a page or a section. To create a heading, add number signs `#` in front of a word or phrase. The number of signs corresponds to the heading level. 
