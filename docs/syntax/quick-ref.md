@@ -1,8 +1,12 @@
 ---
-navigation_title: "Quick reference"
+navigation_title: "WIP Quick reference"
 ---
 
-# Syntax quick reference
+# WORK IN PROGRESS Syntax quick reference
+
+:::{warning}
+This page contains WIP tests, not real entries
+:::
 
 Quick guidance on Elastic Docs V3 syntax. 
 
