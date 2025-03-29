@@ -20,9 +20,10 @@ public static class ContentSourceMoniker
 
 	public static string CreateString(string repo, string? path)
 	{
-		if (string.IsNullOrWhiteSpace(path))
+		path = path?.Replace("\\", "/").Trim('/');
+		if (string.IsNullOrWhiteSpace(path) || path == ".")
 			return $"{repo}://";
-		return $"{repo}://{path.Replace("\\", "/").Trim('/')}/";
+		return $"{repo}://{path}/";
 	}
 }
 
@@ -206,9 +207,14 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				{
 					var extension = _configuration.EnabledExtensions.OfType<DetectionRulesDocsBuilderExtension>().First();
 					children = extension.CreateTableOfContentItems(_configuration, parentPath, detectionRules, Files);
+					var overviewPath = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
+					var landingPage = new RuleOverviewReference(this, overviewPath, fileFound, children, detectionRules);
+					return [landingPage];
 				}
 			}
-			return [new FileReference(this, $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar), fileFound, hiddenFile, children ?? [])];
+
+			var path = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
+			return [new FileReference(this, path, fileFound, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)

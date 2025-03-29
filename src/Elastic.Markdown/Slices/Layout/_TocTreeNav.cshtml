@@ -21,6 +21,20 @@
 			</a>
 		</li>
 	}
+	else if (item is GroupNavigationItem { Group: { NavigationItems.Count: 0, Index: not null } } group)
+	{
+		var f = group.Group.Index;
+		<li class="flex group/li pr-4 @(isTopLevel ? "font-semibold py-8 pr-4 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
+			<a
+				href="@f.Url"
+				@Htmx.GetHxAttributes(f.Url, Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
+				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				id="page-@id"
+			>
+				@f.NavigationTitle
+			</a>
+		</li>
+	}
 	else if (item is GroupNavigationItem folder)
 	{
 		var g = folder.Group;

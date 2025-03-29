@@ -7,6 +7,7 @@ using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
@@ -28,13 +29,27 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		ref int fileIndex,
 		int index)
 	{
+
 	}
 
+	private DetectionRuleOverviewFile? _overviewFile;
 	public void Visit(DocumentationFile file, ITocItem tocItem)
 	{
+		// TODO the parsing of rules should not happen at ITocItem reading time.
 		// ensure the file has an instance of the rule the reference parsed.
 		if (file is DetectionRuleFile df && tocItem is RuleReference r)
+		{
 			df.Rule = r.Rule;
+			_overviewFile?.AddDetectionRuleFile(df, r);
+
+		}
+
+		if (file is DetectionRuleOverviewFile of && tocItem is RuleOverviewReference or)
+		{
+			var rules = or.Children.OfType<RuleReference>().ToArray();
+			of.Rules = rules;
+			_overviewFile = of;
+		}
 	}
 
 	public DocumentationFile? CreateDocumentationFile(IFileInfo file, IDirectoryInfo sourceDirectory, DocumentationSet documentationSet)
@@ -44,6 +59,16 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 
 		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, documentationSet.MarkdownParser, Build, documentationSet);
 	}
+
+	public MarkdownFile? CreateMarkdownFile(
+		IFileInfo file,
+		IDirectoryInfo sourceDirectory,
+		MarkdownParser markdownParser,
+		BuildContext context,
+		DocumentationSet documentationSet) =>
+		file.Name == "index.md"
+			? new DetectionRuleOverviewFile(file, sourceDirectory, documentationSet.MarkdownParser, Build, documentationSet)
+			: null;
 
 	public bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile)
 	{
@@ -80,6 +105,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 			var children = ReadDetectionRuleFolder(configuration, parentPath, files, detectionRuleFolder);
 			tocItems.AddRange(children);
 		}
+
 		return tocItems
 			.OrderBy(d => d is RuleReference r ? r.Rule.Name : null, StringComparer.OrdinalIgnoreCase)
 			.ToArray();
