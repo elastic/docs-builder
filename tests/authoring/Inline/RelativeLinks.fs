@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elemenents``.``relative links``
+module ``inline elements``.``relative links``
 
 open Xunit
 open authoring
@@ -29,7 +29,12 @@ Through various means $$$including-this-inline-syntax$$$
 [link to parent](../parent.md)
 
 [link to parent](../parent.md#some-header)
+
+[link to sibling](./file2.md)
         """
+        Markdown "deeply/nested/file2.md" """
+# file2.md
+"""
         Markdown "deeply/parent.md" """
 # parent.md
 
@@ -44,6 +49,7 @@ Through various means $$$including-this-inline-syntax$$$
              <p><a href="/#and-anchored">link to root</a></p>
              <p><a href="/deeply/parent">link to parent</a></p>
              <p><a href="/deeply/parent#some-header">link to parent</a></p>
+             <p><a href="/deeply/nested/file2">link to sibling</a></p>
          """
 
     [<Fact>]

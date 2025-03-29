@@ -8,11 +8,10 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
-using Spectre.Console;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler;
@@ -33,6 +32,7 @@ public record TocConfigurationMapping
 
 public class AssembleSources
 {
+	public AssembleContext AssembleContext { get; }
 	public FrozenDictionary<string, AssemblerDocumentationSet> AssembleSets { get; }
 
 	public FrozenDictionary<Uri, TocTopLevelMapping> TocTopLevelMappings { get; }
@@ -51,16 +51,17 @@ public class AssembleSources
 		return sources;
 	}
 
-	private AssembleSources(AssembleContext context, Checkout[] checkouts)
+	private AssembleSources(AssembleContext assembleContext, Checkout[] checkouts)
 	{
-		TocTopLevelMappings = GetConfiguredSources(context);
+		AssembleContext = assembleContext;
+		TocTopLevelMappings = GetConfiguredSources(assembleContext);
 
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, context.Configuration);
-		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, context.Environment);
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration);
+		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => !c.Repository.Skip)
-			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, context, c, crossLinkResolver, TreeCollector))
+			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, assembleContext, c, crossLinkResolver, TreeCollector))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 
@@ -85,7 +86,7 @@ public class AssembleSources
 				var file = tocFiles.FirstOrDefault(f => f.Exists);
 				if (file is null)
 				{
-					context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Unable to find toc file in {tocDirectory}");
+					assembleContext.Collector.EmitWarning(assembleContext.ConfigurationPath.FullName, $"Unable to find toc file in {tocDirectory}");
 					file = tocFiles.First();
 				}
 
@@ -198,7 +199,8 @@ public class AssembleSources
 			if (source is null)
 				return;
 
-			if (!Uri.TryCreate(source.TrimEnd('/') + '/', UriKind.Absolute, out var sourceUri))
+			source = source.EndsWith("://") ? source : source.TrimEnd('/') + "/";
+			if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
 			{
 				reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 				return;

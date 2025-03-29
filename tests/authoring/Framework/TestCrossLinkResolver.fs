@@ -10,7 +10,7 @@ open System.Collections.Frozen
 open System.Runtime.InteropServices
 open System.Threading.Tasks
 open System.Linq
-open Elastic.Markdown.CrossLinks
+open Elastic.Markdown.Links.CrossLinks
 open Elastic.Markdown.IO.Configuration
 open Elastic.Markdown.IO.State
 
@@ -27,7 +27,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
         member this.UriResolver = uriResolver
 
-        member this.FetchLinks() =
+        member this.FetchLinks(ctx) =
             let redirects = LinkReference.SerializeRedirects config.Redirects
             // language=json
             let json = $$"""{

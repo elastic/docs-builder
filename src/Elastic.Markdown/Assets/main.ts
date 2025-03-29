@@ -1,4 +1,3 @@
-// @ts-nocheck
 import "htmx.org"
 import "htmx-ext-preload"
 import "htmx-ext-head-support"
@@ -8,11 +7,21 @@ import {initHighlight} from "./hljs";
 import {initTabs} from "./tabs";
 import {initCopyButton} from "./copybutton";
 import {initNav} from "./pages-nav";
+import {openDetailsWithAnchor} from "./open-details-with-anchor";
 import {$, $$} from "select-dom"
-
 
 import { UAParser } from 'ua-parser-js';
 const { getOS } = new UAParser();
+
+document.addEventListener('htmx:load', function() {
+	initTocNav();
+	initHighlight();
+	initCopyButton();
+	initTabs();
+	initNav()
+	openDetailsWithAnchor();
+});
+
 
 // Don't remove style tags because they are used by the elastic global nav.
 document.addEventListener('htmx:removingHeadElement', function(event) {
@@ -32,14 +41,6 @@ document.addEventListener('htmx:beforeRequest', function(event) {
 			window.open(event.detail.requestConfig.path, '_blank', 'noopener,noreferrer');
 		}
 	}
-});
-
-document.addEventListener('htmx:load', function() {
-	initTocNav();
-	initHighlight();
-	initCopyButton();
-	initTabs();
-	initNav();
 });
 
 document.body.addEventListener('htmx:oobBeforeSwap', function(event) {

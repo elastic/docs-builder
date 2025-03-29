@@ -4,15 +4,15 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
 public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration) : CrossLinkFetcher(logger)
 {
-	public override async Task<FetchedCrossLinks> Fetch()
+	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
 		var linkReferences = new Dictionary<string, LinkReference>();
 		var linkIndexEntries = new Dictionary<string, LinkIndexEntry>();
@@ -27,9 +27,9 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 			if (repository.Skip)
 				continue;
 
-			var linkReference = await Fetch(repositoryName);
+			var linkReference = await Fetch(repositoryName, ctx);
 			linkReferences.Add(repositoryName, linkReference);
-			var linkIndexReference = await GetLinkIndexEntry(repositoryName);
+			var linkIndexReference = await GetLinkIndexEntry(repositoryName, ctx);
 			linkIndexEntries.Add(repositoryName, linkIndexReference);
 		}
 

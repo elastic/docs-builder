@@ -8,9 +8,9 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
-using Elastic.Markdown.InboundLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
+using Elastic.Markdown.Links.InboundLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;

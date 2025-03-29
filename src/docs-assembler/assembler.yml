@@ -3,14 +3,18 @@ environments:
     uri: https://www.elastic.co
     path_prefix: docs
     allow_indexing: false
-    enable_google_tag_manager: true
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
-    enable_google_tag_manager: true
-  preview:
-    uri: https://docs-v3-preview.elastic.dev
-    path_prefix:
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
+      auth: nPocPUG0wiH68jsVeyRSxA
+      preview: env-507
+      cookies_win: x
   dev:
     uri: http://localhost:4000
     path_prefix: docs
@@ -35,11 +39,11 @@ references:
   cloud:
     current: master
   curator:
-    skip: true
     current: master
+  detection-rules:
+    checkout_strategy: full
   ecctl:
     current: master
-    skip: true
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -60,18 +64,14 @@ references:
   elasticsearch-php:
   elasticsearch-py:
     # https://github.com/elastic/elasticsearch-rs ci checks not running?
-  elasticsearch-rs:
-    skip: true
+  # elasticsearch-rs:
+  #   skip: true
   elasticsearch-ruby:
   elasticsearch:
   go-elasticsearch:
   integrations:
   kibana:
-  logstash-docs:
-    skip: true
+  logstash-docs-md:
   logstash:
   search-ui:
   integration-docs:
-  security-docs:
-    # wait for move to https://github.com/elastic/detection-rules/pull/4507/files
-    skip: true

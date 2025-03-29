@@ -36,7 +36,13 @@ public class DocumentationWebHost
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
 		var collector = new LiveModeDiagnosticsCollector(logger);
-		_context = new BuildContext(collector, fileSystem, fileSystem, path, null);
+
+		var hostUrl = $"http://localhost:{port}";
+
+		_context = new BuildContext(collector, fileSystem, fileSystem, path, null)
+		{
+			CanonicalBaseUrl = new Uri(hostUrl),
+		};
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
@@ -51,7 +57,7 @@ public class DocumentationWebHost
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
 
-		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
+		_ = builder.WebHost.UseUrls(hostUrl);
 
 		_webApplication = builder.Build();
 		SetUpRoutes();

@@ -7,24 +7,17 @@
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
 	data-root-path="@Model.Link("/")">
-@if (Model.EnableGoogleTagManager)
+@if (Model.GoogleTagManager.Enabled)
 {
-	<!-- Google Tag Manager (noscript) -->
-	<noscript>
-		<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNJMG2M&gtm_auth=nPocPUG0wiH68jsVeyRSxA&gtm_preview=env-507&gtm_cookies_win=x"
-		        height="0"
-		        width="0"
-		        style="display:none;visibility:hidden">
-		</iframe>
-	</noscript>
-	<!-- End Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
+	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 }
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
 	@functions {
 		private async Task DefaultLayout()
 		{
-			<div class="container grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
+			<div class="container h-full grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
 				@await RenderPartialAsync(_TableOfContents.Create(Model))
 				<main id="content-container" class="w-full flex flex-col order-2 relative pb-30 overflow-x-hidden">

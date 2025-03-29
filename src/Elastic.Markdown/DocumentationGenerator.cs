@@ -5,10 +5,10 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Slices;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
@@ -93,7 +93,7 @@ public class DocumentationGenerator
 			return;
 
 		_logger.LogInformation($"Fetching external links");
-		_ = await Resolver.FetchLinks();
+		_ = await Resolver.FetchLinks(ctx);
 
 		await ResolveDirectoryTree(ctx);
 

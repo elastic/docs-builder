@@ -39,14 +39,6 @@ div.highlight  {
 	opacity: 1;
 }
 
-.highlight button.copybtn:hover {
-    /*background-color: rgb(235, 235, 235);*/
-}
-
-.highlight button.copybtn:active {
-    /*background-color: rgb(187, 187, 187);*/
-}
-
 /**
  * A minimal CSS-only tooltip copied from:
  *   https://codepen.io/mildrenben/pen/rVBrpK
@@ -57,9 +49,6 @@ div.highlight  {
  */
  .o-tooltip--left {
   position: relative;
- }
- 
- .o-tooltip--left.success:after {
  }
 
  .o-tooltip--left:after {

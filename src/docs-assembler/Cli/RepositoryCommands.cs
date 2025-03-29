@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
@@ -11,7 +10,6 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Markdown.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -78,6 +76,14 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			AllowIndexing = allowIndexing ?? false,
 		};
 
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
+		{
+			assembleContext.Collector.Channel.TryComplete();
+			await assembleContext.Collector.StopAsync(ctx);
+			return 1;
+		}
+
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkouts = cloner.GetAll().ToArray();
 		if (checkouts.Length == 0)
@@ -88,11 +94,14 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
-		var pathProvider = new GlobalNavigationPathProvider(assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(assembleContext, navigation, assembleSources);
-		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
+		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
+		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
 
+		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
+
+		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+		sitemapBuilder.Generate();
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;

@@ -13,27 +13,100 @@ using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;
 
-#pragma warning disable xUnit1004
-
 public class GlobalNavigationPathProviderTests
 {
+	private DiagnosticsCollector Collector { get; }
+	private AssembleContext Context { get; }
+	private FileSystem FileSystem { get; }
+	private IDirectoryInfo CheckoutDirectory { get; set; }
 
-	[Fact(Skip = "Requires local checkout folder")]
+	private bool HasCheckouts() => CheckoutDirectory.Exists;
+
+	public GlobalNavigationPathProviderTests()
+	{
+		FileSystem = new FileSystem();
+		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+		);
+		Collector = new DiagnosticsCollector([]);
+		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+	}
+
+	private Checkout CreateCheckout(IFileSystem fs, string name) =>
+		new()
+		{
+			Repository = new Repository
+			{
+				Name = name,
+				Origin = $"elastic/{name}"
+			},
+			HeadReference = Guid.NewGuid().ToString(),
+			Directory = fs.DirectoryInfo.New(fs.Path.Combine(Path.Combine(CheckoutDirectory.FullName, name)))
+		};
+
+	private async Task<AssembleSources> Setup()
+	{
+		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		string[] nar = [NarrativeRepository.RepositoryName];
+		var repos = nar.Concat(Context.Configuration.ReferenceRepositories
+				.Where(kv => !kv.Value.Skip)
+				.Select(kv => kv.Value.Name)
+			)
+			.ToArray();
+		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
+
+		var assembleSources = await AssembleSources.AssembleAsync(Context, checkouts, TestContext.Current.CancellationToken);
+		return assembleSources;
+	}
+
+	[Fact]
+	public async Task ReadAllPathPrefixes()
+	{
+		await using var collector = new DiagnosticsCollector([]);
+
+		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+
+		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
+
+		pathPrefixes.Should().NotBeEmpty();
+		pathPrefixes.Should().Contain(new Uri("eland://reference/elasticsearch/clients/eland/"));
+	}
+
+	[Fact]
+	public async Task PathProvider()
+	{
+		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+
+		var assembleSources = await Setup();
+
+		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
+		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, Context);
+
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
+		pathProvider.TableOfContentsPrefixes.Should().Contain("detection-rules://");
+	}
+
+
+	[Fact]
 	public async Task ParsesReferences()
 	{
+		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+
 		var expectedRoot = new Uri("docs-content://reference/");
-		var expectedParent = new Uri("docs-content://reference/ingestion-tools/apm/agents/");
+		var expectedParent = new Uri("docs-content://reference/apm-agents/");
 		var sut = new Uri("apm-agent-dotnet://reference/");
 		var clients = new Uri("docs-content://reference/elasticsearch-clients/");
-		var fs = new FileSystem();
-		var (assembleContext, assembleSources) = await Setup(fs);
+		var assembleSources = await Setup();
 
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(sut);
 		assembleSources.TocTopLevelMappings[sut].TopLevelSource.Should().Be(expectedRoot);
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(expectedRoot);
 		assembleSources.TocTopLevelMappings[sut].ParentSource.Should().Be(expectedParent);
 
-		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
+
+		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
 		referenceToc.Should().NotBeNull();
 		referenceToc!.TocReferences.Should().NotContainKey(clients);
@@ -78,19 +151,21 @@ public class GlobalNavigationPathProviderTests
 		dotnetAgentNav.Should().NotBeNull();
 
 		var resolved = navigation.NavigationItems;
+		resolved.Should().NotBeNull();
 
 	}
 
 
 
-	[Fact(Skip = "Requires local checkout folder")]
+	[Fact]
 	public async Task ParsesGlobalNavigation()
 	{
+		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+
 		var expectedRoot = new Uri("docs-content://extend");
 		var kibanaExtendMoniker = new Uri("kibana://extend/");
-		var fs = new FileSystem();
 
-		var (assembleContext, assembleSources) = await Setup(fs);
+		var assembleSources = await Setup();
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(kibanaExtendMoniker);
 		assembleSources.TocTopLevelMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
@@ -111,49 +186,21 @@ public class GlobalNavigationPathProviderTests
 		kibanaConfigMapping.TableOfContentsConfiguration.Should().NotBeNull();
 		assembleSources.TocConfigurationMapping[kibanaExtendMoniker].Should().NotBeNull();
 
-		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
+		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		navigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
 		navigationFile.TableOfContents.Count.Should().BeLessThan(20);
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		navigation.TopLevelItems.Count.Should().BeLessThan(20);
 		var resolved = navigation.NavigationItems;
+		resolved.Should().NotBeNull();
 	}
 
-	private static async Task<(AssembleContext assembleContext, AssembleSources assembleSources)> Setup(FileSystem fs)
-	{
-		await using var collector = new DiagnosticsCollector([]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
-
-		var assembleContext = new AssembleContext("dev", collector, fs, fs, null, null);
-
-		string[] nar = [NarrativeRepository.RepositoryName];
-		var repos = nar.Concat(assembleContext.Configuration.ReferenceRepositories
-				.Where(kv => !kv.Value.Skip)
-				.Select(kv => kv.Value.Name)
-			)
-			.ToArray();
-		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
-
-		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
-		return (assembleContext, assembleSources);
-	}
-
-	public static Checkout CreateCheckout(IFileSystem fs, string name) =>
-		new()
-		{
-			Repository = new Repository
-			{
-				Name = name,
-				Origin = $"elastic/{name}"
-			},
-			HeadReference = Guid.NewGuid().ToString(),
-			Directory = fs.DirectoryInfo.New(fs.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts", name))
-		};
-
-	[Fact(Skip = "Requires local checkout folder")]
+	[Fact]
 	public async Task UriResolving()
 	{
+		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+
 		await using var collector = new DiagnosticsCollector([]);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 

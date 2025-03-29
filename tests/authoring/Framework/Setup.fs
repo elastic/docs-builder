@@ -11,7 +11,6 @@ open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open Elastic.Markdown
-open Elastic.Markdown.CrossLinks
 open Elastic.Markdown.IO
 open JetBrains.Annotations
 open Xunit

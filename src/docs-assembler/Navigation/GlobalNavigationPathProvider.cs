@@ -2,20 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
-using Documentation.Assembler.Sourcing;
 using Elastic.Markdown;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.IO.Navigation;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Navigation;
 
@@ -24,66 +17,54 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 	private readonly AssembleSources _assembleSources;
 	private readonly AssembleContext _context;
 
-	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
+	public ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
+	private ImmutableSortedSet<string> PhantomPrefixes { get; }
 
-	public GlobalNavigationPathProvider(AssembleSources assembleSources, AssembleContext context)
+	public GlobalNavigationPathProvider(GlobalNavigationFile navigationFile, AssembleSources assembleSources, AssembleContext context)
 	{
 		_assembleSources = assembleSources;
 		_context = context;
 
 		TableOfContentsPrefixes = [..assembleSources.TocTopLevelMappings
 			.Values
-			.Select(v => v.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
+		];
+
+		PhantomPrefixes = [..navigationFile.Phantoms
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
+			.OrderByDescending(v => v.Length)
+			.ToArray()
 		];
 	}
 
-	/*
-	public IFileInfo? LocateDocSetYaml(Uri crossLinkUri)
-	{
-		if (!TryGetCheckout(crossLinkUri, out var checkout))
-			return null;
-
-		var tocDirectory = _readFs.DirectoryInfo.New(Path.Combine(checkout.Directory.FullName, crossLinkUri.Host, crossLinkUri.AbsolutePath.TrimStart('/')));
-		if (!tocDirectory.Exists)
-		{
-			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find toc directory: {tocDirectory.FullName}");
-			return null;
-		}
-
-		var docsetYaml = _readFs.FileInfo.New(Path.Combine(tocDirectory.FullName, "docset.yml"));
-		var tocYaml = _readFs.FileInfo.New(Path.Combine(tocDirectory.FullName, "toc.yml"));
-		if (!docsetYaml.Exists && !tocYaml.Exists)
-		{
-			_context.Collector.EmitError(_context.NavigationPath, $"Unable to find docset.yml or toc.yml in: {tocDirectory.FullName}");
-			return null;
-		}
-
-		return docsetYaml.Exists ? docsetYaml : tocYaml;
-	}
-
-	public bool TryGetCheckout(Uri crossLinkUri, [NotNullWhen(true)] out Checkout? checkout)
-	{
-		if (_checkoutsLookup.TryGetValue(crossLinkUri.Scheme, out checkout))
-			return true;
-
-		_context.Collector.EmitError(_context.ConfigurationPath,
-			!_repoConfigLookup.TryGetValue(crossLinkUri.Scheme, out _)
-				? $"Repository: '{crossLinkUri.Scheme}' is not defined in assembler.yml"
-				: $"Unable to find checkout for repository: {crossLinkUri.Scheme}"
-		);
-		return false;
-	}*/
-
 	public IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
 	{
+
 		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
 			return defaultOutputFile;
 
+
+
+		var repositoryName = documentationSet.Build.Git.RepositoryName;
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
-		var repositoryName = documentationSet.Build.Git.RepositoryName;
+		if (repositoryName == "detection-rules")
+		{
+			var output = DetectionRuleFile.OutputPath(defaultOutputFile, documentationSet.Build);
+			var md = fs.FileInfo.New(Path.ChangeExtension(output.FullName, "md"));
+			relativePath = Path.GetRelativePath(documentationSet.OutputDirectory.FullName, md.FullName);
+		}
+
 
 		var l = ContentSourceMoniker.CreateString(repositoryName, relativePath).TrimEnd('/');
 		var lookup = l.AsSpan();
@@ -124,13 +105,23 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			if (relativePath.EndsWith(".asciidoc", StringComparison.Ordinal))
 				return null;
 
+			foreach (var prefix in PhantomPrefixes)
+			{
+				if (lookup.StartsWith(prefix, StringComparison.Ordinal))
+					return null;
+			}
+
 			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", repositoryName, relativePath);
 			_context.Collector.EmitError(_context.NavigationPath, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
 			return fs.FileInfo.New(fallBack);
 		}
 
 		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
-		var newRelativePath = relativePath.AsSpan().TrimStart(originalPath).TrimStart('/').ToString();
+		var relativePathSpan = relativePath.AsSpan();
+		var newRelativePath = relativePathSpan.StartsWith(originalPath, StringComparison.Ordinal)
+			? relativePathSpan.Slice(originalPath.Length).TrimStart('/').ToString()
+			: relativePathSpan.TrimStart(originalPath).TrimStart('/').ToString();
+
 		var path = fs.Path.Combine(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
 
 		return fs.FileInfo.New(path);

@@ -6,6 +6,15 @@ using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
+public record RuleOverviewReference(
+	ITableOfContentsScope TableOfContentsScope,
+	string Path,
+	bool Found,
+	IReadOnlyCollection<ITocItem> Children,
+	IReadOnlyCollection<string> DetectionRuleFolders
+)
+	: FileReference(TableOfContentsScope, Path, Found, false, Children);
+
 public record RuleReference(
 	ITableOfContentsScope TableOfContentsScope,
 	string Path,
@@ -13,4 +22,4 @@ public record RuleReference(
 	bool Found,
 	IReadOnlyCollection<ITocItem> Children, DetectionRule Rule
 )
-	: FileReference(TableOfContentsScope, Path, Found, false, Children);
+	: FileReference(TableOfContentsScope, Path, Found, true, Children);

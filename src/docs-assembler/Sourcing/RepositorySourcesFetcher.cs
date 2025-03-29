@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
-using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using ProcNet;
@@ -134,6 +133,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 			context.Collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 	}
 
+	// ReSharper disable once UnusedMember.Local
 	private string Capture(IDirectoryInfo? workingDirectory, string binary, params string[] args)
 	{
 		var arguments = new StartArguments(binary, args)

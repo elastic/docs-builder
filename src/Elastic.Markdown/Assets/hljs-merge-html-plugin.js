@@ -129,7 +129,6 @@ export const mergeHTMLPlugin = (function () {
       function attributeString(attr) {
         return ' ' + attr.nodeName + '="' + escapeHTML(attr.value) + '"';
       }
-      // @ts-ignore
       result += '<' + tag(node) + [].map.call(node.attributes, attributeString).join('') + '>';
     }
 

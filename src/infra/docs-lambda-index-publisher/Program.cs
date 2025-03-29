@@ -8,7 +8,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Links.CrossLinks;
 
 await LambdaBootstrapBuilder.Create(Handler)
 	.Build()
@@ -57,10 +57,13 @@ static async Task<string> Handler(ILambdaContext context)
 				if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
 					existingEntry[branch] = entry;
 				else
+				{
 					linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
 					{
 						{ branch, entry }
 					});
+				}
+
 				Console.WriteLine(entry);
 			}
 

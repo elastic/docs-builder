@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
@@ -10,6 +11,7 @@ namespace Elastic.Markdown.Slices;
 
 public class IndexViewModel
 {
+	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
@@ -24,10 +26,13 @@ public class IndexViewModel
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
+	public required string? ReportIssueUrl { get; init; }
 	public required ApplicableTo? Applies { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
-	public required bool EnableGoogleTagManager { get; init; }
+
+	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 }
@@ -49,10 +54,10 @@ public class LayoutViewModel
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
+	public required string? ReportIssueUrl { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
-	public required bool EnableGoogleTagManager { get; init; }
-
+	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
 	public required FeatureFlags Features { get; init; }
 

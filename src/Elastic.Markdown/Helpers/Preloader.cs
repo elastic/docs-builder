@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -11,7 +9,7 @@ namespace Elastic.Markdown.Helpers;
 
 public static partial class FontPreloader
 {
-	private static IReadOnlyCollection<string>? FontUriCache = null!;
+	private static IReadOnlyCollection<string>? FontUriCache;
 
 	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync(string? urlPrefix) => FontUriCache ??= await LoadFontUrisAsync(urlPrefix);
 	private static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync(string? urlPrefix)

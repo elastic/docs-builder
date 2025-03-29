@@ -5,7 +5,7 @@
 	public LayoutViewModel LayoutModel => new()
 	{
 		DocSetName = Model.DocSetName,
-		Title = $"Elastic Documentation: {Model.Title}",
+		Title = Model.CurrentDocument.Parent == null ? Model.Title : $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
 		CurrentDocument = Model.CurrentDocument,
@@ -16,9 +16,10 @@
 		GithubEditUrl = Model.GithubEditUrl,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
-		EnableGoogleTagManager = Model.EnableGoogleTagManager,
+		GoogleTagManager = Model.GoogleTagManager,
 		Features = Model.Features,
-		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
+		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
+		ReportIssueUrl = Model.ReportIssueUrl
 	};
 }
 <section id="elastic-docs-v3">

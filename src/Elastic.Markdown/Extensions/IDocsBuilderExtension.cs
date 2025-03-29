@@ -7,6 +7,7 @@ using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Extensions;
 
@@ -44,4 +45,6 @@ public interface IDocsBuilderExtension
 		Func<BuildContext, IDirectoryInfo, DocumentationFile[]> scanDocumentationFiles,
 		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
 	);
+
+	MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser, BuildContext context, DocumentationSet documentationSet);
 }
