@@ -229,13 +229,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
 		if (linkMarkdown is not null)
 			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
-<<<<<<< HEAD
 
 		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
 		UpdateLinkUrl(link, url, context, anchor);
-=======
 		return linkMarkdown;
->>>>>>> origin/main
 	}
 
 	private static (string url, string? anchor) SplitUrlAndAnchor(string fullUrl)
