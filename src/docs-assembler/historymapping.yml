@@ -31,7 +31,7 @@ mappings:
   en/cloud-on-k8s: 2.16
   en/elasticsearch/client/curator: 8.0
   en/ecctl: 1.14
-  en/ecs: stack
+  en/ecs: 8.17
   en/ecs-logging/dotnet: undefined
   en/ecs-logging: undefined
   en/ecs-logging/go-logrus: undefined
