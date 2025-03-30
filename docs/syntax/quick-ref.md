@@ -111,6 +111,7 @@ Use admonitions to draw attention to content that is different than the main bod
 
 **DOs**<br>
 ✅ Use :open: <bool> to collapse long content that takes too much space.<br>
+
 **DON'Ts**<br>
 ❌ Overload the page with too many admonitions. <br>
 
@@ -165,14 +166,47 @@ When none of the above apply.
 
 ## Applies to
 
-Allows you to annotate a page or section based on its applicability to a specific product or version.
+Allows you to annotate a page or a section based on its applicability to a specific product or version.
 
 **DOs**<br>
-✅ Put `{applies_to}` immediately before the heading<br>
+✅ To annotate a page, put `{applies_to}` in the YAML frontmatter<br>
+✅ To annotate a section, put `{applies_to}` immediately before the heading<br>
+
 **DON'Ts**<br>
 ❌ Use in admonitions yet.<br> 
 
+:::{dropdown} Page annotations
+```markdown
+---
+applies_to:
+  stack: ga 9.1
+  deployment:
+    eck: ga 9.0
+    ess: beta 9.1
+    ece: discontinued 9.2.0
+    self: unavailable 9.3.0
+  serverless:
+    security: ga 9.0.0
+    elasticsearch: beta 9.1.0
+    observability: discontinued 9.2.0
+  product: coming 9.5, discontinued 9.7
+---
+```
+![annotations rendered](img/annotations.png)
+:::
 
+:::{dropdown} Section annotations
+```markdown
+#### Stack only
+```yaml {applies_to}
+stack: ga 9.1
+```
+
+#### Stack only
+```yaml {applies_to}
+stack: ga 9.1
+```
+:::
 
 
 🚧🚧🚧
