@@ -109,17 +109,69 @@ You can also specify a custom anchor link using the following syntax.
 Use admonitions to draw attention to content that is different than the main body.
 (Include examples: Markdown and Rendered)
 
-**Note**: Is relevant but can be ignored.<br>
-**Warning**: Warn the user against decisions they might regret.<br>
-**Tip**: Helps the user make better choices.<br>
-**Important**: Could impact system performance or stability.<br>
-**Plain**: When none of the above apply.<br>
-
 **DOs**<br>
 ✅ Use :open: <bool> to collapse long content that takes too much space.<br>
-
 **DON'Ts**<br>
 ❌ Overload the page with too many admonitions. <br>
+
+:::{dropdown} Note
+```markdown
+:::{note}
+Is relevant but can be ignored.
+It can span multiple lines and supports inline formatting.
+```
+:::{note}
+Is relevant but can be ignored.
+It can span multiple lines and supports inline formatting.
+:::
+
+:::{dropdown} Warning
+```markdown
+:::{warning}
+Warn the user against decisions they might regret.
+```
+:::{warning}
+Warn the user against decisions they might regret.
+:::
+
+
+:::{dropdown} Tip
+```markdown
+:::{tip}
+Helps the user make better choices.
+```
+:::{tip}
+Helps the user make better choices.
+:::
+
+:::{dropdown} Important
+```markdown
+:::{important}
+Could impact system performance or stability.
+```
+:::{important}
+Could impact system performance or stability.
+:::
+
+:::{dropdown} Plain
+```markdown
+:::{admonition}
+When none of the above apply.
+```
+:::{admonition}
+When none of the above apply.
+:::
+
+
+## Applies to
+
+Allows you to annotate a page or section based on its applicability to a specific product or version.
+
+**DOs**<br>
+✅ Put `{applies_to}` immediately before the heading<br>
+**DON'Ts**<br>
+❌ Use in admonitions yet.<br> 
+
 
 
 
