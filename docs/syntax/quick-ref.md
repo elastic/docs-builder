@@ -36,30 +36,17 @@ some output, **strong**
 ## Headings
 Title of a page or a section. To create a heading, add number signs `#` in front of a word or phrase. The number of signs corresponds to the heading level. 
 
-**DOs**
-- ✅ Start every page with Heading 1
-- ✅ Use only one Heading 1 per page
-- ✅ Use a custom anchor link if you use the same heading text multiple times
+**DOs**<br>
+✅ Start every page with Heading 1<br>
+✅ Use only one Heading 1 per page<br>
+✅ Use a custom anchor link if you use the same heading text multiple times
 
-**DON'Ts**
-- ❌ Use headings in tabs or dropdowns
-- ❌ Go deeper than Heading 4
+**DON'Ts**<br>
+❌ Use headings in tabs or dropdowns<br>
+❌ Go deeper than Heading 4
 
-::::{tab-set}
 
-:::{tab-item} Output
-
-# Heading 1
-
-## Heading 2
-
-### Heading 3
-
-#### Heading 4
-:::
-
-:::{tab-item} Markdown
-
+:::{dropdown} Markdown
 ```markdown
 # Heading 1
 ## Heading 2
@@ -67,82 +54,72 @@ Title of a page or a section. To create a heading, add number signs `#` in front
 #### Heading 4
 ```
 :::
-::::
 
+:::{dropdown} Output
+
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+
+:::
 
 ## Anchor links
 
 Anchor links are generated based on the heading text. You will get a hyphened, lowercase, alphanumeric version of any string, with any diacritics removed, whitespace and dashes collapsed, and whitespace trimmed. 
 
-**DOs**
-- ✅ Use always lower case
+**DOs**<br>
+✅ Use always lower case<br>
 
-**DON'Ts**
-- ❌ Put punctuation marks
+**DON'Ts**<br>
+❌ Put punctuation marks<br>
 
 ### Default anchor links
 
-::::{tab-set}
-
-:::{tab-item} Output
-
-#### Hello-World
-
-:::
-
-:::{tab-item} Markdown
-
+:::{dropdown} Markdown
 ```markdown
+#### Hello-World
+```
+:::
+
+:::{dropdown} Output
 
 #### Hello-World
 
-```
-
 :::
-
-::::
-
 
 ### Custom anchor links
 
 You can also specify a custom anchor link using the following syntax.
 
-::::{tab-set}
-
-:::{tab-item} Output
-
-#### Heading [custom-anchor]
-
-:::
-
-:::{tab-item} Markdown
-
+:::{dropdown} Markdown
 ```markdown
+#### Heading [custom-anchor]
+```
+:::
+
+:::{dropdown} Output
 
 #### Heading [custom-anchor]
 
-```
-
 :::
-
-::::
 
 ## Admonitions
 
 Use admonitions to draw attention to content that is different than the main body.
 (Include examples: Markdown and Rendered)
 
-- **Note**: Is relevant but can be ignored.
-- **Warning**: Warn the user against decisions they might regret.
-- **Tip**: Helps the user make better choices.
-- **Important**: Could impact system performance or stability.
-- **Plain**: When none of the above apply.
+**Note**: Is relevant but can be ignored.<br>
+**Warning**: Warn the user against decisions they might regret.<br>
+**Tip**: Helps the user make better choices.<br>
+**Important**: Could impact system performance or stability.<br>
+**Plain**: When none of the above apply.<br>
 
-**DOs**
-- ✅ Use :open: <bool> to collapse long content that takes too much space.
+**DOs**<br>
+✅ Use :open: <bool> to collapse long content that takes too much space.<br>
 
-**DON'Ts**
-- ❌ Overload the page with too many admonitions. 
+**DON'Ts**<br>
+❌ Overload the page with too many admonitions. <br>
 
 
 
