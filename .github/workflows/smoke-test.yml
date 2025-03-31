@@ -13,6 +13,8 @@ jobs:
         include:
           - repository: elastic/docs-content
             landing-page-path-output: /docs/
+          - repository: elastic/elasticsearch
+            landing-page-path-output: /docs/reference
           - repository: elastic/apm-agent-android
             landing-page-path-output: /docs/reference/
             
