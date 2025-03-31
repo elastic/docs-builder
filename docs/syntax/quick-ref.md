@@ -208,5 +208,36 @@ stack: ga 9.1
 ```
 :::
 
+## Code block
+
+Block element that displays multiple lines of code. Start and end a code block with a sequence of three backtick characters ```.
+
+**DOs**<br>
+✅ Add a language identifier to enable syntax highlighting<br>
+
+**DON'Ts**<br>
+❌ Use in admonitions yet.<br> 
+
+:::{dropdown} Markdown
+```markdown
+```yaml
+project:
+  title: MyST Markdown
+  github: https://github.com/jupyter-book/mystmd
+```
+```
+:::
+
+:::{dropdown} Output
+
+```yaml
+project:
+  title: MyST Markdown
+  github: https://github.com/jupyter-book/mystmd
+```
+
+:::
+
+
 
 🚧🚧🚧
