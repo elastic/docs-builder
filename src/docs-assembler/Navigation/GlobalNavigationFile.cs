@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO.Configuration;
@@ -28,6 +29,115 @@ public record GlobalNavigationFile : ITableOfContentsScope
 		ScopeDirectory = _context.NavigationPath.Directory!;
 	}
 
+	public static bool ValidatePathPrefixes(AssembleContext context)
+	{
+		var sourcePathPrefixes = GetAllPathPrefixes(context);
+		var pathPrefixSet = new HashSet<string>();
+		var valid = true;
+		foreach (var pathPrefix in sourcePathPrefixes)
+		{
+			var prefix = $"{pathPrefix.Host}/{pathPrefix.AbsolutePath.Trim('/')}/";
+			if (pathPrefixSet.Add(prefix))
+				continue;
+			var duplicateOf = sourcePathPrefixes.First(p => p.Host == pathPrefix.Host && p.AbsolutePath == pathPrefix.AbsolutePath);
+			context.Collector.EmitError(context.NavigationPath.FullName,
+				$"Duplicate path prefix: {pathPrefix} duplicate: {duplicateOf}"
+			);
+			valid = false;
+		}
+		return valid;
+	}
+
+
+	public static ImmutableHashSet<Uri> GetAllPathPrefixes(AssembleContext context) =>
+		GetSourceUris("toc", context);
+
+	public static ImmutableHashSet<Uri> GetPhantomPrefixes(AssembleContext context) =>
+		GetSourceUris("phantoms", context);
+
+	private static ImmutableHashSet<Uri> GetSourceUris(string key, AssembleContext context)
+	{
+		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
+		var set = new HashSet<Uri>();
+		foreach (var entry in reader.Read())
+		{
+			if (entry.Key == key && key == "toc")
+				ReadPathPrefixes(reader, entry.Entry, set);
+			if (entry.Key == key && key == "phantoms")
+				ReadPhantomTocs(reader, entry.Entry, set);
+		}
+		return set.ToImmutableHashSet();
+
+		static void ReadPhantomTocs(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, HashSet<Uri> hashSet)
+		{
+			if (entry.Value is not YamlSequenceNode sequence)
+			{
+				reader.EmitWarning($"'{entry.Value}' is not an array");
+				return;
+			}
+
+			foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
+			{
+				foreach (var child in tocEntry.Children)
+				{
+					var key = ((YamlScalarNode)child.Key).Value;
+					switch (key)
+					{
+						case "toc":
+							var source = reader.ReadString(child);
+							if (source != null && !source.Contains("://"))
+								source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
+							if (source is not null)
+								_ = hashSet.Add(new Uri(source));
+							break;
+					}
+				}
+			}
+		}
+
+		static void ReadPathPrefixes(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, HashSet<Uri> hashSet, string? parent = null)
+		{
+			if (entry.Key is not YamlScalarNode { Value: not null } scalarKey)
+			{
+				reader.EmitWarning($"key '{entry.Key}' is not string");
+				return;
+			}
+
+			if (entry.Value is not YamlSequenceNode sequence)
+			{
+				reader.EmitWarning($"'{scalarKey.Value}' is not an array");
+				return;
+			}
+
+			foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
+			{
+				var source = ReadToc(reader, tocEntry, ref parent, out var pathPrefix, out var sourceUri);
+				if (sourceUri is not null && pathPrefix is not null)
+				{
+					var pathUri = new Uri($"{sourceUri.Scheme}://{pathPrefix.TrimEnd('/')}/");
+					if (!hashSet.Add(pathUri))
+						reader.EmitError($"Duplicate path prefix in the same repository: {pathUri}", tocEntry);
+				}
+
+				foreach (var child in tocEntry.Children)
+				{
+					var key = ((YamlScalarNode)child.Key).Value;
+					switch (key)
+					{
+						case "children":
+							if (source is null && pathPrefix is null)
+							{
+								reader.EmitWarning("toc entry has no toc or path_prefix defined");
+								continue;
+							}
+
+							ReadPathPrefixes(reader, child, hashSet);
+							break;
+					}
+				}
+			}
+		}
+	}
 	public void EmitWarning(string message) =>
 		_context.Collector.EmitWarning(_context.NavigationPath.FullName, message);
 
@@ -107,56 +217,11 @@ public record GlobalNavigationFile : ITableOfContentsScope
 
 	private TocReference? ReadTocDefinition(YamlStreamReader reader, YamlMappingNode tocEntry, string? parent, int depth)
 	{
-		string? repository = null;
-		string? source = null;
-		string? pathPrefix = null;
-		foreach (var entry in tocEntry.Children)
-		{
-			var key = ((YamlScalarNode)entry.Key).Value;
-			switch (key)
-			{
-				case "toc":
-					source = reader.ReadString(entry);
-					if (source != null && !source.Contains("://"))
-					{
-						parent = source;
-						pathPrefix = source;
-						source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
-					}
+		var source = ReadToc(reader, tocEntry, ref parent, out var pathPrefix, out var sourceUri);
 
-					break;
-				case "repo":
-					repository = reader.ReadString(entry);
-					break;
-				case "path_prefix":
-					pathPrefix = reader.ReadString(entry);
-					break;
-			}
-		}
-
-		if (repository is not null)
-		{
-			if (source is not null)
-				reader.EmitError($"toc config defines 'repo' can not be combined with 'toc': {source}", tocEntry);
-			pathPrefix = string.Join("/", [parent, repository]);
-			source = ContentSourceMoniker.CreateString(repository, parent);
-		}
-
-		if (source is null)
+		if (sourceUri is null)
 			return null;
 
-		if (!Uri.TryCreate(source.TrimEnd('/') + "/", UriKind.Absolute, out var sourceUri))
-		{
-			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
-			return null;
-		}
-
-
-		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
-		if (string.IsNullOrEmpty(pathPrefix))
-			reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
-
-		pathPrefix ??= sourcePrefix;
 
 		if (!_assembleSources.TocConfigurationMapping.TryGetValue(sourceUri, out var mapping))
 		{
@@ -190,4 +255,72 @@ public record GlobalNavigationFile : ITableOfContentsScope
 		return tocReference;
 	}
 
+	private static string? ReadTocSourcePathPrefix(YamlStreamReader reader, YamlMappingNode tocEntry, string? source, out Uri? sourceUri, string? pathPrefix)
+	{
+		sourceUri = null;
+		if (source is null)
+			return pathPrefix;
+
+		source = source.EndsWith("://") ? source : source.TrimEnd('/') + "/";
+		if (!Uri.TryCreate(source, UriKind.Absolute, out sourceUri))
+		{
+			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
+			return pathPrefix;
+		}
+
+		var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
+		if (string.IsNullOrEmpty(pathPrefix))
+			reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
+
+		pathPrefix ??= sourcePrefix;
+		return pathPrefix;
+	}
+
+	private static string? ReadToc(
+		YamlStreamReader reader,
+		YamlMappingNode tocEntry,
+		ref string? parent,
+		out string? pathPrefix,
+		out Uri? sourceUri
+	)
+	{
+		string? repository = null;
+		string? source = null;
+		pathPrefix = null;
+		foreach (var entry in tocEntry.Children)
+		{
+			var key = ((YamlScalarNode)entry.Key).Value;
+			switch (key)
+			{
+				case "toc":
+					source = reader.ReadString(entry);
+					if (source != null && !source.Contains("://"))
+					{
+						parent = source;
+						pathPrefix = source;
+						source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
+					}
+
+					break;
+				case "repo":
+					repository = reader.ReadString(entry);
+					break;
+				case "path_prefix":
+					pathPrefix = reader.ReadString(entry);
+					break;
+			}
+		}
+
+		if (repository is not null)
+		{
+			if (source is not null)
+				reader.EmitError($"toc config defines 'repo' can not be combined with 'toc': {source}", tocEntry);
+			pathPrefix = string.Join("/", [parent, repository]);
+			source = ContentSourceMoniker.CreateString(repository, parent);
+		}
+
+		pathPrefix = ReadTocSourcePathPrefix(reader, tocEntry, source, out sourceUri, pathPrefix);
+
+		return source;
+	}
 }

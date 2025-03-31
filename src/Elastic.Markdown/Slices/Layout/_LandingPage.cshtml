@@ -7,8 +7,8 @@
 		<div class="sr-only">Loading</div>
 	</div>
 	<section class="w-full px-8 lg:px-6 bg-grey-10">
-		<div class="container mx-auto py-16 grid md:grid-cols-2 items-center gap-6">
-			<div class="lg:basis-[50%]">
+		<div class="container mx-auto py-16 grid items-center gap-6">
+			<div>
 				<h1 class="text-4xl font-bold font-sans text-black">Elastic documentation</h1>
 				<p class="mt-4">Find the help you need, wherever you are in your Elastic journey.</p>
 				<div class="flex md:inline-flex gap-3 mt-9">
@@ -17,15 +17,16 @@
 					</a>
 				</div>
 			</div>
-			<div class="lg:basis-[50%]">
-				<img src="https://brand.elastic.co/uploads/SONO6_32yshHjrTME25O8g.png" alt="elastic" class="aspect-video w-full"/>
-			</div>
 		</div>
 	</section>
 
 	<section class="w-full px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
-			<h2 class="font-bold font-sans text-3xl text-ink-dark">Elastic products</h2>
+			<div class="heading-wrapper" id="elastic-products">
+				<h2 class="font-bold font-sans text-3xl text-ink-dark">
+					<a href="#elastic-products">Elastic products</a>
+				</h2>
+			</div>
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
 				<div class="grow rounded-xl border-1 border-grey-20 p-6 bg-white">
 					<div class="flex gap-6 h-full">
@@ -70,7 +71,13 @@
 
 	<section class="w-full px-8 lg:px-6">
 		<div class="container mx-auto py-16">
-			<h2 class="font-bold font-sans text-3xl text-ink-dark">How-to guides</h2>
+			<div class="heading-wrapper" id="how-to-guides">
+				<h2 class="font-bold font-sans text-3xl text-ink-dark">
+					<a href="#how-to-guides">
+						How-to guides
+					</a>
+				</h2>
+			</div>
 			<div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6">
 				<div class="grow rounded-xl border-1 border-grey-20 p-6">
 					<div class="flex gap-6 h-full">
@@ -115,22 +122,26 @@
 					<div class="flex gap-6 h-full">
 						<img loading="lazy" alt="Three people icon" src="@Model.Static("icon-three-people-64-color.svg")" class="size-9"/>
 						<div class="flex flex-col h-full">
-							<p class="font-sans font-bold text-xl">Manage your Elastic Cloud organization</p>
-							<p class="mt-2 grow">Manage the settings for your Elastic Cloud account.</p>
+							<p class="font-sans font-bold text-xl">Manage your Elastic Cloud account and preferences</p>
+							<p class="mt-2 grow">Manage your profile information, preferences, and personal settings.</p>
 							<div class="grid grid-cols-2 mt-6">
 								<a href="@Model.Link("/cloud-account")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View docs</a>
 							</div>
 						</div>
 					</div>
 				</div>
-				
+
 			</div>
 		</div>
 	</section>
 	
 	<section class="w-full px-8 lg:px-6">
 		<div class="container mx-auto py-16">
-			<h2 class="font-bold font-sans text-3xl text-ink-dark">References</h2>
+			<div class="heading-wrapper" id="references">
+				<h2 class="font-bold font-sans text-3xl text-ink-dark">
+					<a href="#references">References</a>
+				</h2>
+			</div>
 			<div class="mt-6 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 				<div class="flex flex-col rounded-xl bg-white border-1 border-grey-20 p-6">
 					<h3 class="font-bold font-sans text-ink-dark text-2xl">Elastic APIs</h3>
@@ -167,23 +178,23 @@
 					<p class="grow mt-3">Browse the client libraries for Elasticsearch.</p>
 					<ul>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/elasticsearch/clients/java" class="font-sans font-bold hover:underline hover:text-black">
 								Java
 							</a>
 						</li>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/elasticsearch/clients/dotnet" class="font-sans font-bold hover:underline hover:text-black">
 								.NET
 							</a>
 						</li>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/elasticsearch/clients/python" class="font-sans font-bold hover:underline hover:text-black">
 								Python
 							</a>
 						</li>
 					</ul>
 					<div class="mt-6">
-						<a href="#" class="link">
+						<a href="/docs/reference/elasticsearch-clients/" class="link">
 							Explore all
 							<svg class="link-arrow"
 							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -197,23 +208,23 @@
 					<p class="grow mt-3">Browse the query language documentation.</p>
 					<ul>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="docs/reference/query-languages/querydsl" class="font-sans font-bold hover:underline hover:text-black">
 								Query DSL
 							</a>
 						</li>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/query-languages/esql" class="font-sans font-bold hover:underline hover:text-black">
 								ES/QL
 							</a>
 						</li>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/query-languages/kql" class="font-sans font-bold hover:underline hover:text-black">
 								KQL
 							</a>
 						</li>
 					</ul>
 					<div class="mt-6">
-						<a href="#" class="link">
+						<a href="/docs/reference/query-languages/" class="link">
 							Explore all
 							<svg class="link-arrow"
 							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -227,23 +238,23 @@
 					<p class="grow mt-3">Browse the agents for Elastic APM.</p>
 					<ul>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/apm/agents/rum-js" class="font-sans font-bold hover:underline hover:text-black">
 								RUM JavaScript
 							</a>
 						</li>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/apm/agents/java" class="font-sans font-bold hover:underline hover:text-black">
 								Java
 							</a>
 						</li>
 						<li class="mt-3">
-							<a href="#" class="font-sans font-bold hover:underline hover:text-black">
+							<a href="/docs/reference/apm/agents/dotnet" class="font-sans font-bold hover:underline hover:text-black">
 								.NET
 							</a>
 						</li>
 					</ul>
 					<div class="mt-6">
-						<a href="#" class="link">
+						<a href="/docs/reference/apm-agents/" class="link">
 							Explore all
 							<svg class="link-arrow"
 							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -267,7 +278,13 @@
 
 	<section class="w-full px-8 lg:px-6 bg-grey-10">
 		<div class="container mx-auto py-16">
-			<h2 class="font-bold font-sans text-3xl text-ink-dark">Product resources</h2>
+			<div class="heading-wrapper" id="product-resources">
+				<h2 class="font-bold font-sans text-3xl text-ink-dark">
+					<a href="#product-resources">
+						Product resources
+					</a>
+				</h2>
+			</div>
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
 				<div class="flex flex-col rounded-xl bg-black text-white p-6">
 					<h3 class="font-sans font-bold text-2xl">Releases</h3>
@@ -305,10 +322,10 @@
 					<h3 class="font-sans font-bold text-2xl">Contribute and extend</h3>
 					<p class="grow mt-4">Learn how to contribute to Elastic products and extend Elastic capabilities.</p>
 					<div class="mt-6 grid grid-cols-1 gap-6 text-center">
-						<a href="https://docs-v3-preview.elastic.dev/elastic/asciidocalypse/tree/main/kibana/docs/extend/" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
+						<a href="/docs/extend/kibana" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
 							Start contributing
 						</a>
-						<a href="https://docs-v3-preview.elastic.dev/elastic/asciidocalypse/tree/main/elasticsearch/docs/extend/" target="_blank" rel="noopener noreferrer" class="link text-white">
+						<a href="/docs/extend/" target="_blank" rel="noopener noreferrer" class="link text-white">
 							Extend Elastic
 							<svg class="link-arrow"
 							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

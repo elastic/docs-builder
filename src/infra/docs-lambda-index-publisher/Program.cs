@@ -8,7 +8,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Links.CrossLinks;
 
 await LambdaBootstrapBuilder.Create(Handler)
 	.Build()

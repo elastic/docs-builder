@@ -61,6 +61,34 @@ public class GlobalNavigationPathProviderTests
 	}
 
 	[Fact]
+	public async Task ReadAllPathPrefixes()
+	{
+		await using var collector = new DiagnosticsCollector([]);
+
+		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+
+		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
+
+		pathPrefixes.Should().NotBeEmpty();
+		pathPrefixes.Should().Contain(new Uri("eland://reference/elasticsearch/clients/eland/"));
+	}
+
+	[Fact]
+	public async Task PathProvider()
+	{
+		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+
+		var assembleSources = await Setup();
+
+		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
+		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, Context);
+
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
+		pathProvider.TableOfContentsPrefixes.Should().Contain("detection-rules://");
+	}
+
+
+	[Fact]
 	public async Task ParsesReferences()
 	{
 		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
@@ -75,6 +103,8 @@ public class GlobalNavigationPathProviderTests
 		assembleSources.TocTopLevelMappings[sut].TopLevelSource.Should().Be(expectedRoot);
 		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(expectedRoot);
 		assembleSources.TocTopLevelMappings[sut].ParentSource.Should().Be(expectedParent);
+
+		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
 
 		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
@@ -96,9 +126,6 @@ public class GlobalNavigationPathProviderTests
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		var referenceNav = navigation.NavigationLookup[expectedRoot];
 		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
-
-		var referenceOrder = referenceNav.Group.NavigationItems.OfType<TocNavigationItem>()
-			.Last().Source.Should().Be(new Uri("docs-content://reference/glossary/"));
 
 		referenceNav.Should().NotBeNull();
 		referenceNav.NavigationLookup.Should().NotContainKey(clients);

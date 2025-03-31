@@ -8,9 +8,9 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.RepresentationModel;
 
@@ -199,7 +199,8 @@ public class AssembleSources
 			if (source is null)
 				return;
 
-			if (!Uri.TryCreate(source.TrimEnd('/') + '/', UriKind.Absolute, out var sourceUri))
+			source = source.EndsWith("://") ? source : source.TrimEnd('/') + "/";
+			if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
 			{
 				reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 				return;

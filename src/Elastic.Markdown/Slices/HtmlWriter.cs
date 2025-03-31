@@ -15,7 +15,7 @@ namespace Elastic.Markdown.Slices;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default);
+	Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
@@ -30,7 +30,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -84,7 +84,7 @@ public class HtmlWriter(
 		var html = markdown.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, ctx);
+		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
 
 		var previous = DocumentationSet.GetPrevious(markdown);
 		var next = DocumentationSet.GetNext(markdown);
@@ -125,7 +125,7 @@ public class HtmlWriter(
 			GithubEditUrl = editUrl,
 			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
 			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
-			EnableGoogleTagManager = DocumentationSet.Build.EnableGoogleTagManager,
+			GoogleTagManager = DocumentationSet.Build.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl

@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
-using Elastic.Markdown.CrossLinks;
+using Elastic.Markdown.Links.CrossLinks;
 
 namespace Documentation.Assembler.Building;
 
@@ -15,19 +15,20 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 	private PublishEnvironment PublishEnvironment { get; }
 
-	private IsolatedBuildEnvironmentUriResolver IsolatedBuildResolver { get; }
-
 	private IReadOnlyList<string> TableOfContentsPrefixes { get; }
 
 	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, TocTopLevelMapping> topLevelMappings, PublishEnvironment environment)
 	{
 		_topLevelMappings = topLevelMappings;
 		PublishEnvironment = environment;
-		IsolatedBuildResolver = new IsolatedBuildEnvironmentUriResolver();
 
 		TableOfContentsPrefixes = [..topLevelMappings
 			.Values
-			.Select(v => v.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
 		];
 
@@ -39,11 +40,12 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 	public Uri Resolve(Uri crossLinkUri, string path)
 	{
-		// TODO Maybe not needed
-		if (PublishEnvironment.Name == "preview")
-			return IsolatedBuildResolver.Resolve(crossLinkUri, path);
+		if (crossLinkUri.Scheme == "detection-rules")
+		{
 
-		var subPath = GetSubPath(crossLinkUri, ref path);
+		}
+
+		var subPath = GetSubPathPrefix(crossLinkUri, ref path);
 
 		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch
 		{
@@ -56,7 +58,62 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		return new Uri(BaseUri, fullPath);
 	}
 
-	public string GetSubPath(Uri crossLinkUri, ref string path)
+	public static string MarkdownPathToUrlPath(string path)
+	{
+		if (path.EndsWith("/index.md"))
+			path = path[..^8];
+		if (path.EndsWith(".md"))
+			path = path[..^3];
+		return path;
+
+	}
+
+	public string[] ResolveToSubPaths(Uri crossLinkUri, string path)
+	{
+		var lookup = crossLinkUri.ToString().TrimEnd('/').AsSpan();
+		if (lookup.EndsWith("index.md", StringComparison.Ordinal))
+			lookup = lookup[..^8];
+		if (lookup.EndsWith(".md", StringComparison.Ordinal))
+			lookup = lookup[..^3];
+
+		Uri? match = null;
+		foreach (var prefix in TableOfContentsPrefixes)
+		{
+			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
+				continue;
+			match = new Uri(prefix);
+			break;
+		}
+
+		if (match is null || !_topLevelMappings.TryGetValue(match, out var toc))
+		{
+			var fallBack = new Uri(lookup.ToString());
+			return [$"{fallBack.Host}/{fallBack.AbsolutePath.Trim('/')}"];
+		}
+		path = MarkdownPathToUrlPath(path);
+
+		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
+		var relativePathSpan = path.AsSpan();
+		var newRelativePath = relativePathSpan.StartsWith(originalPath, StringComparison.Ordinal)
+			? relativePathSpan.Slice(originalPath.Length).TrimStart('/').ToString()
+			: relativePathSpan.TrimStart(originalPath).TrimStart('/').ToString();
+
+		var tokens = newRelativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		var paths = new List<string>();
+		var p = "";
+		for (var index = 0; index < tokens.Length; index++)
+		{
+			p += tokens[index] + '/';
+			paths.Add(p);
+		}
+
+		return paths
+			.Select(i => $"{toc.SourcePathPrefix}/{i.TrimStart('/')}")
+			.Concat([$"{toc.SourcePathPrefix}/"])
+			.ToArray();
+	}
+
+	private string GetSubPathPrefix(Uri crossLinkUri, ref string path)
 	{
 		var lookup = crossLinkUri.ToString().AsSpan();
 		if (lookup.EndsWith(".md", StringComparison.Ordinal))

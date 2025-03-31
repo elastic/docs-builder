@@ -4,11 +4,11 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -51,11 +51,14 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
 		NavigationRoot = set.Tree;
+		NavigationSource = set.Source;
 	}
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	public INavigation NavigationRoot { get; set; }
+
+	public Uri NavigationSource { get; set; }
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 

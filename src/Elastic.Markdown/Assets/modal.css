@@ -1,0 +1,31 @@
+.modal {
+	@apply fixed inset-0 z-50 flex hidden items-center justify-center bg-black/50;
+}
+
+.modal-content {
+	@apply relative w-full max-w-3xl items-center rounded-lg bg-white p-6 shadow-lg;
+}
+
+.modal-content figure {
+	@apply text-center;
+}
+
+.modal-content img {
+	@apply mx-auto h-auto max-w-full rounded-lg;
+}
+
+.modal-content figcaption {
+	@apply mt-4 text-sm;
+}
+
+.modal-footer {
+	@apply mt-4 text-right;
+}
+
+.modal-close {
+	@apply absolute top-2 right-4 cursor-pointer transition-colors;
+
+	& > a {
+		@apply text-ink-dark hover:text-ink text-2xl font-bold no-underline;
+	}
+}

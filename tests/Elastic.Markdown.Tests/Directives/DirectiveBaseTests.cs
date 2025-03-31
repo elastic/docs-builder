@@ -79,10 +79,10 @@ $"""
 
 	public virtual async ValueTask InitializeAsync()
 	{
-		_ = Collector.StartAsync(default);
+		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		await Set.LinkResolver.FetchLinks();
-		Document = await File.ParseFullAsync(default);
+		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
+		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
 		var html = File.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
@@ -91,7 +91,7 @@ $"""
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
 		Collector.Channel.TryComplete();
 
-		await Collector.StopAsync(default);
+		await Collector.StopAsync(TestContext.Current.CancellationToken);
 	}
 
 	public ValueTask DisposeAsync()

@@ -4,8 +4,8 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Markdown.CrossLinks;
 using Elastic.Markdown.IO.State;
+using Elastic.Markdown.Links.CrossLinks;
 using Xunit.Internal;
 
 namespace Elastic.Markdown.Tests;
@@ -17,7 +17,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];
 
-	public Task<FetchedCrossLinks> FetchLinks()
+	public Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
 	{
 		// language=json
 		var json = """
