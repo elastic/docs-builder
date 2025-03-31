@@ -16,7 +16,12 @@ Note that there should be no space between the enclosing markers and the text.
 
 ## Subscript & Superscript
 
-H~2~O, and 4^th^ of July
+| Syntax           | Result        |
+| ---------------- | ------------- |
+| H\~2\~O          | H~2~O         |
+| 4\^th\^ of July  | 4^th^ of July |
+
+
 
 ## Quotation
 
