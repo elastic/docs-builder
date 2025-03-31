@@ -310,7 +310,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
 			var siblingsGoToCurrent = url.StartsWith("./") && markdownPath == "index.md";
 			var lastIndexPath = subPrefix.LastIndexOf('/');
-			if (lastIndexPath > 0 && !siblingsGoToCurrent)
+			if (lastIndexPath >= 0 && !siblingsGoToCurrent)
 				subPrefix = subPrefix[..lastIndexPath];
 
 			var combined = '/' + Path.Combine(subPrefix, url).TrimStart('/');
