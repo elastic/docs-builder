@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
+using Documentation.Assembler.Extensions;
 using Elastic.Markdown.Links.CrossLinks;
 
 namespace Documentation.Assembler.Building;
@@ -142,10 +143,9 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		if (originalPath == toc.SourcePathPrefix)
 			return string.Empty;
 
-		var newRelativePath = path.TrimStart('/').AsSpan().TrimStart(originalPath).ToString();
-		path = Path.Combine(toc.SourcePathPrefix, newRelativePath.TrimStart('/'));
+		var newRelativePath = path.AsSpan().GetTrimmedRelativePath(originalPath);
+		path = Path.Combine(toc.SourcePathPrefix, newRelativePath);
 
 		return string.Empty;
 	}
-
 }

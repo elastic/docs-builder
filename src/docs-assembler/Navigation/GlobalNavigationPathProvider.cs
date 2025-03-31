@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO.Abstractions;
+using Documentation.Assembler.Extensions;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -118,9 +119,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
 		var relativePathSpan = relativePath.AsSpan();
-		var newRelativePath = relativePathSpan.StartsWith(originalPath, StringComparison.Ordinal)
-			? relativePathSpan.Slice(originalPath.Length).TrimStart('/').ToString()
-			: relativePathSpan.TrimStart(originalPath).TrimStart('/').ToString();
+		var newRelativePath = relativePathSpan.GetTrimmedRelativePath(originalPath);
 
 		var path = fs.Path.Combine(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
 
