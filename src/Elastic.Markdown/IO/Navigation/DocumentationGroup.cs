@@ -88,6 +88,11 @@ public class TableOfContentsTree : DocumentationGroup
 		Source = source;
 		TreeCollector.Collect(source, this);
 		DocumentationSet = documentationSet;
+
+		//edge case if tree only holds a single group ensure we collapse it down to the root (this)
+		if (NavigationItems.Count == 1 && NavigationItems.First() is GroupNavigationItem { Group.NavigationItems.Count: 0 })
+			NavigationItems = [];
+
 	}
 
 	internal TableOfContentsTree(
@@ -251,6 +256,7 @@ public class DocumentationGroup : INavigation
 						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
 					navigationItems.Add(new GroupNavigationItem(index, depth, group));
+					indexFile ??= virtualIndex;
 					continue;
 				}
 

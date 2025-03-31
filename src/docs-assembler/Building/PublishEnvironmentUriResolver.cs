@@ -24,7 +24,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 		TableOfContentsPrefixes = [..topLevelMappings
 			.Values
-			.Select(v => v.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
 		];
 
@@ -36,6 +40,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 	public Uri Resolve(Uri crossLinkUri, string path)
 	{
+		if (crossLinkUri.Scheme == "detection-rules")
+		{
+
+		}
+
 		var subPath = GetSubPathPrefix(crossLinkUri, ref path);
 
 		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch

@@ -261,7 +261,8 @@ public record GlobalNavigationFile : ITableOfContentsScope
 		if (source is null)
 			return pathPrefix;
 
-		if (!Uri.TryCreate(source.TrimEnd('/') + "/", UriKind.Absolute, out sourceUri))
+		source = source.EndsWith("://") ? source : source.TrimEnd('/') + "/";
+		if (!Uri.TryCreate(source, UriKind.Absolute, out sourceUri))
 		{
 			reader.EmitError($"Source toc entry is not a valid uri: {source}", tocEntry);
 			return pathPrefix;

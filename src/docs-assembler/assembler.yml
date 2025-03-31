@@ -40,6 +40,8 @@ references:
     current: master
   curator:
     current: master
+  detection-rules:
+    checkout_strategy: full
   ecctl:
     current: master
   ecs-dotnet:
@@ -73,6 +75,3 @@ references:
   logstash:
   search-ui:
   integration-docs:
-  # security-docs:
-  #   # wait for move to https://github.com/elastic/detection-rules/pull/4507/files
-  #   skip: true

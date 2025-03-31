@@ -1,4 +1,3 @@
-// @ts-nocheck
 import "htmx.org"
 import "htmx-ext-preload"
 import "htmx-ext-head-support"

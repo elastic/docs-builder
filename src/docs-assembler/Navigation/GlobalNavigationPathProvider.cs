@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 
@@ -16,7 +17,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 	private readonly AssembleSources _assembleSources;
 	private readonly AssembleContext _context;
 
-	private ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
+	public ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
 	private ImmutableSortedSet<string> PhantomPrefixes { get; }
 
 	public GlobalNavigationPathProvider(GlobalNavigationFile navigationFile, AssembleSources assembleSources, AssembleContext context)
@@ -26,12 +27,20 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		TableOfContentsPrefixes = [..assembleSources.TocTopLevelMappings
 			.Values
-			.Select(v => v.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
 		];
 
 		PhantomPrefixes = [..navigationFile.Phantoms
-			.Select(p => p.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
 			.ToArray()
 		];
@@ -39,13 +48,23 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 	public IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
 	{
+
 		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
 			return defaultOutputFile;
 
+
+
+		var repositoryName = documentationSet.Build.Git.RepositoryName;
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
-		var repositoryName = documentationSet.Build.Git.RepositoryName;
+		if (repositoryName == "detection-rules")
+		{
+			var output = DetectionRuleFile.OutputPath(defaultOutputFile, documentationSet.Build);
+			var md = fs.FileInfo.New(Path.ChangeExtension(output.FullName, "md"));
+			relativePath = Path.GetRelativePath(documentationSet.OutputDirectory.FullName, md.FullName);
+		}
+
 
 		var l = ContentSourceMoniker.CreateString(repositoryName, relativePath).TrimEnd('/');
 		var lookup = l.AsSpan();
