@@ -44,7 +44,7 @@
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.4",
     "select-dom": "9.3.0",
-    "tailwindcss": "4.0.3",
+    "tailwindcss": "4.0.17",
     "ua-parser-js": "2.0.2"
   }
 }
