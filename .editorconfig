@@ -19,6 +19,11 @@ indent_size = 4
 indent_style = space
 indent_size = 2
 
+[*.{ts,tsx}]
+indent_style = space
+indent_size = 4
+quote_type = single
+
 # Dotnet code style settings:
 [*.{cs,vb}]
 trim_trailing_whitespace=true

@@ -1,8 +1,8 @@
 @layer components {
 	.markdown-content {
 		a.image-reference {
-			@apply block mt-4 align-middle;
-			&>img {
+			@apply mt-4 block align-middle;
+			& > img {
 				@apply block;
 			}
 		}
@@ -14,8 +14,8 @@
 			display: initial;
 			vertical-align: initial;
 		}
-        .screenshot {
-            @apply border-1 border-grey-20 p-4 bg-grey-10 shadow-md;
-        }
+		.screenshot {
+			@apply border-grey-20 bg-grey-10 border-1 p-4 shadow-md;
+		}
 	}
 }
