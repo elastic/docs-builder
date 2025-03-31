@@ -309,7 +309,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			// './' current path lookups should be relative to sub-path.
 			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
 			var siblingsGoToCurrent = url.StartsWith("./") && markdownPath == "index.md";
-			if (!siblingsGoToCurrent && subPrefix.LastIndexOf('/') >= 0)
+			if (!siblingsGoToCurrent)
 				subPrefix = subPrefix[..subPrefix.LastIndexOf('/')];
 
 			var combined = '/' + Path.Combine(subPrefix, url).TrimStart('/');
