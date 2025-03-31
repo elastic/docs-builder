@@ -317,6 +317,41 @@ This is regular text
 This is regular text
 :::
 
+## Dropdowns
+
+Dropdowns hide and reveal content on user interaction. By default, dropdowns are collapsed and content is hidden until you click the title of the collapsible block.
+
+**DOs**<br>
+✅ Use dropdowns for text, lists, images, code blocks, and tables<br>
+
+**DON'Ts**<br>
+❌ Use for very long paragraphs or entire sections<br>
+
+:::{dropdown} Markdown
+```markdown
+:::{dropdown} Dropdown Title
+Dropdown content
+:::
+:::
+
+:::{dropdown} Output
+:::{dropdown} Dropdown Title
+Dropdown content
+:::
+:::
+
+You can optionally specify the `open` option to keep the dropdown content visible by default.
+
+```markdown
+:::{dropdown} Dropdown Title
+:open:
+Dropdown content
+:::
+```
+
+
+
+
 
 
 
