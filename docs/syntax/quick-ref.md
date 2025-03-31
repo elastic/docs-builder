@@ -249,6 +249,9 @@ A code block can contain **explicit** and **magic** callouts.
 **DON'Ts**<br>
 ❌ Combine explicit and magic callout<br> 
 
+### Example of explicit callout
+Add `<\d+>` to the end of a line to explicitly create a code callout.
+
 :::{dropdown} Markdown
 ```markdown
 ```yaml
@@ -272,6 +275,26 @@ project:
 
 :::
 
+### Example of magic callout
+Add comments with `//` or `#` to magically create callouts.
+
+:::{dropdown} Markdown
+```markdown
+```csharp
+var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
+var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
+```
+```
+:::
+
+:::{dropdown} Output
+```csharp
+var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
+var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
+```content: CC-BY-4.0
+```
+
+:::
 
 
 
