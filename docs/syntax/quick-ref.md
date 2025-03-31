@@ -8,10 +8,10 @@ navigation_title: "WIP Quick reference"
 This page contains WIP tests, not real entries
 :::
 
-Quick guidance on Elastic Docs V3 syntax. 
+Quick guidance on Elastic Docs V3 syntax.
 
 ## Example quick ref entry
-Prose description of this syntax element (note: the heading should link to the full syntax guide entry)
+Prose description of this syntax element (include a link to the full syntax guide)
 
 **DOs**<br>
 ✅ First _do_ -- not in a bulleted list; use the checkmark as a bullet character and use line breaks<br>
@@ -31,21 +31,66 @@ some markdown, **strong**
 some output, **strong**
 :::
 
+[Link to the full syntax ref entry for more details](index.md)
+<br>
+<br>
+<br>
 
+:::{tip}
+ 👇 Final drafts 👇 
+:::
 
-## Headings
-Title of a page or a section. To create a heading, add number signs `#` in front of a word or phrase. The number of signs corresponds to the heading level. 
+## Anchors
+
+An anchor is automatically created for each [heading](#headings). Default anchors take the form of hyphenated, lowercase heading text, with spaces and special characters trimmed. You can also create a custom anchor by adding it in square brackets at the end of a heading. 
 
 **DOs**<br>
-✅ Start every page with Heading 1<br>
+✅ Create custom anchors for repeated headings like "Example request"<br>
+
+**DON'Ts**<br>
+❌ Include punctuation marks in custom anchors<br>
+❌ Define custom anchors in text that is not a heading
+
+### Default anchors
+
+:::{dropdown} Markdown
+```markdown
+#### Hello world!
+```
+:::
+
+:::{dropdown} Output
+
+Auto-generated anchor `#hello-world`
+:::
+
+### Custom anchors
+
+:::{dropdown} Markdown
+```markdown
+#### Heading [custom-anchor]
+```
+:::
+
+:::{dropdown} Output
+
+`#custom-anchor` that targets the H4 `Heading`
+:::
+
+[More syntax: Anchor links](links#same-page-links-anchors)
+
+## Headings
+Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level). 
+
+**DOs**<br>
+✅ Start every page with a Heading 1<br>
 ✅ Use only one Heading 1 per page<br>
-✅ Use a custom anchor link if you use the same heading text multiple times<br>
+✅ Define [custom anchors](#custom-anchors) for repeated headings<br>
 
 **DON'Ts**<br>
 ❌ Use headings in tabs or dropdowns<br>
 ❌ Go deeper than Heading 4
 
-
 :::{dropdown} Markdown
 ```markdown
 # Heading 1
@@ -64,56 +109,84 @@ Title of a page or a section. To create a heading, add number signs `#` in front
 
 :::
 
-## Anchor links
+[More syntax: Headings](headings.md)
 
-Anchor links are generated based on the heading text. You will get a hyphened, lowercase, alphanumeric version of any string, with any diacritics removed, whitespace and dashes collapsed, and whitespace trimmed. 
+## Substitutions
 
-**DOs**<br>
-✅ Use always lower case<br>
+Key-value pairs that define variables. They help ensure consistency and enable short forms.  
+You can define a substitution at the page level in a [front matter](frontmatter.md) block, or in `docset.yml` to apply it across the entire doc set. To use a substitution in your content, surround the key with curly brackets: `{{variable}}`<br>
+
+
+**DOs** <br>
+✅ Check the global `docset.yml` file for existing product and feature name substitutions<br>
+✅ Use substitutions in code blocks by setting `subs=true`  <br>
+✅ Define new page-specific substitutions as needed  
 
 **DON'Ts**<br>
-❌ Put punctuation marks<br>
+❌ Override existing `docset.yml` substitutions at the page level (causes build errors)<br>
+❌ Use substitutions for common words that don't need to be standardized  
 
-### Default anchor links
+### Define a substitution
 
+:::{dropdown} Yaml
+In `docset.yml`:
+
+```
+subs:
+  ccs: "cross-cluster search"
+  ech: "Elastic Cloud Hosted"
+```
+:::
+
+
+### Use a substitution
 :::{dropdown} Markdown
-```markdown
-#### Hello-World
+
+In `myfile.md`:
+
+```
+{{ech}} supports most standard Kibana settings.
 ```
 :::
 
 :::{dropdown} Output
 
-#### Hello-World
-
+Elastic Cloud Hosted supports most standard Kibana settings.
 :::
 
-### Custom anchor links
+[More syntax: Substitutions](./substitutions.md)
 
-You can also specify a custom anchor link using the following syntax.
-
-:::{dropdown} Markdown
-```markdown
-#### Heading [custom-anchor]
-```
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+:::{tip} 
+👆 Final drafts 👆  
 :::
 
-:::{dropdown} Output
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
-#### Heading [custom-anchor]
-
+:::{warning} WIP
+🚧🚧🚧 👇 not-final drafts 👇 🚧🚧🚧
 :::
 
 ## Admonitions
 
-Use admonitions to draw attention to content that is different than the main body.
-(Include examples: Markdown and Rendered)
+Use admonitions to draw attention to content or to distinguish it from the main flow.
 
 **DOs**<br>
-✅ Use :open: <bool> to collapse long content that takes too much space<br>
+✅ Use custom admonitions as needed
 
 **DON'Ts**<br>
-❌ Overload the page with too many admonitions<br>
+❌ Stack admonitions<br>
+❌ Overload a page with too many admonitions<br>
 
 :::{dropdown} Note
 ```markdown
@@ -135,7 +208,6 @@ Warn the user against decisions they might regret.
 Warn the user against decisions they might regret.
 :::
 
-
 :::{dropdown} Tip
 ```markdown
 :::{tip}
@@ -154,13 +226,13 @@ Could impact system performance or stability.
 Could impact system performance or stability.
 :::
 
-:::{dropdown} Plain
+:::{dropdown} Custom
 ```markdown
-:::{admonition}
-When none of the above apply.
+:::{admonition} Special note
+Custom admonition with custom label.
 ```
-:::{admonition}
-When none of the above apply.
+:::{admonition} Special note
+Custom admonition with custom label.
 :::
 
 
@@ -173,7 +245,8 @@ Allows you to annotate a page or a section based on its applicability to a speci
 ✅ To annotate a section, put `{applies_to}` immediately before the heading<br>
 
 **DON'Ts**<br>
-❌ Use in admonitions yet.<br> 
+❌ Use "coming in x.x" `applies_to` tags (don't pre-announce features)<br>
+❌ Include `applies_to` tags in admonitions<br> 
 
 :::{dropdown} Page annotations
 ```markdown
@@ -189,7 +262,7 @@ applies_to:
     security: ga 9.0.0
     elasticsearch: beta 9.1.0
     observability: discontinued 9.2.0
-  product: coming 9.5, discontinued 9.7
+  product: discontinued 9.7
 ---
 ```
 ![annotations rendered](img/annotations.png)
