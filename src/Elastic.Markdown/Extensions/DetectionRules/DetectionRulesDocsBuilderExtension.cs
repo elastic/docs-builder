@@ -124,7 +124,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => f.Extension is ".md" or ".toml")
 			.Where(f => f.Name != "README.md")
-			.Where(f => !f.FullName.Contains("_deprecated"))
+			.Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}_deprecated{Path.DirectorySeparatorChar}"))
 			.Select(f =>
 			{
 				var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);
