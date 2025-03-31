@@ -77,7 +77,7 @@ Auto-generated anchor `#hello-world`
 `#custom-anchor` that targets the H4 `Heading`
 :::
 
-[More syntax: Anchor links](links#same-page-links-anchors)
+[More syntax: Anchor links](links.md#same-page-links-anchors)
 
 ## Headings
 Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level). 
