@@ -296,6 +296,27 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 :::
 
+## Comments
+
+Use `%` to add single-line comments.
+
+**DOs**<br>
+✅ Add a space after the `%`<br>
+
+**DON'Ts**<br>
+❌ Use `#` or `//`<br>
+
+:::{dropdown} Markdown
+```markdown
+% This is a comment
+This is regular text
+:::
+
+:::{dropdown} Output
+% This is a comment
+This is regular text
+:::
+
 
 
 
