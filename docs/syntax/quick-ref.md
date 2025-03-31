@@ -39,7 +39,7 @@ Title of a page or a section. To create a heading, add number signs `#` in front
 **DOs**<br>
 ✅ Start every page with Heading 1<br>
 ✅ Use only one Heading 1 per page<br>
-✅ Use a custom anchor link if you use the same heading text multiple times
+✅ Use a custom anchor link if you use the same heading text multiple times<br>
 
 **DON'Ts**<br>
 ❌ Use headings in tabs or dropdowns<br>
@@ -110,10 +110,10 @@ Use admonitions to draw attention to content that is different than the main bod
 (Include examples: Markdown and Rendered)
 
 **DOs**<br>
-✅ Use :open: <bool> to collapse long content that takes too much space.<br>
+✅ Use :open: <bool> to collapse long content that takes too much space<br>
 
 **DON'Ts**<br>
-❌ Overload the page with too many admonitions. <br>
+❌ Overload the page with too many admonitions<br>
 
 :::{dropdown} Note
 ```markdown
@@ -216,7 +216,7 @@ Block element that displays multiple lines of code. Start and end a code block w
 ✅ Add a language identifier to enable syntax highlighting<br>
 
 **DON'Ts**<br>
-❌ Use in admonitions yet.<br> 
+❌ Use in admonitions yet<br> 
 
 :::{dropdown} Markdown
 ```markdown
@@ -229,14 +229,50 @@ project:
 :::
 
 :::{dropdown} Output
-
 ```yaml
 project:
   title: MyST Markdown
   github: https://github.com/jupyter-book/mystmd
 ```
+:::
+
+
+## Code callouts
+
+A code block can contain **explicit** and **magic** callouts. 
+
+**DOs**<br>
+✅ Use one callout format<br>
+✅ Put comments right after the code block to be positioned as a callout<br>
+✅ In case of an ordered list, follow the same number of items as in the code block<br>
+
+**DON'Ts**<br>
+❌ Combine explicit and magic callout<br> 
+
+:::{dropdown} Markdown
+```markdown
+```yaml
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+```
+:::
+
+:::{dropdown} Output
+```yaml
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
 
 :::
+
+
 
 
 
