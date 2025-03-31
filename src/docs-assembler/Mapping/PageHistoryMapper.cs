@@ -2,19 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Markdown.IO.PageHistoryMapping;
+using Elastic.Markdown.IO.HistoryMapping;
 
-public interface IHistoryMapper
-{
-	string? MapPreviousUrl(string? currentUrl);
-}
+namespace Documentation.Assembler.Mapping;
+
 public record PageHistoryMapper : IHistoryMapper
 {
 	private IReadOnlyDictionary<string, string> PreviousUrls { get; }
 
 	public PageHistoryMapper(IReadOnlyDictionary<string, string> previousUrls) => PreviousUrls = previousUrls;
 
-	public string? MapPreviousUrl(string? currentUrl)
+	public string? MapLegacyUrl(string? currentUrl)
 	{
 		if (currentUrl is null)
 			return null;
@@ -25,9 +23,4 @@ public record PageHistoryMapper : IHistoryMapper
 
 		return !currentUrl.Contains("current") ? null : currentUrl.Replace($"{versionMarker.Key}/current/", $"{versionMarker.Key}/{versionMarker.Value}/");
 	}
-}
-
-public record BypassHistoryMapper : IHistoryMapper
-{
-	public string? MapPreviousUrl(string? currentUrl) => null;
 }

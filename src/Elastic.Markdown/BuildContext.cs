@@ -9,7 +9,6 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Discovery;
-using Elastic.Markdown.IO.PageHistoryMapping;
 
 namespace Elastic.Markdown;
 
@@ -29,8 +28,6 @@ public record BuildContext
 	public GitCheckoutInformation Git { get; }
 
 	public DiagnosticsCollector Collector { get; }
-
-	public IHistoryMapper HistoryMapper { get; }
 
 	public bool Force { get; init; }
 
@@ -63,8 +60,7 @@ public record BuildContext
 		IFileSystem writeFileSystem,
 		string? source = null,
 		string? output = null,
-		GitCheckoutInformation? gitCheckoutInformation = null,
-		IHistoryMapper? historyMapper = null
+		GitCheckoutInformation? gitCheckoutInformation = null
 	)
 	{
 		Collector = collector;
@@ -87,7 +83,6 @@ public record BuildContext
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-		HistoryMapper = historyMapper ?? new BypassHistoryMapper();
 		Configuration = new ConfigurationFile(this);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{

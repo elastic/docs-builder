@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
+using Elastic.Markdown.IO.HistoryMapping;
 using Elastic.Markdown.IO.Navigation;
 using Markdig.Syntax;
 using RazorSlices;
@@ -66,13 +67,13 @@ public class HtmlWriter(
 	DocumentationSet documentationSet,
 	IFileSystem writeFileSystem,
 	IDescriptionGenerator descriptionGenerator,
-	INavigationHtmlWriter? navigationHtmlWriter = null)
+	INavigationHtmlWriter? navigationHtmlWriter = null,
+	IHistoryMapper? historyMapper = null)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
-
-
+	private IHistoryMapper HistoryMapper { get; } = historyMapper ?? new BypassHistoryMapper();
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
@@ -106,7 +107,7 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
-		var previousVersionUrl = DocumentationSet.Build.HistoryMapper.MapPreviousUrl(markdown.YamlFrontMatter?.MappedPages?.FirstOrDefault());
+		var legacyUrl = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages?.FirstOrDefault());
 
 		var slice = Index.Create(new IndexViewModel
 		{
@@ -131,7 +132,7 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			PreviousVersionUrl = previousVersionUrl
+			LegacyUrl = legacyUrl
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

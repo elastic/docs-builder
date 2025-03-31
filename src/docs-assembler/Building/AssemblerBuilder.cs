@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using Documentation.Assembler.Navigation;
 using Elastic.Markdown;
+using Elastic.Markdown.IO.HistoryMapping;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
@@ -13,10 +14,13 @@ public class AssemblerBuilder(
 	ILoggerFactory logger,
 	AssembleContext context,
 	GlobalNavigationHtmlWriter writer,
-	GlobalNavigationPathProvider pathProvider
+	GlobalNavigationPathProvider pathProvider,
+	IHistoryMapper? historyMapper
 )
 {
 	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
+
+	private IHistoryMapper? HistoryMapper { get; } = historyMapper;
 
 	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, Cancel ctx)
 	{
@@ -54,7 +58,7 @@ public class AssemblerBuilder(
 
 	private async Task BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
 	{
-		var generator = new DocumentationGenerator(set.DocumentationSet, logger, HtmlWriter, pathProvider);
+		var generator = new DocumentationGenerator(set.DocumentationSet, logger, HtmlWriter, pathProvider, historyMapper: HistoryMapper);
 		await generator.GenerateAll(ctx);
 	}
 
