@@ -7,7 +7,9 @@
   "scripts": {
     "watch": "parcel watch",
     "build": "parcel build",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "fmt:check": "prettier --check .",
+    "fmt:write": "prettier --write ."
   },
   "targets": {
     "js": {
@@ -25,13 +27,15 @@
   },
   "private": true,
   "devDependencies": {
-    "@tailwindcss/postcss": "4.0.3",
     "@eslint/js": "9.23.0",
+    "@tailwindcss/postcss": "4.0.3",
     "eslint": "9.23.0",
     "globals": "16.0.0",
     "parcel": "2.14.4",
     "postcss": "8.5.3",
     "postcss-import": "16.1.0",
+    "prettier": "3.5.3",
+    "prettier-plugin-tailwindcss": "0.6.11",
     "typescript-eslint": "8.28.0"
   },
   "browserslist": [
