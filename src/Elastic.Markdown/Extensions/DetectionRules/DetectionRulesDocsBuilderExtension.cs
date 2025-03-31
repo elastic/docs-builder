@@ -15,22 +15,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 {
 	private BuildContext Build { get; } = build;
 
-	public bool InjectsIntoNavigation(ITocItem tocItem) => false;
-
 	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
-
-	public void CreateNavigationItem(
-		DocumentationGroup? parent,
-		ITocItem tocItem,
-		NavigationLookups lookups,
-		List<DocumentationGroup> groups,
-		List<INavigationItem> navigationItems,
-		int depth,
-		ref int fileIndex,
-		int index)
-	{
-
-	}
 
 	private DetectionRuleOverviewFile? _overviewFile;
 	public void Visit(DocumentationFile file, ITocItem tocItem)

@@ -15,6 +15,6 @@ namespace Elastic.Markdown;
 [JsonSerializable(typeof(GenerationState))]
 [JsonSerializable(typeof(LinkReference))]
 [JsonSerializable(typeof(GitCheckoutInformation))]
-[JsonSerializable(typeof(LinkIndex))]
+[JsonSerializable(typeof(LinkIndexRegistry))]
 [JsonSerializable(typeof(LinkIndexEntry))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

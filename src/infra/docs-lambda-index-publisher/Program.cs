@@ -25,7 +25,7 @@ static async Task<string> Handler(ILambdaContext context)
 		MaxKeys = 5
 	};
 
-	var linkIndex = new LinkIndex
+	var linkIndex = new LinkIndexRegistry
 	{
 		Repositories = []
 	};
@@ -77,7 +77,7 @@ static async Task<string> Handler(ILambdaContext context)
 		return $"Error encountered on server. Message:'{ex.Message}' getting list of objects.";
 	}
 
-	var json = LinkIndex.Serialize(linkIndex);
+	var json = LinkIndexRegistry.Serialize(linkIndex);
 
 	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 	await client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);

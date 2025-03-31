@@ -8,23 +8,6 @@ using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Markdown.Diagnostics;
 
-public enum Severity
-{
-	Error,
-	Warning,
-	Hint
-}
-
-public readonly record struct Diagnostic
-{
-	public Severity Severity { get; init; }
-	public int? Line { get; init; }
-	public int? Column { get; init; }
-	public int? Length { get; init; }
-	public string File { get; init; }
-	public string Message { get; init; }
-}
-
 public sealed class DiagnosticsChannel : IDisposable
 {
 	private readonly Channel<Diagnostic> _channel;

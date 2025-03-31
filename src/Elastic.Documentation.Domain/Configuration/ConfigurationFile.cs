@@ -2,11 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Extensions;
-using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.State;
 
 namespace Elastic.Markdown.IO.Configuration;
@@ -14,6 +13,7 @@ namespace Elastic.Markdown.IO.Configuration;
 public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 {
 	private readonly BuildContext _context;
+	private readonly IDocumentationPluginFactory _pluginFactory;
 
 	public string? Project { get; }
 
@@ -26,7 +26,7 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 
 	public EnabledExtensions Extensions { get; } = new([]);
 
-	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; } = [];
+	public IReadOnlyCollection<IDocumentationPlugin> EnabledExtensions { get; } = [];
 
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
 
@@ -56,10 +56,11 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(BuildContext context)
+	public ConfigurationFile(BuildContext context, IDocumentationPluginFactory pluginFactory)
 		: base(context.ConfigurationPath, context.DocumentationSourceDirectory)
 	{
 		_context = context;
+		_pluginFactory = pluginFactory;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
 		if (!context.ConfigurationPath.Exists)
 		{
@@ -132,17 +133,13 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}{Path.DirectorySeparatorChar}*.md"))];
 	}
 
-	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
+	private IReadOnlyCollection<IDocumentationPlugin> InstantiateExtensions()
 	{
-		var list = new List<IDocsBuilderExtension>();
+		var list = new List<IDocumentationPlugin>();
 		foreach (var extension in Extensions.Enabled)
 		{
-			switch (extension.ToLowerInvariant())
-			{
-				case "detection-rules":
-					list.Add(new DetectionRulesDocsBuilderExtension(_context));
-					continue;
-			}
+			if (_pluginFactory.TryCreate(extension.ToLowerInvariant(), _context, out var plugin))
+				list.Add(plugin);
 		}
 
 		return list.AsReadOnly();

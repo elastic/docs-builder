@@ -20,7 +20,7 @@ public interface INavigationLookups
 {
 	FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; }
 	IReadOnlyCollection<ITocItem> TableOfContents { get; }
-	IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
+	IReadOnlyCollection<IDocumentationPlugin> EnabledExtensions { get; }
 	FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
 }
 
@@ -28,7 +28,7 @@ public record NavigationLookups : INavigationLookups
 {
 	public required FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; init; }
 	public required IReadOnlyCollection<ITocItem> TableOfContents { get; init; }
-	public required IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; init; }
+	public required IReadOnlyCollection<IDocumentationPlugin> EnabledExtensions { get; init; }
 	public required FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; init; }
 	//public required FrozenDictionary<Uri, TableOfContentsReference> IndexedTableOfContents { get; init; }
 }
@@ -63,7 +63,7 @@ public class DocumentationSet : INavigationLookups
 
 	IReadOnlyCollection<ITocItem> INavigationLookups.TableOfContents => Configuration.TableOfContents;
 
-	IReadOnlyCollection<IDocsBuilderExtension> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
+	IReadOnlyCollection<IDocumentationPlugin> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
 
 	// FrozenDictionary<Uri, TableOfContentsReference>? indexedTableOfContents = null
 	public DocumentationSet(

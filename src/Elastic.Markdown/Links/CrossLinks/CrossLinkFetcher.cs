@@ -33,14 +33,14 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 {
 	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly HttpClient _client = new();
-	private LinkIndex? _linkIndex;
+	private LinkIndexRegistry? _linkIndex;
 
 	public static LinkReference Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
 
 	public abstract Task<FetchedCrossLinks> Fetch(Cancel ctx);
 
-	protected async Task<LinkIndex> FetchLinkIndex(Cancel ctx)
+	protected async Task<LinkIndexRegistry> FetchLinkIndex(Cancel ctx)
 	{
 		if (_linkIndex is not null)
 		{
@@ -50,7 +50,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json";
 		_logger.LogInformation("Fetching {Url}", url);
 		var json = await _client.GetStringAsync(url, ctx);
-		_linkIndex = LinkIndex.Deserialize(json);
+		_linkIndex = LinkIndexRegistry.Deserialize(json);
 		return _linkIndex;
 	}
 
