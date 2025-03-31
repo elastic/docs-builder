@@ -227,8 +227,10 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			return;
 
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
-		var parentPath = block.Context.MarkdownSourcePath;
+
+		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
 		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
+
 		var html = document.ToHtml(parser.Pipeline);
 		_ = renderer.Write(html);
 	}

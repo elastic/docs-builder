@@ -53,6 +53,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public ConfigurationFile Configuration { get; }
 	public ICrossLinkResolver CrossLinkResolver { get; }
 	public IFileInfo MarkdownSourcePath { get; }
+	public IFileInfo? MarkdownParentPath { get; }
 	public string CurrentUrlPath { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; }
 	public BuildContext Build { get; }
@@ -67,15 +68,16 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		Configuration = state.Configuration;
 		YamlFrontMatter = state.YamlFrontMatter;
 		SkipValidation = state.SkipValidation;
+		MarkdownParentPath = state.ParentMarkdownPath;
 
 		CrossLinkResolver = state.CrossLinkResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;
 		DocumentationFileLookup = state.DocumentationFileLookup;
-		var parentPath = state.ParentMarkdownPath;
 
-		CurrentUrlPath = DocumentationFileLookup(parentPath ?? MarkdownSourcePath) is MarkdownFile md
+		CurrentUrlPath = DocumentationFileLookup(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile md
 			? md.Url
 			: string.Empty;
+
 		if (SkipValidation && string.IsNullOrEmpty(CurrentUrlPath))
 		{
 			//TODO investigate this deeper.
