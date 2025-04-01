@@ -7,10 +7,11 @@
     <RepositoryUrl>https://github.com/elastic/elastic-otel-dotnet</RepositoryUrl>
     <PackageProjectUrl>https://github.com/elastic/elastic-otel-dotnet</PackageProjectUrl>
     <PackageReleaseNotes>https://github.com/elastic/elastic-otel-dotnet/releases</PackageReleaseNotes>
-    <IsPackable>False</IsPackable>
   </PropertyGroup>
   
   <PropertyGroup>
+    <IsPackable>False</IsPackable>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
     <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
     <LangVersion>latest</LangVersion>
@@ -28,7 +29,4 @@
     <Using Include="System.Threading.CancellationToken" Alias="Cancel" />
   </ItemGroup>
   
-  <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
-  </ItemGroup>
 </Project>

@@ -19,10 +19,10 @@
     <RootNamespace>Elastic.Documentation.Lambda.LinkIndexUploader</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.12.3"/>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0"/>
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4"/>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.414.5"/>
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" />
+    <PackageReference Include="Amazon.Lambda.Core" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
+    <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj"/>
