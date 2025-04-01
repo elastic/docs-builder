@@ -16,17 +16,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.414.5" />
-    <PackageReference Include="ConsoleAppFramework.Abstractions" Version="5.4.1" />
-    <PackageReference Include="ConsoleAppFramework" Version="5.4.1" PrivateAssets="all">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Proc" Version="0.9.1" />
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
-    <PackageReference Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12"
-                      PrivateAssets="all" ExcludeAssets="runtime" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="16.1.3"
-                      PrivateAssets="all" ExcludeAssets="runtime"/>
+    <PackageReference Include="AWSSDK.S3"/>
+    <PackageReference Include="ConsoleAppFramework.Abstractions"/>
+    <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Proc"  />
+    <PackageReference Include="YamlDotNet"  />
+    <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
   </ItemGroup>
 
   <ItemGroup>

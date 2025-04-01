@@ -12,18 +12,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0"/>
-    <PackageReference Include="xunit.v3" Version="2.0.0"/>
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2"/>
-    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="GitHubActionsTestLogger" />
 
-    <PackageReference Include="coverlet.collector" Version="6.0.2"/>
-    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="21.0.29"/>
-    <PackageReference Include="FsUnit.xUnit" Version="7.0.1"/>
-    <PackageReference Include="AngleSharp.Diffing" Version="1.0.0"/>
-    <PackageReference Include="DiffPlex" Version="1.7.2"/>
-    <PackageReference Include="Unquote" Version="7.0.1"/>
+    <PackageReference Include="JetBrains.Annotations" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="FsUnit.xUnit" />
+    <PackageReference Include="AngleSharp.Diffing" />
+    <PackageReference Include="DiffPlex" />
+    <PackageReference Include="Unquote" />
+    <PackageReference Include="FSharp.Core" />
   </ItemGroup>
 
   <ItemGroup>
