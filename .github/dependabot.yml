@@ -19,6 +19,10 @@ updates:
     labels:
       - chore
   - package-ecosystem: nuget
+    groups:
+      yamldotnet:
+        patterns:
+          - 'YamlDotNet.*'
     directories:
       - '**/*'
     schedule:
