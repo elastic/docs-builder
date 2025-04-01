@@ -7,8 +7,6 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
-    reviewers:
-      - 'elastic/observablt-ci'
     labels:
       - chore
   - package-ecosystem: npm
