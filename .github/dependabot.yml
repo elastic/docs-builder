@@ -1,8 +1,31 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "src/Elastic.Markdown"
+  - package-ecosystem: github-actions
+    directories:
+      - '**/*'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
+      day: 'monday'
+      time: '8:00'
+    reviewers:
+      - 'elastic/observablt-ci'
+    labels:
+      - chore
+  - package-ecosystem: npm
+    directories:
+      - '**/*'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '8:00'
+    labels:
+      - chore
+  - package-ecosystem: nuget
+    directories:
+      - '**/*'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '8:00'
     labels:
       - chore
