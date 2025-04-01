@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
-      time: '8:00'
+      time: '08:00'
     reviewers:
       - 'elastic/observablt-ci'
     labels:
@@ -17,7 +17,7 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
-      time: '8:00'
+      time: '08:00'
     labels:
       - chore
   - package-ecosystem: nuget
@@ -26,6 +26,6 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
-      time: '8:00'
+      time: '08:00'
     labels:
       - chore
