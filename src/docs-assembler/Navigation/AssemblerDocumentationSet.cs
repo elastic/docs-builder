@@ -45,7 +45,7 @@ public record AssemblerDocumentationSet
 			RepositoryName = checkout.Repository.Name,
 			Ref = checkout.HeadReference,
 			Remote = $"elastic/${checkout.Repository.Name}",
-			Branch = checkout.Repository.CurrentBranch
+			Branch = checkout.Repository.GitReferenceCurrent
 		};
 
 		var buildContext = new BuildContext(
