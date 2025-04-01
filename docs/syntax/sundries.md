@@ -15,13 +15,34 @@ Note that there should be no space between the enclosing markers and the text.
 | `\*escaped symbols\*`           | \*escaped symbols\* |
 
 ## Subscript & Superscript
+ 
+::::{tab-set}
 
-| Syntax           | Result        |
-| ---------------- | ------------- |
-| H\~2\~O          | H~2~O         |
-| 4\^th\^ of July  | 4^th^ of July |
+:::{tab-item} Output
+H~2~O
+:::
 
+:::{tab-item} Markdown
+```markdown
+H~2~O 
+```
+:::
 
+::::
+
+::::{tab-set}
+
+:::{tab-item} Output
+4^th^ of July
+:::
+
+:::{tab-item} Markdown
+```markdown
+4^th^ of July
+```
+:::
+
+::::
 
 ## Quotation
 
