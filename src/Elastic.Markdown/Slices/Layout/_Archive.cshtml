@@ -1,5 +1,4 @@
 @inherits RazorSlice<LayoutViewModel>
-
 <div class="bg-[#F5F7FA] w-full px-8 py-16 text-center">
 	<div class="container mx-auto mt-20">
 		<h1 class="text-4xl md:text-6xl">Documentation archive</h1>
@@ -11,7 +10,7 @@
 </div>
 <div style="background-image: url(@(Model.Static("delorean-bg.png"))"
      class="delorean-background bg-center bg-repeat-x w-full h-30 bg-blue-developer py-6 flex items-center justify-center">
-	<img src="@Model.Static("delorean.png")" alt="" width="200" class="delorean">
+	<img id="delorean" src="@Model.Static("delorean.png")" alt="" width="200" class="delorean">
 </div>
 <div class="bg-blue-developer text-white size-full px-8 py-16">
 	<div class="container mx-auto">
@@ -329,3 +328,41 @@
 		</a>
 	</div>
 </div>
+<script type="module">
+	const delorean = document.getElementById('delorean');
+	let isTraveling = false;
+	delorean.addEventListener('click', () => {
+		if (!isTraveling) {
+			isTraveling = true;
+			delorean.style.transform = `translateX(calc(100vw - 50px))`;
+
+			// Creative flash timing with patterns
+			const flashPattern = [300, 150, 600, 200, 50, 50, 50, 50, 50]; // Milliseconds delays
+			let totalDelay = 0;
+
+			flashPattern.forEach(delay => {
+				totalDelay += delay;
+				setTimeout(() => {
+					createScreenFlash();
+				}, totalDelay);
+			});
+
+			setTimeout(() => {
+				window.location.assign('/')
+			}, 1500);
+		}
+	});
+
+	function createScreenFlash() {
+		const flash = document.createElement('div');
+		flash.className = 'screen-flash';
+		flash.style.animation = 'flash-colors 0.4s ease-in-out';
+		document.body.appendChild(flash);
+		setTimeout(() => {
+			flash.classList.add('show');
+			setTimeout(() => {
+				flash.remove();
+			}, 400);
+		});
+	}
+</script>

@@ -1,0 +1,31 @@
+#delorean {
+	transition: transform 1500ms linear; /* Use transform translate */
+}
+
+.screen-flash {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.2s ease-out;
+	z-index: 15;
+}
+
+.screen-flash.show {
+	opacity: 1;
+}
+
+@keyframes flash-colors {
+	0% {
+		background-color: rgba(255, 255, 255, 0.8);
+	}
+	50% {
+		background-color: rgb(255, 255, 0, 0.9);
+	}
+	100% {
+		background-color: rgba(255, 255, 255, 0.8);
+	}
+}

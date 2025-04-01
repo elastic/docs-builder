@@ -12,6 +12,7 @@
 @import './markdown/definition-list.css';
 @import './markdown/images.css';
 @import './modal.css';
+@import './archive.css';
 
 :root {
 	--outline-size: max(2px, 0.08em);
@@ -188,6 +189,7 @@
 }
 
 body {
+	min-height: 100vh;
 	display: grid;
 	grid-template-rows: auto auto 1fr auto;
 }
