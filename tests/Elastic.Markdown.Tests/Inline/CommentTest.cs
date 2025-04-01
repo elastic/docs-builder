@@ -27,3 +27,37 @@ not a comment
 			"""
 		);
 }
+
+public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(output,
+	"""
+	not a comment, and multi line comment below
+	<!---
+	multi line comment
+	Another line inside the commented area
+	end of comments
+	-->
+
+	also not a comment
+	"""
+)
+{
+
+	[Fact]
+	public void GeneratesAttributesInHtml() =>
+		// language=html
+		Html.Should().NotContainAny(
+				"<p><!---",
+				"<p>Multi line comment, first line",
+				"<p>Another line inside the commented area",
+				"<p>end of comments",
+				"<p>-->")
+			.And.ContainAll(
+				"<p>not a comment, and multi line comment below</p>",
+				"<p>also not a comment</p>"
+			).And.Be(
+				"""
+				<p>not a comment, and multi line comment below</p>
+				<p>also not a comment</p>
+				"""
+			);
+}
