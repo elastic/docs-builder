@@ -47,6 +47,9 @@
 		case LayoutName.LandingPage:
 			await RenderPartialAsync(_LandingPage.Create(Model));
 			break;
+		case LayoutName.Archive:
+			await RenderPartialAsync(_Archive.Create(Model));
+			break;
 		default:
 			await DefaultLayout();
 			break;

@@ -10,7 +10,8 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 public enum LayoutName
 {
 	[EnumMember(Value = "landing-page")] LandingPage,
-	[EnumMember(Value = "not-found")] NotFound
+	[EnumMember(Value = "not-found")] NotFound,
+	[EnumMember(Value = "archive")] Archive
 }
 
 [YamlSerializable]
