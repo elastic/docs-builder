@@ -335,18 +335,14 @@
 		if (!isTraveling) {
 			isTraveling = true;
 			delorean.style.transform = `translateX(calc(100vw - 50px))`;
-
-			// Creative flash timing with patterns
 			const flashPattern = [300, 150, 600, 200, 50, 50, 50, 50, 50]; // Milliseconds delays
 			let totalDelay = 0;
-
 			flashPattern.forEach(delay => {
 				totalDelay += delay;
 				setTimeout(() => {
 					createScreenFlash();
 				}, totalDelay);
 			});
-
 			setTimeout(() => {
 				window.location.assign('@Model.Link("/")')
 			}, 1500);
