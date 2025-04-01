@@ -189,11 +189,30 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static void ProcessInternalLink(LinkInline link, InlineProcessor processor, ParserContext context)
 	{
+		if (link.Url != null && link.Url.StartsWith('!'))
+		{
+			// [](!/already/resolved/url) internal syntax to allow markdown embedding already resolved links
+			var verbatimUrl = link.Url[1..];
+			link.Url = verbatimUrl;
+			var md = ResolveFile(context, verbatimUrl);
+			_ = SetLinkData(link, processor, context, md, verbatimUrl);
+			return;
+		}
+
 		var (url, anchor) = SplitUrlAndAnchor(link.Url ?? string.Empty);
 		var includeFrom = GetIncludeFromPath(url, context);
 		var file = ResolveFile(context, url);
 		ValidateInternalUrl(processor, url, includeFrom, link, context);
 
+		var linkMarkdown = SetLinkData(link, processor, context, file, url);
+
+		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
+		UpdateLinkUrl(link, url, context, anchor);
+	}
+
+	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,
+		IFileInfo file, string url)
+	{
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
 			link.SetData(nameof(currentMarkdown.NavigationRoot), currentMarkdown.NavigationRoot);
@@ -210,15 +229,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
 		if (linkMarkdown is not null)
 			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
-
-		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
-		UpdateLinkUrl(link, url, context, anchor);
+		return linkMarkdown;
 	}
 
 	private static (string url, string? anchor) SplitUrlAndAnchor(string fullUrl)
 	{
 		var parts = fullUrl.Split('#');
-		return (parts[0], parts.Length > 1 ? parts[1].Trim() : null);
+		return (parts[0].TrimStart('!'), parts.Length > 1 ? parts[1].Trim() : null);
 	}
 
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
@@ -272,11 +289,14 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{
 		if (!markdown.Anchors.Contains(anchor))
-			processor.EmitError(link, $"`{anchor}` does not exist in {markdown.FileName}.");
+			processor.EmitError(link, $"`{anchor}` does not exist in {markdown.RelativePath}.");
 	}
 
 	private static void UpdateLinkUrl(LinkInline link, string url, ParserContext context, string? anchor)
 	{
+		// TODO revisit when we refactor our documentation set graph
+		// This method grew too complex, we need to revisit our documentation set graph generation so we can ask these questions
+		// on `DocumentationFile` that are mostly precomputed
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
 
 		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
@@ -286,15 +306,19 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				? context.CurrentUrlPath[urlPathPrefix.Length..]
 				: urlPathPrefix;
 
-			var markdownPath = context.MarkdownSourcePath.Name;
+			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
+			// as it's not part of url by chopping of the extra parent navigation
+			if (url.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippetFile)
+				url = url.Substring(3);
 
+			// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
+			var markdownPath = context.MarkdownSourcePath;
 			// if the current path is an index e.g /reference/cloud-k8s/
 			// './' current path lookups should be relative to sub-path.
 			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
-			var siblingsGoToCurrent = url.StartsWith("./") && markdownPath == "index.md";
-			if (!siblingsGoToCurrent)
-				subPrefix = subPrefix[..subPrefix.LastIndexOf('/')];
-
+			var lastIndexPath = subPrefix.LastIndexOf('/');
+			if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
+				subPrefix = subPrefix[..lastIndexPath];
 			var combined = '/' + Path.Combine(subPrefix, url).TrimStart('/');
 			url = Path.GetFullPath(combined);
 		}
@@ -323,6 +347,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			url = url[..^5];
 
 		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
+
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>

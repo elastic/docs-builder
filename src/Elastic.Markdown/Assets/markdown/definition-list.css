@@ -4,7 +4,7 @@
 			@apply mt-4;
 		}
 		dt {
-			@apply text-black mt-6;
+			@apply mt-6 text-black;
 		}
 		dd {
 			@apply text-ink-light mt-2 ml-4;

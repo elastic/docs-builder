@@ -38,6 +38,30 @@ jobs:
           docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
           tree .artifacts
           stat .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
+          
+  lint:
+    runs-on: ubuntu-latest
+    defaults: 
+      run: 
+        working-directory: src/Elastic.Markdown
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: src/Elastic.Markdown/package-lock.json
+          node-version-file: .nvmrc
+      
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Lint
+        run: npm run lint
+      
+      - name: Format
+        run: npm run fmt:check
+      
 
   build:
     runs-on: ${{ matrix.os }}

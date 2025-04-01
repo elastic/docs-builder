@@ -27,8 +27,7 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
-		TableOfContentsTreeCollector treeCollector
-	)
+		TableOfContentsTreeCollector treeCollector)
 	{
 		AssembleContext = context;
 		Checkout = checkout;

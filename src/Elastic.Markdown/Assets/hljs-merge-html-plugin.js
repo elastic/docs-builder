@@ -1,7 +1,7 @@
 export const mergeHTMLPlugin = (function () {
-  'use strict';
+  'use strict'
 
-  var originalStream;
+  var originalStream
 
   /**
    * @param {string} value
@@ -13,7 +13,7 @@ export const mergeHTMLPlugin = (function () {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;');
+      .replace(/'/g, '&#x27;')
   }
 
   /* plugin itself */
@@ -21,19 +21,19 @@ export const mergeHTMLPlugin = (function () {
   /** @type {HLJSPlugin} */
   const mergeHTMLPlugin = {
     // preserve the original HTML token stream
-    "before:highlightElement": ({ el }) => {
-      originalStream = nodeStream(el);
+    'before:highlightElement': ({ el }) => {
+      originalStream = nodeStream(el)
     },
     // merge it afterwards with the highlighted token stream
-    "after:highlightElement": ({ el, result, text }) => {
-      if (!originalStream.length) return;
+    'after:highlightElement': ({ el, result, text }) => {
+      if (!originalStream.length) return
 
-      const resultNode = document.createElement('div');
-      resultNode.innerHTML = result.value;
-      result.value = mergeStreams(originalStream, nodeStream(resultNode), text);
-      el.innerHTML = result.value;
-    }
-  };
+      const resultNode = document.createElement('div')
+      resultNode.innerHTML = result.value
+      result.value = mergeStreams(originalStream, nodeStream(resultNode), text)
+      el.innerHTML = result.value
+    },
+  }
 
   /* Stream merging support functions */
 
@@ -48,7 +48,7 @@ export const mergeHTMLPlugin = (function () {
    * @param {Node} node
    */
   function tag(node) {
-    return node.nodeName.toLowerCase();
+    return node.nodeName.toLowerCase()
   }
 
   /**
@@ -56,18 +56,18 @@ export const mergeHTMLPlugin = (function () {
    */
   function nodeStream(node) {
     /** @type Event[] */
-    const result = [];
-    (function _nodeStream(node, offset) {
+    const result = []
+    ;(function _nodeStream(node, offset) {
       for (let child = node.firstChild; child; child = child.nextSibling) {
         if (child.nodeType === 3) {
-          offset += child.nodeValue.length;
+          offset += child.nodeValue.length
         } else if (child.nodeType === 1) {
           result.push({
             event: 'start',
             offset: offset,
-            node: child
-          });
-          offset = _nodeStream(child, offset);
+            node: child,
+          })
+          offset = _nodeStream(child, offset)
           // Prevent void elements from having an end tag that would actually
           // double them in the output. There are more void elements in HTML
           // but we list only those realistically expected in code display.
@@ -75,14 +75,14 @@ export const mergeHTMLPlugin = (function () {
             result.push({
               event: 'stop',
               offset: offset,
-              node: child
-            });
+              node: child,
+            })
           }
         }
       }
-      return offset;
-    })(node, 0);
-    return result;
+      return offset
+    })(node, 0)
+    return result
   }
 
   /**
@@ -91,16 +91,18 @@ export const mergeHTMLPlugin = (function () {
    * @param {string} value - the original source itself
    */
   function mergeStreams(original, highlighted, value) {
-    let processed = 0;
-    let result = '';
-    const nodeStack = [];
+    let processed = 0
+    let result = ''
+    const nodeStack = []
 
     function selectStream() {
       if (!original.length || !highlighted.length) {
-        return original.length ? original : highlighted;
+        return original.length ? original : highlighted
       }
       if (original[0].offset !== highlighted[0].offset) {
-        return (original[0].offset < highlighted[0].offset) ? original : highlighted;
+        return original[0].offset < highlighted[0].offset
+          ? original
+          : highlighted
       }
 
       /*
@@ -118,7 +120,7 @@ export const mergeHTMLPlugin = (function () {
 
       ... which is collapsed to:
       */
-      return highlighted[0].event === 'start' ? original : highlighted;
+      return highlighted[0].event === 'start' ? original : highlighted
     }
 
     /**
@@ -127,30 +129,33 @@ export const mergeHTMLPlugin = (function () {
     function open(node) {
       /** @param {Attr} attr */
       function attributeString(attr) {
-        return ' ' + attr.nodeName + '="' + escapeHTML(attr.value) + '"';
+        return ' ' + attr.nodeName + '="' + escapeHTML(attr.value) + '"'
       }
-      // @ts-ignore
-      result += '<' + tag(node) + [].map.call(node.attributes, attributeString).join('') + '>';
+      result +=
+        '<' +
+        tag(node) +
+        [].map.call(node.attributes, attributeString).join('') +
+        '>'
     }
 
     /**
      * @param {Node} node
      */
     function close(node) {
-      result += '</' + tag(node) + '>';
+      result += '</' + tag(node) + '>'
     }
 
     /**
      * @param {Event} event
      */
     function render(event) {
-      (event.event === 'start' ? open : close)(event.node);
+      ;(event.event === 'start' ? open : close)(event.node)
     }
 
     while (original.length || highlighted.length) {
-      let stream = selectStream();
-      result += escapeHTML(value.substring(processed, stream[0].offset));
-      processed = stream[0].offset;
+      let stream = selectStream()
+      result += escapeHTML(value.substring(processed, stream[0].offset))
+      processed = stream[0].offset
       if (stream === original) {
         /*
         On any opening or closing tag of the original markup we first close
@@ -158,23 +163,27 @@ export const mergeHTMLPlugin = (function () {
         with all the following original tags at the same offset and then
         reopen all the tags on the highlighted stack.
         */
-        nodeStack.reverse().forEach(close);
+        nodeStack.reverse().forEach(close)
         do {
-          render(stream.splice(0, 1)[0]);
-          stream = selectStream();
-        } while (stream === original && stream.length && stream[0].offset === processed);
-        nodeStack.reverse().forEach(open);
+          render(stream.splice(0, 1)[0])
+          stream = selectStream()
+        } while (
+          stream === original &&
+          stream.length &&
+          stream[0].offset === processed
+        )
+        nodeStack.reverse().forEach(open)
       } else {
         if (stream[0].event === 'start') {
-          nodeStack.push(stream[0].node);
+          nodeStack.push(stream[0].node)
         } else {
-          nodeStack.pop();
+          nodeStack.pop()
         }
-        render(stream.splice(0, 1)[0]);
+        render(stream.splice(0, 1)[0])
       }
     }
-    return result + escapeHTML(value.substr(processed));
+    return result + escapeHTML(value.substr(processed))
   }
 
-  return mergeHTMLPlugin;
-}());
+  return mergeHTMLPlugin
+})()

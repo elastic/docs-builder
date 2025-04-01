@@ -1,18 +1,17 @@
-@import "tailwindcss";
-@import "./fonts.css";
-@import "./theme.css";
-@import "./markdown/typography.css";
-@import "./markdown/list.css";
-@import "./markdown/tabs.css";
-@import "./markdown/code.css";
-@import "./copybutton.css";
-@import "./markdown/admonition.css";
-@import "./markdown/dropdown.css";
-@import "./markdown/table.css";
-@import "./markdown/definition-list.css";
-@import "./markdown/images.css";
-@import "./modal.css";
-
+@import 'tailwindcss';
+@import './fonts.css';
+@import './theme.css';
+@import './markdown/typography.css';
+@import './markdown/list.css';
+@import './markdown/tabs.css';
+@import './markdown/code.css';
+@import './copybutton.css';
+@import './markdown/admonition.css';
+@import './markdown/dropdown.css';
+@import './markdown/table.css';
+@import './markdown/definition-list.css';
+@import './markdown/images.css';
+@import './modal.css';
 
 :root {
 	--outline-size: max(2px, 0.08em);
@@ -37,36 +36,16 @@
 	}
 }
 
-
-
-/*@media screen and (min-width: 767px) {*/
-/*	:root {*/
-/*		--offset-top: 131px;*/
-/*	}*/
-/*}*/
-
 @media screen and (min-width: 1200px) {
 	:root {
 		--offset-top: 72px;
 	}
 }
 
-/*#default-search::-webkit-search-cancel-button {*/
-/*	padding-right: calc(var(--spacing) * 2);*/
-/*	-webkit-appearance: none;*/
-/*	height: 16px;*/
-/*	width: 16px;*/
-/*	margin-left: .4em;*/
-/*	background-image: url("data:image/svg+xml;utf8,<svg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'><path stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18 17.94 6M18 18 6.06 6'/></svg>");*/
-/*	cursor: pointer;*/
-/*	background-repeat: no-repeat;*/
-/*}*/
-
-
 #pages-nav li.current {
 	position: relative;
 	&::before {
-		content: "";
+		content: '';
 		position: absolute;
 		top: 50%;
 		left: -1px;
@@ -85,40 +64,23 @@
 
 @layer components {
 	.link {
-		@apply 
-			font-sans
-			text-blue-elastic 
-			text-nowrap
-			font-semibold
-			hover:text-blue-elastic-100
-			inline-flex
-			justify-center
-			items-center;
+		@apply text-blue-elastic hover:text-blue-elastic-100 inline-flex items-center justify-center font-sans font-semibold text-nowrap;
 
 		.link-icon {
-			@apply 
-				shrink-0 
-				size-4
-				ml-0
-				mr-1
-			}
-			
-		.link-arrow {
-			@apply 
-				shrink-0 
-				size-7
-				ml-2
-				transition-transform
-				ease-out;
+			@apply mr-1 ml-0 size-4 shrink-0;
 		}
 
-		&:hover{
+		.link-arrow {
+			@apply ml-2 size-7 shrink-0 transition-transform ease-out;
+		}
+
+		&:hover {
 			svg:not(.link-icon) {
 				@apply translate-x-2;
 			}
 		}
 	}
-	
+
 	.sidebar {
 		.sidebar-nav {
 			@apply sticky top-(--offset-top) z-30 overflow-y-auto;
@@ -126,18 +88,12 @@
 			scrollbar-gutter: stable;
 			scroll-behavior: smooth;
 		}
-		
+
 		.sidebar-link {
-			@apply
-				text-ink-light
-				hover:text-black
-				md:text-sm
-				text-wrap
-				inline-block
-			    leading-[1.2em]
+			@apply text-ink-light inline-block leading-[1.2em] text-wrap hover:text-black md:text-sm;
 		}
 	}
-	
+
 	.content-container {
 		@apply w-full max-w-[80ch];
 	}
@@ -171,8 +127,6 @@
 	scroll-margin-top: calc(var(--offset-top) + var(--spacing) * 6);
 }
 
-
-
 :is(a, button, input, textarea, summary):focus {
 	outline: var(--outline-size) var(--outline-style) var(--outline-color);
 	outline-offset: var(--outline-offset, var(--outline-size));
@@ -188,11 +142,11 @@
 }
 
 .htmx-indicator {
-	display:none;
+	display: none;
 }
 .htmx-request .htmx-indicator,
-.htmx-request.htmx-indicator{
-	display:block;
+.htmx-request.htmx-indicator {
+	display: block;
 	z-index: 9999;
 }
 
@@ -205,18 +159,18 @@
 }
 @keyframes progress {
 	0% {
-		transform:  translateX(0) scaleX(0);
+		transform: translateX(0) scaleX(0);
 	}
 	40% {
-		transform:  translateX(0) scaleX(0.4);
+		transform: translateX(0) scaleX(0.4);
 	}
 	100% {
-		transform:  translateX(100%) scaleX(0.5);
+		transform: translateX(100%) scaleX(0.5);
 	}
 }
 
 #pages-nav .current {
-	@apply font-semibold text-blue-elastic!;
+	@apply text-blue-elastic! font-semibold;
 }
 
 .markdown-content {
@@ -225,17 +179,12 @@
 
 .container {
 	@apply lg:px-3;
-	
+
 	max-width: 1250px !important;
 }
 
-
 #elastic-nav {
 	min-height: var(--offset-top);
-}
-
-html, body {
-	height: 100%;
 }
 
 body {

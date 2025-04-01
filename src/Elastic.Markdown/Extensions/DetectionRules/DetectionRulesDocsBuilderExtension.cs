@@ -32,17 +32,23 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 
 	}
 
+	private DetectionRuleOverviewFile? _overviewFile;
 	public void Visit(DocumentationFile file, ITocItem tocItem)
 	{
 		// TODO the parsing of rules should not happen at ITocItem reading time.
 		// ensure the file has an instance of the rule the reference parsed.
 		if (file is DetectionRuleFile df && tocItem is RuleReference r)
+		{
 			df.Rule = r.Rule;
+			_overviewFile?.AddDetectionRuleFile(df, r);
+
+		}
 
 		if (file is DetectionRuleOverviewFile of && tocItem is RuleOverviewReference or)
 		{
 			var rules = or.Children.OfType<RuleReference>().ToArray();
 			of.Rules = rules;
+			_overviewFile = of;
 		}
 	}
 
@@ -118,7 +124,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => f.Extension is ".md" or ".toml")
 			.Where(f => f.Name != "README.md")
-			.Where(f => !f.FullName.Contains("_deprecated"))
+			.Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}_deprecated{Path.DirectorySeparatorChar}"))
 			.Select(f =>
 			{
 				var relativePath = Path.GetRelativePath(sourceDirectory.FullName, f.FullName);

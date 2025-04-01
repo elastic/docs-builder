@@ -20,9 +20,10 @@ public static class ContentSourceMoniker
 
 	public static string CreateString(string repo, string? path)
 	{
-		if (string.IsNullOrWhiteSpace(path))
+		path = path?.Replace("\\", "/").Trim('/');
+		if (string.IsNullOrWhiteSpace(path) || path == ".")
 			return $"{repo}://";
-		return $"{repo}://{path.Replace("\\", "/").Trim('/')}/";
+		return $"{repo}://{path}/";
 	}
 }
 

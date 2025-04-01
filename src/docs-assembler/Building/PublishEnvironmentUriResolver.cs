@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Documentation.Assembler.Configuration;
+using Documentation.Assembler.Extensions;
 using Elastic.Markdown.Links.CrossLinks;
 
 namespace Documentation.Assembler.Building;
@@ -24,7 +25,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 		TableOfContentsPrefixes = [..topLevelMappings
 			.Values
-			.Select(v => v.Source.ToString())
+			.Select(p =>
+			{
+				var source = p.Source.ToString();
+				return source.EndsWith(":///") ? source[..^1] : source;
+			})
 			.OrderByDescending(v => v.Length)
 		];
 
@@ -36,6 +41,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 	public Uri Resolve(Uri crossLinkUri, string path)
 	{
+		if (crossLinkUri.Scheme == "detection-rules")
+		{
+
+		}
+
 		var subPath = GetSubPathPrefix(crossLinkUri, ref path);
 
 		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch
@@ -133,10 +143,9 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		if (originalPath == toc.SourcePathPrefix)
 			return string.Empty;
 
-		var newRelativePath = path.TrimStart('/').AsSpan().TrimStart(originalPath).ToString();
-		path = Path.Combine(toc.SourcePathPrefix, newRelativePath.TrimStart('/'));
+		var newRelativePath = path.AsSpan().GetTrimmedRelativePath(originalPath);
+		path = Path.Combine(toc.SourcePathPrefix, newRelativePath);
 
 		return string.Empty;
 	}
-
 }

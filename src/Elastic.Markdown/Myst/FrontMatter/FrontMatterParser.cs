@@ -10,7 +10,8 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 public enum LayoutName
 {
 	[EnumMember(Value = "landing-page")] LandingPage,
-	[EnumMember(Value = "not-found")] NotFound
+	[EnumMember(Value = "not-found")] NotFound,
+	[EnumMember(Value = "archive")] Archive
 }
 
 [YamlSerializable]
@@ -34,4 +35,7 @@ public class YamlFrontMatter
 
 	[YamlMember(Alias = "applies_to")]
 	public ApplicableTo? AppliesTo { get; set; }
+
+	[YamlMember(Alias = "mapped_pages")]
+	public IReadOnlyCollection<string>? MappedPages { get; set; }
 }

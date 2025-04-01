@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
+using Documentation.Assembler.Mapping;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
@@ -104,7 +105,9 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
 
-		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
+		var historyMapper = new PageHistoryMapper(assembleSources.HistoryMappings);
+
+		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
