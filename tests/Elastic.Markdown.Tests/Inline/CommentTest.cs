@@ -45,7 +45,7 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().NotContainAny(
+		Html.ReplaceLineEndings().Should().NotContainAny(
 				"<p><!---",
 				"<p>Multi line comment, first line",
 				"<p>Another line inside the commented area",
@@ -58,6 +58,6 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 				"""
 				<p>not a comment, and multi line comment below</p>
 				<p>also not a comment</p>
-				"""
-			);
+				""".ReplaceLineEndings()
+				);
 }
