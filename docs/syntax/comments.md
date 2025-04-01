@@ -12,9 +12,9 @@ Use `%` to add single-line comments.
 
 Make sure to add a space after the `%`.
 
-## Block comments
+## Multiple line comments
 
-Use `<!---` and `-->` to add multi-line block comments.
+Use `<!---` and `-->` to add multiple line comment blocks.
 
 ```markdown
 - There is a commented section below.
