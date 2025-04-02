@@ -170,21 +170,23 @@ Collapsible blocks for hiding and showing content.
 **DON'Ts**<br>
 ❌ Use dropdowns for very long paragraphs or entire sections<br>
 
-:::{dropdown} Output
-:open:
+
+**Output**
 :::{dropdown} Title or label
+:open:
 Collapsible content
 :::
-:::
 
-:::{dropdown} Markdown
+**Markdown**
+
 ```markdown
     :::{dropdown} Title or label
+    :open:
     Collapsible content
     :::
 ```
-:::
 
+[More details: Dropdowns →](dropdowns.md)
 
 ## Headings
 Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level). 
@@ -401,7 +403,7 @@ A code block can contain **explicit** and **magic** callouts.
 ✅ In case of an ordered list, follow the same number of items as in the code block<br>
 
 **DON'Ts**<br>
-❌ Combine explicit and magic callout<br> 
+❌ Combine explicit and magic callouts<br> 
 
 ### Explicit callout
 Add `<\d+>` to the end of a line to explicitly create a code callout.
