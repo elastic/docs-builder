@@ -95,7 +95,7 @@ public class EnabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests
 )
 {
 	[Fact]
-	public void Render() => Html.Should().Contain("<span class=\"code-callout\" data-index=\"1\">1</span>");
+	public void Render() => Html.Should().Contain("<span class=\"code-callout\" data-index=\"1\"></span>");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
