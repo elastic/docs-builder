@@ -19,7 +19,8 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetche
 		var linkIndex = await FetchLinkIndex(ctx);
 		foreach (var (repository, value) in linkIndex.Repositories)
 		{
-			var linkIndexEntry = value.First().Value;
+			var linkIndexEntry = GetNextContentSourceLinkIndexEntry(value, repository);
+
 			linkEntries.Add(repository, linkIndexEntry);
 			var linkReference = await FetchLinkIndexEntry(repository, linkIndexEntry, ctx);
 			linkReferences.Add(repository, linkReference);
@@ -34,4 +35,5 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logger) : CrossLinkFetche
 			FromConfiguration = false
 		};
 	}
+
 }

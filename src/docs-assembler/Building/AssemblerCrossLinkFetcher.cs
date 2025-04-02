@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration) : CrossLinkFetcher(logger)
+public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment) : CrossLinkFetcher(logger)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
@@ -27,7 +27,11 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 			if (repository.Skip)
 				continue;
 
-			var linkReference = await Fetch(repositoryName, ctx);
+			var branch = publishEnvironment.ContentSource == ContentSource.Current
+				? repository.GitReferenceCurrent
+				: repository.GitReferenceNext;
+
+			var linkReference = await Fetch(repositoryName, [branch], ctx);
 			linkReferences.Add(repositoryName, linkReference);
 			var linkIndexReference = await GetLinkIndexEntry(repositoryName, ctx);
 			linkIndexEntries.Add(repositoryName, linkIndexReference);

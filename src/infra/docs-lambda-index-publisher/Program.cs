@@ -8,6 +8,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 
 await LambdaBootstrapBuilder.Create(Handler)
@@ -44,6 +45,8 @@ static async Task<string> Handler(ILambdaContext context)
 				if (tokens.Length < 3)
 					continue;
 
+				var gitReference = await ReadLinkReferenceSha(client, obj);
+
 				var repository = tokens[1];
 				var branch = tokens[2];
 
@@ -52,7 +55,8 @@ static async Task<string> Handler(ILambdaContext context)
 					Repository = repository,
 					Branch = branch,
 					ETag = obj.ETag.Trim('"'),
-					Path = obj.Key
+					Path = obj.Key,
+					GitReference = gitReference
 				};
 				if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
 					existingEntry[branch] = entry;
@@ -82,4 +86,22 @@ static async Task<string> Handler(ILambdaContext context)
 	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 	await client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
 	return $"Finished in {sw}";
+}
+
+static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, S3Object obj)
+{
+	try
+	{
+		var contents = await client.GetObjectAsync(obj.Key, obj.Key, CancellationToken.None);
+		await using var s = contents.ResponseStream;
+		var linkReference = LinkReference.Deserialize(s);
+		return linkReference.Origin.Ref;
+	}
+	catch (Exception e)
+	{
+		Console.WriteLine(e);
+		// it's important we don't fail here we need to fallback gracefully from this so we can fix the root cause
+		// of why a repository is not reporting its git reference properly
+		return "unknown";
+	}
 }

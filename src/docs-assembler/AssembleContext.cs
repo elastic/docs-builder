@@ -7,6 +7,7 @@ using System.Reflection;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 
 namespace Documentation.Assembler;
 

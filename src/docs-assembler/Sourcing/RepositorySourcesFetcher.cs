@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 using ProcNet;
 using ProcNet.Std;

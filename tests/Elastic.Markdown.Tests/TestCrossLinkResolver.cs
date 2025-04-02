@@ -22,6 +22,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		// language=json
 		var json = """
 		           {
+		              "content_source": "current",
 		           	  "origin": {
 		           		"branch": "main",
 		           		"remote": " https://github.com/elastic/docs-content",
@@ -53,7 +54,8 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 			Repository = e.Key,
 			Path = $"elastic/asciidocalypse/{e.Key}/links.json",
 			Branch = "main",
-			ETag = Guid.NewGuid().ToString()
+			ETag = Guid.NewGuid().ToString(),
+			GitReference = Guid.NewGuid().ToString()
 		});
 		_crossLinks = new FetchedCrossLinks
 		{

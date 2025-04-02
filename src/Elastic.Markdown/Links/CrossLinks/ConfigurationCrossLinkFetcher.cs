@@ -21,7 +21,7 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 			_ = declaredRepositories.Add(repository);
 			try
 			{
-				var linkReference = await Fetch(repository, ctx);
+				var linkReference = await Fetch(repository, ["main", "master"], ctx);
 				linkReferences.Add(repository, linkReference);
 				var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
 				linkIndexEntries.Add(repository, linkIndexReference);
