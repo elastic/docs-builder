@@ -60,16 +60,24 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int lineNumber)
 	{
+		var originalLength = slice.Length;
+		_ = slice.TrimEnd();
+		var removedSpaces = originalLength - slice.Length;
 		_ = renderer.WriteEscape(slice);
-		RenderCallouts(renderer, block, lineNumber);
+		RenderCallouts(renderer, block, lineNumber, removedSpaces);
 		_ = renderer.WriteLine();
 	}
 
-	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber)
+	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber, int removedSpaces)
 	{
 		var callOuts = FindCallouts(block.CallOuts, lineNumber + 1);
 		foreach (var callOut in callOuts)
-			_ = renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
+		{
+			// This adds a span with the same width as the removed spaces
+			// to ensure the callout number is aligned with the code
+			_ = renderer.Write($"<span style=\"display: inline-block; width: {removedSpaces}ch\"></span>");
+			_ = renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\"></span>");
+		}
 	}
 
 	private static IEnumerable<CallOut> FindCallouts(
