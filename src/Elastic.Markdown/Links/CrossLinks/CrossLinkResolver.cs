@@ -38,8 +38,9 @@ public record LinkIndexEntry
 	[JsonPropertyName("etag")]
 	public required string ETag { get; init; }
 
+	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]
-	public required string GitReference { get; init; }
+	public string GitReference { get; init; } = "unknown";
 }
 
 public interface ICrossLinkResolver
