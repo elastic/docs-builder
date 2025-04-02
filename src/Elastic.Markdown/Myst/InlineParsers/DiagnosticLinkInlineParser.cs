@@ -296,8 +296,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		var newUrl = url;
 		if (linkMarkdown is not null)
-			newUrl = linkMarkdown.Url;
-
+		{
+			// if url is null it's an anchor link
+			if (!string.IsNullOrEmpty(url))
+				newUrl = linkMarkdown.Url;
+		}
 		else
 		{
 			// TODO revisit when we refactor our documentation set graph
@@ -330,7 +333,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			}
 
 			if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
-				newUrl = $"{newUrl.TrimEnd('/')}{newUrl}";
+				newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
 		}
 
