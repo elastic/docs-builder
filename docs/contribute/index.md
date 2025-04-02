@@ -10,7 +10,7 @@ Whether you're a technical writer or you've only edited Elastic docs once or twi
 
 ## Contribute to the docs [#contribute]
 
-The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs. The easiest way to find the source file for the page you want to update is to navigate to the page on the web and click **Edit this page**. This will take you to the source file in the correct repo.
+The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs. The easiest way to find the source file for the page you want to update is to navigate to the page on the web and click **Edit this page**. This will take you to the source file in the correct repo. For more detailed instructions, see [Contribute on the web](on-the-web.md).
 
 ### Contribute to version `8.x` docs and earlier
 
@@ -34,20 +34,6 @@ When you are ready to edit the content:
 
 * For **simple bugfixes and enhancements** --> [contribute on the web](on-the-web.md)
 * For **complex or multi-page updates** --> [Contribute locally](locally.md)
-
-## Report a bug
-
-* It's a **documentation** problem --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md)
-* It's a **build tool (docs-builder)** problem --> [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
-
-## Request an enhancement
-
-* Make the **documentation** better --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
-* Make our **build tool (docs-builder)** better --> [Start a docs-builder discussion](https://github.com/elastic/docs-builder/discussions)
-
-## Work on docs-builder
-
-That sounds great! See [development](../development/index.md) to learn how to contribute to our documentation build system.
 
 ## Where does the content live
 
@@ -131,3 +117,18 @@ The following section shows a mapping of the different areas in the docs IA to t
 | **Troubleshoot** | Content in this section is troubleshooting content for the different products as well as how to contact support. | All troubleshooting content |
 | **Extend and contribute** | Content in this section focuses on contributing to Elastic products and building plugins, clients, and beats modules. | **Contributions guides for:** Kibana Logstash Beats <br/>**Developer guides for:** Integrations Elasticsearch Plugins |
 | **Reference** | Content in this section focuses on manuals for optional products as well as reference materials like query language references, configuration references, etc. | Reference content, Release notes, Developer guide |
+
+## Report a bug
+
+* It's a **documentation** problem --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md)
+* It's a **build tool (docs-builder)** problem --> [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
+
+## Request an enhancement
+
+* Make the **documentation** better --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
+* Make our **build tool (docs-builder)** better --> [Start a docs-builder discussion](https://github.com/elastic/docs-builder/discussions)
+
+## Work on docs-builder
+
+That sounds great! See [development](../development/index.md) to learn how to contribute to our documentation build system.
+
