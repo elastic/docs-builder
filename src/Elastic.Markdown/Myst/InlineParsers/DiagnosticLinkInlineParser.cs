@@ -357,8 +357,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (newUrl.EndsWith(".toml"))
 			newUrl = url[..^5];
 
-		link.Url = string.IsNullOrEmpty(anchor) ? newUrl : $"{newUrl}#{anchor}";
-
+		link.Url = !string.IsNullOrEmpty(anchor)
+			? newUrl == context.CurrentUrlPath
+				? $"#{anchor}"
+				: $"{newUrl}#{anchor}"
+			: newUrl;
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
