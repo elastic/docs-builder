@@ -1,4 +1,5 @@
 import { UAParser } from 'ua-parser-js'
+
 const { getBrowser } = new UAParser()
 
 // This is a fix for anchors in details elements in non-Chrome browsers.
