@@ -25,9 +25,10 @@ public class GlobalNavigationPathProviderTests
 	public GlobalNavigationPathProviderTests()
 	{
 		FileSystem = new FileSystem();
-		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+		var checkoutDirectory = FileSystem.DirectoryInfo.New(
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
+		CheckoutDirectory = checkoutDirectory.GetDirectories().First(d => d.Name is "next" or "current");
 		Collector = new DiagnosticsCollector([]);
 		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
