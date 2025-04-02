@@ -173,19 +173,17 @@ Collapsible blocks for hiding and showing content.
 :::{dropdown} Output
 :open:
 :::{dropdown} Title or label
-:open:
 Collapsible content
 :::
 :::
 
 :::{dropdown} Markdown
 ```markdown
-:::{dropdown} Title or label
-:open:
-Collapsible content
+    :::{dropdown} Title or label
+    Collapsible content
+    :::
+```
 :::
-:::
-
 
 
 ## Headings
