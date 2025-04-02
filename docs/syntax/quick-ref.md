@@ -11,7 +11,7 @@ This page contains WIP tests, not real entries
 Quick guidance on Elastic Docs V3 syntax.
 
 ## Example quick ref entry
-Prose description of this syntax element (include a link to the full syntax guide)
+Prose description of this syntax element 
 
 **DOs**<br>
 ✅ First _do_ -- not in a bulleted list; use the checkmark as a bullet character and use line breaks<br>
@@ -21,63 +21,172 @@ Prose description of this syntax element (include a link to the full syntax guid
 ❌ First _don't_<br>
 ❌ Second _don't_
 
+Dropdowns: In most cases, use dropdowns labeled Output (open by default) and Markdown. But use different labels and a progressive sequence (etc.) as needed
+
+:::{dropdown} Output
+(open by default)
+
+:open:
+some output, **strong**
+:::
+
 :::{dropdown} Markdown
 ```markdown
 some markdown, **strong**
 ```
 :::
 
-:::{dropdown} Output
-some output, **strong**
-:::
 
-[Link to the full syntax ref entry for more details](index.md)
+[More details →](index.md)
 <br>
 <br>
 <br>
 
 :::{tip}
- 👇 Final drafts 👇 
+ 👇 Almost-final drafts 👇 
 :::
+
+
+## Admonitions
+
+Use admonitions to caution users, or to provide helpful tips or extra information.
+
+**DOs**<br>
+✅ Use custom admonitions as needed
+
+**DON'Ts**<br>
+❌ Stack admonitions<br>
+❌ Overload a page with too many admonitions<br>
+
+### Types
+🚧 TODO: move labels to H4s so we can still have markdown and output dropdowns for each; flip output and markdown; auto-show output 🚧
+
+:::{dropdown} Warning
+```markdown
+:::{warning}
+Users could permanently lose data or leak sensitive information.
+```
+:::{warning}
+Users could permanently lose data or leak sensitive information.
+:::
+
+:::{dropdown} Important
+```markdown
+:::{important}
+Less dire than a warning. Users might encounter issues with performance or stability.
+```
+:::{important}
+Less dire than a warning. Users might encounter issues with performance or stability.
+:::
+
+:::{dropdown} Note
+```markdown
+:::{note}
+Supplemental information that provides context or clarification.
+```
+:::{note}
+Supplemental information that provides context or clarification.
+:::
+
+:::{dropdown} Tip
+```markdown
+:::{tip}
+Advice that helps users work more efficiently or make better choices.
+```
+:::{tip}
+Advice that helps users work more efficiently or make better choices.
+:::
+
+:::{dropdown} Custom
+```markdown
+:::{admonition} Special note
+Custom admonition with custom label.
+```
+:::{admonition} Special note
+Custom admonition with custom label.
+:::
+
 
 ## Anchors
 
-An anchor is automatically created for each [heading](#headings). Default anchors take the form of hyphenated, lowercase heading text, with spaces and special characters trimmed. You can also create a custom anchor by adding it in square brackets at the end of a heading. 
+A default anchor is automatically created for each [heading](#headings), in the form `#heading-text` (hyphenated, lowercase, special characters and spaces trimmed). To create a custom anchor, add it in square brackets at the end of a heading: `[my-better-anchor]` 
 
 **DOs**<br>
-✅ Create custom anchors for repeated headings like "Example request"<br>
+✅ Create custom anchors for repeated structural headings like "Example request"<br>
 
 **DON'Ts**<br>
 ❌ Include punctuation marks in custom anchors<br>
 ❌ Define custom anchors in text that is not a heading
 
-### Default anchors
-
-:::{dropdown} Markdown
+:::{dropdown} Default anchor
+:open:
 ```markdown
 #### Hello world!
+<!-- Auto-generated default anchor: `#hello-world`-->
 ```
 :::
 
-:::{dropdown} Output
 
-Auto-generated anchor `#hello-world`
+:::{dropdown} Custom anchor
+```markdown
+#### Hello world! [get-started]
+```
 :::
 
-### Custom anchors
+
+[More details: Links →](links.md#same-page-links-anchors)
+
+
+## Comments
+
+Use `%` to add single-line comments.
+
+**DOs**<br>
+✅ Add a space after the `%`<br>
+
+**DON'Ts**<br>
+❌ Use `#` or `//`<br>
+
+:::{dropdown} Markdown
+:open:
+```markdown
+% This is a comment
+This is regular text
+:::
+
+:::{dropdown} Output
+% This is a comment
+This is regular text
+:::
+
+## Dropdowns
+
+Collapsible blocks for hiding and showing content. 
+
+**DOs**<br>
+✅ Use dropdowns for text, lists, images, code blocks, and tables<br>
+✅ Add `:open:` to auto-expand a dropdown by default
+
+**DON'Ts**<br>
+❌ Use dropdowns for very long paragraphs or entire sections<br>
+
+:::{dropdown} Output
+:open:
+:::{dropdown} Title or label
+:open:
+Collapsible content
+:::
+:::
 
 :::{dropdown} Markdown
 ```markdown
-#### Heading [custom-anchor]
-```
+:::{dropdown} Title or label
+:open:
+Collapsible content
+:::
 :::
 
-:::{dropdown} Output
 
-`#custom-anchor` that targets the H4 `Heading`
-:::
-
-[More syntax: Anchor links](links.md#same-page-links-anchors)
 
 ## Headings
 Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level). 
@@ -85,11 +194,20 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 **DOs**<br>
 ✅ Start every page with a Heading 1<br>
 ✅ Use only one Heading 1 per page<br>
-✅ Define [custom anchors](#custom-anchors) for repeated headings<br>
+✅ Define custom anchors for repeated headings<br>
 
 **DON'Ts**<br>
 ❌ Use headings in tabs or dropdowns<br>
 ❌ Go deeper than Heading 4
+
+:::{dropdown} Output
+:open:
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+
+:::
 
 :::{dropdown} Markdown
 ```markdown
@@ -100,30 +218,20 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 ```
 :::
 
-:::{dropdown} Output
 
-# Heading 1
-## Heading 2
-### Heading 3
-#### Heading 4
 
-:::
+[More details: Headings →](headings.md)
 
-[More syntax: Headings](headings.md)
-
-## Substitutions
-
-Key-value pairs that define variables. They help ensure consistency and enable short forms.  
-You can define a substitution at the page level in a [front matter](frontmatter.md) block, or in `docset.yml` to apply it across the entire doc set. To use a substitution in your content, surround the key with curly brackets: `{{variable}}`<br>
-
+## Substitutions (subs)
+Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a sub, surround the key with curly brackets: `{{variable}}`<br>
 
 **DOs** <br>
-✅ Check the global `docset.yml` file for existing product and feature name substitutions<br>
+✅ Check the global `docset.yml` file for existing product and feature name subs<br>
 ✅ Use substitutions in code blocks by setting `subs=true`  <br>
 ✅ Define new page-specific substitutions as needed  
 
 **DON'Ts**<br>
-❌ Override existing `docset.yml` substitutions at the page level (causes build errors)<br>
+❌ Override a `docset.yml` sub by defining a page-level sub with the same key (causes build errors)<br>
 ❌ Use substitutions for common words that don't need to be standardized  
 
 ### Define a substitution
@@ -140,6 +248,9 @@ subs:
 
 
 ### Use a substitution
+
+This example uses the `docset.yml` defined [above](#define-a-substitution).
+
 :::{dropdown} Markdown
 
 In `myfile.md`:
@@ -154,7 +265,9 @@ In `myfile.md`:
 Elastic Cloud Hosted supports most standard Kibana settings.
 :::
 
-[More syntax: Substitutions](./substitutions.md)
+[More details: Substitutions →](./substitutions.md)
+
+% TODO: link to our global docset.yml?
 
 <br>
 <br>
@@ -163,7 +276,7 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 <br>
 <br>
 :::{tip} 
-👆 Final drafts 👆  
+👆 Almost-final drafts 👆  
 :::
 
 <br>
@@ -174,112 +287,79 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 <br>
 
 :::{warning} WIP
-🚧🚧🚧 👇 not-final drafts 👇 🚧🚧🚧
-:::
-
-## Admonitions
-
-Use admonitions to draw attention to content or to distinguish it from the main flow.
-
-**DOs**<br>
-✅ Use custom admonitions as needed
-
-**DON'Ts**<br>
-❌ Stack admonitions<br>
-❌ Overload a page with too many admonitions<br>
-
-:::{dropdown} Note
-```markdown
-:::{note}
-Is relevant but can be ignored.
-It can span multiple lines and supports inline formatting.
-```
-:::{note}
-Is relevant but can be ignored.
-It can span multiple lines and supports inline formatting.
-:::
-
-:::{dropdown} Warning
-```markdown
-:::{warning}
-Warn the user against decisions they might regret.
-```
-:::{warning}
-Warn the user against decisions they might regret.
-:::
-
-:::{dropdown} Tip
-```markdown
-:::{tip}
-Helps the user make better choices.
-```
-:::{tip}
-Helps the user make better choices.
-:::
-
-:::{dropdown} Important
-```markdown
-:::{important}
-Could impact system performance or stability.
-```
-:::{important}
-Could impact system performance or stability.
-:::
-
-:::{dropdown} Custom
-```markdown
-:::{admonition} Special note
-Custom admonition with custom label.
-```
-:::{admonition} Special note
-Custom admonition with custom label.
+🚧🚧🚧 👇 very much WIP drafts 👇 🚧🚧🚧
 :::
 
 
 ## Applies to
 
-Allows you to annotate a page or a section based on its applicability to a specific product or version.
+:::{admonition} WIP
+🚧 more coming soon 🚧
+:::
+
+Tags that note the technical contexts of a page or section: the deployments and flavors (stack/serverless) that the content "applies to." Use `applies_to` to help users make sure content is right for their deployments.
 
 **DOs**<br>
-✅ To annotate a page, put `{applies_to}` in the YAML frontmatter<br>
-✅ To annotate a section, put `{applies_to}` immediately before the heading<br>
+✅ Define a set of page-level `applies_to` tags in a front matter block<br>
+✅ Add `{applies_to}` after a heading to indicate that section's contexts<br>
+✅ Indicate versions (`major.minor` with an optional `[.patch]`)  and release phases like `beta`
 
 **DON'Ts**<br>
-❌ Use "coming in x.x" `applies_to` tags (don't pre-announce features)<br>
-❌ Include `applies_to` tags in admonitions<br> 
+❌ Include `applies_to` tags in admonitions<br>
+❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)<br>
 
-:::{dropdown} Page annotations
-```markdown
----
-applies_to:
-  stack: ga 9.1
-  deployment:
-    eck: ga 9.0
-    ess: beta 9.1
-    ece: discontinued 9.2.0
-    self: unavailable 9.3.0
-  serverless:
-    security: ga 9.0.0
-    elasticsearch: beta 9.1.0
-    observability: discontinued 9.2.0
-  product: discontinued 9.7
----
-```
+### Page-level tags
+
+:::{dropdown} Output
+:open:
+🚧 **TODO replace this image to match markdown** 🚧
+
 ![annotations rendered](img/annotations.png)
 :::
 
-:::{dropdown} Section annotations
-```markdown
-#### Stack only
-```yaml {applies_to}
-stack: ga 9.1
-```
+:::{dropdown} Markdown
 
-#### Stack only
-```yaml {applies_to}
-stack: ga 9.1
+This example includes version and release phase facets, which aren't always needed. In many cases, `stack:` and `serverless:` are enough.
+
+```yaml
+---
+applies_to:
+  stack: 9.0
+  deployment:
+    ece: preview
+    eck: beta 9.0.1
+    ess: 
+    self: 9.0 
+  serverless:
+    elasticsearch:  
+    observability: deprecated 
+    security: 
+  product: 
+---
 ```
 :::
+
+
+
+### Section tag
+
+:::{dropdown} Output
+:open:
+#### Stack-only content
+```{applies_to}
+stack:
+:::
+
+:::{dropdown} Markdown
+````markdown
+# Stack-only content
+```{applies_to}
+stack: 
+```
+````
+:::
+
+[More details: Applies to →](applies.md)
 
 ## Code block
 
@@ -289,7 +369,16 @@ Block element that displays multiple lines of code. Start and end a code block w
 ✅ Add a language identifier to enable syntax highlighting<br>
 
 **DON'Ts**<br>
-❌ Use in admonitions yet<br> 
+❌ Use in admonitions<br> 
+
+:::{dropdown} Output
+:open:
+```yaml
+project:
+  title: MyST Markdown
+  github: https://github.com/jupyter-book/mystmd
+```
+:::
 
 :::{dropdown} Markdown
 ```markdown
@@ -301,13 +390,7 @@ project:
 ```
 :::
 
-:::{dropdown} Output
-```yaml
-project:
-  title: MyST Markdown
-  github: https://github.com/jupyter-book/mystmd
-```
-:::
+
 
 
 ## Code callouts
@@ -322,9 +405,21 @@ A code block can contain **explicit** and **magic** callouts.
 **DON'Ts**<br>
 ❌ Combine explicit and magic callout<br> 
 
-### Example of explicit callout
+### Explicit callout
 Add `<\d+>` to the end of a line to explicitly create a code callout.
 
+:::{dropdown} Output
+:open:
+```yaml
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+
+:::
+
 :::{dropdown} Markdown
 ```markdown
 ```yaml
@@ -337,30 +432,13 @@ project:
 ```
 :::
 
-:::{dropdown} Output
-```yaml
-project:
-  license:
-    content: CC-BY-4.0 <1>
-```
 
-1. The license
 
-:::
-
-### Example of magic callout
+### Magic callout
 Add comments with `//` or `#` to magically create callouts.
 
-:::{dropdown} Markdown
-```markdown
-```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
-var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
-```
-```
-:::
-
 :::{dropdown} Output
+:open:
 ```csharp
 var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
@@ -369,60 +447,14 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 :::
 
-## Comments
-
-Use `%` to add single-line comments.
-
-**DOs**<br>
-✅ Add a space after the `%`<br>
-
-**DON'Ts**<br>
-❌ Use `#` or `//`<br>
-
 :::{dropdown} Markdown
 ```markdown
-% This is a comment
-This is regular text
-:::
-
-:::{dropdown} Output
-% This is a comment
-This is regular text
-:::
-
-## Dropdowns
-
-Dropdowns hide and reveal content on user interaction. By default, dropdowns are collapsed and content is hidden until you click the title of the collapsible block.
-
-**DOs**<br>
-✅ Use dropdowns for text, lists, images, code blocks, and tables<br>
-
-**DON'Ts**<br>
-❌ Use for very long paragraphs or entire sections<br>
-
-:::{dropdown} Markdown
-```markdown
-:::{dropdown} Dropdown Title
-Dropdown content
-:::
-:::
-
-:::{dropdown} Output
-:::{dropdown} Dropdown Title
-Dropdown content
-:::
-:::
-
-You can optionally specify the `open` option to keep the dropdown content visible by default.
-
-```markdown
-:::{dropdown} Dropdown Title
-:open:
-Dropdown content
-:::
+```csharp
+var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
+var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
-
-
+```
+:::
 
 
 
