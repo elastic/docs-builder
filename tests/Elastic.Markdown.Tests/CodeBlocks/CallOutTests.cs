@@ -121,9 +121,9 @@ var z = y - 2; <2>
 		Html.ReplaceLineEndings().Should().Contain("""
 		                      <div class="highlight-csharp notranslate">
 		                      	<div class="highlight">
-		                      		<pre><code class="language-csharp">var x = 1; <span class="code-callout" data-index="1">1</span>
+		                      		<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
 		                      var y = x - 2;
-		                      var z = y - 2; <span class="code-callout" data-index="2">2</span>
+		                      var z = y - 2;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
 		                      </code></pre>
 		                      	</div>
 		                      </div>

@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Comments;
+using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Slices.Directives;
 using Markdig.Helpers;
 using Markdig.Renderers;
@@ -60,16 +61,24 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static void RenderCodeBlockLine(HtmlRenderer renderer, EnhancedCodeBlock block, StringSlice slice, int lineNumber)
 	{
+		var originalLength = slice.Length;
+		_ = slice.TrimEnd();
+		var removedSpaces = originalLength - slice.Length;
 		_ = renderer.WriteEscape(slice);
-		RenderCallouts(renderer, block, lineNumber);
+		RenderCallouts(renderer, block, lineNumber, removedSpaces);
 		_ = renderer.WriteLine();
 	}
 
-	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber)
+	private static void RenderCallouts(HtmlRenderer renderer, EnhancedCodeBlock block, int lineNumber, int indent)
 	{
 		var callOuts = FindCallouts(block.CallOuts, lineNumber + 1);
 		foreach (var callOut in callOuts)
-			_ = renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\">{callOut.Index}</span>");
+		{
+			// This adds a span with the same width as the removed spaces
+			// to ensure the callout number is aligned with the code
+			_ = renderer.Write($"<span style=\"display: inline-block; width: {indent}ch\"></span>");
+			_ = renderer.Write($"<span class=\"code-callout\" data-index=\"{callOut.Index}\"></span>");
+		}
 	}
 
 	private static IEnumerable<CallOut> FindCallouts(
@@ -228,10 +237,10 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
 	{
 		var appliesTo = appliesToDirective.AppliesTo;
-		var slice2 = ApplicableTo.Create(appliesTo);
+		var slice = ApplicableToDirective.Create(appliesTo);
 		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
 			return;
-		var html = slice2.RenderAsync().GetAwaiter().GetResult();
+		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		_ = renderer.Write(html);
 	}
 }
