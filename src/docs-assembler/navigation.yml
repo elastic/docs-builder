@@ -42,7 +42,7 @@ toc:
       - toc: beats://extend
         path_prefix: extend/beats
 
-  #################
+ #################
   # RELEASE NOTES #
   #################
   # Context:
@@ -58,76 +58,139 @@ toc:
   # In docs-content, I tried moving release-notes/index.md to release-notes/intro/index.md
   # and creating a release-notes/intro/toc.yml file that contains just that page,
   # but I still couldn't get it to work.
-  - toc: docs-content://release-notes/intro
+  - toc: docs-content://release-notes
     path_prefix: release-notes
     children:
-      - toc: apm-agent-android://release-notes
-        path_prefix: release-notes/apm/agents/android
-      - toc: apm-agent-dotnet://release-notes
-        path_prefix: release-notes/apm/agents/dotnet
-      - toc: apm-agent-go://release-notes
-        path_prefix: release-notes/apm/agents/go
-      - toc: apm-agent-ios://release-notes
-        path_prefix: release-notes/apm/agents/ios
-      - toc: apm-agent-java://release-notes
-        path_prefix: release-notes/apm/agents/java
-      - toc: apm-agent-nodejs://release-notes
-        path_prefix: release-notes/apm/agents/nodejs
-      - toc: apm-agent-php://release-notes
-        path_prefix: release-notes/apm/agents/php
-      - toc: apm-agent-python://release-notes
-        path_prefix: release-notes/apm/agents/python
-      - toc: apm-agent-ruby://release-notes
-        path_prefix: release-notes/apm/agents/ruby
-      - toc: apm-agent-rum-js://release-notes
-        path_prefix: release-notes/apm/agents/rum-js
-      - toc: apm-aws-lambda://release-notes
-        path_prefix: release-notes/apm/aws-lambda
-      - toc: apm-server://release-notes
-        path_prefix: release-notes/apm
+      # Elasticsearch
+      # https://github.com/elastic/elasticsearch/blob/main/docs/release-notes/toc.yml
+      - toc: elasticsearch://release-notes
+        path_prefix: release-notes/elasticsearch
+        children:
+          # Elasticsearch Clients
+          # https://github.com/elastic/elasticsearch-java/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-java://release-notes
+            path_prefix: release-notes/elasticsearch/clients/java
+          # https://github.com/elastic/elasticsearch-js/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-js://release-notes
+            path_prefix: release-notes/elasticsearch/clients/javascript
+          # https://github.com/elastic/elasticsearch-net/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-net://release-notes
+            path_prefix: release-notes/elasticsearch/clients/dotnet
+          # https://github.com/elastic/elasticsearch-php/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-php://release-notes
+            path_prefix: release-notes/elasticsearch/clients/php
+          # https://github.com/elastic/elasticsearch-py/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-py://release-notes
+            path_prefix: release-notes/elasticsearch/clients/python
+          # https://github.com/elastic/elasticsearch-ruby/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-ruby://release-notes
+            path_prefix: release-notes/elasticsearch/clients/ruby
+          # Elasticsearch Hadoop
+          # https://github.com/elastic/elasticsearch-hadoop/blob/main/docs/release-notes/toc.yml
+          - toc: elasticsearch-hadoop://release-notes
+            path_prefix: release-notes/elasticsearch-hadoop
+
+      # Kibana
+      # https://github.com/elastic/kibana/blob/main/docs/release-notes/toc.yml
+      - toc: kibana://release-notes
+        path_prefix: release-notes/kibana
+
+      # Fleet and Elastic Agent
+      # https://github.com/elastic/docs-content/blob/main/release-notes/fleet-elastic-agent/toc.yml
+      - toc: docs-content://release-notes/fleet-elastic-agent
+        path_prefix: release-notes/fleet
+
+      # Logstash
+      # https://github.com/elastic/logstash/blob/main/docs/release-notes/toc.yml
+      - toc: logstash://release-notes
+        path_prefix: release-notes/logstash
+
+      # Beats
+      # https://github.com/elastic/beats/blob/main/docs/release-notes/toc.yml
       - toc: beats://release-notes
         path_prefix: release-notes/beats
-      - toc: cloud-on-k8s://release-notes
-        path_prefix: release-notes/cloud-on-k8s
+
+      # Serverless
+      # Comes from docs-content
+      # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-cloud-serverless/toc.yml
+      - toc: docs-content://release-notes/elastic-cloud-serverless
+        path_prefix: release-notes/cloud-serverless
+      # Cloud Hosted
+      # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-hosted/toc.yml
       # We probably need to add `max_toc_depth: 2` to
       # https://github.com/elastic/cloud/blob/master/docs/docset.yml
       - toc: cloud://release-notes/cloud-hosted
         path_prefix: release-notes/cloud-hosted
+      # Cloud Enterprise
+      # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-enterprise/toc.yml
       - toc: cloud://release-notes/cloud-enterprise
         path_prefix: release-notes/cloud-enterprise
-      # Comes from docs-content
-      - toc: docs-content://release-notes/elastic-cloud-serverless
-        path_prefix: release-notes/cloud-serverless
-      - toc: elasticsearch://release-notes
-        path_prefix: release-notes/elasticsearch
-      - toc: elasticsearch-hadoop://release-notes
-        path_prefix: release-notes/elasticsearch-hadoop
-      - toc: elasticsearch-java://release-notes
-        path_prefix: release-notes/elasticsearch/clients/java
-      - toc: elasticsearch-js://release-notes
-        path_prefix: release-notes/elasticsearch/clients/javascript
-      - toc: elasticsearch-net://release-notes
-        path_prefix: release-notes/elasticsearch/clients/dotnet
-      - toc: elasticsearch-php://release-notes
-        path_prefix: release-notes/elasticsearch/clients/php
-      - toc: elasticsearch-py://release-notes
-        path_prefix: release-notes/elasticsearch/clients/python
-      - toc: elasticsearch-ruby://release-notes
-        path_prefix: release-notes/elasticsearch/clients/ruby
-      # Comes from docs-content
-      - toc: docs-content://release-notes/fleet-elastic-agent
-        path_prefix: release-notes/fleet
-      - toc: kibana://release-notes
-        path_prefix: release-notes/kibana
-      - toc: logstash://release-notes
-        path_prefix: release-notes/logstash
+
+      # K8s
+      # https://github.com/elastic/cloud-on-k8s/blob/main/docs/release-notes/toc.yml
+      - toc: cloud-on-k8s://release-notes
+        path_prefix: release-notes/cloud-on-k8s
+
+      # Observability
+      # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-observability/toc.yml
       # Comes from docs-content
       - toc: docs-content://release-notes/elastic-observability
         path_prefix: release-notes/observability
-      # Comes from docs-content
+        children:
+          # APM
+          # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-apm/toc.yml
+          - toc: apm-server://release-notes
+            path_prefix: release-notes/apm
+          # APM Android agent
+          # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-android://release-notes
+            path_prefix: release-notes/apm/agents/android
+          # APM .NET agent
+          # https://github.com/elastic/apm-agent-dotnet/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-dotnet://release-notes
+            path_prefix: release-notes/apm/agents/dotnet
+          # APM Go agent
+          # https://github.com/elastic/apm-agent-go/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-go://release-notes
+            path_prefix: release-notes/apm/agents/go
+          # APM iOS agent
+          # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-ios://release-notes
+            path_prefix: release-notes/apm/agents/ios
+          # APM Java agent
+          # https://github.com/elastic/apm-agent-java/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-java://release-notes
+            path_prefix: release-notes/apm/agents/java
+          # APM Node.js agent
+          # https://github.com/elastic/apm-agent-nodejs/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-nodejs://release-notes
+            path_prefix: release-notes/apm/agents/nodejs
+          # APM PHP agent
+          # https://github.com/elastic/apm-agent-php/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-php://release-notes
+            path_prefix: release-notes/apm/agents/php
+          # APM Python agent
+          # https://github.com/elastic/apm-agent-python/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-python://release-notes
+            path_prefix: release-notes/apm/agents/python
+          # APM Ruby agent
+          # https://github.com/elastic/apm-agent-ruby/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-ruby://release-notes
+            path_prefix: release-notes/apm/agents/ruby
+          # APM RUM JavaScript Agent
+          # https://github.com/elastic/apm-agent-rum-js/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-rum-js://release-notes
+            path_prefix: release-notes/apm/agents/rum-js
+          # APM AWS Lambda Extension
+          # https://github.com/elastic/apm-aws-lambda/blob/main/docs/release-notes/toc.yml
+          - toc: apm-aws-lambda://release-notes
+            path_prefix: release-notes/apm/aws-lambda
+
+      # Security
+      # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-security/toc.yml
       - toc: docs-content://release-notes/elastic-security
         path_prefix: release-notes/security
-
+        
   #############
   # REFERENCE #
   #############
