@@ -23,7 +23,7 @@ If you need to update documentation for both 8.x and 9.x, you will have to work 
 
 ### Contribute to version `9.0` docs and later
 
-To contribute to `9.0+` content, you need to work with our new documentation system. This system uses custom [Markdown syntax](syntax.md).
+To contribute to `9.0+` content, you need to work with our new documentation system. This system uses custom [Markdown syntax](../syntax/index.md).
 This content lives in one of three places:
 
 1. **Reference/settings content** lives in the new Markdown files in the code repo as it did pre 9.0. This enables folks to make updates that touch code and low-level docs in the same PR.  
