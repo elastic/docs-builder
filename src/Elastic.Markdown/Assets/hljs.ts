@@ -1,6 +1,6 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import { $$ } from 'select-dom'
-
+import { LanguageFn } from 'highlight.js'
+import hljs from 'highlight.js/lib/core'
 import asciidoc from 'highlight.js/lib/languages/asciidoc'
 import bash from 'highlight.js/lib/languages/bash'
 import c from 'highlight.js/lib/languages/c'
@@ -13,7 +13,6 @@ import go from 'highlight.js/lib/languages/go'
 import gradle from 'highlight.js/lib/languages/gradle'
 import groovy from 'highlight.js/lib/languages/groovy'
 import handlebars from 'highlight.js/lib/languages/handlebars'
-import hljs from 'highlight.js/lib/core'
 import http from 'highlight.js/lib/languages/http'
 import ini from 'highlight.js/lib/languages/ini'
 import java from 'highlight.js/lib/languages/java'
@@ -35,7 +34,7 @@ import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
-import { LanguageFn } from 'highlight.js'
+import { $$ } from 'select-dom'
 
 const languages: Array<{
     name: string

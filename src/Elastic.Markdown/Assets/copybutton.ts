@@ -1,5 +1,4 @@
 // Localization support
-
 import * as ClipboardJS from 'clipboard'
 
 const DOCUMENTATION_OPTIONS = {

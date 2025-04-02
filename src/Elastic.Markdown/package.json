@@ -29,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "9.23.0",
     "@tailwindcss/postcss": "4.1.0",
+    "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "eslint": "9.23.0",
     "globals": "16.0.0",
     "parcel": "2.14.4",

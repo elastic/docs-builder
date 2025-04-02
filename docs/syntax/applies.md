@@ -154,6 +154,34 @@ stack: ga 9.1
 
 This will allow the yaml inside the `{applies-to}` directive to be fully highlighted.
 
+## Inline Applies To 
+
+Inline applies to can be placed anywhere using the following syntax
+
+```markdown
+This can live inline {applies_to}`section: <life-cycle> [version]`
+```
+
+An inline version example would be {applies_to}`stack: beta 9.1` this allows you to target elements more concretely visually.
+
+A common use case would be to place them on definition lists:
+
+Fruit {applies_to}`stack: preview 9.1`
+:   A sweet and fleshy product of a tree or other plant that contains seed and can be eaten as food. Common examples include apples, oranges, and bananas. Most fruits are rich in vitamins, minerals and fiber.
+
+Applies {preview}`9.1`
+:   A sweet and fleshy product of a tree or other plant that contains seed and can be eaten as food. Common examples include apples, oranges, and bananas. Most fruits are rich in vitamins, minerals and fiber.
+
+
+A specialized `{preview}` role exist to quickly mark something as a technical preview. It takes a required version number
+as argument.
+
+```markdown
+Property {preview}`<version>`
+:   definition body
+```
+
+
 
 ## Examples
 
@@ -161,6 +189,7 @@ This will allow the yaml inside the `{applies-to}` directive to be fully highlig
 ```yaml {applies_to}
 stack: ga 9.1
 ```
+
 
 #### Stack with deployment
 ```yaml {applies_to}

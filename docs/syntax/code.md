@@ -195,6 +195,42 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 ::::
 
+#### Align callouts
+
+You can align callouts with spaces.
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```yaml
+foo: 1       <1>
+barbar: 2    <2>
+bazbazbaz: 3 <3>
+```
+
+1. Foo
+2. Bar
+3. Baz
+
+:::
+
+:::{tab-item} Markdown
+````markdown
+```yaml
+foo: 1       <1>
+barbar: 2    <2>
+bazbazbaz: 3 <3>
+```
+
+1. Foo
+2. Bar
+3. Baz
+````
+:::
+
+::::
+
 #### Disable callouts
 
 You can disable callouts by adding a code block argument `callouts=false`.

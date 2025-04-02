@@ -9,6 +9,7 @@
 			@apply text-grey-30 overflow-x-auto rounded-none border-0 p-6! text-sm;
 			background-color: #22272e;
 			mix-blend-mode: unset;
+			line-height: 1.5em;
 		}
 		code:first-child {
 			@apply rounded-t-sm;
@@ -23,8 +24,10 @@
 
 	pre code .code-callout {
 		@apply ml-1;
-		transform: translateY(-1px);
 		user-select: none;
+		&::after {
+			content: attr(data-index);
+		}
 	}
 
 	ol.code-callouts {
@@ -48,7 +51,7 @@
 
 	pre code .code-callout,
 	ol.code-callouts li::before {
-		@apply bg-blue-elastic inline-flex size-5 items-center justify-center rounded-full font-mono text-xs! text-white!;
+		@apply bg-blue-elastic inline-flex size-4.5 items-center justify-center rounded-full font-mono text-xs! text-white!;
 	}
 
 	code {
@@ -57,7 +60,6 @@
 		line-height: 1.4em;
 		padding-left: 0.2em;
 		padding-right: 0.2em;
-		letter-spacing: 0.02em;
 		text-decoration: inherit;
 		font-weight: inherit;
 		mix-blend-mode: multiply;

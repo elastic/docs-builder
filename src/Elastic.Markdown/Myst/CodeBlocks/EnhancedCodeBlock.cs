@@ -10,12 +10,6 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
-public class AppliesToDirective(BlockParser parser, ParserContext context)
-	: EnhancedCodeBlock(parser, context)
-{
-	public ApplicableTo? AppliesTo { get; set; }
-}
-
 public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 	: FencedCodeBlock(parser), IBlockExtension
 {

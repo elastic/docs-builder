@@ -71,7 +71,7 @@ public class AssembleContext
 			throw new Exception($"Could not find environment {environment}");
 		Environment = env;
 
-		var contentSource = Environment.ContentSource.ToStringFast();
+		var contentSource = Environment.ContentSource.ToStringFast(true);
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? Path.Combine(".artifacts", "checkouts", contentSource));
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? Path.Combine(".artifacts", "assembly"));
 
