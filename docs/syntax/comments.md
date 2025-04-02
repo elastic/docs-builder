@@ -14,11 +14,11 @@ Make sure to add a space after the `%`.
 
 ## Multiple line comments
 
-Use `<!---` and `-->` to add multiple line comment blocks.
+Use `<!--` and `-->` to add multiple line comment blocks.
 
 ```markdown
 - There is a commented section below.
-<!---
+<!--
 This section should not appear -
 Neither should this line.
 -->

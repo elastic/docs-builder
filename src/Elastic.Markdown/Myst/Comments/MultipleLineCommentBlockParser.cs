@@ -15,7 +15,7 @@ public class MultipleLineCommentBlockParser : BlockParser
 {
 	public MultipleLineCommentBlockParser() => OpeningCharacters = ['<'];
 
-	private const string BlockStart = "<!---";
+	private const string BlockStart = "<!--";
 	private const string BlockEnd = "-->";
 
 	public override BlockState TryOpen(BlockProcessor processor)

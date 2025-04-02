@@ -31,7 +31,7 @@ not a comment
 public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(output,
 	"""
 	not a comment, and multi line comment below
-	<!---
+	<!--
 	multi line comment
 	Another line inside the commented area
 	end of comments
@@ -46,7 +46,7 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ReplaceLineEndings().Should().NotContainAny(
-				"<p><!---",
+				"<p><!--",
 				"<p>Multi line comment, first line",
 				"<p>Another line inside the commented area",
 				"<p>end of comments",
@@ -60,4 +60,42 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 				<p>also not a comment</p>
 				""".ReplaceLineEndings()
 				);
+}
+
+public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineTest(output,
+	"""
+	not a comment, and multi line comment below
+	<!--
+	multi line comment
+	[regular link](http://elastic.co/non-existing-link)
+	[global search field]({{this-variable-does-not-exist}}/introduction.html)
+	end of comments
+	-->
+
+	also not a comment
+	"""
+)
+{
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void GeneratesAttributesInHtml() =>
+		// language=html
+		Html.ReplaceLineEndings().Should().NotContainAny(
+				"<p><!--",
+				"<p>Multi line comment, first line",
+				"regular link",
+				"global search field",
+				"<p>end of comments",
+				"<p>-->")
+			.And.ContainAll(
+				"<p>not a comment, and multi line comment below</p>",
+				"<p>also not a comment</p>"
+			).And.Be(
+				"""
+					<p>not a comment, and multi line comment below</p>
+					<p>also not a comment</p>
+					""".ReplaceLineEndings()
+			);
 }
