@@ -332,6 +332,15 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = Path.GetFullPath(combined);
 			}
 
+			// When running on Windows, path traversal results must be normalized prior to being used in a URL
+			// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				newUrl = newUrl.Replace('\\', '/');
+				if (newUrl.Length > 2 && newUrl[1] == ':')
+					newUrl = newUrl[2..];
+			}
+
 			if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 				newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
@@ -342,15 +351,6 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			newUrl = newUrl.EndsWith($"{Path.DirectorySeparatorChar}index.md")
 				? newUrl.Remove(newUrl.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
 				: newUrl.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
-		}
-
-		// When running on Windows, path traversal results must be normalized prior to being used in a URL
-		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-		{
-			newUrl = newUrl.Replace('\\', '/');
-			if (newUrl.Length > 2 && newUrl[1] == ':')
-				newUrl = newUrl[2..];
 		}
 
 		// TODO this is hardcoded should be part of extension system
