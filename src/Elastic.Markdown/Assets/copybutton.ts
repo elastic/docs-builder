@@ -215,10 +215,6 @@ const addCopyButtonToCodeCells = () => {
                 outputLines.push(line)
             }
         }
-        
-        for (let i = 0; i < outputLines.length; i++) {
-            outputLines[i] = outputLines[i].replace(/\s+$/, '')
-        }
 
         // If no lines with the prompt were found then just use original lines
         if (lineGotPrompt.some((v) => v === true)) {
