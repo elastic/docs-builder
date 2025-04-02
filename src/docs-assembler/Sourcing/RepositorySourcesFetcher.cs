@@ -48,7 +48,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 		_logger.LogInformation(
 			"Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
-			PublishEnvironment.ContentSource.ToStringFast()
+			PublishEnvironment.ContentSource.ToStringFast(true)
 		);
 
 		var dict = new ConcurrentDictionary<string, Stopwatch>();
