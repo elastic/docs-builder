@@ -122,7 +122,7 @@ A default anchor is automatically created for each [heading](#headings), in the 
 :open:
 ```markdown
 #### Hello world!
-<!-- Auto-generated default anchor: `#hello-world`-->
+<!-- Auto-generated default anchor: #hello-world -->
 ```
 :::
 
