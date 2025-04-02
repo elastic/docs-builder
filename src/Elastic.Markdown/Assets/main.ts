@@ -11,6 +11,7 @@ import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { $, $$ } from 'select-dom'
 
 import { UAParser } from 'ua-parser-js'
+import { initSmoothScroll } from "./smooth-scroll";
 const { getOS } = new UAParser()
 
 document.addEventListener('htmx:load', function () {
@@ -19,6 +20,7 @@ document.addEventListener('htmx:load', function () {
     initCopyButton()
     initTabs()
     initNav()
+    initSmoothScroll()
     openDetailsWithAnchor()
 })
 
