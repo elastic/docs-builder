@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
-using NetEscapades.EnumGenerators;
 using System.Text.Json.Serialization;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Markdown.IO.State;
 
@@ -19,4 +19,3 @@ public enum ContentSource
 	[Display(Name = "current")]
 	Current
 }
-
