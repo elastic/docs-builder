@@ -237,7 +237,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 1. 🚧 there's a bug in the rendering of this
 :::
 
-### Magic (comment-based) callout
+### Magic (comment-based) callout [magic-callout]
 Add comments with `//` or `#` to magically create callouts.
 
 :::{dropdown} Example: Magic callout
