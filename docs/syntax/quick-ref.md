@@ -8,7 +8,7 @@ navigation_title: "WIP Quick reference"
 This page is still in progress. 
 :::
 
-Quick guidance on Elastic Docs V3 syntax.
+This page offers quick guidance on Elastic Docs v3 syntax, including usage tips. The [full syntax guide](index.md) provides implementation details.
 
 
 ## Admonitions
@@ -54,7 +54,7 @@ Use admonitions to caution users, or to provide helpful tips or extra informatio
   :::{note}
   Supplemental information that provides context or clarification.
   :::
-  
+
   **Tip**
   ```markdown
       :::{tip}
@@ -76,14 +76,9 @@ Use admonitions to caution users, or to provide helpful tips or extra informatio
   :::
 
 ::::
+<br>
 
- 
-
-
-
-
-
-
+---
 
 ## Anchors
 
@@ -113,6 +108,10 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 
 [More details: Links →](links.md#same-page-links-anchors)
+<br>
+<br>
+
+---
 
 ## Applies to 🚧
 
@@ -187,7 +186,10 @@ stack:
 🚧 Coming soon 🚧
 
 [More details: Applies to →](applies.md)
+<br>
+<br>
 
+---
 
 ## Code blocks
 
@@ -218,7 +220,11 @@ elasticsearch.hosts: ["http://localhost:9200"]
 ```
 :::
 
+[More details: Code →](code.md)
+<br>
+<br>
 
+---
 
 ## Code callouts
 
@@ -287,6 +293,12 @@ Add comments with `//` or `#` to magically create callouts.
 **DON'Ts**<br>
 ❌ Overuse callouts -- aim for readability and scannability<br>
 
+[More details: Code callouts→](code.md#code-callouts)
+<br>
+<br>
+
+---
+
 ## Comments
 
 Use `%` to add single-line comments.
@@ -339,6 +351,10 @@ Collapsible content
 ```
 
 [More details: Dropdowns →](dropdowns.md)
+<br>
+<br>
+
+---
 
 ## Headings
 Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level). 
@@ -372,7 +388,10 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 
 
 [More details: Headings →](headings.md)
+<br>
+<br>
 
+---
 
 ## Links
 
@@ -397,6 +416,10 @@ Standard Markdown links to doc pages, sections (anchors), or external content. P
 :::
 
 [More details: Links →](links.md)
+<br>
+<br>
+
+---
 
 ## Lists
 
@@ -428,7 +451,10 @@ Standard Markdown ordered (numbered) and unordered (bulleted) lists. Indent with
 :::
 
 [More details: Lists →](lists.md)
+<br>
+<br>
 
+---
 
 
 ## Substitutions (subs)
@@ -442,6 +468,8 @@ Key-value pairs that define variables. They help ensure consistency and enable s
 **DON'Ts**<br>
 ❌ Override a `docset.yml` sub by defining a page-level sub with the same key (causes build errors)<br>
 ❌ Use substitutions for common words that don't need to be standardized  
+
+% TODO: link to our global docset.yml?
 
 ### Define a substitution
 
@@ -475,15 +503,10 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 :::
 
 [More details: Substitutions →](./substitutions.md)
+<br>
+<br>
 
-% TODO: link to our global docset.yml?
-
-
-
-
-
-
-
+---
 
 
 🚧🚧🚧
@@ -515,3 +538,8 @@ some markdown, **strong**
 :::
 
 [More details →](index.md)
+
+<br>
+<br>
+
+---
