@@ -2,14 +2,13 @@
 navigation_title: "WIP Quick reference"
 ---
 
-# WORK IN PROGRESS Syntax quick reference
+# Syntax quick reference (WIP)
 
 :::{warning}
 This page is still in progress. 
 :::
 
-This page offers quick guidance on Elastic Docs v3 syntax, including usage tips. The [full syntax guide](index.md) provides implementation details.
-
+This page offers quick guidance on Elastic Docs v3 syntax, including usage tips. Elements are in alphabetical order. The [full syntax guide](index.md) provides implementation details.
 
 ## Admonitions
 
@@ -390,6 +389,31 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 <br>
 
 ---
+
+## Images
+Standard markdown images, with `[alt text]` in square brackets and the image path in parentheses.
+
+**DOs**<br>
+✅ Use a 16:9 resolution for screenshots
+✅ Store images in an `/images` folder within the main docs directory (in Elastic doc sets, `/docs/images`)<br> 
+✅ Use inline images as needed<br>
+✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border
+✅ Draw attention to certain parts of an image using arrows and manual callouts (numbers)
+
+**DON'Ts**<br>
+❌ Use lots of UI screenshots that create a maintenance burden<br>
+❌ Include confidential info or PII in an image<br>
+❌ Add a drop shadow or torn edge effect
+
+:::{dropdown} Output
+![Bears emerging from hibernation](../images/bear.png)
+:::
+
+:::{dropdown} Markdown
+```markdown
+![Bears emerging from hibernation](../images/bear.png)
+```
+:::
 
 
 ## Inline formatting 
