@@ -506,6 +506,58 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 ---
 
+## Tabs
+
+Block element that displays content in switchable tabs to help users zero in on the right context (such as a deployment or language). [Synced tab groups](https://elastic.github.io/docs-builder/syntax/tabs/#tab-groups) are supported.
+
+**DOs**<br>
+✅ Use clear, descriptive tab labels<br>
+✅ Make sure all tabs have the same type of content and similar goals<br>
+✅ Keep tab content scannable and self-contained (don't make the user switch tabs to get the full picture or compare information)<br>
+✅ Include other block elements in tabs, like [admonitions](#admonitions)
+
+**DON'Ts**<br>
+❌ Nest tabs<br>
+❌ Split step-by-step procedures across tabs<br>
+❌ Use more than 6 tabs (use as few as possible)<br>
+❌ Use tabs in [dropdowns](#dropdowns)
+
+:::::{dropdown} Output
+::::{tab-set}
+
+:::{tab-item} Tab 1 title
+Tab 1 content
+:::
+
+:::{tab-item} Tab 2 title
+Tab 2 content
+:::
+
+::::
+:::::
+
+:::::{dropdown} Markdown
+```markdown
+    ::::{tab-set}
+
+    :::{tab-item} Tab 1 title
+    Tab 1 content
+    :::
+
+    :::{tab-item} Tab 2 title
+    Tab 2 content
+    :::
+
+    ::::
+```
+:::::
+
+[More details: Tabs →](tabs.md)
+<br>
+<br>
+
+---
+
 ## Tables
 
 Standard table layout for structured data. Automatically scrolls horizontally if needed. The **header** row is optional. 
@@ -535,6 +587,7 @@ Standard table layout for structured data. Automatically scrolls horizontally if
     | Info	 | Data   |     
 ```
 :::
+[More details: Tables →](tables.md)
 <br>
 <br>
 
