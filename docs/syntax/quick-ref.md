@@ -707,6 +707,18 @@ Standard table layout for structured data. Automatically scrolls horizontally if
 ## Quick ref entry template
 Prose description of this syntax element 
 
+Example dropdowns: In most cases, use dropdowns labeled Syntax and Output. But use different labels and structure as needed.
+
+:::{dropdown} Syntax
+```markdown
+some markdown, **strong**
+```
+:::
+
+:::{dropdown} Output
+some output, **strong**
+:::
+
 **DOs**<br>
 ✅ First _do_ -- not in a bulleted list; use the checkmark as a bullet character and use line breaks<br>
 ✅ Second _do_
@@ -714,21 +726,6 @@ Prose description of this syntax element
 **DON'Ts**<br>
 ❌ First _don't_<br>
 ❌ Second _don't_
-
-Dropdowns: In most cases, use dropdowns labeled Output (open by default) and Markdown. But use different labels and a progressive sequence (etc.) as needed
-
-:::{dropdown} Output
-(open by default if the element is not obvious)
-
-:open:
-some output, **strong**
-:::
-
-:::{dropdown} Syntax
-```markdown
-some markdown, **strong**
-```
-:::
 
 [More details →](index.md)
 <br>
