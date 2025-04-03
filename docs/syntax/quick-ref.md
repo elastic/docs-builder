@@ -22,52 +22,67 @@ Use admonitions to caution users, or to provide helpful tips or extra informatio
 ❌ Stack admonitions<br>
 ❌ Overload a page with too many admonitions<br>
 
-### Types
+::::{dropdown} Types
+ **Warning**
 
-:::{dropdown} Warning
-```markdown
-:::{warning}
-Users could permanently lose data or leak sensitive information.
-```
-:::{warning}
-Users could permanently lose data or leak sensitive information.
-:::
+  ```markdown
+      :::{warning}
+      Users could permanently lose data or leak sensitive information.
+      :::
+  ```
+  :::{warning}
+  Users could permanently lose data or leak sensitive information.
+  :::
 
-:::{dropdown} Important
-```markdown
-:::{important}
-Less dire than a warning. Users might encounter issues with performance or stability.
-```
-:::{important}
-Less dire than a warning. Users might encounter issues with performance or stability.
-:::
+  **Important**
 
-:::{dropdown} Note
-```markdown
-:::{note}
-Supplemental information that provides context or clarification.
-```
-:::{note}
-Supplemental information that provides context or clarification.
-:::
+  ```markdown
+      :::{important}
+      Less dire than a warning. Users might encounter issues with performance or stability.
+      :::
+  ```
+  :::{important}
+  Less dire than a warning. Users might encounter issues with performance or stability.
+  :::
 
-:::{dropdown} Tip
-```markdown
-:::{tip}
-Advice that helps users work more efficiently or make better choices.
-```
-:::{tip}
-Advice that helps users work more efficiently or make better choices.
-:::
+  **Note**
+  ```markdown
+      :::{note}
+      Supplemental information that provides context or clarification.
+      :::
+  ```
+  :::{note}
+  Supplemental information that provides context or clarification.
+  :::
+  
+  **Tip**
+  ```markdown
+      :::{tip}
+      Advice that helps users work more efficiently or make better choices.
+      :::
+  ```
+  :::{tip}
+  Advice that helps users work more efficiently or make better choices.
+  :::
 
-:::{dropdown} Custom
-```markdown
-:::{admonition} Special note
-Custom admonition with custom label.
-```
-:::{admonition} Special note
-Custom admonition with custom label.
-:::
+  **Custom**
+  ```markdown
+      :::{admonition} Special note
+      Custom admonition with custom label.
+      :::
+  ```
+  :::{admonition} Special note
+  Custom admonition with custom label.
+  :::
+
+::::
+
+ 
+
+
+
+
+
 
 
 ## Anchors
@@ -280,7 +295,7 @@ Use `%` to add single-line comments.
 ✅ Add a space after the `%`<br>
 
 **DON'Ts**<br>
-❌ Use `#` or `//`<br>
+❌ Use `#` or `//` unless you're creating a [magic callout](#magic-callout)<br>
 
 :::{dropdown} Markdown
 ```markdown
@@ -292,6 +307,9 @@ This is regular text
 % This is a comment
 This is regular text
 :::
+<br>
+
+---
 
 ## Dropdowns
 
