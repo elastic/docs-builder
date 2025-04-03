@@ -13,12 +13,12 @@ using Elastic.Markdown.Links.CrossLinks;
 
 const string bucketName = "elastic-docs-link-index";
 
-// await LambdaBootstrapBuilder.Create(Handler)
-// 	.Build()
-// 	.RunAsync();
+await LambdaBootstrapBuilder.Create(Handler)
+ 	.Build()
+	.RunAsync();
 
 // Uncomment to test locally without uploading
-await CreateLinkIndex(new AmazonS3Client());
+// await CreateLinkIndex(new AmazonS3Client());
 
 #pragma warning disable CS8321 // Local function is declared but never used
 static async Task<string> Handler(ILambdaContext context)
