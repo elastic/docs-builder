@@ -25,7 +25,8 @@
 
 		thead {
 			@apply border-grey-20 bg-grey-10 border-b-1 text-left align-top font-sans font-semibold;
-			:empty {
+			&:not(:has(th:not(:empty))) {
+				/* If no th within thead is not empty, all are empty, so hide the thead */
 				display: none;
 			}
 		}
