@@ -293,6 +293,7 @@ applies_to:
 #### Stack-only content
 ```{applies_to}
 stack:
+```
 :::
 
 :::{dropdown} Markdown
