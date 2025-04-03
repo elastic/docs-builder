@@ -92,7 +92,6 @@ A default anchor is automatically created for each [heading](#headings), in the 
 ❌ Define custom anchors in text that is not a heading
 
 :::{dropdown} Default anchor
-:open:
 ```markdown
 #### Hello world!
 <!-- Auto-generated default anchor: #hello-world -->
@@ -203,8 +202,7 @@ Multi-line blocks for code, commands, configuration, and similar content. Use th
 ❌ Place code blocks in admonitions<br>
 ❌ Use inline code formatting (single backticks) for multi-line content<br>
 
-:::{dropdown} Example
-:open:
+:::{dropdown} Output
 ```yaml
 server.host: "0.0.0.0"
 elasticsearch.hosts: ["http://localhost:9200"]
@@ -368,7 +366,7 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 ❌ Use headings in tabs or dropdowns<br>
 ❌ Go deeper than Heading 4
 
-:::{dropdown} Rendered example
+:::{dropdown} Output
 # Heading 1
 ## Heading 2
 ### Heading 3
@@ -525,7 +523,7 @@ Prose description of this syntax element
 Dropdowns: In most cases, use dropdowns labeled Output (open by default) and Markdown. But use different labels and a progressive sequence (etc.) as needed
 
 :::{dropdown} Output
-(open by default)
+(open by default if the element is not obvious)
 
 :open:
 some output, **strong**
@@ -538,7 +536,6 @@ some markdown, **strong**
 :::
 
 [More details →](index.md)
-
 <br>
 <br>
 
