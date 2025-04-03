@@ -99,6 +99,180 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 [More details: Links →](links.md#same-page-links-anchors)
 
+## Applies to
+
+:::{admonition} WIP
+🚧 more coming soon 🚧
+:::
+
+Tags that identify the deployments and flavors (stack/serverless) that a piece of content "applies to." Think of `applies_to` tags as technical context identifiers that help users determine whether content is right for their deployments and configuration.
+
+:::{admonition} Tip
+General content that is not deployment-specific should _not_ have any `applies_to` tags. They're meant to be limiting, not exhaustive / tk something
+:::
+
+**DOs**<br>
+✅ Define a set of page-level `applies_to` tags in a front matter block<br>
+✅ Add `{applies_to}` after a heading to indicate that section's contexts<br>
+✅ Indicate versions (`major.minor` with an optional `[.patch]`)  and release phases like `beta`
+
+**DON'Ts**<br>
+❌ Add `applies_to` tags to general, broadly applicable content<br>
+❌ Use `applies_to` tags as metadata or to represent "aboutness" -- focus on helping users make decisions 
+❌ Include `applies_to` tags in admonitions<br>
+❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)<br>
+
+### Page-level tags
+
+:::{dropdown} Output
+:open:
+🚧 **TODO replace this image to match markdown** 🚧
+
+![annotations rendered](img/annotations.png)
+:::
+
+:::{dropdown} Markdown
+
+This example includes version and release phase facets, which aren't always needed. In many cases, `stack:` and `serverless:` are enough.
+
+```yaml
+---
+applies_to:
+  stack: 9.0
+  deployment:
+    ece: preview
+    eck: beta 9.0.1
+    ess: 
+    self: 9.0 
+  serverless:
+    elasticsearch:  
+    observability: deprecated 
+    security: 
+  product: 
+---
+```
+:::
+
+### Section tag
+
+:::{dropdown} Output
+:open:
+#### Stack-only content
+```{applies_to}
+stack:
+```
+:::
+
+:::{dropdown} Markdown
+````markdown
+# Stack-only content
+```{applies_to}
+stack: 
+```
+````
+:::
+
+[More details: Applies to →](applies.md)
+
+
+
+## Code blocks
+
+Multi-line blocks for code, commands, configuration, and similar content. Use three backticks ` ``` ` on separate lines to start and end the block. For syntax highlighting, add a language identifier after the opening backticks.
+
+**DOs**<br>
+✅ Include code blocks within lists or other block elements as needed<br>
+✅ Add language identifiers like `yaml`, `json`, `bash`
+
+**DON'Ts**<br>
+❌ Place code blocks in admonitions<br>
+❌ Use inline code formatting (single backticks) for multi-line content<br>
+
+:::{dropdown} Example
+:open:
+```yaml
+server.host: "0.0.0.0"
+elasticsearch.hosts: ["http://localhost:9200"]
+```
+:::
+
+:::{dropdown} Markdown
+```markdown
+    ```yaml
+    server.host: "0.0.0.0"
+    elasticsearch.hosts: ["http://localhost:9200"]
+    ```
+```
+:::
+
+
+
+## Code callouts
+
+Inline annotations that highlight or explain specific lines in a code block. 
+
+**DOs**<br>
+✅ Keep callout/comment text short and specific<br>
+✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
+
+**DON'Ts**<br>
+❌ Overuse callouts -- aim for scannability<br>
+
+### Explicit callout
+Add `<1>`, `<2>`, ... to the end of a line to explicitly create a code callout.
+
+:::{dropdown} Example: Explicit callout
+:open:
+```json
+{
+  "match": {
+    "message": "search text" <1>
+  }
+}
+```
+1. Searches the `message` field for the phrase "search text"
+
+**Markdown**
+```
+    ```json
+    {
+      "match": {
+        "message": "search text" <1>
+      }
+    }
+    ```
+    1. Searches the `message` field for the phrase "search text"
+```
+1. 🚧 there's a bug in the rendering of this
+:::
+
+
+### Magic callout
+Add comments with `//` or `#` to magically create callouts.
+
+:::{dropdown} Example: Magic comment-based callout
+```json
+{
+  "match": {
+    "message": "search text" // Searches the message field
+  }
+}
+```
+
+**Markdown**
+
+(TODO replace with image format to prevent rendering? create issue)
+
+```markdown
+    ```json
+    {
+      "match": {
+        "message": "search text" // Searches the message field
+      }
+    }
+    ```
+```
+:::
 
 ## Comments
 
@@ -232,177 +406,11 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 % TODO: link to our global docset.yml?
 
-## Applies to
-
-:::{admonition} WIP
-🚧 more coming soon 🚧
-:::
-
-Tags that identify the deployments and flavors (stack/serverless) that a piece of content "applies to." Think of `applies_to` tags as technical context identifiers that help users determine whether content is right for their deployments and configuration.
-
-:::{admonition} Tip
-General content that is not deployment-specific should _not_ have any `applies_to` tags. They're meant to be limiting, not exhaustive / tk something
-:::
-
-**DOs**<br>
-✅ Define a set of page-level `applies_to` tags in a front matter block<br>
-✅ Add `{applies_to}` after a heading to indicate that section's contexts<br>
-✅ Indicate versions (`major.minor` with an optional `[.patch]`)  and release phases like `beta`
-
-**DON'Ts**<br>
-❌ Add `applies_to` tags to general, broadly applicable content<br>
-❌ Use `applies_to` tags as metadata or to represent "aboutness" -- focus on helping users make decisions 
-❌ Include `applies_to` tags in admonitions<br>
-❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)<br>
-
-### Page-level tags
-
-:::{dropdown} Output
-:open:
-🚧 **TODO replace this image to match markdown** 🚧
-
-![annotations rendered](img/annotations.png)
-:::
-
-:::{dropdown} Markdown
-
-This example includes version and release phase facets, which aren't always needed. In many cases, `stack:` and `serverless:` are enough.
-
-```yaml
----
-applies_to:
-  stack: 9.0
-  deployment:
-    ece: preview
-    eck: beta 9.0.1
-    ess: 
-    self: 9.0 
-  serverless:
-    elasticsearch:  
-    observability: deprecated 
-    security: 
-  product: 
----
-```
-:::
-
-### Section tag
-
-:::{dropdown} Output
-:open:
-#### Stack-only content
-```{applies_to}
-stack:
-```
-:::
-
-:::{dropdown} Markdown
-````markdown
-# Stack-only content
-```{applies_to}
-stack: 
-```
-````
-:::
-
-[More details: Applies to →](applies.md)
-
-## Code blocks
-
-Multi-line blocks for code, commands, configuration, and similar content. Use three backticks ` ``` ` on separate lines to start and end the block. For syntax highlighting, add a language identifier after the opening backticks.
-
-**DOs**<br>
-✅ Include code blocks within lists or other block elements as needed<br>
-✅ Add language identifiers like `yaml`, `json`, `bash`
-
-**DON'Ts**<br>
-❌ Place code blocks in admonitions<br>
-❌ Use inline code formatting (single backticks) for multi-line content<br>
-
-:::{dropdown} Example
-:open:
-```yaml
-server.host: "0.0.0.0"
-elasticsearch.hosts: ["http://localhost:9200"]
-```
-:::
-
-:::{dropdown} Markdown
-```markdown
-    ```yaml
-    server.host: "0.0.0.0"
-    elasticsearch.hosts: ["http://localhost:9200"]
-    ```
-```
-:::
 
 
-## Code callouts
-
-Inline annotations that highlight or explain specific lines in a code block. 
-
-**DOs**<br>
-✅ Keep callout/comment text short and specific<br>
-✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
-
-**DON'Ts**<br>
-❌ Overuse callouts -- aim for scannability<br>
-
-### Explicit callout
-Add `<1>`, `<2>`, ... to the end of a line to explicitly create a code callout.
-
-:::{dropdown} Example: Explicit callout
-:open:
-```json
-{
-  "match": {
-    "message": "search text" <1>
-  }
-}
-```
-1. Searches the `message` field for the phrase "search text"
-
-**Markdown**
-```
-    ```json
-    {
-      "match": {
-        "message": "search text" <1>
-      }
-    }
-    ```
-    1. Searches the `message` field for the phrase "search text"
-```
-1. 🚧 there's a bug in the rendering of this
-:::
 
 
-### Magic callout
-Add comments with `//` or `#` to magically create callouts.
 
-:::{dropdown} Example: Magic comment-based callout
-```json
-{
-  "match": {
-    "message": "search text" // Searches the message field
-  }
-}
-```
-
-**Markdown**
-
-(TODO replace with image format to prevent rendering? create issue)
-
-```markdown
-    ```json
-    {
-      "match": {
-        "message": "search text" // Searches the message field
-      }
-    }
-    ```
-```
-:::
 
 
 
