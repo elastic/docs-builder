@@ -2,15 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
+using Amazon.S3;
+using Amazon.S3.Model;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
+using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Mapping;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Markdown;
+using Elastic.Markdown.Exporters;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -116,5 +125,58 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
 		return collector.Errors;
+	}
+
+	/// <param name="contentSource"> The content source. "current" or "next"</param>
+	/// <param name="ctx"></param>
+	[Command("update-link-index-all")]
+	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
+	{
+		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
+		var cloner = new RepositorySourcer(logger, assembleContext.CheckoutDirectory, new FileSystem(), collector);
+		var dict = new ConcurrentDictionary<string, Stopwatch>();
+		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
+		{
+			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
+		};
+		await Parallel.ForEachAsync(repositories,
+			new ParallelOptions
+			{
+				CancellationToken = ctx,
+				MaxDegreeOfParallelism = Environment.ProcessorCount
+			}, async (kv, c) =>
+			{
+				var name = kv.Key.Trim();
+				var checkout = cloner.CloneOrUpdateRepository(kv.Value, name, kv.Value.GetBranch(contentSource), dict);
+
+				var docsMetadataPath = Path.Combine(checkout.Directory.FullName, ".docs-metadata");
+
+				var context = new BuildContext(
+					collector,
+					new FileSystem(),
+					new FileSystem(),
+					checkout.Directory.FullName,
+					docsMetadataPath
+				);
+				var set = new DocumentationSet(context, logger);
+				var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
+				await generator.GenerateAll(c);
+
+				IAmazonS3 s3Client = new AmazonS3Client();
+				var bucketName = "elastic-docs-link-index";
+				var linksJsonPath = Path.Combine(docsMetadataPath, "links.json");
+				var content = await File.ReadAllTextAsync(linksJsonPath, c);
+				var putObjectRequest = new PutObjectRequest
+				{
+					BucketName = bucketName,
+					Key = $"test/elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
+					ContentBody = content
+				};
+				var response = await s3Client.PutObjectAsync(putObjectRequest, c);
+				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+					collector.EmitError(linksJsonPath, $"Failed to upload {putObjectRequest.Key} to S3");
+			}).ConfigureAwait(false);
+		return collector.Errors > 0 ? 1 : 0;
 	}
 }

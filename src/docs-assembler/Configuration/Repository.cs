@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.IO.State;
 using YamlDotNet.Serialization;
 
 namespace Documentation.Assembler.Configuration;
@@ -31,4 +32,11 @@ public record Repository
 
 	[YamlMember(Alias = "skip")]
 	public bool Skip { get; set; }
+
+	public string GetBranch(ContentSource contentSource) => contentSource switch
+	{
+		ContentSource.Current => GitReferenceCurrent,
+		ContentSource.Next => GitReferenceNext,
+		_ => throw new ArgumentException($"The content source {contentSource} is not supported.", nameof(contentSource))
+	};
 }
