@@ -506,6 +506,39 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 ---
 
+## Tables
+
+Standard table layout for structured data. Automatically scrolls horizontally if needed. A **header** row is required. 
+
+**DOs**<br>
+✅ Use leading and trailing pipes for clarity<br>
+✅ Add spaces for readability (they're trimmed)<br>
+✅ Keep cell content scannable and parallel<br>
+✅ Use standard Markdown text alignment when necessary (`:-- --: :--:`)<br>
+
+**DON'Ts**<br>
+❌ Insert block elements or multiple paragraphs in a table cell<br>
+❌ Use a table solely for position or spacing purposes<br>
+
+:::{dropdown} Output
+| Header | Header |
+| ------ | ------ |
+| Data   | Info   | 
+| Info	 | Data   |  
+:::
+
+:::{dropdown} Markdown
+```markdown
+    | Header | Header |
+    | ------ | ------ |
+    | Data   | Info   | 
+    | Info	 | Data   |     
+```
+:::
+<br>
+<br>
+
+---
 
 🚧🚧🚧
 
