@@ -308,25 +308,45 @@ Add comments with `//` or `#` to magically create callouts.
 
 ## Comments
 
-Use `%` to add single-line comments.
+Use `%` to add single-line comments. Use HTML-style `<!--` and `-->` for multi-line comments.
 
 :::{dropdown} Syntax
 ```markdown
-% This is a comment
-This is regular text
+    % This is a comment
+    This is regular text
+
+    <!--
+    so much depends 
+    upon
+    a multi-line 
+    comment
+    -->
+    Regular text after multi-line comment
+```
 :::
 
 :::{dropdown} Output
 % This is a comment
 This is regular text
+
+<!--
+so much depends 
+upon
+a multi-line 
+comment
+-->
+Regular text after multi-line comment
+
 :::
 
 
+
+
 **DOs**<br>
-✅ Add a space after the `%`<br>
+✅ Add a space after `%` to start a single-line comment<br>
 
 **DON'Ts**<br>
-❌ Use `#` or `//` unless you're creating a [magic callout](#magic-callout)<br>
+❌ Use `#` or `//` for comments; they're reserved for [magic callouts](#magic-callout)<br>
 
 <br>
 
@@ -560,7 +580,7 @@ Page title (Markdown H1):
 ---
 
 ## Substitutions 
-Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a substitution (or "sub"), surround the key with curly brackets: `{{variable}}`<br>
+Key-value pairs that define reusable variables. They help ensure consistency and enable short forms. To use a substitution (or "sub"), surround the key with curly brackets: `{{variable}}`<br>
 
 % TODO: link to our global docset.yml?
 
@@ -650,7 +670,7 @@ Tab 2 content
 **DOs**<br>
 ✅ Use clear, descriptive tab labels<br>
 ✅ Make sure all tabs have the same type of content and similar goals<br>
-✅ Keep tab content scannable and self-contained (don't make the user switch tabs to get the full picture or compare information)<br>
+✅ Keep tab content scannable and self-contained (don't make the user switch tabs to get complete steps or compare information)<br>
 ✅ Include other block elements in tabs, like [admonitions](#admonitions)
 
 **DON'Ts**<br>
@@ -702,16 +722,18 @@ Standard table layout for structured data. Automatically scrolls horizontally if
 
 ---
 
-🚧🚧🚧
+🚧🚧🚧 
 
-## Quick ref entry template
+% DELETE ME
+
+## Template: quick ref entry
 Prose description of this syntax element 
 
 Example dropdowns: In most cases, use dropdowns labeled Syntax and Output. But use different labels and structure as needed.
 
 :::{dropdown} Syntax
 ```markdown
-some markdown, **strong**
+some syntax, **strong**
 ```
 :::
 
