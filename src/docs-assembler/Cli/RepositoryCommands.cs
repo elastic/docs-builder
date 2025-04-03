@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Net.Mime;
 using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -128,9 +129,10 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	}
 
 	/// <param name="contentSource"> The content source. "current" or "next"</param>
+	/// <param name="DryRun"> Dry run without uploading to s3</param>
 	/// <param name="ctx"></param>
 	[Command("update-link-index-all")]
-	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
+	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, bool DryRun, Cancel ctx = default)
 	{
 		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
@@ -164,14 +166,15 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 				await generator.GenerateAll(c);
 
 				IAmazonS3 s3Client = new AmazonS3Client();
-				var bucketName = "elastic-docs-link-index";
+				const string bucketName = "elastic-docs-link-index";
 				var linksJsonPath = Path.Combine(docsMetadataPath, "links.json");
 				var content = await File.ReadAllTextAsync(linksJsonPath, c);
 				var putObjectRequest = new PutObjectRequest
 				{
 					BucketName = bucketName,
-					Key = $"test/elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
-					ContentBody = content
+					Key = $"elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
+					ContentBody = content,
+					ContentType = MediaTypeNames.Application.Json,
 				};
 				var response = await s3Client.PutObjectAsync(putObjectRequest, c);
 				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
