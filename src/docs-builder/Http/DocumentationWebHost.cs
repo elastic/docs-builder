@@ -178,12 +178,14 @@ public class DocumentationWebHost
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
-				if (generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
-				{
-					var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
-					return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);
-				}
-				return Results.NotFound();
+				if (s == "index.md")
+					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Value.Url);
+
+				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
+					return Results.NotFound();
+
+				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
+				return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
 	}
 }

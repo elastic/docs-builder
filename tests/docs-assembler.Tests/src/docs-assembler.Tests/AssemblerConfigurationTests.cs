@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;

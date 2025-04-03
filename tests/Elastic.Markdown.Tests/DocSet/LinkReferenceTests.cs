@@ -26,6 +26,7 @@ public class LinkReferenceTests : NavigationTestsBase
 	[Fact]
 	public void ShouldNotIncludeSnippets() =>
 		Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
+
 }
 
 public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)
@@ -46,4 +47,65 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 		git.RepositoryName.Should().NotContain(".git");
 		git.Remote.Should().NotContain(".git");
 	}
+}
+
+public class LinkReferenceSerializationTests
+{
+	[Fact]
+	public void SerializesCurrent()
+	{
+		var linkReference = new LinkReference
+		{
+			Origin = new GitCheckoutInformation
+			{
+				Branch = "branch",
+				Remote = "remote",
+				Ref = "ref"
+			},
+			UrlPathPrefix = "",
+			Links = [],
+			CrossLinks = [],
+		};
+		var json = LinkReference.Serialize(linkReference);
+		// language=json
+		json.Should().Be(
+			"""
+			{
+			  "origin": {
+			    "branch": "branch",
+			    "remote": "remote",
+			    "ref": "ref",
+			    "name": "unavailable"
+			  },
+			  "url_path_prefix": "",
+			  "links": {},
+			  "cross_links": [],
+			  "redirects": null
+			}
+			""");
+	}
+
+	[Fact]
+	public void Deserializes()
+	{
+		// language=json
+		var json =
+			"""
+			{
+			  "origin": {
+			    "branch": "branch",
+			    "remote": "remote",
+			    "ref": "ref",
+			    "name": "unavailable"
+			  },
+			  "url_path_prefix": "",
+			  "links": {},
+			  "cross_links": [],
+			  "redirects": null
+			}
+			""";
+		var linkReference = LinkReference.Deserialize(json);
+		linkReference.Origin.Ref.Should().Be("ref");
+	}
+
 }

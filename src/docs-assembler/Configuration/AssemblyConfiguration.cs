@@ -2,8 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.ComponentModel.DataAnnotations;
-using NetEscapades.EnumGenerators;
+using Elastic.Markdown.IO.State;
 using YamlDotNet.Serialization;
 
 namespace Documentation.Assembler.Configuration;
@@ -99,16 +98,6 @@ public record PublishEnvironment
 
 	[YamlMember(Alias = "google_tag_manager")]
 	public GoogleTagManager GoogleTagManager { get; set; } = new();
-}
-
-[EnumExtensions]
-public enum ContentSource
-{
-	[Display(Name = "next")]
-	Next,
-
-	[Display(Name = "current")]
-	Current
 }
 
 public record GoogleTagManager
