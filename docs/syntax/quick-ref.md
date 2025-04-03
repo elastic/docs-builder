@@ -665,7 +665,7 @@ Tab 2 content
 **DOs**<br>
 ✅ Use clear, descriptive tab labels<br>
 ✅ Make sure all tabs have the same type of content and similar goals<br>
-✅ Keep tab content scannable and self-contained (don't make the user switch tabs to get complete steps or compare information)<br>
+✅ Keep tab content scannable and self-contained (don't make the user switch tabs to follow steps or compare content)<br>
 ✅ Include other block elements in tabs, like [admonitions](#admonitions)
 
 **DON'Ts**<br>
