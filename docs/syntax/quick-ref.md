@@ -394,10 +394,10 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 Standard markdown images, with `[alt text]` in square brackets and the image path in parentheses.
 
 **DOs**<br>
-✅ Use a 16:9 resolution for screenshots
+✅ Use a 16:9 resolution for screenshots<br>
 ✅ Store images in an `/images` folder within the main docs directory (in Elastic doc sets, `/docs/images`)<br> 
 ✅ Use inline images as needed<br>
-✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border
+✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border<br>
 ✅ Draw attention to certain parts of an image using arrows and manual callouts (numbers)
 
 **DON'Ts**<br>
@@ -406,12 +406,12 @@ Standard markdown images, with `[alt text]` in square brackets and the image pat
 ❌ Add a drop shadow or torn edge effect
 
 :::{dropdown} Output
-![Bears emerging from hibernation](../images/bear.png)
+![Bear emerging from hibernation](../images/bear.png)
 :::
 
 :::{dropdown} Markdown
 ```markdown
-![Bears emerging from hibernation](../images/bear.png)
+![Bear emerging from hibernation](../images/bear.png)
 ```
 :::
 
