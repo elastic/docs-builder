@@ -7,6 +7,7 @@ using System.Reflection;
 using Documentation.Assembler.Configuration;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 
 namespace Documentation.Assembler;
 
@@ -22,6 +23,8 @@ public class AssembleContext
 	public IFileInfo ConfigurationPath { get; }
 
 	public IFileInfo NavigationPath { get; }
+
+	public IFileInfo HistoryMappingPath { get; }
 
 	public IDirectoryInfo CheckoutDirectory { get; set; }
 
@@ -60,13 +63,20 @@ public class AssembleContext
 			ExtractAssemblerConfiguration(navigationPath, "navigation.yml");
 		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
 
-		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? ".artifacts/checkouts");
-		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? ".artifacts/assembly");
-
+		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "historymapping.yml");
+		if (!ReadFileSystem.File.Exists(historyMappingPath))
+			ExtractAssemblerConfiguration(historyMappingPath, "historymapping.yml");
+		HistoryMappingPath = ReadFileSystem.FileInfo.New(historyMappingPath);
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
 			throw new Exception($"Could not find environment {environment}");
 		Environment = env;
+
+		var contentSource = Environment.ContentSource.ToStringFast(true);
+		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? Path.Combine(".artifacts", "checkouts", contentSource));
+		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? Path.Combine(".artifacts", "assembly"));
+
+
 	}
 
 	private void ExtractAssemblerConfiguration(string configPath, string file)

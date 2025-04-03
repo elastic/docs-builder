@@ -315,6 +315,9 @@ public class DocumentationGroup : INavigation
 			}
 		}
 
+		if (indexFile is not null)
+			indexFile.IsIndex = true;
+
 		return indexFile ?? files.FirstOrDefault();
 	}
 

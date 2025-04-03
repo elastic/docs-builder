@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.IO.State;
 using YamlDotNet.Serialization;
 
 namespace Documentation.Assembler.Configuration;
@@ -24,6 +25,7 @@ public record AssemblyConfiguration
 				var repository = RepositoryDefaults(r, name);
 				config.ReferenceRepositories[name] = repository;
 			}
+
 			foreach (var (name, env) in config.Environments)
 				env.Name = name;
 			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
@@ -44,8 +46,10 @@ public record AssemblyConfiguration
 		var repository = r ?? new TRepository();
 		// ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
 		repository.Name = name;
-		if (string.IsNullOrEmpty(repository.CurrentBranch))
-			repository.CurrentBranch = "main";
+		if (string.IsNullOrEmpty(repository.GitReferenceCurrent))
+			repository.GitReferenceCurrent = "main";
+		if (string.IsNullOrEmpty(repository.GitReferenceNext))
+			repository.GitReferenceNext = "main";
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
@@ -70,6 +74,9 @@ public record AssemblyConfiguration
 
 	[YamlMember(Alias = "environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
+
+	[YamlMember(Alias = "named_git_references")]
+	public Dictionary<string, string> NamedGitReferences { get; set; } = [];
 }
 
 public record PublishEnvironment
@@ -86,6 +93,9 @@ public record PublishEnvironment
 	[YamlMember(Alias = "allow_indexing")]
 	public bool AllowIndexing { get; set; }
 
+	[YamlMember(Alias = "content_source")]
+	public ContentSource ContentSource { get; set; }
+
 	[YamlMember(Alias = "google_tag_manager")]
 	public GoogleTagManager GoogleTagManager { get; set; } = new();
 }
@@ -96,6 +106,7 @@ public record GoogleTagManager
 	public bool Enabled { get; set; }
 
 	private string _id = string.Empty;
+
 	[YamlMember(Alias = "id")]
 	public string Id
 	{
@@ -107,6 +118,7 @@ public record GoogleTagManager
 			_id = value;
 		}
 	}
+
 	[YamlMember(Alias = "auth")]
 	public string? Auth { get; set; }
 

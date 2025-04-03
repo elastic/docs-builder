@@ -73,7 +73,8 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                     Repository = e.Key,
                     Path = $"elastic/asciidocalypse/{e.Key}/links.json",
                     Branch = "main",
-                    ETag = Guid.NewGuid().ToString()
+                    ETag = Guid.NewGuid().ToString(),
+                    GitReference = Guid.NewGuid().ToString()
                  ))
 
             let crossLinks =
@@ -91,7 +92,8 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                     Repository = e.Key,
                     Path = $"elastic/asciidocalypse/{e.Key}/links.json",
                     Branch = "main",
-                    ETag = Guid.NewGuid().ToString()
+                    ETag = Guid.NewGuid().ToString(),
+                    GitReference = Guid.NewGuid().ToString()
                  ));
 
             let crossLinks =

@@ -21,7 +21,10 @@ public record Repository
 	public string Origin { get; set; } = string.Empty;
 
 	[YamlMember(Alias = "current")]
-	public string CurrentBranch { get; set; } = "main";
+	public string GitReferenceCurrent { get; set; } = "main";
+
+	[YamlMember(Alias = "next")]
+	public string GitReferenceNext { get; set; } = "main";
 
 	[YamlMember(Alias = "checkout_strategy")]
 	public string CheckoutStrategy { get; set; } = "partial";

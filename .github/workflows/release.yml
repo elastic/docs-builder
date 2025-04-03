@@ -35,6 +35,8 @@ jobs:
 
   release-lambda:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Amazon Linux 2023 build
@@ -48,7 +50,7 @@ jobs:
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.ref_name }} .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
+        run: gh release upload ${{ github.event.release.tag_name }} .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
         shell: bash
 
   release:
@@ -78,5 +80,5 @@ jobs:
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.ref_name }} .artifacts/publish/docs-builder/release/*.zip
+        run: gh release upload ${{ github.event.release.tag_name }} .artifacts/publish/docs-builder/release/*.zip
         shell: bash

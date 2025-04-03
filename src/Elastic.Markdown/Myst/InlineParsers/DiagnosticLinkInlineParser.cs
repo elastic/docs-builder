@@ -207,7 +207,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var linkMarkdown = SetLinkData(link, processor, context, file, url);
 
 		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
-		UpdateLinkUrl(link, url, context, anchor);
+		UpdateLinkUrl(link, linkMarkdown, url, context, anchor);
 	}
 
 	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,
@@ -289,57 +289,79 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{
 		if (!markdown.Anchors.Contains(anchor))
-			processor.EmitError(link, $"`{anchor}` does not exist in {markdown.FileName}.");
+			processor.EmitError(link, $"`{anchor}` does not exist in {markdown.RelativePath}.");
 	}
 
-	private static void UpdateLinkUrl(LinkInline link, string url, ParserContext context, string? anchor)
+	private static void UpdateLinkUrl(LinkInline link, MarkdownFile? linkMarkdown, string url, ParserContext context, string? anchor)
 	{
-		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
-
-		if (!url.StartsWith('/') && !string.IsNullOrEmpty(url))
+		var newUrl = url;
+		if (linkMarkdown is not null)
 		{
-			// eat overall path prefix since its gets appended later
-			var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
-				? context.CurrentUrlPath[urlPathPrefix.Length..]
-				: urlPathPrefix;
+			// if url is null it's an anchor link
+			if (!string.IsNullOrEmpty(url))
+				newUrl = linkMarkdown.Url;
+		}
+		else
+		{
+			// TODO revisit when we refactor our documentation set graph
+			// This method grew too complex, we need to revisit our documentation set graph generation so we can ask these questions
+			// on `DocumentationFile` that are mostly precomputed
+			var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
 
-			var markdownPath = context.MarkdownSourcePath.Name;
+			if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
+			{
+				// eat overall path prefix since its gets appended later
+				var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
+					? context.CurrentUrlPath[urlPathPrefix.Length..]
+					: urlPathPrefix;
 
-			// if the current path is an index e.g /reference/cloud-k8s/
-			// './' current path lookups should be relative to sub-path.
-			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
-			var siblingsGoToCurrent = url.StartsWith("./") && markdownPath == "index.md";
-			if (!siblingsGoToCurrent)
-				subPrefix = subPrefix[..subPrefix.LastIndexOf('/')];
+				// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
+				// as it's not part of url by chopping of the extra parent navigation
+				if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippetFile)
+					newUrl = url.Substring(3);
 
-			var combined = '/' + Path.Combine(subPrefix, url).TrimStart('/');
-			url = Path.GetFullPath(combined);
+				// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
+				var markdownPath = context.MarkdownSourcePath;
+				// if the current path is an index e.g /reference/cloud-k8s/
+				// './' current path lookups should be relative to sub-path.
+				// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
+				var lastIndexPath = subPrefix.LastIndexOf('/');
+				if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
+					subPrefix = subPrefix[..lastIndexPath];
+				var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
+				newUrl = Path.GetFullPath(combined);
+			}
+
+			// When running on Windows, path traversal results must be normalized prior to being used in a URL
+			// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				newUrl = newUrl.Replace('\\', '/');
+				if (newUrl.Length > 2 && newUrl[1] == ':')
+					newUrl = newUrl[2..];
+			}
+
+			if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
+				newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+
 		}
 
-		if (url.EndsWith(".md"))
+		if (newUrl.EndsWith(".md"))
 		{
-			url = url.EndsWith($"{Path.DirectorySeparatorChar}index.md")
-				? url.Remove(url.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
-				: url.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
+			newUrl = newUrl.EndsWith($"{Path.DirectorySeparatorChar}index.md")
+				? newUrl.Remove(newUrl.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
+				: newUrl.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
-
-		// When running on Windows, path traversal results must be normalized prior to being used in a URL
-		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-		{
-			url = url.Replace('\\', '/');
-			if (url.Length > 2 && url[1] == ':')
-				url = url[2..];
-		}
-
-		if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(urlPathPrefix))
-			url = $"{urlPathPrefix.TrimEnd('/')}{url}";
 
 		// TODO this is hardcoded should be part of extension system
-		if (url.EndsWith(".toml"))
-			url = url[..^5];
+		if (newUrl.EndsWith(".toml"))
+			newUrl = url[..^5];
 
-		link.Url = string.IsNullOrEmpty(anchor) ? url : $"{url}#{anchor}";
+		link.Url = !string.IsNullOrEmpty(anchor)
+			? newUrl == context.CurrentUrlPath
+				? $"#{anchor}"
+				: $"{newUrl}#{anchor}"
+			: newUrl;
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>

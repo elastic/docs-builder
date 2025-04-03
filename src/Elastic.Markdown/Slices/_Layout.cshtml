@@ -3,6 +3,11 @@
 <!DOCTYPE html>
 <html lang="en" class="h-screen">
 @await RenderPartialAsync(_Head.Create(Model))
+
+@{
+	var layout = Model.CurrentDocument.YamlFrontMatter?.Layout;
+}
+
 <body
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
@@ -39,13 +44,16 @@
 			</div>
 		}
 	}
-	@switch (Model.CurrentDocument.YamlFrontMatter?.Layout)
+	@switch (layout)
 	{
 		case LayoutName.NotFound:
 			await RenderPartialAsync(_NotFound.Create(Model));
 			break;
 		case LayoutName.LandingPage:
 			await RenderPartialAsync(_LandingPage.Create(Model));
+			break;
+		case LayoutName.Archive:
+			await RenderPartialAsync(_Archive.Create(Model));
 			break;
 		default:
 			await DefaultLayout();

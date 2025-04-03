@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Slices.Components
 @using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
 @implements IUsesLayout<Elastic.Markdown.Slices._Layout, LayoutViewModel>
@@ -19,15 +20,22 @@
 		GoogleTagManager = Model.GoogleTagManager,
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
-		ReportIssueUrl = Model.ReportIssueUrl
+		ReportIssueUrl = Model.ReportIssueUrl,
+		LegacyUrl = Model.LegacyUrl
 	};
 }
 <section id="elastic-docs-v3">
 	@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@
 	@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
-	@if (Model.Applies is not null)
+	@if (Model.AppliesTo is not null)
 	{
-		await RenderPartialAsync(ApplicableTo.Create(Model.Applies));
+		<p class="applies">
+		@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+		{
+			AppliesTo = Model.AppliesTo,
+			Inline = false
+		}))
+		</p>
 	}
 	@(new HtmlString(Model.MarkdownHtml))
 </section>

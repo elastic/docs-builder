@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0"/>
-    <PackageReference Include="xunit.v3" Version="1.1.0"/>
+    <PackageReference Include="xunit.v3" Version="1.1.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2"/>
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1"/>
 
@@ -43,7 +43,8 @@
 
   <ItemGroup>
     <Compile Include="Inline\Comments.fs"/>
-    <Compile Include="Inline\InlineImages.fs"/>
+    <Compile Include="Inline\AppliesToRole.fs" />
+    <Compile Include="Inline\InlineAppliesTo.fs" />
     <Compile Include="Inline\InlineAnchors.fs"/>
   </ItemGroup>
 

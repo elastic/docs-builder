@@ -1,51 +1,54 @@
 .markdown-content {
-	
-	@apply text-ink text-base font-body;
+	@apply text-ink font-body text-base;
 
 	h1 {
-		@apply text-5xl text-ink-dark font-semibold;
+		@apply text-ink-dark text-5xl font-semibold;
 		line-height: 1.2em;
 	}
-	
-	h2 {
 
-		@apply text-4xl text-ink-dark font-bold mt-10;
+	h2 {
+		@apply text-ink-dark mt-10 text-4xl font-bold;
 		line-height: 1.2em;
 	}
-	
+
 	h3 {
-		@apply text-2xl text-ink-dark font-bold mt-8;
+		@apply text-ink-dark mt-8 text-2xl font-bold;
 		line-height: 1.2em;
 	}
 
 	h4 {
-		@apply text-xl text-ink-dark font-bold mt-8;
+		@apply text-ink-dark mt-8 text-xl font-bold;
 		line-height: 1.2em;
 	}
 
 	h5 {
-		@apply text-base text-ink-dark font-bold mt-8;
+		@apply text-ink-dark mt-8 text-base font-bold;
 		line-height: 1.2em;
 	}
 
 	h6 {
-		@apply text-sm text-ink-dark font-bold mt-8;
+		@apply text-ink-dark mt-8 text-sm font-bold;
 		line-height: 1.2em;
 	}
-	
-	h1, h2, h3, h4, h5, h6 {
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
 		@apply font-sans;
 		a {
-			@apply font-sans text-ink-dark hover:text-ink-dark no-underline;
+			@apply text-ink-dark hover:text-ink-dark font-sans no-underline;
 		}
 	}
-	
+
 	p {
 		@apply mt-4;
 		line-height: 1.5em;
 		text-wrap: pretty;
 	}
-	
+
 	a {
 		@apply font-body text-blue-elastic hover:text-blue-elastic-100 underline;
 	}

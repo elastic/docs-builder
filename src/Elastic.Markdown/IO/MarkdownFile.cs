@@ -41,6 +41,8 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
+		IsIndex = FileName == "index.md";
+
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
 		Collector = build.Collector;
@@ -75,6 +77,8 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
+
+	public bool IsIndex { get; internal set; }
 
 	public string? Title
 	{

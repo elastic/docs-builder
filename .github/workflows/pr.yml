@@ -59,6 +59,9 @@ jobs:
       - name: Lint
         run: npm run lint
       
+      - name: Format
+        run: npm run fmt:check
+      
 
   build:
     runs-on: ${{ matrix.os }}

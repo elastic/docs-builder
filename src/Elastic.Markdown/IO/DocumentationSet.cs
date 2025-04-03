@@ -213,12 +213,10 @@ public class DocumentationSet : INavigationLookups
 
 	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; }
 
-	public MarkdownFile? DocumentationFileLookup(IFileInfo sourceFile)
+	public DocumentationFile? DocumentationFileLookup(IFileInfo sourceFile)
 	{
 		var relativePath = Path.GetRelativePath(SourceDirectory.FullName, sourceFile.FullName);
-		if (FlatMappedFiles.TryGetValue(relativePath, out var file) && file is MarkdownFile markdownFile)
-			return markdownFile;
-		return null;
+		return FlatMappedFiles.GetValueOrDefault(relativePath);
 	}
 
 	public MarkdownFile? GetPrevious(MarkdownFile current)

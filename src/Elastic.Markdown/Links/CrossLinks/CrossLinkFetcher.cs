@@ -57,23 +57,34 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 	protected async Task<LinkIndexEntry> GetLinkIndexEntry(string repository, Cancel ctx)
 	{
 		var linkIndex = await FetchLinkIndex(ctx);
-		if (linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
-			return repositoryLinks.First().Value;
-		throw new Exception($"Repository {repository} not found in link index");
+		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
+			throw new Exception($"Repository {repository} not found in link index");
+		return GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
 	}
 
-	protected async Task<LinkReference> Fetch(string repository, Cancel ctx)
+	protected static LinkIndexEntry GetNextContentSourceLinkIndexEntry(IDictionary<string, LinkIndexEntry> repositoryLinks, string repository)
+	{
+		var linkIndexEntry =
+			(repositoryLinks.TryGetValue("main", out var link)
+				? link
+				: repositoryLinks.TryGetValue("master", out link) ? link : null)
+				?? throw new Exception($"Repository {repository} found in link index, but no main or master branch found");
+		return linkIndexEntry;
+	}
+
+	protected async Task<LinkReference> Fetch(string repository, string[] keys, Cancel ctx)
 	{
 		var linkIndex = await FetchLinkIndex(ctx);
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 
-		if (repositoryLinks.TryGetValue("main", out var linkIndexEntry))
-			return await FetchLinkIndexEntry(repository, linkIndexEntry, ctx);
-		if (repositoryLinks.TryGetValue("master", out linkIndexEntry))
-			return await FetchLinkIndexEntry(repository, linkIndexEntry, ctx);
-		throw new Exception($"Repository {repository} not found in link index");
+		foreach (var key in keys)
+		{
+			if (repositoryLinks.TryGetValue(key, out var linkIndexEntry))
+				return await FetchLinkIndexEntry(repository, linkIndexEntry, ctx);
+		}
 
+		throw new Exception($"Repository found in link index however none of: '{string.Join(", ", keys)}' branches found");
 	}
 
 	protected async Task<LinkReference> FetchLinkIndexEntry(string repository, LinkIndexEntry linkIndexEntry, Cancel ctx)

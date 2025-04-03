@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text.Json;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.HistoryMapping;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Slices;
@@ -44,7 +45,8 @@ public class DocumentationGenerator
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IDocumentationFileExporter? documentationExporter = null,
-		IConversionCollector? conversionCollector = null
+		IConversionCollector? conversionCollector = null,
+		IHistoryMapper? historyMapper = null
 	)
 	{
 		_documentationFileOutputProvider = documentationFileOutputProvider;
@@ -55,7 +57,7 @@ public class DocumentationGenerator
 		DocumentationSet = docSet;
 		Context = docSet.Build;
 		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, historyMapper);
 		_documentationFileExporter =
 			documentationExporter
 			?? docSet.Build.Configuration.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter

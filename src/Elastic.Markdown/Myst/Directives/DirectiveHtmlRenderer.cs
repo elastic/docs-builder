@@ -4,8 +4,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Settings;
-using Elastic.Markdown.Myst.Substitution;
 using Elastic.Markdown.Slices.Directives;
 using Markdig;
 using Markdig.Renderers;
@@ -31,8 +31,6 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		{
 			case MermaidBlock mermaidBlock:
 				WriteMermaid(renderer, mermaidBlock);
-				return;
-			case AppliesBlock: //deprecated scheduled for removal
 				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
@@ -227,8 +225,10 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			return;
 
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
-		var parentPath = block.Context.MarkdownSourcePath;
+
+		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
 		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
+
 		var html = document.ToHtml(parser.Pipeline);
 		_ = renderer.Write(html);
 	}

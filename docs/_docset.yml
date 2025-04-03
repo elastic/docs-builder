@@ -108,6 +108,8 @@ toc:
       - folder: nested
       - file: cross-links.md
       - file: custom-highlighters.md
+      - hidden: archive.md
+      - hidden: landing-page.md
       - folder: mover
         children:
           - file: first-page.md

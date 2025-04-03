@@ -39,15 +39,15 @@
 	{
 		var g = folder.Group;
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "py-8 not-last:border-b-1 border-grey-20 pr-4" : "mt-4 lg:mt-3")">
-			<div class="peer flex items-start gap-1">
-				<label for="@id" class="group/label">
+			<div class="peer grid gap-1 @(isTopLevel ? "grid-cols-[1fr_auto] w-full" : "grid-cols-[auto_1fr]")">
+				<label for="@id" class="group/label flex pt-0.5 @(isTopLevel ? "order-1 items-center mr-3" : "order-0 items-start")">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
 						stroke="currentColor"
-						class="w-3 mt-[3px] shrink-0 -rotate-90 group-has-checked/label:rotate-0 cursor-pointer @(isTopLevel ? "hidden" : "")">
+						class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 cursor-pointer @(isTopLevel ? "w-4" : "w-3")">
 						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 					</svg>
 					<input
@@ -55,15 +55,13 @@
 						type="checkbox"
 						class="hidden"
 						aria-hidden="true"
-						@(isTopLevel ? "checked" : "")
-						@(isTopLevel ? "disabled" : "")
 					>
 				</label>
 				<a
 					href="@(g.Index?.Url ?? "")"
 					@Htmx.GetHxAttributes(g.Index?.Url ?? "", Model.IsPrimaryNavEnabled && g.NavigationRootId == Model.RootNavigationId || true)
 					id="page-@(g.Index?.Id ?? id)"
-					class="sidebar-link @(isTopLevel ? "font-semibold font-sans mb-1 text-base" : "")">
+					class="sidebar-link @(isTopLevel ? "font-semibold font-sans text-base" : "") @(isTopLevel ? "order-0" : "order-1")">
 					@(g.Index?.NavigationTitle ?? (g as TableOfContentsTree)?.Source.ToString() ?? "Untitled")
 				</a>
 			</div>

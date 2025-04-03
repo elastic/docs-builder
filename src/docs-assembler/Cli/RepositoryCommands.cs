@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
+using Documentation.Assembler.Mapping;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
@@ -28,15 +29,22 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	// libgit2 is magnitudes slower to clone repositories https://github.com/libgit2/libgit2/issues/4674
 	/// <summary> Clones all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
+	/// <param name="environment"> The environment to build</param>
 	/// <param name="ctx"></param>
 	[Command("clone-all")]
-	public async Task<int> CloneAll(bool? strict = null, Cancel ctx = default)
+	public async Task<int> CloneAll(
+		bool? strict = null,
+		string? environment = null,
+		Cancel ctx = default
+	)
 	{
 		AssignOutputLogger();
+		var githubEnvironmentInput = githubActionsService.GetInput("environment");
+		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 
-		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		_ = await cloner.AcquireAllLatest(ctx);
 
@@ -49,7 +57,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
-	/// <param name="environment"> The environment to resolve links to</param>
+	/// <param name="environment"> The environment to build</param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
@@ -97,7 +105,9 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
 
-		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider);
+		var historyMapper = new PageHistoryMapper(assembleSources.HistoryMappings);
+
+		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);

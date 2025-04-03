@@ -2,6 +2,7 @@ environments:
   prod:
     uri: https://www.elastic.co
     path_prefix: docs
+    content_source: current # current | next
     allow_indexing: false
     google_tag_manager:
       enabled: true
@@ -9,6 +10,7 @@ environments:
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
+    content_source: next
     google_tag_manager:
       enabled: true
       id: GTM-KNJMG2M
@@ -17,9 +19,31 @@ environments:
       cookies_win: x
   dev:
     uri: http://localhost:4000
+    content_source: next
     path_prefix: docs
+
+named_git_references:
+  stack: &stack 9.0
+  cloud-hosted: ms-120
+
+###
+# 'narrative' shares the same keys as keys in 'references' (<repository_config>)
+# 'narrative' defines the docs-content repository
+###
 narrative:
   checkout_strategy: full
+
+###
+# 'references' defines a map of `elastic/<repository_name> * <repository_config>
+# repository_config:
+#   skip: bool
+#   checkout_strategy: full | partial
+#             # 'full' git clone --depth-1 --single-branch
+#             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
+#   current: <git_ref>
+#   next: <git_ref>
+###
+
 references:
   apm-server:
   apm-agent-android:
@@ -38,12 +62,15 @@ references:
   cloud-on-k8s:
   cloud:
     current: master
+    next: master
   curator:
     current: master
+    next: master
   detection-rules:
     checkout_strategy: full
   ecctl:
     current: master
+    next: master
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -68,6 +95,7 @@ references:
   #   skip: true
   elasticsearch-ruby:
   elasticsearch:
+    current: *stack
   go-elasticsearch:
   integrations:
   kibana:

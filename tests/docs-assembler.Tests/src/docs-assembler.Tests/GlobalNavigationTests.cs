@@ -25,9 +25,12 @@ public class GlobalNavigationPathProviderTests
 	public GlobalNavigationPathProviderTests()
 	{
 		FileSystem = new FileSystem();
-		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+		var checkoutDirectory = FileSystem.DirectoryInfo.New(
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
+		CheckoutDirectory = checkoutDirectory.Exists
+			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
+			: checkoutDirectory;
 		Collector = new DiagnosticsCollector([]);
 		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
@@ -63,6 +66,8 @@ public class GlobalNavigationPathProviderTests
 	[Fact]
 	public async Task ReadAllPathPrefixes()
 	{
+		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
+
 		await using var collector = new DiagnosticsCollector([]);
 
 		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);

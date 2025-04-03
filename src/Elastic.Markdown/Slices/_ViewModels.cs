@@ -24,10 +24,11 @@ public class IndexViewModel
 	public required MarkdownFile? NextDocument { get; init; }
 
 	public required string NavigationHtml { get; init; }
+	public required string? LegacyUrl { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }
-	public required ApplicableTo? Applies { get; init; }
+	public required ApplicableTo? AppliesTo { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 
@@ -52,6 +53,7 @@ public class LayoutViewModel
 	public required MarkdownFile? Previous { get; init; }
 	public required MarkdownFile? Next { get; init; }
 	public required string NavigationHtml { get; init; }
+	public required string? LegacyUrl { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }
