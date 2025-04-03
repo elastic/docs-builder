@@ -17,12 +17,12 @@ Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.Instance.RegisterChec
 
 const string bucketName = "elastic-docs-link-index";
 
-await LambdaBootstrapBuilder.Create(Handler)
-	.Build()
-	.RunAsync();
+// await LambdaBootstrapBuilder.Create(Handler)
+// 	.Build()
+// 	.RunAsync();
 
 // Uncomment to test locally without uploading
-// await CreateLinkIndex(new AmazonS3Client());
+await CreateLinkIndex(new AmazonS3Client());
 
 #pragma warning disable CS8321 // Local function is declared but never used
 static async Task<string> Handler(ILambdaContext context)
@@ -48,7 +48,7 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 	var request = new ListObjectsV2Request
 	{
 		BucketName = bucketName,
-		MaxKeys = 5
+		MaxKeys = 1000 //default
 	};
 
 	var linkIndex = new LinkIndex
@@ -61,14 +61,14 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 		do
 		{
 			response = await client.ListObjectsV2Async(request, CancellationToken.None);
-			foreach (var obj in response.S3Objects)
+			await Parallel.ForEachAsync(response.S3Objects, async (obj, ctx) =>
 			{
 				if (!obj.Key.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase))
-					continue;
+					return;
 
 				var tokens = obj.Key.Split('/');
 				if (tokens.Length < 3)
-					continue;
+					return;
 
 				// TODO create a dedicated state file for git configuration
 				// Deserializing all of the links metadata adds significant overhead
@@ -96,7 +96,7 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 				}
 
 				Console.WriteLine(entry);
-			}
+			});
 
 			// If the response is truncated, set the request ContinuationToken
 			// from the NextContinuationToken property of the response.

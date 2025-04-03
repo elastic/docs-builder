@@ -24,6 +24,7 @@
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4"/>
     <PackageReference Include="AWSSDK.S3" Version="3.7.414.5"/>
     <PackageReference Include="AWSSDK.Extensions.CrtIntegration" Version="3.7.400" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj"/>
