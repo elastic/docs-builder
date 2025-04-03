@@ -359,6 +359,41 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 
 [More details: Headings →](headings.md)
 
+
+
+## Lists
+
+Standard Markdown ordered (numbered) and unordered (bulleted) lists. Indent with four spaces to nest paragraphs and other elements under a list item. Unordered lists can start with hyphens `-`, asterisks `*`, or plus signs `+`.
+
+**DOs** <br>
+✅ Add code blocks, images, admonitions, and other content within a list item<br>
+✅ Nest lists, mixing ordered and unordered as needed<br>
+✅ Use parallel structure and phrasing in list items<br>
+✅ Capitalize only the first word of list items (sentence case)<br>
+✅ Use terminal punctuation consistently and only for complete sentences<br>
+
+**DON'Ts** <br>
+❌ Use lists solely for layout purposes <br>
+❌ Use lists for structured data or comparisons — use tables instead
+
+:::{dropdown} Markdown examples
+
+  ```
+      - Unordered item 1
+      ····Paragraph within item 1
+      - Unordered item 2
+  ```
+
+  ```
+  1. Ordered item 1
+  2. Ordered item 2
+  ```
+:::
+
+[More details: Lists →](lists.md)
+
+
+
 ## Substitutions (subs)
 Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a sub, surround the key with curly brackets: `{{variable}}`<br>
 
