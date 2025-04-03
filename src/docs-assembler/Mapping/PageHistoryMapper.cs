@@ -28,6 +28,6 @@ public record PageHistoryMapper : IHistoryMapper
 			}
 		}
 
-		return null;
+		return mappedPages.FirstOrDefault();
 	}
 }
