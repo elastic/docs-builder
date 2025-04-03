@@ -99,13 +99,10 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 [More details: Links →](links.md#same-page-links-anchors)
 
-## Applies to
+## Applies to 🚧
 
-:::{admonition} WIP
-🚧 more coming soon (including inline tags) 🚧
-:::
-
-Tags that identify technical contexts: the deployments and flavors (stack/serverless) that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration.
+Tags that identify technical contexts: the deployments and flavors (stack/serverless) that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. For more guidance, see 
+[](../versions/content-patterns.md).
 
 :::{tip}
 General content that is not deployment-specific should _not_ have any `applies_to` tags. They're signals for readers, not comprehensive metadata.
@@ -170,8 +167,11 @@ stack:
 ````
 :::
 
-[More details: Applies to →](applies.md)
+### Inline tag
 
+🚧 Coming soon 🚧
+
+[More details: Applies to →](applies.md)
 
 
 ## Code blocks
