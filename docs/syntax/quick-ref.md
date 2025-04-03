@@ -454,6 +454,51 @@ Standard Markdown ordered (numbered) and unordered (bulleted) lists. Indent with
 
 ---
 
+## Navigation title
+
+Optional [front matter](frontmatter.md) element that sets a custom title for docs navigation features: appears in the left nav (table of contents), breadcrumbs, and previous/next links. Compare [headings](#headings) (H1 = page title). 
+
+**DOs**<br>
+✅ Use active phrasing and shorter forms<br>
+✅ Make sure the navigation title clearly identifies the page topic<br>
+✅ Omit product names that appear in the full H1 page title
+
+**DON'Ts**<br>
+❌ Duplicate the H1 page title<br>
+❌ Use a long navigation title or lots of punctuation<br>
+❌ Abbreviate with periods or ellipses
+
+
+:::{dropdown} Yaml/Markdown
+
+Page front matter:
+
+```yaml
+  ---
+    navigation_title: "Minimalist identifier" 
+  ---
+```
+
+Page title (H1): 
+
+```markdown
+    # Full descriptive page title with product context  
+```
+
+:::
+
+:::{dropdown} Output
+(screenshot)
+
+![Rendered nav title](../images/nav-title.png)
+
+:::
+
+[More details: Title →](./titles.md)
+<br>
+<br>
+
+---
 
 ## Substitutions (subs)
 Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a sub, surround the key with curly brackets: `{{variable}}`<br>
