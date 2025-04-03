@@ -6,10 +6,10 @@ namespace Elastic.Markdown.IO.HistoryMapping;
 
 public interface IHistoryMapper
 {
-	string? MapLegacyUrl(string? currentUrl);
+	string? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
 }
 
 public record BypassHistoryMapper : IHistoryMapper
 {
-	public string? MapLegacyUrl(string? currentUrl) => null;
+	public string? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages) => null;
 }

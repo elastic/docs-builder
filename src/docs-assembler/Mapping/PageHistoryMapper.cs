@@ -12,15 +12,22 @@ public record PageHistoryMapper : IHistoryMapper
 
 	public PageHistoryMapper(IReadOnlyDictionary<string, string> previousUrls) => PreviousUrls = previousUrls;
 
-	public string? MapLegacyUrl(string? currentUrl)
+	public string? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
-		if (currentUrl is null)
+		if (mappedPages is null)
 			return null;
 
-		var versionMarker = PreviousUrls.FirstOrDefault(x => currentUrl.Contains(x.Key));
-		if (versionMarker.Key == string.Empty)
-			return null;
+		foreach (var mappedPage in mappedPages)
+		{
+			var versionMarker = PreviousUrls.FirstOrDefault(x => mappedPage.Contains(x.Key));
+			if (versionMarker.Key != string.Empty && versionMarker.Value != "undefined")
+			{
+				return mappedPage.Contains("current")
+					? mappedPage.Replace($"{versionMarker.Key}current/", $"{versionMarker.Key}{versionMarker.Value}/")
+					: null;
+			}
+		}
 
-		return !currentUrl.Contains("current") ? null : currentUrl.Replace($"{versionMarker.Key}/current/", $"{versionMarker.Key}/{versionMarker.Value}/");
+		return null;
 	}
 }
