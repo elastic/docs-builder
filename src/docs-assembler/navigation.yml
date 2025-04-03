@@ -58,7 +58,7 @@ toc:
   # In docs-content, I tried moving release-notes/index.md to release-notes/intro/index.md
   # and creating a release-notes/intro/toc.yml file that contains just that page,
   # but I still couldn't get it to work.
-  - toc: docs-content://release-notes
+  - toc: release-notes
     path_prefix: release-notes
     children:
       # Elasticsearch
