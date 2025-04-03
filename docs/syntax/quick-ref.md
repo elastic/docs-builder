@@ -209,20 +209,12 @@ elasticsearch.hosts: ["http://localhost:9200"]
 
 ## Code callouts
 
-Inline annotations that highlight or explain specific lines in a code block. 
-
-**DOs**<br>
-✅ Keep callout/comment text short and specific<br>
-✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
-
-**DON'Ts**<br>
-❌ Overuse callouts -- aim for scannability<br>
+Inline annotations that highlight or explain specific lines in a code block.
 
 ### Explicit callout
-Add `<1>`, `<2>`, ... to the end of a line to explicitly create a code callout.
+To explicitly create a code callout, add a number marker in angle brackets (`<1>`, `<2>`, ...) at the end of a line. Add the corresponding callout text below the code block, in a numbered list that matches the markers.
 
 :::{dropdown} Example: Explicit callout
-:open:
 ```json
 {
   "match": {
@@ -230,7 +222,8 @@ Add `<1>`, `<2>`, ... to the end of a line to explicitly create a code callout.
   }
 }
 ```
-1. Searches the `message` field for the phrase "search text"
+1. Searches the `message` field for the phrase "search text"<br>
+
 
 **Markdown**
 ```
@@ -246,11 +239,10 @@ Add `<1>`, `<2>`, ... to the end of a line to explicitly create a code callout.
 1. 🚧 there's a bug in the rendering of this
 :::
 
-
-### Magic callout
+### Magic (comment-based) callout
 Add comments with `//` or `#` to magically create callouts.
 
-:::{dropdown} Example: Magic comment-based callout
+:::{dropdown} Example: Magic callout
 ```json
 {
   "match": {
@@ -273,6 +265,14 @@ Add comments with `//` or `#` to magically create callouts.
     ```
 ```
 :::
+
+**DOs**<br>
+✅ Keep callout text short and specific<br>
+✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
+✅ For explicit callouts, make sure you have a corresponding list item for each callout marker in the code.
+
+**DON'Ts**<br>
+❌ Overuse callouts -- aim for readability and scannability<br>
 
 ## Comments
 
@@ -337,8 +337,7 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 ❌ Use headings in tabs or dropdowns<br>
 ❌ Go deeper than Heading 4
 
-:::{dropdown} Output
-:open:
+:::{dropdown} Rendered example
 # Heading 1
 ## Heading 2
 ### Heading 3
@@ -360,6 +359,29 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 [More details: Headings →](headings.md)
 
 
+## Links
+
+Standard Markdown links to doc pages, sections (anchors), or external content. Prefer absolute paths for links within the doc set.
+
+**DOs**<br>
+✅ Use inline formatting in link text: `[**bold link**](bold-page.md)`<br>
+✅ Autogenerate link text from the page or section title: `[](use-title.md#section)`<br>
+✅ Define a custom [anchor](#anchors) by adding `[anchor-text]` at the end of a heading line
+
+**DON'Ts**<br>
+❌ Use unclear, inaccessible link text like "click here" or "this"<br>
+❌ Include terminal punctuation in link text
+
+:::{dropdown} Markdown examples
+```markdown
+    [link text](/absolute/file.md#anchor)
+    [link text](https://external-site.com)
+    [link text](other-repo://path/file.md)
+    (#same-page-anchor)
+```
+:::
+
+[More details: Links →](links.md)
 
 ## Lists
 
