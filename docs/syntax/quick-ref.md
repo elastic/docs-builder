@@ -289,7 +289,7 @@ Add comments with `//` or `#` to magically create callouts.
 ✅ For explicit callouts, make sure you have a corresponding list item for each callout marker in the code.
 
 **DON'Ts**<br>
-❌ Overuse callouts -- aim for readability and scannability<br>
+❌ Overuse callouts -- they can impede readability<br>
 
 [More details: Code callouts→](code.md#code-callouts)
 <br>
@@ -386,6 +386,27 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 
 
 [More details: Headings →](headings.md)
+<br>
+<br>
+
+---
+
+
+## Inline formatting 
+Elastic Docs v3 supports standard Markdown inline formatting.
+
+`_emphasis_` &nbsp;&nbsp;&nbsp; _italics_ <br>
+`**strong**` &nbsp;&nbsp;&nbsp;**bold**  <br>
+\` `monospace` \` &nbsp;&nbsp;&nbsp; `inline code` (single backticks) <br>
+`~~strikethrough~~` &nbsp;&nbsp;&nbsp; ~~strikethrough~~ <br>
+`\* escaped` &nbsp;&nbsp;&nbsp; \* escaped character <br>
+
+**DOs**<br>
+✅ Use `_emphasis_` to introduce a term<br>
+✅ Use inline `code` in headings and other elements as needed
+
+**DON'Ts**<br>
+❌ Overuse `**strong**` or `_emphasis_` -- aim for readability
 <br>
 <br>
 
@@ -500,8 +521,8 @@ Page title (H1):
 
 ---
 
-## Substitutions (subs)
-Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a sub, surround the key with curly brackets: `{{variable}}`<br>
+## Substitutions 
+Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a substition (or "sub"), surround the key with curly brackets: `{{variable}}`<br>
 
 **DOs** <br>
 ✅ Check the global `docset.yml` file for existing product and feature name subs<br>
@@ -514,7 +535,7 @@ Key-value pairs that define variables. They help ensure consistency and enable s
 
 % TODO: link to our global docset.yml?
 
-### Define a substitution
+### Define a sub
 
 :::{dropdown} Yaml
 In `docset.yml`:
@@ -523,24 +544,26 @@ In `docset.yml`:
 subs:
   ccs: "cross-cluster search"
   ech: "Elastic Cloud Hosted"
+  kib: "Kibana"
 ```
 :::
 
 
-### Use a substitution
+### Use a sub
 
-This example uses the `docset.yml` defined [above](#define-a-substitution).
+This example uses the sub defined in `docset.yml` above.
 
 :::{dropdown} Markdown
 
 In `myfile.md`:
 
 ```
-{{ech}} supports most standard Kibana settings.
+{{ech}} supports most standard {{kib}} settings.
 ```
 :::
 
 :::{dropdown} Output
+% TODO replace with actual subs once _docset.yml is updated
 
 Elastic Cloud Hosted supports most standard Kibana settings.
 :::

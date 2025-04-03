@@ -13,6 +13,8 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+  ech:   "Elastic Cloud Hosted"
+  kib:   "Kibana"
   
 features:
   primary-nav: false
