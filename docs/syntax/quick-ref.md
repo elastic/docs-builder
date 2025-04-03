@@ -115,18 +115,18 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 ## Applies to 🚧
 
-Tags that identify technical contexts: the deployments and flavors (stack/serverless) that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. For more guidance, see 
+Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. For more guidance, see 
 [](../versions/content-patterns.md).
 
 :::{tip}
-General content that is not deployment-specific should _not_ have any `applies_to` tags. They're signals for readers, not comprehensive metadata.
+The `applies_to` tags are scope signals for readers, not comprehensive metadata. If a page contains general information that applies to all contexts, it doesn't need tags.
 :::
 
 ### Page-level tag
 
 :::{dropdown} Syntax
 
-This example includes version and release phase facets, which aren't always needed. In many cases, `stack:` and `serverless:` are enough.
+This example includes version and release phase facets, which aren't always needed. 
 
 ```yaml
 ---
@@ -147,7 +147,7 @@ applies_to:
 :::
 
 :::{dropdown} Output
-🚧 **TODO replace this image to match markdown** 🚧
+🚧 TODO replace this image: match example and get updated tags 🚧
 
 ![annotations rendered](img/annotations.png)
 :::
@@ -229,7 +229,7 @@ elasticsearch.hosts: ["http://localhost:9200"]
 
 ---
 
-## Code callouts
+## Code callouts 🚧
 
 Inline annotations that highlight or explain specific lines in a code block.
 
@@ -339,9 +339,6 @@ Regular text after multi-line comment
 
 :::
 
-
-
-
 **DOs**<br>
 ✅ Add a space after `%` to start a single-line comment<br>
 
@@ -395,13 +392,14 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 ```
 :::
 
-:::{dropdown} Output
-# Heading 1
-## Heading 2
-### Heading 3
-#### Heading 4
-
+::::{dropdown} Output
+:::{image} img/headings.png
+:screenshot:
+:alt: Heading levels
+:width: 300px
 :::
+
+::::
 
 **DOs**<br>
 ✅ Start every page with a Heading 1<br>
@@ -423,20 +421,18 @@ Standard Markdown images: `[alt text]` in square brackets, followed by the image
 
 :::{dropdown} Syntax
 ```markdown
-![Bear emerging from hibernation](../images/bear.png)
+![Bear emerging from hibernation](img/bear.png)
 ```
 :::
 
 :::{dropdown} Output
-![Bear emerging from hibernation](../images/bear.png)
+![Bear emerging from hibernation](img/bear.png)
 :::
 
 **DOs**<br>
-✅ Use a 16:9 resolution for screenshots<br>
-✅ Store images in a centralized `/images` directory<br> 
-✅ Use inline images as needed<br>
+✅ Store images in a centralized directory<br> 
+✅ Follow v3 [best practices for screenshots](../versions/index.md#screenshots)<br>
 ✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border<br>
-✅ Use arrows and numbers to highlight key areas in an image
 
 **DON'Ts**<br>
 ❌ Use lots of UI screenshots that create a maintenance burden<br>
@@ -556,9 +552,8 @@ Page title (Markdown H1):
 :::
 
 :::{dropdown} Output
-(screenshot)
 
-![Rendered nav title](../images/nav-title.png)
+![Rendered nav title](img/nav-title.png)
 
 :::
 
