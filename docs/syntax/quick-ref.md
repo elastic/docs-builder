@@ -14,14 +14,10 @@ This page offers quick guidance on Elastic Docs v3 syntax, including usage tips.
 
 Use admonitions to caution users, or to provide helpful tips or extra information.
 
-**DOs**<br>
-✅ Use custom admonitions as needed
-
-**DON'Ts**<br>
-❌ Stack admonitions<br>
-❌ Overload a page with too many admonitions<br>
-
 ::::{dropdown} Types
+
+These examples show the syntax first, followed by the rendered admonition.
+
  **Warning**
 
   ```markdown
@@ -75,6 +71,13 @@ Use admonitions to caution users, or to provide helpful tips or extra informatio
   :::
 
 ::::
+
+**DOs**<br>
+✅ Use custom admonitions as needed
+
+**DON'Ts**<br>
+❌ Stack admonitions<br>
+❌ Overload a page with too many admonitions<br>
 <br>
 
 ---
@@ -139,7 +142,7 @@ General content that is not deployment-specific should _not_ have any `applies_t
 ![annotations rendered](img/annotations.png)
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 
 This example includes version and release phase facets, which aren't always needed. In many cases, `stack:` and `serverless:` are enough.
 
@@ -170,7 +173,7 @@ stack:
 ```
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ````markdown
 # Stack-only content
 ```{applies_to}
@@ -208,7 +211,7 @@ elasticsearch.hosts: ["http://localhost:9200"]
 ```
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ```markdown
     ```yaml
     server.host: "0.0.0.0"
@@ -306,7 +309,7 @@ Use `%` to add single-line comments.
 **DON'Ts**<br>
 ❌ Use `#` or `//` unless you're creating a [magic callout](#magic-callout)<br>
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ```markdown
 % This is a comment
 This is regular text
@@ -373,7 +376,7 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ```markdown
 # Heading 1
 ## Heading 2
@@ -409,7 +412,7 @@ Standard markdown images, with `[alt text]` in square brackets and the image pat
 ![Bear emerging from hibernation](../images/bear.png)
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ```markdown
 ![Bear emerging from hibernation](../images/bear.png)
 ```
@@ -455,7 +458,7 @@ Standard Markdown links to doc pages, sections (anchors), or external content. P
 ❌ Use unclear, inaccessible link text like "click here" or "this"<br>
 ❌ Include terminal punctuation in link text
 
-:::{dropdown} Markdown examples
+:::{dropdown} Syntax
 ```markdown
     [link text](/absolute/file.md#anchor)
     [link text](https://external-site.com)
@@ -485,7 +488,7 @@ Standard Markdown ordered (numbered) and unordered (bulleted) lists. Indent with
 ❌ Use lists solely for layout purposes <br>
 ❌ Use lists for structured data or comparisons — use tables instead
 
-:::{dropdown} Markdown examples
+:::{dropdown} Syntax
 
   ```
       - Unordered item 1
@@ -520,9 +523,9 @@ Optional [front matter](frontmatter.md) element that sets a custom title for doc
 ❌ Abbreviate with periods or ellipses
 
 
-:::{dropdown} Yaml/Markdown
+:::{dropdown} Syntax
 
-Page front matter:
+Page front matter (yaml):
 
 ```yaml
   ---
@@ -530,7 +533,7 @@ Page front matter:
   ---
 ```
 
-Page title (H1): 
+Page title (Markdown H1): 
 
 ```markdown
     # Full descriptive page title with product context  
@@ -567,7 +570,8 @@ Key-value pairs that define variables. They help ensure consistency and enable s
 
 ### Define a sub
 
-:::{dropdown} Yaml
+:::{dropdown} Syntax
+
 In `docset.yml`:
 
 ```
@@ -583,7 +587,7 @@ subs:
 
 This example uses the sub defined in `docset.yml` above.
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 
 In `myfile.md`:
 
@@ -634,7 +638,7 @@ Tab 2 content
 ::::
 :::::
 
-:::::{dropdown} Markdown
+:::::{dropdown} Syntax
 ```markdown
     ::::{tab-set}
 
@@ -677,7 +681,7 @@ Standard table layout for structured data. Automatically scrolls horizontally if
 | Info	 | Data   |  
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ```markdown
     | Header | Header |
     | ------ | ------ |
@@ -713,7 +717,7 @@ Dropdowns: In most cases, use dropdowns labeled Output (open by default) and Mar
 some output, **strong**
 :::
 
-:::{dropdown} Markdown
+:::{dropdown} Syntax
 ```markdown
 some markdown, **strong**
 ```
