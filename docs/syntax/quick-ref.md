@@ -395,7 +395,7 @@ Standard markdown images, with `[alt text]` in square brackets and the image pat
 
 **DOs**<br>
 ✅ Use a 16:9 resolution for screenshots<br>
-✅ Store images in an `/images` folder within the main docs directory (in Elastic doc sets, `/docs/images`)<br> 
+✅ Store images in a centralized `/images` directory<br> 
 ✅ Use inline images as needed<br>
 ✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border<br>
 ✅ Draw attention to certain parts of an image using arrows and manual callouts (numbers)
@@ -414,6 +414,12 @@ Standard markdown images, with `[alt text]` in square brackets and the image pat
 ![Bear emerging from hibernation](../images/bear.png)
 ```
 :::
+
+[More details: Images →](images.md)
+<br>
+<br>
+
+---
 
 
 ## Inline formatting 
