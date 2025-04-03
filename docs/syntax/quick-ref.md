@@ -399,7 +399,7 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 ---
 
 ## Images
-Standard markdown images, with `[alt text]` in square brackets and the image path in parentheses.
+Standard Markdown images: `[alt text]` in square brackets, followed by the image path in parentheses.
 
 :::{dropdown} Syntax
 ```markdown
@@ -416,7 +416,7 @@ Standard markdown images, with `[alt text]` in square brackets and the image pat
 ✅ Store images in a centralized `/images` directory<br> 
 ✅ Use inline images as needed<br>
 ✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border<br>
-✅ Draw attention to certain parts of an image using arrows and manual callouts (numbers)
+✅ Use arrows and numbers to highlight key areas in an image
 
 **DON'Ts**<br>
 ❌ Use lots of UI screenshots that create a maintenance burden<br>
@@ -560,7 +560,7 @@ Page title (Markdown H1):
 ---
 
 ## Substitutions 
-Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a substition (or "sub"), surround the key with curly brackets: `{{variable}}`<br>
+Key-value pairs that define variables. They help ensure consistency and enable short forms. To use a substitution (or "sub"), surround the key with curly brackets: `{{variable}}`<br>
 
 % TODO: link to our global docset.yml?
 
