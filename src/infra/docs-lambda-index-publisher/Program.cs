@@ -8,12 +8,8 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.S3;
 using Amazon.S3.Model;
-using AWSSDK.Extensions.CrtIntegration;
-using Cysharp.IO;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
-
-Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.Instance.RegisterChecksumProvider(new CrtChecksums());
 
 const string bucketName = "elastic-docs-link-index";
 
@@ -57,6 +53,7 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 	};
 	try
 	{
+		var httpClient = new HttpClient();
 		ListObjectsV2Response response;
 		do
 		{
@@ -72,7 +69,7 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 
 				// TODO create a dedicated state file for git configuration
 				// Deserializing all of the links metadata adds significant overhead
-				var gitReference = await ReadLinkReferenceSha(client, bucketName, obj);
+				var gitReference = await ReadLinkReferenceSha(httpClient, obj);
 
 				var repository = tokens[1];
 				var branch = tokens[2];
@@ -94,8 +91,6 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 						{ branch, entry }
 					});
 				}
-
-				Console.WriteLine(entry);
 			});
 
 			// If the response is truncated, set the request ContinuationToken
@@ -111,21 +106,21 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 	return linkIndex;
 }
 
-static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, string bucketName, S3Object obj)
+static async Task<string> ReadLinkReferenceSha(HttpClient httpClient, S3Object obj)
 {
 	try
 	{
-		using var contents = await client.GetObjectAsync(bucketName, obj.Key, CancellationToken.None);
-		await using var sr = new Utf8StreamReader(contents.ResponseStream);
-		await using var utf8TextReader = new Utf8TextReader(sr);
-		var json = await utf8TextReader.ReadToEndAsync();
+		// can not use client getobject since CRT checksum validation requires native code not available in AOT.
+		var tokens = obj.Key.Split('/');
+		var path = Path.Join(tokens[0], tokens[1], "tree", tokens[2], string.Join("/", tokens[3..]));
+		var url = "https://docs-v3-preview.elastic.dev/" + path;
+		var json = await httpClient.GetStringAsync(new Uri(url));
 
 		var linkReference = LinkReference.Deserialize(json);
 		return linkReference.Origin.Ref;
 	}
-	catch (Exception e)
+	catch
 	{
-		Console.WriteLine(e);
 		// it's important we don't fail here we need to fallback gracefully from this so we can fix the root cause
 		// of why a repository is not reporting its git reference properly
 		return "unknown";
