@@ -8,18 +8,43 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.S3;
 using Amazon.S3.Model;
+using AWSSDK.Extensions.CrtIntegration;
+using Cysharp.IO;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
+
+Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.Instance.RegisterChecksumProvider(new CrtChecksums());
+
+const string bucketName = "elastic-docs-link-index";
 
 await LambdaBootstrapBuilder.Create(Handler)
 	.Build()
 	.RunAsync();
 
+// Uncomment to test locally without uploading
+// await CreateLinkIndex(new AmazonS3Client());
+
+#pragma warning disable CS8321 // Local function is declared but never used
 static async Task<string> Handler(ILambdaContext context)
+#pragma warning restore CS8321 // Local function is declared but never used
 {
 	var sw = Stopwatch.StartNew();
+
 	IAmazonS3 client = new AmazonS3Client();
-	var bucketName = "elastic-docs-link-index";
+	var linkIndex = await CreateLinkIndex(client);
+	if (linkIndex == null)
+		return $"Error encountered on server. getting list of objects.";
+
+	var json = LinkIndex.Serialize(linkIndex);
+
+	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+	await client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
+	return $"Finished in {sw}";
+}
+
+
+static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
+{
 	var request = new ListObjectsV2Request
 	{
 		BucketName = bucketName,
@@ -45,7 +70,9 @@ static async Task<string> Handler(ILambdaContext context)
 				if (tokens.Length < 3)
 					continue;
 
-				var gitReference = await ReadLinkReferenceSha(client, obj);
+				// TODO create a dedicated state file for git configuration
+				// Deserializing all of the links metadata adds significant overhead
+				var gitReference = await ReadLinkReferenceSha(client, bucketName, obj);
 
 				var repository = tokens[1];
 				var branch = tokens[2];
@@ -76,25 +103,24 @@ static async Task<string> Handler(ILambdaContext context)
 			request.ContinuationToken = response.NextContinuationToken;
 		} while (response.IsTruncated);
 	}
-	catch (AmazonS3Exception ex)
+	catch
 	{
-		return $"Error encountered on server. Message:'{ex.Message}' getting list of objects.";
+		return null;
 	}
 
-	var json = LinkIndex.Serialize(linkIndex);
-
-	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-	await client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
-	return $"Finished in {sw}";
+	return linkIndex;
 }
 
-static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, S3Object obj)
+static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, string bucketName, S3Object obj)
 {
 	try
 	{
-		var contents = await client.GetObjectAsync(obj.Key, obj.Key, CancellationToken.None);
-		await using var s = contents.ResponseStream;
-		var linkReference = LinkReference.Deserialize(s);
+		using var contents = await client.GetObjectAsync(bucketName, obj.Key, CancellationToken.None);
+		await using var sr = new Utf8StreamReader(contents.ResponseStream);
+		await using var utf8TextReader = new Utf8TextReader(sr);
+		var json = await utf8TextReader.ReadToEndAsync();
+
+		var linkReference = LinkReference.Deserialize(json);
 		return linkReference.Origin.Ref;
 	}
 	catch (Exception e)
