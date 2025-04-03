@@ -5,46 +5,10 @@ navigation_title: "WIP Quick reference"
 # WORK IN PROGRESS Syntax quick reference
 
 :::{warning}
-This page contains WIP tests, not real entries
+This page is still in progress. 
 :::
 
 Quick guidance on Elastic Docs V3 syntax.
-
-## Example quick ref entry
-Prose description of this syntax element 
-
-**DOs**<br>
-✅ First _do_ -- not in a bulleted list; use the checkmark as a bullet character and use line breaks<br>
-✅ Second _do_
-
-**DON'Ts**<br>
-❌ First _don't_<br>
-❌ Second _don't_
-
-Dropdowns: In most cases, use dropdowns labeled Output (open by default) and Markdown. But use different labels and a progressive sequence (etc.) as needed
-
-:::{dropdown} Output
-(open by default)
-
-:open:
-some output, **strong**
-:::
-
-:::{dropdown} Markdown
-```markdown
-some markdown, **strong**
-```
-:::
-
-
-[More details →](index.md)
-<br>
-<br>
-<br>
-
-:::{tip}
- 👇 Almost-final drafts 👇 
-:::
 
 
 ## Admonitions
@@ -59,7 +23,6 @@ Use admonitions to caution users, or to provide helpful tips or extra informatio
 ❌ Overload a page with too many admonitions<br>
 
 ### Types
-🚧 TODO: move labels to H4s so we can still have markdown and output dropdowns for each; flip output and markdown; auto-show output 🚧
 
 :::{dropdown} Warning
 ```markdown
@@ -269,35 +232,17 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 % TODO: link to our global docset.yml?
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-:::{tip} 
-👆 Almost-final drafts 👆  
-:::
-
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-
-:::{warning} WIP
-🚧🚧🚧 👇 very much WIP drafts 👇 🚧🚧🚧
-:::
-
-
 ## Applies to
 
 :::{admonition} WIP
 🚧 more coming soon 🚧
 :::
 
-Tags that note the technical contexts of a page or section: the deployments and flavors (stack/serverless) that the content "applies to." Use `applies_to` to help users make sure content is right for their deployments.
+Tags that identify the deployments and flavors (stack/serverless) that a piece of content "applies to." Think of `applies_to` tags as technical context identifiers that help users determine whether content is right for their deployments and configuration.
+
+:::{admonition} Tip
+General content that is not deployment-specific should _not_ have any `applies_to` tags. They're meant to be limiting, not exhaustive / tk something
+:::
 
 **DOs**<br>
 ✅ Define a set of page-level `applies_to` tags in a front matter block<br>
@@ -305,6 +250,8 @@ Tags that note the technical contexts of a page or section: the deployments and 
 ✅ Indicate versions (`major.minor` with an optional `[.patch]`)  and release phases like `beta`
 
 **DON'Ts**<br>
+❌ Add `applies_to` tags to general, broadly applicable content<br>
+❌ Use `applies_to` tags as metadata or to represent "aboutness" -- focus on helping users make decisions 
 ❌ Include `applies_to` tags in admonitions<br>
 ❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)<br>
 
@@ -339,8 +286,6 @@ applies_to:
 ```
 :::
 
-
-
 ### Section tag
 
 :::{dropdown} Output
@@ -361,103 +306,131 @@ stack:
 
 [More details: Applies to →](applies.md)
 
-## Code block
+## Code blocks
 
-Block element that displays multiple lines of code. Start and end a code block with a sequence of three backtick characters ```.
+Multi-line blocks for code, commands, configuration, and similar content. Use three backticks ` ``` ` on separate lines to start and end the block. For syntax highlighting, add a language identifier after the opening backticks.
 
 **DOs**<br>
-✅ Add a language identifier to enable syntax highlighting<br>
+✅ Include code blocks within lists or other block elements as needed<br>
+✅ Add language identifiers like `yaml`, `json`, `bash`
 
 **DON'Ts**<br>
-❌ Use in admonitions<br> 
+❌ Place code blocks in admonitions<br>
+❌ Use inline code formatting (single backticks) for multi-line content<br>
 
-:::{dropdown} Output
+:::{dropdown} Example
 :open:
 ```yaml
-project:
-  title: MyST Markdown
-  github: https://github.com/jupyter-book/mystmd
+server.host: "0.0.0.0"
+elasticsearch.hosts: ["http://localhost:9200"]
 ```
 :::
 
 :::{dropdown} Markdown
 ```markdown
-```yaml
-project:
-  title: MyST Markdown
-  github: https://github.com/jupyter-book/mystmd
-```
+    ```yaml
+    server.host: "0.0.0.0"
+    elasticsearch.hosts: ["http://localhost:9200"]
+    ```
 ```
 :::
-
-
 
 
 ## Code callouts
 
-A code block can contain **explicit** and **magic** callouts. 
+Inline annotations that highlight or explain specific lines in a code block. 
 
 **DOs**<br>
-✅ Use one callout format<br>
-✅ Put comments right after the code block to be positioned as a callout<br>
-✅ In case of an ordered list, follow the same number of items as in the code block<br>
+✅ Keep callout/comment text short and specific<br>
+✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
 
 **DON'Ts**<br>
-❌ Combine explicit and magic callouts<br> 
+❌ Overuse callouts -- aim for scannability<br>
 
 ### Explicit callout
-Add `<\d+>` to the end of a line to explicitly create a code callout.
+Add `<1>`, `<2>`, ... to the end of a line to explicitly create a code callout.
 
-:::{dropdown} Output
+:::{dropdown} Example: Explicit callout
 :open:
-```yaml
-project:
-  license:
-    content: CC-BY-4.0 <1>
+```json
+{
+  "match": {
+    "message": "search text" <1>
+  }
+}
 ```
+1. Searches the `message` field for the phrase "search text"
 
-1. The license
-
+**Markdown**
+```
+    ```json
+    {
+      "match": {
+        "message": "search text" <1>
+      }
+    }
+    ```
+    1. Searches the `message` field for the phrase "search text"
+```
+1. 🚧 there's a bug in the rendering of this
 :::
-
-:::{dropdown} Markdown
-```markdown
-```yaml
-project:
-  license:
-    content: CC-BY-4.0 <1>
-```
-
-1. The license
-```
-:::
-
 
 
 ### Magic callout
 Add comments with `//` or `#` to magically create callouts.
 
-:::{dropdown} Output
-:open:
-```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
-var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
-```content: CC-BY-4.0
+:::{dropdown} Example: Magic comment-based callout
+```json
+{
+  "match": {
+    "message": "search text" // Searches the message field
+  }
+}
 ```
 
-:::
+**Markdown**
 
-:::{dropdown} Markdown
+(TODO replace with image format to prevent rendering? create issue)
+
 ```markdown
-```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
-var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
-```
+    ```json
+    {
+      "match": {
+        "message": "search text" // Searches the message field
+      }
+    }
+    ```
 ```
 :::
-
-
 
 
 
 🚧🚧🚧
+
+## Quick ref entry template
+Prose description of this syntax element 
+
+**DOs**<br>
+✅ First _do_ -- not in a bulleted list; use the checkmark as a bullet character and use line breaks<br>
+✅ Second _do_
+
+**DON'Ts**<br>
+❌ First _don't_<br>
+❌ Second _don't_
+
+Dropdowns: In most cases, use dropdowns labeled Output (open by default) and Markdown. But use different labels and a progressive sequence (etc.) as needed
+
+:::{dropdown} Output
+(open by default)
+
+:open:
+some output, **strong**
+:::
+
+:::{dropdown} Markdown
+```markdown
+some markdown, **strong**
+```
+:::
+
+[More details →](index.md)
