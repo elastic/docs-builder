@@ -508,7 +508,7 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 ## Tables
 
-Standard table layout for structured data. Automatically scrolls horizontally if needed. A **header** row is required. 
+Standard table layout for structured data. Automatically scrolls horizontally if needed. The **header** row is optional. 
 
 **DOs**<br>
 ✅ Use leading and trailing pipes for clarity<br>
