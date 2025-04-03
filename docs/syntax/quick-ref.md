@@ -102,13 +102,13 @@ A default anchor is automatically created for each [heading](#headings), in the 
 ## Applies to
 
 :::{admonition} WIP
-🚧 more coming soon 🚧
+🚧 more coming soon (including inline tags) 🚧
 :::
 
-Tags that identify the deployments and flavors (stack/serverless) that a piece of content "applies to." Think of `applies_to` tags as technical context identifiers that help users determine whether content is right for their deployments and configuration.
+Tags that identify technical contexts: the deployments and flavors (stack/serverless) that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration.
 
-:::{admonition} Tip
-General content that is not deployment-specific should _not_ have any `applies_to` tags. They're meant to be limiting, not exhaustive / tk something
+:::{tip}
+General content that is not deployment-specific should _not_ have any `applies_to` tags. They're signals for readers, not comprehensive metadata.
 :::
 
 **DOs**<br>
@@ -118,14 +118,13 @@ General content that is not deployment-specific should _not_ have any `applies_t
 
 **DON'Ts**<br>
 ❌ Add `applies_to` tags to general, broadly applicable content<br>
-❌ Use `applies_to` tags as metadata or to represent "aboutness" -- focus on helping users make decisions 
+❌ Use `applies_to` tags as metadata or to represent "aboutness"<br>
 ❌ Include `applies_to` tags in admonitions<br>
 ❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)<br>
 
-### Page-level tags
+### Page-level tag
 
 :::{dropdown} Output
-:open:
 🚧 **TODO replace this image to match markdown** 🚧
 
 ![annotations rendered](img/annotations.png)
@@ -156,7 +155,6 @@ applies_to:
 ### Section tag
 
 :::{dropdown} Output
-:open:
 #### Stack-only content
 ```{applies_to}
 stack:
@@ -285,7 +283,6 @@ Use `%` to add single-line comments.
 ❌ Use `#` or `//`<br>
 
 :::{dropdown} Markdown
-:open:
 ```markdown
 % This is a comment
 This is regular text
