@@ -134,6 +134,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
 	{
 		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		// The environment ist not relevant here.
+		// It's only used to get the list of repositories.
 		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new RepositorySourcer(logger, assembleContext.CheckoutDirectory, new FileSystem(), collector);
 		var dict = new ConcurrentDictionary<string, Stopwatch>();
