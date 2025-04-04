@@ -61,6 +61,7 @@ mappings:
   en/logstash-versioned-plugins: undefined
   en/search-ui: undefined
   en/security: stack
+  en/serverless: undefined
   en/starting-with-the-elasticsearch-platform-and-its-solutions: stack
   en/observability: stack
   en/elasticsearch/painless: stack
