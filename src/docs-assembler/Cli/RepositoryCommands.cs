@@ -173,7 +173,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 					var putObjectRequest = new PutObjectRequest
 					{
 						BucketName = bucketName,
-						Key = $"test2/elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
+						Key = $"elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
 						ContentBody = content,
 						ContentType = MediaTypeNames.Application.Json,
 						ChecksumAlgorithm = ChecksumAlgorithm.SHA256
