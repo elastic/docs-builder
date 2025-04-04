@@ -130,7 +130,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 	/// <param name="contentSource"> The content source. "current" or "next"</param>
 	/// <param name="ctx"></param>
-	[Command("update-link-index-all")]
+	[Command("update-all-link-reference")]
 	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
 	{
 		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
