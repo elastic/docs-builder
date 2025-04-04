@@ -35,7 +35,7 @@ public static class CodeBlock
 		{ "properties", "" }, // Properties
 		{ "python", "py, gyp" }, // Python
 		{ "ruby", "rb, gemspec, podspec, thor, irb" }, // Ruby
-		{ "rust", "rs" }, // Ruby
+		{ "rust", "rs" }, // Rust
 		{ "scala", "" }, // Scala
 		{ "shell", "console" }, // Shell
 		{ "sql", "" }, // SQL
