@@ -129,10 +129,9 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	}
 
 	/// <param name="contentSource"> The content source. "current" or "next"</param>
-	/// <param name="DryRun"> Dry run without uploading to s3</param>
 	/// <param name="ctx"></param>
 	[Command("update-link-index-all")]
-	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, bool DryRun, Cancel ctx = default)
+	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
 	{
 		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
 		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
