@@ -102,7 +102,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
 
-		Uri? canonicalBaseUri = null;
+		Uri? canonicalBaseUri;
 
 		if (canonicalBaseUrl is null)
 			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");

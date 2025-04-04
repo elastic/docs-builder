@@ -16,6 +16,9 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppF
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{
 		await Next.InvokeAsync(context, ctx);
+		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
+			return;
+
 		var latestVersionUrl = await GetLatestVersion(ctx);
 		if (latestVersionUrl is null)
 			ConsoleApp.LogError("Unable to determine latest version");
@@ -54,9 +57,6 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppF
 
 	private async ValueTask<Uri?> GetLatestVersion(Cancel ctx)
 	{
-		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
-			return null;
-
 		// only check for new versions once per hour
 		if (_stateFile.Exists && _stateFile.LastWriteTimeUtc >= DateTime.UtcNow.Subtract(TimeSpan.FromHours(1)))
 		{
