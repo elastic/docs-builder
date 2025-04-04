@@ -35,7 +35,7 @@ When you are ready to edit the content:
 * For **simple bugfixes and enhancements** --> [contribute on the web](on-the-web.md)
 * For **complex or multi-page updates** --> [Contribute locally](locally.md)
 
-## Where does the content live
+## Where to find docs source files
 
 Understand where your content of interest now sits in the new docs information architecture and the repos where source pages live.
 
@@ -102,7 +102,7 @@ Public-facing narrative and conceptual docs have moved. Most can now be found un
 * Reference content, anything that is or could be auto-generated): Settings, syntax references, functions lists…  
 * Release notes
 
-## How is content organized across documentation sections?
+## How docs sections are organized
 
 The following section shows a mapping of the different areas in the docs IA to the product areas and topics.
 
