@@ -51,4 +51,4 @@ runs:
       env:
         LINK_REFERENCE_FILE: ${{ inputs.link_reference_file }}
       run: |
-        aws s3 cp "${LINK_REFERENCE_FILE}" "s3://${{ inputs.aws_s3_bucket_name }}/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/links.json"
+        aws s3 cp --checksum-algorithm "SHA256" "${LINK_REFERENCE_FILE}" "s3://${{ inputs.aws_s3_bucket_name }}/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/links.json"
