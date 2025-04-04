@@ -148,37 +148,44 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 				MaxDegreeOfParallelism = Environment.ProcessorCount
 			}, async (kv, c) =>
 			{
-				var name = kv.Key.Trim();
-				var checkout = cloner.CloneOrUpdateRepository(kv.Value, name, kv.Value.GetBranch(contentSource), dict);
-
-				var docsMetadataPath = Path.Combine(checkout.Directory.FullName, ".docs-metadata");
-
-				var context = new BuildContext(
-					collector,
-					new FileSystem(),
-					new FileSystem(),
-					checkout.Directory.FullName,
-					docsMetadataPath
-				);
-				var set = new DocumentationSet(context, logger);
-				var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
-				await generator.GenerateAll(c);
-
-				IAmazonS3 s3Client = new AmazonS3Client();
-				const string bucketName = "elastic-docs-link-index";
-				var linksJsonPath = Path.Combine(docsMetadataPath, "links.json");
-				var content = await File.ReadAllTextAsync(linksJsonPath, c);
-				var putObjectRequest = new PutObjectRequest
+				try
 				{
-					BucketName = bucketName,
-					Key = $"elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
-					ContentBody = content,
-					ContentType = MediaTypeNames.Application.Json,
-					ChecksumAlgorithm = ChecksumAlgorithm.SHA256
-				};
-				var response = await s3Client.PutObjectAsync(putObjectRequest, c);
-				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
-					collector.EmitError(linksJsonPath, $"Failed to upload {putObjectRequest.Key} to S3");
+					var name = kv.Key.Trim();
+					var checkout = cloner.CloneOrUpdateRepository(kv.Value, name, kv.Value.GetBranch(contentSource), dict);
+
+					var docsMetadataPath = Path.Combine(checkout.Directory.FullName, ".docs-metadata");
+
+					var context = new BuildContext(
+						collector,
+						new FileSystem(),
+						new FileSystem(),
+						checkout.Directory.FullName,
+						docsMetadataPath
+					);
+					var set = new DocumentationSet(context, logger);
+					var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
+					await generator.GenerateAll(c);
+
+					IAmazonS3 s3Client = new AmazonS3Client();
+					const string bucketName = "elastic-docs-link-index";
+					var linksJsonPath = Path.Combine(docsMetadataPath, "links.json");
+					var content = await File.ReadAllTextAsync(linksJsonPath, c);
+					var putObjectRequest = new PutObjectRequest
+					{
+						BucketName = bucketName,
+						Key = $"elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
+						ContentBody = content,
+						ContentType = MediaTypeNames.Application.Json,
+						ChecksumAlgorithm = ChecksumAlgorithm.SHA256
+					};
+					var response = await s3Client.PutObjectAsync(putObjectRequest, c);
+					if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+						collector.EmitError(linksJsonPath, $"Failed to upload {putObjectRequest.Key} to S3");
+				}
+				catch (Exception e)
+				{
+					collector.EmitError(kv.Key, $"Failed to update link index for {kv.Key}: {e.Message}", e);
+				}
 			}).ConfigureAwait(false);
 		return collector.Errors > 0 ? 1 : 0;
 	}
