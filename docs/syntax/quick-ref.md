@@ -238,7 +238,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 
 :::{dropdown} Syntax
 
-  ```
+  ```markdown callouts=false
       ```json
       {
         "match": {
@@ -247,8 +247,6 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
       }
       ```
       1. Searches the `message` field for the phrase "search text"
-  ```
-  1. 🚧 rendering bug
 :::
 
 :::{dropdown} Output
