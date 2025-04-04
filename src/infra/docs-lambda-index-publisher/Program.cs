@@ -26,20 +26,20 @@ static async Task<string> Handler(ILambdaContext context)
 {
 	var sw = Stopwatch.StartNew();
 
-	IAmazonS3 client = new AmazonS3Client();
-	var linkIndex = await CreateLinkIndex(client);
+	IAmazonS3 s3Client = new AmazonS3Client();
+	var linkIndex = await CreateLinkIndex(s3Client);
 	if (linkIndex == null)
 		return $"Error encountered on server. getting list of objects.";
 
 	var json = LinkIndex.Serialize(linkIndex);
 
 	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-	await client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
+	await s3Client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
 	return $"Finished in {sw}";
 }
 
 
-static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
+static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
 {
 	var request = new ListObjectsV2Request
 	{
@@ -53,11 +53,10 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 	};
 	try
 	{
-		var httpClient = new HttpClient();
 		ListObjectsV2Response response;
 		do
 		{
-			response = await client.ListObjectsV2Async(request, CancellationToken.None);
+			response = await s3Client.ListObjectsV2Async(request, CancellationToken.None);
 			await Parallel.ForEachAsync(response.S3Objects, async (obj, ctx) =>
 			{
 				if (!obj.Key.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase))
@@ -69,7 +68,7 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 
 				// TODO create a dedicated state file for git configuration
 				// Deserializing all of the links metadata adds significant overhead
-				var gitReference = await ReadLinkReferenceSha(httpClient, obj);
+				var gitReference = await ReadLinkReferenceSha(s3Client, obj);
 
 				var repository = tokens[1];
 				var branch = tokens[2];
@@ -106,21 +105,18 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 client)
 	return linkIndex;
 }
 
-static async Task<string> ReadLinkReferenceSha(HttpClient httpClient, S3Object obj)
+static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, S3Object obj)
 {
 	try
 	{
-		// can not use client getobject since CRT checksum validation requires native code not available in AOT.
-		var tokens = obj.Key.Split('/');
-		var path = Path.Join(tokens[0], tokens[1], "tree", tokens[2], string.Join("/", tokens[3..]));
-		var url = "https://docs-v3-preview.elastic.dev/" + path;
-		var json = await httpClient.GetStringAsync(new Uri(url));
-
-		var linkReference = LinkReference.Deserialize(json);
+		var contents = await client.GetObjectAsync(obj.Key, obj.Key, CancellationToken.None);
+		await using var s = contents.ResponseStream;
+		var linkReference = LinkReference.Deserialize(s);
 		return linkReference.Origin.Ref;
 	}
-	catch
+	catch (Exception e)
 	{
+		Console.WriteLine(e);
 		// it's important we don't fail here we need to fallback gracefully from this so we can fix the root cause
 		// of why a repository is not reporting its git reference properly
 		return "unknown";
