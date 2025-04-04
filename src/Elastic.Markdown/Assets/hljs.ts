@@ -27,6 +27,7 @@ import powershell from 'highlight.js/lib/languages/powershell'
 import properties from 'highlight.js/lib/languages/properties'
 import python from 'highlight.js/lib/languages/python'
 import ruby from 'highlight.js/lib/languages/ruby'
+import rust from 'highlight.js/lib/languages/rust'
 import scala from 'highlight.js/lib/languages/scala'
 import shell from 'highlight.js/lib/languages/shell'
 import sql from 'highlight.js/lib/languages/sql'
@@ -67,6 +68,7 @@ const languages: Array<{
     { name: 'properties', module: properties },
     { name: 'python', module: python },
     { name: 'ruby', module: ruby },
+    { name: 'rust', module: rust },
     { name: 'scala', module: scala },
     { name: 'shell', module: shell, aliases: ['sh'] },
     { name: 'sql', module: sql },
