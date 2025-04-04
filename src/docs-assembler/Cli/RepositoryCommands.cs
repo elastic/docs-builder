@@ -174,6 +174,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 					Key = $"elastic/{checkout.Repository.Name}/{checkout.Repository.GetBranch(contentSource)}/links.json",
 					ContentBody = content,
 					ContentType = MediaTypeNames.Application.Json,
+					ChecksumAlgorithm = ChecksumAlgorithm.SHA256
 				};
 				var response = await s3Client.PutObjectAsync(putObjectRequest, c);
 				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
