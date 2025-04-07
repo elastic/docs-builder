@@ -3,11 +3,11 @@ export function initDismissibleBanner() {
     const dismissButton = document.getElementById('dismissible-button')
 
     if (!localStorage.getItem('bannerDismissed')) {
-        banner?.classList.remove('hidden')
+        banner?.style.setProperty('display', 'flex')
     }
 
     dismissButton?.addEventListener('click', () => {
-        banner?.classList.add('hidden')
+        banner?.style.setProperty('display', 'none')
         localStorage.setItem('bannerDismissed', 'true')
     })
 }
