@@ -275,7 +275,6 @@ Add comments with `//` or `#` to magically create callouts.
 :::
 
 :::{dropdown} Output
-🚧 rendering bug
 ```markdown
     ```json
     {
