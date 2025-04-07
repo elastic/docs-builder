@@ -36,7 +36,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.3"/>
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Proc" Version="0.9.1" />
-    <PackageVersion Include="RazorSlices" Version="0.8.1" />
+    <PackageVersion Include="RazorSlices" Version="0.9.1" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="2.7.0" />
