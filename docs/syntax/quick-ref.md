@@ -174,7 +174,7 @@ stack:
 
 ### Inline tag
 
-🚧 Coming soon 🚧
+For details on inline tags, see the [full syntax reference](applies.md).
 
 **DOs**<br>
 ✅ Define a set of page-level `applies_to` tags in a front matter block<br>
