@@ -104,9 +104,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{literalinclude}") > 0)
 			return new LiteralIncludeBlock(this, context);
 
-		if (info.IndexOf("{applies}") > 0)
-			return new AppliesBlock(this, context);
-
 		if (info.IndexOf("{settings}") > 0)
 			return new SettingsBlock(this, context);
 

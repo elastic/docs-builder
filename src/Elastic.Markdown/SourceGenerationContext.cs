@@ -11,7 +11,7 @@ namespace Elastic.Markdown;
 
 // This configures the source generation for json (de)serialization.
 
-[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(GenerationState))]
 [JsonSerializable(typeof(LinkReference))]
 [JsonSerializable(typeof(GitCheckoutInformation))]

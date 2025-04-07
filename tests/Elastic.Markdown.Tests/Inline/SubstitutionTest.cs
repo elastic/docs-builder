@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Myst.CodeBlocks;
-using Elastic.Markdown.Myst.Substitution;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;

@@ -22,6 +22,8 @@ public class CommentMarkdownExtension : IMarkdownExtension
 	{
 		if (!pipeline.BlockParsers.Contains<CommentBlockParser>())
 			_ = pipeline.BlockParsers.InsertBefore<ThematicBreakParser>(new CommentBlockParser());
+		if (!pipeline.BlockParsers.Contains<MultipleLineCommentBlockParser>())
+			_ = pipeline.BlockParsers.InsertBefore<ThematicBreakParser>(new MultipleLineCommentBlockParser());
 	}
 
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)

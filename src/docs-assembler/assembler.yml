@@ -90,9 +90,7 @@ references:
   elasticsearch-net:
   elasticsearch-php:
   elasticsearch-py:
-    # https://github.com/elastic/elasticsearch-rs ci checks not running?
-  # elasticsearch-rs:
-  #   skip: true
+  elasticsearch-rs:
   elasticsearch-ruby:
   elasticsearch:
     current: *stack

@@ -59,7 +59,7 @@ public class AssembleSources
 		TocTopLevelMappings = GetConfiguredSources(assembleContext);
 		HistoryMappings = GetHistoryMapping(assembleContext);
 
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration);
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration, assembleContext.Environment);
 		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts

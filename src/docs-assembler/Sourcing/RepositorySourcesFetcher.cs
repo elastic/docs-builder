@@ -7,7 +7,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Documentation.Assembler.Configuration;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 using ProcNet;
 using ProcNet.Std;
@@ -20,6 +23,8 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 
 	private AssemblyConfiguration Configuration => context.Configuration;
 	private PublishEnvironment PublishEnvironment => context.Environment;
+
+	private RepositorySourcer RepositorySourcer => new(logger, context.CheckoutDirectory, context.ReadFileSystem, context.Collector);
 
 	public IReadOnlyCollection<Checkout> GetAll()
 	{
@@ -48,18 +53,26 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 		_logger.LogInformation(
 			"Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
-			PublishEnvironment.ContentSource.ToStringFast()
+			PublishEnvironment.ContentSource.ToStringFast(true)
 		);
 
+		var repositories = new Dictionary<string, Repository>(Configuration.ReferenceRepositories)
+		{
+			{ NarrativeRepository.RepositoryName, Configuration.Narrative }
+		};
+		return await RepositorySourcer.AcquireAllLatest(repositories, PublishEnvironment.ContentSource, ctx);
+	}
+}
+
+public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
+{
+	private readonly ILogger<RepositorySourcer> _logger = logger.CreateLogger<RepositorySourcer>();
+
+	public async Task<IReadOnlyCollection<Checkout>> AcquireAllLatest(Dictionary<string, Repository> repositories, ContentSource source, Cancel ctx = default)
+	{
 		var dict = new ConcurrentDictionary<string, Stopwatch>();
 		var checkouts = new ConcurrentBag<Checkout>();
-
-		_logger.LogInformation("Cloning narrative content: {Repository}", NarrativeRepository.RepositoryName);
-		var checkout = CloneOrUpdateRepository(Configuration.Narrative, NarrativeRepository.RepositoryName, dict);
-		checkouts.Add(checkout);
-
-		_logger.LogInformation("Cloning {ReferenceRepositoryCount} repositories", Configuration.ReferenceRepositories.Count);
-		await Parallel.ForEachAsync(Configuration.ReferenceRepositories,
+		await Parallel.ForEachAsync(repositories,
 			new ParallelOptions
 			{
 				CancellationToken = ctx,
@@ -69,26 +82,21 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 				await Task.Run(() =>
 				{
 					var name = kv.Key.Trim();
-					var clone = CloneOrUpdateRepository(kv.Value, name, dict);
+					var repo = kv.Value;
+					var clone = CloneOrUpdateRepository(kv.Value, name, repo.GetBranch(source), dict);
 					checkouts.Add(clone);
 				}, c);
 			}).ConfigureAwait(false);
 
-		foreach (var kv in dict.OrderBy(kv => kv.Value.Elapsed))
-			_logger.LogInformation("-> took: {Elapsed}\t{RepositoryBranch}", kv.Key, kv.Value.Elapsed);
-
 		return checkouts.ToList().AsReadOnly();
 	}
 
-	private Checkout CloneOrUpdateRepository(Repository repository, string name, ConcurrentDictionary<string, Stopwatch> dict)
+	public Checkout CloneOrUpdateRepository(Repository repository, string name, string branch, ConcurrentDictionary<string, Stopwatch> dict)
 	{
-		var fs = context.ReadFileSystem;
-		var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, name));
+		var fs = readFileSystem;
+		var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, name));
 		var relativePath = Path.GetRelativePath(Paths.WorkingDirectoryRoot.FullName, checkoutFolder.FullName);
 		var sw = Stopwatch.StartNew();
-		var branch = PublishEnvironment.ContentSource == ContentSource.Next
-			? repository.GitReferenceNext
-			: repository.GitReferenceCurrent;
 
 		_ = dict.AddOrUpdate($"{name} ({branch})", sw, (_, _) => sw);
 
@@ -139,22 +147,23 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 		IDirectoryInfo checkoutFolder)
 	{
 		_logger.LogInformation("Checkout: {Name}\t{Branch}\t{RelativePath}", name, branch, relativePath);
-		if (repository.CheckoutStrategy == "full")
+		switch (repository.CheckoutStrategy)
 		{
-			Exec("git", "clone", repository.Origin, checkoutFolder.FullName,
-				"--depth", "1", "--single-branch",
-				"--branch", branch
-			);
-		}
-		else if (repository.CheckoutStrategy == "partial")
-		{
-			Exec(
-				"git", "clone", "--filter=blob:none", "--no-checkout", repository.Origin, checkoutFolder.FullName
-			);
+			case "full":
+				Exec("git", "clone", repository.Origin, checkoutFolder.FullName,
+					"--depth", "1", "--single-branch",
+					"--branch", branch
+				);
+				break;
+			case "partial":
+				Exec(
+					"git", "clone", "--filter=blob:none", "--no-checkout", repository.Origin, checkoutFolder.FullName
+				);
 
-			ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "--cone");
-			ExecIn(checkoutFolder, "git", "checkout", branch);
-			ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
+				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "--cone");
+				ExecIn(checkoutFolder, "git", "checkout", branch);
+				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
+				break;
 		}
 
 		return Capture(checkoutFolder, "git", "rev-parse", "HEAD");
@@ -170,7 +179,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 		};
 		var result = Proc.Exec(arguments);
 		if (result != 0)
-			context.Collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+			collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 	}
 
 	// ReSharper disable once UnusedMember.Local
@@ -202,11 +211,12 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 			};
 			var result = Proc.Start(arguments);
 			if (result.ExitCode != 0)
-				context.Collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+				collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 			var line = result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
 			return line;
 		}
 	}
+
 }
 
 public class NoopConsoleWriter : IConsoleOutWriter

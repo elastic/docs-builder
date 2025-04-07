@@ -14,6 +14,9 @@ public record LinkIndex
 {
 	[JsonPropertyName("repositories")] public required Dictionary<string, Dictionary<string, LinkIndexEntry>> Repositories { get; init; }
 
+	public static LinkIndex Deserialize(Stream json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
+
 	public static LinkIndex Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
 
@@ -34,6 +37,10 @@ public record LinkIndexEntry
 
 	[JsonPropertyName("etag")]
 	public required string ETag { get; init; }
+
+	// TODO can be made required after all doc_sets have published again
+	[JsonPropertyName("ref")]
+	public string GitReference { get; init; } = "unknown";
 }
 
 public interface ICrossLinkResolver

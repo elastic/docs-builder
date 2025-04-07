@@ -1,16 +1,16 @@
-import 'htmx.org'
-import 'htmx-ext-preload'
-import 'htmx-ext-head-support'
-
-import { initTocNav } from './toc-nav'
-import { initHighlight } from './hljs'
-import { initTabs } from './tabs'
 import { initCopyButton } from './copybutton'
-import { initNav } from './pages-nav'
+import { initHighlight } from './hljs'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
+import { initNav } from './pages-nav'
+import { initSmoothScroll } from './smooth-scroll'
+import { initTabs } from './tabs'
+import { initTocNav } from './toc-nav'
+import 'htmx-ext-head-support'
+import 'htmx-ext-preload'
+import 'htmx.org'
 import { $, $$ } from 'select-dom'
-
 import { UAParser } from 'ua-parser-js'
+
 const { getOS } = new UAParser()
 
 document.addEventListener('htmx:load', function () {
@@ -19,6 +19,7 @@ document.addEventListener('htmx:load', function () {
     initCopyButton()
     initTabs()
     initNav()
+    initSmoothScroll()
     openDetailsWithAnchor()
 })
 

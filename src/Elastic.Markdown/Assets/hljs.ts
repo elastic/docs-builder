@@ -1,6 +1,6 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import { $$ } from 'select-dom'
-
+import { LanguageFn } from 'highlight.js'
+import hljs from 'highlight.js/lib/core'
 import asciidoc from 'highlight.js/lib/languages/asciidoc'
 import bash from 'highlight.js/lib/languages/bash'
 import c from 'highlight.js/lib/languages/c'
@@ -13,7 +13,6 @@ import go from 'highlight.js/lib/languages/go'
 import gradle from 'highlight.js/lib/languages/gradle'
 import groovy from 'highlight.js/lib/languages/groovy'
 import handlebars from 'highlight.js/lib/languages/handlebars'
-import hljs from 'highlight.js/lib/core'
 import http from 'highlight.js/lib/languages/http'
 import ini from 'highlight.js/lib/languages/ini'
 import java from 'highlight.js/lib/languages/java'
@@ -28,6 +27,7 @@ import powershell from 'highlight.js/lib/languages/powershell'
 import properties from 'highlight.js/lib/languages/properties'
 import python from 'highlight.js/lib/languages/python'
 import ruby from 'highlight.js/lib/languages/ruby'
+import rust from 'highlight.js/lib/languages/rust'
 import scala from 'highlight.js/lib/languages/scala'
 import shell from 'highlight.js/lib/languages/shell'
 import sql from 'highlight.js/lib/languages/sql'
@@ -35,7 +35,7 @@ import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
-import { LanguageFn } from 'highlight.js'
+import { $$ } from 'select-dom'
 
 const languages: Array<{
     name: string
@@ -68,6 +68,7 @@ const languages: Array<{
     { name: 'properties', module: properties },
     { name: 'python', module: python },
     { name: 'ruby', module: ruby },
+    { name: 'rust', module: rust },
     { name: 'scala', module: scala },
     { name: 'shell', module: shell, aliases: ['sh'] },
     { name: 'sql', module: sql },

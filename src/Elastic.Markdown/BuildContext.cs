@@ -9,6 +9,7 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Discovery;
+using Elastic.Markdown.IO.State;
 
 namespace Elastic.Markdown;
 
