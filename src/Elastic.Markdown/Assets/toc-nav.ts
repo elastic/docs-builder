@@ -153,7 +153,7 @@ export function initTocNav() {
     }
     const update = () => updateIndicator(elements)
     update()
-    window.addEventListener('scroll', update)
-    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update, { passive: true })
     setupSmoothScrolling(elements)
 }
