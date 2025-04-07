@@ -199,7 +199,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 
 :::{dropdown} Syntax
 
-  ````json callouts=false
+  ````markdown callouts=false
       ```json
       {
         "match": {
@@ -227,7 +227,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 Add comments with `//` or `#` to magically create callouts.
 
 :::{dropdown} Syntax
-  ````json callouts=false
+  ````markdown callouts=false
     ```json
     {
       "match": {
