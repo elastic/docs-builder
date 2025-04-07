@@ -651,7 +651,3 @@ Standard table layout for structured data. Automatically scrolls horizontally if
 ❌ Use a table solely for position or spacing purposes<br>
 
 [More details: Tables →](tables.md)
-<br>
-<br>
-
----
