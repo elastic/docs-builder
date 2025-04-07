@@ -233,8 +233,8 @@ toc:
 
               # Rust
               # ✅ https://github.com/elastic/elasticsearch-rs/blob/main/docs/reference/toc.yml
-              #- toc: elasticsearch-rs://reference
-              #  path_prefix: reference/elasticsearch/clients/rust
+              - toc: elasticsearch-rs://reference
+                path_prefix: reference/elasticsearch/clients/rust
                 # Children include the entire AsciiDoc book
 
               # Community-contributed clients

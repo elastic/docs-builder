@@ -107,7 +107,7 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
-		var legacyUrl = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages?.FirstOrDefault());
+		var legacyUrl = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var slice = Index.Create(new IndexViewModel
 		{
