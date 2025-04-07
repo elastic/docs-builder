@@ -111,73 +111,27 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 ## Applies to
 
-Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. For more guidance, see 
-[](../versions/content-patterns.md) and the [full syntax guide](applies.md).
+Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are part of the larger [](../versions/content-patterns.md) in Elastic Docs v3.
 
+For examples and more details, see [](applies.md).
+
+<!--
 :::{tip}
 The `applies_to` tags are scope signals for readers, not comprehensive metadata. If a page contains general information that applies to all contexts, it doesn't need tags.
 :::
+-->
 
-### Page-level tag
-
-:::{dropdown} Syntax
-
-This example includes version and release phase facets, which aren't always needed. 
-
-```yaml
----
-applies_to:
-  stack: 9.0
-  deployment:
-    ece: preview
-    eck: beta 9.0.1
-    ess: 
-    self: 9.0 
-  serverless:
-    elasticsearch:  
-    observability: deprecated 
-    security: 
-  product: 
----
-```
-:::
-
-
-### Section tag
-
-:::{dropdown} Syntax
-````markdown
-# Stack-only content
-```{applies_to}
-stack: 
-```
-````
-:::
-
-:::{dropdown} Output
-#### Stack-only content
-```{applies_to}
-stack:
-```
-:::
-
-### Inline tag
-
-For details on inline tags, see the [full syntax reference](applies.md).
+% TODO restore details when guidance has settled
 
 **DOs**<br>
-✅ Define a set of page-level `applies_to` tags in a front matter block<br>
-✅ Add `{applies_to}` after a heading to indicate that section's contexts<br>
-✅ Indicate versions (`major.minor` with an optional `[.patch]`)  and release phases like `beta`
+✅ Define a set of [page-level tags](applies.md#page-annotations) in a front matter block<br>
+✅ Add an `{applies_to}` [directive](applies.md#sections) after a heading to note contexts at the section level<br>
+✅ Indicate versions (`major.minor` with an optional `[.patch]`) and release phases like `beta`
 
 **DON'Ts**<br>
-❌ Add `applies_to` tags to general, broadly applicable content<br>
-❌ Use `applies_to` tags as metadata or to represent "aboutness"<br>
 ❌ Include `applies_to` tags in admonitions<br>
-❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)<br>
-
-
-[More details: Applies to →](applies.md)
+❌ Add `applies_to` tags to general, broadly applicable content<br>
+❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)
 <br>
 <br>
 
@@ -227,7 +181,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 
 :::{dropdown} Syntax
 
-  ```markdown callouts=false
+  ````json callouts=false
       ```json
       {
         "match": {
@@ -236,6 +190,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
       }
       ```
       1. Searches the `message` field for the phrase "search text"
+  ````
 :::
 
 :::{dropdown} Output
@@ -254,17 +209,7 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 Add comments with `//` or `#` to magically create callouts.
 
 :::{dropdown} Syntax
-  ````markdown callouts=false
-  ```json
-  {
-    "match": {
-      "message": "search text" // Searches the message field
-    }
-  }
-:::
-
-:::{dropdown} Output
-```markdown
+  ````json callouts=false
     ```json
     {
       "match": {
@@ -272,14 +217,24 @@ Add comments with `//` or `#` to magically create callouts.
       }
     }
     ```
-```
+  ````
+:::
 
+:::{dropdown} Output
+
+```json
+{
+  "match": {
+    "message": "search text" // Searches the message field
+  }
+}
+```
 :::
 
 **DOs**<br>
 ✅ Keep callout text short and specific<br>
 ✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
-✅ For explicit callouts, make sure you have a corresponding list item for each callout marker in the code.
+✅ Make sure there's a corresponding list item for each explicit callout marker in a code block
 
 **DON'Ts**<br>
 ❌ Overuse callouts -- they can impede readability<br>
