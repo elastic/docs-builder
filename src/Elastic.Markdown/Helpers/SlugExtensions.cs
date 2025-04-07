@@ -10,6 +10,6 @@ public static class SlugExtensions
 {
 	private static readonly SlugHelper Instance = new();
 
-	public static string Slugify(this string? text) => Instance.GenerateSlug(text);
+	public static string Slugify(this string? text) => Instance.GenerateSlug(text ?? "");
 
 }
