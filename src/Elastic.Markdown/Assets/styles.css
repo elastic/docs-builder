@@ -250,7 +250,7 @@ body {
 }
 
 #dismissible-banner {
-	@apply font-body sticky bottom-0 hidden flex-row items-center justify-between p-4 mt-0 text-sm z-50;
+	@apply font-body sticky bottom-0 z-50 mt-0 hidden flex-row items-center justify-between p-4 text-sm;
 }
 
 #dismissible-button {
