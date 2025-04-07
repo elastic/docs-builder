@@ -47,6 +47,13 @@ export function initNav() {
     if (!pagesNav) {
         return
     }
+    const allNavItems = $$('a', pagesNav);
+    allNavItems.forEach((link) => {
+        link.addEventListener('click', _ => {
+            link.closest('details').removeAttribute('open')
+        })
+    })
+
     const navItems = $$(
         'a[href="' +
             window.location.pathname +
