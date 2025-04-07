@@ -13,6 +13,8 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+  ech:   "Elastic Cloud Hosted"
+  kib:   "Kibana"
   
 features:
   primary-nav: false
@@ -68,6 +70,7 @@ toc:
   - folder: syntax
     children:
       - file: index.md
+      - file: quick-ref.md
       - file: headings.md
       - file: admonitions.md
       - file: applies.md

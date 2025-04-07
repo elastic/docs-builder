@@ -69,6 +69,9 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		var l = ContentSourceMoniker.CreateString(repositoryName, relativePath).TrimEnd('/');
 		var lookup = l.AsSpan();
+		//TODO clean up docs folders in the following repositories
+		if (lookup.StartsWith("cloud://saas/", StringComparison.Ordinal))
+			return null;
 		if (lookup.StartsWith("docs-content://serverless/", StringComparison.Ordinal))
 			return null;
 		if (lookup.StartsWith("eland://sphinx/", StringComparison.Ordinal))

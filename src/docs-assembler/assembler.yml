@@ -3,7 +3,7 @@ environments:
     uri: https://www.elastic.co
     path_prefix: docs
     content_source: current # current | next
-    allow_indexing: false
+    allow_indexing: true
     google_tag_manager:
       enabled: true
       id: GTM-KNJMG2M
