@@ -111,9 +111,27 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 ## Applies to
 
-Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are part of the larger [](../versions/content-patterns.md) in Elastic Docs v3.
+Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are a [version content pattern](../versions/content-patterns.md) in Elastic Docs v3.
 
-For examples and more details, see [](applies.md).
+**Example: Section tag**
+
+:::{dropdown} Syntax
+````markdown
+# Stack-only content
+```{applies_to}
+stack: 
+```
+````
+:::
+
+:::{dropdown} Output
+#### Stack-only content
+```{applies_to}
+stack:
+```
+:::
+
+For full syntax and more examples, see [](applies.md).
 
 <!--
 :::{tip}
@@ -125,7 +143,7 @@ The `applies_to` tags are scope signals for readers, not comprehensive metadata.
 
 **DOs**<br>
 ✅ Define a set of [page-level tags](applies.md#page-annotations) in a front matter block<br>
-✅ Add an `{applies_to}` [directive](applies.md#sections) after a heading to note contexts at the section level<br>
+✅ Add section-level tags in an `{applies_to}` [directive](applies.md#sections) after a heading<br>
 ✅ Indicate versions (`major.minor` with an optional `[.patch]`) and release phases like `beta`
 
 **DON'Ts**<br>
