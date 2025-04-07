@@ -1,6 +1,6 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<NavigationViewModel>
-<div class="pb-20 font-body">
+<div class="pb-20 font-body" hx-boost="true">
 	@{
 		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
 	} 
@@ -14,7 +14,7 @@
 							onclick="this.closest('details').removeAttribute('open')"
 							class="hover:underline text-blue-elastic hover:text-blue-elastic-100"
 							href="@current.Group.Index?.Url"
-							@Htmx.GetHxAttributes(current.Group.Index?.Url!, true)
+							@Htmx.GetHxAttributes(true)
 						>
 							@current.Group.Index?.NavigationTitle
 						</a>
@@ -41,7 +41,7 @@
 								onclick="this.closest('details').removeAttribute('open')"
 								class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 								href="@item.Group.Index.Url"
-								@Htmx.GetHxAttributes(item.Group.Index.Url, false, "mouseover")>
+								@Htmx.GetHxAttributes(false, "mouseover")>
 								@item.Group.Index.NavigationTitle
 							</a>
 						</li>
@@ -54,7 +54,7 @@
 	{
 		<a
 			href="@Model.TitleUrl"
-			@Htmx.GetHxAttributes(Model.TitleUrl, current is null || Model.Tree.Id == current.Id)
+			@Htmx.GetHxAttributes(current is null || Model.Tree.Id == current.Id)
 			class="inline-block mx-4 mt-6 font-semibold text-ink hover:text-black">
 			@Model.Title
 		</a>

@@ -32,7 +32,8 @@ public static class Htmx
 	)
 	{
 		var attributes = new StringBuilder();
-		_ = attributes.Append($" hx-get={targetUrl}");
+		if (!string.IsNullOrEmpty(targetUrl))
+			_ = attributes.Append($" hx-get={targetUrl}");
 		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
 		_ = attributes.Append($" hx-swap={hxSwap}");
 		_ = attributes.Append($" hx-push-url={hxPushUrl}");
@@ -40,4 +41,13 @@ public static class Htmx
 		_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
 	}
+
+	public static string GetHxAttributes(
+		bool hasSameTopLevelGroup = false,
+		string? preload = Preload,
+		string? hxSwapOob = null,
+		string? hxSwap = HxSwap,
+		string? hxPushUrl = HxPushUrl,
+		string? hxIndicator = HxIndicator
+	) => GetHxAttributes(string.Empty, hasSameTopLevelGroup, preload, hxSwapOob, hxSwap, hxPushUrl, hxIndicator);
 }
