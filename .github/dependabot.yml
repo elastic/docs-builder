@@ -19,8 +19,7 @@ updates:
     labels:
       - chore
   - package-ecosystem: nuget
-    directories:
-      - '**/*'
+    directory: '/'
     schedule:
       interval: 'weekly'
       day: 'monday'
