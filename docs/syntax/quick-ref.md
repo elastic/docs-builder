@@ -251,7 +251,6 @@ To explicitly create a code callout, add a number marker in angle brackets (`<1>
 
 :::{dropdown} Output
 
-🚧 rendering bug
 ```json
 {
   "match": {
