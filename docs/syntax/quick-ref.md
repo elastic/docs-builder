@@ -146,13 +146,6 @@ applies_to:
 ```
 :::
 
-:::{dropdown} Output
-🚧 TODO replace this image: match example and get updated tags 🚧
-
-![annotations rendered](img/annotations.png)
-:::
-
-
 
 ### Section tag
 
