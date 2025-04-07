@@ -1,4 +1,5 @@
 import { initCopyButton } from './copybutton'
+import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
@@ -21,6 +22,7 @@ document.addEventListener('htmx:load', function () {
     initNav()
     initSmoothScroll()
     openDetailsWithAnchor()
+    initDismissibleBanner()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

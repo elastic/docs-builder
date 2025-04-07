@@ -93,7 +93,6 @@ references:
   elasticsearch-rs:
   elasticsearch-ruby:
   elasticsearch:
-    current: *stack
   go-elasticsearch:
   integrations:
   kibana:

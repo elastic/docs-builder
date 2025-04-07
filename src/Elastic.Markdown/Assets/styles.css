@@ -248,3 +248,14 @@ body {
 #pages-nav details > summary::-webkit-details-marker {
 	display: none;
 }
+
+#dismissible-banner {
+	@apply font-body sticky bottom-0 z-50 mt-0 hidden flex-row items-center justify-between p-4 text-sm;
+}
+
+#dismissible-button {
+	@apply text-blue-developer cursor-pointer text-base font-bold;
+	&:hover {
+		@apply bg-grey-20 rounded-2xl;
+	}
+}

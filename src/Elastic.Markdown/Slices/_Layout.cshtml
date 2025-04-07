@@ -1,7 +1,7 @@
 @using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorLayoutSlice<LayoutViewModel>
 <!DOCTYPE html>
-<html lang="en" class="h-screen">
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
 @await RenderPartialAsync(_Head.Create(Model))
 
 @{
@@ -20,6 +20,7 @@
 @(await RenderPartialAsync(_Header.Create(Model)))
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
 	@functions {
+
 		private async Task DefaultLayout()
 		{
 			<div class="container h-full grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
@@ -43,7 +44,9 @@
 				</main>
 			</div>
 		}
+
 	}
+
 	@switch (layout)
 	{
 		case LayoutName.NotFound:
@@ -61,5 +64,18 @@
 	}
 </div>
 @await RenderPartialAsync(_Footer.Create(Model))
+<aside id="dismissible-banner" class="admonition note">
+	<div class="container flex justify-between items-center mx-auto">
+		<p>
+			You are viewing the new Elastic Docs experience for the latest product versions.
+			If the page exists in older docs, you can click <strong>View previous version</strong>.
+		</p>
+		<button id="dismissible-button">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+			</svg>
+		</button>
+	</div>
+</aside>
 </body>
 </html>
