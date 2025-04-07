@@ -56,7 +56,7 @@
     <PackageReference Include="SoftCircuits.IniFileParser" Version="2.7.0" />
     <PackageReference Include="Markdig" Version="0.40.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
-    <PackageReference Include="RazorSlices" Version="0.8.1" />
+    <PackageReference Include="RazorSlices" Version="0.9.1" />
     <PackageReference Include="Slugify.Core" Version="4.0.1" />
     <PackageReference Include="Utf8StreamReader" Version="1.3.2"/>
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="16.1.3" PrivateAssets="All"/>
