@@ -40,4 +40,12 @@ public static class Htmx
 		_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
 	}
+
+	public static string GetNavHxAttributes(bool hasSameTopLevelGroup = false, string? preload = Preload)
+	{
+		var attributes = new StringBuilder();
+		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
+		_ = attributes.Append($" preload={preload}");
+		return attributes.ToString();
+	}
 }
