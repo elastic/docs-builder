@@ -2,7 +2,7 @@
 navigation_title: "Quick reference"
 ---
 
-# Syntax quick reference (WIP)
+# Syntax quick reference
 
 This page offers quick guidance on Elastic Docs v3 syntax, including usage tips. Elements are in alphabetical order. The [full syntax guide](index.md) provides implementation details.
 
