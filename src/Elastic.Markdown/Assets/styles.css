@@ -254,5 +254,5 @@ body {
 }
 
 #dismissible-button {
-	@apply text-blue-developer absolute top-0 right-1.5 text-base font-bold;
+	@apply text-blue-developer absolute top-1 right-2.5 text-base font-bold;
 }
