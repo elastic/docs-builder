@@ -49,7 +49,7 @@ export function initNav() {
     }
     const allNavItems = $$('a', pagesNav)
     allNavItems.forEach((link) => {
-        link.addEventListener('click', (_) => {
+        link.addEventListener('click', () => {
             link.closest('details').removeAttribute('open')
         })
     })
