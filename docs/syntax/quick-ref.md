@@ -112,7 +112,7 @@ A default anchor is automatically created for each [heading](#headings), in the 
 ## Applies to
 
 Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. For more guidance, see 
-[](../versions/content-patterns.md).
+[](../versions/content-patterns.md) and the [full syntax guide](applies.md).
 
 :::{tip}
 The `applies_to` tags are scope signals for readers, not comprehensive metadata. If a page contains general information that applies to all contexts, it doesn't need tags.
