@@ -85,10 +85,9 @@ public record GlobalNavigation
 
 			var allNavigationItems = new List<INavigationItem>();
 			var seenSources = new HashSet<Uri>();
-			var currentOrder = 0;
 
-			AddNavigationItems(allNavigationItems, tree.NavigationItems, seenSources, tree, ref currentOrder);
-			AddNavigationItems(allNavigationItems, tocNavigationItems, seenSources, tree, ref currentOrder);
+			AddNavigationItems(allNavigationItems, tree.NavigationItems, seenSources, tree);
+			AddNavigationItems(allNavigationItems, tocNavigationItems, seenSources, tree);
 
 			tree.NavigationItems = allNavigationItems.ToArray();
 			var navigationItem = new TocNavigationItem(i, depth, tree, toc.Source);
@@ -100,7 +99,7 @@ public record GlobalNavigation
 		return list.ToArray().AsReadOnly();
 	}
 
-	private void AddNavigationItems(List<INavigationItem> navigationItems, IEnumerable<INavigationItem>? toAdd, HashSet<Uri> seenSources, TableOfContentsTree tree, ref int currentOrder)
+	private void AddNavigationItems(List<INavigationItem> navigationItems, IEnumerable<INavigationItem>? toAdd, HashSet<Uri> seenSources, TableOfContentsTree tree)
 	{
 		if (toAdd is null)
 			return;
@@ -109,7 +108,6 @@ public record GlobalNavigation
 			if (navigationItem is not TocNavigationItem tocNav)
 			{
 				navigationItems.Add(navigationItem);
-				currentOrder++;
 				continue;
 			}
 			if (seenSources.Contains(tocNav.Source))
@@ -123,7 +121,6 @@ public record GlobalNavigation
 
 			_ = seenSources.Add(tocNav.Source);
 			navigationItems.Add(navigationItem);
-			currentOrder++;
 		}
 	}
 }
