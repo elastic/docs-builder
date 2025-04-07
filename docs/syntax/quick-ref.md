@@ -229,7 +229,7 @@ elasticsearch.hosts: ["http://localhost:9200"]
 
 ---
 
-## Code callouts 🚧
+## Code callouts
 
 Inline annotations that highlight or explain specific lines in a code block.
 
