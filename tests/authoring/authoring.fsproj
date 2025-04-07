@@ -31,20 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit.v3" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="GitHubActionsTestLogger" />
-    <PackageReference Include="JetBrains.Annotations" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
-    <PackageReference Include="FsUnit.xUnit" />
-    <PackageReference Include="AngleSharp.Diffing" />
-    <PackageReference Include="DiffPlex" />
-    <PackageReference Include="Unquote" />
-    <PackageReference Include="FSharp.Core" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="Framework\TestValues.fs"/>
     <Compile Include="Framework\TestCrossLinkResolver.fs" />
     <Compile Include="Framework\Setup.fs"/>
