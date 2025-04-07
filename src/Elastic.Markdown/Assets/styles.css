@@ -250,9 +250,9 @@ body {
 }
 
 #dismissible-banner {
-	@apply relative p-4 mt-1 mb-1 flex-row justify-between items-center text-sm font-body;
+	@apply font-body relative mt-1 mb-1 flex-row items-center justify-between p-4 text-sm;
 }
 
 #dismissible-button {
-	@apply absolute right-1.5 top-0 text-base text-blue-developer font-bold;
+	@apply text-blue-developer absolute top-0 right-1.5 text-base font-bold;
 }

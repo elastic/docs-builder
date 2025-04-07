@@ -1,13 +1,13 @@
 export function initDismissibleBanner() {
-    const banner = document.getElementById('dismissible-banner');
-    const dismissButton = document.getElementById('dismissible-button');
-    
+    const banner = document.getElementById('dismissible-banner')
+    const dismissButton = document.getElementById('dismissible-button')
+
     if (!localStorage.getItem('bannerDismissed')) {
-        banner?.classList.remove('hidden');
+        banner?.classList.remove('hidden')
     }
-    
+
     dismissButton?.addEventListener('click', () => {
-        banner?.classList.add('hidden');
-        localStorage.setItem('bannerDismissed', 'true');
+        banner?.classList.add('hidden')
+        localStorage.setItem('bannerDismissed', 'true')
     })
 }

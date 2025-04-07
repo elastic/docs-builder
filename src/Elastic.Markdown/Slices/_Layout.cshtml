@@ -1,7 +1,7 @@
 @using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorLayoutSlice<LayoutViewModel>
 <!DOCTYPE html>
-<html lang="en" class="h-screen">
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
 @await RenderPartialAsync(_Head.Create(Model))
 
 @{
@@ -26,6 +26,7 @@
 		<button id="dismissible-button">&#x2715;</button>
 	</div>
 	@functions {
+
 		private async Task DefaultLayout()
 		{
 			<div class="container h-full grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
@@ -49,7 +50,9 @@
 				</main>
 			</div>
 		}
+
 	}
+
 	@switch (layout)
 	{
 		case LayoutName.NotFound:
