@@ -132,6 +132,7 @@ function updateIndicator(elements: TocElements) {
 function setupSmoothScrolling(elements: TocElements) {
     elements.tocLinks.forEach((link) => {
         link.addEventListener('click', (e) => {
+            link.closest('details').removeAttribute('open')
             const href = link.getAttribute('href')
             if (href?.charAt(0) === '#') {
                 const target = document.getElementById(href.slice(1))

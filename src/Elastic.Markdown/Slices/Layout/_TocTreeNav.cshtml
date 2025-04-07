@@ -13,7 +13,7 @@
 		<li class="flex group/li pr-4 @(isTopLevel ? "font-semibold py-8 pr-4 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
 			<a
 				href="@f.Url"
-				@Htmx.GetHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
+				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
 				id="page-@id"
 				>
@@ -27,7 +27,7 @@
 		<li class="flex group/li pr-4 @(isTopLevel ? "font-semibold py-8 pr-4 not-last:border-b-1 border-grey-20" : "ml-5 lg:ml-4 mt-4 lg:mt-3")">
 			<a
 				href="@f.Url"
-				@Htmx.GetHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
+				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
 				id="page-@id"
 			>
@@ -59,7 +59,7 @@
 				</label>
 				<a
 					href="@(g.Index?.Url ?? "")"
-					@Htmx.GetHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRootId == Model.RootNavigationId || true)
+					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRootId == Model.RootNavigationId || true)
 					id="page-@(g.Index?.Id ?? id)"
 					class="sidebar-link @(isTopLevel ? "font-semibold font-sans text-base" : "") @(isTopLevel ? "order-0" : "order-1")">
 					@(g.Index?.NavigationTitle ?? (g as TableOfContentsTree)?.Source.ToString() ?? "Untitled")
