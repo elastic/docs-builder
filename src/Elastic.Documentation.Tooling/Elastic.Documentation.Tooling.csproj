@@ -7,12 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework.Abstractions" Version="5.4.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.3"/>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.3"/>
-    <PackageReference Include="Github.Actions.Core" Version="9.0.0"/>
-    <PackageReference Include="Crayon" Version="2.0.69"/>
-    <PackageReference Include="Errata" Version="0.13.0" />
+    <PackageReference Include="ConsoleAppFramework.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Github.Actions.Core" />
+    <PackageReference Include="Crayon" />
+    <PackageReference Include="Errata" />
   </ItemGroup>
 
   <ItemGroup>

@@ -83,30 +83,13 @@ public record GlobalNavigation
 			var tocChildren = toc.Children.OfType<TocReference>().ToArray();
 			var tocNavigationItems = BuildNavigation(tocChildren, depth + 1);
 
-			var allNavigationItems = tree.NavigationItems.Concat(tocNavigationItems);
-			var cleanNavigationItems = new List<INavigationItem>();
+			var allNavigationItems = new List<INavigationItem>();
 			var seenSources = new HashSet<Uri>();
-			foreach (var allNavigationItem in allNavigationItems)
-			{
-				if (allNavigationItem is not TocNavigationItem tocNav)
-				{
-					cleanNavigationItems.Add(allNavigationItem);
-					continue;
-				}
-				if (seenSources.Contains(tocNav.Source))
-					continue;
 
-				if (!_assembleSources.TocTopLevelMappings.TryGetValue(tocNav.Source, out var mapping))
-					continue;
+			AddNavigationItems(allNavigationItems, tree.NavigationItems, seenSources, tree);
+			AddNavigationItems(allNavigationItems, tocNavigationItems, seenSources, tree);
 
-				if (mapping.ParentSource != tree.Source)
-					continue;
-
-				_ = seenSources.Add(tocNav.Source);
-				cleanNavigationItems.Add(allNavigationItem);
-			}
-
-			tree.NavigationItems = cleanNavigationItems.OrderBy(n => n.Order).ToArray();
+			tree.NavigationItems = allNavigationItems.ToArray();
 			var navigationItem = new TocNavigationItem(i, depth, tree, toc.Source);
 
 			list.Add(navigationItem);
@@ -114,5 +97,30 @@ public record GlobalNavigation
 		}
 
 		return list.ToArray().AsReadOnly();
+	}
+
+	private void AddNavigationItems(List<INavigationItem> navigationItems, IEnumerable<INavigationItem>? toAdd, HashSet<Uri> seenSources, TableOfContentsTree tree)
+	{
+		if (toAdd is null)
+			return;
+		foreach (var navigationItem in toAdd)
+		{
+			if (navigationItem is not TocNavigationItem tocNav)
+			{
+				navigationItems.Add(navigationItem);
+				continue;
+			}
+			if (seenSources.Contains(tocNav.Source))
+				continue;
+
+			if (!_assembleSources.TocTopLevelMappings.TryGetValue(tocNav.Source, out var mapping))
+				continue;
+
+			if (mapping.ParentSource != tree.Source)
+				continue;
+
+			_ = seenSources.Add(tocNav.Source);
+			navigationItems.Add(navigationItem);
+		}
 	}
 }

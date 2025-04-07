@@ -19,11 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework.Abstractions" Version="5.4.1" />
-    <PackageReference Include="ConsoleAppFramework" Version="5.4.1" PrivateAssets="all">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Westwind.AspNetCore.LiveReload" Version="0.5.2" />
+    <PackageReference Include="ConsoleAppFramework.Abstractions" />
+    <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Westwind.AspNetCore.LiveReload" />
   </ItemGroup>
 
   <ItemGroup>
