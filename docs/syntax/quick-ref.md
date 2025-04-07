@@ -4,10 +4,6 @@ navigation_title: "Quick reference"
 
 # Syntax quick reference (WIP)
 
-:::{warning}
-This page is still in progress. 
-:::
-
 This page offers quick guidance on Elastic Docs v3 syntax, including usage tips. Elements are in alphabetical order. The [full syntax guide](index.md) provides implementation details.
 
 ## Admonitions
