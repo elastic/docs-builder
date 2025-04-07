@@ -254,7 +254,7 @@ body {
 }
 
 #dismissible-button {
-	@apply text-blue-developer text-base font-bold;
+	@apply text-blue-developer text-base font-bold cursor-pointer;
 	&:hover {
 		@apply bg-grey-20 rounded-2xl;
 	}
