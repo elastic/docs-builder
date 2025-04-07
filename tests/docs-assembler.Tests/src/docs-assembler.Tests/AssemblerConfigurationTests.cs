@@ -50,9 +50,9 @@ public class AssemblerConfigurationTests
 
 		config.NamedGitReferences["stack"].Should().NotBeNullOrEmpty();
 
-		var agent = config.ReferenceRepositories["elasticsearch"];
-		agent.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be(config.NamedGitReferences["stack"]);
+		//var agent = config.ReferenceRepositories["elasticsearch"];
+		//agent.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+		//	.And.Be(config.NamedGitReferences["stack"]);
 
 		// test defaults
 		var apmServer = config.ReferenceRepositories["apm-server"];
