@@ -1,5 +1,5 @@
 ---
-navigation_title: "WIP Quick reference"
+navigation_title: "Quick reference"
 ---
 
 # Syntax quick reference (WIP)
