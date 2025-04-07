@@ -11,7 +11,7 @@
     <PackageVersion Include="Amazon.Lambda.RuntimeSupport" Version="1.12.3"/>
     <PackageVersion Include="Amazon.Lambda.Core" Version="2.5.0"/>
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4"/>
-    <PackageVersion Include="AWSSDK.S3" Version="3.7.414.5"/>
+    <PackageVersion Include="AWSSDK.S3" Version="3.7.416.5"/>
   </ItemGroup>
 
   <!-- Build -->
