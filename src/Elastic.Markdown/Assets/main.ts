@@ -5,6 +5,7 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
+import { initDismissibleBanner } from './dismissible-banner'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
@@ -21,6 +22,7 @@ document.addEventListener('htmx:load', function () {
     initNav()
     initSmoothScroll()
     openDetailsWithAnchor()
+    initDismissibleBanner()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

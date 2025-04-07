@@ -248,3 +248,11 @@ body {
 #pages-nav details > summary::-webkit-details-marker {
 	display: none;
 }
+
+#dismissible-banner {
+	@apply relative p-4 mt-1 mb-1 flex-row justify-between items-center text-sm font-body;
+}
+
+#dismissible-button {
+	@apply absolute right-1.5 top-0 text-base text-blue-developer font-bold;
+}
