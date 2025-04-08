@@ -88,11 +88,11 @@ public class DocumentationGenerator
 	public async Task GenerateAll(Cancel ctx)
 	{
 		var generationState = GetPreviousGenerationState();
+		// always delete output folder on CI
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
 			DocumentationSet.ClearOutputDirectory();
 		else if (!Context.SkipMetadata && (Context.Force || generationState == null))
 			DocumentationSet.ClearOutputDirectory();
-		// always delete output folder on CI
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return;
