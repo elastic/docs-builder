@@ -8,13 +8,7 @@ namespace Elastic.Markdown.Helpers;
 
 public static class Htmx
 {
-	public static string GetHxSelectOob(bool hasSameTopLevelGroup)
-	{
-		var selectTargets = "#content-container,#toc-nav";
-		if (!hasSameTopLevelGroup)
-			selectTargets += ",#pages-nav";
-		return selectTargets;
-	}
+	public static string GetHxSelectOob(bool hasSameTopLevelGroup) => hasSameTopLevelGroup ? "#content-container,#toc-nav" : "#main-container";
 
 	public const string Preload = "mousedown";
 	public const string HxSwap = "none";
