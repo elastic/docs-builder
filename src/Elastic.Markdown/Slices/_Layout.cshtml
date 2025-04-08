@@ -64,18 +64,21 @@
 	}
 </div>
 @await RenderPartialAsync(_Footer.Create(Model))
-<aside id="dismissible-banner" class="admonition note">
-	<div class="container flex justify-between items-center mx-auto">
-		<p>
-			You are viewing the new Elastic Docs experience for the latest product versions.
-			If the page exists in older docs, you can click <strong>View previous version</strong>.
-		</p>
-		<button id="dismissible-button">
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-			</svg>
-		</button>
-	</div>
-</aside>
+@if (!Model.CurrentDocument.Url.Equals("/docs/archive", StringComparison.OrdinalIgnoreCase))
+{
+	<aside id="dismissible-banner" class="admonition note">
+		<div class="container flex justify-between items-center mx-auto">
+			<p>
+				You are viewing the new Elastic Docs experience for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest product versions</a>, including Elastic Stack 9.0.
+				If the page exists in older docs, you can click <strong>View previous version</strong>.
+			</p>
+			<button id="dismissible-button">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+				</svg>
+			</button>
+		</div>
+	</aside>
+}
 </body>
 </html>
