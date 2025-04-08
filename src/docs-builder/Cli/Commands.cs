@@ -105,7 +105,10 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		Uri? canonicalBaseUri;
 
 		if (runningOnCi)
-			force ??= true;
+		{
+			ConsoleApp.Log($"Build running on CI, forcing a full rebuild of the destination folder");
+			force = true;
+		}
 
 		if (canonicalBaseUrl is null)
 			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");
