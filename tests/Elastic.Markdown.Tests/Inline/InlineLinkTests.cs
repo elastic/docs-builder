@@ -49,7 +49,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Be(
-			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#content-container,#toc-nav,#pages-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
+			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#main-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
 		);
 
 	[Fact]
