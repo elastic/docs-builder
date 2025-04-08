@@ -64,7 +64,7 @@
 	}
 </div>
 @await RenderPartialAsync(_Footer.Create(Model))
-@if (!Model.CurrentDocument.Url.Equals("/docs/archive", StringComparison.OrdinalIgnoreCase))
+@if (layout is not LayoutName.Archive)
 {
 	<aside id="dismissible-banner" class="admonition note">
 		<div class="container flex justify-between items-center mx-auto">
