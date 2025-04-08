@@ -104,6 +104,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		Uri? canonicalBaseUri;
 
+		if (runningOnCi)
+			force ??= true;
+
 		if (canonicalBaseUrl is null)
 			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");
 		else if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
