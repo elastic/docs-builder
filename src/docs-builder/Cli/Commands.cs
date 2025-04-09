@@ -144,7 +144,12 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
+
+		// always delete output folder on CI
 		var set = new DocumentationSet(context, logger);
+		if (runningOnCi)
+			set.ClearOutputDirectory();
+
 
 		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
 			metadataOnly ??= metaValue;
