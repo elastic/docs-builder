@@ -97,7 +97,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
 ::::
 
 :::{tip}
-Place the `docs-builder` binary file in a directory and add its path to the system paths to run it from any folder. On macOS, edit the paths file by running `sudo nano /etc/paths`.
+Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
 :::
 
 ## Clone a content repository [#step-two]
