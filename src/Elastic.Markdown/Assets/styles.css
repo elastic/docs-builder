@@ -91,7 +91,7 @@
 		}
 
 		.sidebar-link {
-			@apply text-ink-light text-pretty inline-block leading-[1.2em] hover:text-black md:text-sm;
+			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
 		}
 	}
 
