@@ -15,7 +15,7 @@ public interface INavigationItem
 	string Id { get; }
 }
 
-[DebuggerDisplay("Group >{Depth} #{Order} {Group.FolderName}")]
+[DebuggerDisplay("Toc >{Depth} #{Order} {Group.FolderName}")]
 public record TocNavigationItem(int Order, int Depth, DocumentationGroup Group, Uri Source)
 	: GroupNavigationItem(Order, Depth, Group)
 {
