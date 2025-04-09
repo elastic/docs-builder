@@ -21,10 +21,10 @@ To write and push updates to Elastic documentation, you need the following:
 
 There are two different ways to install and run `docs-builder`:
 
-1. Download, extract, and run the binary (recommended)
-1. Clone the repository and build the binary from source
+1. Download, extract, and run the binary (recommended).
+1. Clone the repository and build the binary from source.
 
-This guide uses option one. If you'd like to clone the repository and build from source, learn how in the [project readme](https://github.com/elastic/docs-builder?tab=readme-ov-file#docs-builder).
+This guide uses the first option. If you'd like to clone the repository and build from source, learn how in the [project readme](https://github.com/elastic/docs-builder?tab=readme-ov-file#docs-builder).
 
 ::::{tab-set}
 
@@ -95,6 +95,10 @@ This guide uses option one. If you'd like to clone the repository and build from
 :::
 
 ::::
+
+:::{tip}
+Place the `docs-builder` binary file in a directory and add its path to the system paths to run it from any folder. On macOS, edit the paths file by running `sudo nano /etc/paths`.
+:::
 
 ## Clone a content repository [#step-two]
 
