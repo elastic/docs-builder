@@ -10,7 +10,7 @@
 	if (item is FileNavigationItem file && Model.SubTree.IndexFileName != file.File.FileName)
 	{
 		var f = file.File;
-		<li class="flex group/li pr-4 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@f.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
