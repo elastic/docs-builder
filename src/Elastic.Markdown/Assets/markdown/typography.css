@@ -1,5 +1,5 @@
 .markdown-content {
-	@apply text-ink font-body text-base;
+	@apply text-ink font-body text-base text-pretty;
 
 	h1 {
 		@apply text-ink-dark text-5xl font-semibold;
@@ -46,7 +46,6 @@
 	p {
 		@apply mt-4;
 		line-height: 1.5em;
-		text-wrap: pretty;
 	}
 
 	a {
