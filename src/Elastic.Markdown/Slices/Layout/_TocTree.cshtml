@@ -11,6 +11,7 @@
 				<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
 					<div>
 						<a
+							tabindex="0"
 							class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
 							href="@current.Group.Index?.Url"
 							@Htmx.GetNavHxAttributes(true)>
@@ -37,6 +38,7 @@
 							if (item.Id == current?.Id) continue;
 							<li class="block">
 								<a
+									tabindex="0"
 									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Group.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 									href="@item.Group.Index.Url"
 									@Htmx.GetNavHxAttributes(false, "mouseover")>

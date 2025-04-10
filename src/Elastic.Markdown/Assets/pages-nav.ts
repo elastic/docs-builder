@@ -50,18 +50,18 @@ export function initNav() {
 
     const pagesDropdown = $('#pages-dropdown')
     if (pagesDropdown) {
-        const activeAnchor = $('a.pages-dropdown_active', pagesDropdown)
-        activeAnchor?.addEventListener('mousedown', (e) => {
-            e.preventDefault()
+        const anchors = $$('a', pagesDropdown)
+        anchors.forEach((a) => {
+            a.addEventListener('mousedown', (e) => {
+                e.preventDefault()
+            })
+            a.addEventListener('mouseup', () => {
+                if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur()
+                }
+            })
         })
     }
-
-    const allNavItems = $$('a', pagesNav)
-    allNavItems.forEach((link) => {
-        link.addEventListener('click', () => {
-            link.closest('details').removeAttribute('open')
-        })
-    })
 
     const navItems = $$(
         'a[href="' +
