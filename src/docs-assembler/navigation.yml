@@ -35,12 +35,12 @@ toc:
         path_prefix: extend/kibana
       - toc: logstash://extend
         path_prefix: extend/logstash
+      - toc: beats://extend
+        path_prefix: extend/beats
       - toc: elasticsearch://extend
         path_prefix: extend/elasticsearch
       - toc: integrations://extend
         path_prefix: extend/integrations
-      - toc: beats://extend
-        path_prefix: extend/beats
 
  #################
   # RELEASE NOTES #
