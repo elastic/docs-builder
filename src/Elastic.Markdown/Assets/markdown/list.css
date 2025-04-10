@@ -50,9 +50,9 @@
 	ol > li > ol > li > ol > li > ol > li > ol > li > ol {
 		list-style-type: lower-roman;
 	}
-	
+
 	.stepper {
-		&>ol {
+		& > ol {
 			@apply ml-0;
 			counter-reset: stepper;
 
@@ -75,31 +75,19 @@
 				list-style-type: lower-roman;
 			}
 		}
-		&>ol > li {
-			@apply relative pl-12 list-none;
+		& > ol > li {
+			@apply relative list-none pl-12;
 			counter-increment: stepper;
 			position: relative;
 			&::before {
-				@apply absolute top-0 left-4 -bottom-8 block w-[1px] bg-grey-20;
+				@apply bg-grey-20 absolute top-0 -bottom-8 left-4 block w-[1px];
 				content: '';
 			}
 			&:last-child::before {
 				@apply bottom-0;
 			}
 			&::after {
-				@apply absolute 
-					top-0
-					left-0 
-					rounded-full
-					border-1 
-					border-grey-20
-					size-8
-					flex
-					text-sm
-					text-black
-					justify-center
-					bg-grey-10
-					items-center;
+				@apply border-grey-20 bg-grey-10 absolute top-0 left-0 flex size-8 items-center justify-center rounded-full border-1 text-sm text-black;
 				content: counter(stepper);
 			}
 		}
