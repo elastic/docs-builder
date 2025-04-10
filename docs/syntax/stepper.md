@@ -1,7 +1,7 @@
 # Stepper
 
-This section introduces the concept of a stepper, a visual representation of sequential steps, 
-often used in tutorials or guides to break down processes into manageable stages.
+Steppers provide a visual representation of sequential steps, commonly used in tutorials or guides
+to break down processes into manageable stages.
 
 ## Numbered Stepper
 
