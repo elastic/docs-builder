@@ -43,20 +43,17 @@ function isElementInViewport(parent: HTMLElement, child: HTMLElement): boolean {
 }
 
 export function initNav() {
-    const pagesDropdown = $('#pages-dropdown')
-    if (pagesDropdown) {
-        const anchors = $$('a', pagesDropdown)
-        anchors.forEach((a) => {
-            a.addEventListener('click', () => {
-                a.blur()
-            })
-        })
-    }
-
     const pagesNav = $('#pages-nav')
     if (!pagesNav) {
         return
     }
+    
+    const pagesDropdown = $('#pages-dropdown')
+    if (pagesDropdown) {
+        const activeAnchor = $('a.pages-dropdown_active', pagesDropdown)
+        activeAnchor?.addEventListener('mousedown', e => {e.preventDefault()})
+    }
+    
     const allNavItems = $$('a', pagesNav)
     allNavItems.forEach((link) => {
         link.addEventListener('click', () => {
