@@ -111,7 +111,7 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
 			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
-				this.EmitHint($"Image '{imageUrl}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+				this.EmitWarning($"Image '{imageUrl}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
 		}
 	}
 }
