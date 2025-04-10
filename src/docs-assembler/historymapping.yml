@@ -54,6 +54,7 @@ mappings:
   en/elasticsearch/client/rust-api: stack
   en/elasticsearch/client/ruby-api: stack
   en/elasticsearch/client/go-api: stack
+  en/elastic-stack: stack
   en/integrations: undefined
   en/integrations-developer: undefined
   en/kibana: stack
