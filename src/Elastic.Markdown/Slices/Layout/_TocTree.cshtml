@@ -7,7 +7,7 @@
 	@if (Model.IsPrimaryNavEnabled && current is { Group.Index: not null })
 	{
 		<div class="sticky top-0 py-6 bg-white z-10 border-b-1 border-grey-20 pr-4">
-			<div id="pages-dropdown" class="block group border-1 border-grey-20 rounded-sm font-sans relative">
+			<div tabindex="0" id="pages-dropdown" class="block group border-1 border-grey-20 rounded-sm font-sans relative">
 				<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
 					<div>
 						<a
