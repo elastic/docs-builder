@@ -7,17 +7,21 @@
 		<div class="sr-only">Loading</div>
 	</div>
 	<section class="w-full px-8 lg:px-6 bg-grey-10">
-		<div class="container mx-auto py-10 grid md:grid-cols-2 items-center gap-6">
+		<div class="container mx-auto pt-16 pb-10 grid md:grid-cols-2 items-center gap-6">
 			<div>
 				<h1 class="text-4xl font-bold font-sans text-black">Elastic Docs</h1>
 				<p class="mt-4">Find the help you need, wherever you are in your Elastic journey.</p>
-			</div>
-			<div>
-				<div class="flex md:inline-flex gap-3">
+				<div class="flex md:inline-flex gap-3 mt-6">
 					<a href="@Model.Link("/get-started/")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
 						Get started
 					</a>
+					<a href="/deploy-manage/upgrade" class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
+						Upgrade
+					</a>
 				</div>
+			</div>
+			<div class="flex justify-center items-center">
+				<img src="@Model.Static("web-documentation-hero-illustration.svg")" alt="" width="400">
 			</div>
 		</div>
 	</section>
@@ -80,7 +84,7 @@
 					</a>
 				</h2>
 			</div>
-			<div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6">
+			<div class="grid md:grid-cols-2 gap-6 mt-6">
 				<div class="grow rounded-xl border-1 border-grey-20 p-6">
 					<div class="flex gap-6 h-full">
 						<img loading="lazy" alt="Graph icon" src="@Model.Static("icon-graph-64-color.svg")" class="size-9"/>
@@ -132,7 +136,6 @@
 						</div>
 					</div>
 				</div>
-
 			</div>
 		</div>
 	</section>
