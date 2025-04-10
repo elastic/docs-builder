@@ -1,5 +1,8 @@
 # Stepper
 
+This section introduces the concept of a stepper, a visual representation of sequential steps, 
+often used in tutorials or guides to break down processes into manageable stages.
+
 ## Numbered Stepper
 
 ::::::{tab-set}
