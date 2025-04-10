@@ -1,0 +1,87 @@
+.mermaid {
+	@apply bg-grey-10 border-grey-20 rounded-xs border-1 font-mono;
+
+	font-size: 0.875em !important;
+
+	.nodeLabel {
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+	.labelText {
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+	.loopText {
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+	.noteText {
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+	.messageText {
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+	text.actor {
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+	.actor {
+		stroke: var(--color-blue-elastic-50);
+		fill: var(--color-blue-elastic-10);
+	}
+	text.actor {
+		fill: var(--color-ink-dark);
+		stroke: none;
+		@apply font-mono;
+		font-size: 0.875em !important;
+	}
+
+	.actor-line {
+		stroke: var(--color-grey-70);
+	}
+
+	.messageLine0 {
+		stroke-width: 1.5;
+		stroke: black;
+	}
+
+	.messageLine1 {
+		stroke-width: 1.5;
+		stroke: var(--color-ink-dark);
+	}
+
+	#arrowhead {
+		fill: var(--color-ink-dark);
+	}
+
+	.messageText {
+		fill: var(--color-ink-dark);
+		stroke: none;
+		@apply font-mono;
+		font-size: 1em;
+	}
+
+	.labelBox {
+		stroke: #ccccff;
+		fill: #ececff;
+	}
+
+	.labelText {
+		fill: var(--color-ink-dark);
+		stroke: none;
+		@apply font-mono;
+	}
+
+	.loopText {
+		fill: var(--color-ink-dark);
+		stroke: none;
+		font-size: 1em;
+	}
+	.note {
+		fill: var(--color-yellow-10) !important;
+		stroke: var(--color-yellow-50) !important;
+		font-size: 1em !important;
+	}
+}

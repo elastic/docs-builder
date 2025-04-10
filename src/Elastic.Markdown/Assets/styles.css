@@ -5,6 +5,7 @@
 @import './markdown/list.css';
 @import './markdown/tabs.css';
 @import './markdown/code.css';
+@import './markdown/mermaid.css';
 @import './copybutton.css';
 @import './markdown/admonition.css';
 @import './markdown/dropdown.css';
