@@ -68,7 +68,7 @@
 		@apply text-blue-elastic hover:text-blue-elastic-100 inline-flex items-center justify-center font-sans font-semibold text-nowrap;
 
 		.link-icon {
-			@apply mr-1 ml-0 size-4 shrink-0;
+			@apply mr-2 ml-0 size-4 shrink-0;
 		}
 
 		.link-arrow {
