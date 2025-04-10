@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -101,10 +102,17 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 		ImageUrl = imageUrl;
 		var imagePath = Path.Combine(includeFrom, imageUrl.TrimStart('/'));
-		if (context.Build.ReadFileSystem.File.Exists(imagePath))
+		var file = context.Build.ReadFileSystem.FileInfo.New(imagePath);
+		if (file.Exists)
 			Found = true;
 		else
 			this.EmitError($"`{imageUrl}` does not exist. resolved to `{imagePath}");
+
+		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		{
+			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
+				this.EmitHint($"Image '{imageUrl}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+		}
 	}
 }
 
