@@ -47,13 +47,15 @@ export function initNav() {
     if (!pagesNav) {
         return
     }
-    
+
     const pagesDropdown = $('#pages-dropdown')
     if (pagesDropdown) {
         const activeAnchor = $('a.pages-dropdown_active', pagesDropdown)
-        activeAnchor?.addEventListener('mousedown', e => {e.preventDefault()})
+        activeAnchor?.addEventListener('mousedown', (e) => {
+            e.preventDefault()
+        })
     }
-    
+
     const allNavItems = $$('a', pagesNav)
     allNavItems.forEach((link) => {
         link.addEventListener('click', () => {
