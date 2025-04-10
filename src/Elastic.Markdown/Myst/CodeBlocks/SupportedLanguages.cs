@@ -27,6 +27,7 @@ public static class CodeBlock
 		{ "javascript", "js, jsx" }, // JavaScript
 		{ "json", "jsonc" }, // JSON
 		{ "kotlin", "kt" }, // Kotlin
+		{ "mermaid", ""},
 		{ "markdown", "md, mkdown, mkd" }, // Markdown
 		{ "nginx", "nginxconf" }, // Nginx
 		{ "php", "" }, // PHP

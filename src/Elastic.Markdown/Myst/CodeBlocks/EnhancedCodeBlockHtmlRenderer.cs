@@ -48,7 +48,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			if (indent >= commonIndent)
 				slice.Start += commonIndent;
 
-			if (!hasCode)
+			if (!hasCode && block.Language != "mermaid")
 			{
 				_ = renderer.Write($"<code class=\"language-{block.Language}\">");
 				hasCode = true;

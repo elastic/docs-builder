@@ -46,7 +46,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "grid", 26 },
 		{ "grid-item-card", 26 },
 		{ "card", 25 },
-		{ "mermaid", 20 },
 		{ "aside", 4 },
 		{ "margin", 4 },
 		{ "sidebar", 4 },
