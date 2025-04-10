@@ -11,7 +11,7 @@
 						<ul class="block w-full">
 							@foreach (var item in Model.PageTocItems)
 							{
-								<li class="has-[:hover]:border-l-grey-80 items-center ml-2 pl-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
+								<li class="has-[:hover]:border-l-grey-80 items-center ml-2 px-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
 									<a
 										class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)"
 										href="#@item.Slug">
