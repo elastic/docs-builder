@@ -81,3 +81,5 @@ public class SettingsViewModel
 }
 
 public class MermaidViewModel;
+
+public class StepperViewModel;

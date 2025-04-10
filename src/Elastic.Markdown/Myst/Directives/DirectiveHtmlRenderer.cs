@@ -65,6 +65,9 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock, markdownParser);
 				return;
+			case StepperBlock stepperBlock:
+				WriteStepperBlock(renderer, stepperBlock, markdownParser);
+				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -108,6 +111,12 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl,
 		});
+		RenderRazorSlice(slice, renderer, block);
+	}
+
+	private static void WriteStepperBlock(HtmlRenderer renderer, StepperBlock block, MarkdownParser _)
+	{
+		var slice = Stepper.Create(new StepperViewModel());
 		RenderRazorSlice(slice, renderer, block);
 	}
 

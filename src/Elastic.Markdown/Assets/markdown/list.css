@@ -50,4 +50,58 @@
 	ol > li > ol > li > ol > li > ol > li > ol > li > ol {
 		list-style-type: lower-roman;
 	}
+	
+	.stepper {
+		&>ol {
+			@apply ml-0;
+			counter-reset: stepper;
+
+			ol {
+				list-style-type: decimal;
+			}
+			ol > li > ol {
+				list-style-type: lower-alpha;
+			}
+			ol > li > ol > li > ol {
+				list-style-type: lower-roman;
+			}
+			ol > li > ol > li > ol > li > ol {
+				list-style-type: decimal;
+			}
+			ol > li > ol > li > ol > li > ol > li > ol {
+				list-style-type: lower-alpha;
+			}
+			ol > li > ol > li > ol > li > ol > li > ol > li > ol {
+				list-style-type: lower-roman;
+			}
+		}
+		&>ol > li {
+			@apply relative pl-12 list-none;
+			counter-increment: stepper;
+			position: relative;
+			&::before {
+				@apply absolute top-0 left-4 -bottom-8 block w-[1px] bg-grey-20;
+				content: '';
+			}
+			&:last-child::before {
+				@apply bottom-0;
+			}
+			&::after {
+				@apply absolute 
+					top-0
+					left-0 
+					rounded-full
+					border-1 
+					border-grey-20
+					size-8
+					flex
+					text-sm
+					text-black
+					justify-center
+					bg-grey-10
+					items-center;
+				content: counter(stepper);
+			}
+		}
+	}
 }
