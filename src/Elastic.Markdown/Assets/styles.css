@@ -92,6 +92,7 @@
 
 		.sidebar-link {
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
+			word-break: break-word;
 		}
 	}
 
