@@ -11,7 +11,7 @@ import 'htmx-ext-preload'
 import 'htmx.org'
 import {$, $$} from 'select-dom'
 import {UAParser} from 'ua-parser-js'
-import mermaid from 'mermaid'
+import mermaid from 'mermaid/dist/mermaid.esm.min.mjs'
 
 const {getOS} = new UAParser()
 
@@ -30,8 +30,6 @@ document.addEventListener('htmx:load', function () {
             fontFamily: 'inherit',
             altFontFamily: 'inherit',
             fontSize: '0.875em',
-            primaryColor: 'var(--color-purple-50)',
-            primaryBorderColor: 'var(--color-purple-100)'
         },
         fontFamily: 'inherit', altFontFamily: 'inherit',
         "sequence": {
