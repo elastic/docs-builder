@@ -122,6 +122,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{stepper}") > 0)
 			return new StepperBlock(this, context);
 
+		if (info.IndexOf("{step}") > 0)
+			return new StepBlock(this, context);
+
 		return new UnknownDirectiveBlock(this, info.ToString(), context);
 	}
 

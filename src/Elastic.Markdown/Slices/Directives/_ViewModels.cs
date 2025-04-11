@@ -83,3 +83,9 @@ public class SettingsViewModel
 public class MermaidViewModel;
 
 public class StepperViewModel;
+
+public class StepViewModel
+{
+	public required string Title { get; init; }
+	public required string Anchor { get; init; }
+}

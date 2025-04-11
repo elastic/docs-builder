@@ -1,0 +1,12 @@
+@inherits RazorSlice<StepViewModel>
+<li class="step">
+	@if (!string.IsNullOrEmpty(Model.Title))
+	{
+		<div id="@Model.Anchor">
+			<a class="title" href="#@Model.Anchor">
+				@Model.Title
+			</a>
+		</div>
+	}
+	[CONTENT]
+</li>
