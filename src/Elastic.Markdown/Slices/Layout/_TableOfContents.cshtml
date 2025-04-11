@@ -3,17 +3,17 @@
 <aside class="sidebar hidden lg:block order-3">
 	<nav id="toc-nav" class="sidebar-nav">
 		<div id="page-version-dropdown" tabindex="1"
-		     class="mt-6 block group border-1 border-grey-20 rounded-sm font-sans relative z-50">
+		     class="mt-6 block group font-sans text-sm relative z-50">
 			<button
-				class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+				class="text-left border-1 rounded-2xl grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-1 py-1 group-open:border-b-1 border-grey-20">
 				<div>
 					<a
-						class="page-version-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
+						class="page-version-dropdown_active hover:underline text-ink hover:text-blue-elastic-100"
 						href="#"
 					>Current version
 					</a>
 				</div>
-				<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+				<div class="flex items-center my-auto justify-center size-5 hover:bg-grey-20 rounded-xl">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -21,17 +21,25 @@
 						stroke-width="1.5"
 						stroke="currentColor"
 						class="w-4 group-open:rotate-180">
-						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 9.25-7.5 8.5-7.5-8.5"/>
 					</svg>
 				</div>
 			</button>
-			<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
-				<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+			<div class="hidden group-focus-within:block left-0 right-0 absolute top-full w-max">
+				<ul class="mt-1 py-0 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+					<li class="block">
+						<a
+							class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
+							@Htmx.GetNavHxAttributes(false, "mouseover")
+						>
+							Current version ✓
+						</a>						
+					</li>
 					<li class="block">
 						@if (Model.LegacyPage is not null)
 						{
 							<a
-								class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink"
+								class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
 								href="@Model.LegacyPage.Url"
 								@Htmx.GetNavHxAttributes(false, "mouseover")>
 								Previous
