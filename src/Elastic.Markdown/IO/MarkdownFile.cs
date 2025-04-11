@@ -292,7 +292,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
-				return new PageTocItem { Heading = header, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
+				return new PageTocItem
+				{
+					Heading = header,
+					Slug = (h.Item2 ?? h.Item1).Slugify(),
+					Level = h.Level
+				};
 			})
 			.Concat(includedTocs)
 			.Select(toc => subs.Count == 0
