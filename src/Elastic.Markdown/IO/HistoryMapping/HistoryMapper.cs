@@ -4,12 +4,14 @@
 
 namespace Elastic.Markdown.IO.HistoryMapping;
 
+public record LegacyPageMapping(string Url, string Version);
+
 public interface IHistoryMapper
 {
-	string? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
+	LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
 }
 
 public record BypassHistoryMapper : IHistoryMapper
 {
-	public string? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages) => null;
+	public LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages) => null;
 }
