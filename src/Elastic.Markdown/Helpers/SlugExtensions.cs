@@ -8,8 +8,14 @@ namespace Elastic.Markdown.Helpers;
 
 public static class SlugExtensions
 {
-	private static readonly SlugHelper Instance = new();
+	private static readonly SlugHelper Instance = InitSlugHelper();
+
+	private static SlugHelper InitSlugHelper()
+	{
+		var config = new SlugHelperConfiguration();
+		_ = config.AllowedChars.Remove('.');
+		return new SlugHelper(config);
+	}
 
 	public static string Slugify(this string? text) => Instance.GenerateSlug(text);
-
 }
