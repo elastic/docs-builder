@@ -9,13 +9,17 @@ namespace Elastic.Markdown.Helpers;
 public static class SlugExtensions
 {
 	private static readonly SlugHelper Instance = InitSlugHelper();
+	private static readonly SlugHelper InstanceWithDots = InitSlugHelper(true);
 
-	private static SlugHelper InitSlugHelper()
+	private static SlugHelper InitSlugHelper(bool allowDots = false)
 	{
 		var config = new SlugHelperConfiguration();
-		_ = config.AllowedChars.Remove('.');
+		if (!allowDots)
+			_ = config.AllowedChars.Remove('.');
 		return new SlugHelper(config);
 	}
 
-	public static string Slugify(this string? text) => Instance.GenerateSlug(text);
+	public static string Slugify(this string? text, bool allowDots = false) => allowDots
+		? InstanceWithDots.GenerateSlug(text)
+		: Instance.GenerateSlug(text);
 }
