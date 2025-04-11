@@ -68,12 +68,16 @@ public class HtmlWriter(
 	IFileSystem writeFileSystem,
 	IDescriptionGenerator descriptionGenerator,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
-	IHistoryMapper? historyMapper = null)
+	IHistoryMapper? historyMapper = null,
+	IPositionalNavigation? positionalNavigation = null
+)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
 	private IHistoryMapper HistoryMapper { get; } = historyMapper ?? new BypassHistoryMapper();
+	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;
+
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
@@ -87,8 +91,8 @@ public class HtmlWriter(
 
 		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
 
-		var previous = DocumentationSet.GetPrevious(markdown);
-		var next = DocumentationSet.GetNext(markdown);
+		var previous = PositionalNavigation.GetPrevious(markdown);
+		var next = PositionalNavigation.GetNext(markdown);
 
 		var remote = DocumentationSet.Build.Git.RepositoryName;
 		var branch = DocumentationSet.Build.Git.Branch;

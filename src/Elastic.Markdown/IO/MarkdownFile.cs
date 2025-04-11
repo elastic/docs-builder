@@ -144,7 +144,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public int NavigationIndex { get; internal set; } = -1;
+	public int NavigationIndex { get; set; } = -1;
 
 	public string? GroupId { get; set; }
 

@@ -13,10 +13,10 @@ namespace Documentation.Assembler.Building;
 public class AssemblerBuilder(
 	ILoggerFactory logger,
 	AssembleContext context,
+	GlobalNavigation navigation,
 	GlobalNavigationHtmlWriter writer,
 	GlobalNavigationPathProvider pathProvider,
-	IHistoryMapper? historyMapper
-)
+	IHistoryMapper? historyMapper)
 {
 	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
 
@@ -58,7 +58,13 @@ public class AssemblerBuilder(
 
 	private async Task BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
 	{
-		var generator = new DocumentationGenerator(set.DocumentationSet, logger, HtmlWriter, pathProvider, historyMapper: HistoryMapper);
+		var generator = new DocumentationGenerator(
+			set.DocumentationSet,
+			logger, HtmlWriter,
+			pathProvider,
+			historyMapper: HistoryMapper,
+			positionalNavigation: navigation
+		);
 		await generator.GenerateAll(ctx);
 	}
 

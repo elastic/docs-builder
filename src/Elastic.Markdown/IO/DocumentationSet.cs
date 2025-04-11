@@ -24,6 +24,12 @@ public interface INavigationLookups
 	FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
 }
 
+public interface IPositionalNavigation
+{
+	MarkdownFile? GetPrevious(MarkdownFile current);
+	MarkdownFile? GetNext(MarkdownFile current);
+}
+
 public record NavigationLookups : INavigationLookups
 {
 	public required FrozenDictionary<string, DocumentationFile> FlatMappedFiles { get; init; }
@@ -33,7 +39,7 @@ public record NavigationLookups : INavigationLookups
 	//public required FrozenDictionary<Uri, TableOfContentsReference> IndexedTableOfContents { get; init; }
 }
 
-public class DocumentationSet : INavigationLookups
+public class DocumentationSet : INavigationLookups, IPositionalNavigation
 {
 	public BuildContext Build { get; }
 	public string Name { get; }

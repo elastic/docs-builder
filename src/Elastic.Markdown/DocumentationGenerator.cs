@@ -46,7 +46,8 @@ public class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null,
-		IHistoryMapper? historyMapper = null
+		IHistoryMapper? historyMapper = null,
+		IPositionalNavigation? positionalNavigation = null
 	)
 	{
 		_documentationFileOutputProvider = documentationFileOutputProvider;
@@ -57,7 +58,7 @@ public class DocumentationGenerator
 		DocumentationSet = docSet;
 		Context = docSet.Build;
 		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, historyMapper);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, historyMapper, positionalNavigation);
 		_documentationFileExporter =
 			documentationExporter
 			?? docSet.Build.Configuration.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
