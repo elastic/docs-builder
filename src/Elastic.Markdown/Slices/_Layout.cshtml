@@ -66,11 +66,11 @@
 @await RenderPartialAsync(_Footer.Create(Model))
 @if (layout is not LayoutName.Archive)
 {
-	<aside id="dismissible-banner" class="admonition note">
+	<aside id="dismissible-banner" class="admonition tip">
 		<div class="container flex justify-between items-center mx-auto">
 			<p>
-				You are viewing the new Elastic Docs experience for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest product versions</a>, including Elastic Stack 9.0.
-				If the page exists in older docs, you can click <strong>View previous version</strong>.
+				You are viewing the new Elastic Docs experience for the <a class="link text-base" target="_blank" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest product versions</a>, including Elastic Stack 9.0.
+				To view the old Docs experience, go to <a class="link text-base" target="_blank" href="https://elastic.co/guide">elastic.co/guide</a>.
 			</p>
 			<button id="dismissible-button">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
