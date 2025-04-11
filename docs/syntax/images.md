@@ -4,7 +4,7 @@ Images include screenshots, inline images, icons, and more. Syntax for images is
 
 1. instead of link text, you provide an image description
 2. an image description starts with `![` not just `[`
-3. image paths must be specified as absolute paths
+3. there are restrictions on the scope of image paths
 
 :::{note}
 If you reference an image using a relative path, it must be relative to the `toc.yml` or `docset.yml` rather than relative to the page that uses it.
