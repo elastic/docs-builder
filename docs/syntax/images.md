@@ -9,6 +9,8 @@ Images include screenshots, inline images, icons, and more. Syntax for images is
 :::{note}
 If a page uses a relative image path, it must be relative to the `toc.yml` or `docset.yml` that includes the page rather than relative to the page itself.
 This type of relative path may fail to render when you run a local build, thus it's generally preferable to use an absolute path, for example: `/solutions/images/observability-apm-app-landing.png`.
+
+Irrespective of whether you use relative or absolute paths, if you reference an image that exists in a folder that is higher in the tree than the `toc.yml` file, it is at risk of being broken if the assembler rehomes this subtree and causes a warning in the build.
 :::
 
 ## Block-level images
