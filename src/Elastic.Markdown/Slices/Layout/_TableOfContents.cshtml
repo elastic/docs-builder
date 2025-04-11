@@ -35,7 +35,7 @@
 								href="@Model.LegacyPage.Url"
 								@Htmx.GetNavHxAttributes(false, "mouseover")>
 								Previous
-								Version @(string.IsNullOrEmpty(Model.LegacyPage.Version) ? string.Empty : $"[{Model.LegacyPage.Version}]")
+								Version @(string.IsNullOrEmpty(Model.LegacyPage.Version) ? string.Empty : $"({Model.LegacyPage.Version})")
 							</a>
 						}
 						else
