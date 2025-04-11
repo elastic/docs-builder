@@ -85,11 +85,11 @@ toc:
       - file: frontmatter.md
       - file: images.md
       - file: lists.md
-      - file: stepper.md
       - file: line_breaks.md
       - file: links.md
       - file: passthrough.md
       - file: sidebars.md
+      - file: stepper.md
       - file: substitutions.md
       - file: sundries.md
       - file: tables.md
