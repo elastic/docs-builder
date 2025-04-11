@@ -30,7 +30,7 @@
 					@if (Model.LegacyPage is not null)
 					{
 						<a
-							class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-blue-elastic"
+							class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink"
 							href="@Model.LegacyPage.Url"
 							@Htmx.GetNavHxAttributes(false, "mouseover")>
 							Previous
@@ -40,7 +40,7 @@
 					else
 					{
 						<a
-							class="block py-2 px-4 font-semibold text-ink"
+							class="block py-2 px-4 font-semibold text-grey-60 cursor-default"
 							@Htmx.GetNavHxAttributes(false, "mouseover")
 							title="Current is the only version of this page.">
 							Previous version
