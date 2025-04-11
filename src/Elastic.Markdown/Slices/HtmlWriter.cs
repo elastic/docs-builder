@@ -111,7 +111,7 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
-		var legacyUrl = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+		var legacyPage = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var slice = Index.Create(new IndexViewModel
 		{
@@ -136,7 +136,7 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			LegacyUrl = legacyUrl
+			LegacyPage = legacyPage
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

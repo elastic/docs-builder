@@ -42,15 +42,9 @@ function isElementInViewport(parent: HTMLElement, child: HTMLElement): boolean {
     )
 }
 
-export function initNav() {
-    const pagesNav = $('#pages-nav')
-    if (!pagesNav) {
-        return
-    }
-
-    const pagesDropdown = $('#pages-dropdown')
-    if (pagesDropdown) {
-        const anchors = $$('a', pagesDropdown)
+function setDropdown(dropdown: HTMLElement) {
+    if (dropdown) {
+        const anchors = $$('a', dropdown)
         anchors.forEach((a) => {
             a.addEventListener('mousedown', (e) => {
                 e.preventDefault()
@@ -62,6 +56,18 @@ export function initNav() {
             })
         })
     }
+}
+
+export function initNav() {
+    const pagesNav = $('#pages-nav')
+    if (!pagesNav) {
+        return
+    }
+
+    const pagesDropdown = $('#pages-dropdown')
+    const pageVersionDropdown = $('#page-version-dropdown')
+    setDropdown(pagesDropdown)
+    setDropdown(pageVersionDropdown)
 
     const navItems = $$(
         'a[href="' +

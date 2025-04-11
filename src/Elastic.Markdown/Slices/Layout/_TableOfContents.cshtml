@@ -1,5 +1,55 @@
+@using Elastic.Markdown.Helpers;
 @inherits RazorSlice<LayoutViewModel>
 <aside class="sidebar hidden lg:block order-3">
+	<div id="page-version-dropdown"
+	     class="mt-6 block group border-1 border-grey-20 rounded-sm font-sans relative">
+		<button
+			class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+			<div>
+				<a
+					class="page-version-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
+					href="#"
+				>Current Version
+				</a>
+			</div>
+			<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke-width="1.5"
+					stroke="currentColor"
+					class="w-4 group-open:rotate-180">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+				</svg>
+			</div>
+		</button>
+		<div class="hidden group-focus-within:block left-0 right-0 absolute top-full z-1000">
+			<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+				<li class="block">
+					@if (Model.LegacyPage is not null)
+					{
+						<a
+							class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-blue-elastic"
+							href="@Model.LegacyPage.Url"
+							@Htmx.GetNavHxAttributes(false, "mouseover")>
+							Previous
+							Version @(string.IsNullOrEmpty(Model.LegacyPage.Version) ? string.Empty : $"[{Model.LegacyPage.Version}]")
+						</a>
+					}
+					else
+					{
+						<a
+							class="block py-2 px-4 font-semibold text-grey-70"
+							@Htmx.GetNavHxAttributes(false, "mouseover")
+							title="Current is the only version of this page.">
+							Previous Version
+						</a>
+					}
+				</li>
+			</ul>
+		</div>
+	</div>
 	<nav id="toc-nav" class="sidebar-nav pl-4">
 		<div class="pt-6 pb-20">
 			@if (Model.PageTocItems.Count > 0)
@@ -23,20 +73,9 @@
 					</div>
 				</div>
 			}
-			
+
 			<ul class="mt-6">
-				@if (Model.LegacyUrl is not null)
-				{
-					<li class="edit-this-page not-first:mt-1">
-						<a href="@Model.LegacyUrl" class="link text-sm" target="_blank">
-							<svg class="link-icon"
-							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="1 0 22 22" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-							</svg>
-							View previous version
-						</a>
-					</li>
-				}
+
 				@if (Model.GithubEditUrl is not null)
 				{
 					<li class="edit-this-page not-first:mt-1">
