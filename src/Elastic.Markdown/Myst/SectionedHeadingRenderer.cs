@@ -32,11 +32,9 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 		var header = obj.GetData("header") as string;
 		var anchor = obj.GetData("anchor") as string;
 
-		var slugTarget = (anchor ?? header) ?? string.Empty;
-		if (slugTarget.Contains('$'))
-			slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
-
-		var slug = slugTarget.Slugify();
+		var slug = anchor ?? header.Slugify();
+		if (slug.Contains('$'))
+			slug = HeadingAnchorParser.InlineAnchors().Replace(slug, "").Slugify();
 
 		_ = renderer.Write(@"<div class=""heading-wrapper"" id=""")
 			.Write(slug)
