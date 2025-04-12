@@ -8,7 +8,7 @@ Images include screenshots, inline images, icons, and more. Syntax for images is
 
 :::{note}
 
-Irrespective of whether you use relative or absolute paths, if you reference an image that exists in a folder that is higher in the tree than the `toc.yml` file, it is at risk of being broken if the assembler rehomes this subtree and causes a warning in the build.
+When a page is referenced in a `toc.yml` file or a `docset.yml` file and you reference an image that exists outside the tree represented in that `.yml` file, it will fail to render and will generate warnings.
 :::
 
 ## Block-level images
