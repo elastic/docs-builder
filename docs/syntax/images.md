@@ -8,7 +8,7 @@ Images include screenshots, inline images, icons, and more. Syntax for images is
 
 :::{note}
 
-When a page is referenced in a `toc.yml` file or a `docset.yml` file and you reference an image that exists outside the tree represented in that `.yml` file, it will fail to render and will generate warnings.
+If a page uses an image that exists outside the folder that contains the `toc.yml` file or `docset.yml` file that contains that page, the image will fail to render and will generate warnings.
 :::
 
 ## Block-level images
