@@ -138,7 +138,7 @@ jobs:
 
       - name: Bootstrap Action Workspace
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
-        uses: ./.github/actions/bootstrap
+        uses: elastic/docs-builder/actions/bootstrap@main
 
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
