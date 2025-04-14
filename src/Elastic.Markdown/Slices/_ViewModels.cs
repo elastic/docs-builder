@@ -4,6 +4,7 @@
 
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.IO.HistoryMapping;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.FrontMatter;
 
@@ -25,7 +26,7 @@ public class IndexViewModel
 	public required MarkdownFile[] Parents { get; init; }
 
 	public required string NavigationHtml { get; init; }
-	public required string? LegacyUrl { get; init; }
+	public required LegacyPageMapping? LegacyPage { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }
@@ -54,7 +55,7 @@ public class LayoutViewModel
 	public required MarkdownFile? Previous { get; init; }
 	public required MarkdownFile? Next { get; init; }
 	public required string NavigationHtml { get; init; }
-	public required string? LegacyUrl { get; init; }
+	public required LegacyPageMapping? LegacyPage { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }
