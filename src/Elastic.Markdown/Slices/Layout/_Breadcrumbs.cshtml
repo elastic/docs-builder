@@ -1,7 +1,8 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<LayoutViewModel>
 @{
-	var parents = Model.Parents.Reverse().DistinctBy(kv => kv.FileName).ToList();
+	var parents = Model.Parents.Reverse().DistinctBy(p => p.CrossLink).ToList();
+	var firstCrumb = parents.FirstOrDefault();
 	var crumbs = parents.Skip(1).TakeLast(2).ToList();
 }
 
@@ -17,9 +18,6 @@
 		</a>
 		<meta itemprop="position" content="1">
 	</li>
-	@{
-		var firstCrumb = parents.FirstOrDefault();
-	}
 	@if (firstCrumb != null)
 	{
 		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
@@ -34,7 +32,7 @@
 			<meta itemprop="position" content="2">
 		</li>
 	}
-	@if (crumbs.Count > 0 && parents.Count > 2)
+	@if (crumbs.Count > 0 && parents.Count > 3)
 	{
 		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<span class="px-1">/</span>
