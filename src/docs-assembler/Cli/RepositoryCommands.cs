@@ -117,7 +117,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var historyMapper = new PageHistoryMapper(assembleSources.HistoryMappings);
 
-		var builder = new AssemblerBuilder(logger, assembleContext, htmlWriter, pathProvider, historyMapper);
+		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);

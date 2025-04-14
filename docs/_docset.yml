@@ -89,6 +89,7 @@ toc:
       - file: links.md
       - file: passthrough.md
       - file: sidebars.md
+      - file: stepper.md
       - file: substitutions.md
       - file: sundries.md
       - file: tables.md

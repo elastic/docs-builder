@@ -12,7 +12,7 @@ public record PageHistoryMapper : IHistoryMapper
 
 	public PageHistoryMapper(IReadOnlyDictionary<string, string> previousUrls) => PreviousUrls = previousUrls;
 
-	public string? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
+	public LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
 		if (mappedPages is null)
 			return null;
@@ -23,11 +23,11 @@ public record PageHistoryMapper : IHistoryMapper
 			if (versionMarker.Key != string.Empty && versionMarker.Value != "undefined")
 			{
 				return mappedPage.Contains("current")
-					? mappedPage.Replace($"{versionMarker.Key}current/", $"{versionMarker.Key}{versionMarker.Value}/")
+					? new LegacyPageMapping(mappedPage.Replace($"{versionMarker.Key}current/", $"{versionMarker.Key}{versionMarker.Value}/"), versionMarker.Value)
 					: null;
 			}
 		}
 
-		return mappedPages.FirstOrDefault();
+		return new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty);
 	}
 }

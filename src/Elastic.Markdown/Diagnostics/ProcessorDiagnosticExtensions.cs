@@ -122,14 +122,20 @@ public static class ProcessorDiagnosticExtensions
 		collector.Channel.Write(d);
 	}
 
-	public static void EmitError(this IBlockExtension block, string message, Exception? e = null)
+	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => EmitDiagnostic(block, Severity.Error, message, e);
+
+	public static void EmitWarning(this IBlockExtension block, string message) => EmitDiagnostic(block, Severity.Warning, message);
+
+	public static void EmitHint(this IBlockExtension block, string message) => EmitDiagnostic(block, Severity.Hint, message);
+
+	private static void EmitDiagnostic(IBlockExtension block, Severity severity, string message, Exception? e = null)
 	{
 		if (block.SkipValidation)
 			return;
 
 		var d = new Diagnostic
 		{
-			Severity = Severity.Error,
+			Severity = severity,
 			File = block.CurrentFile.FullName,
 			Line = block.Line + 1,
 			Column = block.Column,
@@ -139,23 +145,6 @@ public static class ProcessorDiagnosticExtensions
 		block.Build.Collector.Channel.Write(d);
 	}
 
-
-	public static void EmitWarning(this IBlockExtension block, string message)
-	{
-		if (block.SkipValidation)
-			return;
-
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = block.CurrentFile.FullName,
-			Line = block.Line + 1,
-			Column = block.Column,
-			Length = block.OpeningLength + 4,
-			Message = message
-		};
-		block.Build.Collector.Channel.Write(d);
-	}
 
 	private static void LinkDiagnostic(InlineProcessor processor, Severity severity, Inline inline, int length, string message, Exception? e = null)
 	{

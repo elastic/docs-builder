@@ -74,12 +74,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
           
-      - name: Free Disk Space
-        if: contains(fromJSON('["elastic/security-docs"]'), github.repository)
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          tool-cache: false
-          
       - name: Create Deployment
         if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
         uses: actions/github-script@v7
@@ -138,7 +132,7 @@ jobs:
 
       - name: Bootstrap Action Workspace
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
-        uses: ./.github/actions/bootstrap
+        uses: elastic/docs-builder/.github/actions/bootstrap@main
 
       # we run our artifact directly please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
