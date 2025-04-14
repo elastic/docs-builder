@@ -21,7 +21,7 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		var allKeys = positionalNavigation.MarkdownNavigationLookup.Keys.ToList();
 		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
 
-		var f = positionalNavigation.MarkdownNavigationLookup.FirstOrDefault(kv => kv.Key == "docs-builder://testing/nested/index.md");
+		var f = positionalNavigation.MarkdownNavigationLookup.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
 		f.Should().NotBeNull();
 
 		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc!.CrossLink);

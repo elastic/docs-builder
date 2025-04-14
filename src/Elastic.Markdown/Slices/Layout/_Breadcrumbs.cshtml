@@ -1,7 +1,12 @@
 @using Elastic.Markdown.Helpers
 @inherits RazorSlice<LayoutViewModel>
 @{
-	var parents = Model.Parents.Reverse().DistinctBy(p => p.CrossLink).ToList();
+	var targets =
+		!Model.Features.IsPrimaryNavEnabled
+			? Model.Parents.Reverse().Skip(1)
+			: Model.Parents.Reverse();
+
+	var parents = targets.DistinctBy(p => p.CrossLink).ToList();
 	var firstCrumb = parents.FirstOrDefault();
 	var crumbs = parents.Skip(1).TakeLast(2).ToList();
 }
