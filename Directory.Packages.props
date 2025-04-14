@@ -32,8 +32,8 @@
     <PackageVersion Include="Errata" Version="0.13.0" />
     <PackageVersion Include="Github.Actions.Core" Version="9.0.0"/>
     <PackageVersion Include="Markdig" Version="0.40.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.3"/>
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.3"/>
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.4"/>
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.4"/>
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Proc" Version="0.9.1" />
     <PackageVersion Include="RazorSlices" Version="0.8.1" />
