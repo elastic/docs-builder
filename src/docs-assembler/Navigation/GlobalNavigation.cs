@@ -9,7 +9,7 @@ using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
 
-public record GlobalNavigation
+public record GlobalNavigation : IPositionalNavigation
 {
 	private readonly AssembleSources _assembleSources;
 	private readonly GlobalNavigationFile _navigationFile;
@@ -25,8 +25,40 @@ public record GlobalNavigation
 		_assembleSources = assembleSources;
 		_navigationFile = navigationFile;
 		NavigationItems = BuildNavigation(navigationFile.TableOfContents, 0);
+		var navigationIndex = 0;
+		var markdownFiles = new HashSet<MarkdownFile>();
+		UpdateNavigationIndex(markdownFiles, NavigationItems, ref navigationIndex);
 		TopLevelItems = NavigationItems.OfType<TocNavigationItem>().ToList();
 		NavigationLookup = TopLevelItems.ToDictionary(kv => kv.Source, kv => kv);
+		var grouped = markdownFiles.GroupBy(f => f.NavigationIndex).ToList();
+		var files = grouped
+			.Select(g => g.First())
+			.ToList();
+
+		MarkdownFiles = files.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+	}
+
+	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; set; }
+
+	private static void UpdateNavigationIndex(HashSet<MarkdownFile> markdownFiles, IReadOnlyCollection<INavigationItem> navigationItems, ref int navigationIndex)
+	{
+		foreach (var item in navigationItems)
+		{
+			switch (item)
+			{
+				case FileNavigationItem fileNavigationItem:
+					var fileIndex = Interlocked.Increment(ref navigationIndex);
+					fileNavigationItem.File.NavigationIndex = fileIndex;
+					_ = markdownFiles.Add(fileNavigationItem.File);
+					break;
+				case GroupNavigationItem { Group.Index: not null } groupNavigationItem:
+					var index = Interlocked.Increment(ref navigationIndex);
+					groupNavigationItem.Group.Index.NavigationIndex = index;
+					_ = markdownFiles.Add(groupNavigationItem.Group.Index);
+					UpdateNavigationIndex(markdownFiles, groupNavigationItem.Group.NavigationItems, ref navigationIndex);
+					break;
+			}
+		}
 	}
 
 	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<TocReference> node, int depth)
@@ -46,8 +78,8 @@ public record GlobalNavigation
 					continue;
 				}
 
-				// TODO passing DocumentationSet to TableOfContentsTree constructr is temporary
-				// We only build this fallback in order to aid with bootstrapping the navigaton
+				// TODO passing DocumentationSet to TableOfContentsTree constructor is temporary
+				// We only build this fallback in order to aid with bootstrapping the navigation
 				if (!_assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevel.TopLevelSource, out tree))
 				{
 					_navigationFile.EmitError(
@@ -86,13 +118,14 @@ public record GlobalNavigation
 
 			var cleanNavigationItems = new List<INavigationItem>();
 			var seenSources = new HashSet<Uri>();
-			foreach (var allNavigationItem in allNavigationItems)
+			foreach (var item in allNavigationItems)
 			{
-				if (allNavigationItem is not TocNavigationItem tocNav)
+				if (item is not TocNavigationItem tocNav)
 				{
-					cleanNavigationItems.Add(allNavigationItem);
+					cleanNavigationItems.Add(item);
 					continue;
 				}
+
 				if (seenSources.Contains(tocNav.Source))
 					continue;
 
@@ -103,20 +136,47 @@ public record GlobalNavigation
 					continue;
 
 				_ = seenSources.Add(tocNav.Source);
-				cleanNavigationItems.Add(allNavigationItem);
+				cleanNavigationItems.Add(item);
 			}
 
 			tree.NavigationItems = cleanNavigationItems.ToArray();
 			var navigationItem = new TocNavigationItem(i, depth, tree, toc.Source);
-			if (toc.Source == new Uri("docs-content://reference"))
-			{
-			}
-
-
 			list.Add(navigationItem);
 			i++;
 		}
 
 		return list.ToArray().AsReadOnly();
+	}
+
+	public MarkdownFile? GetPrevious(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+				return previous;
+			index--;
+		} while (index >= 0);
+
+		return null;
+	}
+
+	public MarkdownFile? GetNext(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+				return previous;
+			index++;
+		} while (index <= MarkdownFiles.Count);
+
+		return null;
 	}
 }

@@ -42,6 +42,22 @@ function isElementInViewport(parent: HTMLElement, child: HTMLElement): boolean {
     )
 }
 
+function setDropdown(dropdown: HTMLElement) {
+    if (dropdown) {
+        const anchors = $$('a', dropdown)
+        anchors.forEach((a) => {
+            a.addEventListener('mousedown', (e) => {
+                e.preventDefault()
+            })
+            a.addEventListener('mouseup', () => {
+                if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur()
+                }
+            })
+        })
+    }
+}
+
 export function initNav() {
     const pagesNav = $('#pages-nav')
     if (!pagesNav) {
@@ -49,19 +65,9 @@ export function initNav() {
     }
 
     const pagesDropdown = $('#pages-dropdown')
-    if (pagesDropdown) {
-        const activeAnchor = $('a.pages-dropdown_active', pagesDropdown)
-        activeAnchor?.addEventListener('mousedown', (e) => {
-            e.preventDefault()
-        })
-    }
-
-    const allNavItems = $$('a', pagesNav)
-    allNavItems.forEach((link) => {
-        link.addEventListener('click', () => {
-            link.closest('details').removeAttribute('open')
-        })
-    })
+    const pageVersionDropdown = $('#page-version-dropdown')
+    setDropdown(pagesDropdown)
+    setDropdown(pageVersionDropdown)
 
     const navItems = $$(
         'a[href="' +

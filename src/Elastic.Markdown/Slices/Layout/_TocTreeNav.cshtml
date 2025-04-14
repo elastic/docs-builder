@@ -14,7 +14,7 @@
 			<a
 				href="@f.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
-				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
 				id="page-@id"
 				>
 				@f.NavigationTitle
@@ -24,7 +24,7 @@
 	else if (item is GroupNavigationItem { Group: { NavigationItems.Count: 0, Index: not null } } group)
 	{
 		var f = group.Group.Index;
-		<li class="flex group/li pr-4 @(isTopLevel ? "font-semibold mt-6 pr-4" : "ml-4")">
+		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@f.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)

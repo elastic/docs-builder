@@ -35,14 +35,14 @@ toc:
         path_prefix: extend/kibana
       - toc: logstash://extend
         path_prefix: extend/logstash
+      - toc: beats://extend
+        path_prefix: extend/beats
       - toc: elasticsearch://extend
         path_prefix: extend/elasticsearch
       - toc: integrations://extend
         path_prefix: extend/integrations
-      - toc: beats://extend
-        path_prefix: extend/beats
 
- #################
+  #################
   # RELEASE NOTES #
   #################
   # Context:
@@ -213,17 +213,6 @@ toc:
         path_prefix: reference/observability
         # Children include: Fields and object schemas, Elastic Entity Model,
         # Infrastructure app fields
-
-      # Search
-      # ✅ https://github.com/elastic/docs-content/blob/main/reference/search/toc.yml
-      - toc: docs-content://reference/search
-        path_prefix: reference/search
-        children:
-          # Search UI
-          # ✅ https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
-          - toc: search-ui://reference
-            path_prefix: reference/search-ui
-            # Children include the entire AsciiDoc book
 
       # Elasticsearch and index management
       # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
@@ -553,6 +542,12 @@ toc:
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/aggregations/toc.yml
           - toc: elasticsearch://reference/aggregations
             path_prefix: reference/aggregations
+
+      # Search UI
+      # ✅ https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
+      - toc: search-ui://reference
+        path_prefix: reference/search-ui
+        # Children include the entire AsciiDoc book
 
       # Cloud
       # ✅ https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
