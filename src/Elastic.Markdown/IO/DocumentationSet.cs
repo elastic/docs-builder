@@ -26,8 +26,46 @@ public interface INavigationLookups
 
 public interface IPositionalNavigation
 {
+	FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
+
 	MarkdownFile? GetPrevious(MarkdownFile current);
 	MarkdownFile? GetNext(MarkdownFile current);
+
+	INavigationItem[] GetParents(INavigationItem current)
+	{
+		var parents = new List<INavigationItem>();
+		var parent = current.Parent;
+		do
+		{
+			if (parent is null)
+				continue;
+			parents.Add(parent);
+			parent = parent.Parent;
+		} while (parent != null);
+
+		return [.. parents];
+	}
+	MarkdownFile[] GetParentMarkdownFiles(INavigationItem current)
+	{
+		var parents = new List<MarkdownFile>();
+		var navigationParents = GetParents(current);
+		foreach (var parent in navigationParents)
+		{
+			if (parent is FileNavigationItem f)
+				parents.Add(f.File);
+			if (parent is GroupNavigationItem { Group.Index: not null } g)
+				parents.Add(g.Group.Index);
+			if (parent is DocumentationGroup { Index: not null } dg)
+				parents.Add(dg.Index);
+		}
+		return [.. parents];
+	}
+	MarkdownFile[] GetParentMarkdownFiles(MarkdownFile file)
+	{
+		if (MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem))
+			return GetParentMarkdownFiles(navigationItem);
+		return [];
+	}
 }
 
 public record NavigationLookups : INavigationLookups
@@ -70,6 +108,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	IReadOnlyCollection<ITocItem> INavigationLookups.TableOfContents => Configuration.TableOfContents;
 
 	IReadOnlyCollection<IDocsBuilderExtension> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
+
+	public FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 
 	// FrozenDictionary<Uri, TableOfContentsReference>? indexedTableOfContents = null
 	public DocumentationSet(
@@ -137,7 +177,30 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
 
+		MarkdownNavigationLookup = Tree.NavigationItems
+			.SelectMany(Pairs)
+			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
+			.ToFrozenDictionary();
+
 		ValidateRedirectsExists();
+	}
+
+	public static (string, INavigationItem)[] Pairs(INavigationItem item)
+	{
+		if (item is FileNavigationItem f)
+			return [(f.File.CrossLink, item)];
+		if (item is GroupNavigationItem g)
+		{
+			var index = new List<(string, INavigationItem)>();
+			if (g.Group.Index is not null)
+				index.Add((g.Group.Index.CrossLink, g));
+
+			return index.Concat(g.Group.NavigationItems.SelectMany(Pairs).ToArray())
+				.DistinctBy(kv => kv.Item1)
+				.ToArray();
+		}
+
+		return [];
 	}
 
 	private DocumentationFile[] ScanDocumentationFiles(BuildContext build, IDirectoryInfo sourceDirectory) =>
@@ -150,11 +213,11 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			.Where(f => !Path.GetRelativePath(sourceDirectory.FullName, f.FullName).StartsWith('.'))
 			.Select<IFileInfo, DocumentationFile>(file => file.Extension switch
 			{
-				".jpg" => new ImageFile(file, SourceDirectory, "image/jpeg"),
-				".jpeg" => new ImageFile(file, SourceDirectory, "image/jpeg"),
-				".gif" => new ImageFile(file, SourceDirectory, "image/gif"),
-				".svg" => new ImageFile(file, SourceDirectory, "image/svg+xml"),
-				".png" => new ImageFile(file, SourceDirectory),
+				".jpg" => new ImageFile(file, SourceDirectory, build.Git.RepositoryName, "image/jpeg"),
+				".jpeg" => new ImageFile(file, SourceDirectory, build.Git.RepositoryName, "image/jpeg"),
+				".gif" => new ImageFile(file, SourceDirectory, build.Git.RepositoryName, "image/gif"),
+				".svg" => new ImageFile(file, SourceDirectory, build.Git.RepositoryName, "image/svg+xml"),
+				".png" => new ImageFile(file, SourceDirectory, build.Git.RepositoryName),
 				".md" => CreateMarkDownFile(file, build),
 				_ => DefaultFileHandling(file, sourceDirectory)
 		})];
@@ -167,7 +230,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			if (documentationFile is not null)
 				return documentationFile;
 		}
-		return new ExcludedFile(file, sourceDirectory);
+		return new ExcludedFile(file, sourceDirectory, Build.Git.RepositoryName);
 	}
 
 	private void ValidateRedirectsExists()
@@ -265,15 +328,15 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		var relativePath = Path.GetRelativePath(SourceDirectory.FullName, file.FullName);
 		if (Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
-			return new ExcludedFile(file, SourceDirectory);
+			return new ExcludedFile(file, SourceDirectory, context.Git.RepositoryName);
 
 		if (relativePath.Contains("_snippets"))
-			return new SnippetFile(file, SourceDirectory);
+			return new SnippetFile(file, SourceDirectory, context.Git.RepositoryName);
 
 		// we ignore files in folders that start with an underscore
 		var folder = Path.GetDirectoryName(relativePath);
 		if (folder is not null && (folder.Contains($"{Path.DirectorySeparatorChar}_", StringComparison.Ordinal) || folder.StartsWith('_')))
-			return new ExcludedFile(file, SourceDirectory);
+			return new ExcludedFile(file, SourceDirectory, context.Git.RepositoryName);
 
 		if (Configuration.Files.Contains(relativePath))
 			return ExtensionOrDefaultMarkdown();
@@ -282,7 +345,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			return ExtensionOrDefaultMarkdown();
 
 		context.EmitError(Configuration.SourceFile, $"Not linked in toc: {relativePath}");
-		return new ExcludedFile(file, SourceDirectory);
+		return new ExcludedFile(file, SourceDirectory, context.Git.RepositoryName);
 
 		MarkdownFile ExtensionOrDefaultMarkdown()
 		{

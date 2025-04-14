@@ -16,7 +16,7 @@ namespace Elastic.Markdown.Slices;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default);
+	Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
@@ -31,7 +31,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -46,7 +46,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(INavigation navigation)
+	private NavigationViewModel CreateNavigationModel(INavigationGroup navigation)
 	{
 		if (navigation is not DocumentationGroup tree)
 			throw new InvalidOperationException("Expected a documentation group");
@@ -93,6 +93,7 @@ public class HtmlWriter(
 
 		var previous = PositionalNavigation.GetPrevious(markdown);
 		var next = PositionalNavigation.GetNext(markdown);
+		var parents = PositionalNavigation.GetParentMarkdownFiles(markdown);
 
 		var remote = DocumentationSet.Build.Git.RepositoryName;
 		var branch = DocumentationSet.Build.Git.Branch;
@@ -126,6 +127,7 @@ public class HtmlWriter(
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
+			Parents = parents,
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,

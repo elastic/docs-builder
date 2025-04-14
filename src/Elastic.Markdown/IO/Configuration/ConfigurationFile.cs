@@ -57,7 +57,7 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
 	public ConfigurationFile(BuildContext context)
-		: base(context.ConfigurationPath, context.DocumentationSourceDirectory)
+		: base(context.ConfigurationPath, context.DocumentationSourceDirectory, context.Git.RepositoryName)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;

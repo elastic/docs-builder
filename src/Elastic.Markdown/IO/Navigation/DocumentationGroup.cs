@@ -11,41 +11,43 @@ namespace Elastic.Markdown.IO.Navigation;
 
 public interface INavigationItem
 {
-	int Order { get; }
 	string Id { get; }
+	INavigationItem? Parent { get; set; }
+	int Depth { get; }
 }
 
-[DebuggerDisplay("Toc >{Depth} #{Order} {Group.FolderName}")]
-public record TocNavigationItem(int Order, int Depth, DocumentationGroup Group, Uri Source)
-	: GroupNavigationItem(Order, Depth, Group)
+[DebuggerDisplay("Toc >{Depth} {Group.FolderName}")]
+public record TocNavigationItem(int Depth, DocumentationGroup Group, Uri Source, INavigationItem? Parent)
+	: GroupNavigationItem(Depth, Group, Parent)
 {
 	/// Only used for tests
 	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup =>
 		Group.NavigationItems.OfType<TocNavigationItem>().ToDictionary(i => i.Source, i => i);
 }
 
-[DebuggerDisplay("Group >{Depth} #{Order} {Group.FolderName}")]
-public record GroupNavigationItem(int Order, int Depth, DocumentationGroup Group) : INavigationItem
+[DebuggerDisplay("Group >{Depth} {Group.FolderName}")]
+public record GroupNavigationItem(int Depth, DocumentationGroup Group, INavigationItem? Parent) : INavigationItem
 {
 	public string Id { get; } = Group.Id;
+	public INavigationItem? Parent { get; set; } = Parent;
 }
 
-[DebuggerDisplay("File >{Depth} #{Order} {File.RelativePath}")]
-public record FileNavigationItem(int Order, int Depth, MarkdownFile File) : INavigationItem
+[DebuggerDisplay("File >{Depth} {File.RelativePath}")]
+public record FileNavigationItem(int Depth, MarkdownFile File, INavigationItem? Parent) : INavigationItem
 {
 	public string Id { get; } = File.Id;
+	public INavigationItem? Parent { get; set; } = Parent;
 }
 
-public interface INavigation
+public interface INavigationGroup : INavigationItem
 {
-	string Id { get; }
 	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 	string? IndexFileName { get; }
 }
 
 public interface INavigationScope
 {
-	INavigation NavigationRoot { get; }
+	INavigationGroup NavigationRoot { get; }
 }
 
 public class TableOfContentsTreeCollector
@@ -114,11 +116,10 @@ public class TableOfContentsTree : DocumentationGroup
 		TreeCollector.Collect(source, this);
 	}
 
-	protected override DocumentationGroup DefaultNavigation => this;
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
-public class DocumentationGroup : INavigation
+public class DocumentationGroup : INavigationGroup
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
@@ -126,7 +127,7 @@ public class DocumentationGroup : INavigation
 
 	public string NavigationRootId => NavigationRoot.Id;
 
-	public INavigation NavigationRoot { get; set; }
+	public INavigationGroup NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
@@ -140,13 +141,11 @@ public class DocumentationGroup : INavigation
 
 	public string? IndexFileName => Index?.FileName;
 
-	private int Depth { get; set; }
+	public int Depth { get; set; }
 
-	public DocumentationGroup? Parent { get; }
+	public INavigationItem? Parent { get; set; }
 
 	public string FolderName { get; }
-
-	protected virtual DocumentationGroup DefaultNavigation => this;
 
 	protected DocumentationGroup(
 		TableOfContentsTreeCollector treeCollector,
@@ -161,7 +160,7 @@ public class DocumentationGroup : INavigation
 		_treeCollector = treeCollector;
 	}
 
-	internal DocumentationGroup(
+	protected DocumentationGroup(
 		string folderName,
 		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
@@ -170,25 +169,19 @@ public class DocumentationGroup : INavigation
 		ref int fileIndex,
 		int depth,
 		DocumentationGroup? toplevelTree,
-		DocumentationGroup? parent,
+		INavigationItem? parent,
 		MarkdownFile? index = null
 	)
 	{
+		Parent = parent;
 		FolderName = folderName;
 		NavigationSource = navigationSource;
 		_treeCollector = treeCollector;
 		Depth = depth;
-		Parent = parent;
-		// Virtual call on purpose, implementations use no state
-		// ReSharper disable VirtualMemberCallInConstructor
-		toplevelTree ??= DefaultNavigation;
-		if (parent?.Depth == 0)
-			toplevelTree = DefaultNavigation;
+		toplevelTree ??= this;
 		NavigationRoot = toplevelTree;
 		// ReSharper restore VirtualMemberCallInConstructor
 		Index = ProcessTocItems(context, toplevelTree, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
-		if (Index is not null)
-			Index.GroupId = Id;
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
@@ -234,7 +227,6 @@ public class DocumentationGroup : INavigation
 					continue;
 
 
-				md.Parent = this;
 				md.Hidden = file.Hidden;
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
 				md.NavigationIndex = navigationIndex;
@@ -255,7 +247,7 @@ public class DocumentationGroup : INavigation
 							TableOfContents = file.Children
 						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
-					navigationItems.Add(new GroupNavigationItem(index, depth, group));
+					navigationItems.Add(new GroupNavigationItem(depth, group, this));
 					indexFile ??= virtualIndex;
 					continue;
 				}
@@ -269,7 +261,7 @@ public class DocumentationGroup : INavigation
 				// explicit index page. E.g. when grouping related files together.
 				// if the page is referenced as hidden in the TOC do not include it in the navigation
 				if (indexFile != md && !md.Hidden)
-					navigationItems.Add(new FileNavigationItem(index, depth, md));
+					navigationItems.Add(new FileNavigationItem(depth, md, this));
 			}
 			else if (tocItem is FolderReference folder)
 			{
@@ -292,7 +284,7 @@ public class DocumentationGroup : INavigation
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
 
 					group = toc;
-					navigationItems.Add(new TocNavigationItem(index, depth, toc, tocReference.Source));
+					navigationItems.Add(new TocNavigationItem(depth, toc, tocReference.Source, this));
 				}
 				else
 				{
@@ -300,7 +292,7 @@ public class DocumentationGroup : INavigation
 					{
 						TableOfContents = children
 					}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this);
-					navigationItems.Add(new GroupNavigationItem(index, depth, group));
+					navigationItems.Add(new GroupNavigationItem(depth, group, this));
 				}
 
 				groups.Add(group);

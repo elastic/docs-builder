@@ -37,7 +37,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		BuildContext build,
 		DocumentationSet set
 	)
-		: base(sourceFile, rootPath)
+		: base(sourceFile, rootPath, build.Git.RepositoryName)
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
@@ -52,25 +52,20 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
+
 		NavigationRoot = set.Tree;
 		NavigationSource = set.Source;
 	}
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigation NavigationRoot { get; set; }
+	public INavigationGroup NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
 	private DiagnosticsCollector Collector { get; }
-
-	public DocumentationGroup? Parent
-	{
-		get => FileName == "index.md" ? _parent?.Parent : _parent;
-		set => _parent = value;
-	}
 
 	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
@@ -135,8 +130,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 				_url = DefaultUrlPath;
 				return _url;
 			}
-			var path = RelativePath;
-			var crossLink = new Uri($"{_set.Build.Git.RepositoryName}://{path}");
+			var crossLink = new Uri(CrossLink);
 			var uri = _set.LinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
 			_url = uri.AbsolutePath;
 			return _url;
@@ -146,25 +140,8 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	public int NavigationIndex { get; set; } = -1;
 
-	public string? GroupId { get; set; }
-
 	private bool _instructionsParsed;
-	private DocumentationGroup? _parent;
 	private string? _title;
-
-	public MarkdownFile[] YieldParents()
-	{
-		var parents = new List<MarkdownFile>();
-		var parent = Parent;
-		do
-		{
-			if (parent is { Index: not null } && parent.Index != this)
-				parents.Add(parent.Index);
-			parent = parent?.Parent;
-		} while (parent != null);
-
-		return [.. parents];
-	}
 
 	/// this get set by documentationset when validating redirects
 	/// because we need to minimally parse to see the anchors anchor validation is deferred.
@@ -367,5 +344,4 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			_ = document.Remove(h1);
 		return document.ToHtml(MarkdownParser.Pipeline);
 	}
-
 }
