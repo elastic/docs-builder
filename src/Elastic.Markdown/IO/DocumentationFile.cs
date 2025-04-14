@@ -15,7 +15,7 @@ public abstract record DocumentationFile
 		SourceFile = sourceFile;
 		RelativePath = Path.GetRelativePath(rootPath.FullName, SourceFile.FullName);
 		RelativeFolder = Path.GetRelativePath(rootPath.FullName, SourceFile.Directory!.FullName);
-		CrossLink = $"{repository}://{RelativePath}";
+		CrossLink = $"{repository}://{RelativePath.Replace('\\', '/')}";
 	}
 
 	public string RelativePath { get; }
