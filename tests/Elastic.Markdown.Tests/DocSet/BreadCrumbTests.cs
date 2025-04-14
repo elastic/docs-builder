@@ -16,9 +16,22 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 
 		doc.Should().NotBeNull();
 
-		doc!.Parent.Should().NotBeNull();
+		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
 
-		doc.YieldParents().Should().HaveCount(2);
+		var allKeys = positionalNavigation.MarkdownNavigationLookup.Keys.ToList();
+		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
+
+		var f = positionalNavigation.MarkdownNavigationLookup.FirstOrDefault(kv => kv.Key == "docs-builder://testing/nested/index.md");
+		f.Should().NotBeNull();
+
+		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc!.CrossLink);
+		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
+
+		nav.Parent.Should().NotBeNull();
+
+		var parents = positionalNavigation.GetParentMarkdownFiles(doc);
+
+		parents.Should().HaveCount(2);
 
 	}
 }

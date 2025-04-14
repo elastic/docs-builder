@@ -22,6 +22,7 @@ public class IndexViewModel
 	public required MarkdownFile CurrentDocument { get; init; }
 	public required MarkdownFile? PreviousDocument { get; init; }
 	public required MarkdownFile? NextDocument { get; init; }
+	public required MarkdownFile[] Parents { get; init; }
 
 	public required string NavigationHtml { get; init; }
 	public required string? LegacyUrl { get; init; }
@@ -63,18 +64,7 @@ public class LayoutViewModel
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
 	public required FeatureFlags Features { get; init; }
 
-	private MarkdownFile[]? _parents;
-	public MarkdownFile[] Parents
-	{
-		get
-		{
-			if (_parents is not null)
-				return _parents;
-
-			_parents = [.. CurrentDocument.YieldParents()];
-			return _parents;
-		}
-	}
+	public required MarkdownFile[] Parents { get; init; }
 
 	public string Static(string path)
 	{
@@ -108,7 +98,7 @@ public class NavigationViewModel
 {
 	public required string Title { get; init; }
 	public required string TitleUrl { get; init; }
-	public required INavigation Tree { get; init; }
+	public required INavigationGroup Tree { get; init; }
 	//public required MarkdownFile CurrentDocument { get; init; }
 	/// controls whether to split tree automatically
 	public required bool IsPrimaryNavEnabled { get; init; }
@@ -120,7 +110,7 @@ public class NavigationTreeItem
 {
 	public required int Level { get; init; }
 	//public required MarkdownFile CurrentDocument { get; init; }
-	public required INavigation SubTree { get; init; }
+	public required INavigationGroup SubTree { get; init; }
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }
 	public required string RootNavigationId { get; set; }

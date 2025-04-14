@@ -8,27 +8,37 @@ using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.IO;
 
-public abstract record DocumentationFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
+public abstract record DocumentationFile
 {
-	public string RelativePath { get; } = Path.GetRelativePath(RootPath.FullName, SourceFile.FullName);
-	public string RelativeFolder { get; } = Path.GetRelativePath(RootPath.FullName, SourceFile.Directory!.FullName);
+	protected DocumentationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string repository)
+	{
+		SourceFile = sourceFile;
+		RelativePath = Path.GetRelativePath(rootPath.FullName, SourceFile.FullName);
+		RelativeFolder = Path.GetRelativePath(rootPath.FullName, SourceFile.Directory!.FullName);
+		CrossLink = $"{repository}://{RelativePath}";
+	}
+
+	public string RelativePath { get; }
+	public string RelativeFolder { get; }
+	public string CrossLink { get; }
 
 	/// Allows documentation files of non markdown origins to advertise as their markdown equivalent in links.json
 	public virtual string LinkReferenceRelativePath => RelativePath;
 
+	public IFileInfo SourceFile { get; }
 }
 
-public record ImageFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string MimeType = "image/png")
-	: DocumentationFile(SourceFile, RootPath);
+public record ImageFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository, string MimeType = "image/png")
+	: DocumentationFile(SourceFile, RootPath, Repository);
 
-public record StaticFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
-	: DocumentationFile(SourceFile, RootPath);
+public record StaticFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)
+	: DocumentationFile(SourceFile, RootPath, Repository);
 
-public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
-	: DocumentationFile(SourceFile, RootPath);
+public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)
+	: DocumentationFile(SourceFile, RootPath, Repository);
 
-public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath)
-	: DocumentationFile(SourceFile, RootPath)
+public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)
+	: DocumentationFile(SourceFile, RootPath, Repository)
 {
 	private SnippetAnchors? Anchors { get; set; }
 	private bool _parsed;

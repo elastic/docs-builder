@@ -199,6 +199,12 @@ public class GlobalNavigationPathProviderTests
 		navigation.TopLevelItems.Count.Should().BeLessThan(20);
 		var resolved = navigation.NavigationItems;
 		resolved.Should().NotBeNull();
+
+
+		IPositionalNavigation positionalNavigation = navigation;
+
+		var releaseNotes = positionalNavigation.MarkdownNavigationLookup.Where(kv => kv.Key.Contains("release-notes")).ToArray();
+
 	}
 
 	[Fact]
