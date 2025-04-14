@@ -20,6 +20,7 @@ let private clean _ =
     removeArtifacts "release-notes"
     removeArtifacts "tests"
     removeArtifacts "docs-builder"
+    removeArtifacts "docs-assembler"
 
 let private compile _ = exec { run "dotnet" "build" "-c" "release" }
 
@@ -60,16 +61,19 @@ let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/docs-assembler/docs-assembler.csproj" }
 
 let private publishZip _ =
-    exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
-    let binary = match OS.Current with Windows -> "docs-builder.exe" | _ -> "docs-builder"
-    Zip.zip
-        ".artifacts/publish/docs-builder/release"
-        $".artifacts/publish/docs-builder/release/docs-builder-%s{OS.Name}-{OS.Arch}.zip"
-        [
-            $".artifacts/publish/docs-builder/release/%s{binary}";
-            ".artifacts/publish/docs-builder/release/LICENSE.txt";
-            ".artifacts/publish/docs-builder/release/NOTICE.txt"
-        ]
+    let zip tool =
+        exec { run "dotnet" "publish" $"src/{tool}/{tool}.csproj" }
+        let binary = match OS.Current with Windows -> $"{tool}.exe" | _ -> tool
+        Zip.zip
+            $".artifacts/publish/{tool}/release"
+            $".artifacts/publish/{tool}/release/{tool}-%s{OS.Name}-{OS.Arch}.zip"
+            [
+                $".artifacts/publish/{tool}/release/%s{binary}";
+                $".artifacts/publish/{tool}/release/LICENSE.txt";
+                $".artifacts/publish/{tool}/release/NOTICE.txt"
+            ]
+    zip "docs-builder"
+    zip "docs-assembler"
 
 let private publishContainers _ =
 

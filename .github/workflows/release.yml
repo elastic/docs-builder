@@ -80,5 +80,7 @@ jobs:
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.event.release.tag_name }} .artifacts/publish/docs-builder/release/*.zip
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} .artifacts/publish/docs-builder/release/*.zip
+          gh release upload ${{ github.event.release.tag_name }} .artifacts/publish/docs-assembler/release/*.zip
         shell: bash
