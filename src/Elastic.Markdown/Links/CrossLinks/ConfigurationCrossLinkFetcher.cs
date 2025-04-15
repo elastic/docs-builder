@@ -19,21 +19,10 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 		foreach (var repository in configuration.CrossLinkRepositories)
 		{
 			_ = declaredRepositories.Add(repository);
-			try
-			{
-				var linkReference = await Fetch(repository, ["main", "master"], ctx);
-				linkReferences.Add(repository, linkReference);
-				var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
-				linkIndexEntries.Add(repository, linkIndexReference);
-			}
-			catch when (repository == "docs-content")
-			{
-				throw;
-			}
-			catch when (repository != "docs-content")
-			{
-				// TODO: ignored for now while we wait for all links.json files to populate
-			}
+			var linkReference = await Fetch(repository, ["main", "master"], ctx);
+			linkReferences.Add(repository, linkReference);
+			var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
+			linkIndexEntries.Add(repository, linkIndexReference);
 		}
 
 		return new FetchedCrossLinks
