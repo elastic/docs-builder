@@ -62,7 +62,7 @@ public class LayoutViewModel
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
-	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString() : null;
+	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentDocument.Url).ToString().TrimEnd('/') : null;
 	public required FeatureFlags Features { get; init; }
 
 	public required MarkdownFile[] Parents { get; init; }
