@@ -21,7 +21,9 @@ TBD
 
 In both the AsciiDoctor- and V3-based system, there is site-wide configuration where you list all content sources, where to find those sources, and in what order they should be added to the site.
 
-In the AsciiDoctor system, this all happens in one YAML file in the `/docs` repo. In the V3 system, this happens in the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/src/docs-assembler/assembler.yml) file in `docs-builder`.
+In the AsciiDoctor system, this all happens in one YAML file in the `/docs` repo. In the V3 system:
+* Content configuration happens in the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/src/docs-assembler/assembler.yml) file in `docs-builder`.
+* Navigation configuration happens in the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/src/docs-assembler/navigation.yml) file in `docs-builder`.
 
 [assembler.yml](./content.md)
 
