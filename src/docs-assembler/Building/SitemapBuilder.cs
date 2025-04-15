@@ -8,22 +8,24 @@ using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Building;
 
-public class SitemapBuilder(IReadOnlyCollection<INavigationItem> navigationItems, IFileSystem fileSystem, IDirectoryInfo outputFolder)
+public class SitemapBuilder(
+	IReadOnlyCollection<INavigationItem> navigationItems,
+	IFileSystem fileSystem,
+	IDirectoryInfo outputFolder
+)
 {
 	private static readonly Uri BaseUri = new("https://www.elastic.co");
-	private readonly IReadOnlyCollection<INavigationItem> _navigationItems = navigationItems;
-	private readonly IFileSystem _fileSystem = fileSystem;
-	private readonly IDirectoryInfo _outputFolder = outputFolder;
 
 	public void Generate()
 	{
-		var flattenedNavigationItems = GetNavigationItems(_navigationItems);
+		var flattenedNavigationItems = GetNavigationItems(navigationItems);
 
 		var doc = new XDocument()
 		{
 			Declaration = new XDeclaration("1.0", "utf-8", "yes"),
 		};
 
+		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz");
 		var root = new XElement(
 				"urlset",
 				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
@@ -32,12 +34,15 @@ public class SitemapBuilder(IReadOnlyCollection<INavigationItem> navigationItems
 					.Select(n => n.File.Url)
 					.Distinct()
 					.Select(u => new Uri(BaseUri, u))
-					.Select(u => new XElement("url", new XElement("loc", u)))
+					.Select(u => new XElement("url", [
+						new XElement("loc", u),
+						new XElement("lastmod", currentDate)
+					]))
 			);
 
 		doc.Add(root);
 
-		using var fileStream = _fileSystem.File.Create(Path.Combine(_outputFolder.ToString() ?? string.Empty, "docs", "sitemap.xml"));
+		using var fileStream = fileSystem.File.Create(Path.Combine(outputFolder.ToString() ?? string.Empty, "docs", "sitemap.xml"));
 		doc.Save(fileStream);
 	}
 
@@ -53,6 +58,9 @@ public class SitemapBuilder(IReadOnlyCollection<INavigationItem> navigationItems
 					break;
 				case GroupNavigationItem group:
 					result.AddRange(GetNavigationItems(group.Group.NavigationItems));
+					break;
+				case DocumentationGroup group:
+					result.AddRange(GetNavigationItems(group.NavigationItems));
 					break;
 			}
 		}
