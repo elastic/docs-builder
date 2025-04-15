@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.HistoryMapping;
@@ -132,7 +133,7 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
+			AllowIndexing = DocumentationSet.Build.AllowIndexing && (markdown is DetectionRuleFile || !markdown.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Build.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
