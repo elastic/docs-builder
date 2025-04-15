@@ -35,12 +35,12 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 			if (link.Url?.StartsWith('/') == true)
 			{
-				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INavigationGroup;
-				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INavigationGroup;
+				// var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INavigationGroup;
+				// var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INavigationGroup;
 				_ = renderer.Write(" hx-get=\"");
 				_ = renderer.WriteEscapeUrl(url);
 				_ = renderer.Write('"');
-				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
+				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(HasSameTopLevelSegment(currentUrl, link.Url))}\"");
 				_ = renderer.Write($" hx-swap=\"{Htmx.HxSwap}\"");
 				_ = renderer.Write($" hx-push-url=\"{Htmx.HxPushUrl}\"");
 				_ = renderer.Write($" hx-indicator=\"{Htmx.HxIndicator}\"");
@@ -73,6 +73,17 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		}
 		else
 			base.Write(renderer, link);
+	}
+
+	private static bool HasSameTopLevelSegment(string currentUrl, string targetUrl)
+	{
+		var currentUrlSegments = currentUrl.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		var targetUrlSegments = targetUrl.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+		if (currentUrlSegments.Length == 0 || targetUrlSegments.Length == 0)
+			return false;
+
+		return currentUrlSegments[0].Equals(targetUrlSegments[0], StringComparison.OrdinalIgnoreCase);
 	}
 }
 
