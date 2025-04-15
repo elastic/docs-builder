@@ -21,7 +21,7 @@
 					href="@Model.Link("/release-notes/")"
 					@Htmx.GetHxAttributes(
 						targetUrl: Model.Link("/release-notes/"), 
-						hxSwapOob: "#main-container"
+						hxSwapOob: "#main-container,#secondary-nav"
 					)
 				>
 					Release notes
@@ -32,7 +32,7 @@
 					href="@Model.Link("/troubleshoot/")"
 					@Htmx.GetHxAttributes(
 						targetUrl: Model.Link("/troubleshoot/"),
-						hxSwapOob: "#main-container"
+						hxSwapOob: "#main-container,#secondary-nav"
 					)
 				>
 					Troubleshoot
@@ -43,7 +43,7 @@
 					href="@Model.Link("/reference/")"
 					@Htmx.GetHxAttributes(
 						Model.Link("/reference/"), 
-						hxSwapOob: "#main-container"
+						hxSwapOob: "#main-container,#secondary-nav"
 					)
 				>
 					Reference
