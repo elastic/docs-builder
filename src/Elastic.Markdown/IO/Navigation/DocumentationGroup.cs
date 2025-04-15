@@ -116,6 +116,8 @@ public class TableOfContentsTree : DocumentationGroup
 		TreeCollector.Collect(source, this);
 	}
 
+	protected override DocumentationGroup DefaultNavigation => this;
+
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
@@ -146,6 +148,8 @@ public class DocumentationGroup : INavigationGroup
 	public INavigationItem? Parent { get; set; }
 
 	public string FolderName { get; }
+
+	protected virtual DocumentationGroup DefaultNavigation => this;
 
 	protected DocumentationGroup(
 		TableOfContentsTreeCollector treeCollector,
@@ -179,6 +183,9 @@ public class DocumentationGroup : INavigationGroup
 		_treeCollector = treeCollector;
 		Depth = depth;
 		toplevelTree ??= this;
+		toplevelTree ??= DefaultNavigation;
+		if (parent?.Depth == 0)
+			toplevelTree = DefaultNavigation;
 		NavigationRoot = toplevelTree;
 		// ReSharper restore VirtualMemberCallInConstructor
 		Index = ProcessTocItems(context, toplevelTree, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
