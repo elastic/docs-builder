@@ -5,9 +5,9 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;

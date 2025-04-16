@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;

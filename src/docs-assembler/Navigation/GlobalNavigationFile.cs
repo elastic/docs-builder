@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 using System.IO.Abstractions;
-using Documentation.Assembler.Configuration;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using Elastic.Markdown.IO.Configuration;
 using YamlDotNet.RepresentationModel;
 

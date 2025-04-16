@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Markdown.IO.Discovery;
+using Elastic.Documentation.Model;
 
 namespace Elastic.Markdown.IO.State;
 

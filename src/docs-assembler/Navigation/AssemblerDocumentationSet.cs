@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Model;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Discovery;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;

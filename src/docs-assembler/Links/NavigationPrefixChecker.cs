@@ -5,7 +5,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;

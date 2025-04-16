@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using Documentation.Assembler.Configuration;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;

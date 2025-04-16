@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Elastic.Documentation.Model</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,5 +12,7 @@
     <PackageReference Include="NetEscapades.EnumGenerators"/>
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
     <PackageReference Include="YamlDotNet"/>
+    <PackageReference Include="SoftCircuits.IniFileParser" />
+    <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 </Project>

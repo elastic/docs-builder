@@ -2,11 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Documentation.Assembler.Configuration;
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using YamlDotNet.Serialization;
 
-namespace Documentation.Assembler;
+namespace Elastic.Documentation.Model.Serialization;
 
 [YamlStaticContext]
 [YamlSerializable(typeof(AssemblyConfiguration))]

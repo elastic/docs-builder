@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Model;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.IO.Discovery;
 
 namespace Elastic.Markdown.IO.State;
 

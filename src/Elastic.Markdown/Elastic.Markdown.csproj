@@ -53,7 +53,6 @@
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="Samboy063.Tomlet" />
-    <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
@@ -66,7 +65,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Elastic.Documentation.Model\Elastic.Documentation.Model.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
   </ItemGroup>
 
 </Project>

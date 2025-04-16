@@ -82,7 +82,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-path-prefixes-loca
 		actions\validate-path-prefixes-local\action.yml = actions\validate-path-prefixes-local\action.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Model", "Elastic.Documentation.Model\Elastic.Documentation.Model.csproj", "{09CE30F6-013A-49ED-B3D6-60AFA84682AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation", "Elastic.Documentation\Elastic.Documentation.csproj", "{09CE30F6-013A-49ED-B3D6-60AFA84682AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

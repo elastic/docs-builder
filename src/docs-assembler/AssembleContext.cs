@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Reflection;
-using Documentation.Assembler.Configuration;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.State;

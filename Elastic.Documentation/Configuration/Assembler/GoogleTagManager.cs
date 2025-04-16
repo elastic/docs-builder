@@ -4,7 +4,7 @@
 
 using YamlDotNet.Serialization;
 
-namespace Documentation.Assembler.Configuration;
+namespace Elastic.Documentation.Model.Configuration.Assembler;
 
 public record GoogleTagManager
 {

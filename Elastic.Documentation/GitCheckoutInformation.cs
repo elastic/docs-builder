@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using SoftCircuits.IniFileParser;
 
-namespace Elastic.Markdown.IO.Discovery;
+namespace Elastic.Documentation.Model;
 
 public record GitCheckoutInformation
 {

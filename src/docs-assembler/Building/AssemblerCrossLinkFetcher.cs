@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Documentation.Assembler.Configuration;
+using Elastic.Documentation.Model.Configuration.Assembler;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
