@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   packages: write
+  attestations: write
 
 jobs:
   containers:
@@ -76,6 +77,11 @@ jobs:
       - name: Publish Binaries
         run: ./build.sh publishzip
         shell: bash
+        
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '.artifacts/publish/docs-builder/release/*.zip'
 
       - name: Attach Distribution to release
         env:
