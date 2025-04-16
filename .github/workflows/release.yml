@@ -63,6 +63,7 @@ jobs:
     permissions:
       contents: write
       attestations: write
+      id-token: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
