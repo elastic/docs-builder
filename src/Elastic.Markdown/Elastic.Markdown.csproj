@@ -65,4 +65,8 @@
     <PackageReference Include="NetEscapades.EnumGenerators" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Elastic.Documentation.Model\Elastic.Documentation.Model.csproj" />
+  </ItemGroup>
+
 </Project>
