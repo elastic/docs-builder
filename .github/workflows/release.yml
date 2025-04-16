@@ -62,6 +62,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+      attestations: write
+      id-token: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
@@ -76,6 +78,13 @@ jobs:
       - name: Publish Binaries
         run: ./build.sh publishzip
         shell: bash
+        
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            .artifacts/publish/docs-builder/release/*.zip
+            .artifacts/publish/docs-assembler/release/*.zip
 
       - name: Attach Distribution to release
         env:
