@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   packages: write
-  attestations: write
 
 jobs:
   containers:
@@ -63,6 +62,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+      attestations: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
