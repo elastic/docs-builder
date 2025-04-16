@@ -78,8 +78,6 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			return null;
 		if (lookup.StartsWith("elasticsearch-py://sphinx/", StringComparison.Ordinal))
 			return null;
-		if (lookup.StartsWith("elastic-serverless-forwarder://", StringComparison.Ordinal) && lookup.EndsWith(".png"))
-			return null;
 
 		//allow files at root for `docs-content` (index.md 404.md)
 		if (lookup.StartsWith("docs-content://") && !relativePath.Contains('/'))
