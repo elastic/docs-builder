@@ -81,7 +81,9 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: '.artifacts/publish/docs-builder/release/*.zip'
+          subject-path: |
+            .artifacts/publish/docs-builder/release/*.zip
+            .artifacts/publish/docs-assembler/release/*.zip
 
       - name: Attach Distribution to release
         env:
