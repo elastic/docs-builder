@@ -75,7 +75,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 			retryCount++;
 			if (retryCount >= maxRetries)
 			{
-				context.Logger.LogInformation($"Error encountered on server. getting object {getObjectRequest.Key}.");
+				context.Logger.LogInformation($"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}");
 				return $"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}";
 			}
 			// Wait a short time before retrying
