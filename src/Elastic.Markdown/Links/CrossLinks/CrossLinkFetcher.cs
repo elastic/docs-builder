@@ -56,9 +56,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 
 	protected async Task<LinkIndexEntry> GetLinkIndexEntry(string repository, Cancel ctx)
 	{
-		var linkIndex = await FetchLinkIndex(ctx);
-		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
-			throw new Exception($"Repository {repository} not found in link index");
+		var repositoryLinks = await GetRepositoryLinksWithRetry(repository, ctx);
 		return GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
 	}
 
@@ -74,10 +72,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 
 	protected async Task<LinkReference> Fetch(string repository, string[] keys, Cancel ctx)
 	{
-		var linkIndex = await FetchLinkIndex(ctx);
-		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
-			throw new Exception($"Repository {repository} not found in link index");
-
+		var repositoryLinks = await GetRepositoryLinksWithRetry(repository, ctx);
 		foreach (var key in keys)
 		{
 			if (repositoryLinks.TryGetValue(key, out var linkIndexEntry))
@@ -85,6 +80,31 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		}
 
 		throw new Exception($"Repository found in link index however none of: '{string.Join(", ", keys)}' branches found");
+	}
+
+	// See https://github.com/elastic/docs-internal-workflows/issues/41
+	private async Task<Dictionary<string, LinkIndexEntry>> GetRepositoryLinksWithRetry(string repository, Cancel ctx)
+	{
+		const int maxAttempts = 3;
+		var attempts = 0;
+		while (true)
+		{
+			try
+			{
+				var linkIndex = await FetchLinkIndex(ctx);
+				if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
+					throw new Exception($"Unable to find repository {repository} after {maxAttempts} attempts");
+				return repositoryLinks;
+			}
+			catch
+			{
+				attempts++;
+				if (attempts >= maxAttempts)
+					throw;
+				_logger.LogWarning("Retrying to fetch {Repository} repository links ({Attempt}/{MaxAttempts})", repository, attempts, maxAttempts);
+				await Task.Delay(500, ctx);
+			}
+		}
 	}
 
 	protected async Task<LinkReference> FetchLinkIndexEntry(string repository, LinkIndexEntry linkIndexEntry, Cancel ctx)
