@@ -4,7 +4,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <GlobalPackageVersion Include="MinVer" Version="6.0.0" PrivateAssets="All" />
+    <GlobalPackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
   <!-- AWS -->
   <ItemGroup>

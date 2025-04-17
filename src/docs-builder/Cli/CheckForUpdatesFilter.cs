@@ -39,7 +39,8 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppF
 			.FirstOrDefault()?.InformationalVersion;
 		if (SemVersion.TryParse(assemblyVersion ?? "", out var currentSemVersion))
 		{
-			if (latestVersion <= currentSemVersion)
+			var currentVersion = new SemVersion(currentSemVersion.Major, currentSemVersion.Minor, currentSemVersion.Patch);
+			if (latestVersion <= currentVersion)
 				return;
 			ConsoleApp.Log("");
 			ConsoleApp.Log($"A new version of docs-builder is available: {latestVersion} currently on version {currentSemVersion}");
