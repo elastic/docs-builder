@@ -29,14 +29,17 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 	const int maxRetries = 3;
 	var retryCount = 0;
 
-	while (retryCount < maxRetries)
+	while (true)
 	{
 		var sw = Stopwatch.StartNew();
 
 		IAmazonS3 s3Client = new AmazonS3Client();
 		var linkIndex = await CreateLinkIndex(s3Client);
 		if (linkIndex == null)
+		{
+			context.Logger.LogLine($"Error encountered on server. getting list of objects.");
 			return $"Error encountered on server. getting list of objects.";
+		}
 
 		var json = LinkIndex.Serialize(linkIndex);
 
@@ -63,6 +66,8 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 		try
 		{
 			var putObjectResponse = await s3Client.PutObjectAsync(putObjectRequest);
+			context.Logger.LogLine($"Created link object with ETag {putObjectResponse.ETag}");
+			context.Logger.LogLine($"Link Index: {json}");
 			return $"Finished in {sw}";
 		}
 		catch (AmazonS3Exception ex) when (ex.ErrorCode == "PreconditionFailed")
@@ -70,15 +75,13 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 			retryCount++;
 			if (retryCount >= maxRetries)
 			{
+				context.Logger.LogLine($"Error encountered on server. getting object {getObjectRequest.Key}.");
 				return $"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}";
 			}
 			// Wait a short time before retrying
 			await Task.Delay(TimeSpan.FromSeconds(1));
-			continue;
 		}
 	}
-
-	return "Unexpected error: Retry loop completed without success";
 }
 
 static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
