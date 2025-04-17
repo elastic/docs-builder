@@ -34,7 +34,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 		var sw = Stopwatch.StartNew();
 
 		IAmazonS3 s3Client = new AmazonS3Client();
-		var linkIndex = await CreateLinkIndex(s3Client, linkReference);
+		var linkIndex = await CreateLinkIndex(s3Client);
 		if (linkIndex == null)
 			return $"Error encountered on server. getting list of objects.";
 
@@ -81,7 +81,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 	return "Unexpected error: Retry loop completed without success";
 }
 
-static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client, LinkReference linkReference)
+static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
 {
 	var request = new ListObjectsV2Request
 	{
@@ -99,18 +99,18 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client, LinkReference 
 		do
 		{
 			response = await s3Client.ListObjectsV2Async(request, CancellationToken.None);
-			await Parallel.ForEachAsync(response.S3Objects, (obj, ctx) =>
+			await Parallel.ForEachAsync(response.S3Objects, async (obj, ctx) =>
 			{
 				if (!obj.Key.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase))
-					return new ValueTask(Task.CompletedTask);
+					return;
 
 				var tokens = obj.Key.Split('/');
 				if (tokens.Length < 3)
-					return new ValueTask(Task.CompletedTask);
+					return;
 
 				// TODO create a dedicated state file for git configuration
 				// Deserializing all of the links metadata adds significant overhead
-				var gitReference = linkReference.Origin.Ref;
+				var gitReference = await ReadLinkReferenceSha(s3Client, obj);
 
 				var repository = tokens[1];
 				var branch = tokens[2];
@@ -132,7 +132,6 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client, LinkReference 
 						{ branch, entry }
 					});
 				}
-				return new ValueTask(Task.CompletedTask);
 			});
 
 			// If the response is truncated, set the request ContinuationToken
@@ -146,4 +145,22 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client, LinkReference 
 	}
 
 	return linkIndex;
+}
+
+static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, S3Object obj)
+{
+	try
+	{
+		var contents = await client.GetObjectAsync(obj.Key, obj.Key, CancellationToken.None);
+		await using var s = contents.ResponseStream;
+		var linkReference = LinkReference.Deserialize(s);
+		return linkReference.Origin.Ref;
+	}
+	catch (Exception e)
+	{
+		Console.WriteLine(e);
+		// it's important we don't fail here we need to fallback gracefully from this so we can fix the root cause
+		// of why a repository is not reporting its git reference properly
+		return "unknown";
+	}
 }
