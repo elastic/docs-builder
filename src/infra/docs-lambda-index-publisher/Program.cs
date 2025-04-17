@@ -29,6 +29,8 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 	const int maxRetries = 3;
 	var retryCount = 0;
 
+	Console.WriteLine($"Event triggered by {linkReference.Origin.RepositoryName} {linkReference.Origin.Ref}");
+
 	while (true)
 	{
 		var sw = Stopwatch.StartNew();
@@ -57,7 +59,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 		var putObjectRequest = new PutObjectRequest
 		{
 			BucketName = bucketName,
-			Key = "link-index.json",
+			Key = "link-index-test.json",
 			ContentBody = json,
 			ContentType = "application/json",
 			IfMatch = currentETag
