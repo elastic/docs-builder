@@ -74,6 +74,9 @@ These examples show the syntax first, followed by the rendered admonition.
 **DON'Ts**<br>
 ❌ **Don't:** Stack admonitions<br>
 ❌ **Don't:** Overload a page with too many admonitions
+
+[More details: Admonitions →](admonitions.md)
+<br>
 <br>
 
 ---
@@ -297,11 +300,11 @@ Regular text after multi-line comment
 :::
 
 **DOs**<br>
-✅ **Do:** Add a space after `%` to start a single-line comment
+✅ **Do:** Add a space after the `%` in single-line comments
 
 **DON'Ts**<br>
 ❌ **Don't:** Use `#` or `//` for comments (reserved for [magic callouts](#magic-callout))
-
+<br>
 <br>
 
 ---
