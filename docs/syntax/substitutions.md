@@ -99,10 +99,10 @@ echo "{{a-global-variable}}"
 
 ````
 :::
-
-###  MD code block without subs enabled
  
 ::::
+
+###  MD code block without subs enabled
 
 ::::{tab-set}
 
