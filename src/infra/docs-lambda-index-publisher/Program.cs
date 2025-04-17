@@ -4,8 +4,10 @@
 
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json.Serialization;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Elastic.Markdown.IO.State;
@@ -13,7 +15,7 @@ using Elastic.Markdown.Links.CrossLinks;
 
 const string bucketName = "elastic-docs-link-index";
 
-await LambdaBootstrapBuilder.Create(Handler)
+await LambdaBootstrapBuilder.Create<LinkReference>(Handler, new SourceGeneratorLambdaJsonSerializer<JsonSerializerContext>())
  	.Build()
 	.RunAsync();
 
@@ -21,25 +23,65 @@ await LambdaBootstrapBuilder.Create(Handler)
 // await CreateLinkIndex(new AmazonS3Client());
 
 #pragma warning disable CS8321 // Local function is declared but never used
-static async Task<string> Handler(ILambdaContext context)
+static async Task<string> Handler(LinkReference linkReference, ILambdaContext context)
 #pragma warning restore CS8321 // Local function is declared but never used
 {
-	var sw = Stopwatch.StartNew();
+	const int maxRetries = 3;
+	var retryCount = 0;
 
-	IAmazonS3 s3Client = new AmazonS3Client();
-	var linkIndex = await CreateLinkIndex(s3Client);
-	if (linkIndex == null)
-		return $"Error encountered on server. getting list of objects.";
+	while (retryCount < maxRetries)
+	{
+		var sw = Stopwatch.StartNew();
 
-	var json = LinkIndex.Serialize(linkIndex);
+		IAmazonS3 s3Client = new AmazonS3Client();
+		var linkIndex = await CreateLinkIndex(s3Client, linkReference);
+		if (linkIndex == null)
+			return $"Error encountered on server. getting list of objects.";
 
-	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-	await s3Client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
-	return $"Finished in {sw}";
+		var json = LinkIndex.Serialize(linkIndex);
+
+		// First, get the current object's ETag
+		var getObjectRequest = new GetObjectRequest
+		{
+			BucketName = bucketName,
+			Key = "link-index.json"
+		};
+
+		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest);
+		var currentETag = getObjectResponse.ETag;
+
+		// Then, when updating the object, use the If-Match condition
+		var putObjectRequest = new PutObjectRequest
+		{
+			BucketName = bucketName,
+			Key = "link-index.json",
+			ContentBody = json,
+			ContentType = "application/json",
+			IfMatch = currentETag
+		};
+
+		try
+		{
+			var putObjectResponse = await s3Client.PutObjectAsync(putObjectRequest);
+			return $"Finished in {sw}";
+		}
+		catch (AmazonS3Exception ex) when (ex.ErrorCode == "PreconditionFailed")
+		{
+			retryCount++;
+			if (retryCount >= maxRetries)
+			{
+				return $"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}";
+			}
+			// Wait a short time before retrying
+			await Task.Delay(TimeSpan.FromSeconds(1));
+			continue;
+		}
+	}
+
+	return "Unexpected error: Retry loop completed without success";
 }
 
-
-static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
+static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client, LinkReference linkReference)
 {
 	var request = new ListObjectsV2Request
 	{
@@ -57,18 +99,18 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
 		do
 		{
 			response = await s3Client.ListObjectsV2Async(request, CancellationToken.None);
-			await Parallel.ForEachAsync(response.S3Objects, async (obj, ctx) =>
+			await Parallel.ForEachAsync(response.S3Objects, (obj, ctx) =>
 			{
 				if (!obj.Key.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase))
-					return;
+					return new ValueTask(Task.CompletedTask);
 
 				var tokens = obj.Key.Split('/');
 				if (tokens.Length < 3)
-					return;
+					return new ValueTask(Task.CompletedTask);
 
 				// TODO create a dedicated state file for git configuration
 				// Deserializing all of the links metadata adds significant overhead
-				var gitReference = await ReadLinkReferenceSha(s3Client, obj);
+				var gitReference = linkReference.Origin.Ref;
 
 				var repository = tokens[1];
 				var branch = tokens[2];
@@ -90,6 +132,7 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
 						{ branch, entry }
 					});
 				}
+				return new ValueTask(Task.CompletedTask);
 			});
 
 			// If the response is truncated, set the request ContinuationToken
@@ -103,22 +146,4 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
 	}
 
 	return linkIndex;
-}
-
-static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, S3Object obj)
-{
-	try
-	{
-		var contents = await client.GetObjectAsync(obj.Key, obj.Key, CancellationToken.None);
-		await using var s = contents.ResponseStream;
-		var linkReference = LinkReference.Deserialize(s);
-		return linkReference.Origin.Ref;
-	}
-	catch (Exception e)
-	{
-		Console.WriteLine(e);
-		// it's important we don't fail here we need to fallback gracefully from this so we can fix the root cause
-		// of why a repository is not reporting its git reference properly
-		return "unknown";
-	}
 }
