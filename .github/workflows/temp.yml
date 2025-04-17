@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
-          docker cp (docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+          docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with: 
