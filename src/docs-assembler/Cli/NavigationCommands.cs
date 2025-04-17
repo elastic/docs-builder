@@ -6,14 +6,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Documentation.Assembler.Building;
 using Documentation.Assembler.Links;
 using Documentation.Assembler.Navigation;
-using Elastic.Documentation.Model;
+using Elastic.Documentation;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Links.InboundLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;

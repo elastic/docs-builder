@@ -4,6 +4,8 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Configuration;

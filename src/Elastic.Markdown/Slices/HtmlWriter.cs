@@ -4,7 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
-using Elastic.Documentation.Model;
+using Elastic.Documentation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.HistoryMapping;

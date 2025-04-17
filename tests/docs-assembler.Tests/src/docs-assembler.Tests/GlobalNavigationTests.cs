@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Documentation.Model.Configuration.Assembler;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;

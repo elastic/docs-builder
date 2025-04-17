@@ -4,8 +4,10 @@
 
 using System.Collections.Frozen;
 using System.Text.Json;
+using Elastic.Documentation;
+using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.CrossLinks;

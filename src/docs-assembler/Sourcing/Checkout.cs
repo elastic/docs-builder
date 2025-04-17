@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Model.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Assembler;
 
 namespace Documentation.Assembler.Sourcing;
 

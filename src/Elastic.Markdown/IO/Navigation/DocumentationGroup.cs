@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO.Configuration;
 

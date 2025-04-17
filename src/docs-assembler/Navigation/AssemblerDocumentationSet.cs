@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Documentation.Assembler.Sourcing;
-using Elastic.Documentation.Model;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;

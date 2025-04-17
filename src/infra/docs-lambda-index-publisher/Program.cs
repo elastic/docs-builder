@@ -8,8 +8,8 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Elastic.Markdown.IO.State;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation;
+using Elastic.Documentation.Links;
 
 const string bucketName = "elastic-docs-link-index";
 
@@ -27,7 +27,7 @@ static async Task<string> Handler(ILambdaContext context)
 	var sw = Stopwatch.StartNew();
 
 	IAmazonS3 s3Client = new AmazonS3Client();
-	var linkIndex = await CreateLinkIndex(s3Client);
+	var linkIndex = await CreateLinkIndex(s3Client, context.Logger);
 	if (linkIndex == null)
 		return $"Error encountered on server. getting list of objects.";
 
@@ -39,12 +39,13 @@ static async Task<string> Handler(ILambdaContext context)
 }
 
 
-static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
+static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client, ILambdaLogger contextLogger)
 {
 	var request = new ListObjectsV2Request
 	{
 		BucketName = bucketName,
 		MaxKeys = 1000 //default
+
 	};
 
 	var linkIndex = new LinkIndex
@@ -65,6 +66,8 @@ static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
 				var tokens = obj.Key.Split('/');
 				if (tokens.Length < 3)
 					return;
+
+				contextLogger.LogInformation("");
 
 				// TODO create a dedicated state file for git configuration
 				// Deserializing all of the links metadata adds significant overhead

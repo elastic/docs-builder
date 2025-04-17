@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Documentation.Model.Configuration.Assembler;
+namespace Elastic.Documentation.Configuration.Assembler;
 
 [EnumExtensions]
 public enum ContentSource

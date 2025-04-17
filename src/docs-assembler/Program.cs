@@ -5,6 +5,7 @@
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown.Diagnostics;

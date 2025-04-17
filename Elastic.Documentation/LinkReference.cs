@@ -2,12 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Documentation.Model;
+using Elastic.Documentation.Serialization;
 
-namespace Elastic.Markdown.IO.State;
+namespace Elastic.Documentation;
 
 public record LinkMetadata
 {
@@ -70,28 +69,4 @@ public record LinkReference
 
 	public static string Serialize(LinkReference reference) =>
 		JsonSerializer.Serialize(reference, SourceGenerationContext.Default.LinkReference);
-
-	public static LinkReference Create(DocumentationSet set)
-	{
-		var redirects = set.Configuration.Redirects;
-		var crossLinks = set.Build.Collector.CrossLinks.ToHashSet().ToArray();
-		var links = set.MarkdownFiles.Values
-			.Select(m => (m.LinkReferenceRelativePath, File: m))
-			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-			? k.LinkReferenceRelativePath.Replace('\\', '/')
-			: k.LinkReferenceRelativePath, v =>
-			{
-				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
-			});
-
-		return new LinkReference
-		{
-			Redirects = redirects,
-			UrlPathPrefix = set.Build.UrlPathPrefix,
-			Origin = set.Build.Git,
-			Links = links,
-			CrossLinks = crossLinks
-		};
-	}
 }

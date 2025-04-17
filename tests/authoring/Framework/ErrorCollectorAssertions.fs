@@ -6,7 +6,7 @@ namespace authoring
 
 open System.Diagnostics
 open System.Linq
-open Elastic.Markdown.Diagnostics
+open Elastic.Documentation.Diagnostics
 open FsUnitTyped
 open Swensen.Unquote
 

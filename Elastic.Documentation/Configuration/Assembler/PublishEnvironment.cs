@@ -4,7 +4,7 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Model.Configuration.Assembler;
+namespace Elastic.Documentation.Configuration.Assembler;
 
 public record PublishEnvironment
 {

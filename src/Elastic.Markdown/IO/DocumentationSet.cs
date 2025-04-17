@@ -5,7 +5,8 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Elastic.Documentation.Model;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.IO.Configuration;
@@ -111,7 +112,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 
-	// FrozenDictionary<Uri, TableOfContentsReference>? indexedTableOfContents = null
 	public DocumentationSet(
 		BuildContext build,
 		ILoggerFactory logger,
@@ -320,7 +320,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return null;
 	}
 
-
 	public async Task ResolveDirectoryTree(Cancel ctx) =>
 		await Tree.Resolve(ctx);
 
@@ -358,6 +357,31 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
 		}
 	}
+
+	public LinkReference CreateLinkReference()
+	{
+		var redirects = Configuration.Redirects;
+		var crossLinks = Build.Collector.CrossLinks.ToHashSet().ToArray();
+		var links = MarkdownFiles.Values
+			.Select(m => (m.LinkReferenceRelativePath, File: m))
+			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+			? k.LinkReferenceRelativePath.Replace('\\', '/')
+			: k.LinkReferenceRelativePath, v =>
+			{
+				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
+				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
+			});
+
+		return new LinkReference
+		{
+			Redirects = redirects,
+			UrlPathPrefix = Build.UrlPathPrefix,
+			Origin = Build.Git,
+			Links = links,
+			CrossLinks = crossLinks
+		};
+	}
+
 	public void ClearOutputDirectory()
 	{
 		if (OutputDirectory.Exists)
