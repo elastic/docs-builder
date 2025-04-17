@@ -173,6 +173,8 @@ See the [release-drafter configuration](./.github/release-drafter.yml) for more 
 
 ## Creating a New Release
 
+To create a new release trigger the [release](https://github.com/elastic/docs-builder/actions/workflows/release.yml) workflow on the `main` branch.
+
 Every time a pull request is merged into the `main` branch, release-drafter will
 create a draft release or update the existing draft release in the [Releases](https://github.com/elastic/docs-builder/releases) page.
 

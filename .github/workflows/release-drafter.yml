@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   update-release-draft:
+    concurrency:
+      group: release-drafter
     permissions:
       contents: write
       pull-requests: read
