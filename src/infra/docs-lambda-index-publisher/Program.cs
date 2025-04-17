@@ -47,7 +47,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 		var getObjectRequest = new GetObjectRequest
 		{
 			BucketName = bucketName,
-			Key = "link-index.json"
+			Key = "link-index-test.json"
 		};
 
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest);
