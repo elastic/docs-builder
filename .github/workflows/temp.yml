@@ -1,0 +1,18 @@
+name: temp
+
+on:
+  pull_request: 
+
+jobs: 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
+          docker cp (docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: bootstrap
+          path: .artifacts/publish/docs-lambda-index-publisher/release_linux-x64/bootstrap
