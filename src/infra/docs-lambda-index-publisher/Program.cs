@@ -37,7 +37,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 		var linkIndex = await CreateLinkIndex(s3Client);
 		if (linkIndex == null)
 		{
-			context.Logger.LogInformation($"Error encountered on server. getting list of objects.");
+			Console.WriteLine($"Error encountered on server. getting list of objects.");
 			return $"Error encountered on server. getting list of objects.";
 		}
 
@@ -66,8 +66,8 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 		try
 		{
 			var putObjectResponse = await s3Client.PutObjectAsync(putObjectRequest);
-			context.Logger.LogInformation($"Created link object with ETag {putObjectResponse.ETag}");
-			context.Logger.LogInformation($"Link Index: {json}");
+			Console.WriteLine($"Created link object with ETag {putObjectResponse.ETag}");
+			Console.WriteLine($"Link Index: {json}");
 			return $"Finished in {sw}";
 		}
 		catch (AmazonS3Exception ex) when (ex.ErrorCode == "PreconditionFailed")
@@ -75,7 +75,7 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 			retryCount++;
 			if (retryCount >= maxRetries)
 			{
-				context.Logger.LogInformation($"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}");
+				Console.WriteLine($"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}");
 				return $"Error: Failed to update after {maxRetries} attempts. Someone else modified the object since we read it. {ex.Message}";
 			}
 			// Wait a short time before retrying
