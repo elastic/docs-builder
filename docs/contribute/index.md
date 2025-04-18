@@ -12,6 +12,8 @@ Whether you're a technical writer or you've only edited Elastic docs once or twi
 
 The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs. The easiest way to find the source file for the page you want to update is to navigate to the page on the web and click **Edit this page**. This will take you to the source file in the correct repo. For more detailed instructions, see [Contribute on the web](on-the-web.md).
 
+If you need to update documentation for both 8.x and 9.x, you will have to work in two systems. See [What if I need to update both 8.x and 9.x docs?](on-the-web.md#what-if-i-need-to-update-both-8.x-and-9.x-docs) for the processes on updating docs across different versions.
+
 ### Contribute to version `8.18`, `ECE 3.8`, and `ECK 2.0` docs and earlier
 
 To contribute to earlier versions of the documentation, you must work with our [legacy documentation build system](https://github.com/elastic/docs). This system uses the [AsciiDoc](https://asciidoc.org) markup language. 
@@ -19,15 +21,13 @@ To contribute to earlier versions of the documentation, you must work with our [
 * For **simple bug fixes and enhancements**, refer to [Contribute on the web](on-the-web.md)
 * For **complex or multi-page updates**, refer to our [legacy Building documentation guide](https://github.com/elastic/docs?tab=readme-ov-file#building-documentation)
 
-If you need to update documentation for both 8.x and 9.x, you will have to work in two systems. See [What if I need to update both 8.x and 9.x docs?](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/on-the-web#what-if-i-need-to-update-both-8.x-and-9.x-docs) for the processes on updating docs across different versions.
-
 ### Contribute to version `9.0+`, `ECE 4.0+`, and `ECK 3.0+` docs and later
 
 To contribute to `9.0+`, `ECE 4.0+`, and `ECK 3.0+`  content, you need to work with our new documentation system. This system uses custom [Markdown syntax](../syntax/index.md).
 The source files for this content are hosted in one of three places:
 
 1. **Reference/settings content** is generally stored in markdown files in the relevant product repo. For example, the Elasticsearch configuration reference is stored in the [elastic/elasticsearch](https://github.com/elastic/elasticsearch/tree/main/docs) repo. This enables contributors to make updates that touch code and low-level docs in the same PR. 
-2. **Narrative/conceptual and overview content** lives in [elastic/docs-content](https://github.com/elastic/docs-content). For example, the [ES|QL overview](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/explore-analyze/query-filter/languages/esql) lives in the **Explore & Analyze** section of the narrative docs. But the reference documentation lives in the Elasticsearch reference section of the docs: [ES|QL reference](https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/reference/query-languages/esql)  
+2. **Narrative/conceptual and overview content** lives in [elastic/docs-content](https://github.com/elastic/docs-content). For example, the [ES|QL overview](https://www.elastic.co/docs/explore-analyze/query-filter/languages/esql) lives in the **Explore & Analyze** section of the narrative docs. But the reference documentation lives in the Elasticsearch reference section of the docs: [ES|QL reference](https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/reference/query-languages/esql)  
 3. **API reference docs** live in the different OpenAPI spec repositories. This is where you need to update API docs published in the new API docs system.
 
 When you are ready to edit the content:
