@@ -4,23 +4,27 @@
 
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Elastic.Documentation.Lambda.LinkIndexUploader;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 
+
 const string bucketName = "elastic-docs-link-index";
 
-await LambdaBootstrapBuilder.Create<LinkReference>(Handler, new SourceGeneratorLambdaJsonSerializer<JsonSerializerContext>())
+await LambdaBootstrapBuilder.Create<LinkReference>(Handler, new SourceGeneratorLambdaJsonSerializer<LinkReferenceSerializerContext>())
  	.Build()
 	.RunAsync();
 
 // Uncomment to test locally without uploading
-// await CreateLinkIndex(new AmazonS3Client());
+await CreateLinkIndex(new AmazonS3Client());
+
 
 #pragma warning disable CS8321 // Local function is declared but never used
 static async Task<string> Handler(LinkReference linkReference, ILambdaContext context)
@@ -30,11 +34,10 @@ static async Task<string> Handler(LinkReference linkReference, ILambdaContext co
 	var retryCount = 0;
 
 	Console.WriteLine($"Event triggered by {linkReference.Origin.RepositoryName} {linkReference.Origin.Ref}");
+	var sw = Stopwatch.StartNew();
 
 	while (true)
 	{
-		var sw = Stopwatch.StartNew();
-
 		IAmazonS3 s3Client = new AmazonS3Client();
 		var linkIndex = await CreateLinkIndex(s3Client);
 		if (linkIndex == null)
