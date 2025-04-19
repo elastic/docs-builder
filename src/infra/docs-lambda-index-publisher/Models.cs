@@ -43,4 +43,7 @@ public class S3Object
 {
 	[JsonPropertyName("key")]
 	public string Key { get; set; } = string.Empty;
+
+	[JsonPropertyName("eTag")]
+	public string ETag { get; set; } = string.Empty;
 }
