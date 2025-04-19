@@ -122,11 +122,18 @@ static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext contex
 static async Task ProcessMessageAsync(SQSEvent.SQSMessage message, ILambdaContext context)
 {
 	if (string.IsNullOrEmpty(message.Body))
-	{
 		throw new Exception("No Body in SQS Message.");
-	}
 
 	context.Logger.LogInformation($"Processed message {message.Body}");
+
+	var s3Event = JsonSerializer.Deserialize<S3EventNotification>(message.Body, SQSEventSerializerContext.Default.S3EventNotification);
+	if (s3Event?.Records == null || s3Event.Records.Count == 0)
+		throw new Exception("Invalid S3 event message format");
+
+	var s3Object = s3Event.Records[0].S3.S3Object;
+	context.Logger.LogInformation($"S3 bucket: {s3Event.Records[0].S3.Bucket.Name}");
+	context.Logger.LogInformation($"Processing S3 object: {s3Object.Key}");
+
 	// TODO: Do interesting work based on the new message
 	await Task.CompletedTask;
 }
