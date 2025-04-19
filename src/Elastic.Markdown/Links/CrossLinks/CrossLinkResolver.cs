@@ -38,6 +38,9 @@ public record LinkIndexEntry
 	[JsonPropertyName("etag")]
 	public required string ETag { get; init; }
 
+	[JsonPropertyName("eventTime")]
+	public DateTime EventTime { get; init; } = DateTime.MinValue;
+
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]
 	public string GitReference { get; init; } = "unknown";

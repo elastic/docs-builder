@@ -22,6 +22,9 @@ public class S3EventRecord
 {
 	[JsonPropertyName("s3")]
 	public S3Event S3 { get; set; } = new();
+
+	[JsonPropertyName("eventTime")]
+	public DateTime EventTime { get; set; }
 }
 
 public class S3Event
