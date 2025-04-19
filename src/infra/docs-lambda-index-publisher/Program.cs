@@ -38,6 +38,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	await using var stream = getObjectResponse.ResponseStream;
 	var linkIndex = LinkIndex.Deserialize(stream);
 	var currentETag = getObjectResponse.ETag;
+	var processedMessageCount = 0;
 
 	foreach (var message in ev.Records)
 	{
@@ -46,6 +47,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 			var linkReferences = await GetLinkReferences(s3Client, message, context);
 			foreach (var (record, linkReference) in linkReferences)
 				UpdateLinkIndex(linkIndex, linkReference, record, context);
+			processedMessageCount++;
 		}
 		catch (Exception)
 		{
@@ -72,8 +74,9 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	{
 		_ = await s3Client.PutObjectAsync(putObjectRequest);
 		context.Logger.LogInformation($"Successfully updated {bucketName}/{indexFile}.");
+		context.Logger.LogInformation($"Processed {processedMessageCount} messages.");
 		if (batchItemFailures.Count > 0)
-			context.Logger.LogInformation($"Failed to process {batchItemFailures.Count} messages. Returning them to the queue.");
+			context.Logger.LogInformation($"Failed to process {batchItemFailures.Count}  messages. Returning them to the queue.");
 		return new SQSBatchResponse(batchItemFailures);
 	}
 	catch (Exception ex)
