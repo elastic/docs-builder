@@ -14,5 +14,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with: 
+          retention-days: 1
           name: bootstrap
           path: .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
