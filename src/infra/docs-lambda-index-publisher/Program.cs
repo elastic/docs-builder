@@ -21,6 +21,7 @@ using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 
 // const string bucketName = "elastic-docs-link-index";
+// const string indexFile = "link-index-test.json";
 
 await LambdaBootstrapBuilder.Create<SQSEvent>(Handler, new SourceGeneratorLambdaJsonSerializer<SQSEventSerializerContext>())
 	.Build()
@@ -33,13 +34,21 @@ await LambdaBootstrapBuilder.Create<SQSEvent>(Handler, new SourceGeneratorLambda
 static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext context)
 #pragma warning restore CS8321 // Local function is declared but never used
 {
+	var s3Client = new AmazonS3Client();
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
+
+	// var getObjectRequest = new GetObjectRequest
+	// {
+	// 	BucketName = bucketName,
+	// 	Key = indexFile
+	// };
+
 	foreach (var message in evnt.Records)
 	{
 		try
 		{
 			//process your message
-			await ProcessMessageAsync(message, context);
+			await ProcessMessageAsync(s3Client, message, context);
 		}
 		catch (Exception)
 		{
@@ -119,7 +128,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext contex
 	// }
 }
 
-static async Task ProcessMessageAsync(SQSEvent.SQSMessage message, ILambdaContext context)
+static async Task ProcessMessageAsync(IAmazonS3 s3Client, SQSEvent.SQSMessage message, ILambdaContext context)
 {
 	if (string.IsNullOrEmpty(message.Body))
 		throw new Exception("No Body in SQS Message.");
@@ -130,9 +139,17 @@ static async Task ProcessMessageAsync(SQSEvent.SQSMessage message, ILambdaContex
 	if (s3Event?.Records == null || s3Event.Records.Count == 0)
 		throw new Exception("Invalid S3 event message format");
 
-	var s3Object = s3Event.Records[0].S3.S3Object;
-	context.Logger.LogInformation($"S3 bucket: {s3Event.Records[0].S3.Bucket.Name}");
-	context.Logger.LogInformation($"Processing S3 object: {s3Object.Key}");
+	await Parallel.ForEachAsync(s3Event.Records, async (record, ctx) =>
+	{
+		var s3Bucket = record.S3.Bucket;
+		var s3Object = record.S3.S3Object;
+		var getObjectResponse = await s3Client.GetObjectAsync(s3Bucket.Name, s3Object.Key, ctx);
+		await using var stream = getObjectResponse.ResponseStream;
+		var linkReference = LinkReference.Deserialize(stream);
+		context.Logger.LogInformation($"S3 bucket: {s3Event.Records[0].S3.Bucket.Name}");
+		context.Logger.LogInformation($"Processing S3 object: {s3Object.Key}");
+		context.Logger.LogInformation($"Processed link {linkReference}");
+	});
 
 	// TODO: Do interesting work based on the new message
 	await Task.CompletedTask;
