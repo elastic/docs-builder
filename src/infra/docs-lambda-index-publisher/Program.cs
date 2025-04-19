@@ -123,28 +123,23 @@ static async Task<IReadOnlyCollection<(S3Object, LinkReference)>> ProcessMessage
 {
 	if (string.IsNullOrEmpty(message.Body))
 		throw new Exception("No Body in SQS Message.");
-
-	context.Logger.LogInformation($"Processed message {message.Body}");
-
+	context.Logger.LogInformation($"Received message {message.Body}");
 	var s3Event = JsonSerializer.Deserialize<S3EventNotification>(message.Body, SQSEventSerializerContext.Default.S3EventNotification);
 	if (s3Event?.Records == null || s3Event.Records.Count == 0)
 		throw new Exception("Invalid S3 event message format");
-
 	var linkReferences = new ConcurrentBag<(S3Object, LinkReference)>();
-
 	await Parallel.ForEachAsync(s3Event.Records, async (record, ctx) =>
 	{
 		var s3Bucket = record.S3.Bucket;
 		var s3Object = record.S3.S3Object;
+		context.Logger.LogInformation($"Get object {s3Object.Key} from bucket {s3Bucket.Name}");
 		var getObjectResponse = await s3Client.GetObjectAsync(s3Bucket.Name, s3Object.Key, ctx);
 		await using var stream = getObjectResponse.ResponseStream;
+		context.Logger.LogInformation($"Deserializing link reference from {s3Object.Key}");
 		var linkReference = LinkReference.Deserialize(stream);
-		context.Logger.LogInformation($"S3 bucket: {s3Event.Records[0].S3.Bucket.Name}");
-		context.Logger.LogInformation($"Processing S3 object: {s3Object.Key}");
-		context.Logger.LogInformation($"Processed link {linkReference}");
-
+		context.Logger.LogInformation($"Link reference deserialized: {linkReference}");
 		linkReferences.Add((s3Object, linkReference));
 	});
-
+	context.Logger.LogInformation($"Deserialized {linkReferences.Count} link references from S3 event");
 	return linkReferences;
 }
