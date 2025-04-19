@@ -40,8 +40,7 @@ static async Task<string> Handler(SQSEvent ev, ILambdaContext context)
 	await Task.Delay(100);
 	foreach (var record in ev.Records)
 	{
-		var message = LinkReference.Deserialize(record.Body);
-		context.Logger.LogInformation($"Received message: {message}");
+		context.Logger.LogInformation($"Received message: {record.Body}");
 
 		// Delete the message from the queue
 		var sqsClient = new AmazonSQSClient();
