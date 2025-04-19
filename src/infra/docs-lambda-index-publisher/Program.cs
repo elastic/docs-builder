@@ -34,7 +34,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext contex
 #pragma warning restore CS8321 // Local function is declared but never used
 {
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
-	foreach(var message in evnt.Records)
+	foreach (var message in evnt.Records)
 	{
 		try
 		{
@@ -44,9 +44,13 @@ static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext contex
 		catch (Exception)
 		{
 			//Add failed message identifier to the batchItemFailures list
-			batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure{ItemIdentifier=message.MessageId});
+			batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure
+			{
+				ItemIdentifier = message.MessageId
+			});
 		}
 	}
+
 	return new SQSBatchResponse(batchItemFailures);
 	// const int maxRetries = 3;
 	// var retryCount = 0;
@@ -121,6 +125,7 @@ static async Task ProcessMessageAsync(SQSEvent.SQSMessage message, ILambdaContex
 	{
 		throw new Exception("No Body in SQS Message.");
 	}
+
 	context.Logger.LogInformation($"Processed message {message.Body}");
 	// TODO: Do interesting work based on the new message
 	await Task.CompletedTask;
