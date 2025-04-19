@@ -68,13 +68,17 @@ static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext contex
 				};
 
 				if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
+				{
 					existingEntry[branch] = entry;
+					context.Logger.LogInformation($"Updated existing entry for {repository}@{branch}");
+				}
 				else
 				{
 					linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
 					{
 						{ branch, entry }
 					});
+					context.Logger.LogInformation($"Added new entry for {repository}@{branch}");
 				}
 			}
 		}
@@ -102,6 +106,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext contex
 	try
 	{
 		_ = await s3Client.PutObjectAsync(putObjectRequest);
+		context.Logger.LogInformation($"Successfully updated {bucketName}/{indexFile}");
 		return new SQSBatchResponse(batchItemFailures);
 	}
 	catch (Exception)
