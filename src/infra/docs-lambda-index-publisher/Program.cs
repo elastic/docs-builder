@@ -13,7 +13,6 @@ using Amazon.S3.Model;
 using Elastic.Documentation.Lambda.LinkIndexUploader;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
-using S3Object = Elastic.Documentation.Lambda.LinkIndexUploader.S3Object;
 
 const string bucketName = "elastic-docs-link-index";
 const string indexFile = "link-index-test.json";
@@ -72,13 +71,16 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	try
 	{
 		_ = await s3Client.PutObjectAsync(putObjectRequest);
-		context.Logger.LogInformation($"Successfully updated {bucketName}/{indexFile} but failed to process {batchItemFailures.Count} messages. Returning them to the queue.");
+		context.Logger.LogInformation($"Successfully updated {bucketName}/{indexFile}.");
+		if (batchItemFailures.Count > 0)
+			context.Logger.LogInformation($"Failed to process {batchItemFailures.Count} messages. Returning them to the queue.");
 		return new SQSBatchResponse(batchItemFailures);
 	}
-	catch (Exception)
+	catch (Exception ex)
 	{
 		// if we fail to update the object, we need to return all the messages
 		context.Logger.LogError($"Failed to update {bucketName}/{indexFile}. Returning all messages to the queue.");
+		context.Logger.LogError(ex.Message);
 		return new SQSBatchResponse(ev.Records.Select(r => new SQSBatchResponse.BatchItemFailure
 		{
 			ItemIdentifier = r.MessageId
