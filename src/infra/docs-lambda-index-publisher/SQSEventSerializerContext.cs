@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Elastic.Markdown.IO.State;
-using Elastic.Markdown.Links.CrossLinks;
+using Amazon.Lambda.SQSEvents;
 
 namespace Elastic.Documentation.Lambda.LinkIndexUploader;
 
-[JsonSerializable(typeof(LinkReference))]
-[JsonSerializable(typeof(LinkIndex))]
-[JsonSerializable(typeof(LinkIndexEntry))]
-public partial class LinkReferenceSerializerContext : JsonSerializerContext;
+[JsonSerializable(typeof(SQSEvent))]
+public partial class SQSEventSerializerContext : JsonSerializerContext;
