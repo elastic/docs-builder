@@ -134,13 +134,13 @@ static void UpdateLinkIndex(LinkIndex linkIndex, LinkReference linkReference, S3
 		Branch = linkReference.Origin.Branch,
 		ETag = s3Object.ETag,
 		Path = s3Object.Key,
-		EventTime = s3EventRecord.EventTime,
+		UpdatedAt = s3EventRecord.EventTime,
 		GitReference = linkReference.Origin.Ref
 	};
 
 	if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
 	{
-		var newEntryIsNewer = DateTime.Compare(newEntry.EventTime, existingEntry[branch].EventTime) > 0;
+		var newEntryIsNewer = DateTime.Compare(newEntry.UpdatedAt, existingEntry[branch].UpdatedAt) > 0;
 		if (newEntryIsNewer)
 		{
 			existingEntry[branch] = newEntry;
