@@ -6,12 +6,16 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Amazon;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.SQSEvents;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.SQS;
+using Amazon.SQS.Model;
 using Elastic.Documentation.Lambda.LinkIndexUploader;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
@@ -38,6 +42,11 @@ static async Task<string> Handler(SQSEvent ev, ILambdaContext context)
 	{
 		var message = LinkReference.Deserialize(record.Body);
 		context.Logger.LogInformation($"Received message: {message}");
+
+		// Delete the message from the queue
+		var sqsClient = new AmazonSQSClient();
+		var deleteMessageRequest = new DeleteMessageRequest(record.EventSourceArn, record.ReceiptHandle);
+		_ = await sqsClient.DeleteMessageAsync(deleteMessageRequest);
 	}
 	return "Done";
 

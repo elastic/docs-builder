@@ -25,6 +25,7 @@
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" />
     <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="AWSSDK.SQS" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj"/>
