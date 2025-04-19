@@ -2,123 +2,159 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
-using System.Text;
+using System.Collections.Concurrent;
+using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
+using Amazon.Lambda.Serialization.SystemTextJson;
+using Amazon.Lambda.SQSEvents;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Elastic.Documentation.Lambda.LinkIndexUploader;
 using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 
 const string bucketName = "elastic-docs-link-index";
+const string indexFile = "link-index-test.json";
 
-await LambdaBootstrapBuilder.Create(Handler)
- 	.Build()
+await LambdaBootstrapBuilder.Create<SQSEvent>(Handler, new SourceGeneratorLambdaJsonSerializer<SQSEventSerializerContext>())
+	.Build()
 	.RunAsync();
 
-// Uncomment to test locally without uploading
-// await CreateLinkIndex(new AmazonS3Client());
+return;
 
-#pragma warning disable CS8321 // Local function is declared but never used
-static async Task<string> Handler(ILambdaContext context)
-#pragma warning restore CS8321 // Local function is declared but never used
+static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 {
-	var sw = Stopwatch.StartNew();
+	var s3Client = new AmazonS3Client();
+	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
 
-	IAmazonS3 s3Client = new AmazonS3Client();
-	var linkIndex = await CreateLinkIndex(s3Client);
-	if (linkIndex == null)
-		return $"Error encountered on server. getting list of objects.";
+	var getObjectRequest = new GetObjectRequest
+	{
+		BucketName = bucketName,
+		Key = indexFile
+	};
+
+	var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest);
+	await using var stream = getObjectResponse.ResponseStream;
+	var linkIndex = LinkIndex.Deserialize(stream);
+	var currentETag = getObjectResponse.ETag;
+	var processedMessageCount = 0;
+
+	foreach (var message in ev.Records)
+	{
+		try
+		{
+			var linkReferences = await GetLinkReferences(s3Client, message, context);
+			foreach (var (record, linkReference) in linkReferences)
+				UpdateLinkIndex(linkIndex, linkReference, record, context);
+			processedMessageCount++;
+		}
+		catch (Exception)
+		{
+			//Add failed message identifier to the batchItemFailures list
+			batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure
+			{
+				ItemIdentifier = message.MessageId
+			});
+		}
+	}
 
 	var json = LinkIndex.Serialize(linkIndex);
 
-	using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-	await s3Client.UploadObjectFromStreamAsync(bucketName, "link-index.json", stream, new Dictionary<string, object>(), CancellationToken.None);
-	return $"Finished in {sw}";
-}
-
-
-static async Task<LinkIndex?> CreateLinkIndex(IAmazonS3 s3Client)
-{
-	var request = new ListObjectsV2Request
+	var putObjectRequest = new PutObjectRequest
 	{
 		BucketName = bucketName,
-		MaxKeys = 1000 //default
+		Key = indexFile,
+		ContentBody = json,
+		ContentType = "application/json",
+		IfMatch = currentETag
 	};
 
-	var linkIndex = new LinkIndex
-	{
-		Repositories = []
-	};
 	try
 	{
-		ListObjectsV2Response response;
-		do
-		{
-			response = await s3Client.ListObjectsV2Async(request, CancellationToken.None);
-			await Parallel.ForEachAsync(response.S3Objects, async (obj, ctx) =>
-			{
-				if (!obj.Key.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase))
-					return;
-
-				var tokens = obj.Key.Split('/');
-				if (tokens.Length < 3)
-					return;
-
-				// TODO create a dedicated state file for git configuration
-				// Deserializing all of the links metadata adds significant overhead
-				var gitReference = await ReadLinkReferenceSha(s3Client, obj);
-
-				var repository = tokens[1];
-				var branch = tokens[2];
-
-				var entry = new LinkIndexEntry
-				{
-					Repository = repository,
-					Branch = branch,
-					ETag = obj.ETag.Trim('"'),
-					Path = obj.Key,
-					GitReference = gitReference
-				};
-				if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
-					existingEntry[branch] = entry;
-				else
-				{
-					linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
-					{
-						{ branch, entry }
-					});
-				}
-			});
-
-			// If the response is truncated, set the request ContinuationToken
-			// from the NextContinuationToken property of the response.
-			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated);
+		_ = await s3Client.PutObjectAsync(putObjectRequest);
+		context.Logger.LogInformation($"Successfully updated {bucketName}/{indexFile}.");
+		context.Logger.LogInformation($"Processed {processedMessageCount} messages.");
+		if (batchItemFailures.Count > 0)
+			context.Logger.LogInformation($"Failed to process {batchItemFailures.Count}  messages. Returning them to the queue.");
+		return new SQSBatchResponse(batchItemFailures);
 	}
-	catch
+	catch (Exception ex)
 	{
-		return null;
+		// if we fail to update the object, we need to return all the messages
+		context.Logger.LogError($"Failed to update {bucketName}/{indexFile}. Returning all messages to the queue.");
+		context.Logger.LogError(ex.Message);
+		return new SQSBatchResponse(ev.Records.Select(r => new SQSBatchResponse.BatchItemFailure
+		{
+			ItemIdentifier = r.MessageId
+		}).ToList());
 	}
-
-	return linkIndex;
 }
 
-static async Task<string> ReadLinkReferenceSha(IAmazonS3 client, S3Object obj)
+static async Task<IReadOnlyCollection<(S3EventRecord, LinkReference)>> GetLinkReferences(IAmazonS3 s3Client, SQSEvent.SQSMessage message, ILambdaContext context)
 {
-	try
+	if (string.IsNullOrEmpty(message.Body))
+		throw new Exception("No Body in SQS Message.");
+	context.Logger.LogInformation($"Received message {message.Body}");
+	var s3Event = JsonSerializer.Deserialize<S3EventNotification>(message.Body, SQSEventSerializerContext.Default.S3EventNotification);
+	if (s3Event?.Records == null || s3Event.Records.Count == 0)
+		throw new Exception("Invalid S3 event message format");
+	var linkReferences = new ConcurrentBag<(S3EventRecord, LinkReference)>();
+	await Parallel.ForEachAsync(s3Event.Records, async (record, ctx) =>
 	{
-		var contents = await client.GetObjectAsync(obj.Key, obj.Key, CancellationToken.None);
-		await using var s = contents.ResponseStream;
-		var linkReference = LinkReference.Deserialize(s);
-		return linkReference.Origin.Ref;
+		var s3Bucket = record.S3.Bucket;
+		var s3Object = record.S3.S3Object;
+		context.Logger.LogInformation($"Get object {s3Object.Key} from bucket {s3Bucket.Name}");
+		var getObjectResponse = await s3Client.GetObjectAsync(s3Bucket.Name, s3Object.Key, ctx);
+		await using var stream = getObjectResponse.ResponseStream;
+		context.Logger.LogInformation($"Deserializing link reference from {s3Object.Key}");
+		var linkReference = LinkReference.Deserialize(stream);
+		context.Logger.LogInformation($"Link reference deserialized: {linkReference}");
+		linkReferences.Add((record, linkReference));
+	});
+	context.Logger.LogInformation($"Deserialized {linkReferences.Count} link references from S3 event");
+	return linkReferences;
+}
+
+static void UpdateLinkIndex(LinkIndex linkIndex, LinkReference linkReference, S3EventRecord s3EventRecord, ILambdaContext context)
+{
+	var s3Object = s3EventRecord.S3.S3Object;
+	var keyTokens = s3Object.Key.Split('/');
+	var repository = keyTokens[1];
+	var branch = keyTokens[2];
+
+	// TODO: This cannot be used for now because it's wrong if all link references were updated by the
+	// https://github.com/elastic/docs-internal-workflows/actions/workflows/update-all-link-reference.yml workflow
+	// var repository = linkReference.Origin.RepositoryName;
+	// var branch = linkReference.Origin.Branch;
+
+	var newEntry = new LinkIndexEntry
+	{
+		Repository = linkReference.Origin.RepositoryName,
+		Branch = linkReference.Origin.Branch,
+		ETag = s3Object.ETag,
+		Path = s3Object.Key,
+		UpdatedAt = s3EventRecord.EventTime,
+		GitReference = linkReference.Origin.Ref
+	};
+
+	if (linkIndex.Repositories.TryGetValue(repository, out var existingEntry))
+	{
+		var newEntryIsNewer = DateTime.Compare(newEntry.UpdatedAt, existingEntry[branch].UpdatedAt) > 0;
+		if (newEntryIsNewer)
+		{
+			existingEntry[branch] = newEntry;
+			context.Logger.LogInformation($"Updated existing entry for {repository}@{branch}");
+		}
+		else
+			context.Logger.LogInformation($"Skipping update for {repository}@{branch} because the existing entry is newer");
 	}
-	catch (Exception e)
+	else
 	{
-		Console.WriteLine(e);
-		// it's important we don't fail here we need to fallback gracefully from this so we can fix the root cause
-		// of why a repository is not reporting its git reference properly
-		return "unknown";
+		linkIndex.Repositories.Add(repository, new Dictionary<string, LinkIndexEntry>
+		{
+			{ branch, newEntry }
+		});
+		context.Logger.LogInformation($"Added new entry for {repository}@{branch}");
 	}
 }
