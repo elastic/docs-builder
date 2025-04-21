@@ -63,19 +63,21 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		ValidateAndProcessLink(link, processor, context);
 
-		ParseStylingInstructions(link);
+		ParseStylingInstructions(link, context);
 
 		return match;
 	}
 
 
-	private static void ParseStylingInstructions(LinkInline link)
+	private static void ParseStylingInstructions(LinkInline link, ParserContext context)
 	{
 		if (!link.IsImage)
 			return;
 
+		var attributes = link.GetAttributes();
+
 		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
-			return;
+			link.Title = (link.Title ?? "{undefined}").ReplaceSubstitutions(context);
 
 		var matches = LinkRegexExtensions.MatchTitleStylingInstructions().Match(link.Title);
 		if (!matches.Success)
@@ -89,10 +91,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			height = width;
 		else if (!height.EndsWith('%'))
 			height += "px";
-		var title = link.Title[..matches.Index];
 
-		link.Title = title;
-		var attributes = link.GetAttributes();
 		attributes.AddProperty("width", width);
 		attributes.AddProperty("height", height);
 	}

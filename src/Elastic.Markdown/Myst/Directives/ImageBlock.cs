@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 
@@ -19,6 +20,11 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	/// or spoken by applications for visually impaired users.
 	/// </summary>
 	public string? Alt { get; set; }
+
+	/// <summary>
+	/// Title text: a short description of the image
+	/// </summary>
+	public string? Title { get; set; }
 
 	/// <summary>
 	/// The desired height of the image. Used to reserve space or scale the image vertically. When the “scale” option
@@ -64,9 +70,10 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Label = Prop("label", "name");
-		Alt = Prop("alt");
-		Align = Prop("align");
+		Alt = (Prop("alt") ?? "{undefined}").ReplaceSubstitutions(context);
+		Title = (Prop("title") ?? "{undefined}").ReplaceSubstitutions(context);
 
+		Align = Prop("align");
 		Height = Prop("height", "h");
 		Width = Prop("width", "w");
 

@@ -50,6 +50,7 @@ public class ImageViewModel
 	public required string? Label { get; init; }
 	public required string? Align { get; init; }
 	public required string? Alt { get; init; }
+	public required string? Title { get; init; }
 	public required string? Height { get; init; }
 	public required string? Scale { get; init; }
 	public required string? Target { get; init; }
