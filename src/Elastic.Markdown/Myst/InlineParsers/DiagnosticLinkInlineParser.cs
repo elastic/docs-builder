@@ -75,25 +75,29 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 
 		var attributes = link.GetAttributes();
+		var title = link.Title;
 
-		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
-			link.Title = (link.Title ?? "{undefined}").ReplaceSubstitutions(context);
-
-		var matches = LinkRegexExtensions.MatchTitleStylingInstructions().Match(link.Title);
-		if (!matches.Success)
+		if (string.IsNullOrEmpty(title))
 			return;
 
-		var width = matches.Groups["width"].Value;
-		if (!width.EndsWith('%'))
-			width += "px";
-		var height = matches.Groups["height"].Value;
-		if (string.IsNullOrEmpty(height))
-			height = width;
-		else if (!height.EndsWith('%'))
-			height += "px";
+		var matches = LinkRegexExtensions.MatchTitleStylingInstructions().Match(title);
+		if (matches.Success)
+		{
+			var width = matches.Groups["width"].Value;
+			if (!width.EndsWith('%'))
+				width += "px";
+			var height = matches.Groups["height"].Value;
+			if (string.IsNullOrEmpty(height))
+				height = width;
+			else if (!height.EndsWith('%'))
+				height += "px";
 
-		attributes.AddProperty("width", width);
-		attributes.AddProperty("height", height);
+			attributes.AddProperty("width", width);
+			attributes.AddProperty("height", height);
+
+			title = title[..matches.Index];
+		}
+		link.Title = (title ?? "{undefined}").ReplaceSubstitutions(context);
 	}
 
 	private static bool IsInCommentBlock(LinkInline link) =>
@@ -182,7 +186,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				s => processor.EmitError(link, s),
 				s => processor.EmitWarning(link, s),
 				uri, out var resolvedUri)
-		   )
+			 )
 			link.Url = resolvedUri.ToString();
 	}
 
