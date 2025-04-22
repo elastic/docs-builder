@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Myst.Directives;
