@@ -4,6 +4,7 @@
 	h1 {
 		@apply text-ink-dark text-5xl font-semibold;
 		line-height: 1.2em;
+		max-width: 805px; /* approximately 80ch */
 	}
 
 	h2 {
@@ -48,8 +49,10 @@
 		line-height: 1.5em;
 	}
 	
-	#elastic-docs-v3>p {
-		max-width: 80ch;
+	#elastic-docs-v3 {
+		&>p, &>ul, &>ol, &>.heading-wrapper {
+			max-width: 80ch;
+		}
 	}
 
 	a {
