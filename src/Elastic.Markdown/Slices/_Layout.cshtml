@@ -23,25 +23,27 @@
 
 		private async Task DefaultLayout()
 		{
-			<div class="container h-full grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_1fr] lg:grid-cols-[calc(var(--spacing)*65)_1fr_calc(var(--spacing)*50)] px-6">
+			<div class="w-full h-full grid grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_1fr] px-6">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
-				@await RenderPartialAsync(_TableOfContents.Create(Model))
-				<main id="content-container" class="w-full flex flex-col order-2 relative pb-30 overflow-x-hidden">
-					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-						<div class="h-[2px] w-full overflow-hidden">
-							<div class="progress w-full h-full bg-pink-70 left-right"></div>
+				<div class="order-2 grid grid-cols-1 md:grid-cols-[95ch_calc(var(--spacing)*65)] justify-center">
+					@await RenderPartialAsync(_TableOfContents.Create(Model))
+					<main id="content-container" class="w-full flex flex-col order-1 relative pb-30 overflow-x-hidden">
+						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+							<div class="h-[2px] w-full overflow-hidden">
+								<div class="progress w-full h-full bg-pink-70 left-right"></div>
+							</div>
+							<div class="sr-only">Loading</div>
 						</div>
-						<div class="sr-only">Loading</div>
-					</div>
-					<div class="content-container md:px-4">
-						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-					</div>
-					<article id="markdown-content" class="content-container markdown-content md:px-4">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderBodyAsync()
-					</article>
-					@await RenderPartialAsync(_PrevNextNav.Create(Model))
-				</main>
+						<div class="content-container md:px-4">
+							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content md:px-4">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+						@await RenderPartialAsync(_PrevNextNav.Create(Model))
+					</main>
+				</div>
 			</div>
 		}
 

@@ -47,6 +47,10 @@
 		@apply mt-4;
 		line-height: 1.5em;
 	}
+	
+	#elastic-docs-v3>p {
+		max-width: 80ch;
+	}
 
 	a {
 		@apply font-body text-blue-elastic hover:text-blue-elastic-100 underline;

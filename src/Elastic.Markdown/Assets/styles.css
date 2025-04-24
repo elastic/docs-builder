@@ -98,8 +98,8 @@
 	}
 
 	.content-container {
-		@apply w-full max-w-[80ch];
-	}
+		/*@apply w-full max-w-[90ch];*/
+	}	
 
 	.applies {
 		@apply font-sans;
@@ -239,6 +239,15 @@
 
 #elastic-nav {
 	min-height: var(--offset-top);
+	.oldNav {
+		&>div {
+			max-width: 100%;
+		}
+		div:has(> div > nav) {
+			flex-grow: 1;
+			justify-content: center;
+		}
+	}
 }
 
 body {
