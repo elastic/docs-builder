@@ -45,19 +45,6 @@ toc:
   #################
   # RELEASE NOTES #
   #################
-  # Context:
-  # I want to start with just this one page:
-  # https://github.com/elastic/docs-content/blob/main/release-notes/index.md
-  # And include other tocs from docs-content later in this file.
-  #
-  # Why:
-  # We need to assign different a `path_prefix` to the Fleet, Observability, Security,
-  # and Serverless release notes, which all live in the docs-content repo.
-  #
-  # What I tried:
-  # In docs-content, I tried moving release-notes/index.md to release-notes/intro/index.md
-  # and creating a release-notes/intro/toc.yml file that contains just that page,
-  # but I still couldn't get it to work.
   - toc: docs-content://release-notes/intro
     path_prefix: release-notes
     children:
@@ -190,7 +177,12 @@ toc:
       # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-security/toc.yml
       - toc: docs-content://release-notes/elastic-security
         path_prefix: release-notes/security
-        
+
+      # ECS
+      # https://github.com/elastic/ecs/blob/main/docs/release-notes/toc.yml
+      - toc: ecs://release-notes
+        path_prefix: release-notes/ecs
+
   #############
   # REFERENCE #
   #############
