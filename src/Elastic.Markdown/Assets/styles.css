@@ -237,7 +237,7 @@
 
 	@media screen and (min-width: 1200px) {
 		.oldNav {
-			&>div {
+			& > div {
 				max-width: 100%;
 			}
 			div:has(> div > nav) {
@@ -252,7 +252,6 @@
 				margin-left: -74px;
 			}
 		}
-		
 	}
 }
 
