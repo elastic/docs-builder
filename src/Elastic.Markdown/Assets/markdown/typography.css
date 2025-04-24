@@ -4,7 +4,7 @@
 	h1 {
 		@apply text-ink-dark text-5xl font-semibold;
 		line-height: 1.2em;
-		max-width: 805px; /* approximately 80ch */
+		/*max-width: 805px; !* approximately 80ch *!*/
 	}
 
 	h2 {
@@ -49,11 +49,11 @@
 		line-height: 1.5em;
 	}
 	
-	#elastic-docs-v3 {
-		&>p, &>ul, &>ol, &>.heading-wrapper {
-			max-width: 80ch;
-		}
-	}
+	/*#elastic-docs-v3 {*/
+	/*	&>p, &>ul, &>ol, &>.heading-wrapper, &>dl {*/
+	/*		max-width: 80ch;*/
+	/*	}*/
+	/*}*/
 
 	a {
 		@apply font-body text-blue-elastic hover:text-blue-elastic-100 underline;

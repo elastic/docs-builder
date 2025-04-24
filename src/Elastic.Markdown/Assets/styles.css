@@ -233,20 +233,30 @@
 
 .container {
 	@apply lg:px-3;
-
 	max-width: 1250px !important;
 }
 
 #elastic-nav {
 	min-height: var(--offset-top);
-	.oldNav {
-		&>div {
-			max-width: 100%;
+
+	@media screen and (min-width: 1200px) {
+		.oldNav {
+			&>div {
+				max-width: 100%;
+			}
+			div:has(> div > nav) {
+				flex-grow: 1;
+				justify-content: center;
+			}
 		}
-		div:has(> div > nav) {
-			flex-grow: 1;
-			justify-content: center;
+	}
+	@media screen and (min-width: 1536px) {
+		.oldNav {
+			nav {
+				margin-left: -74px;
+			}
 		}
+		
 	}
 }
 

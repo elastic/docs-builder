@@ -25,7 +25,7 @@
 		{
 			<div class="w-full h-full grid grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_1fr] px-6">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
-				<div class="order-2 grid grid-cols-1 md:grid-cols-[95ch_calc(var(--spacing)*65)] justify-center">
+				<div class="order-2 grid grid-cols-1 md:grid-cols-[clamp(40ch,80ch,100%)] lg:grid-cols-[80ch_1fr] xl:grid-cols-[90ch_calc(var(--spacing)*65)] justify-center">
 					@await RenderPartialAsync(_TableOfContents.Create(Model))
 					<main id="content-container" class="w-full flex flex-col order-1 relative pb-30 overflow-x-hidden">
 						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
