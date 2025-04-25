@@ -190,7 +190,12 @@ toc:
       # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-security/toc.yml
       - toc: docs-content://release-notes/elastic-security
         path_prefix: release-notes/security
-        
+
+      # ECS
+      # https://github.com/elastic/ecs/blob/main/release-notes/toc.yml
+      - toc: ecs://release-notes
+        path_prefix: release-notes/ecs
+
   #############
   # REFERENCE #
   #############
