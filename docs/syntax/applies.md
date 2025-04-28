@@ -67,24 +67,24 @@ Both are equivalent, note `all` just means we won't be rendering the version por
 
 ## Structured model
 
-![Applies To Model](img/applies.png)
+![Applies To Model](images/applies.png)
 
 The above model is projected to the following structured yaml.
 
 ```yaml
 ---
 applies_to:
-  stack: 
+  stack:
   deployment:
-    eck: 
-    ess: 
-    ece: 
-    self: 
+    eck:
+    ess:
+    ece:
+    self:
   serverless:
-    security: 
-    elasticsearch: 
-    observability: 
-  product: 
+    security:
+    elasticsearch:
+    observability:
+  product:
 ---
 ```
 This allows you to annotate various facets as defined in [](../migration/versioning.md)
@@ -128,7 +128,7 @@ serverless:
 product: coming 9.5, discontinued 9.7
 ```
 
-A header may be followed by an `{applies_to}` directive which will contextualize the applicability 
+A header may be followed by an `{applies_to}` directive which will contextualize the applicability
 of the section further.
 
 :::{note}
@@ -154,7 +154,7 @@ stack: ga 9.1
 
 This will allow the yaml inside the `{applies-to}` directive to be fully highlighted.
 
-## Inline Applies To 
+## Inline Applies To
 
 Inline applies to can be placed anywhere using the following syntax
 
