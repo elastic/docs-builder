@@ -6,12 +6,13 @@ on:
 permissions:
   contents: read
   packages: write
+    
+concurrency:
+  group: release-drafter
 
 jobs:
   
   release-drafter:
-    concurrency: 
-      group: release-drafter
     outputs:
       tag_name: ${{ steps.release-drafter.outputs.tag_name }}
     permissions:
@@ -145,4 +146,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
         run: |
-          gh release edit ${{ needs.release-drafter.outputs.tag_name }} --draft=false --latest
+          gh release edit ${{ needs.release-drafter.outputs.tag_name }} --draft=false --latest --repo ${{ github.repository }}
