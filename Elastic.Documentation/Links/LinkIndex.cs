@@ -39,5 +39,9 @@ public record LinkIndexEntry
 	// TODO can be made required after all doc_sets have published again
 	[JsonPropertyName("ref")]
 	public string GitReference { get; init; } = "unknown";
+
+	// TODO can be made required after all doc_sets have published again
+	[JsonPropertyName("updated_at")]
+	public DateTime UpdatedAt { get; init; } = DateTime.MinValue;
 }
 

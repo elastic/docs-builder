@@ -2,8 +2,9 @@
 
 Elastic Docs V3 uses [Markdown](https://commonmark.org) as its main content authoring format.
 
-:::{admonition} New to Markdown?
-[Learn Markdown in just 10 minutes](https://commonmark.org/help/).
+:::{admonition} New to Elastic Docs V3?
+* Learn [Markdown](https://commonmark.org/help/) in 10 minutes
+* Review the V3 [](quick-ref.md)
 :::
 
 V3 fully supports [CommonMark](https://commonmark.org/), a strongly defined, standard-compliant Markdown specification. In many cases, plain Markdown syntax will be sufficient when authoring Elastic content. On top of this functionality, there are two main syntax extension points:
