@@ -82,6 +82,8 @@ references:
   ecs-logging-ruby:
   ecs-logging:
   ecs:
+    current: "9.0"
+    next: main
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:
