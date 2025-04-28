@@ -139,6 +139,8 @@ jobs:
       - release-lambda
       - release-drafter
     runs-on: ubuntu-latest
+    permissions: 
+      contents: write
     steps:
       - name: Publish release
         env:
