@@ -5,6 +5,7 @@ runs:
   using: "composite"
   steps:
     - name: Update Reference Index
-      run: |
-        curl -v https://kaqcb6pumme57zlb63wmoqcjxq0fhkdl.lambda-url.us-east-1.on.aws
+      run: exit 0;
+#      run: |
+#        curl -v https://kaqcb6pumme57zlb63wmoqcjxq0fhkdl.lambda-url.us-east-1.on.aws
       shell: bash
