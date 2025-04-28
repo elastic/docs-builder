@@ -14,7 +14,7 @@ using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 
 const string bucketName = "elastic-docs-link-index";
-const string indexFile = "link-index-test.json";
+const string indexFile = "link-index.json";
 
 await LambdaBootstrapBuilder.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
 	.Build()
