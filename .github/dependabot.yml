@@ -24,5 +24,10 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
+    groups: 
+      system-io-abstractions:
+        patterns:
+          - 'System.IO.Abstractions'
+          - 'System.IO.Abstractions.*'
     labels:
       - chore
