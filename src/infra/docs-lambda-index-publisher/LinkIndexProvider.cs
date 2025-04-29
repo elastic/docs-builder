@@ -11,16 +11,16 @@ namespace Elastic.Documentation.Lambda.LinkIndexUploader;
 
 /// <summary>
 /// Gets the link index from S3 once.
-/// You can then update the link index with <see cref="UpdateLinkIndexEntry(LinkIndexEntry)"/> and save it with <see cref="Save()"/>.
+/// You can then update the link index with <see cref="UpdateLinkIndexEntry(LinkRegistryEntry)"/> and save it with <see cref="Save()"/>.
 /// If the link index changed in the meantime, <see cref="Save()"/> will throw an exception,
 /// thus all the messages from the queue will be sent back to the queue.
 /// </summary>
 public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string bucketName, string key)
 {
 	private string? _etag;
-	private LinkIndex? _linkIndex;
+	private LinkReferenceRegistry? _linkIndex;
 
-	private async Task<LinkIndex> GetLinkIndex()
+	private async Task<LinkReferenceRegistry> GetLinkIndex()
 	{
 		var getObjectRequest = new GetObjectRequest
 		{
@@ -32,31 +32,31 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 		await using var stream = getObjectResponse.ResponseStream;
 		_etag = getObjectResponse.ETag;
 		logger.LogInformation("Successfully got link index from s3://{bucketName}/{key}", bucketName, key);
-		_linkIndex = LinkIndex.Deserialize(stream);
+		_linkIndex = LinkReferenceRegistry.Deserialize(stream);
 		return _linkIndex;
 	}
 
-	public async Task UpdateLinkIndexEntry(LinkIndexEntry linkIndexEntry)
+	public async Task UpdateLinkIndexEntry(LinkRegistryEntry linkRegistryEntry)
 	{
 		_linkIndex ??= await GetLinkIndex();
-		if (_linkIndex.Repositories.TryGetValue(linkIndexEntry.Repository, out var existingEntry))
+		if (_linkIndex.Repositories.TryGetValue(linkRegistryEntry.Repository, out var existingEntry))
 		{
-			var newEntryIsNewer = DateTime.Compare(linkIndexEntry.UpdatedAt, existingEntry[linkIndexEntry.Branch].UpdatedAt) > 0;
+			var newEntryIsNewer = DateTime.Compare(linkRegistryEntry.UpdatedAt, existingEntry[linkRegistryEntry.Branch].UpdatedAt) > 0;
 			if (newEntryIsNewer)
 			{
-				existingEntry[linkIndexEntry.Branch] = linkIndexEntry;
-				logger.LogInformation("Updated existing entry for {repository}@{branch}", linkIndexEntry.Repository, linkIndexEntry.Branch);
+				existingEntry[linkRegistryEntry.Branch] = linkRegistryEntry;
+				logger.LogInformation("Updated existing entry for {repository}@{branch}", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
 			}
 			else
-				logger.LogInformation("Skipping update for {repository}@{branch} because the existing entry is newer", linkIndexEntry.Repository, linkIndexEntry.Branch);
+				logger.LogInformation("Skipping update for {repository}@{branch} because the existing entry is newer", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
 		}
 		else
 		{
-			_linkIndex.Repositories.Add(linkIndexEntry.Repository, new Dictionary<string, LinkIndexEntry>
+			_linkIndex.Repositories.Add(linkRegistryEntry.Repository, new Dictionary<string, LinkRegistryEntry>
 			{
-				{ linkIndexEntry.Branch, linkIndexEntry }
+				{ linkRegistryEntry.Branch, linkRegistryEntry }
 			});
-			logger.LogInformation("Added new entry for {repository}@{branch}", linkIndexEntry.Repository, linkIndexEntry.Branch);
+			logger.LogInformation("Added new entry for {repository}@{branch}", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
 		}
 	}
 
@@ -64,7 +64,7 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 	{
 		if (_etag == null || _linkIndex == null)
 			throw new InvalidOperationException("You must call UpdateLinkIndexEntry() before Save()");
-		var json = LinkIndex.Serialize(_linkIndex);
+		var json = LinkReferenceRegistry.Serialize(_linkIndex);
 		logger.LogInformation("Saving link index to s3://{bucketName}/{key}", bucketName, key);
 		var putObjectRequest = new PutObjectRequest
 		{

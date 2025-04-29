@@ -5,10 +5,10 @@
 using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.IO.Configuration;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler.Navigation;
@@ -210,7 +210,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 					if (source != null && !source.Contains("://"))
 						source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
 					var sourceUri = new Uri(source!);
-					var tocReference = new TocReference(sourceUri, this, "", true, []);
+					var tocReference = new TocReference(sourceUri, this, "", []);
 					return tocReference;
 			}
 		}
@@ -254,7 +254,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 
 		var rootConfig = mapping.RepositoryConfigurationFile.SourceFile.Directory!;
 		var path = Path.GetRelativePath(rootConfig.FullName, mapping.TableOfContentsConfiguration.ScopeDirectory.FullName);
-		var tocReference = new TocReference(sourceUri, mapping.TableOfContentsConfiguration, path, true, navigationItems);
+		var tocReference = new TocReference(sourceUri, mapping.TableOfContentsConfiguration, path, navigationItems);
 		return tocReference;
 	}
 

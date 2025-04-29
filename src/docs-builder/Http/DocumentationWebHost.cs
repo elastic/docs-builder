@@ -162,7 +162,7 @@ public class DocumentationWebHost
 			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
 			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
 			{
-				foreach (var extension in generator.Context.Configuration.EnabledExtensions)
+				foreach (var extension in holder.Generator.DocumentationSet.EnabledExtensions)
 				{
 					if (extension.TryGetDocumentationFileBySlug(generator.DocumentationSet, slug, out documentationFile))
 						break;

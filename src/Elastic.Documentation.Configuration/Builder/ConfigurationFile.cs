@@ -4,19 +4,15 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
-using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Extensions;
-using Elastic.Markdown.Extensions.DetectionRules;
 
-namespace Elastic.Markdown.IO.Configuration;
+namespace Elastic.Documentation.Configuration.Builder;
 
 public record ConfigurationFile : ITableOfContentsScope
 {
-	private readonly BuildContext _context;
+	private readonly IDocumentationContext _context;
 
 	public IFileInfo SourceFile => _context.ConfigurationPath;
 
@@ -30,8 +26,6 @@ public record ConfigurationFile : ITableOfContentsScope
 	public int MaxTocDepth { get; } = 1;
 
 	public EnabledExtensions Extensions { get; } = new([]);
-
-	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; } = [];
 
 	public IReadOnlyCollection<ITocItem> TableOfContents { get; } = [];
 
@@ -61,7 +55,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(BuildContext context)
+	public ConfigurationFile(IDocumentationContext context)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -103,7 +97,6 @@ public record ConfigurationFile : ITableOfContentsScope
 						break;
 					case "extensions":
 						Extensions = new([.. YamlStreamReader.ReadStringArray(entry.Entry)]);
-						EnabledExtensions = InstantiateExtensions();
 						break;
 					case "subs":
 						_substitutions = reader.ReadDictionary(entry.Entry);
@@ -136,19 +129,4 @@ public record ConfigurationFile : ITableOfContentsScope
 		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}{Path.DirectorySeparatorChar}*.md"))];
 	}
 
-	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
-	{
-		var list = new List<IDocsBuilderExtension>();
-		foreach (var extension in Extensions.Enabled)
-		{
-			switch (extension.ToLowerInvariant())
-			{
-				case "detection-rules":
-					list.Add(new DetectionRulesDocsBuilderExtension(_context));
-					continue;
-			}
-		}
-
-		return list.AsReadOnly();
-	}
 }

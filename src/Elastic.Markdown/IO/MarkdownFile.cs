@@ -8,7 +8,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
@@ -281,7 +280,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.Concat(includedTocs)
 			.Select(toc => subs.Count == 0
 				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Build.Collector, out var r)
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
 					? toc with { Heading = r }
 					: toc)
 			.ToList();

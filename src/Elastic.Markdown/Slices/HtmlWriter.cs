@@ -5,9 +5,9 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Legacy;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.HistoryMapping;
 using Elastic.Markdown.IO.Navigation;
 using Markdig.Syntax;
 using RazorSlices;
@@ -55,7 +55,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		return new NavigationViewModel
 		{
 			Title = tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = tree.Index?.Url ?? Set.Build.UrlPathPrefix ?? "/",
+			TitleUrl = tree.Index?.Url ?? Set.Context.UrlPathPrefix ?? "/",
 			Tree = tree,
 			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,
@@ -69,14 +69,14 @@ public class HtmlWriter(
 	IFileSystem writeFileSystem,
 	IDescriptionGenerator descriptionGenerator,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
-	IHistoryMapper? historyMapper = null,
+	ILegacyUrlMapper? legacyUrlMapper = null,
 	IPositionalNavigation? positionalNavigation = null
 )
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
-	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
-	private IHistoryMapper HistoryMapper { get; } = historyMapper ?? new BypassHistoryMapper();
+	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
+	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;
 
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
@@ -96,24 +96,24 @@ public class HtmlWriter(
 		var next = PositionalNavigation.GetNext(markdown);
 		var parents = PositionalNavigation.GetParentMarkdownFiles(markdown);
 
-		var remote = DocumentationSet.Build.Git.RepositoryName;
-		var branch = DocumentationSet.Build.Git.Branch;
+		var remote = DocumentationSet.Context.Git.RepositoryName;
+		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (DocumentationSet.Build.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Build.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
 		{
-			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Build.DocumentationSourceDirectory.FullName);
+			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = Path.Combine(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
 		Uri? reportLinkParameter = null;
-		if (DocumentationSet.Build.CanonicalBaseUrl is not null)
-			reportLinkParameter = new Uri(DocumentationSet.Build.CanonicalBaseUrl, Path.Combine(DocumentationSet.Build.UrlPathPrefix ?? string.Empty, markdown.Url));
+		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
-		var legacyPage = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var slice = Index.Create(new IndexViewModel
 		{
@@ -133,9 +133,9 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Build.AllowIndexing && (markdown is DetectionRuleFile || !markdown.Hidden),
-			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
-			GoogleTagManager = DocumentationSet.Build.GoogleTagManager,
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown is DetectionRuleFile || !markdown.Hidden),
+			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
+			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,

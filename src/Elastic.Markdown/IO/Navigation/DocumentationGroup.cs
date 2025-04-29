@@ -4,9 +4,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.TableOfContents;
-using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown.IO.Navigation;
 
@@ -221,10 +220,10 @@ public class DocumentationGroup : INavigationGroup
 		{
 			if (tocItem is FileReference file)
 			{
-				if (!lookups.FlatMappedFiles.TryGetValue(file.Path, out var d))
+				if (!lookups.FlatMappedFiles.TryGetValue(file.RelativePath, out var d))
 				{
 					context.EmitError(context.ConfigurationPath,
-						$"The following file could not be located: {file.Path} it may be excluded from the build in docset.yml");
+						$"The following file could not be located: {file.RelativePath} it may be excluded from the build in docset.yml");
 					continue;
 				}
 
@@ -245,13 +244,13 @@ public class DocumentationGroup : INavigationGroup
 				md.NavigationRoot = topLevelGroup;
 				md.NavigationSource = NavigationSource;
 
-				foreach (var extension in context.Configuration.EnabledExtensions)
+				foreach (var extension in lookups.EnabledExtensions)
 					extension.Visit(d, tocItem);
 
 				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
 				{
 					if (file.Hidden)
-						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.Path}");
+						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.RelativePath}");
 					var group = new DocumentationGroup(virtualIndex.RelativePath,
 						_treeCollector, context, lookups with
 						{
@@ -264,7 +263,7 @@ public class DocumentationGroup : INavigationGroup
 				}
 
 				files.Add(md);
-				if (file.Path.EndsWith("index.md") && d is MarkdownFile i)
+				if (file.RelativePath.EndsWith("index.md") && d is MarkdownFile i)
 					indexFile ??= i;
 
 				// add the page to navigation items unless it's the index file
@@ -277,19 +276,19 @@ public class DocumentationGroup : INavigationGroup
 			else if (tocItem is FolderReference folder)
 			{
 				var children = folder.Children;
-				if (children.Count == 0 && lookups.FilesGroupedByFolder.TryGetValue(folder.Path, out var documentationFiles))
+				if (children.Count == 0 && lookups.FilesGroupedByFolder.TryGetValue(folder.RelativePath, out var documentationFiles))
 				{
 					children =
 					[
 						.. documentationFiles
-							.Select(d => new FileReference(folder.TableOfContentsScope, d.RelativePath, true, false, []))
+							.Select(d => new FileReference(folder.TableOfContentsScope, d.RelativePath, false, []))
 					];
 				}
 
 				DocumentationGroup group;
 				if (folder is TocReference tocReference)
 				{
-					var toc = new TableOfContentsTree(tocReference.Source, folder.Path, _treeCollector, context, lookups with
+					var toc = new TableOfContentsTree(tocReference.Source, folder.RelativePath, _treeCollector, context, lookups with
 					{
 						TableOfContents = children
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
@@ -299,7 +298,7 @@ public class DocumentationGroup : INavigationGroup
 				}
 				else
 				{
-					group = new DocumentationGroup(folder.Path, _treeCollector, context, lookups with
+					group = new DocumentationGroup(folder.RelativePath, _treeCollector, context, lookups with
 					{
 						TableOfContents = children
 					}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this);
@@ -307,14 +306,6 @@ public class DocumentationGroup : INavigationGroup
 				}
 
 				groups.Add(group);
-			}
-			else
-			{
-				foreach (var extension in lookups.EnabledExtensions)
-				{
-					if (extension.InjectsIntoNavigation(tocItem))
-						extension.CreateNavigationItem(this, tocItem, lookups, groups, navigationItems, depth, ref fileIndex, index);
-				}
 			}
 		}
 

@@ -16,7 +16,7 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfigurat
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
 		var linkReferences = new Dictionary<string, LinkReference>();
-		var linkIndexEntries = new Dictionary<string, LinkIndexEntry>();
+		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
 		var repositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative]);
 

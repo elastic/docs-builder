@@ -5,11 +5,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace Elastic.Markdown.IO.Configuration;
+namespace Elastic.Documentation.Configuration;
 
 public record YamlToplevelKey
 {

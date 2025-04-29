@@ -4,17 +4,16 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.Extensions.DetectionRules;
 using YamlDotNet.RepresentationModel;
 
-namespace Elastic.Markdown.IO.Configuration;
+namespace Elastic.Documentation.Configuration.Builder;
 
 public record TableOfContentsConfiguration : ITableOfContentsScope
 {
-	private readonly BuildContext _context;
+	private readonly IDocumentationContext _context;
 	private readonly int _maxTocDepth;
 	private readonly int _depth;
 	private readonly string _parentPath;
@@ -34,7 +33,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		ConfigurationFile configuration,
 		IFileInfo definitionFile,
 		IDirectoryInfo scope,
-		BuildContext context,
+		IDocumentationContext context,
 		int depth,
 		string parentPath)
 	{
@@ -86,8 +85,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 						return children;
 					if (filePaths.Length is > 1 or 0)
 						reader.EmitError("toc with nested toc sections must only link a single file: index.md", entry.Key);
-					else if (!filePaths[0].Path.EndsWith("index.md"))
-						reader.EmitError($"toc with nested toc sections must only link a single file: 'index.md' actually linked {filePaths[0].Path}", entry.Key);
+					else if (!filePaths[0].RelativePath.EndsWith("index.md", StringComparison.OrdinalIgnoreCase))
+						reader.EmitError($"toc with nested toc sections must only link a single file: 'index.md' actually linked {filePaths[0].RelativePath}", entry.Key);
 					return children;
 			}
 		}
@@ -133,8 +132,6 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		string? folder = null;
 		string[]? detectionRules = null;
 		TableOfContentsConfiguration? toc = null;
-		var fileFound = false;
-		var folderFound = false;
 		var detectionRulesFound = false;
 		var hiddenFile = false;
 		IReadOnlyCollection<ITocItem>? children = null;
@@ -144,15 +141,15 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			switch (key)
 			{
 				case "toc":
-					toc = ReadNestedToc(reader, entry, parentPath, out fileFound);
+					toc = ReadNestedToc(reader, entry, parentPath);
 					break;
 				case "hidden":
 				case "file":
 					hiddenFile = key == "hidden";
-					file = ReadFile(reader, entry, parentPath, out fileFound);
+					file = ReadFile(reader, entry, parentPath);
 					break;
 				case "folder":
-					folder = ReadFolder(reader, entry, parentPath, out folderFound);
+					folder = ReadFolder(reader, entry, parentPath);
 					parentPath += $"{Path.DirectorySeparatorChar}{folder}";
 					break;
 				case "detection_rules":
@@ -173,7 +170,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			foreach (var f in toc.Files)
 				_ = Files.Add(f);
 
-			return [new TocReference(toc.Source, toc, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, toc.TableOfContents)];
+			return [new TocReference(toc.Source, toc, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), toc.TableOfContents)];
 		}
 
 		if (file is not null)
@@ -190,16 +187,16 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				}
 				else
 				{
-					var extension = _configuration.EnabledExtensions.OfType<DetectionRulesDocsBuilderExtension>().First();
-					children = extension.CreateTableOfContentItems(_configuration, parentPath, detectionRules, Files);
 					var overviewPath = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
-					var landingPage = new RuleOverviewReference(this, overviewPath, fileFound, children, detectionRules);
+					var landingPage = new RuleOverviewReference(this, overviewPath, parentPath, _configuration, _context, detectionRules);
+					foreach (var child in landingPage.Children.OfType<FileReference>())
+						_ = Files.Add(child.RelativePath);
 					return [landingPage];
 				}
 			}
 
 			var path = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
-			return [new FileReference(this, path, fileFound, hiddenFile, children ?? [])];
+			return [new FileReference(this, path, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)
@@ -207,24 +204,21 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 			if (children is null)
 				_ = _configuration.ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
 
-			return [new FolderReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), folderFound, children ?? [])];
+			return [new FolderReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), children ?? [])];
 		}
 
 		return null;
 	}
 
-	private string? ReadFolder(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private string? ReadFolder(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
 	{
-		found = false;
 		var folder = reader.ReadString(entry);
-		if (folder is not null)
-		{
-			var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), folder);
-			if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
-				reader.EmitError($"Directory '{path}' does not exist", entry.Key);
-			else
-				found = true;
-		}
+		if (folder is null)
+			return folder;
+
+		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), folder);
+		if (!_context.ReadFileSystem.DirectoryInfo.New(path).Exists)
+			reader.EmitError($"Directory '{path}' does not exist", entry.Key);
 
 		return folder;
 	}
@@ -248,9 +242,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		return folders.Length == 0 ? null : folders;
 	}
 
-	private string? ReadFile(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private string? ReadFile(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
 	{
-		found = false;
 		var file = reader.ReadString(entry);
 		if (file is null)
 			return null;
@@ -260,16 +253,14 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		var path = Path.Combine(_rootPath.FullName, parentPath.TrimStart(Path.DirectorySeparatorChar), file);
 		if (!_context.ReadFileSystem.FileInfo.New(path).Exists)
 			reader.EmitError($"File '{path}' does not exist", entry.Key);
-		else
-			found = true;
 		_ = Files.Add(Path.Combine(parentPath, file).TrimStart(Path.DirectorySeparatorChar));
 
 		return file;
 	}
 
-	private TableOfContentsConfiguration? ReadNestedToc(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath, out bool found)
+	private TableOfContentsConfiguration? ReadNestedToc(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry, string parentPath)
 	{
-		found = false;
+		var found = false;
 		var tocPath = reader.ReadString(entry);
 		if (tocPath is null)
 		{

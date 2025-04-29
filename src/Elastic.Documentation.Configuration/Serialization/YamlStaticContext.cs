@@ -5,7 +5,7 @@
 using Elastic.Documentation.Configuration.Assembler;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Documentation.Serialization;
+namespace Elastic.Documentation.Configuration.Serialization;
 
 [YamlStaticContext]
 [YamlSerializable(typeof(AssemblyConfiguration))]

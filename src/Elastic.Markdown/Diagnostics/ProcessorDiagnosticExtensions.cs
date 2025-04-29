@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -77,50 +78,6 @@ public static class ProcessorDiagnosticExtensions
 			Length = length
 		};
 		context.Build.Collector.Channel.Write(d);
-	}
-
-	public static void EmitError(this BuildContext context, IFileInfo file, string message, Exception? e = null)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Error,
-			File = file.FullName,
-			Message = CreateExceptionMessage(message, e),
-		};
-		context.Collector.Channel.Write(d);
-	}
-
-	public static void EmitWarning(this BuildContext context, IFileInfo file, string message)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = file.FullName,
-			Message = message,
-		};
-		context.Collector.Channel.Write(d);
-	}
-
-	public static void EmitError(this DiagnosticsCollector collector, IFileInfo file, string message, Exception? e = null)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Error,
-			File = file.FullName,
-			Message = CreateExceptionMessage(message, e),
-		};
-		collector.Channel.Write(d);
-	}
-
-	public static void EmitWarning(this DiagnosticsCollector collector, IFileInfo file, string message)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = file.FullName,
-			Message = message,
-		};
-		collector.Channel.Write(d);
 	}
 
 	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => EmitDiagnostic(block, Severity.Error, message, e);

@@ -5,7 +5,6 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
@@ -118,7 +117,7 @@ public record GlobalNavigation : IPositionalNavigation
 				{
 					FlatMappedFiles = new Dictionary<string, DocumentationFile>().ToFrozenDictionary(),
 					TableOfContents = [],
-					EnabledExtensions = documentationSet.Configuration.EnabledExtensions,
+					EnabledExtensions = documentationSet.EnabledExtensions,
 					FilesGroupedByFolder = new Dictionary<string, DocumentationFile[]>().ToFrozenDictionary(),
 				};
 
@@ -126,7 +125,7 @@ public record GlobalNavigation : IPositionalNavigation
 				tree = new TableOfContentsTree(
 					documentationSet,
 					toc.Source,
-					documentationSet.Build,
+					documentationSet.Context,
 					lookups,
 					_assembleSources.TreeCollector, ref fileIndex);
 			}

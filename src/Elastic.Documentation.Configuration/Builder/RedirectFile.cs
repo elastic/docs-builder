@@ -3,18 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation;
+using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
 
-namespace Elastic.Markdown.IO.Configuration;
+namespace Elastic.Documentation.Configuration.Builder;
 
 public record RedirectFile
 {
 	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
-	public IFileInfo Source { get; init; }
-	public BuildContext Context { get; init; }
+	private IFileInfo Source { get; init; }
+	private IDocumentationContext Context { get; init; }
 
-	public RedirectFile(IFileInfo source, BuildContext context)
+	public RedirectFile(IFileInfo source, IDocumentationContext context)
 	{
 		Source = source;
 		Context = context;

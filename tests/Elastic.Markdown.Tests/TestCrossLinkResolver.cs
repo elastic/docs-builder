@@ -50,7 +50,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		LinkReferences.Add("kibana", reference);
 		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
 
-		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkIndexEntry
+		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
 		{
 			Repository = e.Key,
 			Path = $"elastic/asciidocalypse/{e.Key}/links.json",

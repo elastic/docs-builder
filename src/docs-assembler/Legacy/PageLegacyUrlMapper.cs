@@ -2,15 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.IO.HistoryMapping;
+using Elastic.Documentation.Legacy;
 
-namespace Documentation.Assembler.Mapping;
+namespace Documentation.Assembler.Legacy;
 
-public record PageHistoryMapper : IHistoryMapper
+public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
 	private IReadOnlyDictionary<string, string> PreviousUrls { get; }
 
-	public PageHistoryMapper(IReadOnlyDictionary<string, string> previousUrls) => PreviousUrls = previousUrls;
+	public PageLegacyUrlMapper(IReadOnlyDictionary<string, string> previousUrls) => PreviousUrls = previousUrls;
 
 	public LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{

@@ -14,6 +14,6 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(GenerationState))]
 [JsonSerializable(typeof(LinkReference))]
 [JsonSerializable(typeof(GitCheckoutInformation))]
-[JsonSerializable(typeof(LinkIndex))]
-[JsonSerializable(typeof(LinkIndexEntry))]
+[JsonSerializable(typeof(LinkReferenceRegistry))]
+[JsonSerializable(typeof(LinkRegistryEntry))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

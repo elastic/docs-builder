@@ -12,15 +12,19 @@ public abstract record DocumentationFile
 {
 	protected DocumentationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string repository)
 	{
+		RootPath = rootPath;
+		Repository = repository;
 		SourceFile = sourceFile;
-		RelativePath = Path.GetRelativePath(rootPath.FullName, SourceFile.FullName);
-		RelativeFolder = Path.GetRelativePath(rootPath.FullName, SourceFile.Directory!.FullName);
-		CrossLink = $"{repository}://{RelativePath.Replace('\\', '/')}";
+		RelativePath = Path.GetRelativePath(RootPath.FullName, SourceFile.FullName);
+		RelativeFolder = Path.GetRelativePath(RootPath.FullName, SourceFile.Directory!.FullName);
+		CrossLink = $"{Repository}://{RelativePath.Replace('\\', '/')}";
 	}
 
+	public IDirectoryInfo RootPath { get; }
 	public string RelativePath { get; }
 	public string RelativeFolder { get; }
 	public string CrossLink { get; }
+	public string Repository { get; }
 
 	/// Allows documentation files of non markdown origins to advertise as their markdown equivalent in links.json
 	public virtual string LinkReferenceRelativePath => RelativePath;
@@ -29,9 +33,6 @@ public abstract record DocumentationFile
 }
 
 public record ImageFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository, string MimeType = "image/png")
-	: DocumentationFile(SourceFile, RootPath, Repository);
-
-public record StaticFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)
 	: DocumentationFile(SourceFile, RootPath, Repository);
 
 public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)

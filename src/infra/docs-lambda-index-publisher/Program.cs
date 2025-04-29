@@ -71,13 +71,13 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	}
 }
 
-static LinkIndexEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, LinkReference linkReference)
+static LinkRegistryEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, LinkReference linkReference)
 {
 	var s3Object = record.S3.Object;
 	var keyTokens = s3Object.Key.Split('/');
 	var repository = keyTokens[1];
 	var branch = keyTokens[2];
-	return new LinkIndexEntry
+	return new LinkRegistryEntry
 	{
 		Repository = repository,
 		Branch = branch,

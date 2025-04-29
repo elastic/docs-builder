@@ -34,7 +34,7 @@
   <ItemGroup>
     <EmbeddedResource Include="assembler.yml" />
     <EmbeddedResource Include="navigation.yml" />
-    <EmbeddedResource Include="historymapping.yml" />
+    <EmbeddedResource Include="legacy-url-mappings.yml" />
   </ItemGroup>
   
   <ItemGroup>

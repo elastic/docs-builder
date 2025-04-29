@@ -8,21 +8,23 @@ using Elastic.Documentation.Serialization;
 
 namespace Elastic.Documentation.Links;
 
-public record LinkIndex
+public record LinkReferenceRegistry
 {
-	[JsonPropertyName("repositories")] public required Dictionary<string, Dictionary<string, LinkIndexEntry>> Repositories { get; init; }
+	/// Map of branch to <see cref="LinkRegistryEntry"/>
+	[JsonPropertyName("repositories")]
+	public required Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; init; }
 
-	public static LinkIndex Deserialize(Stream json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
+	public static LinkReferenceRegistry Deserialize(Stream json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReferenceRegistry)!;
 
-	public static LinkIndex Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
+	public static LinkReferenceRegistry Deserialize(string json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReferenceRegistry)!;
 
-	public static string Serialize(LinkIndex index) =>
-		JsonSerializer.Serialize(index, SourceGenerationContext.Default.LinkIndex);
+	public static string Serialize(LinkReferenceRegistry referenceRegistry) =>
+		JsonSerializer.Serialize(referenceRegistry, SourceGenerationContext.Default.LinkReferenceRegistry);
 }
 
-public record LinkIndexEntry
+public record LinkRegistryEntry
 {
 	[JsonPropertyName("repository")]
 	public required string Repository { get; init; }

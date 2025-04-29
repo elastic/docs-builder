@@ -4,16 +4,17 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Elastic.Documentation</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Glob" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Logging"/>
-    <PackageReference Include="NetEscapades.EnumGenerators"/>
-    <PackageReference Include="SoftCircuits.IniFileParser" />
-    <PackageReference Include="System.IO.Abstractions" />
+    <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Samboy063.Tomlet" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
+    <PackageReference Include="YamlDotNet"/>
+    <PackageReference Include="System.IO.Abstractions" />
+  </ItemGroup>
 </Project>

@@ -11,16 +11,15 @@ public interface ITocItem
 	ITableOfContentsScope TableOfContentsScope { get; }
 }
 
-public record FileReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, bool Hidden, IReadOnlyCollection<ITocItem> Children)
+public record FileReference(ITableOfContentsScope TableOfContentsScope, string RelativePath, bool Hidden, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
-public record FolderReference(ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
+public record FolderReference(ITableOfContentsScope TableOfContentsScope, string RelativePath, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
-public record TocReference(Uri Source, ITableOfContentsScope TableOfContentsScope, string Path, bool Found, IReadOnlyCollection<ITocItem> Children)
-	: FolderReference(TableOfContentsScope, Path, Found, Children)
-
+public record TocReference(Uri Source, ITableOfContentsScope TableOfContentsScope, string RelativePath, IReadOnlyCollection<ITocItem> Children)
+	: FolderReference(TableOfContentsScope, RelativePath, Children)
 {
 	public IReadOnlyDictionary<Uri, TocReference> TocReferences { get; } =
 		Children.OfType<TocReference>().ToDictionary(kv => kv.Source, kv => kv);
-};
+}

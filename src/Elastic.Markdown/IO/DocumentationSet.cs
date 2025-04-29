@@ -6,10 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
-using Elastic.Markdown.IO.Configuration;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
@@ -80,7 +82,7 @@ public record NavigationLookups : INavigationLookups
 
 public class DocumentationSet : INavigationLookups, IPositionalNavigation
 {
-	public BuildContext Build { get; }
+	public BuildContext Context { get; }
 	public string Name { get; }
 	public IFileInfo OutputStateFile { get; }
 	public IFileInfo LinkReferenceFile { get; }
@@ -108,24 +110,25 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	IReadOnlyCollection<ITocItem> INavigationLookups.TableOfContents => Configuration.TableOfContents;
 
-	IReadOnlyCollection<IDocsBuilderExtension> INavigationLookups.EnabledExtensions => Configuration.EnabledExtensions;
-
 	public FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 
+	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
+
 	public DocumentationSet(
-		BuildContext build,
+		BuildContext context,
 		ILoggerFactory logger,
 		ICrossLinkResolver? linkResolver = null,
 		TableOfContentsTreeCollector? treeCollector = null
 	)
 	{
-		Build = build;
-		Source = ContentSourceMoniker.Create(build.Git.RepositoryName, null);
-		SourceDirectory = build.DocumentationSourceDirectory;
-		OutputDirectory = build.DocumentationOutputDirectory;
+		Context = context;
+		Source = ContentSourceMoniker.Create(context.Git.RepositoryName, null);
+		SourceDirectory = context.DocumentationSourceDirectory;
+		OutputDirectory = context.DocumentationOutputDirectory;
 		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(build.Configuration, logger));
-		Configuration = build.Configuration;
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, logger));
+		Configuration = context.Configuration;
+		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();
 
 		var resolver = new ParserResolvers
@@ -133,17 +136,17 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			CrossLinkResolver = LinkResolver,
 			DocumentationFileLookup = DocumentationFileLookup
 		};
-		MarkdownParser = new MarkdownParser(build, resolver);
+		MarkdownParser = new MarkdownParser(context, resolver);
 
-		Name = Build.Git != GitCheckoutInformation.Unavailable
-			? Build.Git.RepositoryName
-			: Build.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Build.DocumentationSourceDirectory.Name}";
+		Name = Context.Git != GitCheckoutInformation.Unavailable
+			? Context.Git.RepositoryName
+			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
 
-		var files = ScanDocumentationFiles(build, SourceDirectory);
-		var additionalSources = Build.Configuration.EnabledExtensions
-			.SelectMany(extension => extension.ScanDocumentationFiles(ScanDocumentationFiles, DefaultFileHandling))
+		var files = ScanDocumentationFiles(context, SourceDirectory);
+		var additionalSources = EnabledExtensions
+			.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling))
 			.ToArray();
 
 		Files = files.Concat(additionalSources).Where(f => f is not ExcludedFile).ToArray();
@@ -162,18 +165,18 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		{
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
-			EnabledExtensions = Configuration.EnabledExtensions,
+			EnabledExtensions = EnabledExtensions,
 			FilesGroupedByFolder = FilesGroupedByFolder,
 			//IndexedTableOfContents = indexedTableOfContents ?? new Dictionary<Uri, TableOfContentsReference>().ToFrozenDictionary()
 		};
 
-		Tree = new TableOfContentsTree(this, Source, Build, lookups, treeCollector, ref fileIndex);
+		Tree = new TableOfContentsTree(this, Source, Context, lookups, treeCollector, ref fileIndex);
 
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 
 		var excludedChildren = markdownFiles.Where(f => f.NavigationIndex == -1).ToArray();
 		foreach (var excludedChild in excludedChildren)
-			Build.EmitError(Build.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
+			Context.EmitError(Context.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
 
 		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
 
@@ -224,13 +227,13 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	private DocumentationFile DefaultFileHandling(IFileInfo file, IDirectoryInfo sourceDirectory)
 	{
-		foreach (var extension in Configuration.EnabledExtensions)
+		foreach (var extension in EnabledExtensions)
 		{
-			var documentationFile = extension.CreateDocumentationFile(file, sourceDirectory, this);
+			var documentationFile = extension.CreateDocumentationFile(file, this);
 			if (documentationFile is not null)
 				return documentationFile;
 		}
-		return new ExcludedFile(file, sourceDirectory, Build.Git.RepositoryName);
+		return new ExcludedFile(file, sourceDirectory, Context.Git.RepositoryName);
 	}
 
 	private void ValidateRedirectsExists()
@@ -258,14 +261,14 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 			if (!FlatMappedFiles.TryGetValue(to, out var file))
 			{
-				Build.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
+				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
 				return;
 
 			}
 
 			if (file is not MarkdownFile markdownFile)
 			{
-				Build.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
+				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
 				return;
 			}
 
@@ -348,9 +351,9 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		MarkdownFile ExtensionOrDefaultMarkdown()
 		{
-			foreach (var extension in Configuration.EnabledExtensions)
+			foreach (var extension in EnabledExtensions)
 			{
-				var documentationFile = extension.CreateMarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
+				var documentationFile = extension.CreateMarkdownFile(file, SourceDirectory, this);
 				if (documentationFile is not null)
 					return documentationFile;
 			}
@@ -361,7 +364,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	public LinkReference CreateLinkReference()
 	{
 		var redirects = Configuration.Redirects;
-		var crossLinks = Build.Collector.CrossLinks.ToHashSet().ToArray();
+		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
 		var links = MarkdownFiles.Values
 			.Select(m => (m.LinkReferenceRelativePath, File: m))
 			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -375,8 +378,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return new LinkReference
 		{
 			Redirects = redirects,
-			UrlPathPrefix = Build.UrlPathPrefix,
-			Origin = Build.Git,
+			UrlPathPrefix = Context.UrlPathPrefix,
+			Origin = Context.Git,
 			Links = links,
 			CrossLinks = crossLinks
 		};
@@ -387,5 +390,21 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		if (OutputDirectory.Exists)
 			OutputDirectory.Delete(true);
 		OutputDirectory.Create();
+	}
+
+	private IReadOnlyCollection<IDocsBuilderExtension> InstantiateExtensions()
+	{
+		var list = new List<IDocsBuilderExtension>();
+		foreach (var extension in Configuration.Extensions.Enabled)
+		{
+			switch (extension.ToLowerInvariant())
+			{
+				case "detection-rules":
+					list.Add(new DetectionRulesDocsBuilderExtension(Context));
+					continue;
+			}
+		}
+
+		return list.AsReadOnly();
 	}
 }

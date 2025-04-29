@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Serialization;
 
-namespace Elastic.Documentation;
+namespace Elastic.Documentation.Links;
 
 public record LinkMetadata
 {

@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Markdown.Links.CrossLinks;
 

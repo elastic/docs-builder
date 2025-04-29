@@ -4,6 +4,7 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;

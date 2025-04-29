@@ -4,24 +4,14 @@
 
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.IO.Configuration;
 
-namespace Elastic.Markdown.Extensions.DetectionRules;
-
-public record RuleOverviewReference(
-	ITableOfContentsScope TableOfContentsScope,
-	string Path,
-	bool Found,
-	IReadOnlyCollection<ITocItem> Children,
-	IReadOnlyCollection<string> DetectionRuleFolders
-)
-	: FileReference(TableOfContentsScope, Path, Found, false, Children);
+namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 
 public record RuleReference(
 	ITableOfContentsScope TableOfContentsScope,
-	string Path,
+	string RelativePath,
 	string SourceDirectory,
 	bool Found,
 	IReadOnlyCollection<ITocItem> Children, DetectionRule Rule
 )
-	: FileReference(TableOfContentsScope, Path, Found, true, Children);
+	: FileReference(TableOfContentsScope, RelativePath, true, Children);

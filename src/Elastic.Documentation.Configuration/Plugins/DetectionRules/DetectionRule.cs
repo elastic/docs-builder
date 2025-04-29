@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using Tomlet;
 using Tomlet.Models;
 
-namespace Elastic.Markdown.Extensions.DetectionRules;
+namespace Elastic.Documentation.Configuration.Plugins.DetectionRules;
 
 public record DetectionRuleThreat
 {
@@ -48,7 +48,7 @@ public record DetectionRule
 
 	public required string[]? Tags { get; init; }
 
-	public string? Domain => Tags?.FirstOrDefault(t => t.StartsWith("Domain:"))?[7..]?.Trim();
+	public string? Domain => Tags?.FirstOrDefault(t => t.StartsWith("Domain:", StringComparison.Ordinal))?[7..]?.Trim();
 
 	public required string Severity { get; init; }
 

@@ -5,13 +5,13 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
 
 namespace Elastic.Markdown;
 
-public record BuildContext
+public record BuildContext : IDocumentationContext
 {
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }

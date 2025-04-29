@@ -62,9 +62,9 @@ public class AssembleContext
 			ExtractAssemblerConfiguration(navigationPath, "navigation.yml");
 		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
 
-		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "historymapping.yml");
+		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "legacy-url-mappings.yml");
 		if (!ReadFileSystem.File.Exists(historyMappingPath))
-			ExtractAssemblerConfiguration(historyMappingPath, "historymapping.yml");
+			ExtractAssemblerConfiguration(historyMappingPath, "legacy-url-mappings.yml");
 		HistoryMappingPath = ReadFileSystem.FileInfo.New(historyMappingPath);
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
