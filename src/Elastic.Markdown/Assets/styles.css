@@ -26,7 +26,9 @@
 	--offset-top: 72px;
 	--max-layout-width: 1500px;
 	--max-sidebar-width: calc(var(--spacing) * 65);
-	--max-content-width: calc(var(--max-layout-width) - (var(--max-sidebar-width) * 2))
+	--max-content-width: calc(
+		var(--max-layout-width) - (var(--max-sidebar-width) * 2)
+	);
 }
 
 @media screen and (min-width: 767px) {
