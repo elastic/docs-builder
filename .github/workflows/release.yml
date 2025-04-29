@@ -94,7 +94,7 @@ jobs:
           
       - name: Upload Lambda function
         run: |        
-          zip "${ZIP_FILE}" .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
+          zip -j "${ZIP_FILE}" .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
           aws lambda update-function-code \
             --function-name elastic-docs-v3-link-index-updater \
             --zip-file "fileb://${ZIP_FILE}"
