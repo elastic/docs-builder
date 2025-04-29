@@ -23,11 +23,15 @@
 
 		private async Task DefaultLayout()
 		{
-			<div class="max-w-(--max-layout-width) w-full h-full grid grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_1fr] px-6">
+			<div class="max-w-(--max-layout-width) w-full h-full grid px-6
+					grid-cols-1
+					md:grid-cols-[var(--max-sidebar-width)_1fr]
+					lg:grid-cols-[var(--max-sidebar-width)_1fr_var(--max-sidebar-width)]
+				">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
-				<div class="order-2 grid grid-cols-1 md:grid-cols-[clamp(40ch,80ch,100%)] lg:grid-cols-[80ch_1fr] xl:grid-cols-[90ch_calc(var(--spacing)*65)] justify-center">
-					@await RenderPartialAsync(_TableOfContents.Create(Model))
-					<main id="content-container" class="w-full flex flex-col order-1 relative pb-30 overflow-x-hidden">
+				<div class="justify-center grid grid-cols-[1fr_clamp(40ch,80ch,100%)_1fr]">
+					<div class="spacer"></div>
+					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
 						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
 							<div class="h-[2px] w-full overflow-hidden">
 								<div class="progress w-full h-full bg-pink-70 left-right"></div>
@@ -43,7 +47,9 @@
 						</article>
 						@await RenderPartialAsync(_PrevNextNav.Create(Model))
 					</main>
+					<div class="spacer"></div>
 				</div>
+				@await RenderPartialAsync(_TableOfContents.Create(Model))
 			</div>
 		}
 
