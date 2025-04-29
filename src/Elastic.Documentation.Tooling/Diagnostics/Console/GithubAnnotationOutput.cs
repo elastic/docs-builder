@@ -4,6 +4,7 @@
 
 using Actions.Core;
 using Actions.Core.Services;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Documentation.Tooling.Diagnostics.Console;

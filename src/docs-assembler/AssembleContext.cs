@@ -4,10 +4,9 @@
 
 using System.IO.Abstractions;
 using System.Reflection;
-using Documentation.Assembler.Configuration;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
 
 namespace Documentation.Assembler;
 

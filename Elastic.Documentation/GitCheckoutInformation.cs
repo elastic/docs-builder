@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using SoftCircuits.IniFileParser;
 
-namespace Elastic.Markdown.IO.Discovery;
+namespace Elastic.Documentation;
 
 public record GitCheckoutInformation
 {
@@ -60,7 +60,7 @@ public record GitCheckoutInformation
 		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
 		//not detached HEAD
-		if (head.StartsWith("ref:"))
+		if (head.StartsWith("ref:", StringComparison.OrdinalIgnoreCase))
 		{
 			head = head.Replace("ref: ", string.Empty);
 			gitRef = Read(source, Path.Combine(".git", head)) ?? fakeRef;

@@ -2,16 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Discovery;
-using Elastic.Markdown.IO.State;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
 public class LinkReferenceTests : NavigationTestsBase
 {
-	public LinkReferenceTests(ITestOutputHelper output) : base(output) => Reference = LinkReference.Create(Set);
+	public LinkReferenceTests(ITestOutputHelper output) : base(output) => Reference = Set.CreateLinkReference();
 
 	private LinkReference Reference { get; }
 

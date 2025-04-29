@@ -10,9 +10,10 @@ open System.Collections.Frozen
 open System.Runtime.InteropServices
 open System.Threading.Tasks
 open System.Linq
+open Elastic.Documentation
+open Elastic.Documentation.Links
 open Elastic.Markdown.Links.CrossLinks
 open Elastic.Markdown.IO.Configuration
-open Elastic.Markdown.IO.State
 
 type TestCrossLinkResolver (config: ConfigurationFile) =
 

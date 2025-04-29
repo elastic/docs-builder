@@ -4,28 +4,13 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Markdown.IO.Configuration;
-
-public interface ITableOfContentsScope
-{
-	IDirectoryInfo ScopeDirectory { get; }
-}
-
-public static class ContentSourceMoniker
-{
-	public static Uri Create(string repo, string? path) => new(CreateString(repo, path));
-
-	public static string CreateString(string repo, string? path)
-	{
-		path = path?.Replace("\\", "/").Trim('/');
-		if (string.IsNullOrWhiteSpace(path) || path == ".")
-			return $"{repo}://";
-		return $"{repo}://{path}/";
-	}
-}
 
 public record TableOfContentsConfiguration : ITableOfContentsScope
 {

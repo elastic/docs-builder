@@ -67,11 +67,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "update-link-index", "update
 		actions\update-link-index\README.md = actions\update-link-index\README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "update-reference-index", "update-reference-index", "{9FEC15F6-13F8-40B1-A66A-EB054E49E680}"
-	ProjectSection(SolutionItems) = preProject
-		actions\update-reference-index\action.yml = actions\update-reference-index\action.yml
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-lambda-index-publisher", "src\infra\docs-lambda-index-publisher\docs-lambda-index-publisher.csproj", "{C559D52D-100B-4B2B-BE87-2344D835761D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-assembler.Tests", "tests\docs-assembler.Tests\src\docs-assembler.Tests\docs-assembler.Tests.csproj", "{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}"
@@ -82,6 +77,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-path-prefixes-loca
 	ProjectSection(SolutionItems) = preProject
 		actions\validate-path-prefixes-local\action.yml = actions\validate-path-prefixes-local\action.yml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation", "Elastic.Documentation\Elastic.Documentation.csproj", "{09CE30F6-013A-49ED-B3D6-60AFA84682AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -136,6 +133,10 @@ Global
 		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09CE30F6-013A-49ED-B3D6-60AFA84682AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09CE30F6-013A-49ED-B3D6-60AFA84682AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09CE30F6-013A-49ED-B3D6-60AFA84682AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09CE30F6-013A-49ED-B3D6-60AFA84682AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
@@ -150,10 +151,10 @@ Global
 		{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{6554F917-73CE-4B3D-9101-F28EAA762C6B} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
-		{9FEC15F6-13F8-40B1-A66A-EB054E49E680} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
 		{4894063D-0DEF-4B7E-97D0-0D0A5B85C608} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{C559D52D-100B-4B2B-BE87-2344D835761D} = {4894063D-0DEF-4B7E-97D0-0D0A5B85C608}
 		{BB789671-B262-43DD-91DB-39F9186B8257} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
+		{09CE30F6-013A-49ED-B3D6-60AFA84682AC} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 	EndGlobalSection
 EndGlobal

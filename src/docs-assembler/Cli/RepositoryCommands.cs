@@ -12,15 +12,14 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Mapping;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;

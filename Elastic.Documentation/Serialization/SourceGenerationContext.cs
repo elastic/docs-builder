@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Elastic.Markdown.IO.Discovery;
-using Elastic.Markdown.IO.State;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation.Links;
+using Elastic.Documentation.State;
 
-namespace Elastic.Markdown;
+namespace Elastic.Documentation.Serialization;
 
 // This configures the source generation for json (de)serialization.
 

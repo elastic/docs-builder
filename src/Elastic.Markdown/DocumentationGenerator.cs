@@ -5,10 +5,11 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.HistoryMapping;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Slices;
 using Markdig.Syntax;
@@ -268,7 +269,7 @@ public class DocumentationGenerator
 	private async Task GenerateLinkReference(Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
-		var state = LinkReference.Create(DocumentationSet);
+		var state = DocumentationSet.CreateLinkReference();
 
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);

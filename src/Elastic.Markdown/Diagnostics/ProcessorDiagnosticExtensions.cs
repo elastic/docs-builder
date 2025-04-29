@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Markdig.Parsers;

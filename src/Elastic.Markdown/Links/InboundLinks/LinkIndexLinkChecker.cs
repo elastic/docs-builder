@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 

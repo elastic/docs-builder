@@ -7,8 +7,8 @@ namespace authoring
 open System
 open System.Collections.Concurrent
 open System.IO.Abstractions
+open Elastic.Documentation.Diagnostics
 open Elastic.Markdown
-open Elastic.Markdown.Diagnostics
 open Elastic.Markdown.IO
 open Markdig.Syntax
 open Microsoft.Extensions.Logging

@@ -4,7 +4,8 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.Links.CrossLinks;
 using Xunit.Internal;
 

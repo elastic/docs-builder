@@ -6,24 +6,7 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 
-namespace Elastic.Markdown.Diagnostics;
-
-public enum Severity
-{
-	Error,
-	Warning,
-	Hint
-}
-
-public readonly record struct Diagnostic
-{
-	public Severity Severity { get; init; }
-	public int? Line { get; init; }
-	public int? Column { get; init; }
-	public int? Length { get; init; }
-	public string File { get; init; }
-	public string Message { get; init; }
-}
+namespace Elastic.Documentation.Diagnostics;
 
 public sealed class DiagnosticsChannel : IDisposable
 {
@@ -69,8 +52,7 @@ public interface IDiagnosticsOutput
 	void Write(Diagnostic diagnostic);
 }
 
-public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
-	: IHostedService, IAsyncDisposable
+public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs) : IHostedService, IAsyncDisposable
 {
 	public DiagnosticsChannel Channel { get; } = new();
 

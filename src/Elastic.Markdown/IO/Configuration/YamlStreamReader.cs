@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;

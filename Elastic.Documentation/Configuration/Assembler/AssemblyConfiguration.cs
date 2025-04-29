@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation.Serialization;
 using YamlDotNet.Serialization;
 
-namespace Documentation.Assembler.Configuration;
+namespace Elastic.Documentation.Configuration.Assembler;
 
 public record AssemblyConfiguration
 {
@@ -77,54 +77,4 @@ public record AssemblyConfiguration
 
 	[YamlMember(Alias = "named_git_references")]
 	public Dictionary<string, string> NamedGitReferences { get; set; } = [];
-}
-
-public record PublishEnvironment
-{
-	[YamlIgnore]
-	public string Name { get; set; } = string.Empty;
-
-	[YamlMember(Alias = "uri")]
-	public string Uri { get; set; } = string.Empty;
-
-	[YamlMember(Alias = "path_prefix")]
-	public string? PathPrefix { get; set; } = string.Empty;
-
-	[YamlMember(Alias = "allow_indexing")]
-	public bool AllowIndexing { get; set; }
-
-	[YamlMember(Alias = "content_source")]
-	public ContentSource ContentSource { get; set; }
-
-	[YamlMember(Alias = "google_tag_manager")]
-	public GoogleTagManager GoogleTagManager { get; set; } = new();
-}
-
-public record GoogleTagManager
-{
-	[YamlMember(Alias = "enabled")]
-	public bool Enabled { get; set; }
-
-	private string _id = string.Empty;
-
-	[YamlMember(Alias = "id")]
-	public string Id
-	{
-		get => _id;
-		set
-		{
-			if (Enabled && string.IsNullOrEmpty(value))
-				throw new ArgumentException("Id is required when Enabled is true.");
-			_id = value;
-		}
-	}
-
-	[YamlMember(Alias = "auth")]
-	public string? Auth { get; set; }
-
-	[YamlMember(Alias = "preview")]
-	public string? Preview { get; set; }
-
-	[YamlMember(Alias = "cookies_win")]
-	public string? CookiesWin { get; set; }
 }

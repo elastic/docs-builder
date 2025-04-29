@@ -4,16 +4,21 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
-using Elastic.Markdown.IO.State;
 
 namespace Elastic.Markdown.IO.Configuration;
 
-public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
+public record ConfigurationFile : ITableOfContentsScope
 {
 	private readonly BuildContext _context;
+
+	public IFileInfo SourceFile => _context.ConfigurationPath;
 
 	public string? Project { get; }
 
@@ -57,7 +62,6 @@ public record ConfigurationFile : DocumentationFile, ITableOfContentsScope
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
 	public ConfigurationFile(BuildContext context)
-		: base(context.ConfigurationPath, context.DocumentationSourceDirectory, context.Git.RepositoryName)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
