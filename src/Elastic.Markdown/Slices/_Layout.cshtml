@@ -23,15 +23,16 @@
 
 		private async Task DefaultLayout()
 		{
-			<div class="max-w-(--max-layout-width) w-full h-full grid px-6
+			<div class="max-w-(--max-layout-width) w-full h-full grid
 					grid-cols-1
 					md:grid-cols-[var(--max-sidebar-width)_1fr]
 					lg:grid-cols-[var(--max-sidebar-width)_1fr_var(--max-sidebar-width)]
 				">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
-				<div class="justify-center px-6 grid
+				<div class="justify-center grid
 					grid-cols-1
-					lg:grid-cols-[1fr_clamp(40ch,80ch,100%)_1fr]
+					px-6 lg:px-0
+					lg:grid-cols-[1fr_var(--max-text-width)_1fr]
 					">
 					<div class="spacer"></div>
 					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">

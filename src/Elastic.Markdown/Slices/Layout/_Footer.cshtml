@@ -1,13 +1,14 @@
 @inherits RazorSlice<LayoutViewModel>
 
 
-<footer class="text-grey-20 text-[12px] bg-ink-dark py-12 px-6">
+<footer class="py-12 px-6 w-full mx-auto bg-ink-dark">
 	<div class="max-w-(--max-layout-width) w-full mx-auto">
+	<div class="text-grey-20 text-[12px]">
 		<a href="https://www.elastic.co/">
 			<img class="block" alt="Elastic logo" src="@Model.Static("logo-elastic-horizontal-white.svg")" width="120"/>
 		</a>
 	</div>
-	<div class="max-w-(--max-layout-width) w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-2 rounded-tl-4xl rounded-tr-4xl items-center">
+	<div class="text-grey-20 text-[12px] bg-ink-dark grid grid-cols-1 md:grid-cols-2 gap-2 items-center">
 		<div>
 			<ul class="mt-4 flex gap-3">
 				<li>
@@ -30,6 +31,7 @@
 		<p class="mt-4">
 			Elasticsearch is a trademark of Elasticsearch B.V., registered in the U.S. and in other countries. Apache, Apache Lucene, Apache Hadoop, Hadoop, HDFS and the yellow elephant logo are trademarks of the Apache Software Foundation in the United States and/or other countries.
 		</p>
+	</div>
 	</div>
 </footer>
 
