@@ -12,7 +12,7 @@ using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Refactor;
+using Elastic.Documentation.Refactor;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;

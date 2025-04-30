@@ -28,7 +28,6 @@ type Build =
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishContainers
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishZip
 
-    | [<CliPrefix(CliPrefix.None);SubCommand>] ReleaseNotes
     | [<CliPrefix(CliPrefix.None);SubCommand>] Release
     
     | [<Inherit;AltCommandLine("-s")>] Single_Target
@@ -57,8 +56,7 @@ with
             | PublishContainers
             | PublishZip
             | ValidateLicenses
-            | ReleaseNotes
-            | Compile 
+            | Compile
 
             // flags
             | Single_Target -> "Runs the provided sub command without running their dependencies"
