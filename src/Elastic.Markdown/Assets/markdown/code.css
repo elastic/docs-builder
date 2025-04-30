@@ -10,6 +10,7 @@
 			background-color: #22272e;
 			mix-blend-mode: unset;
 			line-height: 1.5em;
+			word-break: normal;
 		}
 		code:first-child {
 			@apply rounded-t-sm;
@@ -63,6 +64,7 @@
 		text-decoration: inherit;
 		font-weight: inherit;
 		mix-blend-mode: multiply;
+		word-break: break-word;
 	}
 
 	.hljs-built_in,

@@ -44,7 +44,7 @@ mappings:
   en/ecs: 8.17
   en/elastic-stack-glossary: undefined
   en/elastic-stack: stack
-  en/elasticsearch/client/curator: 8.0
+  en/elasticsearch/client/curator: 7.0
   en/elasticsearch/client/eland: undefined
   en/elasticsearch/client/go-api: stack
   en/elasticsearch/client/java-api-client: stack

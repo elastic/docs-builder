@@ -24,6 +24,7 @@
 	--banner-height: calc(var(--spacing) * 9);
 	/*--offset-top: calc(var(--header-height) + var(--banner-height));*/
 	--offset-top: 72px;
+	--max-layout-width: 1920px;
 }
 
 @media screen and (min-width: 767px) {
@@ -95,10 +96,6 @@
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
 			word-break: break-word;
 		}
-	}
-
-	.content-container {
-		@apply w-full max-w-[80ch];
 	}
 
 	.applies {
@@ -233,12 +230,31 @@
 
 .container {
 	@apply lg:px-3;
-
 	max-width: 1250px !important;
 }
 
 #elastic-nav {
 	min-height: var(--offset-top);
+
+	@media screen and (min-width: 1200px) {
+		.oldNav {
+			& > div {
+				width: 100%;
+				max-width: var(--max-layout-width);
+			}
+			div:has(> div > nav) {
+				flex-grow: 1;
+				justify-content: center;
+			}
+		}
+	}
+	@media screen and (min-width: 1536px) {
+		.oldNav {
+			nav {
+				margin-left: -74px;
+			}
+		}
+	}
 }
 
 body {
