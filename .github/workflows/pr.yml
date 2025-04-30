@@ -24,7 +24,7 @@ jobs:
         uses: ./.github/actions/bootstrap
 
       - name: Build
-        run: dotnet run --project src/docs-assembler -c release -- navigation validate
+        run: dotnet run --project src/tooling/docs-assembler -c release -- navigation validate
 
   build-lambda:
     runs-on: ubuntu-latest
