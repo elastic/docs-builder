@@ -5,10 +5,11 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Cysharp.IO;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Errata;
 using Spectre.Console;
-using Diagnostic = Elastic.Markdown.Diagnostics.Diagnostic;
+using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Elastic.Documentation.Tooling.Diagnostics.Console;
 

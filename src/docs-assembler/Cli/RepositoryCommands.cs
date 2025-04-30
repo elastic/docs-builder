@@ -12,15 +12,14 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
-using Documentation.Assembler.Mapping;
+using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -115,7 +114,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
 
-		var historyMapper = new PageHistoryMapper(assembleSources.HistoryMappings);
+		var historyMapper = new PageLegacyUrlMapper(assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);

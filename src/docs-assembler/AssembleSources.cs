@@ -5,10 +5,12 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Markdown.IO.Configuration;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;

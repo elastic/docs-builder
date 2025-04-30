@@ -4,44 +4,10 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Markdown.Links.CrossLinks;
-
-public record LinkIndex
-{
-	[JsonPropertyName("repositories")] public required Dictionary<string, Dictionary<string, LinkIndexEntry>> Repositories { get; init; }
-
-	public static LinkIndex Deserialize(Stream json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
-
-	public static LinkIndex Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkIndex)!;
-
-	public static string Serialize(LinkIndex index) =>
-		JsonSerializer.Serialize(index, SourceGenerationContext.Default.LinkIndex);
-}
-
-public record LinkIndexEntry
-{
-	[JsonPropertyName("repository")]
-	public required string Repository { get; init; }
-
-	[JsonPropertyName("path")]
-	public required string Path { get; init; }
-
-	[JsonPropertyName("branch")]
-	public required string Branch { get; init; }
-
-	[JsonPropertyName("etag")]
-	public required string ETag { get; init; }
-
-	// TODO can be made required after all doc_sets have published again
-	[JsonPropertyName("ref")]
-	public string GitReference { get; init; } = "unknown";
-}
 
 public interface ICrossLinkResolver
 {

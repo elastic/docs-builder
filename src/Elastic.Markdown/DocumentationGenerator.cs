@@ -5,10 +5,11 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
+using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.HistoryMapping;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Slices;
 using Markdig.Syntax;
@@ -46,23 +47,23 @@ public class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null,
-		IHistoryMapper? historyMapper = null,
+		ILegacyUrlMapper? legacyUrlMapper = null,
 		IPositionalNavigation? positionalNavigation = null
 	)
 	{
 		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_conversionCollector = conversionCollector;
-		_writeFileSystem = docSet.Build.WriteFileSystem;
+		_writeFileSystem = docSet.Context.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
-		Context = docSet.Build;
+		Context = docSet.Context;
 		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, historyMapper, positionalNavigation);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper, positionalNavigation);
 		_documentationFileExporter =
 			documentationExporter
-			?? docSet.Build.Configuration.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
-			?? new DocumentationFileExporter(docSet.Build.ReadFileSystem, _writeFileSystem);
+			?? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
+			?? new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem);
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
 		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
@@ -268,7 +269,7 @@ public class DocumentationGenerator
 	private async Task GenerateLinkReference(Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
-		var state = LinkReference.Create(DocumentationSet);
+		var state = DocumentationSet.CreateLinkReference();
 
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);

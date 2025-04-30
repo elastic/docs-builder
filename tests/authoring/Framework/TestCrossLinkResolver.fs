@@ -10,9 +10,9 @@ open System.Collections.Frozen
 open System.Runtime.InteropServices
 open System.Threading.Tasks
 open System.Linq
+open Elastic.Documentation.Configuration.Builder
+open Elastic.Documentation.Links
 open Elastic.Markdown.Links.CrossLinks
-open Elastic.Markdown.IO.Configuration
-open Elastic.Markdown.IO.State
 
 type TestCrossLinkResolver (config: ConfigurationFile) =
 
@@ -69,7 +69,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
             this.DeclaredRepositories.Add("elasticsearch") |> ignore
 
             let indexEntries =
-                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, LinkReference>) -> LinkIndexEntry(
+                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, LinkReference>) -> LinkRegistryEntry(
                     Repository = e.Key,
                     Path = $"elastic/asciidocalypse/{e.Key}/links.json",
                     Branch = "main",
@@ -88,7 +88,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
         member this.TryResolve(errorEmitter, warningEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             let indexEntries =
-                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, LinkReference>) -> LinkIndexEntry(
+                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, LinkReference>) -> LinkRegistryEntry(
                     Repository = e.Key,
                     Path = $"elastic/asciidocalypse/{e.Key}/links.json",
                     Branch = "main",

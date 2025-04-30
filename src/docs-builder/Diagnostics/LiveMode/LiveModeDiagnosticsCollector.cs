@@ -2,10 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Diagnostic = Elastic.Markdown.Diagnostics.Diagnostic;
+using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Documentation.Builder.Diagnostics.LiveMode;
 

@@ -5,11 +5,11 @@
 using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Documentation.Assembler.Extensions;
+using Elastic.Documentation;
 using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Configuration;
 
 namespace Documentation.Assembler.Navigation;
 
@@ -55,13 +55,13 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 
 
-		var repositoryName = documentationSet.Build.Git.RepositoryName;
+		var repositoryName = documentationSet.Context.Git.RepositoryName;
 		var outputDirectory = documentationSet.OutputDirectory;
 		var fs = defaultOutputFile.FileSystem;
 
 		if (repositoryName == "detection-rules")
 		{
-			var output = DetectionRuleFile.OutputPath(defaultOutputFile, documentationSet.Build);
+			var output = DetectionRuleFile.OutputPath(defaultOutputFile, documentationSet.Context);
 			var md = fs.FileInfo.New(Path.ChangeExtension(output.FullName, "md"));
 			relativePath = Path.GetRelativePath(documentationSet.OutputDirectory.FullName, md.FullName);
 		}

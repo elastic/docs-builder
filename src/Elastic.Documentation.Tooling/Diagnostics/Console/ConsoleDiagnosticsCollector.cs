@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Actions.Core.Services;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
-using Diagnostic = Elastic.Markdown.Diagnostics.Diagnostic;
+using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Elastic.Documentation.Tooling.Diagnostics.Console;
 

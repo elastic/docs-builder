@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using Documentation.Assembler.Building;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Links.InboundLinks;
 using Microsoft.Extensions.Logging;

@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Links;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.CrossLinks;
@@ -14,7 +15,7 @@ public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILog
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
 		var linkReferences = new Dictionary<string, LinkReference>();
-		var linkIndexEntries = new Dictionary<string, LinkIndexEntry>();
+		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
 		foreach (var repository in configuration.CrossLinkRepositories)
 		{

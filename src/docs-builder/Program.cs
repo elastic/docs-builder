@@ -4,6 +4,7 @@
 
 using ConsoleAppFramework;
 using Documentation.Builder.Cli;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
