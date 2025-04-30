@@ -49,7 +49,7 @@ public class AssembleContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var configPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "assembler.yml");
+		var configPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "tooling", "docs-assembler", "assembler.yml");
 		// temporarily fallback to embedded assembler.yml
 		// This will live in docs-content soon
 		if (!ReadFileSystem.File.Exists(configPath))
@@ -57,12 +57,12 @@ public class AssembleContext
 		ConfigurationPath = ReadFileSystem.FileInfo.New(configPath);
 		Configuration = AssemblyConfiguration.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationPath.FullName));
 
-		var navigationPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "navigation.yml");
+		var navigationPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "tooling", "docs-assembler", "navigation.yml");
 		if (!ReadFileSystem.File.Exists(navigationPath))
 			ExtractAssemblerConfiguration(navigationPath, "navigation.yml");
 		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
 
-		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "docs-assembler", "legacy-url-mappings.yml");
+		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "tooling", "docs-assembler", "legacy-url-mappings.yml");
 		if (!ReadFileSystem.File.Exists(historyMappingPath))
 			ExtractAssemblerConfiguration(historyMappingPath, "legacy-url-mappings.yml");
 		HistoryMappingPath = ReadFileSystem.FileInfo.New(historyMappingPath);

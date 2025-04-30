@@ -139,7 +139,7 @@ jobs:
       - name: Build documentation
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
+          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))

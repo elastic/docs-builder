@@ -31,6 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\docs-assembler\docs-assembler.csproj" />
+    <ProjectReference Include="..\..\..\..\src\tooling\docs-assembler\docs-assembler.csproj" />
   </ItemGroup>
 </Project>

@@ -20,7 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BE6011CC-120
 		src\Directory.Build.props = src\Directory.Build.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-builder", "src\docs-builder\docs-builder.csproj", "{01F05AD0-E0E0-401F-A7EC-905928E1E9F0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-builder", "src\tooling\docs-builder\docs-builder.csproj", "{01F05AD0-E0E0-401F-A7EC-905928E1E9F0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = ".github", ".github\.github.csproj", "{1A8659C1-222A-4824-B562-ED8F88658C05}"
 EndProject
@@ -43,18 +43,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish-vercel", "publish-v
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "build", "build\build.fsproj", "{10857974-6CF1-42B5-B793-AAA988BD7348}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-assembler", "src\docs-assembler\docs-assembler.csproj", "{28350800-B44B-479B-86E2-1D39E321C0B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "docs-assembler", "src\tooling\docs-assembler\docs-assembler.csproj", "{28350800-B44B-479B-86E2-1D39E321C0B4}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "authoring", "tests\authoring\authoring.fsproj", "{018F959E-824B-4664-B345-066784478D24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Markdown.Refactor", "src\Elastic.Markdown.Refactor\Elastic.Markdown.Refactor.csproj", "{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Refactor", "src\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj", "{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler", "assembler", "{CFEE9FAD-9E0C-4C0E-A0C2-B97D594C14B5}"
 	ProjectSection(SolutionItems) = preProject
 		actions\assembler\action.yml = actions\assembler\action.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Tooling", "src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj", "{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Tooling", "src\tooling\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj", "{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-inbound-local", "validate-inbound-local", "{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46}"
 	ProjectSection(SolutionItems) = preProject
@@ -78,9 +78,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validate-path-prefixes-loca
 		actions\validate-path-prefixes-local\action.yml = actions\validate-path-prefixes-local\action.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation", "Elastic.Documentation\Elastic.Documentation.csproj", "{09CE30F6-013A-49ED-B3D6-60AFA84682AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation", "src\Elastic.Documentation\Elastic.Documentation.csproj", "{09CE30F6-013A-49ED-B3D6-60AFA84682AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Configuration", "src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj", "{CD94F9E4-7FCD-4152-81F1-4288C6B75367}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tooling", "tooling", "{73ABAE37-118F-4A53-BC2C-F19333555C90}"
+	ProjectSection(SolutionItems) = preProject
+		src\tooling\Directory.Build.props = src\tooling\Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "authoring", "authoring", "{059E787F-85C1-43BE-9DD6-CE319E106383}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -146,15 +153,11 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
-		{01F05AD0-E0E0-401F-A7EC-905928E1E9F0} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{B27C5107-128B-465A-B8F8-8985399E4CFB} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
 		{CD2887E3-BDA9-434B-A5BF-9ED38DE20332} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{A2A34BBC-CB5E-4100-9529-A12B6ECB769C} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
-		{28350800-B44B-479B-86E2-1D39E321C0B4} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{018F959E-824B-4664-B345-066784478D24} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
-		{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{CFEE9FAD-9E0C-4C0E-A0C2-B97D594C14B5} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
-		{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{6E2ED6CC-AFC1-4E58-965D-6AEC500EBB46} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{6554F917-73CE-4B3D-9101-F28EAA762C6B} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{CDC0ECF4-6597-4FBA-8D25-5C244F0877E3} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
@@ -163,5 +166,11 @@ Global
 		{BB789671-B262-43DD-91DB-39F9186B8257} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 		{09CE30F6-013A-49ED-B3D6-60AFA84682AC} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{CD94F9E4-7FCD-4152-81F1-4288C6B75367} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{73ABAE37-118F-4A53-BC2C-F19333555C90} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{28350800-B44B-479B-86E2-1D39E321C0B4} = {73ABAE37-118F-4A53-BC2C-F19333555C90}
+		{01F05AD0-E0E0-401F-A7EC-905928E1E9F0} = {73ABAE37-118F-4A53-BC2C-F19333555C90}
+		{4CCE599A-B9FE-4DF2-8763-34CF0A99D4AA} = {73ABAE37-118F-4A53-BC2C-F19333555C90}
+		{059E787F-85C1-43BE-9DD6-CE319E106383} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166} = {059E787F-85C1-43BE-9DD6-CE319E106383}
 	EndGlobalSection
 EndGlobal

@@ -9,7 +9,7 @@ using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using static System.StringComparison;
 
-namespace Elastic.Markdown.Refactor;
+namespace Elastic.Documentation.Refactor;
 
 public record ChangeSet(IFileInfo From, IFileInfo To);
 public record Change(IFileInfo Source, string OriginalContent, string NewContent);

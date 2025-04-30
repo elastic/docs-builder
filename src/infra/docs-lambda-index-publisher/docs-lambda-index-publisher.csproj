@@ -28,6 +28,6 @@
     <PackageReference Include="AWSSDK.SQS" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj"/>
+    <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj"/>
   </ItemGroup>
 </Project>
