@@ -7,7 +7,7 @@
 }
 else
 {
-	<header class="sticky top-0 z-50 bg-blue-developer text-white text-lg font-semibold h-(--offset-top) flex items-center px-6">
+	<header class="sticky top-0 z-50 bg-blue-developer text-white h-(--offset-top) flex items-center">
 		<div class="max-w-(--max-layout-width) w-full mx-auto flex justify-between items-center">
 			@* ReSharper disable once Html.IdNotResolved *@
 			<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
@@ -15,7 +15,7 @@ else
 					<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
 				</svg>
 			</label>
-			<a href="@Model.Link("/")" class="flex items-center gap-2">
+			<a href="@Model.Link("/")" class="flex items-center gap-2 text-lg font-semibold px-4">
 				<img src="@Model.Static("logo-elastic-glyph-color.svg")" alt="" width="32" height="32">
 				@Model.DocSetName
 			</a>
