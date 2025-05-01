@@ -16,10 +16,10 @@ public record YamlToplevelKey
 	public required KeyValuePair<YamlNode, YamlNode> Entry { get; init; }
 }
 
-public class YamlStreamReader(IFileInfo source, DiagnosticsCollector collector)
+public class YamlStreamReader(IFileInfo source, IDiagnosticsCollector collector)
 {
 	private IFileInfo Source { get; init; } = source;
-	private DiagnosticsCollector Collector { get; init; } = collector;
+	private IDiagnosticsCollector Collector { get; init; } = collector;
 
 	public IEnumerable<YamlToplevelKey> Read()
 	{
@@ -185,7 +185,7 @@ public class YamlStreamReader(IFileInfo source, DiagnosticsCollector collector)
 			Column = start.HasValue ? (int)start.Value.Column : null,
 			Length = length
 		};
-		Collector.Channel.Write(d);
+		Collector.Write(d);
 	}
 	public void EmitWarning(string message, Mark? start = null, Mark? end = null, int? length = null)
 	{
@@ -199,6 +199,6 @@ public class YamlStreamReader(IFileInfo source, DiagnosticsCollector collector)
 			Column = start.HasValue ? (int)start.Value.Column : null,
 			Length = length
 		};
-		Collector.Channel.Write(d);
+		Collector.Write(d);
 	}
 }

@@ -66,7 +66,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
-	private DiagnosticsCollector Collector { get; }
+	private IDiagnosticsCollector Collector { get; }
 
 	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }

@@ -8,9 +8,10 @@ using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs) : IHostedService, IAsyncDisposable
+public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
+	: IDiagnosticsCollector, IHostedService
 {
-	public DiagnosticsChannel Channel { get; } = new();
+	private DiagnosticsChannel Channel { get; } = new();
 
 	private int _errors;
 	private int _warnings;
@@ -29,7 +30,13 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public bool NoHints { get; init; }
 
-	public Task StartAsync(Cancel cancellationToken)
+	public DiagnosticsCollector StartAsync(Cancel ctx)
+	{
+		_ = ((IHostedService)this).StartAsync(ctx);
+		return this;
+	}
+
+	Task IHostedService.StartAsync(Cancel cancellationToken)
 	{
 		if (_started is not null)
 			return _started;
@@ -59,7 +66,6 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			{
 				if (item.Severity == Severity.Hint && NoHints)
 					continue;
-				IncrementSeverityCount(item);
 				HandleItem(item);
 				_ = OffendingFiles.Add(item.File);
 				foreach (var output in outputs)
@@ -82,6 +88,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
+		Channel.TryComplete();
 		if (_started is not null)
 			await _started;
 		await Channel.Reader.Completion;
@@ -89,8 +96,14 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
 
+	public void Write(Diagnostic diagnostic)
+	{
+		IncrementSeverityCount(diagnostic);
+		Channel.Write(diagnostic);
+	}
+
 	private void Emit(Severity severity, string file, string message) =>
-		Channel.Write(new Diagnostic
+		Write(new Diagnostic
 		{
 			Severity = severity,
 			File = file,

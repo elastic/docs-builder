@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
@@ -20,9 +19,7 @@ public class StaticWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly BuildContext _context;
-
-	public StaticWebHost(string? path, int port, IFileSystem fileSystem)
+	public StaticWebHost(int port)
 	{
 		var builder = WebApplication.CreateSlimBuilder();
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
@@ -34,13 +31,12 @@ public class StaticWebHost
 		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		_webApplication = builder.Build();
-		_context = new BuildContext(new DiagnosticsCollector([]), fileSystem, fileSystem, path, null);
 		SetUpRoutes();
 	}
 
 	public async Task RunAsync(Cancel ctx) => await _webApplication.RunAsync(ctx);
 
-	public async Task StopAsync(Cancel ctx) => await _context.Collector.StopAsync(ctx);
+	public async Task StopAsync(Cancel ctx) => await _webApplication.StopAsync(ctx);
 
 	private void SetUpRoutes()
 	{
@@ -50,8 +46,7 @@ public class StaticWebHost
 
 		_ = _webApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
 
-		_ = _webApplication.MapGet("{**slug}", (string slug, Cancel ctx) =>
-			ServeDocumentationFile(slug, ctx));
+		_ = _webApplication.MapGet("{**slug}", ServeDocumentationFile);
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(string slug, Cancel _)

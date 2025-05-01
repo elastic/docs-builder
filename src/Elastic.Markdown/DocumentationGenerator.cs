@@ -117,23 +117,11 @@ public class DocumentationGenerator
 		await GenerateLinkReference(ctx);
 	}
 
-	public async Task StopDiagnosticCollection(Cancel ctx)
-	{
-		_logger.LogInformation($"Completing diagnostics channel");
-		Context.Collector.Channel.TryComplete();
-
-		_logger.LogInformation($"Stopping diagnostics collector");
-		await Context.Collector.StopAsync(ctx);
-
-		_logger.LogInformation($"Completed diagnostics channel");
-	}
-
 	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)
 	{
 		var processedFileCount = 0;
 		var exceptionCount = 0;
 		var totalFileCount = DocumentationSet.Files.Count;
-		_ = Context.Collector.StartAsync(ctx);
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
 			var processedFiles = Interlocked.Increment(ref processedFileCount);

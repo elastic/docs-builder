@@ -96,7 +96,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
 		{
-			assembleContext.Collector.Channel.TryComplete();
 			await assembleContext.Collector.StopAsync(ctx);
 			return 1;
 		}
@@ -121,6 +120,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 		sitemapBuilder.Generate();
+
+		await collector.StopAsync(ctx);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
@@ -186,6 +187,9 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 					collector.EmitError(kv.Key, $"Failed to update link index for {kv.Key}: {e.Message}", e);
 				}
 			}).ConfigureAwait(false);
+
+		await collector.StopAsync(ctx);
+
 		return collector.Errors > 0 ? 1 : 0;
 	}
 }
