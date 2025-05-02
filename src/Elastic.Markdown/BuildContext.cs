@@ -30,7 +30,7 @@ public record BuildContext : IDocumentationContext
 
 	public bool Force { get; init; }
 
-	public bool SkipMetadata { get; init; }
+	public bool SkipDocumentationState { get; init; }
 
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }

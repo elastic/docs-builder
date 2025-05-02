@@ -5,7 +5,9 @@
 using System.Collections.Frozen;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Links;
 using Elastic.Markdown;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
@@ -29,6 +31,8 @@ public class AssemblerBuilder(
 			context.OutputDirectory.Delete(true);
 		context.OutputDirectory.Create();
 
+		var redirects = new Dictionary<string, string>();
+
 		foreach (var (_, set) in assembleSets)
 		{
 			var checkout = set.Checkout;
@@ -40,7 +44,8 @@ public class AssemblerBuilder(
 
 			try
 			{
-				await BuildAsync(set, ctx);
+				var result = await BuildAsync(set, ctx);
+				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
@@ -57,7 +62,36 @@ public class AssemblerBuilder(
 		await context.Collector.StopAsync(ctx);
 	}
 
-	private async Task BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
+	private static void CollectRedirects(
+		Dictionary<string, string> allRedirects,
+		IReadOnlyDictionary<string, LinkRedirect> redirects,
+		string repository,
+		ICrossLinkResolver linkResolver
+	)
+	{
+		if (redirects.Count == 0)
+			return;
+
+		foreach (var (k, v) in redirects)
+		{
+			if (v.To is { } to)
+				allRedirects[Resolve(k)] = Resolve(to);
+			else if (v.Many is { } many)
+			{
+				var target = many.FirstOrDefault(l => l.To is not null);
+				if (target?.To is { } t)
+					allRedirects[Resolve(k)] = Resolve(t);
+			}
+		}
+		string Resolve(string relativeMarkdownPath)
+		{
+			var uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{relativeMarkdownPath}"),
+				PublishEnvironmentUriResolver.MarkdownPathToUrlPath(relativeMarkdownPath));
+			return uri.AbsolutePath;
+		}
+	}
+
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
 	{
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
@@ -66,7 +100,7 @@ public class AssemblerBuilder(
 			legacyUrlMapper: LegacyUrlMapper,
 			positionalNavigation: navigation
 		);
-		await generator.GenerateAll(ctx);
+		return await generator.GenerateAll(ctx);
 	}
 
 }

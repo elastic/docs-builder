@@ -41,11 +41,6 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 	public Uri Resolve(Uri crossLinkUri, string path)
 	{
-		if (crossLinkUri.Scheme == "detection-rules")
-		{
-
-		}
-
 		var subPath = GetSubPathPrefix(crossLinkUri, ref path);
 
 		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
 using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
@@ -25,6 +26,11 @@ public interface IConversionCollector
 public interface IDocumentationFileOutputProvider
 {
 	IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath);
+}
+
+public record GenerationResult
+{
+	public IReadOnlyDictionary<string, LinkRedirect> Redirects { get; set; } = new Dictionary<string, LinkRedirect>();
 }
 
 public class DocumentationGenerator
@@ -87,14 +93,23 @@ public class DocumentationGenerator
 		_logger.LogInformation("Resolved tree");
 	}
 
-	public async Task GenerateAll(Cancel ctx)
+	public async Task<GenerationResult> GenerateAll(Cancel ctx)
 	{
-		var generationState = GetPreviousGenerationState();
-		if (!Context.SkipMetadata && (Context.Force || generationState == null))
-			DocumentationSet.ClearOutputDirectory();
+		var result = new GenerationResult();
 
-		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
-			return;
+		HashSet<string> offendingFiles = [];
+		var outputSeenChanges = DateTimeOffset.MinValue;
+		if (Context.SkipDocumentationState)
+			DocumentationSet.ClearOutputDirectory();
+		else
+		{
+			var generationState = GetPreviousGenerationState();
+			if (Context.Force || generationState == null)
+				DocumentationSet.ClearOutputDirectory();
+
+			if (CompilationNotNeeded(generationState, out offendingFiles, out outputSeenChanges))
+				return result;
+		}
 
 		_logger.LogInformation($"Fetching external links");
 		_ = await Resolver.FetchLinks(ctx);
@@ -107,14 +122,20 @@ public class DocumentationGenerator
 
 		await ExtractEmbeddedStaticResources(ctx);
 
-		if (Context.SkipMetadata)
-			return;
-
-		_logger.LogInformation($"Generating documentation compilation state");
-		await GenerateDocumentationState(ctx);
+		if (!Context.SkipDocumentationState)
+		{
+			_logger.LogInformation($"Generating documentation compilation state");
+			await GenerateDocumentationState(ctx);
+		}
 
 		_logger.LogInformation($"Generating links.json");
-		await GenerateLinkReference(ctx);
+		var linkReference = await GenerateLinkReference(ctx);
+
+		// ReSharper disable once WithExpressionModifiesAllMembers
+		return result with
+		{
+			Redirects = linkReference.Redirects ?? []
+		};
 	}
 
 	public async Task StopDiagnosticCollection(Cancel ctx)
@@ -266,13 +287,13 @@ public class DocumentationGenerator
 		return false;
 	}
 
-	private async Task GenerateLinkReference(Cancel ctx)
+	private async Task<LinkReference> GenerateLinkReference(Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
-
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		return state;
 	}
 
 	private async Task GenerateDocumentationState(Cancel ctx)

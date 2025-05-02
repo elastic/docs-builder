@@ -72,7 +72,8 @@ public class AssembleContext
 		Environment = env;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
-		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? Path.Combine(".artifacts", "checkouts", contentSource));
+		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "checkouts", contentSource);
+		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? Path.Combine(".artifacts", "assembly"));
 
 

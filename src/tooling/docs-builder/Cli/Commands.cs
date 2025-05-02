@@ -156,7 +156,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
 
 		var generator = new DocumentationGenerator(set, logger, null, null, exporter);
-		await generator.GenerateAll(ctx);
+		_ = await generator.GenerateAll(ctx);
 		await generator.StopDiagnosticCollection(ctx);
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);

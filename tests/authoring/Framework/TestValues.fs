@@ -98,7 +98,7 @@ and MarkdownTestContext =
 
     member this.Bootstrap () = backgroundTask {
         let! ctx = Async.CancellationToken
-        do! this.Generator.GenerateAll(ctx)
+        let! _ = this.Generator.GenerateAll(ctx)
         do! this.Generator.StopDiagnosticCollection(ctx)
 
         let results =

@@ -163,7 +163,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 					);
 					var set = new DocumentationSet(context, logger);
 					var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
-					await generator.GenerateAll(c);
+					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();
 					const string bucketName = "elastic-docs-link-index";
