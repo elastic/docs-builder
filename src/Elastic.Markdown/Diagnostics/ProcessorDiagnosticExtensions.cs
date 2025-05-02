@@ -30,7 +30,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 
@@ -48,7 +48,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitError(this ParserContext context, string message, Exception? e = null)
@@ -61,7 +61,7 @@ public static class ProcessorDiagnosticExtensions
 			File = context.MarkdownSourcePath.FullName,
 			Message = CreateExceptionMessage(message, e),
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitWarning(this ParserContext context, int line, int column, int length, string message)
@@ -77,7 +77,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => EmitDiagnostic(block, Severity.Error, message, e);
@@ -100,7 +100,7 @@ public static class ProcessorDiagnosticExtensions
 			Length = block.OpeningLength + 5,
 			Message = CreateExceptionMessage(message, e),
 		};
-		block.Build.Collector.Channel.Write(d);
+		block.Build.Collector.Write(d);
 	}
 
 
@@ -121,7 +121,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = CreateExceptionMessage(message, e),
 			Length = Math.Max(length, 1)
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message) =>

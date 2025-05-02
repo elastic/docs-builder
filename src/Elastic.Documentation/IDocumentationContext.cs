@@ -9,7 +9,7 @@ namespace Elastic.Documentation;
 
 public interface IDocumentationContext
 {
-	DiagnosticsCollector Collector { get; }
+	IDiagnosticsCollector Collector { get; }
 	IDirectoryInfo DocumentationSourceDirectory { get; }
 	GitCheckoutInformation Git { get; }
 	IFileSystem ReadFileSystem { get; }

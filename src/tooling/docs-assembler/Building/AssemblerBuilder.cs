@@ -58,7 +58,6 @@ public class AssemblerBuilder(
 			}
 		}
 
-		context.Collector.Channel.TryComplete();
 		await context.Collector.StopAsync(ctx);
 	}
 

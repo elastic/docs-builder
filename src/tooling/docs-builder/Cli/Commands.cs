@@ -49,17 +49,14 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <summary>
 	/// Serve html files directly
 	/// </summary>
-	/// <param name="path">-p, Path to serve the documentation.
-	/// Defaults to the`{pwd}/docs` folder
-	/// </param>
 	/// <param name="port">Port to serve the documentation.</param>
 	/// <param name="ctx"></param>
 	[Command("serve-static")]
 	[ConsoleAppFilter<CheckForUpdatesFilter>]
-	public async Task ServeStatic(string? path = null, int port = 4000, Cancel ctx = default)
+	public async Task ServeStatic(int port = 4000, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		var host = new StaticWebHost(path, port, new FileSystem());
+		var host = new StaticWebHost(port);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 	}
@@ -97,7 +94,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
@@ -156,13 +153,14 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
 
 		var generator = new DocumentationGenerator(set, logger, null, null, exporter);
-		_ = await generator.GenerateAll(ctx);
-		await generator.StopDiagnosticCollection(ctx);
+		await generator.GenerateAll(ctx);
+
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
+
+		await collector.StopAsync(ctx);
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
 			strict ??= strictValue;
-
 		if (strict ?? false)
 			return context.Collector.Errors + context.Collector.Warnings;
 		return context.Collector.Errors;
@@ -220,11 +218,13 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	{
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, null);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, null).StartAsync(ctx);
 		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
 		var set = new DocumentationSet(context, logger);
 
 		var moveCommand = new Move(fileSystem, fileSystem, set, logger);
-		return await moveCommand.Execute(source, target, dryRun ?? false, ctx);
+		var result = await moveCommand.Execute(source, target, dryRun ?? false, ctx);
+		await collector.StopAsync(ctx);
+		return result;
 	}
 }

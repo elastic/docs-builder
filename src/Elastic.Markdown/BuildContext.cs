@@ -26,7 +26,7 @@ public record BuildContext : IDocumentationContext
 
 	public GitCheckoutInformation Git { get; }
 
-	public DiagnosticsCollector Collector { get; }
+	public IDiagnosticsCollector Collector { get; }
 
 	public bool Force { get; init; }
 
@@ -47,14 +47,11 @@ public record BuildContext : IDocumentationContext
 		init => _urlPathPrefix = value;
 	}
 
-	public BuildContext(IFileSystem fileSystem)
-		: this(new DiagnosticsCollector([]), fileSystem, fileSystem, null, null) { }
-
-	public BuildContext(DiagnosticsCollector collector, IFileSystem fileSystem)
+	public BuildContext(IDiagnosticsCollector collector, IFileSystem fileSystem)
 		: this(collector, fileSystem, fileSystem, null, null) { }
 
 	public BuildContext(
-		DiagnosticsCollector collector,
+		IDiagnosticsCollector collector,
 		IFileSystem readFileSystem,
 		IFileSystem writeFileSystem,
 		string? source = null,

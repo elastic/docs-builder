@@ -24,6 +24,7 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly BuildContext _context;
+	private readonly IHostedService _hostedService;
 
 	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
 	{
@@ -39,6 +40,7 @@ public class DocumentationWebHost
 
 		var hostUrl = $"http://localhost:{port}";
 
+		_hostedService = collector;
 		_context = new BuildContext(collector, fileSystem, fileSystem, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
@@ -67,14 +69,14 @@ public class DocumentationWebHost
 
 	public async Task RunAsync(Cancel ctx)
 	{
-		_ = _context.Collector.StartAsync(ctx);
+		_ = _hostedService.StartAsync(ctx);
 		await _webApplication.RunAsync(ctx);
 	}
 
 	public async Task StopAsync(Cancel ctx)
 	{
-		_context.Collector.Channel.TryComplete();
-		await _context.Collector.StopAsync(ctx);
+		await _webApplication.StopAsync(ctx);
+		await _hostedService.StopAsync(ctx);
 	}
 
 	private void SetUpRoutes()

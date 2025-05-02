@@ -17,22 +17,22 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	private sealed record RepositoryFilter
 	{
-		public string? LinksTo { get; set; }
-		public string? LinksFrom { get; set; }
+		public string? LinksTo { get; init; }
+		public string? LinksFrom { get; init; }
 
 		public static RepositoryFilter None => new();
 	}
 
-	public async Task<int> CheckAll(DiagnosticsCollector collector, Cancel ctx)
+	public async Task CheckAll(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 
-		return await ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None, ctx);
+		ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None);
 	}
 
-	public async Task<int> CheckRepository(DiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
+	public async Task CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
@@ -43,10 +43,10 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 			LinksFrom = fromRepository
 		};
 
-		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
+		ValidateCrossLinks(collector, crossLinks, resolver, filter);
 	}
 
-	public async Task<int> CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
+	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logger);
 		var resolver = new CrossLinkResolver(fetcher);
@@ -80,17 +80,16 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 			LinksTo = repository
 		};
 
-		return await ValidateCrossLinks(collector, crossLinks, resolver, filter, ctx);
+		ValidateCrossLinks(collector, crossLinks, resolver, filter);
 	}
 
-	private async Task<int> ValidateCrossLinks(
-		DiagnosticsCollector collector,
+	private void ValidateCrossLinks(
+		IDiagnosticsCollector collector,
 		FetchedCrossLinks crossLinks,
 		CrossLinkResolver resolver,
-		RepositoryFilter filter,
-		Cancel ctx)
+		RepositoryFilter filter
+	)
 	{
-		_ = collector.StartAsync(ctx);
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
 			if (!string.IsNullOrEmpty(filter.LinksTo))
@@ -130,11 +129,6 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 				}, s => collector.EmitWarning(linksJson, s), uri, out _);
 			}
 		}
-
-		collector.Channel.TryComplete();
-		await collector.StopAsync(ctx);
 		// non-strict for now
-		return collector.Errors;
-		// return collector.Errors + collector.Warnings;
 	}
 }

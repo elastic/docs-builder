@@ -32,8 +32,10 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		return await _linkIndexLinkChecker.CheckAll(collector, ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await _linkIndexLinkChecker.CheckAll(collector, ctx);
+		await collector.StopAsync(ctx);
+		return collector.Errors;
 	}
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
@@ -52,8 +54,10 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 			if (from == null)
 				throw new Exception("Unable to determine repository name");
 		}
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		return await _linkIndexLinkChecker.CheckRepository(collector, to, from, ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await _linkIndexLinkChecker.CheckRepository(collector, to, from, ctx);
+		await collector.StopAsync(ctx);
+		return collector.Errors;
 	}
 
 	/// <summary>
@@ -71,7 +75,9 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		return await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, file, ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, file, ctx);
+		await collector.StopAsync(ctx);
+		return collector.Errors;
 	}
 }

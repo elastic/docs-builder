@@ -41,7 +41,6 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
 		{
-			assembleContext.Collector.Channel.TryComplete();
 			await assembleContext.Collector.StopAsync(ctx);
 			return 1;
 		}
@@ -50,7 +49,6 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);
 
-		assembleContext.Collector.Channel.TryComplete();
 		await assembleContext.Collector.StopAsync(ctx);
 		return collector.Errors;
 	}
@@ -80,7 +78,6 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 
 		await namespaceChecker.CheckWithLocalLinksJson(assembleContext.Collector, repository, file, ctx);
 
-		assembleContext.Collector.Channel.TryComplete();
 		await assembleContext.Collector.StopAsync(ctx);
 		return collector.Errors;
 	}
