@@ -63,7 +63,7 @@ external_hosts:
 
 Defines repositories that contain documentation sets you want to link to. The purpose of this feature is to avoid using absolute links that require time-consuming crawling and checking.
 
-Consider an docset repository called `bazinga`. The following example adds three docset repositories to its `docset.yml` file:
+Consider a docset repository called `bazinga`. The following example adds three docset repositories to its `docset.yml` file:
 
 ```yaml
 cross_links:
