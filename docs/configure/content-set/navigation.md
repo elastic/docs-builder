@@ -59,6 +59,25 @@ external_hosts:
   - github.com
 ```
 
+### `cross_links`
+
+Defines repositories that contain documentation sets you want to link to. The purpose of this feature is to avoid using absolute links that require time-consuming crawling and checking.
+
+Consider an docset repository called `bazinga`. The following example adds three docset repositories to its `docset.yml` file:
+
+```yaml
+cross_links:
+  - apm-server
+  - cloud
+  - docs-content
+```
+
+To link to a document in the `docs-content` repository, you would write the link as follows:
+
+```
+[Link to docs-content doc](docs-content://directory/another-directory/file.md)
+```
+
 ### `exclude`
 
 Files to exclude from the TOC. Supports glob patterns.
