@@ -1,6 +1,6 @@
 ---
-# This workflow is used to build the link index updater lambda function zip
-# that can be deployed to AWS Lambda.
+# This workflow is used to build the link-index-updater
+# lambda function bootstrap binary that can be deployed to AWS Lambda.
 name: Build Link Index Updater Lambda
 
 on:
@@ -15,10 +15,7 @@ on:
       artifact-id:
         description: 'Artifact ID of the uploaded artifact. Can be used to download the artifact in other workflows.'
         value: ${{ jobs.build.outputs.artifact-id }}
-      artifact-path:
-        description: 'Path to the zip file.'
-        value: ${{ jobs.build.outputs.zip-file }}
-        
+
 jobs: 
   build:
     outputs: 
@@ -26,7 +23,7 @@ jobs:
       zip-file: ${{ steps.create-zip.outputs.zip-file }}
     runs-on: ubuntu-latest
     env:
-      ZIP_FILE: link-index-updater-lambda.zip
+      BINARY_PATH: .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
     steps:
       - uses: actions/checkout@v4
         with: 
@@ -40,17 +37,12 @@ jobs:
       - name: Inspect bootstrap binary
         run: |
           tree .artifacts
-          stat .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
-      - name: Create zip file
-        id: create-zip
-        run: |
-          zip -j "${ZIP_FILE}" .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
-          echo "zip-file=${ZIP_FILE}" >> "${GITHUB_OUTPUT}"
+          stat "${BINARY_PATH}"
       - name: Archive artifact
         id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: link-index-updater-lambda
+          name: link-index-updater-lambda-binary
           retention-days: 1
           if-no-files-found: error
-          path: ${{ env.ZIP_FILE }}
+          path: ${{ env.BINARY_PATH }}
