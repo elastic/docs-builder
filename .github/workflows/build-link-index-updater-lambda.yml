@@ -1,0 +1,51 @@
+---
+# This workflow is used to build the link index updater lambda function zip
+# that can be deployed to AWS Lambda.
+name: Build Link Index Updater Lambda
+
+on:
+  workflow_dispatch: 
+  workflow_call: 
+    inputs:
+      ref:
+        required: false
+        type: string
+    outputs:
+      artifact-id:
+        description: 'Artifact ID of the uploaded artifact. Can be used to download the artifact in other workflows.'
+        value: ${{ jobs.build.outputs.artifact-id }}
+      artifact-path:
+        description: 'Path to the zip file.'
+        value: ${{ jobs.build.outputs.zip-file }}
+        
+jobs: 
+  build:
+    outputs: 
+      artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
+      zip-file: ${{ steps.create-zip.outputs.zip-file }}
+    runs-on: ubuntu-latest
+    env:
+      ZIP_FILE: link-index-updater-lambda.zip
+    steps:
+      - uses: actions/checkout@v4
+        with: 
+          ref: ${{ inputs.ref }}
+      - name: Amazon Linux 2023 build
+        run: |
+          docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
+      - name: Get bootstrap binary
+        run: |
+          docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+      - name: Create zip file
+        id: create-zip
+        run: |
+          zip -j "${ZIP_FILE}" .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
+          echo "zip-file=${ZIP_FILE}" >> "${GITHUB_OUTPUT}"
+      - name: Archive artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-index-updater-lambda
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ env.ZIP_FILE }}
