@@ -10,6 +10,7 @@ on:
       ref:
         required: false
         type: string
+        default: ${{ github.ref }}
     outputs:
       artifact-id:
         description: 'Artifact ID of the uploaded artifact. Can be used to download the artifact in other workflows.'
@@ -36,6 +37,10 @@ jobs:
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+      - name: Validate bootstrap binary
+        run: |
+          tree .artifacts
+          stat .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
       - name: Create zip file
         id: create-zip
         run: |

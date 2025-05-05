@@ -27,6 +27,7 @@ jobs:
         run: dotnet run --project src/tooling/docs-assembler -c release -- navigation validate
 
   build-lambda:
+    uses: ./.github/workflows/build-link-index-updater-lambda.yml
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
