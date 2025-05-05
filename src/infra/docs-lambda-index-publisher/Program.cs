@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.SQSEvents;
 using Amazon.S3;
 using Amazon.S3.Util;
-using Elastic.Documentation;
 using Elastic.Documentation.Lambda.LinkIndexUploader;
 using Elastic.Documentation.Links;
 
@@ -30,6 +30,8 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
 	foreach (var message in ev.Records)
 	{
+		context.Logger.LogInformation("Processing message {MessageId}", message.MessageId);
+		context.Logger.LogInformation("Message body: {MessageBody}", message.Body);
 		try
 		{
 			var s3RecordLinkReferenceTuples = await GetS3RecordLinkReferenceTuples(s3Client, message, context);
@@ -55,6 +57,8 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 		var response = new SQSBatchResponse(batchItemFailures);
 		if (batchItemFailures.Count > 0)
 			context.Logger.LogInformation("Failed to process {batchItemFailuresCount} of {allMessagesCount} messages. Returning them to the queue.", batchItemFailures.Count, ev.Records.Count);
+		var jsonStr = JsonSerializer.Serialize(response, SerializerContext.Default.SQSBatchResponse);
+		context.Logger.LogInformation(jsonStr);
 		return response;
 	}
 	catch (Exception ex)
@@ -67,6 +71,8 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 		{
 			ItemIdentifier = r.MessageId
 		}).ToList());
+		var jsonStr = JsonSerializer.Serialize(response, SerializerContext.Default.SQSBatchResponse);
+		context.Logger.LogInformation(jsonStr);
 		return response;
 	}
 }

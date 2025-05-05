@@ -19,6 +19,7 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 {
 	private string? _etag;
 	private LinkReferenceRegistry? _linkIndex;
+	private bool _modified;
 
 	private async Task<LinkReferenceRegistry> GetLinkIndex()
 	{
@@ -56,12 +57,18 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 			{
 				{ linkRegistryEntry.Branch, linkRegistryEntry }
 			});
+			_modified = true;
 			logger.LogInformation("Added new entry for {repository}@{branch}", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
 		}
 	}
 
 	public async Task Save()
 	{
+		if (!_modified)
+		{
+			logger.LogInformation("Skipping Save() because the link index was not modified");
+			return;
+		}
 		if (_etag == null || _linkIndex == null)
 			throw new InvalidOperationException("You must call UpdateLinkIndexEntry() before Save()");
 		var json = LinkReferenceRegistry.Serialize(_linkIndex);
