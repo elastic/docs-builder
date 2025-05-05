@@ -37,7 +37,7 @@ jobs:
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
-      - name: Validate bootstrap binary
+      - name: Inspect bootstrap binary
         run: |
           tree .artifacts
           stat .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
@@ -51,6 +51,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: link-index-updater-lambda
-          retention-days: 7
+          retention-days: 1
           if-no-files-found: error
           path: ${{ env.ZIP_FILE }}
