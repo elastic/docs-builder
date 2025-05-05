@@ -90,10 +90,11 @@ jobs:
       ZIP_FILE: link-index-updater-lambda.zip
     steps:
 
-      - uses: actions/download-artifact@v4
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v4
         with: 
-          artifact-ids: ${{ needs.build-lambda.outputs.artifact-id }}
-
+          name: link-index-updater-lambda-binary # Defined in build-link-index-updater-lambda.yml
+          
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap

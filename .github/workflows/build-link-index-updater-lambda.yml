@@ -11,16 +11,9 @@ on:
         required: false
         type: string
         default: ${{ github.ref }}
-    outputs:
-      artifact-id:
-        description: 'Artifact ID of the uploaded artifact. Can be used to download the artifact in other workflows.'
-        value: ${{ jobs.build.outputs.artifact-id }}
 
 jobs: 
   build:
-    outputs: 
-      artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
-      zip-file: ${{ steps.create-zip.outputs.zip-file }}
     runs-on: ubuntu-latest
     env:
       BINARY_PATH: .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
