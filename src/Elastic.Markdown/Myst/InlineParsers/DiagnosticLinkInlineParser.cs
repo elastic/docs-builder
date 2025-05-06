@@ -330,30 +330,29 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	{
 		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
 		var newUrl = url;
-		if (newUrl.StartsWith('/') || string.IsNullOrEmpty(newUrl))
-			return newUrl;
+		if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
+		{
+			var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
+				? context.CurrentUrlPath[urlPathPrefix.Length..]
+				: urlPathPrefix;
 
-		// eat overall path prefix since its gets appended later
-		var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
-			? context.CurrentUrlPath[urlPathPrefix.Length..]
-			: urlPathPrefix;
+			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
+			// as it's not part of url by chopping of the extra parent navigation
+			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile)
+				newUrl = url[3..];
 
-		// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
-		// as it's not part of url by chopping of the extra parent navigation
-		if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile)
-			newUrl = url[3..];
+			// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
+			var markdownPath = context.MarkdownSourcePath;
+			// if the current path is an index e.g /reference/cloud-k8s/
+			// './' current path lookups should be relative to sub-path.
+			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
+			var lastIndexPath = subPrefix.LastIndexOf('/');
+			if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
+				subPrefix = subPrefix[..lastIndexPath];
+			var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
+			newUrl = Path.GetFullPath(combined);
 
-		// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
-		var markdownPath = context.MarkdownSourcePath;
-		// if the current path is an index e.g /reference/cloud-k8s/
-		// './' current path lookups should be relative to sub-path.
-		// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
-		var lastIndexPath = subPrefix.LastIndexOf('/');
-		if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
-			subPrefix = subPrefix[..lastIndexPath];
-		var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
-		newUrl = Path.GetFullPath(combined);
-
+		}
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
 		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -366,6 +365,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
 			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
+		// eat overall path prefix since its gets appended later
 		return newUrl;
 	}
 

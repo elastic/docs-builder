@@ -31,7 +31,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 	{
 		Block!.Alt.Should().Be("Elasticsearch");
 		Block!.Width.Should().Be("250px");
-		Block!.ImageUrl.Should().Be("img/observability.png");
+		Block!.ImageUrl.Should().Be("/img/observability.png");
 		Block!.Screenshot.Should().Be("screenshot");
 	}
 
