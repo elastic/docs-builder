@@ -22,7 +22,7 @@ public enum ProductLifecycle
 	[YamlMember(Alias = "deprecated")]
 	Deprecated,
 	// coming (ditto)
-	[YamlMember(Alias = "coming")]
+	[YamlMember(Alias = "planned")]
 	Planned,
 	// discontinued (historically we've immediately removed content when the feature ceases to be supported, but this might not be the case with pages that contain information that spans versions)
 	[YamlMember(Alias = "discontinued")]
