@@ -21,6 +21,9 @@ public class StepBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 	public string Title { get; private set; } = string.Empty;
 	public string Anchor { get; private set; } = string.Empty;
 
+	// Override this property to expose the step title to the TOC generator
+	public override string CrossReferenceName => Title;
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Arguments ?? string.Empty;
