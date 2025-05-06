@@ -25,6 +25,7 @@ type TestFile =
     | File of name: string * contents: string
     | MarkdownFile of name: string * markdown: Markdown
     | SnippetFile of name: string * markdown: Markdown
+    | StaticFile of name: string
 
     static member Index ([<LanguageInjection("markdown")>] m) =
         MarkdownFile("index.md" , m)
@@ -32,8 +33,16 @@ type TestFile =
     static member Markdown path ([<LanguageInjection("markdown")>] m) =
         MarkdownFile(path , m)
 
+    static member Static path = StaticFile(path)
+
     static member Snippet path ([<LanguageInjection("markdown")>] m) =
         SnippetFile(path , m)
+
+type SetupOptions =
+    { UrlPathPrefix: string option }
+    static member Empty = {
+        UrlPathPrefix = None
+    }
 
 type Setup =
 
@@ -61,7 +70,7 @@ type Setup =
             yaml.WriteLine($" - file: {relative}")
             let fullPath = Path.Combine(root.FullName, relative)
             let contents = File.ReadAllText fullPath
-            fileSystem.AddFile(fullPath, new MockFileData(contents))
+            fileSystem.AddFile(fullPath, MockFileData(contents))
         )
 
         match globalVariables with
@@ -79,7 +88,8 @@ type Setup =
         let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
         fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml))
 
-    static member Generator (files: TestFile seq) : Task<GeneratorResults> =
+    static member Generator (files: TestFile seq) (options: SetupOptions option) : Task<GeneratorResults> =
+        let options = options |> Option.defaultValue SetupOptions.Empty
 
         let d = files
                 |> Seq.map (fun f ->
@@ -87,6 +97,7 @@ type Setup =
                     | File(name, contents) -> ($"docs/{name}", MockFileData(contents))
                     | SnippetFile(name, markdown) -> ($"docs/{name}", MockFileData(markdown))
                     | MarkdownFile(name, markdown) -> ($"docs/{name}", MockFileData(markdown))
+                    | StaticFile(name) -> ($"docs/{name}", MockFileData(""))
                 )
                 |> Map.ofSeq
 
@@ -95,8 +106,8 @@ type Setup =
 
         GenerateDocSetYaml (fileSystem, None)
 
-        let collector = TestDiagnosticsCollector();
-        let context = BuildContext(collector, fileSystem)
+        let collector = TestDiagnosticsCollector()
+        let context = BuildContext(collector, fileSystem, UrlPathPrefix=(options.UrlPathPrefix |> Option.defaultValue ""))
         let logger = new TestLoggerFactory()
         let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)
@@ -115,11 +126,14 @@ type Setup =
 
     /// Pass several files to the test setup
     static member Generate files =
-        lazy (task { return! Setup.Generator files } |> Async.AwaitTask |> Async.RunSynchronously)
+        lazy (task { return! Setup.Generator files None } |> Async.AwaitTask |> Async.RunSynchronously)
+
+    static member GenerateWithOptions options files  =
+        lazy (task { return! Setup.Generator files (Some options) } |> Async.AwaitTask |> Async.RunSynchronously)
 
     /// Pass a full documentation page to the test setup
     static member Document ([<LanguageInjection("markdown")>]m: string) =
-        lazy (task { return! Setup.Generator [Index m] } |> Async.AwaitTask |> Async.RunSynchronously)
+        lazy (task { return! Setup.Generator [Index m] None } |> Async.AwaitTask |> Async.RunSynchronously)
 
     /// Pass a markdown fragment to the test setup
     static member Markdown ([<LanguageInjection("markdown")>]m: string) =
@@ -128,6 +142,6 @@ type Setup =
 {m}
 """
         lazy (
-            task { return! Setup.Generator [Index m] }
+            task { return! Setup.Generator [Index m] None }
             |> Async.AwaitTask |> Async.RunSynchronously
         )

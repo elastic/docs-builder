@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Settings;
 using Elastic.Markdown.Slices.Directives;
@@ -85,23 +86,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 	private static void WriteImage(HtmlRenderer renderer, ImageBlock block)
 	{
 		var imageUrl = block.ImageUrl;
-		if (!string.IsNullOrEmpty(block.ImageUrl))
-		{
-			if (block.ImageUrl.StartsWith('/') || block.ImageUrl.StartsWith("_static"))
-				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
-			else
-			{
-				// `block.Build.ConfigurationPath.DirectoryName` is the directory of the docset.yml file
-				// which is the root of the documentation source
-				// e.g. `/User/username/Projects/docs-builder/docs`
-				// `block.CurrentFile.DirectoryName` is the directory of the current markdown file where the image is referenced
-				// e.g. `/User/username/Projects/docs-builder/docs/page/with/image`
-				// `Path.GetRelativePath` will return the relative path to the docset.yml directory
-				// e.g. `page/with/image`
-				// Hence the full imageUrl will be something like /path-prefix/page/with/image/image.png
-				imageUrl = block.Build.UrlPathPrefix + '/' + Path.GetRelativePath(block.Build.ConfigurationPath.DirectoryName!, block.CurrentFile.DirectoryName!) + "/" + block.ImageUrl;
-			}
-		}
+
 		var slice = Image.Create(new ImageViewModel
 		{
 			Label = block.Label,
