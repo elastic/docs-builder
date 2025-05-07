@@ -30,7 +30,17 @@ public record BuildContext : IDocumentationContext
 
 	public bool Force { get; init; }
 
-	public bool SkipDocumentationState { get; init; }
+	public bool SkipDocumentationState { get; private set; }
+
+	public bool AssemblerBuild
+	{
+		get => _assemblerBuild;
+		init
+		{
+			_assemblerBuild = value;
+			SkipDocumentationState = value;
+		}
+	}
 
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
@@ -41,6 +51,8 @@ public record BuildContext : IDocumentationContext
 	public Uri? CanonicalBaseUrl { get; init; }
 
 	private readonly string? _urlPathPrefix;
+	private readonly bool _assemblerBuild;
+
 	public string? UrlPathPrefix
 	{
 		get => string.IsNullOrWhiteSpace(_urlPathPrefix) ? "" : $"/{_urlPathPrefix.Trim('/')}";

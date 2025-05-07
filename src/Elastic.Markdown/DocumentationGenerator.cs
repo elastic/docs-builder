@@ -65,7 +65,8 @@ public class DocumentationGenerator
 		DocumentationSet = docSet;
 		Context = docSet.Context;
 		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper, positionalNavigation);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
+			positionalNavigation);
 		_documentationFileExporter =
 			documentationExporter
 			?? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
@@ -97,19 +98,19 @@ public class DocumentationGenerator
 	{
 		var result = new GenerationResult();
 
-		HashSet<string> offendingFiles = [];
-		var outputSeenChanges = DateTimeOffset.MinValue;
-		if (Context.SkipDocumentationState)
-			DocumentationSet.ClearOutputDirectory();
-		else
-		{
-			var generationState = GetPreviousGenerationState();
-			if (Context.Force || generationState == null)
-				DocumentationSet.ClearOutputDirectory();
+		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
 
-			if (CompilationNotNeeded(generationState, out offendingFiles, out outputSeenChanges))
-				return result;
+		// clear output directory if force is true but never for assembler builds since these build multiple times to the output.
+		if (Context is { AssemblerBuild: false, Force: true }
+			// clear the output directory if force is false but generation state is null, except for assembler builds.
+			|| (Context is { AssemblerBuild: false, Force: false } && generationState == null))
+		{
+			_logger.LogInformation($"Clearing output directory");
+			DocumentationSet.ClearOutputDirectory();
 		}
+
+		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
+			return result;
 
 		_logger.LogInformation($"Fetching external links");
 		_ = await Resolver.FetchLinks(ctx);
