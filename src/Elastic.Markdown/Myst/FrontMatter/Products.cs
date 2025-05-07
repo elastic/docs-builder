@@ -343,7 +343,7 @@ public class ProductConverter : IYamlTypeConverter
 
 public class InvalidProductException(string invalidValue)
 	: Exception(
-		$"Invalid products frontmatter value: \"{invalidValue}\". Did you mean \"{ProductExtensions.Suggestion(invalidValue)}\"?");
+		$"Invalid products frontmatter value: \"{invalidValue}\". Did you mean \"{ProductExtensions.Suggestion(invalidValue)}\"?\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");
 
 public static class ProductExtensions
 {
