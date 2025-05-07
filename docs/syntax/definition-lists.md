@@ -1,4 +1,4 @@
-# Definition Lists
+# Definition lists
 
 
 A definition list in Markdown is created by writing a term on one line, followed by a colon and at least three spaces (`:   `) on the next line, followed by the definition. Multiple paragraphs in the definition should be indented with spaces to match the definition text.
