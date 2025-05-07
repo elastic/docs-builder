@@ -125,8 +125,6 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			_logger.LogInformation("Pull: {Name}\t{Branch}\t{RelativePath}", name, branch, relativePath);
 			// --allow-unrelated-histories due to shallow clones not finding a common ancestor
 			ExecIn(checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff");
-			head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
-			return true;
 		}
 		catch (Exception e)
 		{
@@ -136,9 +134,12 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
 			}
+			return false;
 		}
 
-		return false;
+		head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+
+		return true;
 	}
 
 	private string CheckoutFromScratch(Repository repository, string name, string branch, string relativePath,
@@ -183,19 +184,26 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 	// ReSharper disable once UnusedMember.Local
 	private string Capture(IDirectoryInfo? workingDirectory, string binary, params string[] args)
 	{
-		// Try 10 times to capture the output of the command, if it fails we'll throw an exception on the last try
-		for (var i = 0; i < 9; i++)
+		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
+		Exception? e = null;
+		for (var i = 0; i <= 9; i++)
 		{
 			try
 			{
 				return CaptureOutput();
 			}
-			catch
+			catch (Exception ex)
 			{
-				// ignored
+				if (ex is not null)
+					e = ex;
 			}
 		}
-		return CaptureOutput();
+
+		if (e is not null)
+			collector.EmitError("", "failure capturing stdout", e);
+
+
+		return string.Empty;
 
 		string CaptureOutput()
 		{
@@ -208,9 +216,9 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 				ConsoleOutWriter = NoopConsoleWriter.Instance
 			};
 			var result = Proc.Start(arguments);
-			if (result.ExitCode != 0)
-				collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
-			var line = result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
+			var line = result.ExitCode != 0
+				? throw new Exception($"Exit code is nto 0 received {result.ExitCode} from {binary}: {workingDirectory}")
+				: result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
 			return line;
 		}
 	}
