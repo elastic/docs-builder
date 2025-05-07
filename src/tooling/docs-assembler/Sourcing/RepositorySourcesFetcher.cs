@@ -217,7 +217,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			};
 			var result = Proc.Start(arguments);
 			var line = result.ExitCode != 0
-				? throw new Exception($"Exit code is nto 0 received {result.ExitCode} from {binary}: {workingDirectory}")
+				? throw new Exception($"Exit code is not 0. Received {result.ExitCode} from {binary}: {workingDirectory}")
 				: result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
 			return line;
 		}
