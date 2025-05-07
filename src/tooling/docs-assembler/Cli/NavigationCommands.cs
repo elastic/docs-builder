@@ -34,9 +34,8 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 	public async Task<int> Validate(Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
-		_ = collector.StartAsync(ctx);
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
@@ -64,8 +63,7 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 		AssignOutputLogger();
 		file ??= ".artifacts/docs/html/links.json";
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
-		_ = collector.StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 
 		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
 

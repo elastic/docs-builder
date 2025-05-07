@@ -249,8 +249,7 @@ public class GlobalNavigationPathProviderTests
 	{
 		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
-		await using var collector = new DiagnosticsCollector([]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 
 		var fs = new FileSystem();
 		var assembleContext = new AssembleContext("prod", collector, fs, fs, null, null);

@@ -51,7 +51,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
@@ -85,9 +85,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
 		{
 			NoHints = true
-		};
-
-		_ = collector.StartAsync(ctx);
+		}.StartAsync(ctx);
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
 		{
