@@ -57,6 +57,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		_ = await cloner.AcquireAllLatest(ctx);
 
+		await collector.StopAsync(ctx);
+
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
 		return collector.Errors;
