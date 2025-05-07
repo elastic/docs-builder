@@ -1,3 +1,4 @@
+@using Elastic.Markdown.Myst.FrontMatter
 @using Elastic.Markdown.Slices.Components
 @using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
@@ -22,7 +23,8 @@
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
-		LegacyPage = Model.LegacyPage
+		LegacyPage = Model.LegacyPage,
+		Products = Model.CurrentDocument.YamlFrontMatter?.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.GetProductDisplayName()).ToList()) : null,
 	};
 }
 <section id="elastic-docs-v3">

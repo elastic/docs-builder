@@ -1,5 +1,6 @@
 @inherits RazorSlice<LayoutViewModel>
 @using Elastic.Markdown.Helpers
+@using Elastic.Markdown.Myst.FrontMatter
 <head hx-head="merge">
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
@@ -34,5 +35,10 @@
 	@if (!string.IsNullOrEmpty(Model.CanonicalUrl))
 	{
 		<meta property="og:url" content="@Model.CanonicalUrl" />
+	}
+	@if (!string.IsNullOrEmpty(Model.Products))
+	{	
+		<meta class="elastic" name="product_name" content="@(Model.Products)"/>
+		<meta name="DC.subject" content="@(Model.Products)"/>
 	}
 </head>

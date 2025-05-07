@@ -68,6 +68,8 @@ public class LayoutViewModel
 
 	public required MarkdownFile[] Parents { get; init; }
 
+	public required string? Products { get; init; }
+
 	public string Static(string path)
 	{
 		var staticPath = $"_static/{path.TrimStart('/')}";
