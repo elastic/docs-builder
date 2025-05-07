@@ -4,9 +4,9 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
-using YamlDotNet.Serialization;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
