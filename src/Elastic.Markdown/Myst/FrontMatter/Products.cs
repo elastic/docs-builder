@@ -321,24 +321,13 @@ public class ProductConverter : IYamlTypeConverter
 				return enumMemberAttr?.Value?.Equals(value.Value, StringComparison.OrdinalIgnoreCase) ?? false;
 			});
 
-		if (product != default)
+		if (Enum.IsDefined(product) && product.GetEnumMemberValue()?.Equals(value.Value) == true)
 			return product;
 
 		throw new InvalidProductException(value.Value);
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
-	{
-		if (value == null)
-			return;
-		var product = (Product)value;
-		var enumMemberAttr = typeof(Product)
-			.GetField(product.ToString())
-			?.GetCustomAttributes(typeof(EnumMemberAttribute), false)
-			.FirstOrDefault() as EnumMemberAttribute;
-
-		emitter.Emit(new Scalar(enumMemberAttr?.Value ?? product.ToString().ToLowerInvariant()));
-	}
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => throw new NotImplementedException();
 }
 
 public class InvalidProductException(string invalidValue)
@@ -354,6 +343,15 @@ public static class ProductExtensions
 			?.GetCustomAttributes(typeof(DisplayAttribute), false)
 			.FirstOrDefault() as DisplayAttribute;
 		return displayAttr?.Name ?? product.ToString();
+	}
+
+	public static string? GetEnumMemberValue(this Product product)
+	{
+		var enumMemberAttr = typeof(Product)
+			.GetField(product.ToString())
+			?.GetCustomAttributes(typeof(EnumMemberAttribute), false)
+			.FirstOrDefault() as EnumMemberAttribute;
+		return enumMemberAttr?.Value;
 	}
 
 

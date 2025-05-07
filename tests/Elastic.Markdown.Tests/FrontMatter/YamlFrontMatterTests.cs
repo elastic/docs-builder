@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
 
@@ -62,4 +63,82 @@ sub:
 {
 	[Fact]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
+}
+
+public class Products(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - "apm"
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void ReadsProducts()
+	{
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter!.Products.Should().NotBeNull()
+			.And.HaveCount(1)
+			.And.Contain(Product.Apm);
+	}
+}
+
+public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - aapm
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"aapm\". Did you mean \"apm\"?"));
+	}
+}
+
+public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - apm-javaagent
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"apm-javaagent\". Did you mean \"apm-java-agent\"?"));
+	}
+}
+
+public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - Apm
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Apm\". Did you mean \"apm\"?"));
+	}
 }
