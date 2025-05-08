@@ -332,7 +332,6 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 		catch (InvalidProductException e)
 		{
-			Collector.EmitHint(FilePath, "What");
 			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
 			return new YamlFrontMatter();
 		}
