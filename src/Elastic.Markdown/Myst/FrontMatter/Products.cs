@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.ComponentModel.DataAnnotations;
+using Elastic.Markdown.Suggestions;
 using EnumFastToStringGenerated;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -255,57 +257,12 @@ public class ProductConverter : IYamlTypeConverter
 public class InvalidProductException(string invalidValue)
 	: Exception(
 		$"Invalid products frontmatter value: \"{invalidValue}\"." +
-		(!string.IsNullOrWhiteSpace(invalidValue) ? $" Did you mean \"{ProductExtensions.Suggestion(invalidValue)}\"?" : "") +
+		(!string.IsNullOrWhiteSpace(invalidValue) ? " " + new Suggestion(ProductExtensions.GetProductIds(), invalidValue).GetSuggestionQuestion() : "") +
 		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");
 
 public static class ProductExtensions
 {
-	private static IReadOnlyCollection<string> GetProductIds() =>
+	public static IReadOnlySet<string> GetProductIds() =>
 		ProductEnumExtensions.GetValuesFast()
-			.Select(p => p.ToDisplayFast()).ToList();
-
-	public static string Suggestion(string input) =>
-		GetProductIds()
-			.OrderBy(p => LevenshteinDistance(input, p))
-			.First();
-
-	// Based on https://rosettacode.org/wiki/Levenshtein_distance#C#
-	private static int LevenshteinDistance(string input, string product)
-	{
-		if (string.IsNullOrEmpty(product))
-			return int.MaxValue;
-
-		var inputLength = input.Length;
-		var productLength = product.Length;
-
-		if (inputLength == 0)
-			return productLength;
-
-		if (productLength == 0)
-			return inputLength;
-
-		var distance = new int[inputLength + 1, productLength + 1];
-
-		for (var i = 0; i <= inputLength; i++)
-			distance[i, 0] = i;
-
-		for (var j = 0; j <= productLength; j++)
-			distance[0, j] = j;
-
-		for (var i = 1; i <= inputLength; i++)
-		{
-			for (var j = 1; j <= productLength; j++)
-			{
-				var cost = (input[i - 1] == product[j - 1]) ? 0 : 1;
-
-				distance[i, j] = Math.Min(
-					Math.Min(
-						distance[i - 1, j] + 1,
-						distance[i, j - 1] + 1),
-					distance[i - 1, j - 1] + cost);
-			}
-		}
-
-		return distance[inputLength, productLength];
-	}
+			.Select(p => p.ToDisplayFast()).ToFrozenSet();
 }
