@@ -21,7 +21,7 @@ products: <4>
 1. [`navigation_title`](#navigation-title)
 2. [`description`](#description)
 3. [`applies_to`](#applies-to)
-4. [`products](#products)
+4. [`products`](#products)
 
 ## Navigation Title
 
