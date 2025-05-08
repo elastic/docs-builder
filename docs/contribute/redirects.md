@@ -49,6 +49,19 @@ redirects:
   'testing/redirects/third-page.md':
     anchors:
       'removed-anchor':
+  'testing/redirects/cross-repo-page.md': 'other-repo://reference/section/new-cross-repo-page.md'
+  'testing/redirects/8th-page.md':
+    to: 'other-repo://testing/redirects/5th-page.md'
+    anchors: '!'
+    many:
+      - to: 'testing/redirects/second-page.md'
+        anchors:
+          'item-a': 'yy'
+      - to: 'testing/redirects/third-page.md'
+        anchors:
+          'item-b': 
+            
+  
 ```
 
 ### Redirect preserving all anchors
@@ -103,4 +116,48 @@ redirects:
     anchors:
       'old-anchor': 'active-anchor'
       'removed-anchor':
+```
+
+### Redirecting to other repositories
+
+It is possible to redirect to other repositories. The syntax is the same as when linking on documentation sets:
+
+* 'other-repo://reference/section/new-cross-repo-page.md'
+
+```yaml
+redirects:
+  'testing/redirects/cross-repo-page.md': 'other-repo://reference/section/new-cross-repo-page.md'
+```
+
+### Managing complex scenarios with anchors
+
+* `to`, `anchor` and `many` can be used together to support more complex scenarios.
+* Setting `to` at the top level determines the default case, which can be used for partial redirects.
+* Cross-repository links are supported, with the same syntax as in the previous example.
+* The existing rules for `anchors` also apply here. To define a catch-all redirect, use `{}`.
+
+```yaml
+redirects:
+  'testing/redirects/8th-page.md':
+    to: 'testing/redirects/8th-page.md'
+    anchors: {}
+    many:
+      - to: 'testing/redirects/second-page.md'
+        anchors:
+          'item-a': 'yy'
+      - to: 'testing/redirects/third-page.md'
+        anchors:
+          'item-b':
+
+  'testing/redirects/deleted-page.md':
+    to: 'testing/redirects/5th-page.md'
+    anchors: '!'
+    many:
+      - to: "testing/redirects/second-page.md"
+        anchors:
+          "aa": "zz"
+          "removed-anchor":
+      - to: "other-repo://reference/section/partial-content.md"
+        anchors:
+          "bb": "yy"
 ```

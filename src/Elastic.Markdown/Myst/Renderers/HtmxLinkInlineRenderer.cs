@@ -27,26 +27,29 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
 
+			var isCrossLink = (link.GetData("isCrossLink") as bool?) == true;
+			var isHttpLink = url?.StartsWith("http") ?? false;
+
 			_ = renderer.Write("<a href=\"");
 			_ = renderer.WriteEscapeUrl(url);
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
-
 			if (link.Url?.StartsWith('/') == true)
 			{
 				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INavigationGroup;
 				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INavigationGroup;
+				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
 				_ = renderer.Write(" hx-get=\"");
 				_ = renderer.WriteEscapeUrl(url);
 				_ = renderer.Write('"');
-				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(currentRootNavigation?.Id == targetRootNavigation?.Id)}\"");
+				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
 				_ = renderer.Write($" hx-swap=\"{Htmx.HxSwap}\"");
 				_ = renderer.Write($" hx-push-url=\"{Htmx.HxPushUrl}\"");
 				_ = renderer.Write($" hx-indicator=\"{Htmx.HxIndicator}\"");
 				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			}
-			else if (link.Url?.StartsWith("http") == true && (link.GetData("isCrossLink") as bool?) == false)
+			if (isHttpLink && !isCrossLink)
 			{
 				_ = renderer.Write(" target=\"_blank\"");
 				_ = renderer.Write(" rel=\"noopener noreferrer\"");
