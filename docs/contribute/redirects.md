@@ -51,7 +51,7 @@ redirects:
       'removed-anchor':
   'testing/redirects/cross-repo-page.md': 'other-repo://reference/section/new-cross-repo-page.md'
   'testing/redirects/8th-page.md':
-    to: 'other-repo://testing/redirects/5th-page.md'
+    to: 'other-repo://reference/section/new-cross-repo-page.md'
     anchors: '!'
     many:
       - to: 'testing/redirects/second-page.md'

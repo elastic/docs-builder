@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Links.CrossLinks;
 public interface ICrossLinkResolver
 {
 	Task<FetchedCrossLinks> FetchLinks(Cancel ctx);
-	bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 	IUriEnvironmentResolver UriResolver { get; }
 }
 
@@ -26,8 +26,8 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		return _crossLinks;
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		TryResolve(errorEmitter, warningEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, LinkReference linkReference)
 	{
@@ -42,7 +42,6 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 
 	public static bool TryResolve(
 		Action<string> errorEmitter,
-		Action<string> warningEmitter,
 		FetchedCrossLinks fetchedCrossLinks,
 		IUriEnvironmentResolver uriResolver,
 		Uri crossLinkUri,
@@ -51,28 +50,10 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	{
 		resolvedUri = null;
 
-		if (crossLinkUri.Scheme.Equals("asciidocalypse") || !fetchedCrossLinks.LinkReferences.TryGetValue(crossLinkUri.Scheme, out var sourceLinkReference))
+		if (!fetchedCrossLinks.LinkReferences.TryGetValue(crossLinkUri.Scheme, out var sourceLinkReference))
 		{
-			// TODO this is temporary while we wait for all links.json to be published
-			// Here we just silently rewrite the cross_link to the url
-
-			var declaredRepositories = fetchedCrossLinks.DeclaredRepositories;
-			if (!declaredRepositories.Contains(crossLinkUri.Scheme))
-			{
-				if (fetchedCrossLinks.FromConfiguration)
-					errorEmitter($"'{crossLinkUri.Scheme}' is not declared as valid cross link repository in docset.yml under cross_links: '{crossLinkUri}'");
-				else
-					warningEmitter($"'{crossLinkUri.Scheme}' is not yet publishing to the links registry: '{crossLinkUri}'");
-				return false;
-			}
-
-			var lookupPathFallback = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
-			var pathFallback = ToTargetUrlPath(lookupPathFallback);
-			if (!string.IsNullOrEmpty(crossLinkUri.Fragment))
-				pathFallback += crossLinkUri.Fragment;
-
-			resolvedUri = uriResolver.Resolve(crossLinkUri, pathFallback);
-			return true;
+			errorEmitter($"'{crossLinkUri.Scheme}' was not found in the cross link index.");
+			return false;
 		}
 
 		var originalLookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
