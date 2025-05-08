@@ -1,0 +1,26 @@
+name: 'Documentation Assembler Match'
+description: 'Checks if the current commit is on either a current or next branch'
+
+branding:
+  icon: 'filter'
+  color: 'blue'
+
+inputs:
+  repository:
+    description: 'the repository name'
+    required: true
+  ref_name:
+    description: 'The branch or tag name'
+    required: true
+
+outputs:
+  content-source-match:
+    description: 'true/false indicating the branch matches a content-source'
+  content-source-name:
+    description: "The name of the content source that matches (current/next) or empty"
+
+runs:
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-assembler:edge"
+  env:
+    INPUT_COMMAND: "content-source match"

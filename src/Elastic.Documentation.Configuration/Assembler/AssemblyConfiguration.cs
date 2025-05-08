@@ -78,4 +78,29 @@ public record AssemblyConfiguration
 
 	[YamlMember(Alias = "named_git_references")]
 	public Dictionary<string, string> NamedGitReferences { get; set; } = [];
+
+	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
+	/// <paramref name="repository"/>.
+	public ContentSource? Match(string repository, string branchOrTag)
+	{
+		var repositoryName = repository.Split('/').Last();
+		if (ReferenceRepositories.TryGetValue(repositoryName, out var r))
+		{
+			if (r.GetBranch(ContentSource.Current) == branchOrTag)
+				return ContentSource.Current;
+			if (r.GetBranch(ContentSource.Next) == branchOrTag)
+				return ContentSource.Next;
+			return null;
+		}
+
+		if (repositoryName == NarrativeRepository.RepositoryName)
+		{
+			if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
+				return ContentSource.Current;
+			if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
+				return ContentSource.Next;
+		}
+
+		return null;
+	}
 }

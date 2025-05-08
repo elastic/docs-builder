@@ -25,9 +25,10 @@ app.UseFilter<CatchExceptionFilter>();
 app.Add<InboundLinkCommands>("inbound-links");
 app.Add<RepositoryCommands>("repo");
 app.Add<NavigationCommands>("navigation");
+app.Add<ContentSourceCommands>("content-source");
 
 var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
-var command = githubActions?.GetInput("COMMAND") ?? Environment.GetEnvironmentVariable("INPUT_COMMAND");
+var command = githubActions?.GetInput("COMMAND");
 if (!string.IsNullOrEmpty(command))
 	args = command.Split(' ');
 

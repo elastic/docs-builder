@@ -90,7 +90,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
 		{
 			Force = force ?? false,
-			AllowIndexing = allowIndexing ?? false,
+			AllowIndexing = allowIndexing ?? false
 		};
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
