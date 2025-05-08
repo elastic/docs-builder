@@ -3,301 +3,230 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.Serialization;
+using EnumFastToStringGenerated;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
+[EnumGenerator]
 public enum Product
 {
-	[Display(Name = "APM")]
-	[EnumMember(Value = "apm")]
+	[Display(Name = "apm", Description = "APM")]
 	Apm,
 
-	[Display(Name = "APM .NET Agent")]
-	[EnumMember(Value = "apm-dotnet-agent")]
+	[Display(Name = "apm-dotnet-agent", Description = "APM .NET Agent")]
 	ApmDotnetAgent,
 
-	[Display(Name = "APM Android Agent")]
-	[EnumMember(Value = "apm-android-agent")]
+	[Display(Name = "apm-android-agent", Description = "APM Android Agent")]
 	ApmAndroidAgent,
 
-	[Display(Name = "APM Attacher")]
-	[EnumMember(Value = "apm-attacher")]
+	[Display(Name = "apm-attacher", Description = "APM Attacher")]
 	ApmAttacher,
 
-	[Display(Name = "APM AWS Lambda extension")]
-	[EnumMember(Value = "apm-aws-lambda-extension")]
+	[Display(Name = "apm-aws-lambda-extension", Description = "APM AWS Lambda extension")]
 	ApmAwsLambdaExtension,
 
-	[Display(Name = "APM Go Agent")]
-	[EnumMember(Value = "apm-go-agent")]
+	[Display(Name = "apm-go-agent", Description = "APM Go Agent")]
 	ApmGoAgent,
 
-	[Display(Name = "APM iOS Agent")]
-	[EnumMember(Value = "apm-ios-agent")]
+	[Display(Name = "apm-ios-agent", Description = "APM iOS Agent")]
 	ApmIosAgent,
 
-	[Display(Name = "APM Java Agent")]
-	[EnumMember(Value = "apm-java-agent")]
+	[Display(Name = "apm-java-agent", Description = "APM Java Agent")]
 	ApmJavaAgent,
 
-	[Display(Name = "APM Node.js Agent")]
-	[EnumMember(Value = "apm-node-agent")]
+	[Display(Name = "apm-node-agent", Description = "APM Node.js Agent")]
 	ApmNodeAgent,
 
-	[Display(Name = "APM PHP Agent")]
-	[EnumMember(Value = "apm-php-agent")]
+	[Display(Name = "apm-php-agent", Description = "APM PHP Agent")]
 	ApmPhpAgent,
 
-	[Display(Name = "APM Python Agent")]
-	[EnumMember(Value = "apm-python-agent")]
+	[Display(Name = "apm-python-agent", Description = "APM Python Agent")]
 	ApmPythonAgent,
 
-	[Display(Name = "APM Ruby Agent")]
-	[EnumMember(Value = "apm-ruby-agent")]
+	[Display(Name = "apm-ruby-agent", Description = "APM Ruby Agent")]
 	ApmRubyAgent,
 
-	[Display(Name = "APM RUM Agent")]
-	[EnumMember(Value = "apm-rum-agent")]
+	[Display(Name = "apm-rum-agent", Description = "APM RUM Agent")]
 	ApmRumAgent,
 
-	[Display(Name = "Beats Logging plugin")]
-	[EnumMember(Value = "beats-logging-plugin")]
+	[Display(Name = "beats-logging-plugin", Description = "Beats Logging plugin")]
 	BeatsLoggingPlugin,
 
-	[Display(Name = "Cloud Control ECCTL")]
-	[EnumMember(Value = "cloud-control-ecctl")]
+	[Display(Name = "cloud-control-ecctl", Description = "Cloud Control ECCTL")]
 	CloudControlEcctl,
 
-	[Display(Name = "Cloud Enterprise")]
-	[EnumMember(Value = "cloud-enterprise")]
+	[Display(Name = "cloud-enterprise", Description = "Cloud Enterprise")]
 	CloudEnterprise,
 
-	[Display(Name = "Cloud Hosted")]
-	[EnumMember(Value = "cloud-hosted")]
+	[Display(Name = "cloud-hosted", Description = "Cloud Hosted")]
 	CloudHosted,
 
-	[Display(Name = "Cloud Kubernetes")]
-	[EnumMember(Value = "cloud-kubernetes")]
+	[Display(Name = "cloud-kubernetes", Description = "Cloud Kubernetes")]
 	CloudKubernetes,
 
-	[Display(Name = "Cloud Native Ingest")]
-	[EnumMember(Value = "cloud-native-ingest")]
+	[Display(Name = "cloud-native-ingest", Description = "Cloud Native Ingest")]
 	CloudNativeIngest,
 
-	[Display(Name = "Cloud Serverless")]
-	[EnumMember(Value = "cloud-serverless")]
+	[Display(Name = "cloud-serverless", Description = "Cloud Serverless")]
 	CloudServerless,
 
-	[Display(Name = "Cloud Terraform")]
-	[EnumMember(Value = "cloud-terraform")]
+	[Display(Name = "cloud-terraform", Description = "Cloud Terraform")]
 	CloudTerraform,
 
-	[Display(Name = "ECS Logging")]
-	[EnumMember(Value = "ecs-logging")]
+	[Display(Name = "ecs-logging", Description = "ECS Logging")]
 	EcsLogging,
 
-	[Display(Name = "ECS Logging .NET")]
-	[EnumMember(Value = "ecs-logging-dotnet")]
+	[Display(Name = "ecs-logging-dotnet", Description = "ECS Logging .NET")]
 	EcsLoggingDotnet,
 
-	[Display(Name = "ECS Logging Go Logrus")]
-	[EnumMember(Value = "ecs-logging-go-logrus")]
+	[Display(Name = "ecs-logging-go-logrus", Description = "ECS Logging Go Logrus")]
 	EcsLoggingGoLogrus,
 
-	[Display(Name = "ECS Logging Go Zap")]
-	[EnumMember(Value = "ecs-logging-go-zap")]
+	[Display(Name = "ecs-logging-go-zap", Description = "ECS Logging Go Zap")]
 	EcsLoggingGoZap,
 
-	[Display(Name = "ECS Logging Go Zerolog")]
-	[EnumMember(Value = "ecs-logging-go-zerolog")]
+	[Display(Name = "ecs-logging-go-zerolog", Description = "ECS Logging Go Zerolog")]
 	EcsLoggingGoZerolog,
 
-	[Display(Name = "ECS Logging Java")]
-	[EnumMember(Value = "ecs-logging-java")]
+	[Display(Name = "ecs-logging-java", Description = "ECS Logging Java")]
 	EcsLoggingJava,
 
-	[Display(Name = "ECS Logging Node.js")]
-	[EnumMember(Value = "ecs-logging-node")]
+	[Display(Name = "ecs-logging-node", Description = "ECS Logging Node.js")]
 	EcsLoggingNode,
 
-	[Display(Name = "ECS Logging PHP")]
-	[EnumMember(Value = "ecs-logging-php")]
+	[Display(Name = "ecs-logging-php", Description = "ECS Logging PHP")]
 	EcsLoggingPhp,
 
-	[Display(Name = "ECS Logging Python")]
-	[EnumMember(Value = "ecs-logging-python")]
+	[Display(Name = "ecs-logging-python", Description = "ECS Logging Python")]
 	EcsLoggingPython,
 
-	[Display(Name = "ECS Logging Ruby")]
-	[EnumMember(Value = "ecs-logging-ruby")]
+	[Display(Name = "ecs-logging-ruby", Description = "ECS Logging Ruby")]
 	EcsLoggingRuby,
 
-	[Display(Name = "Elastic Agent")]
-	[EnumMember(Value = "elastic-agent")]
+	[Display(Name = "elastic-agent", Description = "Elastic Agent")]
 	ElasticAgent,
 
-	[Display(Name = "Elastic Common Schema (ECS)")]
-	[EnumMember(Value = "ecs")]
+	[Display(Name = "ecs", Description = "Elastic Common Schema (ECS)")]
 	Ecs,
 
-	[Display(Name = "Elastic Products platform")]
-	[EnumMember(Value = "elastic-products-platform")]
+	[Display(Name = "elastic-products-platform", Description = "Elastic Products platform")]
 	ElasticProductsPlatform,
 
-	[Display(Name = "Elastic Stack")]
-	[EnumMember(Value = "elastic-stack")]
+	[Display(Name = "elastic-stack", Description = "Elastic Stack")]
 	ElasticStack,
 
-	[Display(Name = "Elasticsearch")]
-	[EnumMember(Value = "elasticsearch")]
+	[Display(Name = "elasticsearch", Description = "Elasticsearch")]
 	Elasticsearch,
 
-	[Display(Name = "Elasticsearch .NET Client")]
-	[EnumMember(Value = "elasticsearch-dotnet-client")]
+	[Display(Name = "elasticsearch-dotnet-client", Description = "Elasticsearch .NET Client")]
 	ElasticsearchDotnetClient,
 
-	[Display(Name = "Elasticsearch Apache Hadoop")]
-	[EnumMember(Value = "elasticsearch-apache-hadoop")]
+	[Display(Name = "elasticsearch-apache-hadoop", Description = "Elasticsearch Apache Hadoop")]
 	ElasticsearchApacheHadoop,
 
-	[Display(Name = "Elasticsearch Cloud Hosted Heroku")]
-	[EnumMember(Value = "elasticsearch-cloud-hosted-heroku")]
+	[Display(Name = "elasticsearch-cloud-hosted-heroku", Description = "Elasticsearch Cloud Hosted Heroku")]
 	ElasticsearchCloudHostedHeroku,
 
-	[Display(Name = "Elasticsearch community clients")]
-	[EnumMember(Value = "elasticsearch-community-clients")]
+	[Display(Name = "elasticsearch-community-clients", Description = "Elasticsearch community clients")]
 	ElasticsearchCommunityClients,
 
-	[Display(Name = "Elasticsearch Curator")]
-	[EnumMember(Value = "elasticsearch-curator")]
+	[Display(Name = "elasticsearch-curator", Description = "Elasticsearch Curator")]
 	ElasticsearchCurator,
 
-	[Display(Name = "Elasticsearch Eland Python Client")]
-	[EnumMember(Value = "elasticsearch-eland-python-client")]
+	[Display(Name = "elasticsearch-eland-python-client", Description = "Elasticsearch Eland Python Client")]
 	ElasticsearchElandPythonClient,
 
-	[Display(Name = "Elasticsearch Go Client")]
-	[EnumMember(Value = "elasticsearch-go-client")]
+	[Display(Name = "elasticsearch-go-client", Description = "Elasticsearch Go Client")]
 	ElasticsearchGoClient,
 
-	[Display(Name = "Elasticsearch Groovy Client")]
-	[EnumMember(Value = "elasticsearch-groovy-client")]
+	[Display(Name = "elasticsearch-groovy-client", Description = "Elasticsearch Groovy Client")]
 	ElasticsearchGroovyClient,
 
-	[Display(Name = "Elasticsearch Java Client")]
-	[EnumMember(Value = "elasticsearch-java-client")]
+	[Display(Name = "elasticsearch-java-client", Description = "Elasticsearch Java Client")]
 	ElasticsearchJavaClient,
 
-	[Display(Name = "Elasticsearch JavaScript Client")]
-	[EnumMember(Value = "elasticsearch-java-script-client")]
+	[Display(Name = "elasticsearch-java-script-client", Description = "Elasticsearch JavaScript Client")]
 	ElasticsearchJavaScriptClient,
 
-	[Display(Name = "Elasticsearch Painless scripting language")]
-	[EnumMember(Value = "elasticsearch-painless-scripting-language")]
+	[Display(Name = "elasticsearch-painless-scripting-language", Description = "Elasticsearch Painless scripting language")]
 	ElasticsearchPainlessScriptingLanguage,
 
-	[Display(Name = "Elasticsearch Perl Client")]
-	[EnumMember(Value = "elasticsearch-perl-client")]
+	[Display(Name = "elasticsearch-perl-client", Description = "Elasticsearch Perl Client")]
 	ElasticsearchPerlClient,
 
-	[Display(Name = "Elasticsearch PHP Client")]
-	[EnumMember(Value = "elasticsearch-php-client")]
+	[Display(Name = "elasticsearch-php-client", Description = "Elasticsearch PHP Client")]
 	ElasticsearchPhpClient,
 
-	[Display(Name = "Elasticsearch plugins")]
-	[EnumMember(Value = "elasticsearch-plugins")]
+	[Display(Name = "elasticsearch-plugins", Description = "Elasticsearch plugins")]
 	ElasticsearchPlugins,
 
-	[Display(Name = "Elasticsearch Python Client")]
-	[EnumMember(Value = "elasticsearch-python-client")]
+	[Display(Name = "elasticsearch-python-client", Description = "Elasticsearch Python Client")]
 	ElasticsearchPythonClient,
 
-	[Display(Name = "Elasticsearch Resiliency Status")]
-	[EnumMember(Value = "elasticsearch-resiliency-status")]
+	[Display(Name = "elasticsearch-resiliency-status", Description = "Elasticsearch Resiliency Status")]
 	ElasticsearchResiliencyStatus,
 
-	[Display(Name = "Elasticsearch Ruby Client")]
-	[EnumMember(Value = "elasticsearch-ruby-client")]
+	[Display(Name = "elasticsearch-ruby-client", Description = "Elasticsearch Ruby Client")]
 	ElasticsearchRubyClient,
 
-	[Display(Name = "Elasticsearch Rust Client")]
-	[EnumMember(Value = "elasticsearch-rust-client")]
+	[Display(Name = "elasticsearch-rust-client", Description = "Elasticsearch Rust Client")]
 	ElasticsearchRustClient,
 
-	[Display(Name = "Fleet")]
-	[EnumMember(Value = "fleet")]
+	[Display(Name = "fleet", Description = "Fleet")]
 	Fleet,
 
-	[Display(Name = "Ingest")]
-	[EnumMember(Value = "ingest")]
+	[Display(Name = "ingest", Description = "Ingest")]
 	Ingest,
 
-	[Display(Name = "Integrations")]
-	[EnumMember(Value = "integrations")]
+	[Display(Name = "integrations", Description = "Integrations")]
 	Integrations,
 
-	[Display(Name = "Kibana")]
-	[EnumMember(Value = "kibana")]
+	[Display(Name = "kibana", Description = "Kibana")]
 	Kibana,
 
-	[Display(Name = "Logstash")]
-	[EnumMember(Value = "logstash")]
+	[Display(Name = "logstash", Description = "Logstash")]
 	Logstash,
 
-	[Display(Name = "Machine Learning")]
-	[EnumMember(Value = "machine-learning")]
+	[Display(Name = "machine-learning", Description = "Machine Learning")]
 	MachineLearning,
 
-	[Display(Name = "Observability")]
-	[EnumMember(Value = "observability")]
+	[Display(Name = "observability", Description = "Observability")]
 	Observability,
 
-	[Display(Name = "Reference Architectures")]
-	[EnumMember(Value = "reference-architectures")]
+	[Display(Name = "reference-architectures", Description = "Reference Architectures")]
 	ReferenceArchitectures,
 
-	[Display(Name = "Search UI")]
-	[EnumMember(Value = "search-ui")]
+	[Display(Name = "search-ui", Description = "Search UI")]
 	SearchUi,
 
-	[Display(Name = "Security")]
-	[EnumMember(Value = "security")]
+	[Display(Name = "security", Description = "Security")]
 	Security,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry Collector")]
-	[EnumMember(Value = "edot-collector")]
+	[Display(Name = "edot-collector", Description = "Elastic Distribution of OpenTelemetry Collector")]
 	EdotCollector,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry Java")]
-	[EnumMember(Value = "edot-java")]
+	[Display(Name = "edot-java", Description = "Elastic Distribution of OpenTelemetry Java")]
 	EdotJava,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry .NET")]
-	[EnumMember(Value = "edot-dotnet")]
+	[Display(Name = "edot-dotnet", Description = "Elastic Distribution of OpenTelemetry .NET")]
 	EdotDotnet,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry Node.js")]
-	[EnumMember(Value = "edot-nodejs")]
+	[Display(Name = "edot-nodejs", Description = "Elastic Distribution of OpenTelemetry Node.js")]
 	EdotNodeJs,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry PHP")]
-	[EnumMember(Value = "edot-php")]
+	[Display(Name = "edot-php", Description = "Elastic Distribution of OpenTelemetry PHP")]
 	EdotPhp,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry Python")]
-	[EnumMember(Value = "edot-python")]
+	[Display(Name = "edot-python", Description = "Elastic Distribution of OpenTelemetry Python")]
 	EdotPython,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry Android")]
-	[EnumMember(Value = "edot-android")]
+	[Display(Name = "edot-android", Description = "Elastic Distribution of OpenTelemetry Android")]
 	EdotAndroid,
 
-	[Display(Name = "Elastic Distribution of OpenTelemetry iOS")]
-	[EnumMember(Value = "edot-ios")]
+	[Display(Name = "edot-ios", Description = "Elastic Distribution of OpenTelemetry iOS")]
 	EdotIos,
 }
 
@@ -309,68 +238,34 @@ public class ProductConverter : IYamlTypeConverter
 	{
 		var value = parser.Consume<Scalar>();
 		if (string.IsNullOrWhiteSpace(value.Value))
-			throw new InvalidProductException("empty value");
+			throw new InvalidProductException("");
 
 		var product = Enum.GetValues<Product>()
-			.FirstOrDefault(p =>
-			{
-				var enumMemberAttr = typeof(Product)
-					.GetField(p.ToString())
-					?.GetCustomAttributes(typeof(EnumMemberAttribute), false)
-					.FirstOrDefault() as EnumMemberAttribute;
-				return enumMemberAttr?.Value?.Equals(value.Value, StringComparison.OrdinalIgnoreCase) ?? false;
-			});
+			.FirstOrDefault(p => p.ToDisplayFast()?.Equals(value.Value, StringComparison.Ordinal) ?? false);
 
-		if (Enum.IsDefined(product) && product.GetEnumMemberValue()?.Equals(value.Value) == true)
+		if (ProductEnumExtensions.IsDefinedFast(product) && product.ToDisplayFast()?.Equals(value.Value) == true)
 			return product;
 
 		throw new InvalidProductException(value.Value);
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => throw new NotImplementedException();
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
 public class InvalidProductException(string invalidValue)
 	: Exception(
-		$"Invalid products frontmatter value: \"{invalidValue}\". Did you mean \"{ProductExtensions.Suggestion(invalidValue)}\"?\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");
+		$"Invalid products frontmatter value: \"{invalidValue}\"." +
+		(!string.IsNullOrWhiteSpace(invalidValue) ? $" Did you mean \"{ProductExtensions.Suggestion(invalidValue)}\"?" : "") +
+		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");
 
 public static class ProductExtensions
 {
-	public static string GetProductDisplayName(this Product product)
-	{
-		var displayAttr = typeof(Product)
-			.GetField(product.ToString())
-			?.GetCustomAttributes(typeof(DisplayAttribute), false)
-			.FirstOrDefault() as DisplayAttribute;
-		return displayAttr?.Name ?? product.ToString();
-	}
-
-	public static string? GetEnumMemberValue(this Product product)
-	{
-		var enumMemberAttr = typeof(Product)
-			.GetField(product.ToString())
-			?.GetCustomAttributes(typeof(EnumMemberAttribute), false)
-			.FirstOrDefault() as EnumMemberAttribute;
-		return enumMemberAttr?.Value;
-	}
-
-
-	private static List<string> GetEnumMemberValues() => Enum.GetValues<Product>()
-		.Select(p =>
-		{
-			var enumMemberAttr = typeof(Product)
-				.GetField(p.ToString())
-				?.GetCustomAttributes(typeof(EnumMemberAttribute), false)
-				.FirstOrDefault() as EnumMemberAttribute;
-
-			return enumMemberAttr?.Value;
-		})
-		.Where(value => value != null)
-		.Select(value => value!)
-		.ToList();
+	private static IReadOnlyCollection<string> GetProductIds() =>
+		ProductEnumExtensions.GetValuesFast()
+			.Select(p => p.ToDisplayFast()).ToList();
 
 	public static string Suggestion(string input) =>
-		GetEnumMemberValues()
+		GetProductIds()
 			.OrderBy(p => LevenshteinDistance(input, p))
 			.First();
 

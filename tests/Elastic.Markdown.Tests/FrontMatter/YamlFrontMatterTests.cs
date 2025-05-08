@@ -65,7 +65,7 @@ sub:
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
 }
 
-public class Products(ITestOutputHelper output) : DirectiveTest(output,
+public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output,
 	"""
 	---
 	products:
@@ -83,6 +83,29 @@ public class Products(ITestOutputHelper output) : DirectiveTest(output,
 		File.YamlFrontMatter!.Products.Should().NotBeNull()
 			.And.HaveCount(1)
 			.And.Contain(Product.Apm);
+	}
+}
+
+public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - "apm"
+	  - "elasticsearch"
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void ReadsProducts()
+	{
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter!.Products.Should().NotBeNull()
+			.And.HaveCount(2)
+			.And.Contain(Product.Apm)
+			.And.Contain(Product.Elasticsearch);
 	}
 }
 
@@ -140,5 +163,24 @@ public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : Direc
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Apm\". Did you mean \"apm\"?"));
+	}
+}
+
+public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - ""
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"\".\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products."));
 	}
 }
