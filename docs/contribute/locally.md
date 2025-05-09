@@ -30,44 +30,43 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
 :::{tab-item} macOS
 
-1. **Download the Binary:**
-   Download the latest macOS binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   curl -LO https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-mac-arm64.zip
-   ```
+1. **Download and run the install script**   
 
-2. **Extract the Binary:**
-   Unzip the downloaded file:
-   ```sh
-   unzip docs-builder-mac-arm64.zip
-   ```
+   Run this command to download and install the latest version of `docs-builder`:
 
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
    ```sh
-   ./docs-builder serve -p ./path/to/docs
+   sudo curl -L https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.sh | sh
+   ```
+   This downloads the latest binary, makes it executable, and installs it to your user PATH.
+
+2. **Run docs-builder from a docs folder**
+
+   Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+
+   ```sh
+   docs-builder serve
    ```
 
 :::
 
 :::{tab-item} Windows
 
-1. **Download the Binary:**
-   Download the latest Windows binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   Invoke-WebRequest -Uri https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-win-x64.zip -OutFile docs-builder-win-x64.zip
+1. **Download and run the install script**   
+
+   Run this command to download and install the latest version of `docs-builder`:
+
+   ```powershell
+   iex (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.ps1')
    ```
 
-2. **Extract the Binary:**
-   Unzip the downloaded file. You can use tools like WinZip, 7-Zip, or the built-in Windows extraction tool.
-   ```sh
-   Expand-Archive -Path docs-builder-win-x64.zip -DestinationPath .
-   ```
+   This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+2. **Run docs-builder from a docs folder**
+
+   Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+
    ```sh
-   .\docs-builder serve -p ./path/to/docs
+   docs-builder serve
    ```
 
 :::

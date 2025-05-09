@@ -159,7 +159,7 @@ jobs:
           gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-builder/release/*.zip
           gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-assembler/release/*.zip
         shell: bash
-    
+
   publish-release:
     needs:
       - release

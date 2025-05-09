@@ -5,231 +5,92 @@
 using System.Collections.Frozen;
 using System.ComponentModel.DataAnnotations;
 using Elastic.Markdown.Suggestions;
-using EnumFastToStringGenerated;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-[EnumGenerator]
-public enum Product
+public record Product(string Id, string DisplayName);
+
+public static class Products
 {
-	[Display(Name = "apm", Description = "APM")]
-	Apm,
-
-	[Display(Name = "apm-dotnet-agent", Description = "APM .NET Agent")]
-	ApmDotnetAgent,
-
-	[Display(Name = "apm-android-agent", Description = "APM Android Agent")]
-	ApmAndroidAgent,
-
-	[Display(Name = "apm-attacher", Description = "APM Attacher")]
-	ApmAttacher,
-
-	[Display(Name = "apm-aws-lambda-extension", Description = "APM AWS Lambda extension")]
-	ApmAwsLambdaExtension,
-
-	[Display(Name = "apm-go-agent", Description = "APM Go Agent")]
-	ApmGoAgent,
-
-	[Display(Name = "apm-ios-agent", Description = "APM iOS Agent")]
-	ApmIosAgent,
-
-	[Display(Name = "apm-java-agent", Description = "APM Java Agent")]
-	ApmJavaAgent,
-
-	[Display(Name = "apm-node-agent", Description = "APM Node.js Agent")]
-	ApmNodeAgent,
-
-	[Display(Name = "apm-php-agent", Description = "APM PHP Agent")]
-	ApmPhpAgent,
-
-	[Display(Name = "apm-python-agent", Description = "APM Python Agent")]
-	ApmPythonAgent,
-
-	[Display(Name = "apm-ruby-agent", Description = "APM Ruby Agent")]
-	ApmRubyAgent,
-
-	[Display(Name = "apm-rum-agent", Description = "APM RUM Agent")]
-	ApmRumAgent,
-
-	[Display(Name = "beats-logging-plugin", Description = "Beats Logging plugin")]
-	BeatsLoggingPlugin,
-
-	[Display(Name = "cloud-control-ecctl", Description = "Cloud Control ECCTL")]
-	CloudControlEcctl,
-
-	[Display(Name = "cloud-enterprise", Description = "Cloud Enterprise")]
-	CloudEnterprise,
-
-	[Display(Name = "cloud-hosted", Description = "Cloud Hosted")]
-	CloudHosted,
-
-	[Display(Name = "cloud-kubernetes", Description = "Cloud Kubernetes")]
-	CloudKubernetes,
-
-	[Display(Name = "cloud-native-ingest", Description = "Cloud Native Ingest")]
-	CloudNativeIngest,
-
-	[Display(Name = "cloud-serverless", Description = "Cloud Serverless")]
-	CloudServerless,
-
-	[Display(Name = "cloud-terraform", Description = "Cloud Terraform")]
-	CloudTerraform,
-
-	[Display(Name = "ecs-logging", Description = "ECS Logging")]
-	EcsLogging,
-
-	[Display(Name = "ecs-logging-dotnet", Description = "ECS Logging .NET")]
-	EcsLoggingDotnet,
-
-	[Display(Name = "ecs-logging-go-logrus", Description = "ECS Logging Go Logrus")]
-	EcsLoggingGoLogrus,
-
-	[Display(Name = "ecs-logging-go-zap", Description = "ECS Logging Go Zap")]
-	EcsLoggingGoZap,
-
-	[Display(Name = "ecs-logging-go-zerolog", Description = "ECS Logging Go Zerolog")]
-	EcsLoggingGoZerolog,
-
-	[Display(Name = "ecs-logging-java", Description = "ECS Logging Java")]
-	EcsLoggingJava,
-
-	[Display(Name = "ecs-logging-node", Description = "ECS Logging Node.js")]
-	EcsLoggingNode,
-
-	[Display(Name = "ecs-logging-php", Description = "ECS Logging PHP")]
-	EcsLoggingPhp,
-
-	[Display(Name = "ecs-logging-python", Description = "ECS Logging Python")]
-	EcsLoggingPython,
-
-	[Display(Name = "ecs-logging-ruby", Description = "ECS Logging Ruby")]
-	EcsLoggingRuby,
-
-	[Display(Name = "elastic-agent", Description = "Elastic Agent")]
-	ElasticAgent,
-
-	[Display(Name = "ecs", Description = "Elastic Common Schema (ECS)")]
-	Ecs,
-
-	[Display(Name = "elastic-products-platform", Description = "Elastic Products platform")]
-	ElasticProductsPlatform,
-
-	[Display(Name = "elastic-stack", Description = "Elastic Stack")]
-	ElasticStack,
-
-	[Display(Name = "elasticsearch", Description = "Elasticsearch")]
-	Elasticsearch,
-
-	[Display(Name = "elasticsearch-dotnet-client", Description = "Elasticsearch .NET Client")]
-	ElasticsearchDotnetClient,
-
-	[Display(Name = "elasticsearch-apache-hadoop", Description = "Elasticsearch Apache Hadoop")]
-	ElasticsearchApacheHadoop,
-
-	[Display(Name = "elasticsearch-cloud-hosted-heroku", Description = "Elasticsearch Cloud Hosted Heroku")]
-	ElasticsearchCloudHostedHeroku,
-
-	[Display(Name = "elasticsearch-community-clients", Description = "Elasticsearch community clients")]
-	ElasticsearchCommunityClients,
-
-	[Display(Name = "elasticsearch-curator", Description = "Elasticsearch Curator")]
-	ElasticsearchCurator,
-
-	[Display(Name = "elasticsearch-eland-python-client", Description = "Elasticsearch Eland Python Client")]
-	ElasticsearchElandPythonClient,
-
-	[Display(Name = "elasticsearch-go-client", Description = "Elasticsearch Go Client")]
-	ElasticsearchGoClient,
-
-	[Display(Name = "elasticsearch-groovy-client", Description = "Elasticsearch Groovy Client")]
-	ElasticsearchGroovyClient,
-
-	[Display(Name = "elasticsearch-java-client", Description = "Elasticsearch Java Client")]
-	ElasticsearchJavaClient,
-
-	[Display(Name = "elasticsearch-java-script-client", Description = "Elasticsearch JavaScript Client")]
-	ElasticsearchJavaScriptClient,
-
-	[Display(Name = "elasticsearch-painless-scripting-language", Description = "Elasticsearch Painless scripting language")]
-	ElasticsearchPainlessScriptingLanguage,
-
-	[Display(Name = "elasticsearch-perl-client", Description = "Elasticsearch Perl Client")]
-	ElasticsearchPerlClient,
-
-	[Display(Name = "elasticsearch-php-client", Description = "Elasticsearch PHP Client")]
-	ElasticsearchPhpClient,
-
-	[Display(Name = "elasticsearch-plugins", Description = "Elasticsearch plugins")]
-	ElasticsearchPlugins,
-
-	[Display(Name = "elasticsearch-python-client", Description = "Elasticsearch Python Client")]
-	ElasticsearchPythonClient,
-
-	[Display(Name = "elasticsearch-resiliency-status", Description = "Elasticsearch Resiliency Status")]
-	ElasticsearchResiliencyStatus,
-
-	[Display(Name = "elasticsearch-ruby-client", Description = "Elasticsearch Ruby Client")]
-	ElasticsearchRubyClient,
-
-	[Display(Name = "elasticsearch-rust-client", Description = "Elasticsearch Rust Client")]
-	ElasticsearchRustClient,
-
-	[Display(Name = "fleet", Description = "Fleet")]
-	Fleet,
-
-	[Display(Name = "ingest", Description = "Ingest")]
-	Ingest,
-
-	[Display(Name = "integrations", Description = "Integrations")]
-	Integrations,
-
-	[Display(Name = "kibana", Description = "Kibana")]
-	Kibana,
-
-	[Display(Name = "logstash", Description = "Logstash")]
-	Logstash,
-
-	[Display(Name = "machine-learning", Description = "Machine Learning")]
-	MachineLearning,
-
-	[Display(Name = "observability", Description = "Observability")]
-	Observability,
-
-	[Display(Name = "reference-architectures", Description = "Reference Architectures")]
-	ReferenceArchitectures,
-
-	[Display(Name = "search-ui", Description = "Search UI")]
-	SearchUi,
-
-	[Display(Name = "security", Description = "Security")]
-	Security,
-
-	[Display(Name = "edot-collector", Description = "Elastic Distribution of OpenTelemetry Collector")]
-	EdotCollector,
-
-	[Display(Name = "edot-java", Description = "Elastic Distribution of OpenTelemetry Java")]
-	EdotJava,
-
-	[Display(Name = "edot-dotnet", Description = "Elastic Distribution of OpenTelemetry .NET")]
-	EdotDotnet,
-
-	[Display(Name = "edot-nodejs", Description = "Elastic Distribution of OpenTelemetry Node.js")]
-	EdotNodeJs,
-
-	[Display(Name = "edot-php", Description = "Elastic Distribution of OpenTelemetry PHP")]
-	EdotPhp,
-
-	[Display(Name = "edot-python", Description = "Elastic Distribution of OpenTelemetry Python")]
-	EdotPython,
-
-	[Display(Name = "edot-android", Description = "Elastic Distribution of OpenTelemetry Android")]
-	EdotAndroid,
-
-	[Display(Name = "edot-ios", Description = "Elastic Distribution of OpenTelemetry iOS")]
-	EdotIos,
+	public static FrozenSet<Product> All { get; } = [
+		new("apm", "APM"),
+		new("apm-dotnet-agent", "APM .NET Agent"),
+		new("apm-android-agent", "APM Android Agent"),
+		new("apm-attacher", "APM Attacher"),
+		new("apm-aws-lambda-extension", "APM AWS Lambda extension"),
+		new("apm-go-agent", "APM Go Agent"),
+		new("apm-ios-agent", "APM iOS Agent"),
+		new("apm-java-agent", "APM Java Agent"),
+		new("apm-node-agent", "APM Node.js Agent"),
+		new("apm-php-agent", "APM PHP Agent"),
+		new("apm-python-agent", "APM Python Agent"),
+		new("apm-ruby-agent", "APM Ruby Agent"),
+		new("apm-rum-agent", "APM RUM Agent"),
+		new("beats-logging-plugin", "Beats Logging plugin"),
+		new("cloud-control-ecctl", "Cloud Control ECCTL"),
+		new("cloud-enterprise", "Cloud Enterprise"),
+		new("cloud-hosted", "Cloud Hosted"),
+		new("cloud-kubernetes", "Cloud Kubernetes"),
+		new("cloud-native-ingest", "Cloud Native Ingest"),
+		new("cloud-serverless", "Cloud Serverless"),
+		new("cloud-terraform", "Cloud Terraform"),
+		new("ecs-logging", "ECS Logging"),
+		new("ecs-logging-dotnet", "ECS Logging .NET"),
+		new("ecs-logging-go-logrus", "ECS Logging Go Logrus"),
+		new("ecs-logging-go-zap", "ECS Logging Go Zap"),
+		new("ecs-logging-go-zerolog", "ECS Logging Go Zerolog"),
+		new("ecs-logging-java", "ECS Logging Java"),
+		new("ecs-logging-node", "ECS Logging Node.js"),
+		new("ecs-logging-php", "ECS Logging PHP"),
+		new("ecs-logging-python", "ECS Logging Python"),
+		new("ecs-logging-ruby", "ECS Logging Ruby"),
+		new("elastic-agent", "Elastic Agent"),
+		new("ecs", "Elastic Common Schema (ECS)"),
+		new("elastic-products-platform", "Elastic Products platform"),
+		new("elastic-stack", "Elastic Stack"),
+		new("elasticsearch", "Elasticsearch"),
+		new("elasticsearch-dotnet-client", "Elasticsearch .NET Client"),
+		new("elasticsearch-apache-hadoop", "Elasticsearch Apache Hadoop"),
+		new("elasticsearch-cloud-hosted-heroku", "Elasticsearch Cloud Hosted Heroku"),
+		new("elasticsearch-community-clients", "Elasticsearch community clients"),
+		new("elasticsearch-curator", "Elasticsearch Curator"),
+		new("elasticsearch-eland-python-client", "Elasticsearch Eland Python Client"),
+		new("elasticsearch-go-client", "Elasticsearch Go Client"),
+		new("elasticsearch-groovy-client", "Elasticsearch Groovy Client"),
+		new("elasticsearch-java-client", "Elasticsearch Java Client"),
+		new("elasticsearch-java-script-client", "Elasticsearch JavaScript Client"),
+		new("elasticsearch-painless-scripting-language", "Elasticsearch Painless scripting language"),
+		new("elasticsearch-perl-client", "Elasticsearch Perl Client"),
+		new("elasticsearch-php-client", "Elasticsearch PHP Client"),
+		new("elasticsearch-plugins", "Elasticsearch plugins"),
+		new("elasticsearch-python-client", "Elasticsearch Python Client"),
+		new("elasticsearch-resiliency-status", "Elasticsearch Resiliency Status"),
+		new("elasticsearch-ruby-client", "Elasticsearch Ruby Client"),
+		new("elasticsearch-rust-client", "Elasticsearch Rust Client"),
+		new("fleet", "Fleet"),
+		new("ingest", "Ingest"),
+		new("integrations", "Integrations"),
+		new("kibana", "Kibana"),
+		new("logstash", "Logstash"),
+		new("machine-learning", "Machine Learning"),
+		new("observability", "Observability"),
+		new("reference-architectures", "Reference Architectures"),
+		new("search-ui", "Search UI"),
+		new("security", "Security"),
+		new("edot-collector", "Elastic Distribution of OpenTelemetry Collector"),
+		new("edot-java", "Elastic Distribution of OpenTelemetry Java"),
+		new("edot-dotnet", "Elastic Distribution of OpenTelemetry .NET"),
+		new("edot-nodejs", "Elastic Distribution of OpenTelemetry Node.js"),
+		new("edot-php", "Elastic Distribution of OpenTelemetry PHP"),
+		new("edot-python", "Elastic Distribution of OpenTelemetry Python"),
+		new("edot-android", "Elastic Distribution of OpenTelemetry Android"),
+		new("edot-ios", "Elastic Distribution of OpenTelemetry iOS")
+	];
+
+	public static FrozenDictionary<string, Product> AllById { get; } = All.ToDictionary(p => p.Id, StringComparer.Ordinal).ToFrozenDictionary();
 }
 
 public class ProductConverter : IYamlTypeConverter
@@ -242,10 +103,7 @@ public class ProductConverter : IYamlTypeConverter
 		if (string.IsNullOrWhiteSpace(value.Value))
 			throw new InvalidProductException("");
 
-		var product = Enum.GetValues<Product>()
-			.FirstOrDefault(p => p.ToDisplayFast()?.Equals(value.Value, StringComparison.Ordinal) ?? false);
-
-		if (ProductEnumExtensions.IsDefinedFast(product) && product.ToDisplayFast()?.Equals(value.Value) == true)
+		if (Products.AllById.TryGetValue(value.Value, out var product))
 			return product;
 
 		throw new InvalidProductException(value.Value);
@@ -263,6 +121,5 @@ public class InvalidProductException(string invalidValue)
 public static class ProductExtensions
 {
 	public static IReadOnlySet<string> GetProductIds() =>
-		ProductEnumExtensions.GetValuesFast()
-			.Select(p => p.ToDisplayFast()).ToFrozenSet();
+		Products.All.Select(p => p.Id).ToFrozenSet();
 }
