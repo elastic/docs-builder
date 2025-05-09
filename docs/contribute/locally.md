@@ -66,9 +66,14 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
 3. **Run the Binary:**
    Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+   
    ```sh
    .\docs-builder serve -p ./path/to/docs
    ```
+
+:::{tip}
+Place the `docs-builder` binary file in a system path so that you can run it from any folder. On Windows, you can do this by running `Copy-Item "docs-builder.exe" -Destination "%SystemRoot%\system32"` with elevated privileges, or move it to a new folder and add the folder to the system paths.
+:::
 
 :::
 
@@ -92,13 +97,17 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ./docs-builder serve -p ./path/to/docs
    ```
 
+   If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
+
+:::{tip}
+Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS and Linux, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
+:::
+
 :::
 
 ::::
 
-:::{tip}
-Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
-:::
+
 
 ## Clone a content repository [#step-two]
 
