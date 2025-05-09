@@ -117,7 +117,15 @@ public record ConfigurationFile : ITableOfContentsScope
 
 						foreach (var node in sequence.Children.OfType<YamlMappingNode>())
 						{
-							var productId = node.Children.FirstOrDefault(c => c.Key is YamlScalarNode { Value: "id" }).Value is YamlScalarNode scalarNode ? scalarNode : null;
+							YamlScalarNode? productId = null;
+							foreach (var child in node.Children)
+							{
+								if (child.Key is YamlScalarNode { Value: "id" } && child.Value is YamlScalarNode scalarNode)
+								{
+									productId = scalarNode;
+									break;
+								}
+							}
 							if (productId?.Value is null)
 							{
 								reader.EmitError("products must contain an id", node);
@@ -125,7 +133,7 @@ public record ConfigurationFile : ITableOfContentsScope
 							}
 
 							if (!Builder.Products.AllById.ContainsKey(productId.Value))
-								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value)}", node);
+								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
 							else
 								_ = Products.Add(productId.Value);
 						}
