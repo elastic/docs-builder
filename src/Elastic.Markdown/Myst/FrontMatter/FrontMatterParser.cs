@@ -33,5 +33,5 @@ public class YamlFrontMatter
 	public IReadOnlyCollection<string>? MappedPages { get; set; }
 
 	[YamlMember(Alias = "products")]
-	public IReadOnlyCollection<Product>? Products { get; set; }
+	public IReadOnlyCollection<PProduct>? Products { get; set; }
 }
