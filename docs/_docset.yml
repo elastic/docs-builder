@@ -13,6 +13,9 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+  
+products:
+  - elasticsearch
 
 features:
   primary-nav: false

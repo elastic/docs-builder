@@ -39,6 +39,8 @@ public class IndexViewModel
 
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
+
+	public required HashSet<Product> Products { get; init; }
 }
 
 public class LayoutViewModel

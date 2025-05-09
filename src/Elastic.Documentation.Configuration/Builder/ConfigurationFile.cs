@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
+using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
@@ -32,6 +33,8 @@ public record ConfigurationFile : ITableOfContentsScope
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
+
+	public HashSet<string> Products { get; } = new(StringComparer.Ordinal);
 
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -103,6 +106,20 @@ public record ConfigurationFile : ITableOfContentsScope
 						break;
 					case "toc":
 						// read this later
+						break;
+					case "products":
+						var productIds = YamlStreamReader.ReadStringArray(entry.Entry);
+						foreach (var productId in productIds)
+						{
+							if (!Builder.Products.AllById.ContainsKey(productId))
+							{
+								var message =
+									$"Product \"{productId}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId).GetSuggestionQuestion()}";
+								reader.EmitError(message, entry.Entry.Value);
+							}
+							else
+								_ = Products.Add(productId);
+						}
 						break;
 					case "features":
 						_features = reader.ReadDictionary(entry.Entry).ToDictionary(k => k.Key, v => bool.Parse(v.Value), StringComparer.OrdinalIgnoreCase);
