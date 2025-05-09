@@ -47,6 +47,8 @@ This guide uses the first option. If you'd like to clone the repository and buil
    docs-builder serve
    ```
 
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
+
 :::
 
 :::{tab-item} Windows
@@ -68,6 +70,8 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```sh
    docs-builder serve
    ```
+
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
 :::
 ::::
