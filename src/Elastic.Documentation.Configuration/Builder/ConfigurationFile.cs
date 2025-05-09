@@ -4,9 +4,11 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
+using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
+using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -32,6 +34,8 @@ public record ConfigurationFile : ITableOfContentsScope
 	public HashSet<string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
+
+	public HashSet<string> Products { get; } = new(StringComparer.Ordinal);
 
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -103,6 +107,36 @@ public record ConfigurationFile : ITableOfContentsScope
 						break;
 					case "toc":
 						// read this later
+						break;
+					case "products":
+						if (entry.Entry.Value is not YamlSequenceNode sequence)
+						{
+							reader.EmitError("products must be a sequence", entry.Entry.Value);
+							break;
+						}
+
+						foreach (var node in sequence.Children.OfType<YamlMappingNode>())
+						{
+							YamlScalarNode? productId = null;
+							foreach (var child in node.Children)
+							{
+								if (child.Key is YamlScalarNode { Value: "id" } && child.Value is YamlScalarNode scalarNode)
+								{
+									productId = scalarNode;
+									break;
+								}
+							}
+							if (productId?.Value is null)
+							{
+								reader.EmitError("products must contain an id", node);
+								break;
+							}
+
+							if (!Builder.Products.AllById.ContainsKey(productId.Value))
+								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
+							else
+								_ = Products.Add(productId.Value);
+						}
 						break;
 					case "features":
 						_features = reader.ReadDictionary(entry.Entry).ToDictionary(k => k.Key, v => bool.Parse(v.Value), StringComparer.OrdinalIgnoreCase);

@@ -21,7 +21,12 @@ public class StaticWebHost
 
 	public StaticWebHost(int port)
 	{
-		var builder = WebApplication.CreateSlimBuilder();
+		var contentRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+
+		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+		{
+			ContentRootPath = contentRoot
+		});
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
 
 		_ = builder.Logging
@@ -49,7 +54,7 @@ public class StaticWebHost
 		_ = _webApplication.MapGet("{**slug}", ServeDocumentationFile);
 	}
 
-	private static async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
+	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
 	{
 		// from the injected top level navigation which expects us to run on elastic.co
 		if (slug.StartsWith("static-res/"))

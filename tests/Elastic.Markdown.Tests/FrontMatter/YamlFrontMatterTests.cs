@@ -69,7 +69,7 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output,
 	"""
 	---
 	products:
-	  - "apm"
+	  - id: "apm"
 	---
 
 	# APM
@@ -90,8 +90,8 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(output,
 	"""
 	---
 	products:
-	  - "apm"
-	  - "elasticsearch"
+	  - id: "apm"
+	  - id: "elasticsearch"
 	---
 
 	# APM
@@ -113,7 +113,7 @@ public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : Directi
 	"""
 	---
 	products:
-	  - aapm
+	  - id: aapm
 	---
 
 	# APM
@@ -132,7 +132,7 @@ public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : Direct
 	"""
 	---
 	products:
-	  - apm-javaagent
+	  - id: apm-javaagent
 	---
 
 	# APM
@@ -151,7 +151,7 @@ public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : Direc
 	"""
 	---
 	products:
-	  - Apm
+	  - id: Apm
 	---
 
 	# APM
@@ -170,7 +170,7 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 	"""
 	---
 	products:
-	  - ""
+	  - id: ""
 	---
 
 	# APM
@@ -181,6 +181,6 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"\".\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products."));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Product 'id' field is required."));
 	}
 }
