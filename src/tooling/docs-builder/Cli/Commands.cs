@@ -50,15 +50,13 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// Serve html files directly
 	/// </summary>
 	/// <param name="port">Port to serve the documentation.</param>
-	/// <param name="contentSource">The content source to serve defaults to next</param>
 	/// <param name="ctx"></param>
 	[Command("serve-static")]
 	[ConsoleAppFilter<CheckForUpdatesFilter>]
-	public async Task ServeStatic(int port = 4000, string? contentSource = null, Cancel ctx = default)
+	public async Task ServeStatic(int port = 4000, Cancel ctx = default)
 	{
-		contentSource ??= "next";
 		AssignOutputLogger();
-		var host = new StaticWebHost(port, contentSource);
+		var host = new StaticWebHost(port);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 	}

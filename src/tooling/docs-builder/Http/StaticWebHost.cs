@@ -17,13 +17,11 @@ namespace Documentation.Builder.Http;
 
 public class StaticWebHost
 {
-	private readonly string _contentSource;
 	private readonly WebApplication _webApplication;
 
-	public StaticWebHost(int port, string contentSource)
+	public StaticWebHost(int port)
 	{
-		_contentSource = contentSource;
-		var contentRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly", _contentSource);
+		var contentRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 
 		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 		{
@@ -63,7 +61,7 @@ public class StaticWebHost
 			return Results.NotFound();
 
 		await Task.CompletedTask;
-		var path = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly", _contentSource);
+		var path = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var localPath = Path.Combine(path, slug.Replace('/', Path.DirectorySeparatorChar));
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);
