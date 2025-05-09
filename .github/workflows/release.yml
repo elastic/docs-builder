@@ -152,12 +152,31 @@ jobs:
             .artifacts/publish/docs-builder/release/*.zip
             .artifacts/publish/docs-assembler/release/*.zip
 
+      # Add install scripts to artifacts directory (only on Linux runner to avoid duplication)
+      - name: Copy install scripts to artifacts
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p .artifacts/publish/scripts
+          cp install.sh .artifacts/publish/scripts/
+          cp install.ps1 .artifacts/publish/scripts/
+        shell: bash
+
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-builder/release/*.zip
           gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-assembler/release/*.zip
+        shell: bash
+        
+      # Upload install scripts (only on Linux runner to avoid duplication)
+      - name: Attach install scripts to release
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ needs.release-drafter.outputs.tag_name }} install.sh
+          gh release upload ${{ needs.release-drafter.outputs.tag_name }} install.ps1
         shell: bash
     
   publish-release:
