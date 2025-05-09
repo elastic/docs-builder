@@ -286,6 +286,12 @@ toc:
               - toc: elasticsearch://reference/community-contributed
                 path_prefix: reference/elasticsearch/clients/community
 
+      # Elastic Distributions of OpenTelemetry (EDOT)
+      # ✅ https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
+      - toc: opentelemetry://reference
+        path_prefix: reference/opentelemetry
+        # Children include all EDOT distribution docs.
+
       # Ingestion tools
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml
       - toc: docs-content://reference/ingestion-tools
