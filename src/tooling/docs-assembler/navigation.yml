@@ -289,7 +289,7 @@ toc:
       # Elastic Distributions of OpenTelemetry (EDOT)
       # ✅ https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
       - toc: opentelemetry://reference
-        path_prefix: reference/edot
+        path_prefix: reference/opentelemetry
         # Children include all EDOT distribution docs.
 
       # Ingestion tools
