@@ -99,7 +99,6 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 		ImageUrl = DiagnosticLinkInlineParser.UpdateRelativeUrl(context, imageUrl);
 
-
 		var file = DiagnosticLinkInlineParser.ResolveFile(context, imageUrl);
 		if (file.Exists)
 			Found = true;

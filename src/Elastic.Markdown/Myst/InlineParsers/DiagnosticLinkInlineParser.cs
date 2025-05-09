@@ -338,8 +338,25 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
-			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile)
-				newUrl = url[3..];
+			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippet)
+			{
+				//figure out how many nested folders inside `_snippets` we need to ignore.
+				var d = snippet.SourceFile.Directory;
+				var offset = 0;
+				while (d is not null && d.Name != "_snippets")
+				{
+					d = d.Parent;
+					if (d is not null && d.Name != "_snippets")
+						offset++;
+				}
+
+				//Because we ignore these folders in the url structure we need to eat the relative paths
+				while (offset >= 0 && newUrl.StartsWith("../"))
+				{
+					newUrl = newUrl[3..];
+					offset--;
+				}
+			}
 
 			// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
 			var markdownPath = context.MarkdownSourcePath;
