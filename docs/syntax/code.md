@@ -1,8 +1,3 @@
----
-products:
-  - apm
----
-
 # Code
 
 Code blocks can be used to display multiple lines of code. They preserve formatting and provide syntax highlighting when possible.
