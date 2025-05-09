@@ -17,11 +17,18 @@ namespace Documentation.Builder.Http;
 
 public class StaticWebHost
 {
+	private readonly string _contentSource;
 	private readonly WebApplication _webApplication;
 
-	public StaticWebHost(int port)
+	public StaticWebHost(int port, string contentSource)
 	{
-		var builder = WebApplication.CreateSlimBuilder();
+		_contentSource = contentSource;
+		var contentRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly", _contentSource);
+
+		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+		{
+			ContentRootPath = contentRoot
+		});
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
 
 		_ = builder.Logging
@@ -49,14 +56,14 @@ public class StaticWebHost
 		_ = _webApplication.MapGet("{**slug}", ServeDocumentationFile);
 	}
 
-	private static async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
+	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
 	{
 		// from the injected top level navigation which expects us to run on elastic.co
 		if (slug.StartsWith("static-res/"))
 			return Results.NotFound();
 
 		await Task.CompletedTask;
-		var path = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var path = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly", _contentSource);
 		var localPath = Path.Combine(path, slug.Replace('/', Path.DirectorySeparatorChar));
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);
