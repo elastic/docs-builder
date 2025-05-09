@@ -28,7 +28,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
 ::::{tab-set}
 
-:::{tab-item} macOS
+:::{tab-item} macOS & Linux
 
 1. **Download and run the install script**   
 
@@ -70,29 +70,6 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```
 
 :::
-
-:::{tab-item} Linux
-
-1. **Download the Binary:**
-   Download the latest Linux binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   wget https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-linux-x64.zip
-   ```
-
-2. **Extract the Binary:**
-   Unzip the downloaded file:
-   ```sh
-   unzip docs-builder-linux-x64.zip
-   ```
-
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
-   ```sh
-   ./docs-builder serve -p ./path/to/docs
-   ```
-
-:::
-
 ::::
 
 :::{tip}
