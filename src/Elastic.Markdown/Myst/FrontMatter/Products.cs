@@ -17,14 +17,31 @@ public class ProductConverter : IYamlTypeConverter
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var value = parser.Consume<Scalar>();
-		if (string.IsNullOrWhiteSpace(value.Value))
+		var productNode = parser.Consume<MappingStart>();
+		string? productId = null;
+
+		while (parser.Current is not MappingEnd)
+		{
+			var key = parser.Consume<Scalar>().Value;
+			if (key == "id")
+			{
+				productId = parser.Consume<Scalar>().Value;
+			}
+			else
+			{
+				parser.SkipThisAndNestedEvents();
+			}
+		}
+
+		_ = parser.Consume<MappingEnd>();
+
+		if (string.IsNullOrWhiteSpace(productId))
 			throw new InvalidProductException("");
 
-		if (Products.AllById.TryGetValue(value.Value, out var product))
+		if (Products.AllById.TryGetValue(productId, out var product))
 			return product;
 
-		throw new InvalidProductException(value.Value);
+		throw new InvalidProductException(productId);
 	}
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
