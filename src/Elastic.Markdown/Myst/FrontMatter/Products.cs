@@ -11,11 +11,11 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public record PProduct(string Id, string DisplayName);
+public record Product(string Id, string DisplayName);
 
 public static class Products
 {
-	public static FrozenSet<PProduct> All { get; } = [
+	public static FrozenSet<Product> All { get; } = [
 		new("apm", "APM"),
 		new("apm-dotnet-agent", "APM .NET Agent"),
 		new("apm-android-agent", "APM Android Agent"),
@@ -93,7 +93,7 @@ public static class Products
 
 public class ProductConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(PProduct);
+	public bool Accepts(Type type) => type == typeof(Product);
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
