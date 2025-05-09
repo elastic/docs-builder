@@ -89,6 +89,8 @@ public static class Products
 		new("edot-android", "Elastic Distribution of OpenTelemetry Android"),
 		new("edot-ios", "Elastic Distribution of OpenTelemetry iOS")
 	];
+
+	public static FrozenDictionary<string, Product> AllById { get; } = All.ToDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase).ToFrozenDictionary();
 }
 
 public class ProductConverter : IYamlTypeConverter
@@ -100,9 +102,7 @@ public class ProductConverter : IYamlTypeConverter
 		var value = parser.Consume<Scalar>();
 		if (string.IsNullOrWhiteSpace(value.Value))
 			throw new InvalidProductException("");
-
-		var product = Products.All.FirstOrDefault(p => p.Id.Equals(value.Value, StringComparison.Ordinal));
-		if (product != null)
+		if (Products.AllById.TryGetValue(value.Value, out var product))
 			return product;
 
 		throw new InvalidProductException(value.Value);
