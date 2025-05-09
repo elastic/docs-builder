@@ -33,16 +33,24 @@ else
   USE_SUDO=false
 fi
 
-# Check if docs-builder already exists
+# Check if docs-builder already exists, but handle non-interactive shells
 if [ -f "$INSTALL_DIR/docs-builder" ]; then
   echo "docs-builder is already installed."
-  printf "Do you want to update/overwrite it? (y/n): "
-  read choice
-  case "$choice" in
-    y|Y ) echo "Updating docs-builder..." ;;
-    n|N ) echo "Installation aborted."; exit 0 ;;
-    * ) echo "Invalid choice. Installation aborted."; exit 1 ;;
-  esac
+  
+  # Check if script is running interactively (has a TTY)
+  if [ -t 0 ]; then
+    # Running interactively, can prompt for input
+    printf "Do you want to update/overwrite it? (y/n): "
+    read choice
+    case "$choice" in
+      y|Y ) echo "Updating docs-builder..." ;;
+      n|N ) echo "Installation aborted."; exit 0 ;;
+      * ) echo "Invalid choice. Installation aborted."; exit 1 ;;
+    esac
+  else
+    # Non-interactive mode (e.g., piped from curl), default to yes
+    echo "Running in non-interactive mode. Proceeding with installation..."
+  fi
 fi
 
 echo "Downloading docs-builder for $OS/$ARCH..."
