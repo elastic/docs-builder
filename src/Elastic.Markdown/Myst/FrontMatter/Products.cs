@@ -20,6 +20,7 @@ public class ProductConverter : IYamlTypeConverter
 		var value = parser.Consume<Scalar>();
 		if (string.IsNullOrWhiteSpace(value.Value))
 			throw new InvalidProductException("");
+
 		if (Products.AllById.TryGetValue(value.Value, out var product))
 			return product;
 
