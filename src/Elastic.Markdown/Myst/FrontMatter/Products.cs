@@ -17,26 +17,28 @@ public class ProductConverter : IYamlTypeConverter
 
 	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var productNode = parser.Consume<MappingStart>();
+		if (parser.Current is Scalar)
+		{
+			var value = parser.Consume<Scalar>().Value;
+			throw new InvalidProductException($"Invalid YAML format. Products must be specified as a mapping with an 'id' field. Found scalar value: '{value}'. Example format:\nproducts:\n  - id: apm");
+		}
+
+		_ = parser.Consume<MappingStart>();
 		string? productId = null;
 
 		while (parser.Current is not MappingEnd)
 		{
 			var key = parser.Consume<Scalar>().Value;
 			if (key == "id")
-			{
 				productId = parser.Consume<Scalar>().Value;
-			}
 			else
-			{
 				parser.SkipThisAndNestedEvents();
-			}
 		}
 
 		_ = parser.Consume<MappingEnd>();
 
 		if (string.IsNullOrWhiteSpace(productId))
-			throw new InvalidProductException("");
+			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm");
 
 		if (Products.AllById.TryGetValue(productId, out var product))
 			return product;

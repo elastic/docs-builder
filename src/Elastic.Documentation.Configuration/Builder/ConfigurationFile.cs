@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
+using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -108,17 +109,25 @@ public record ConfigurationFile : ITableOfContentsScope
 						// read this later
 						break;
 					case "products":
-						var productIds = YamlStreamReader.ReadStringArray(entry.Entry);
-						foreach (var productId in productIds)
+						if (entry.Entry.Value is not YamlSequenceNode sequence)
 						{
-							if (!Builder.Products.AllById.ContainsKey(productId))
+							reader.EmitError("products must be a sequence", entry.Entry.Value);
+							break;
+						}
+
+						foreach (var node in sequence.Children.OfType<YamlMappingNode>())
+						{
+							var productId = node.Children.FirstOrDefault(c => c.Key is YamlScalarNode { Value: "id" }).Value is YamlScalarNode scalarNode ? scalarNode : null;
+							if (productId?.Value is null)
 							{
-								var message =
-									$"Product \"{productId}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId).GetSuggestionQuestion()}";
-								reader.EmitError(message, entry.Entry.Value);
+								reader.EmitError("products must contain an id", node);
+								break;
 							}
+
+							if (!Builder.Products.AllById.ContainsKey(productId.Value))
+								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value)}", node);
 							else
-								_ = Products.Add(productId);
+								_ = Products.Add(productId.Value);
 						}
 						break;
 					case "features":

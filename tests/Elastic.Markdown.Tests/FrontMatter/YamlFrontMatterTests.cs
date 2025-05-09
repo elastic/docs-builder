@@ -181,6 +181,6 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"\".\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products."));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Product 'id' field is required."));
 	}
 }

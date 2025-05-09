@@ -15,7 +15,7 @@ subs:
   eck:   "Elastic Cloud on Kubernetes"
   
 products:
-  - elasticsearch
+  - id: elasticsearch
 
 features:
   primary-nav: false
