@@ -25,7 +25,7 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		LegacyPage = Model.LegacyPage,
-		Products = Model.CurrentDocument.YamlFrontMatter?.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.ToDescriptionFast()).ToList()) : null,
+		Products = Model.CurrentDocument.YamlFrontMatter?.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.Id)) : null,
 	};
 }
 <section id="elastic-docs-v3">

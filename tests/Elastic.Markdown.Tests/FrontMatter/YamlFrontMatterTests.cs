@@ -81,8 +81,8 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output,
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
 		File.YamlFrontMatter!.Products.Should().NotBeNull()
-			.And.HaveCount(1)
-			.And.Contain(Product.Apm);
+			.And.HaveCount(1);
+		File.YamlFrontMatter!.Products!.First().Id.Should().Be("apm");
 	}
 }
 
@@ -103,9 +103,9 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(output,
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
 		File.YamlFrontMatter!.Products.Should().NotBeNull()
-			.And.HaveCount(2)
-			.And.Contain(Product.Apm)
-			.And.Contain(Product.Elasticsearch);
+			.And.HaveCount(2);
+		File.YamlFrontMatter!.Products!.First().Id.Should().Be("apm");
+		File.YamlFrontMatter!.Products!.Last().Id.Should().Be("elasticsearch");
 	}
 }
 
