@@ -35,7 +35,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
    Run this command to download and install the latest version of `docs-builder`:
 
    ```sh
-   sudo curl -L https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.sh | sh
+   sudo curl -sL https://ela.st/docs-builder-install | sh
    ```
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
@@ -58,7 +58,7 @@ To download and install the binary file manually, refer to [Releases](https://gi
    Run this command to download and install the latest version of `docs-builder`:
 
    ```powershell
-   iex (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.ps1')
+   iex (New-Object System.Net.WebClient).DownloadString('https://ela.st/docs-builder-install-win')
    ```
 
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
