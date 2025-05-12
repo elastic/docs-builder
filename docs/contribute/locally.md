@@ -39,6 +39,8 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
+   To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
+
 2. **Run docs-builder from a docs folder**
 
    Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
@@ -46,9 +48,6 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```sh
    docs-builder serve
    ```
-
-To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
-
 :::
 
 :::{tab-item} Windows
@@ -63,6 +62,8 @@ To download and install the binary file manually, refer to [Releases](https://gi
 
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
+   To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
+
 2. **Run docs-builder from a docs folder**
 
    Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
@@ -70,9 +71,7 @@ To download and install the binary file manually, refer to [Releases](https://gi
    ```sh
    docs-builder serve
    ```
-
-To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
-
+   
 :::
 ::::
 
