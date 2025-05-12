@@ -122,10 +122,17 @@ public class ApplicableToConverter : IYamlTypeConverter
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
+		var warnings = new List<string>();
+		var applicableTo = new ApplicableTo();
+
 		if (parser.TryConsume<Scalar>(out var value))
 		{
 			if (string.IsNullOrWhiteSpace(value.Value))
-				return ApplicableTo.All;
+			{
+				warnings.Add("The 'applies_to' field is present but empty. No applicability will be assumed.");
+				return null;
+			}
+
 			if (string.Equals(value.Value, "all", StringComparison.InvariantCultureIgnoreCase))
 				return ApplicableTo.All;
 		}
@@ -133,10 +140,6 @@ public class ApplicableToConverter : IYamlTypeConverter
 		var deserialized = rootDeserializer.Invoke(typeof(Dictionary<object, object?>));
 		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
 			return null;
-
-
-		var applicableTo = new ApplicableTo();
-		var warnings = new List<string>();
 
 		var keys = dictionary.Keys.OfType<string>().ToArray();
 		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();

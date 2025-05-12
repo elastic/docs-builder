@@ -47,14 +47,14 @@ discontinued 9.2.0
 all
 ```
 
-`all` and empty string mean generally available for all active versions
+`all` means generally available for all active versions
 
 ```yaml
 applies_to:
   serverless: all
 ```
 
-`all` and empty string can also be specified at a version level
+`all` can also be specified at a version level
 
 ```yaml
 applies_to:
@@ -62,7 +62,7 @@ applies_to:
   serverless: beta
 ```
 
-Both are equivalent, note `all` just means we won't be rendering the version portion in the html.
+Note `all` just means we won't be rendering the version portion in the HTML.
 
 
 ## Structured model
