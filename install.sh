@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -euo pipefail
 
 # Determine OS type and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -56,11 +56,22 @@ fi
 echo "Downloading docs-builder for $OS/$ARCH..."
 
 # Download the appropriate binary
-curl -LO "https://github.com/elastic/docs-builder/releases/latest/download/$BINARY"
+if ! curl -LO "https://github.com/elastic/docs-builder/releases/latest/download/$BINARY"; then
+  echo "Error: Failed to download $BINARY. Please check your internet connection."
+  exit 1
+fi
+
+# Validate the downloaded file
+if [ ! -s "$BINARY" ]; then
+  echo "Error: Downloaded file $BINARY is missing or empty."
+  exit 1
+fi
 
 # Extract only the docs-builder file to /tmp directory
-# Use -o flag to always overwrite files without prompting
-unzip -j -o "$BINARY" docs-builder -d /tmp
+if ! unzip -j -o "$BINARY" docs-builder -d /tmp; then
+  echo "Error: Failed to extract docs-builder from $BINARY."
+  exit 1
+fi
 
 # Ensure the binary is executable
 chmod +x /tmp/docs-builder
