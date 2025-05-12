@@ -186,3 +186,11 @@ applies_to:
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
             Product=AppliesCollection.op_Explicit "coming 9.5, discontinued 9.7"
         ))
+
+type ``parses empty applies_to as null`` () =
+    static let markdown = frontMatter """
+applies_to:
+"""
+    [<Fact>]
+    let ``does not render label`` () =
+        markdown |> appliesTo null
