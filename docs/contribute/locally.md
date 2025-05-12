@@ -35,7 +35,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
    Run this command to download and install the latest version of `docs-builder`:
 
    ```sh
-   curl -sL https://ela.st/docs-builder-install | sudo sh
+   curl -sL https://ela.st/docs-builder-install | sh
    ```
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
