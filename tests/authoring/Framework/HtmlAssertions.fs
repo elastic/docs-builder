@@ -86,11 +86,19 @@ actual: {actual}
     let private prettyHtml (html:string) (querySelector: string option) =
         let parser = HtmlParser()
         let document = parser.ParseDocument(html)
+        
+        let elementOpt: IElement option =
+            match querySelector with
+            | Some q -> Option.ofObj (document.QuerySelector q)
+            // IHtmlBodyElement implements IElement. document.Body returns IHtmlBodyElement?
+            // Option.ofObj will handle if document.Body is null (though unlikely for valid HTML documents)
+            | None -> Option.ofObj (document.Body :> IElement)
+
+        
         let element =
             match querySelector with
             | Some q -> document.QuerySelector q
             | None -> document.Body
-
         let links = element.QuerySelectorAll("a")
         links
         |> Seq.iter(fun l ->
