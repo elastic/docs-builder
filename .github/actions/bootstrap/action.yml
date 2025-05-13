@@ -20,7 +20,7 @@ runs:
         git tag --list
     - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.204
+        dotnet-version: 9.0.100
         global-json-file: global.json
         
     - id: dotnet
@@ -38,4 +38,3 @@ runs:
         cache: npm
         cache-dependency-path: src/Elastic.Markdown/package-lock.json
         node-version-file: .nvmrc
-      
