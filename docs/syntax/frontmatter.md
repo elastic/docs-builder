@@ -13,8 +13,8 @@ description: This is a description of the page <2>
 applies_to: <3>
   serverless: all
 products: <4>
-  - apm-java-agent
-  - edot-java
+  - id: apm-java-agent
+  - id: edot-java
 ---
 ```
 
@@ -45,7 +45,7 @@ See [](./applies.md)
 The products frontmatter is a list of products that the page relates to.
 This is used for the "Products" filter in the Search UI.
 
-The products frontmatter is a list of strings, each string is the id of a product.
+The products frontmatter is a list of objects, each object has an `id` field.
 
 | Product ID                                  | Product Name                                  |
 |---------------------------------------------|-----------------------------------------------|

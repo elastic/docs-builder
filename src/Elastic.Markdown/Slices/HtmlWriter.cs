@@ -5,10 +5,12 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
 using RazorSlices;
 using IFileInfo = System.IO.Abstractions.IFileInfo;
@@ -115,6 +117,20 @@ public class HtmlWriter(
 
 		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
+		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
+		{
+			if (Products.AllById.TryGetValue(p, out var product))
+				return product;
+			throw new ArgumentException($"Invalid product id: {p}");
+		});
+
+		var frontMatterProducts = markdown.YamlFrontMatter?.Products ?? [];
+
+		var allProducts = frontMatterProducts
+			.Union(configProducts)
+			.Distinct()
+			.ToHashSet();
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,
@@ -139,7 +155,8 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			LegacyPage = legacyPage
+			LegacyPage = legacyPage,
+			Products = allProducts
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

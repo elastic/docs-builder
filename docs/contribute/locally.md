@@ -28,83 +28,55 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
 ::::{tab-set}
 
-:::{tab-item} macOS
+:::{tab-item} macOS & Linux
 
-1. **Download the Binary:**
-   Download the latest macOS binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
+1. **Download and run the install script**   
+
+   Run this command to download and install the latest version of `docs-builder`:
+
    ```sh
-   curl -LO https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-mac-arm64.zip
+   sudo curl -L https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.sh | sh
+   ```
+   
+   This downloads the latest binary, makes it executable, and installs it to your user PATH.
+
+2. **Run docs-builder from a docs folder**
+
+   Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+
+   ```sh
+   docs-builder serve
    ```
 
-2. **Extract the Binary:**
-   Unzip the downloaded file:
-   ```sh
-   unzip docs-builder-mac-arm64.zip
-   ```
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
 
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
-   ```sh
-   ./docs-builder serve -p ./path/to/docs
-   ```
+If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
 
 :::
 
 :::{tab-item} Windows
 
-1. **Download the Binary:**
-   Download the latest Windows binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   Invoke-WebRequest -Uri https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-win-x64.zip -OutFile docs-builder-win-x64.zip
+1. **Download and run the install script**   
+
+   Run this command to download and install the latest version of `docs-builder`:
+
+   ```powershell
+   iex (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.ps1')
    ```
 
-2. **Extract the Binary:**
-   Unzip the downloaded file. You can use tools like WinZip, 7-Zip, or the built-in Windows extraction tool.
+   This downloads the latest binary, makes it executable, and installs it to your user PATH.
+
+2. **Run docs-builder from a docs folder**
+
+   Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+
    ```sh
-   Expand-Archive -Path docs-builder-win-x64.zip -DestinationPath .
+   docs-builder serve
    ```
 
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
-   
-   ```sh
-   .\docs-builder serve -p ./path/to/docs
-   ```
-
-:::{tip}
-Place the `docs-builder` binary file in a system path so that you can run it from any folder. On Windows, you can do this by running `Copy-Item "docs-builder.exe" -Destination "%SystemRoot%\system32"` with elevated privileges, or move it to a new folder and add the folder to the system paths.
-:::
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
 :::
-
-:::{tab-item} Linux
-
-1. **Download the Binary:**
-   Download the latest Linux binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   wget https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-linux-x64.zip
-   ```
-
-2. **Extract the Binary:**
-   Unzip the downloaded file:
-   ```sh
-   unzip docs-builder-linux-x64.zip
-   ```
-
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
-   ```sh
-   ./docs-builder serve -p ./path/to/docs
-   ```
-
-   If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
-
-:::{tip}
-Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS and Linux, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
-:::
-
-:::
-
 ::::
 
 
