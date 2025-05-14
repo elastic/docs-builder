@@ -37,6 +37,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```sh
    sudo curl -L https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.sh | sh
    ```
+   
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
 2. **Run docs-builder from a docs folder**
@@ -47,7 +48,9 @@ This guide uses the first option. If you'd like to clone the repository and buil
    docs-builder serve
    ```
 
-To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
+
+If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
 
 :::
 
@@ -76,9 +79,7 @@ To download and install the binary file manually, refer to [Releases](https://gi
 :::
 ::::
 
-:::{tip}
-Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
-:::
+
 
 ## Clone a content repository [#step-two]
 
