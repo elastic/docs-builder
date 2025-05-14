@@ -30,7 +30,6 @@ public static class Products
 		new("elastic-stack", "Elastic Stack"),
 		new("elasticsearch", "Elasticsearch"),
 		new("elasticsearch-client", "Elasticsearch Client"),
-		new("elasticsearch-curator", "Elasticsearch Curator"),
 		new("filebeat", "Filebeat"),
 		new("fleet", "Fleet"),
 		new("heartbeat", "Heartbeat"),

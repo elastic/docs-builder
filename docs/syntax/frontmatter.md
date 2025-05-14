@@ -68,7 +68,6 @@ The products frontmatter is a list of objects, each object has an `id` field.
 | `elastic-stack`                             | Elastic Stack                                 |
 | `elasticsearch`                             | Elasticsearch                                 |
 | `elasticsearch-client`                      | Elasticsearch Client                          |
-| `elasticsearch-curator`                     | Elasticsearch Curator                         |
 | `filebeat`                                  | Filebeat                                      |
 | `fleet`                                     | Fleet                                         |
 | `heartbeat`                                 | Heartbeat                                     |
