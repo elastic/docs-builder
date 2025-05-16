@@ -4,6 +4,8 @@
 
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Documentation.Diagnostics;
+using System.Text.RegularExpressions;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -24,6 +26,92 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 {
 	private BuildContext Build { get; } = build;
 	private IParserResolvers Resolvers { get; } = resolvers;
+
+	// Collection of irregular whitespace characters that may impair Markdown rendering
+	private static readonly char[] IrregularWhitespaceChars = {
+		'\u000B', // Line Tabulation (\v) - <VT>
+		'\u000C', // Form Feed (\f) - <FF>
+		'\u00A0', // No-Break Space - <NBSP>
+		'\u0085', // Next Line
+		'\u1680', // Ogham Space Mark
+		'\u180E', // Mongolian Vowel Separator - <MVS>
+		'\ufeff', // Zero Width No-Break Space - <BOM>
+		'\u2000', // En Quad
+		'\u2001', // Em Quad
+		'\u2002', // En Space - <ENSP>
+		'\u2003', // Em Space - <EMSP>
+		'\u2004', // Tree-Per-Em
+		'\u2005', // Four-Per-Em
+		'\u2006', // Six-Per-Em
+		'\u2007', // Figure Space
+		'\u2008', // Punctuation Space - <PUNCSP>
+		'\u2009', // Thin Space
+		'\u200A', // Hair Space
+		'\u200B', // Zero Width Space - <ZWSP>
+		'\u2028', // Line Separator
+		'\u2029', // Paragraph Separator
+		'\u202F', // Narrow No-Break Space
+		'\u205F', // Medium Mathematical Space
+		'\u3000'  // Ideographic Space
+	};
+
+	// Detects irregular whitespace in the markdown content and reports diagnostics
+	private void DetectIrregularWhitespace(string content, string filePath)
+	{
+		var lines = content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+		
+		for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+		{
+			var line = lines[lineIndex];
+			for (var columnIndex = 0; columnIndex < line.Length; columnIndex++)
+			{
+				var c = line[columnIndex];
+				if (Array.IndexOf(IrregularWhitespaceChars, c) >= 0)
+				{
+					var charName = GetCharacterName(c);
+					Build.Collector.Write(new Diagnostic
+					{
+						Severity = Severity.Warning,
+						File = filePath,
+						Line = lineIndex + 1, // 1-based line number
+						Column = columnIndex + 1, // 1-based column number
+						Length = 1,
+						Message = $"Irregular whitespace character detected: U+{(int)c:X4} ({charName}). This may impair Markdown rendering."
+					});
+				}
+			}
+		}
+	}
+	
+	// Helper to get a friendly name for the whitespace character
+	private static string GetCharacterName(char c) => c switch
+	{
+		'\u000B' => "Line Tabulation (VT)",
+		'\u000C' => "Form Feed (FF)",
+		'\u00A0' => "No-Break Space (NBSP)",
+		'\u0085' => "Next Line",
+		'\u1680' => "Ogham Space Mark",
+		'\u180E' => "Mongolian Vowel Separator (MVS)",
+		'\ufeff' => "Zero Width No-Break Space (BOM)",
+		'\u2000' => "En Quad",
+		'\u2001' => "Em Quad",
+		'\u2002' => "En Space (ENSP)",
+		'\u2003' => "Em Space (EMSP)",
+		'\u2004' => "Tree-Per-Em",
+		'\u2005' => "Four-Per-Em",
+		'\u2006' => "Six-Per-Em",
+		'\u2007' => "Figure Space",
+		'\u2008' => "Punctuation Space (PUNCSP)",
+		'\u2009' => "Thin Space",
+		'\u200A' => "Hair Space",
+		'\u200B' => "Zero Width Space (ZWSP)",
+		'\u2028' => "Line Separator",
+		'\u2029' => "Paragraph Separator",
+		'\u202F' => "Narrow No-Break Space",
+		'\u205F' => "Medium Mathematical Space",
+		'\u3000' => "Ideographic Space",
+		_ => "Unknown"
+	};
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
@@ -66,11 +154,17 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
-		ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
+	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter)
+	{
+		DetectIrregularWhitespace(markdown, path.FullName);
+		return ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
+	}
 
-	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
-		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
+	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter)
+	{
+		DetectIrregularWhitespace(markdown, path.FullName);
+		return ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
+	}
 
 	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
 	{
@@ -86,26 +180,29 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		return markdownDocument;
 	}
 
-	private static async Task<MarkdownDocument> ParseAsync(
+	private async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,
 		MarkdownParserContext context,
 		MarkdownPipeline pipeline,
 		Cancel ctx)
 	{
+		string inputMarkdown;
 		if (path.FileSystem is FileSystem)
 		{
 			//real IO optimize through UTF8 stream reader.
 			await using var streamReader = new Utf8StreamReader(path.FullName, fileOpenMode: FileOpenMode.Throughput);
-			var inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
-			return markdownDocument;
+			inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
 		}
 		else
 		{
-			var inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
-			return markdownDocument;
+			inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
 		}
+		
+		// Check for irregular whitespace characters
+		DetectIrregularWhitespace(inputMarkdown, path.FullName);
+		
+		var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
+		return markdownDocument;
 	}
 
 	// ReSharper disable once InconsistentNaming
