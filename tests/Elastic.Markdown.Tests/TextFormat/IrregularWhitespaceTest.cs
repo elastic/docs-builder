@@ -3,13 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Linq;
-
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Tests.Inline;
 using FluentAssertions;
-
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Elastic.Markdown.Tests.TextFormat;
 
