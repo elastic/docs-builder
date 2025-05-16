@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Cysharp.IO;
-using Elastic.Documentation.Diagnostics;
 using System.Text.RegularExpressions;
+
+using Cysharp.IO;
+
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -15,6 +17,7 @@ using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
+
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
 using Markdig.Parsers;
@@ -28,7 +31,8 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	private IParserResolvers Resolvers { get; } = resolvers;
 
 	// Collection of irregular whitespace characters that may impair Markdown rendering
-	private static readonly char[] IrregularWhitespaceChars = {
+	private static readonly char[] IrregularWhitespaceChars =
+	[
 		'\u000B', // Line Tabulation (\v) - <VT>
 		'\u000C', // Form Feed (\f) - <FF>
 		'\u00A0', // No-Break Space - <NBSP>
@@ -53,13 +57,13 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		'\u202F', // Narrow No-Break Space
 		'\u205F', // Medium Mathematical Space
 		'\u3000'  // Ideographic Space
-	};
+	];
 
 	// Detects irregular whitespace in the markdown content and reports diagnostics
 	private void DetectIrregularWhitespace(string content, string filePath)
 	{
-		var lines = content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
-		
+		var lines = content.Split(["\r\n", "\n", "\r"], StringSplitOptions.None);
+
 		for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
 		{
 			var line = lines[lineIndex];
@@ -82,7 +86,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			}
 		}
 	}
-	
+
 	// Helper to get a friendly name for the whitespace character
 	private static string GetCharacterName(char c) => c switch
 	{
@@ -112,6 +116,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		'\u3000' => "Ideographic Space",
 		_ => "Unknown"
 	};
+
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
 	{
@@ -197,10 +202,10 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		{
 			inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
 		}
-		
+
 		// Check for irregular whitespace characters
 		DetectIrregularWhitespace(inputMarkdown, path.FullName);
-		
+
 		var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
 		return markdownDocument;
 	}
