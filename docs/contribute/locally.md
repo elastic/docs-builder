@@ -102,7 +102,7 @@ To serve the local copy of the documentation in your browser, follow these steps
 
 ::::::{stepper}
 
-:::::{step} Go to the `docs-builder` clone location
+:::::{step} Go to the docs-builder clone location
 
 ```sh
 cd docs-content
@@ -122,12 +122,14 @@ For example:
 ```sh
 docs-builder serve -p ./migration-test
 ```
+:::
 
 :::{tab-item} Windows
 
 ```powershell
 docs-builder serve -p .\migration-test
 ```
+:::
 ::::
 :::::
 
