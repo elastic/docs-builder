@@ -13,8 +13,8 @@ description: This is a description of the page <2>
 applies_to: <3>
   serverless: all
 products: <4>
-  - id: apm-java-agent
-  - id: edot-java
+  - id: apm-agent
+  - id: edot-sdk
 ---
 ```
 
@@ -50,73 +50,35 @@ The products frontmatter is a list of objects, each object has an `id` field.
 | Product ID                                  | Product Name                                  |
 |---------------------------------------------|-----------------------------------------------|
 | `apm`                                       | APM                                           |
-| `apm-android-agent`                         | APM Android Agent                             |
-| `apm-attacher`                              | APM Attacher                                  |
-| `apm-aws-lambda-extension`                  | APM AWS Lambda extension                      |
-| `apm-dotnet-agent`                          | APM .NET Agent                                |
-| `apm-go-agent`                              | APM Go Agent                                  |
-| `apm-ios-agent`                             | APM iOS Agent                                 |
-| `apm-java-agent`                            | APM Java Agent                                |
-| `apm-node-agent`                            | APM Node.js Agent                             |
-| `apm-php-agent`                             | APM PHP Agent                                 |
-| `apm-python-agent`                          | APM Python Agent                              |
-| `apm-ruby-agent`                            | APM Ruby Agent                                |
-| `apm-rum-agent`                             | APM RUM Agent                                 |
-| `beats-logging-plugin`                      | Beats Logging plugin                          |
-| `cloud-control-ecctl`                       | Cloud Control ECCTL                           |
-| `cloud-enterprise`                          | Cloud Enterprise                              |
-| `cloud-hosted`                              | Cloud Hosted                                  |
-| `cloud-kubernetes`                          | Cloud Kubernetes                              |
-| `cloud-native-ingest`                       | Cloud Native Ingest                           |
-| `cloud-serverless`                          | Cloud Serverless                              |
-| `cloud-terraform`                           | Cloud Terraform                               |
+| `apm-agent`                                 | APM Agent                                     |
+| `auditbeat`                                 | Auditbeat                                     |
+| `beats`                                     | Beats                                         |
+| `cloud-control-ecctl`                       | Elastic Cloud Control ECCTL                   |
+| `cloud-enterprise`                          | Elastic Cloud Enterprise                      |
+| `cloud-hosted`                              | Elastic Cloud Hosted                          |
+| `cloud-kubernetes`                          | Elastic Cloud Kubernetes                      |
+| `cloud-serverless`                          | Elastic Cloud Serverless                      |
+| `cloud-terraform`                           | Elastic Cloud Terraform                       |
 | `ecs`                                       | Elastic Common Schema (ECS)                   |
-| `ecs-logging-dotnet`                        | ECS Logging .NET                              |
-| `ecs-logging-go-logrus`                     | ECS Logging Go Logrus                         |
-| `ecs-logging-go-zap`                        | ECS Logging Go Zap                            |
-| `ecs-logging-go-zerolog`                    | ECS Logging Go Zerolog                        |
-| `ecs-logging-java`                          | ECS Logging Java                              |
-| `ecs-logging-node`                          | ECS Logging Node.js                           |
-| `ecs-logging-php`                           | ECS Logging PHP                               |
-| `ecs-logging-python`                        | ECS Logging Python                            |
-| `ecs-logging-ruby`                          | ECS Logging Ruby                              |
-| `edot-android`                              | Elastic Distribution of OpenTelemetry Android |
+| `ecs-logging`                               | ECS Logging                                   |
+| `edot-sdk`                                  | Elastic Distribution of OpenTelemetry SDK     |
 | `edot-collector`                            | Elastic Distribution of OpenTelemetry Collector |
-| `edot-dotnet`                               | Elastic Distribution of OpenTelemetry .NET     |
-| `edot-ios`                                  | Elastic Distribution of OpenTelemetry iOS     |
-| `edot-java`                                 | Elastic Distribution of OpenTelemetry Java     |
-| `edot-nodejs`                               | Elastic Distribution of OpenTelemetry Node.js   |
-| `edot-php`                                  | Elastic Distribution of OpenTelemetry PHP     |
-| `edot-python`                               | Elastic Distribution of OpenTelemetry Python   |
 | `elastic-agent`                             | Elastic Agent                                 |
-| `elastic-products-platform`                 | Elastic Products platform                     |
+| `elastic-serverless-forwarder`              | Elastic Serverless Forwarder                  |
 | `elastic-stack`                             | Elastic Stack                                 |
 | `elasticsearch`                             | Elasticsearch                                 |
-| `elasticsearch-apache-hadoop`               | Elasticsearch Apache Hadoop                   |
-| `elasticsearch-cloud-hosted-heroku`         | Elasticsearch Cloud Hosted Heroku             |
-| `elasticsearch-community-clients`           | Elasticsearch community clients               |
-| `elasticsearch-curator`                     | Elasticsearch Curator                         |
-| `elasticsearch-dotnet-client`               | Elasticsearch .NET Client                     |
-| `elasticsearch-eland-python-client`         | Elasticsearch Eland Python Client             |
-| `elasticsearch-go-client`                   | Elasticsearch Go Client                       |
-| `elasticsearch-groovy-client`               | Elasticsearch Groovy Client                   |
-| `elasticsearch-java-client`                 | Elasticsearch Java Client                     |
-| `elasticsearch-java-script-client`          | Elasticsearch JavaScript Client               |
-| `elasticsearch-painless-scripting-language` | Elasticsearch Painless scripting language     |
-| `elasticsearch-perl-client`                 | Elasticsearch Perl Client                     |
-| `elasticsearch-php-client`                  | Elasticsearch PHP Client                      |
-| `elasticsearch-plugins`                     | Elasticsearch plugins                         |
-| `elasticsearch-python-client`               | Elasticsearch Python Client                   |
-| `elasticsearch-resiliency-status`           | Elasticsearch Resiliency Status               |
-| `elasticsearch-ruby-client`                 | Elasticsearch Ruby Client                     |
-| `elasticsearch-rust-client`                 | Elasticsearch Rust Client                     |
+| `elasticsearch-client`                      | Elasticsearch Client                          |
+| `filebeat`                                  | Filebeat                                      |
 | `fleet`                                     | Fleet                                         |
-| `ingest`                                    | Ingest                                        |
+| `heartbeat`                                 | Heartbeat                                     |
 | `integrations`                              | Integrations                                  |
 | `kibana`                                    | Kibana                                        |
 | `logstash`                                  | Logstash                                      |
 | `machine-learning`                          | Machine Learning                              |
-| `observability`                             | Observability                                 |
-| `reference-architectures`                   | Reference Architectures                       |
+| `metricbeat`                                | Metricbeat                                    |
+| `observability`                             | Elastic Observability                         |
+| `packetbeat`                                | Packetbeat                                    |
+| `painless`                                  | Painless                                      |
 | `search-ui`                                 | Search UI                                     |
-| `security`                                  | Security                                      |
+| `security`                                  | Elastic Security                              |
+| `winlogbeat`                                | Winlogbeat                                    |

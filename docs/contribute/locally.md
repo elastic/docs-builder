@@ -35,8 +35,9 @@ This guide uses the first option. If you'd like to clone the repository and buil
    Run this command to download and install the latest version of `docs-builder`:
 
    ```sh
-   sudo curl -L https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.sh | sh
+   curl -sL https://ela.st/docs-builder-install | sh
    ```
+   
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
 
    To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
@@ -48,6 +49,11 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```sh
    docs-builder serve
    ```
+
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
+
+If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
+
 :::
 
 :::{tab-item} Windows
@@ -57,7 +63,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
    Run this command to download and install the latest version of `docs-builder`:
 
    ```powershell
-   iex (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/elastic/docs-builder/refs/heads/main/install.ps1')
+   iex (New-Object System.Net.WebClient).DownloadString('https://ela.st/docs-builder-install-win')
    ```
 
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
@@ -75,9 +81,7 @@ This guide uses the first option. If you'd like to clone the repository and buil
 :::
 ::::
 
-:::{tip}
-Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
-:::
+
 
 ## Clone a content repository [#step-two]
 
