@@ -5,8 +5,8 @@ Follow these steps to contribute to Elastic docs.
 * [Prerequisites](#prerequisites)
 * [Step 1: Install `docs-builder`](#step-one)
 * [Step 2: Clone a content repository](#step-two)
-* [Step 3: Serve the Documentation](#step-three)
-* [Step 4: Write docs!](#step-four)
+* [Step 3: Serve the documentation](#step-three)
+* [Step 4: Write the docs](#step-four)
 * [Step 5: Push your changes](#step-five)
 
 ## Prerequisites
@@ -82,7 +82,6 @@ If you get a `Permission denied` error, make sure that you aren't trying to run 
 ::::
 
 
-
 ## Clone a content repository [#step-two]
 
 :::{tip}
@@ -90,42 +89,69 @@ Documentation lives in many repositories across Elastic. If you're unsure which 
 :::
 
 In this guide, we'll clone the [`docs-content`](https://github.com/elastic/docs-content) repository. The `docs-content` repository is the home for narrative documentation at Elastic. Clone this repo to a directory of your choice:
+
 ```sh
 git clone https://github.com/elastic/docs-content.git
 ```
 
-## Serve the Documentation [#step-three]
+## Serve the documentation [#step-three]
 
-1. **Navigate to the `docs-builder` clone location:**
-   ```sh
-   cd docs-content
-   ```
+Static-site generators like docs-builder can serve docs locally. This means you can edit the source and see the result in the browser in real time.
 
-1. **Run the Binary:**
-   Run the binary with the `serve` command to build and serve the content set to http://localhost:3000. Specify the path to the `docset.yml` file that you want to build with `-p`.
+To serve the local copy of the documentation in your browser, follow these steps:
 
-   For example, if `docs-builder` and `docs-content` are in the same top-level directory, you would run:
-   ```sh
-   # macOS/Linux
-   ./docs-builder serve -p ./migration-test
+::::::{stepper}
 
-   # Windows
-   .\docs-builder serve -p .\migration-test
-   ```
+:::::{step} Go to the `docs-builder` clone location
 
+```sh
+cd docs-content
+```
+:::::
+
+:::::{step} Run docs-builder
+
+Run the `docs-builder` binary with the `serve` command to build and serve the content set to http://localhost:3000. Specify the path to the `docset.yml` file that you want to build with `-p`.
+
+For example:
+
+::::{tab-set}
+
+:::{tab-item} macOS & Linux
+
+```sh
+docs-builder serve -p ./migration-test
+```
+
+:::{tab-item} Windows
+
+```powershell
+docs-builder serve -p .\migration-test
+```
+::::
+:::::
+
+:::::{step} Open the documentation in the browser
 Now you should be able to view the documentation locally by navigating to http://localhost:3000.
+:::::
+::::::
 
-## Step 4: Write docs [#step-four]
+## Step 4: Write the docs [#step-four]
 
-We write docs in markdown. See our [syntax](../syntax/index.md) guide for the flavor of markdown that we support and all of our custom directives that enable you to add a little extra pizazz to your docs.
+We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown that we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
 
 ## Step 5: Push your changes [#step-five]
 
-After you've made your changes locally,
+After you've made your changes locally:
 
 * [Push your commits](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
 * [Open a Pull Request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
 
-## Step 5: View on elastic.co/docs
+## Step 5: View the preview
 
-soon...
+You can open a docs preview from the Deployments page of the repository. For example, [https://github.com/elastic/docs-content/deployments](https://github.com/elastic/docs-content/deployments).
+
+1. Select the pull request or branch.
+2. Select the ↗ icon next to the timestamp.
+
+The preview URL is in the form `https://docs-v3-preview.elastic.dev/elastic/<repository>/tree/branch`.
