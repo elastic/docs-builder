@@ -9,21 +9,21 @@ Images can be referenced from the top-level `_static` dir or a local image dir.
 ## Block-level images
 
 ```markdown
-![APM](img/apm.png)
+![APM](images/apm.png)
 ```
 
-![APM](img/apm.png)
+![APM](images/apm.png)
 
 Or, use the `image` directive.
 
 ```markdown
-:::{image} img/observability.png
+:::{image} images/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
 ```
 
-:::{image} img/observability.png
+:::{image} images/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
@@ -33,22 +33,22 @@ Or, use the `image` directive.
 Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
 
 ```markdown
-:::{image} img/apm.png
+:::{image} images/apm.png
 :screenshot:
 :::
 ```
 
-:::{image} img/apm.png
+:::{image} images/apm.png
 :screenshot:
 :::
 
 ## Inline images
 
 ```markdown
-Here is the same image used inline ![Elasticsearch](img/observability.png "elasticsearch =50%x50%")
+Here is the same image used inline ![Elasticsearch](images/observability.png "elasticsearch =50%x50%")
 ```
 
-Here is the same image used inline ![Elasticsearch](img/observability.png "elasticsearch =50%x50%")
+Here is the same image used inline ![Elasticsearch](images/observability.png "elasticsearch =50%x50%")
 
 
 ### Inline image titles
@@ -56,13 +56,13 @@ Here is the same image used inline ![Elasticsearch](img/observability.png "elast
 Titles are optional making this the minimal syntax required
 
 ```markdown
-![Elasticsearch](img/observability.png)
+![Elasticsearch](images/observability.png)
 ```
 
 Including a title can be done by supplying it as an optional argument.
 
 ```markdown
-![Elasticsearch](img/observability.png "elasticsearch")
+![Elasticsearch](images/observability.png "elasticsearch")
 ```
 
 ### Inline image sizing
@@ -92,16 +92,16 @@ If `H` is omitted `W` is used as the height as well.
 ### SVG 
 
 ```markdown
-![Elasticsearch](img/alerts.svg)
+![Elasticsearch](images/alerts.svg)
 ```
-![Elasticsearch](img/alerts.svg)
+![Elasticsearch](images/alerts.svg)
 
 ### GIF
 
 ```markdown
-![Elasticsearch](img/timeslider.gif)
+![Elasticsearch](images/timeslider.gif)
 ```
-![Elasticsearch](img/timeslider.gif)
+![Elasticsearch](images/timeslider.gif)
 
 
 ## Asciidoc syntax

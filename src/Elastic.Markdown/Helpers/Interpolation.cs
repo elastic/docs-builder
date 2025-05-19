@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
 
@@ -30,7 +31,7 @@ public static class Interpolation
 	public static bool ReplaceSubstitutions(
 		this ReadOnlySpan<char> span,
 		IReadOnlyDictionary<string, string>? properties,
-		DiagnosticsCollector? collector,
+		IDiagnosticsCollector? collector,
 		[NotNullWhen(true)] out string? replacement
 	)
 	{
@@ -42,7 +43,7 @@ public static class Interpolation
 	private static bool ReplaceSubstitutions(
 		this ReadOnlySpan<char> span,
 		IReadOnlyDictionary<string, string>[] properties,
-		DiagnosticsCollector? collector,
+		IDiagnosticsCollector? collector,
 		[NotNullWhen(true)] out string? replacement
 	)
 	{

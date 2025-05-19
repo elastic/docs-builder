@@ -4,7 +4,8 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.Links.CrossLinks;
 using Xunit.Internal;
 
@@ -49,7 +50,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		LinkReferences.Add("kibana", reference);
 		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
 
-		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkIndexEntry
+		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
 		{
 			Repository = e.Key,
 			Path = $"elastic/asciidocalypse/{e.Key}/links.json",

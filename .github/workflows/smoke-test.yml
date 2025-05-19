@@ -35,7 +35,7 @@ jobs:
       - name: Build documentation
         id: docs-build
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "/docs" -p test-repo
+          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "/docs" -p test-repo
       
       - name: Verify landing-page-path output
         run: test ${{ steps.docs-build.outputs.landing-page-path }} == ${{ matrix.landing-page-path-output }}

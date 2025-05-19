@@ -5,6 +5,7 @@
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.InlineParsers;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -103,17 +104,13 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 			return;
 		}
 
-		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
-		if (imageUrl.StartsWith('/'))
-			includeFrom = context.Build.DocumentationSourceDirectory.FullName;
+		ImageUrl = DiagnosticLinkInlineParser.UpdateRelativeUrl(context, imageUrl);
 
-		ImageUrl = imageUrl;
-		var imagePath = Path.Combine(includeFrom, imageUrl.TrimStart('/'));
-		var file = context.Build.ReadFileSystem.FileInfo.New(imagePath);
+		var file = DiagnosticLinkInlineParser.ResolveFile(context, imageUrl);
 		if (file.Exists)
 			Found = true;
 		else
-			this.EmitError($"`{imageUrl}` does not exist. resolved to `{imagePath}");
+			this.EmitError($"`{imageUrl}` does not exist. resolved to `{file}");
 
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{

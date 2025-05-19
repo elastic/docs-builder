@@ -10,11 +10,4 @@
     <!-- TODO ENABLE to document our code properly <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="$(SolutionRoot)\build\nuget-icon.png" Pack="True" Link="nuget-icon.png" PackagePath="nuget-icon.png" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="$(SolutionRoot)\LICENSE.txt" Pack="True" PackagePath="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="$(SolutionRoot)\NOTICE.txt" Pack="True" PackagePath="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
-  </ItemGroup>
-
 </Project>

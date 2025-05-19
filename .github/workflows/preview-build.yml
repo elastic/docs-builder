@@ -139,7 +139,7 @@ jobs:
       - name: Build documentation
         if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
+          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
         if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
@@ -174,10 +174,6 @@ jobs:
       - name: Update Link Index
         if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
         uses: elastic/docs-builder/actions/update-link-index@main
-
-      - name: Update Reference Index
-        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
-        uses: elastic/docs-builder/actions/update-reference-index@main
 
       - name: Update deployment status
         uses: actions/github-script@v7

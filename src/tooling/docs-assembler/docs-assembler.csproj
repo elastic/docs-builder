@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>docs-assembler</AssemblyName>
+    <RootNamespace>Documentation.Assembler</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <PublishAot>true</PublishAot>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+
+    <IsPublishable>true</IsPublishable>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3"/>
+    <PackageReference Include="ConsoleAppFramework.Abstractions"/>
+    <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Proc"  />
+    <PackageReference Include="YamlDotNet"  />
+    <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="assembler.yml" />
+    <EmbeddedResource Include="navigation.yml" />
+    <EmbeddedResource Include="legacy-url-mappings.yml" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Configuration\" />
+  </ItemGroup>
+</Project>

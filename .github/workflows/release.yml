@@ -1,15 +1,51 @@
-name: Pre-release main branch
+name: Release
 
 on:
-  release:
-    types: [published]
-
+  workflow_dispatch: 
+    
 permissions:
   contents: read
   packages: write
+    
+concurrency:
+  group: release-drafter
 
 jobs:
+  
+  release-drafter:
+    outputs:
+      tag_name: ${{ steps.release-drafter.outputs.tag_name }}
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify branch
+        run: |
+          if [[ "${{ github.ref }}" != refs/heads/main ]]; then
+            echo "This workflow is only allowed to run on the main branch."
+            exit 1
+          fi
+      - uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5 # v6.1.0
+        id: release-drafter
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          commitish: ${{ github.sha }}
+      - name: Create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ steps.release-drafter.outputs.tag_name }}',
+              sha: context.sha
+            })
+  
   containers:
+    needs: 
+      - release-drafter
     runs-on: ubuntu-latest
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
@@ -17,7 +53,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
@@ -29,32 +66,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
       - name: Publish Containers
-        run: ./build.sh publishcontainers
+        run: ./build.sh publishcontainers\
+        
+  build-lambda:
+    needs: 
+      - release-drafter
+    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+    with:
+      ref: ${{ needs.release-drafter.outputs.tag_name }}
 
   release-lambda:
+    environment: 
+      name: link-index-updater-prod
     runs-on: ubuntu-latest
+    needs:
+      - build-lambda
+      - release-drafter
     permissions:
       contents: write
+      id-token: write
+    env: 
+      ZIP_FILE: link-index-updater-lambda.zip
     steps:
-      - uses: actions/checkout@v4
-      - name: Amazon Linux 2023 build
-        run: |
-          docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
-      - name: Get bootstrap binary
-        run: |
-          docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
 
-      # TODO publish to AWS
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v4
+        with: 
+          name: link-index-updater-lambda-binary # Defined in build-link-index-updater-lambda.yml
+          
+      - name: Create zip
+        run: |
+          zip -j "${ZIP_FILE}" ./bootstrap
+
+      - uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
+          aws-region: us-east-2
+      
+      - name: Upload Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name elastic-docs-v3-link-index-updater \
+            --zip-file "fileb://${ZIP_FILE}"
+      
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.event.release.tag_name }} .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
-        shell: bash
+        run: gh release upload --repo ${{ github.repository }} ${{ needs.release-drafter.outputs.tag_name }} "${ZIP_FILE}"
 
   release:
-    needs: [containers]
+    needs: 
+      - containers
+      - release-drafter
     strategy:
       fail-fast: false
       matrix:
@@ -70,6 +134,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -90,6 +156,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} .artifacts/publish/docs-builder/release/*.zip
-          gh release upload ${{ github.event.release.tag_name }} .artifacts/publish/docs-assembler/release/*.zip
+          gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-builder/release/*.zip
+          gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-assembler/release/*.zip
         shell: bash
+
+  publish-release:
+    needs:
+      - release
+      - release-lambda
+      - release-drafter
+    runs-on: ubuntu-latest
+    permissions: 
+      contents: write
+    steps:
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        run: |
+          gh release edit ${{ needs.release-drafter.outputs.tag_name }} --draft=false --latest --repo ${{ github.repository }}

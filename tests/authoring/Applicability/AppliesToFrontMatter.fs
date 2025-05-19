@@ -120,7 +120,7 @@ applies_to:
             )
         ))
 
-type ``parses product`` () =
+type ``parses product coming DEPRECATED`` () =
     static let markdown = frontMatter """
 applies_to:
    product: coming 9.5
@@ -128,7 +128,18 @@ applies_to:
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
-            Product=AppliesCollection.op_Explicit "coming 9.5.0"
+            Product=AppliesCollection.op_Explicit "planned 9.5.0"
+        ))
+
+type ``parses product planned`` () =
+    static let markdown = frontMatter """
+applies_to:
+   product: planned 9.5
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Product=AppliesCollection.op_Explicit "planned 9.5.0"
         ))
 
 type ``parses product multiple`` () =

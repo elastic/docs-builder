@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
@@ -30,7 +31,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 	{
 		Block!.Alt.Should().Be("Elasticsearch");
 		Block!.Width.Should().Be("250px");
-		Block!.ImageUrl.Should().Be("img/observability.png");
+		Block!.ImageUrl.Should().Be("/img/observability.png");
 		Block!.Screenshot.Should().Be("screenshot");
 	}
 

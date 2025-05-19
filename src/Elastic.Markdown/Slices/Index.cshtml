@@ -22,7 +22,8 @@
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
-		LegacyPage = Model.LegacyPage
+		LegacyPage = Model.LegacyPage,
+		Products = Model.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.DisplayName)) : null,
 	};
 }
 <section id="elastic-docs-v3">

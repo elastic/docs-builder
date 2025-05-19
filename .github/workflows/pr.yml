@@ -24,21 +24,11 @@ jobs:
         uses: ./.github/actions/bootstrap
 
       - name: Build
-        run: dotnet run --project src/docs-assembler -c release -- navigation validate
+        run: dotnet run --project src/tooling/docs-assembler -c release -- navigation validate
 
   build-lambda:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Amazon Linux 2023 build
-        run: |
-          docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile
-      - name: Get bootstrap binary
-        run: |
-          docker cp $(docker create --name tc publish-links-index:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
-          tree .artifacts
-          stat .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
-          
+    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+
   lint:
     runs-on: ubuntu-latest
     defaults: 

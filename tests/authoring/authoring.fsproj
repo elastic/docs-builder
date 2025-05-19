@@ -52,9 +52,14 @@
     <Compile Include="Blocks\CodeBlocks\CodeBlocks.fs"/>
     <Compile Include="Blocks\Lists.fs"/>
     <Compile Include="Blocks\Admonitions.fs"/>
+    <Compile Include="Blocks\ImageBlocks.fs" />
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />
     <Compile Include="Directives\IncludeBlocks.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Linters\WhiteSpaceNormalizers.fs" />
   </ItemGroup>
 
 </Project>

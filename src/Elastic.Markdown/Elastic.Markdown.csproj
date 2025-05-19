@@ -52,8 +52,6 @@
 
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
-    <PackageReference Include="Samboy063.Tomlet" />
-    <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
@@ -63,6 +61,11 @@
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
   </ItemGroup>
 
 </Project>

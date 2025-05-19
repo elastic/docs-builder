@@ -282,7 +282,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			_ = link.AppendChild(new LiteralInline(title));
 	}
 
-	private static IFileInfo ResolveFile(ParserContext context, string url) =>
+	public static IFileInfo ResolveFile(ParserContext context, string url) =>
 		string.IsNullOrWhiteSpace(url)
 			? context.MarkdownSourcePath
 			: url.StartsWith('/')
@@ -305,49 +305,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = linkMarkdown.Url;
 		}
 		else
-		{
-			// TODO revisit when we refactor our documentation set graph
-			// This method grew too complex, we need to revisit our documentation set graph generation so we can ask these questions
-			// on `DocumentationFile` that are mostly precomputed
-			var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+			newUrl = UpdateRelativeUrl(context, url);
 
-			if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
-			{
-				// eat overall path prefix since its gets appended later
-				var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
-					? context.CurrentUrlPath[urlPathPrefix.Length..]
-					: urlPathPrefix;
-
-				// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
-				// as it's not part of url by chopping of the extra parent navigation
-				if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippetFile)
-					newUrl = url.Substring(3);
-
-				// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
-				var markdownPath = context.MarkdownSourcePath;
-				// if the current path is an index e.g /reference/cloud-k8s/
-				// './' current path lookups should be relative to sub-path.
-				// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
-				var lastIndexPath = subPrefix.LastIndexOf('/');
-				if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
-					subPrefix = subPrefix[..lastIndexPath];
-				var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
-				newUrl = Path.GetFullPath(combined);
-			}
-
-			// When running on Windows, path traversal results must be normalized prior to being used in a URL
-			// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-			{
-				newUrl = newUrl.Replace('\\', '/');
-				if (newUrl.Length > 2 && newUrl[1] == ':')
-					newUrl = newUrl[2..];
-			}
-
-			if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
-				newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
-
-		}
 
 		if (newUrl.EndsWith(".md"))
 		{
@@ -365,6 +324,69 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				? $"#{anchor}"
 				: $"{newUrl}#{anchor}"
 			: newUrl;
+	}
+
+	// TODO revisit when we refactor our documentation set graph
+	// This method grew too complex, we need to revisit our documentation set graph generation so we can ask these questions
+	// on `DocumentationFile` that are mostly precomputed
+	public static string UpdateRelativeUrl(ParserContext context, string url)
+	{
+		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+		var newUrl = url;
+		if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
+		{
+			var subPrefix = context.CurrentUrlPath.Length >= urlPathPrefix.Length
+				? context.CurrentUrlPath[urlPathPrefix.Length..]
+				: urlPathPrefix;
+
+			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
+			// as it's not part of url by chopping of the extra parent navigation
+			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippet)
+			{
+				//figure out how many nested folders inside `_snippets` we need to ignore.
+				var d = snippet.SourceFile.Directory;
+				var offset = 0;
+				while (d is not null && d.Name != "_snippets")
+				{
+					d = d.Parent;
+					if (d is not null && d.Name != "_snippets")
+						offset++;
+				}
+
+				//Because we ignore these folders in the url structure we need to eat the relative paths
+				while (offset >= 0 && newUrl.StartsWith("../"))
+				{
+					newUrl = newUrl[3..];
+					offset--;
+				}
+			}
+
+			// TODO check through context.DocumentationFileLookup if file is index vs "index.md" check
+			var markdownPath = context.MarkdownSourcePath;
+			// if the current path is an index e.g /reference/cloud-k8s/
+			// './' current path lookups should be relative to sub-path.
+			// If it's not e.g /reference/cloud-k8s/api-docs/ these links should resolve on folder up.
+			var lastIndexPath = subPrefix.LastIndexOf('/');
+			if (lastIndexPath >= 0 && markdownPath.Name != "index.md")
+				subPrefix = subPrefix[..lastIndexPath];
+			var combined = '/' + Path.Combine(subPrefix, newUrl).TrimStart('/');
+			newUrl = Path.GetFullPath(combined);
+
+		}
+		// When running on Windows, path traversal results must be normalized prior to being used in a URL
+		// Path.GetFullPath() will result in the drive letter being appended to the path, which needs to be pruned back.
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			newUrl = newUrl.Replace('\\', '/');
+			if (newUrl.Length > 2 && newUrl[1] == ':')
+				newUrl = newUrl[2..];
+		}
+
+		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
+			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+
+		// eat overall path prefix since its gets appended later
+		return newUrl;
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
