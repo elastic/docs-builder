@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Documentation.Assembler.Indexing;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Markdown;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
@@ -92,12 +94,18 @@ public class AssemblerBuilder(
 
 	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
 	{
+		IMarkdownExporter[]? markdownExporters =
+			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
+			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
+				? [new ElasticsearchMarkdownExporter(logger, url, apiKey)]
+				: null;
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
 			logger, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
-			positionalNavigation: navigation
+			positionalNavigation: navigation,
+			markdownExporters: markdownExporters
 		);
 		return await generator.GenerateAll(ctx);
 	}

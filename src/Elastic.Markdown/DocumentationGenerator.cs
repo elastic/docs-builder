@@ -40,6 +40,7 @@ public class DocumentationGenerator
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
+	private readonly IMarkdownExporter[] _markdownExporters;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
@@ -51,12 +52,14 @@ public class DocumentationGenerator
 		ILoggerFactory logger,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
+		IMarkdownExporter[]? markdownExporters = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null,
 		ILegacyUrlMapper? legacyUrlMapper = null,
 		IPositionalNavigation? positionalNavigation = null
 	)
 	{
+		_markdownExporters = markdownExporters ?? [];
 		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_conversionCollector = conversionCollector;
 		_writeFileSystem = docSet.Context.WriteFileSystem;
@@ -217,6 +220,12 @@ public class DocumentationGenerator
 				_logger.LogInformation("Re-evaluating {FileName}", file.SourceFile.FullName);
 			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
 				return;
+		}
+
+		if (file is MarkdownFile markdown)
+		{
+			foreach (var exporter in _markdownExporters)
+				_ = await exporter.Export(markdown);
 		}
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);

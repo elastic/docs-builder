@@ -163,7 +163,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 						outputPath
 					);
 					var set = new DocumentationSet(context, logger);
-					var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
+					var generator = new DocumentationGenerator(set, logger, null, null, null, new NoopDocumentationFileExporter());
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();
