@@ -58,6 +58,10 @@ jobs:
       content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
       content-source-name: ${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}
     steps:
+      - name: Debug One
+        run: |
+          echo "ref=${{ github.ref_name }}"
+          echo "repo=${{ github.repository }}"
       - name: Not a push event
         id: event-check
         if: contains(fromJSON('["merge_group", "push", "pull_request_target"]'), github.event_name)
