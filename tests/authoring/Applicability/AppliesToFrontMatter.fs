@@ -193,4 +193,4 @@ applies_to:
 """
     [<Fact>]
     let ``does not render label`` () =
-        markdown |> appliesTo null
+        markdown |> appliesTo (Unchecked.defaultof<ApplicableTo>)
