@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
+using DotNet.Globbing;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
 
@@ -11,6 +13,59 @@ namespace Elastic.Documentation.Configuration.Builder;
 public record RedirectFile
 {
 	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
+
+	public List<(string Pattern, string TargetPrefix)> GlobRedirects { get; set; } = [];
+
+	private readonly Dictionary<string, Glob> _compiledPatterns = new(StringComparer.Ordinal);
+
+	private Glob GetCompiledGlob(string pattern)
+	{
+		if (_compiledPatterns.TryGetValue(pattern, out var glob))
+			return glob;
+
+		var options = new GlobOptions();
+		options.Evaluation.CaseInsensitive = true;
+		glob = Glob.Parse(pattern, options);
+		_compiledPatterns[pattern] = glob;
+		return glob;
+	}
+
+	public string? ResolveRedirect(string path)
+	{
+		if (Redirects != null && Redirects.TryGetValue(path, out var linkRedirect) && linkRedirect.To != null)
+			return linkRedirect.To;
+
+		foreach (var (pattern, targetPrefix) in GlobRedirects)
+		{
+			if (pattern.EndsWith("**", StringComparison.Ordinal) && targetPrefix.Contains("**"))
+			{
+				var prefix = pattern.AsSpan(0, pattern.Length - 2);
+				if (path.StartsWith(prefix.ToString(), StringComparison.OrdinalIgnoreCase))
+				{
+					var suffix = path.AsSpan(prefix.Length);
+					var rewritten = targetPrefix.Replace("**", suffix.ToString());
+					return rewritten;
+				}
+			}
+			else if (pattern.Contains('*') || pattern.Contains('?'))
+			{
+				var glob = GetCompiledGlob(pattern);
+				if (glob.IsMatch(path))
+				{
+					if (!targetPrefix.Contains('*') && !targetPrefix.Contains('?'))
+						return targetPrefix;
+					return path;
+				}
+			}
+			else if (string.Equals(pattern, path, StringComparison.OrdinalIgnoreCase))
+			{
+				return targetPrefix;
+			}
+		}
+
+		return null;
+	}
+
 	private IFileInfo Source { get; init; }
 	private IDocumentationContext Context { get; init; }
 
@@ -47,6 +102,7 @@ public record RedirectFile
 
 	private static Dictionary<string, LinkRedirect>? ReadRedirects(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry)
 	{
+		var globPatterns = new List<(string Pattern, string TargetPrefix)>();
 		if (!reader.ReadObjectDictionary(entry, out var mapping))
 			return null;
 
@@ -60,7 +116,8 @@ public record RedirectFile
 			if (entryValue.Value is YamlScalarNode)
 			{
 				var to = reader.ReadString(entryValue);
-				dictionary.Add(key,
+				dictionary.Add(
+					key,
 					!string.IsNullOrEmpty(to)
 						? to.StartsWith('!')
 							? new LinkRedirect { To = to.TrimStart('!'), Anchors = LinkRedirect.CatchAllAnchors }
@@ -77,7 +134,6 @@ public record RedirectFile
 			if (linkRedirect is not null)
 				dictionary.Add(key, linkRedirect);
 		}
-
 		return dictionary;
 	}
 
@@ -112,8 +168,7 @@ public record RedirectFile
 		if (redirect.To is null && redirect.Many is null or { Length: 0 })
 			return redirect with { To = file };
 
-		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 }
-			? null : redirect;
+		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 } ? null : redirect;
 	}
 
 	private static LinkSingleRedirect[]? ReadManyRedirects(YamlStreamReader reader, string file, YamlNode node)
@@ -153,10 +208,6 @@ public record RedirectFile
 		if (redirects.Count == 0)
 			return null;
 
-		return
-		[
-			..redirects
-				.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)
-		];
+		return [.. redirects.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)];
 	}
 }

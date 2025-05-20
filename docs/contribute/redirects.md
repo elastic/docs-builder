@@ -104,3 +104,45 @@ redirects:
       'old-anchor': 'active-anchor'
       'removed-anchor':
 ```
+
+## Glob pattern redirects
+
+The redirect system also supports glob patterns for redirecting multiple pages at once. This is useful when moving entire sections or directories.
+
+### Trailing wildcard redirects
+
+Use the `**` pattern at the end of a path to match all content under a specific path prefix and redirect it to a new location while preserving the path structure.
+
+```yaml
+redirects:
+  'reference/apm/agents/android/**': 'reference/opentelemetry/edot-sdks/android/**'
+  'old-section/**': 'new-section/**'
+```
+
+This redirects:
+- `reference/apm/agents/android/setup` → `reference/opentelemetry/edot-sdks/android/setup`
+- `reference/apm/agents/android/api/classes` → `reference/opentelemetry/edot-sdks/android/api/classes`
+
+### Simple glob pattern redirects
+
+You can use basic glob patterns with `*` (single segment wildcard) and `?` (single character wildcard).
+
+```yaml
+redirects:
+  'guides/*/intro': 'tutorials/*/getting-started'
+  'api/v1/user?.json': 'api/v2/users'
+```
+
+For simple cases where the target doesn't contain wildcards, the target is used directly:
+
+```yaml
+redirects:
+  'docs/v*/setup': 'documentation/setup-guide'
+```
+
+### Best practices for glob patterns
+
+1. Use exact path redirects when possible.
+2. Use trailing `**` wildcards for redirecting entire directory trees.
+3. Keep glob patterns simple, with wildcards in predictable positions.
+4. Test your redirects thoroughly, especially when using complex patterns.
