@@ -64,6 +64,7 @@ jobs:
       - name: Not a push event
         id: event-check
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        # ensure we emit static output to simplify our checks in the build step
         run: |
           echo "content-source-match=true >> $GITHUB_OUTPUT
           echo "content-source-name=next >> $GITHUB_OUTPUT
@@ -75,7 +76,7 @@ jobs:
           ref_name: ${{ github.event.ref_name }}
           repository: ${{ github.event.repository }}
       - name: Not a push event
-        id: event-check
+        id: match
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         run: |
           echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
