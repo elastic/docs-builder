@@ -1,20 +1,7 @@
 @using Microsoft.AspNetCore.Mvc.ModelBinding.Validation
 @inherits RazorSlice<ImageViewModel>
 <a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-@Model.UniqueImageId').style.display='flex'">
-	@{
-		// Using an if statement because using a ternary operator
-		// doesn't work. Model.Alt and HtmlString.Empty are not the same type.
-		// Converting HtmlString.Empty to string makes the alt tag disappear
-		// in the final HTML.
-	}
-	@if (string.IsNullOrEmpty(Model.Alt))
-	{
-		<img loading="lazy" title="@Model.Title" alt="@HtmlString.Empty" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
-	}
-	else
-	{
-		<img loading="lazy" title="@Model.Title" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
-	}
+	<img loading="lazy" title="@Model.Title" alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	[CONTENT]
 </a>
 
@@ -28,21 +15,7 @@
 			</a>
 		</span>
 		<a class="reference internal image-reference" href="@Model.ImageUrl" target="_blank">
-			
-			@{
-				// Using an if statement because using a ternary operator
-				// doesn't work. Model.Alt and HtmlString.Empty are not the same type.
-				// Converting HtmlString.Empty to string makes the alt tag disappear
-				// in the final HTML.
-			}
-			@if (string.IsNullOrEmpty(Model.Alt))
-			{
-				<img loading="lazy" title="@Model.Title"  alt="@HtmlString.Empty" src="@Model.ImageUrl"/>
-			}
-			else
-			{
-				<img loading="lazy" title="@Model.Title" alt="@Model.Alt" src="@Model.ImageUrl"/>
-			}
+			<img loading="lazy" title="@Model.Title"  alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" />
 		</a>
 	</div>
 </div>
