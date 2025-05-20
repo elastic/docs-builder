@@ -58,20 +58,16 @@ jobs:
       content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
       content-source-name: ${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}
     steps:
-      - name: Debug One
-        run: |
-          echo "ref=${{ github.ref_name }}"
-          echo "repo=${{ github.repository }}"
       - name: Not a push event
         id: event-check
-        if: contains(fromJSON('["merge_group", "push", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         # ensure we emit static output to simplify our checks in the build step
         run: |
           echo "content-source-match=true" >> $GITHUB_OUTPUT
           echo "content-source-name=next" >> $GITHUB_OUTPUT
       - name: Match for push events
         id: match
-        if: contains(fromJSON('["pull_request"]'), github.event_name)
+        if: contains(fromJSON('["push"]'), github.event_name)
         uses: elastic/docs-builder/actions/assembler-match@main
         with:
           ref_name: ${{ github.ref_name }}

@@ -101,6 +101,3 @@ references:
   opentelemetry:
   search-ui:
   integration-docs:
-
-  docs-builder:
-    skip: true
