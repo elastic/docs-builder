@@ -165,3 +165,43 @@ sub:
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 }
+
+public class ReplaceInImageAlt(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  hello-world: Hello World
+---
+
+# Testing ReplaceInImageAlt
+
+![{{hello-world}}](_static/img/observability.png)
+"""
+)
+{
+
+	[Fact]
+	public void OnlySeesGlobalVariable() =>
+		Html.Should().NotContain("alt=\"{{hello-world}}\"")
+			.And.Contain("alt=\"Hello World\"");
+}
+
+public class ReplaceInImageTitle(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  hello-world: Hello World
+---
+
+# Testing ReplaceInImageTitle
+
+![Observability](_static/img/observability.png "{{hello-world}}")
+"""
+)
+{
+
+	[Fact]
+	public void OnlySeesGlobalVariable() =>
+		Html.Should().NotContain("title=\"{{hello-world}}\"")
+			.And.Contain("title=\"Hello World\"");
+}

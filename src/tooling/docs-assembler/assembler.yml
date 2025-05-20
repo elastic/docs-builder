@@ -98,5 +98,6 @@ references:
   kibana:
   logstash-docs-md:
   logstash:
+  opentelemetry:
   search-ui:
   integration-docs:
