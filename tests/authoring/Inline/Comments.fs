@@ -17,3 +17,4 @@ not a comment
     [<Fact>]
     let ``validate HTML: commented line should not be emitted`` () =
         markdown |> convertsToHtml """<p>not a comment</p>"""
+

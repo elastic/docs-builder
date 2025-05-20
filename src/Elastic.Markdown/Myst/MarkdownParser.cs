@@ -3,16 +3,22 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
+
 using Cysharp.IO;
+
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
+using Elastic.Markdown.Myst.Linters;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
+
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
 using Markdig.Parsers;
@@ -92,20 +98,18 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		MarkdownPipeline pipeline,
 		Cancel ctx)
 	{
+		string inputMarkdown;
 		if (path.FileSystem is FileSystem)
 		{
 			//real IO optimize through UTF8 stream reader.
 			await using var streamReader = new Utf8StreamReader(path.FullName, fileOpenMode: FileOpenMode.Throughput);
-			var inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
-			return markdownDocument;
+			inputMarkdown = await streamReader.AsTextReader().ReadToEndAsync(ctx);
 		}
 		else
-		{
-			var inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
-			var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
-			return markdownDocument;
-		}
+			inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
+
+		var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
+		return markdownDocument;
 	}
 
 	// ReSharper disable once InconsistentNaming
@@ -156,6 +160,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
+				.UseWhiteSpaceNormalizer()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			_pipelineCached = builder.Build();
