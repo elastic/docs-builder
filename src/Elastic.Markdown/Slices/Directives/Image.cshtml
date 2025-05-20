@@ -9,11 +9,11 @@
 	}
 	@if (string.IsNullOrEmpty(Model.Alt))
 	{
-		<img loading="lazy" alt="@HtmlString.Empty" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
+		<img loading="lazy" title="@Model.Title" alt="@HtmlString.Empty" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	}
 	else
 	{
-		<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
+		<img loading="lazy" title="@Model.Title" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	}
 	[CONTENT]
 </a>
@@ -37,11 +37,11 @@
 			}
 			@if (string.IsNullOrEmpty(Model.Alt))
 			{
-				<img loading="lazy" alt="@HtmlString.Empty" src="@Model.ImageUrl"/>
+				<img loading="lazy" title="@Model.Title"  alt="@HtmlString.Empty" src="@Model.ImageUrl"/>
 			}
 			else
 			{
-				<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl"/>
+				<img loading="lazy" title="@Model.Title" alt="@Model.Alt" src="@Model.ImageUrl"/>
 			}
 		</a>
 	</div>
