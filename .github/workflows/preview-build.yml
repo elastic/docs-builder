@@ -10,6 +10,13 @@ on:
     branches:
       - main
       - master
+      # TODO remove these need to be added to individual repositories
+      - '\d+.\d+.\d+'
+      - '\d+.\d+'
+      - '\d+.x'
+    tags:
+      - 'v?\d+.\d+.\d+'
+      - 'v?\d+.\d+'
   workflow_call:
     inputs:
       strict:
@@ -44,6 +51,37 @@ permissions:
   pull-requests: read
 
 jobs:
+  match:
+    if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+      cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
+    runs-on: ubuntu-latest
+    outputs:
+      content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
+      content-source-name: ${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}
+    steps:
+      - name: Not a push event
+        id: event-check
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        run: |
+          echo "content-source-match=true >> $GITHUB_OUTPUT
+          echo "content-source-name=next >> $GITHUB_OUTPUT
+      - name: Match for push events
+        id: match
+        if: contains(fromJSON('["push"]'), github.event_name)
+        uses: elastic/docs-builder/actions/assembler-match@main
+        with:
+          ref_name: ${{ github.event.ref_name }}
+          repository: ${{ github.event.repository }}
+      - name: Not a push event
+        id: event-check
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        run: |
+          echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
+          echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
+          echo "content-source-name=${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}"
+
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
     concurrency:
@@ -52,6 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
+    needs: [ match ]
     steps:
 
       - name: Checkout

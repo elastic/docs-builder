@@ -81,7 +81,6 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
-  ecs:
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:

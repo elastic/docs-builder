@@ -89,9 +89,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tooling", "tooling", "{73AB
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "authoring", "authoring", "{059E787F-85C1-43BE-9DD6-CE319E106383}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler-filter", "assembler-filter", "{FB1C1954-D8E2-4745-BA62-04DD82FB4792}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler-match", "assembler-match", "{FB1C1954-D8E2-4745-BA62-04DD82FB4792}"
 	ProjectSection(SolutionItems) = preProject
-		actions\assembler-filter\action.yml = actions\assembler-filter\action.yml
+		actions\assembler-match\action.yml = actions\assembler-match\action.yml
 	EndProjectSection
 EndProject
 Global
