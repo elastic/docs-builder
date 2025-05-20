@@ -71,13 +71,15 @@ jobs:
         uses: elastic/docs-builder/actions/assembler-match@main
         with:
           ref_name: ${{ github.event.ref_name }}
-          repository: ${{ github.event.repository }}
+          repository: ${{ github.repository }}
       - name: Debug
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         run: |
           echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
           echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
           echo "content-source-name=${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}"
+          echo "ref=${{ github.event.ref_name }}"
+          echo "repo=${{ github.repository }}"
 
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
