@@ -23,7 +23,7 @@ applies_to:
 """
     [<Fact>]
     let ``apply matches expected`` () =
-        markdown |> appliesTo ApplicableTo.All
+        markdown |> appliesTo (Unchecked.defaultof<ApplicableTo>)
 
 type ``apply default to top level arguments`` () =
     static let markdown = frontMatter """
