@@ -73,7 +73,6 @@ jobs:
           ref_name: ${{ github.event.ref_name }}
           repository: ${{ github.event.repository }}
       - name: Not a push event
-        id: match
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         run: |
           echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
