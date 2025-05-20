@@ -132,7 +132,7 @@ public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : Direct
 	"""
 	---
 	products:
-	  - id: apm-javaagent
+	  - id: apmagent
 	---
 
 	# APM
@@ -143,7 +143,7 @@ public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : Direct
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"apm-javaagent\". Did you mean \"apm-java-agent\"?"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"apmagent\". Did you mean \"apm-agent\"?"));
 	}
 }
 

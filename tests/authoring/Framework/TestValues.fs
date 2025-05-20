@@ -26,8 +26,10 @@ type TestDiagnosticsOutput() =
                 match diagnostic.Severity with
                 | Severity.Error ->
                     output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{line})")
-                | _ ->
+                | Severity.Warning ->
                     output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{line})")
+                | _ ->
+                    output.WriteLine($"Hint : {diagnostic.Message} ({diagnostic.File}:{line})")
             | _ -> ()
 
 
