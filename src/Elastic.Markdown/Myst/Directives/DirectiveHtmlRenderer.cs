@@ -13,6 +13,7 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Microsoft.AspNetCore.Html;
 using RazorSlices;
 using YamlDotNet.Core;
 
@@ -91,7 +92,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		{
 			Label = block.Label,
 			Align = block.Align,
-			Alt = block.Alt,
+			Alt = block.Alt ?? string.Empty,
 			Title = block.Title,
 			Height = block.Height,
 			Scale = block.Scale,
@@ -129,7 +130,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		{
 			Label = block.Label,
 			Align = block.Align,
-			Alt = block.Alt,
+			Alt = block.Alt ?? string.Empty,
 			Title = block.Title,
 			Height = block.Height,
 			Scale = block.Scale,

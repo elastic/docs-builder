@@ -71,8 +71,8 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Label = Prop("label", "name");
-		Alt = (Prop("alt") ?? "{undefined}").ReplaceSubstitutions(context);
-		Title = (Prop("title") ?? "{undefined}").ReplaceSubstitutions(context);
+		Alt = Prop("alt")?.ReplaceSubstitutions(context) ?? string.Empty;
+		Title = Prop("title")?.ReplaceSubstitutions(context);
 
 		Align = Prop("align");
 		Height = Prop("height", "h");
@@ -119,5 +119,3 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 		}
 	}
 }
-
-
