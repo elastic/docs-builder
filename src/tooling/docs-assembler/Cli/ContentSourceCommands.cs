@@ -30,10 +30,14 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
+		var logger = logFactory.CreateLogger<ContentSourceCommands>();
+
 		var repo = repository ?? githubActionsService.GetInput("repository");
+		var refName = branchOrTag ?? githubActionsService.GetInput("ref_name");
+		logger.LogInformation(" Validating '{Repository}' '{BranchOrTag}' ", repo, refName);
+
 		if (string.IsNullOrEmpty(repo))
 			throw new ArgumentNullException(nameof(repository));
-		var refName = branchOrTag ?? githubActionsService.GetInput("ref_name");
 		if (string.IsNullOrEmpty(refName))
 			throw new ArgumentNullException(nameof(branchOrTag));
 
@@ -50,18 +54,17 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			Force = false,
 			AllowIndexing = false
 		};
-		var logger = logFactory.CreateLogger<ContentSourceCommands>();
 		var matches = assembleContext.Configuration.Match(repo, refName);
 		if (matches == null)
 		{
-			logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repository, branchOrTag);
+			logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
 			await githubActionsService.SetOutputAsync("content-source-name", "");
 		}
 		else
 		{
 			var name = matches.Value.ToStringFast(true);
-			logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repository, branchOrTag, name);
+			logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repo, refName, name);
 
 			await githubActionsService.SetOutputAsync("content-source-match", "true");
 			await githubActionsService.SetOutputAsync("content-source-name", name);
