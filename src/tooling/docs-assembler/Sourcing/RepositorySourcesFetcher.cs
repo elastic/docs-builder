@@ -142,8 +142,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 		return true;
 	}
 
-	private string CheckoutFromScratch(Repository repository, string name, string branch, string relativePath,
-		IDirectoryInfo checkoutFolder)
+	private string CheckoutFromScratch(Repository repository, string name, string branch, string relativePath, IDirectoryInfo checkoutFolder)
 	{
 		_logger.LogInformation("Checkout: {Name}\t{Branch}\t{RelativePath}", name, branch, relativePath);
 		switch (repository.CheckoutStrategy)

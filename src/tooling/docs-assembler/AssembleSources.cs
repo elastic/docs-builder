@@ -65,7 +65,7 @@ public class AssembleSources
 		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
-			.Where(c => !c.Repository.Skip)
+			.Where(c => c.Repository is { Skip: false })
 			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, assembleContext, c, crossLinkResolver, TreeCollector))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
