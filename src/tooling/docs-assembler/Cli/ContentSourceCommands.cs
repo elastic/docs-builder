@@ -57,7 +57,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		var matches = assembleContext.Configuration.Match(repo, refName);
 		if (matches == null)
 		{
-			logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
+			logger.LogError("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
 			await githubActionsService.SetOutputAsync("content-source-name", "");
 		}
@@ -71,7 +71,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		}
 
 		await collector.StopAsync(ctx);
-		return matches != null && collector.Errors == 0 ? 0 : 1;
+		return collector.Errors == 0 ? 0 : 1;
 	}
 
 }
