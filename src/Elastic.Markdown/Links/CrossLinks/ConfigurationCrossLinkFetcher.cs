@@ -5,12 +5,13 @@
 using System.Collections.Frozen;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.CrossLinks;
 
-public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILoggerFactory logger) : CrossLinkFetcher(logger)
+public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILinkIndexProvider linkIndexProvider, ILoggerFactory logger) : CrossLinkFetcher(linkIndexProvider, logger)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{

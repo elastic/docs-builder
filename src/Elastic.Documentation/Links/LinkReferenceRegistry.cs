@@ -14,6 +14,40 @@ public record LinkReferenceRegistry
 	[JsonPropertyName("repositories")]
 	public required Dictionary<string, Dictionary<string, LinkRegistryEntry>> Repositories { get; init; }
 
+	[JsonIgnore]
+	public string? ETag { get; init; }
+
+	public LinkReferenceRegistry WithLinkRegistryEntry(LinkRegistryEntry entry)
+	{
+		var copiedRepositories = new Dictionary<string, Dictionary<string, LinkRegistryEntry>>(Repositories);
+		var repository = entry.Repository;
+		var branch = entry.Branch;
+		// repository already exists in links.json
+		if (copiedRepositories.TryGetValue(repository, out var existingRepositoryEntry))
+		{
+			// The branch already exists in the repository entry
+			if (existingRepositoryEntry.TryGetValue(branch, out var existingBranchEntry))
+			{
+				if (entry.UpdatedAt > existingBranchEntry.UpdatedAt)
+					existingRepositoryEntry[branch] = entry;
+			}
+			// branch does not exist in the repository entry
+			else
+			{
+				existingRepositoryEntry[branch] = entry;
+			}
+		}
+		// onboarding new repository
+		else
+		{
+			copiedRepositories.Add(repository, new Dictionary<string, LinkRegistryEntry>
+			{
+				{ branch, entry }
+			});
+		}
+		return this with { Repositories = copiedRepositories };
+	}
+
 	public static LinkReferenceRegistry Deserialize(Stream json) =>
 		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReferenceRegistry)!;
 
@@ -46,4 +80,3 @@ public record LinkRegistryEntry
 	[JsonPropertyName("updated_at")]
 	public DateTime UpdatedAt { get; init; } = DateTime.MinValue;
 }
-

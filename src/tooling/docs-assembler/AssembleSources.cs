@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using Amazon.S3;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
@@ -11,6 +12,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -60,8 +62,8 @@ public class AssembleSources
 		AssembleContext = assembleContext;
 		TocTopLevelMappings = GetConfiguredSources(assembleContext);
 		HistoryMappings = GetHistoryMapping(assembleContext);
-
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration, assembleContext.Environment);
+		var linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
 		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts

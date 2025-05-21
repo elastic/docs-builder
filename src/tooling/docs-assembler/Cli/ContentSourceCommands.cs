@@ -5,9 +5,11 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
+using Amazon.S3;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
@@ -41,7 +43,8 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			Force = false,
 			AllowIndexing = false
 		};
-		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment);
+		var linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
+		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
 		var links = await fetcher.FetchLinkIndex(ctx);
 		var repositories = context.Configuration.ReferenceRepositories.Values.Concat<Repository>([context.Configuration.Narrative]).ToList();
 
@@ -49,7 +52,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		{
 			if (!links.Repositories.TryGetValue(repository.Name, out var registryMapping))
 			{
-				collector.EmitError(context.ConfigurationPath, $"'{repository}' does not exist in {CrossLinkFetcher.RegistryUrl}");
+				collector.EmitError(context.ConfigurationPath, $"'{repository}' does not exist in link index");
 				continue;
 			}
 
@@ -58,12 +61,12 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			if (!registryMapping.TryGetValue(next, out _))
 			{
 				collector.EmitError(context.ConfigurationPath,
-					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {CrossLinkFetcher.RegistryUrl}");
+					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexProvider.GetLinkIndexPublicUrl()}");
 			}
 			if (!registryMapping.TryGetValue(current, out _))
 			{
 				collector.EmitError(context.ConfigurationPath,
-					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {CrossLinkFetcher.RegistryUrl}");
+					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexProvider.GetLinkIndexPublicUrl()}");
 			}
 		}
 

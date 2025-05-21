@@ -5,9 +5,11 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Amazon.S3;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
@@ -126,7 +128,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.DocumentationOutputDirectory;
 		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, logger));
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, AwsS3LinkIndexProvider.CreateAnonymous(), logger));
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();

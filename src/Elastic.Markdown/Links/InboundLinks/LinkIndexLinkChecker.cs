@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Amazon.S3;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
@@ -14,7 +16,7 @@ namespace Elastic.Markdown.Links.InboundLinks;
 public class LinkIndexLinkChecker(ILoggerFactory logger)
 {
 	private readonly ILogger _logger = logger.CreateLogger<LinkIndexLinkChecker>();
-
+	private readonly ILinkIndexProvider _linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
 	private sealed record RepositoryFilter
 	{
 		public string? LinksTo { get; init; }
@@ -25,7 +27,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	public async Task CheckAll(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(logger);
+		var fetcher = new LinksIndexCrossLinkFetcher(_linkIndexProvider, logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 
@@ -34,7 +36,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	public async Task CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(logger);
+		var fetcher = new LinksIndexCrossLinkFetcher(_linkIndexProvider, logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var filter = new RepositoryFilter
@@ -48,7 +50,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(logger);
+		var fetcher = new LinksIndexCrossLinkFetcher(_linkIndexProvider, logger);
 		var resolver = new CrossLinkResolver(fetcher);
 		// ReSharper disable once RedundantAssignment
 		var crossLinks = await resolver.FetchLinks(ctx);

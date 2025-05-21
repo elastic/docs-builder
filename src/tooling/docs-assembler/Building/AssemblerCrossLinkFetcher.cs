@@ -3,16 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment)
-	: CrossLinkFetcher(logger)
+public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment, ILinkIndexProvider linkIndexProvider)
+	: CrossLinkFetcher(linkIndexProvider, logger)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{

@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown.IO;
@@ -31,9 +32,8 @@ public record FetchedCrossLinks
 	};
 }
 
-public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
+public abstract class CrossLinkFetcher(ILinkIndexProvider linkIndexProvider, ILoggerFactory logger) : IDisposable
 {
-	public const string RegistryUrl = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json";
 	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly HttpClient _client = new();
 	private LinkReferenceRegistry? _linkIndex;
@@ -51,9 +51,8 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 			return _linkIndex;
 		}
 
-		_logger.LogInformation("Fetching {Url}", RegistryUrl);
-		var json = await _client.GetStringAsync(RegistryUrl, ctx);
-		_linkIndex = LinkReferenceRegistry.Deserialize(json);
+		_logger.LogInformation("Getting link index");
+		_linkIndex = await linkIndexProvider.GetLinkIndex(ctx);
 		return _linkIndex;
 	}
 

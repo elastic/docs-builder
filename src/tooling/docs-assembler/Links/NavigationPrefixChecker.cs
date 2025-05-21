@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
+using Amazon.S3;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
@@ -84,7 +86,8 @@ public class NavigationPrefixChecker
 
 	private async Task FetchAndValidateCrossLinks(DiagnosticsCollector collector, string? updateRepository, LinkReference? updateReference, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(_loggerFactory);
+		var linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
+		var fetcher = new LinksIndexCrossLinkFetcher(linkIndexProvider, _loggerFactory);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var dictionary = new Dictionary<string, SeenPaths>();
