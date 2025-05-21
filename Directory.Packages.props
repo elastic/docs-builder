@@ -16,7 +16,7 @@
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.8.0" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.9.0" />
   </ItemGroup>
   <!-- Build -->
   <ItemGroup>

@@ -94,8 +94,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler-filter", "assembl
 		actions\assembler-filter\action.yml = actions\assembler-filter\action.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Search", "src\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj", "{052F70DE-CA5A-45F9-800B-E13CFEAE262C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -157,10 +155,6 @@ Global
 		{CD94F9E4-7FCD-4152-81F1-4288C6B75367}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD94F9E4-7FCD-4152-81F1-4288C6B75367}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD94F9E4-7FCD-4152-81F1-4288C6B75367}.Release|Any CPU.Build.0 = Release|Any CPU
-		{052F70DE-CA5A-45F9-800B-E13CFEAE262C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{052F70DE-CA5A-45F9-800B-E13CFEAE262C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{052F70DE-CA5A-45F9-800B-E13CFEAE262C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{052F70DE-CA5A-45F9-800B-E13CFEAE262C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
@@ -184,6 +178,5 @@ Global
 		{059E787F-85C1-43BE-9DD6-CE319E106383} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166} = {059E787F-85C1-43BE-9DD6-CE319E106383}
 		{FB1C1954-D8E2-4745-BA62-04DD82FB4792} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
-		{052F70DE-CA5A-45F9-800B-E13CFEAE262C} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 	EndGlobalSection
 EndGlobal

@@ -35,6 +35,13 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
+		var esExporter =
+			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
+			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
+				? new ElasticsearchMarkdownExporter(logger, url, apiKey)
+				: null;
+		IMarkdownExporter[] markdownExporters = esExporter is null ? [] : [esExporter];
+
 		foreach (var (_, set) in assembleSets)
 		{
 			var checkout = set.Checkout;
@@ -46,7 +53,7 @@ public class AssemblerBuilder(
 
 			try
 			{
-				var result = await BuildAsync(set, ctx);
+				var result = await BuildAsync(set, markdownExporters, ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
@@ -59,6 +66,9 @@ public class AssemblerBuilder(
 				throw;
 			}
 		}
+
+		if (esExporter is not null)
+			await esExporter.WaitForDrain();
 
 		await context.Collector.StopAsync(ctx);
 	}
@@ -92,13 +102,8 @@ public class AssemblerBuilder(
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, Cancel ctx)
 	{
-		IMarkdownExporter[]? markdownExporters =
-			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
-			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
-				? [new ElasticsearchMarkdownExporter(logger, url, apiKey)]
-				: null;
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
 			logger, HtmlWriter,

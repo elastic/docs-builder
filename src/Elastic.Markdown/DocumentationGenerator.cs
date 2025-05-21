@@ -103,7 +103,7 @@ public class DocumentationGenerator
 
 		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
 
-		// clear output directory if force is true but never for assembler builds since these build multiple times to the output.
+		// clear the output directory if force is true but never for assembler builds since these build multiple times to the output.
 		if (Context is { AssemblerBuild: false, Force: true }
 			// clear the output directory if force is false but generation state is null, except for assembler builds.
 			|| (Context is { AssemblerBuild: false, Force: false } && generationState == null))

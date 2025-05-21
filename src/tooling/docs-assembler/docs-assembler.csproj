@@ -19,6 +19,7 @@
     <PackageReference Include="AWSSDK.S3"/>
     <PackageReference Include="ConsoleAppFramework.Abstractions"/>
     <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Proc"  />
     <PackageReference Include="YamlDotNet"  />
     <PackageReference Include="NetEscapades.EnumGenerators" />
@@ -26,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
