@@ -59,15 +59,17 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
-      content-source-name: ${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}
+      content-source-next: ${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}
+      content-source-current: ${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}
     steps:
       - name: Not a push event
         id: event-check
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
-        # ensure we emit static output to simplify our checks in the build step
+        # ensure we emit static output to simplify our checks in the build step, next/current output has no barrings during preview builds
         run: |
           echo "content-source-match=true" >> $GITHUB_OUTPUT
-          echo "content-source-name=next" >> $GITHUB_OUTPUT
+          echo "content-source-next=true" >> $GITHUB_OUTPUT
+          echo "content-source-current=true" >> $GITHUB_OUTPUT
       - name: Match for push events
         id: match
         if: contains(fromJSON('["push"]'), github.event_name)
@@ -76,11 +78,11 @@ jobs:
           ref_name: ${{ github.ref_name }}
           repository: ${{ github.repository }}
       - name: Debug
-        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         run: |
           echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
           echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
-          echo "content-source-name=${{ steps.event-check.outputs.content-source-name != '' && steps.event-check.outputs.content-source-name || steps.match.outputs.content-source-name }}"
+          echo "content-source-name=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
+          echo "content-source-current=${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}"
           echo "ref=${{ github.ref_name }}"
           echo "repo=${{ github.repository }}"
 
