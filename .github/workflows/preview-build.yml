@@ -61,6 +61,7 @@ jobs:
       content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
       content-source-next: ${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}
       content-source-current: ${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}
+      content-source-speculative: ${{ steps.event-check.outputs.content-source-speculative != '' && steps.event-check.outputs.content-source-speculative || steps.match.outputs.content-source-speculative }}
     steps:
       - name: Not a push event
         id: event-check
@@ -70,6 +71,7 @@ jobs:
           echo "content-source-match=true" >> $GITHUB_OUTPUT
           echo "content-source-next=false" >> $GITHUB_OUTPUT
           echo "content-source-current=false" >> $GITHUB_OUTPUT
+          echo "content-source-speculative=false" >> $GITHUB_OUTPUT
       - name: Match for push events
         id: match
         if: contains(fromJSON('["push"]'), github.event_name)
@@ -81,8 +83,9 @@ jobs:
         run: |
           echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
           echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
-          echo "content-source-name=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
+          echo "content-source-next=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
           echo "content-source-current=${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}"
+          echo "content-source-speculative=${{ steps.event-check.outputs.content-source-speculative != '' && steps.event-check.outputs.content-source-speculative || steps.match.outputs.content-source-speculative }}"
           echo "ref=${{ github.ref_name }}"
           echo "repo=${{ github.repository }}"
 
@@ -233,7 +236,11 @@ jobs:
         if: |
           env.MATCH == 'true' && 
           (contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            && (needs.match.outputs.content-source-current == 'true' || needs.match.outputs.content-source-next == 'true') 
+            && (
+                needs.match.outputs.content-source-current == 'true' 
+                || needs.match.outputs.content-source-next == 'true'
+                || needs.match.outputs.content-source-speculative == 'true'
+            ) 
             && steps.s3-upload.outcome == 'success')
         uses: elastic/docs-builder/actions/update-link-index@main
 

@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Elastic.Markdown.Helpers;
+namespace Elastic.Documentation;
 
 /// <summary>
 /// A semver2 compatible version.

@@ -11,7 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment) : CrossLinkFetcher(logger)
+public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment)
+	: CrossLinkFetcher(logger)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{

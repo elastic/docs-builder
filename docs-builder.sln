@@ -94,6 +94,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler-match", "assemble
 		actions\assembler-match\action.yml = actions\assembler-match\action.yml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembler-config-validate", "assembler-config-validate", "{E20FEEF9-1D1A-4CDA-A546-7FDC573BE399}"
+	ProjectSection(SolutionItems) = preProject
+		actions\assembler-config-validate\action.yml = actions\assembler-config-validate\action.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -178,5 +183,6 @@ Global
 		{059E787F-85C1-43BE-9DD6-CE319E106383} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{7D36DDDA-9E0B-4D2C-8033-5D62FF8B6166} = {059E787F-85C1-43BE-9DD6-CE319E106383}
 		{FB1C1954-D8E2-4745-BA62-04DD82FB4792} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
+		{E20FEEF9-1D1A-4CDA-A546-7FDC573BE399} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 	EndGlobalSection
 EndGlobal
