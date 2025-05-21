@@ -59,7 +59,8 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		{
 			logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
-			await githubActionsService.SetOutputAsync("content-source-name", "");
+			await githubActionsService.SetOutputAsync("content-source-next", "false");
+			await githubActionsService.SetOutputAsync("content-source-current", "false");
 		}
 		else
 		{
@@ -71,10 +72,6 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			await githubActionsService.SetOutputAsync("content-source-match", "true");
 			await githubActionsService.SetOutputAsync("content-source-next", matches.Next is not null ? "true" : "false");
 			await githubActionsService.SetOutputAsync("content-source-current", matches.Current is not null ? "true" : "false");
-
-			//TODO remove once we've merged our changes to the github action and its workflow usage to no longer use this output
-			var name = (matches.Current ?? matches.Next)!.Value.ToStringFast(true);
-			await githubActionsService.SetOutputAsync("content-source-name", name);
 		}
 
 		await collector.StopAsync(ctx);
