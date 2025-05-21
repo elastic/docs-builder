@@ -88,8 +88,8 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 			ContentType = "application/json",
 			IfMatch = _etag // Only update if the ETag matches. Meaning the object has not been changed in the meantime.
 		};
-		var putReponse = await s3Client.PutObjectAsync(putObjectRequest);
-		if (putReponse.HttpStatusCode == HttpStatusCode.OK)
+		var putResponse = await s3Client.PutObjectAsync(putObjectRequest);
+		if (putResponse.HttpStatusCode == HttpStatusCode.OK)
 			logger.LogInformation("Successfully saved link index to s3://{bucketName}/{key}", bucketName, key);
 		else
 		{
