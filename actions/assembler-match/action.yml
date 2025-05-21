@@ -20,6 +20,8 @@ outputs:
     description: "true/false indicating the branch acts as the next content source"
   content-source-current:
     description: "true/false indicating the branch acts as the current content source"
+  content-source-speculative:
+    description: "true/false speculative match, used to build version branches before they are marked as current/next"
 
 runs:
   using: 'docker'

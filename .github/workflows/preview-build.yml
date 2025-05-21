@@ -81,7 +81,7 @@ jobs:
         run: |
           echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
           echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
-          echo "content-source-name=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
+          echo "content-source-next=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
           echo "content-source-current=${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}"
           echo "ref=${{ github.ref_name }}"
           echo "repo=${{ github.repository }}"

@@ -55,12 +55,13 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			AllowIndexing = false
 		};
 		var matches = assembleContext.Configuration.Match(repo, refName);
-		if (matches is { Current: null, Next: null })
+		if (matches is { Current: null, Next: null, Speculative: false })
 		{
 			logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
 			await githubActionsService.SetOutputAsync("content-source-next", "false");
 			await githubActionsService.SetOutputAsync("content-source-current", "false");
+			await githubActionsService.SetOutputAsync("content-source-speculative", "false");
 		}
 		else
 		{
@@ -72,6 +73,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			await githubActionsService.SetOutputAsync("content-source-match", "true");
 			await githubActionsService.SetOutputAsync("content-source-next", matches.Next is not null ? "true" : "false");
 			await githubActionsService.SetOutputAsync("content-source-current", matches.Current is not null ? "true" : "false");
+			await githubActionsService.SetOutputAsync("content-source-speculative", matches.Speculative ? "true" : "false");
 		}
 
 		await collector.StopAsync(ctx);
