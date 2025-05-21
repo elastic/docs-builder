@@ -1,0 +1,12 @@
+name: 'Documentation Assembler Configuration Validator'
+description: 'Ensures the assembler configuration is valid'
+
+branding:
+  icon: 'filter'
+  color: 'blue'
+
+runs:
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-assembler:edge"
+  env:
+    INPUT_COMMAND: "content-source validate"

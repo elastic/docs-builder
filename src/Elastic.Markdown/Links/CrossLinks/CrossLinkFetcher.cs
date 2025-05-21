@@ -33,6 +33,7 @@ public record FetchedCrossLinks
 
 public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 {
+	public const string RegistryUrl = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json";
 	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly HttpClient _client = new();
 	private LinkReferenceRegistry? _linkIndex;
@@ -42,16 +43,16 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 
 	public abstract Task<FetchedCrossLinks> Fetch(Cancel ctx);
 
-	protected async Task<LinkReferenceRegistry> FetchLinkIndex(Cancel ctx)
+	public async Task<LinkReferenceRegistry> FetchLinkIndex(Cancel ctx)
 	{
 		if (_linkIndex is not null)
 		{
 			_logger.LogTrace("Using cached link index");
 			return _linkIndex;
 		}
-		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json";
-		_logger.LogInformation("Fetching {Url}", url);
-		var json = await _client.GetStringAsync(url, ctx);
+
+		_logger.LogInformation("Fetching {Url}", RegistryUrl);
+		var json = await _client.GetStringAsync(RegistryUrl, ctx);
 		_linkIndex = LinkReferenceRegistry.Deserialize(json);
 		return _linkIndex;
 	}

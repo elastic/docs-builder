@@ -6,8 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -20,6 +22,54 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		var log = logFactory.CreateLogger<Program>();
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
+	}
+
+	[Command("validate")]
+	public async Task<int> Validate(Cancel ctx = default)
+	{
+		AssignOutputLogger();
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
+		{
+			NoHints = true
+		};
+
+		_ = collector.StartAsync(ctx);
+
+		// environment does not matter to check the configuration, defaulting to dev
+		var context = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null)
+		{
+			Force = false,
+			AllowIndexing = false
+		};
+		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment);
+		var links = await fetcher.FetchLinkIndex(ctx);
+		var repositories = context.Configuration.ReferenceRepositories.Values.Concat<Repository>([context.Configuration.Narrative]).ToList();
+
+		foreach (var repository in repositories)
+		{
+			if (!links.Repositories.TryGetValue(repository.Name, out var registryMapping))
+			{
+				collector.EmitError(context.ConfigurationPath, $"'{repository}' does not exist in {CrossLinkFetcher.RegistryUrl}");
+				continue;
+			}
+
+			var current = repository.GetBranch(ContentSource.Current);
+			var next = repository.GetBranch(ContentSource.Next);
+			if (!registryMapping.TryGetValue(next, out _))
+			{
+				collector.EmitError(context.ConfigurationPath,
+					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {CrossLinkFetcher.RegistryUrl}");
+			}
+			if (!registryMapping.TryGetValue(current, out _))
+			{
+				collector.EmitError(context.ConfigurationPath,
+					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {CrossLinkFetcher.RegistryUrl}");
+			}
+		}
+
+
+		await collector.StopAsync(ctx);
+		return collector.Errors == 0 ? 0 : 1;
 	}
 
 	/// <summary>  </summary>
