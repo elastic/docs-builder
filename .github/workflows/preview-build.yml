@@ -10,6 +10,13 @@ on:
     branches:
       - main
       - master
+      # TODO remove these need to be added to individual repositories
+      - '\d+.\d+.\d+'
+      - '\d+.\d+'
+      - '\d+.x'
+    tags:
+      - 'v?\d+.\d+.\d+'
+      - 'v?\d+.\d+'
   workflow_call:
     inputs:
       strict:
@@ -44,6 +51,41 @@ permissions:
   pull-requests: read
 
 jobs:
+  match:
+    if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+      cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
+    runs-on: ubuntu-latest
+    outputs:
+      content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
+      content-source-next: ${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}
+      content-source-current: ${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}
+    steps:
+      - name: Not a push event
+        id: event-check
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        # we always want to run for pull requests, but we do not want to indicate its either content source
+        run: |
+          echo "content-source-match=true" >> $GITHUB_OUTPUT
+          echo "content-source-next=false" >> $GITHUB_OUTPUT
+          echo "content-source-current=false" >> $GITHUB_OUTPUT
+      - name: Match for push events
+        id: match
+        if: contains(fromJSON('["push"]'), github.event_name)
+        uses: elastic/docs-builder/actions/assembler-match@main
+        with:
+          ref_name: ${{ github.ref_name }}
+          repository: ${{ github.repository }}
+      - name: Debug
+        run: |
+          echo "Non sensitive data, echo'ing here temporarily to validate this job before connecting it further into the build job"
+          echo "content-source-match=${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}"
+          echo "content-source-name=${{ steps.event-check.outputs.content-source-next != '' && steps.event-check.outputs.content-source-next || steps.match.outputs.content-source-next }}"
+          echo "content-source-current=${{ steps.event-check.outputs.content-source-current != '' && steps.event-check.outputs.content-source-current || steps.match.outputs.content-source-current }}"
+          echo "ref=${{ github.ref_name }}"
+          echo "repo=${{ github.repository }}"
+
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
     concurrency:
@@ -52,30 +94,36 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
+      MATCH: ${{ needs.match.outputs.content-source-match }}
+    needs: [ match ]
     steps:
 
       - name: Checkout
-        if:  contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
+        if:  env.MATCH == 'true' && (contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name))
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Get changed files
-        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        if: env.MATCH == 'true' && (contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name))
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
           
       - name: Checkout
-        if: startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true'
+        if: env.MATCH == 'true' && (startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true')
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
           
       - name: Create Deployment
-        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
+        if: |
+          env.MATCH == 'true' && 
+            (contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
+                || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
+            )
         uses: actions/github-script@v7
         id: deployment
         env:
@@ -108,7 +156,7 @@ jobs:
             return deployment.data.id
 
       - name: Generate env.PATH_PREFIX
-        if: steps.deployment.outputs.result
+        if: env.MATCH == 'true' && (steps.deployment.outputs.result)
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -119,10 +167,6 @@ jobs:
               ;;
             "push" | "workflow_dispatch")
               echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}" >> $GITHUB_ENV
-              if [[ ! "${GITHUB_REF_NAME}" =~ ^(main|master|16\.x)$ ]]; then
-                echo "Unsupported ref name: '${GITHUB_REF_NAME}'";
-                exit 1;
-              fi
               ;;
             *)
               echo "Unsupported event: '${GITHUB_EVENT_NAME}'";
@@ -131,18 +175,22 @@ jobs:
           esac
 
       - name: Bootstrap Action Workspace
-        if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
+        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
         uses: elastic/docs-builder/.github/actions/bootstrap@main
 
-      # we run our artifact directly please use the prebuild
+      # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
-        if: github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result
+        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
         run: |
-          dotnet run --project src/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
+          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
 
       - name: Build documentation
-        if: github.repository != 'elastic/docs-builder' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+        if: | 
+          env.MATCH == 'true' && 
+            (github.repository != 'elastic/docs-builder' && 
+                (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+            )
         uses: elastic/docs-builder@main
         id: docs-build
         continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
@@ -152,11 +200,19 @@ jobs:
           metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'true') }}
 
       - name: 'Validate inbound links'
-        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
+        if: |
+          env.MATCH == 'true' && 
+          (!cancelled() && steps.docs-build.outputs.skip != 'true' 
+            && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+          )
         uses: elastic/docs-builder/actions/validate-inbound-local@main
 
       - name: 'Validate local path prefixes against those claimed by global navigation.yml'
-        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group')) }}
+        if: |
+          env.MATCH == 'true' && 
+          (!cancelled() && steps.docs-build.outputs.skip != 'true' && 
+            (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+          )
         uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
@@ -164,7 +220,9 @@ jobs:
 
       - name: Upload to S3
         id: s3-upload
-        if: ${{ !cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result }}
+        if: |
+          env.MATCH == 'true' && 
+          (!cancelled() && steps.docs-build.outputs.skip != 'true' && steps.deployment.outputs.result)
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
@@ -172,16 +230,16 @@ jobs:
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
       - name: Update Link Index
-        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
+        if: |
+          env.MATCH == 'true' && 
+          (contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
+            && (needs.match.outputs.content-source-current == 'true' || needs.match.outputs.content-source-next == 'true') 
+            && steps.s3-upload.outcome == 'success')
         uses: elastic/docs-builder/actions/update-link-index@main
-
-      - name: Update Reference Index
-        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && steps.s3-upload.outcome == 'success'
-        uses: elastic/docs-builder/actions/update-reference-index@main
 
       - name: Update deployment status
         uses: actions/github-script@v7
-        if: always() && steps.deployment.outputs.result
+        if: env.MATCH == 'true' && (always() && steps.deployment.outputs.result)
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}

@@ -138,7 +138,6 @@ $"""
 		Html = start >= 0 && !TestingFullDocument
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
-		Collector.Channel.TryComplete();
 		await Collector.StopAsync(TestContext.Current.CancellationToken);
 	}
 

@@ -19,6 +19,7 @@ public static class YamlSerialization
 			.IgnoreUnmatchedProperties()
 			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
+			.WithTypeConverter(new ProductConverter())
 #pragma warning disable CS0618 // Type or member is obsolete
 			.WithTypeConverter(new DeploymentConverter())
 			.WithTypeConverter(new ApplicableToConverter())

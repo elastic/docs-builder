@@ -353,7 +353,7 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 :::
 
 ::::{dropdown} Output
-:::{image} img/headings.png
+:::{image} images/headings.png
 :screenshot:
 :alt: Heading levels
 :width: 300px
@@ -381,12 +381,12 @@ Standard Markdown images: `[alt text]` in square brackets, followed by the image
 
 :::{dropdown} Syntax
 ```markdown
-![Bear emerging from hibernation](img/bear.png)
+![Bear emerging from hibernation](images/bear.png)
 ```
 :::
 
 :::{dropdown} Output
-![Bear emerging from hibernation](img/bear.png)
+![Bear emerging from hibernation](images/bear.png)
 :::
 
 **DOs**<br>
@@ -513,7 +513,7 @@ Page title (Markdown H1):
 
 :::{dropdown} Output
 
-![Rendered nav title](img/nav-title.png)
+![Rendered nav title](images/nav-title.png)
 
 :::
 

@@ -4,9 +4,10 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Configuration;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
@@ -65,7 +66,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
 
-	private DiagnosticsCollector Collector { get; }
+	private IDiagnosticsCollector Collector { get; }
 
 	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
@@ -279,7 +280,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.Concat(includedTocs)
 			.Select(toc => subs.Count == 0
 				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Build.Collector, out var r)
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
 					? toc with { Heading = r }
 					: toc)
 			.ToList();
@@ -328,6 +329,11 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		try
 		{
 			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+		}
+		catch (InvalidProductException e)
+		{
+			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			return new YamlFrontMatter();
 		}
 		catch (Exception e)
 		{

@@ -5,10 +5,12 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
+using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
+using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.HistoryMapping;
-using Elastic.Markdown.IO.State;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Slices;
 using Markdig.Syntax;
@@ -24,6 +26,11 @@ public interface IConversionCollector
 public interface IDocumentationFileOutputProvider
 {
 	IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath);
+}
+
+public record GenerationResult
+{
+	public IReadOnlyDictionary<string, LinkRedirect> Redirects { get; set; } = new Dictionary<string, LinkRedirect>();
 }
 
 public class DocumentationGenerator
@@ -46,23 +53,24 @@ public class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null,
-		IHistoryMapper? historyMapper = null,
+		ILegacyUrlMapper? legacyUrlMapper = null,
 		IPositionalNavigation? positionalNavigation = null
 	)
 	{
 		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_conversionCollector = conversionCollector;
-		_writeFileSystem = docSet.Build.WriteFileSystem;
+		_writeFileSystem = docSet.Context.WriteFileSystem;
 		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
-		Context = docSet.Build;
+		Context = docSet.Context;
 		Resolver = docSet.LinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, historyMapper, positionalNavigation);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
+			positionalNavigation);
 		_documentationFileExporter =
 			documentationExporter
-			?? docSet.Build.Configuration.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
-			?? new DocumentationFileExporter(docSet.Build.ReadFileSystem, _writeFileSystem);
+			?? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
+			?? new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem);
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
 		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
@@ -86,14 +94,23 @@ public class DocumentationGenerator
 		_logger.LogInformation("Resolved tree");
 	}
 
-	public async Task GenerateAll(Cancel ctx)
+	public async Task<GenerationResult> GenerateAll(Cancel ctx)
 	{
-		var generationState = GetPreviousGenerationState();
-		if (!Context.SkipMetadata && (Context.Force || generationState == null))
+		var result = new GenerationResult();
+
+		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
+
+		// clear output directory if force is true but never for assembler builds since these build multiple times to the output.
+		if (Context is { AssemblerBuild: false, Force: true }
+			// clear the output directory if force is false but generation state is null, except for assembler builds.
+			|| (Context is { AssemblerBuild: false, Force: false } && generationState == null))
+		{
+			_logger.LogInformation($"Clearing output directory");
 			DocumentationSet.ClearOutputDirectory();
+		}
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
-			return;
+			return result;
 
 		_logger.LogInformation($"Fetching external links");
 		_ = await Resolver.FetchLinks(ctx);
@@ -106,25 +123,20 @@ public class DocumentationGenerator
 
 		await ExtractEmbeddedStaticResources(ctx);
 
-		if (Context.SkipMetadata)
-			return;
-
-		_logger.LogInformation($"Generating documentation compilation state");
-		await GenerateDocumentationState(ctx);
+		if (!Context.SkipDocumentationState)
+		{
+			_logger.LogInformation($"Generating documentation compilation state");
+			await GenerateDocumentationState(ctx);
+		}
 
 		_logger.LogInformation($"Generating links.json");
-		await GenerateLinkReference(ctx);
-	}
+		var linkReference = await GenerateLinkReference(ctx);
 
-	public async Task StopDiagnosticCollection(Cancel ctx)
-	{
-		_logger.LogInformation($"Completing diagnostics channel");
-		Context.Collector.Channel.TryComplete();
-
-		_logger.LogInformation($"Stopping diagnostics collector");
-		await Context.Collector.StopAsync(ctx);
-
-		_logger.LogInformation($"Completed diagnostics channel");
+		// ReSharper disable once WithExpressionModifiesAllMembers
+		return result with
+		{
+			Redirects = linkReference.Redirects ?? []
+		};
 	}
 
 	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)
@@ -132,7 +144,6 @@ public class DocumentationGenerator
 		var processedFileCount = 0;
 		var exceptionCount = 0;
 		var totalFileCount = DocumentationSet.Files.Count;
-		_ = Context.Collector.StartAsync(ctx);
 		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
 		{
 			var processedFiles = Interlocked.Increment(ref processedFileCount);
@@ -265,13 +276,13 @@ public class DocumentationGenerator
 		return false;
 	}
 
-	private async Task GenerateLinkReference(Cancel ctx)
+	private async Task<LinkReference> GenerateLinkReference(Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
-		var state = LinkReference.Create(DocumentationSet);
-
+		var state = DocumentationSet.CreateLinkReference();
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		return state;
 	}
 
 	private async Task GenerateDocumentationState(Cancel ctx)

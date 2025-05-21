@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -10,8 +11,7 @@ using Amazon.Lambda.SQSEvents;
 using Amazon.S3;
 using Amazon.S3.Util;
 using Elastic.Documentation.Lambda.LinkIndexUploader;
-using Elastic.Markdown.IO.State;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation.Links;
 
 const string bucketName = "elastic-docs-link-index";
 const string indexFile = "link-index.json";
@@ -30,6 +30,8 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
 	foreach (var message in ev.Records)
 	{
+		context.Logger.LogInformation("Processing message {MessageId}", message.MessageId);
+		context.Logger.LogInformation("Message body: {MessageBody}", message.Body);
 		try
 		{
 			var s3RecordLinkReferenceTuples = await GetS3RecordLinkReferenceTuples(s3Client, message, context);
@@ -55,6 +57,8 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 		var response = new SQSBatchResponse(batchItemFailures);
 		if (batchItemFailures.Count > 0)
 			context.Logger.LogInformation("Failed to process {batchItemFailuresCount} of {allMessagesCount} messages. Returning them to the queue.", batchItemFailures.Count, ev.Records.Count);
+		var jsonStr = JsonSerializer.Serialize(response, SerializerContext.Default.SQSBatchResponse);
+		context.Logger.LogInformation(jsonStr);
 		return response;
 	}
 	catch (Exception ex)
@@ -67,17 +71,19 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 		{
 			ItemIdentifier = r.MessageId
 		}).ToList());
+		var jsonStr = JsonSerializer.Serialize(response, SerializerContext.Default.SQSBatchResponse);
+		context.Logger.LogInformation(jsonStr);
 		return response;
 	}
 }
 
-static LinkIndexEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, LinkReference linkReference)
+static LinkRegistryEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, LinkReference linkReference)
 {
 	var s3Object = record.S3.Object;
 	var keyTokens = s3Object.Key.Split('/');
 	var repository = keyTokens[1];
 	var branch = keyTokens[2];
-	return new LinkIndexEntry
+	return new LinkRegistryEntry
 	{
 		Repository = repository,
 		Branch = branch,
