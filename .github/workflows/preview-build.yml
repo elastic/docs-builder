@@ -65,11 +65,11 @@ jobs:
       - name: Not a push event
         id: event-check
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
-        # ensure we emit static output to simplify our checks in the build step, next/current output has no barrings during preview builds
+        # we always want to run for pull requests, but we do not want to indicate its either content source
         run: |
           echo "content-source-match=true" >> $GITHUB_OUTPUT
-          echo "content-source-next=true" >> $GITHUB_OUTPUT
-          echo "content-source-current=true" >> $GITHUB_OUTPUT
+          echo "content-source-next=false" >> $GITHUB_OUTPUT
+          echo "content-source-current=false" >> $GITHUB_OUTPUT
       - name: Match for push events
         id: match
         if: contains(fromJSON('["push"]'), github.event_name)
@@ -234,13 +234,13 @@ jobs:
         if: |
           env.MATCH == 'true' && 
           (contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') 
+            && (needs.match.outputs.content-source-current == 'true' || needs.match.outputs.content-source-next == 'true') 
             && steps.s3-upload.outcome == 'success')
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
         uses: actions/github-script@v7
-        if: env.MATCH == 'true' && always() && steps.deployment.outputs.result
+        if: env.MATCH == 'true' && (always() && steps.deployment.outputs.result)
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}
