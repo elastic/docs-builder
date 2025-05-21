@@ -15,7 +15,6 @@ public interface ILinkIndexProvider
 	Task<LinkReferenceRegistry> GetLinkIndex(Cancel cancellationToken = default);
 	Task SaveLinkIndex(LinkReferenceRegistry registry, Cancel cancellationToken = default);
 	Task<LinkReference> GetLinkReference(string key, Cancel cancellationToken = default);
-
 	string GetLinkIndexPublicUrl();
 }
 

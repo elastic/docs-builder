@@ -43,7 +43,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			Force = false,
 			AllowIndexing = false
 		};
-		var linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
+		ILinkIndexProvider linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
 		var links = await fetcher.FetchLinkIndex(ctx);
 		var repositories = context.Configuration.ReferenceRepositories.Values.Concat<Repository>([context.Configuration.Narrative]).ToList();
