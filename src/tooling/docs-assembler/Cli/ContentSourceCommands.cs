@@ -55,7 +55,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			AllowIndexing = false
 		};
 		var matches = assembleContext.Configuration.Match(repo, refName);
-		if (matches == null)
+		if (matches is { Current: null, Next: null })
 		{
 			logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
@@ -63,10 +63,17 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		}
 		else
 		{
-			var name = matches.Value.ToStringFast(true);
-			logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repo, refName, name);
+			if (matches.Current is { } current)
+				logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repo, refName, current.ToStringFast(true));
+			if (matches.Next is { } next)
+				logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repo, refName, next.ToStringFast(true));
 
 			await githubActionsService.SetOutputAsync("content-source-match", "true");
+			await githubActionsService.SetOutputAsync("content-source-next", matches.Next is not null ? "true" : "false");
+			await githubActionsService.SetOutputAsync("content-source-current", matches.Current is not null ? "true" : "false");
+
+			//TODO remove once we've merged our changes to the github action and its workflow usage to no longer use this output
+			var name = (matches.Current ?? matches.Next)!.Value.ToStringFast(true);
 			await githubActionsService.SetOutputAsync("content-source-name", name);
 		}
 

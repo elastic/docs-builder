@@ -81,26 +81,29 @@ public record AssemblyConfiguration
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
 	/// <paramref name="repository"/>.
-	public ContentSource? Match(string repository, string branchOrTag)
+	public ContentSourceMatch Match(string repository, string branchOrTag)
 	{
 		var repositoryName = repository.Split('/').Last();
+		var match = new ContentSourceMatch(null, null);
 		if (ReferenceRepositories.TryGetValue(repositoryName, out var r))
 		{
 			if (r.GetBranch(ContentSource.Current) == branchOrTag)
-				return ContentSource.Current;
+				match = match with { Current = ContentSource.Current };
 			if (r.GetBranch(ContentSource.Next) == branchOrTag)
-				return ContentSource.Next;
-			return null;
+				match = match with { Next = ContentSource.Next };
+			return match;
 		}
 
-		if (repositoryName == NarrativeRepository.RepositoryName)
-		{
-			if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
-				return ContentSource.Current;
-			if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
-				return ContentSource.Next;
-		}
+		if (repositoryName != NarrativeRepository.RepositoryName)
+			return match;
 
-		return null;
+		if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
+			match = match with { Current = ContentSource.Current };
+		if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
+			match = match with { Next = ContentSource.Next };
+
+		return match;
 	}
+
+	public record ContentSourceMatch(ContentSource? Current, ContentSource? Next);
 }

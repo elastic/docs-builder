@@ -18,6 +18,10 @@ outputs:
     description: 'true/false indicating the branch matches a content-source'
   content-source-name:
     description: "The name of the content source that matches (current/next) or empty"
+  content-source-next:
+    description: "true/false indicating the branch acts as the next content source"
+  content-source-current:
+    description: "true/false indicating the branch acts as the current content source"
 
 runs:
   using: 'docker'
