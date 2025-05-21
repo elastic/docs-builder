@@ -8,7 +8,7 @@ using Elastic.Documentation.State;
 
 namespace Elastic.Documentation.Serialization;
 
-// This configures the source generation for json (de)serialization.
+// This configures the source generation for JSON (de)serialization.
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(GenerationState))]
