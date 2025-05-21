@@ -92,7 +92,9 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 		if (putReponse.HttpStatusCode == HttpStatusCode.OK)
 			logger.LogInformation("Successfully saved link index to s3://{bucketName}/{key}", bucketName, key);
 		else
-			// TODO retry?
+		{
 			logger.LogError("Unable to save index to s3://{bucketName}/{key}", bucketName, key);
+			throw new Exception($"Unable to save index to s3://{bucketName}/{key}");
+		}
 	}
 }
