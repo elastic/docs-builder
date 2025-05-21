@@ -102,4 +102,6 @@ references:
   search-ui:
   integration-docs:
   docs-builder:
+    current: 9.0
+    next: main
     skip: true
