@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using Amazon.Lambda.Core;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -36,27 +37,40 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 		return _linkIndex;
 	}
 
-	public async Task UpdateLinkIndexEntry(LinkRegistryEntry linkRegistryEntry)
+	public async Task UpdateLinkIndexEntry(LinkRegistryEntry newEntry)
 	{
 		_linkIndex ??= await GetLinkIndex();
-		if (_linkIndex.Repositories.TryGetValue(linkRegistryEntry.Repository, out var existingEntry))
+		var repository = newEntry.Repository;
+		var branch = newEntry.Branch;
+		// repository already exists in links.json
+		if (_linkIndex.Repositories.TryGetValue(repository, out var existingRepositoryEntry))
 		{
-			var newEntryIsNewer = DateTime.Compare(linkRegistryEntry.UpdatedAt, existingEntry[linkRegistryEntry.Branch].UpdatedAt) > 0;
-			if (newEntryIsNewer)
+			// The branch already exists in the repository entry
+			if (existingRepositoryEntry.TryGetValue(branch, out var existingBranchEntry))
 			{
-				existingEntry[linkRegistryEntry.Branch] = linkRegistryEntry;
-				logger.LogInformation("Updated existing entry for {repository}@{branch}", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
+				if (newEntry.UpdatedAt > existingBranchEntry.UpdatedAt)
+				{
+					existingRepositoryEntry[branch] = newEntry;
+					logger.LogInformation("Updated existing entry for {repository}@{branch}", repository, branch);
+				}
+				else
+					logger.LogInformation("Skipping update for {repository}@{branch} because the existing entry is newer or equal", repository, branch);
 			}
+			// branch does not exist in the repository entry
 			else
-				logger.LogInformation("Skipping update for {repository}@{branch} because the existing entry is newer", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
+			{
+				existingRepositoryEntry[branch] = newEntry;
+				logger.LogInformation("Added new entry '{repository}@{branch}' to existing entry for '{repository}'", repository, branch, repository);
+			}
 		}
+		// onboarding new repository
 		else
 		{
-			_linkIndex.Repositories.Add(linkRegistryEntry.Repository, new Dictionary<string, LinkRegistryEntry>
+			_linkIndex.Repositories.Add(repository, new Dictionary<string, LinkRegistryEntry>
 			{
-				{ linkRegistryEntry.Branch, linkRegistryEntry }
+				{ branch, newEntry }
 			});
-			logger.LogInformation("Added new entry for {repository}@{branch}", linkRegistryEntry.Repository, linkRegistryEntry.Branch);
+			logger.LogInformation("Added new entry for {repository}@{branch}", repository, branch);
 		}
 	}
 
@@ -74,7 +88,11 @@ public class LinkIndexProvider(IAmazonS3 s3Client, ILambdaLogger logger, string 
 			ContentType = "application/json",
 			IfMatch = _etag // Only update if the ETag matches. Meaning the object has not been changed in the meantime.
 		};
-		_ = await s3Client.PutObjectAsync(putObjectRequest);
-		logger.LogInformation("Successfully saved link index to s3://{bucketName}/{key}", bucketName, key);
+		var putReponse = await s3Client.PutObjectAsync(putObjectRequest);
+		if (putReponse.HttpStatusCode == HttpStatusCode.OK)
+			logger.LogInformation("Successfully saved link index to s3://{bucketName}/{key}", bucketName, key);
+		else
+			// TODO retry?
+			logger.LogError("Unable to save index to s3://{bucketName}/{key}", bucketName, key);
 	}
 }
