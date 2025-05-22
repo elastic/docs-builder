@@ -287,3 +287,7 @@ body {
 		@apply bg-grey-20 rounded-2xl;
 	}
 }
+
+body {
+	background-color: green;
+}
