@@ -1,6 +1,9 @@
-name: PR
+name: ci
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
 
 permissions:
