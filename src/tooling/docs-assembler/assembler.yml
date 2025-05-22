@@ -82,6 +82,8 @@ references:
   ecs-logging-ruby:
   ecs-logging:
   ecs:
+    current: "9.0"
+    next: main
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:
@@ -101,3 +103,7 @@ references:
   opentelemetry:
   search-ui:
   integration-docs:
+  docs-builder:
+    current: 9.0
+    next: main
+    skip: true

@@ -1,6 +1,7 @@
+@using Microsoft.AspNetCore.Mvc.ModelBinding.Validation
 @inherits RazorSlice<ImageViewModel>
 <a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-@Model.UniqueImageId').style.display='flex'">
-	<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
+	<img loading="lazy" title="@Model.Title" alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
 	[CONTENT]
 </a>
 
@@ -14,7 +15,7 @@
 			</a>
 		</span>
 		<a class="reference internal image-reference" href="@Model.ImageUrl" target="_blank">
-			<img loading="lazy" alt="@Model.Alt" src="@Model.ImageUrl" />
+			<img loading="lazy" title="@Model.Title"  alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" />
 		</a>
 	</div>
 </div>

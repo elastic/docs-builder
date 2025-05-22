@@ -16,6 +16,12 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
+    groups:
+      tailwindcss:
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/postcss'
+          - 'prettier-plugin-tailwindcss'
     labels:
       - chore
   - package-ecosystem: nuget
