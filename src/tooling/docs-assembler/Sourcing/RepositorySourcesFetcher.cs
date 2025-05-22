@@ -141,8 +141,9 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 				return CloneRef(repository, gitRef, pull, attempt + 1);
 			}
 		}
-
+		// Repository already checked out the same commit
 		if (head != null && head == gitRef)
+			// nothing to do, already at the right commit
 			_logger.LogInformation("{RepositoryName}: HEAD already at {GitRef}", repository.Name, gitRef);
 		else
 		{
