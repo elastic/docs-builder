@@ -5,13 +5,11 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Amazon.S3;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;

@@ -21,6 +21,10 @@ public interface ILinkIndexProvider
 public class AwsS3LinkIndexProvider(IAmazonS3 s3Client, string bucketName = "elastic-docs-link-index", string registryKey = "link-index.json") : ILinkIndexProvider
 {
 
+	// <summary>
+	// Using <see cref="AnonymousAWSCredentials"/> to access the link index
+	// allows to read from the link index without the need to provide AWS credentials.
+	// </summary>
 	public static AwsS3LinkIndexProvider CreateAnonymous()
 	{
 		var credentials = new AnonymousAWSCredentials();
