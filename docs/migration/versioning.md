@@ -10,7 +10,7 @@ To ensure a seamless experience for users and contributors, the new versioning a
 For versioning plan details, check [Docs Versioning plan](https://docs.google.com/presentation/d/1rHl0ia0ZkLHPLAYE5522CTDoatqwAxwAo29_etStPW8/edit?usp=sharing). To learn how to call out versioning differences in docs-builder, see [product availability](../syntax/applies.md).
 
 
-# Content Sources
+## Content Sources
 
 To support multiple deployment models for different repositories, we support the concept of a content source.
 
