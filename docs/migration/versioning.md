@@ -31,7 +31,7 @@ Our publish environments are connected to a single content source.
 
 This allows you as an owner of a repository to choose two different deployment models.
 
-# Deployment models.
+## Deployment models.
 
 The new documentation system supports 2 deployment models.
 
@@ -43,7 +43,7 @@ Tagged deployment
    Allowing you to control the timing of when new documentation should go live.
 
 
-## Continuous Deployment
+### Continuous Deployment
 
 This is the default. To get started, follow our [guide](guide/index.md) to set up the new docs folder structure and CI configuration
 
@@ -68,7 +68,7 @@ references:
 % TODO we need navigation.yml docs
 Once the repository is added, its navigation still needs to be injected into to global site navigation.
 
-## Tagged Deployment
+### Tagged Deployment
 
 If you want to have more control over the timing of when your docs go live to production. Configure the repository
 in our `assembler.yml` to have a fixed git reference (typically a branch) deploy the `current` content source to production.
@@ -85,7 +85,7 @@ In order for `9.0` to be onboarded it needs to first follow our [migration guide
 Our CI integration checks will block until `current` is successfully configured
 :::
 
-### CI Configuration
+#### CI Configuration
 
 To ensure [tagged deployments](#tagged-deployment) can be onboarded correctly, our CI integration needs to have appropriate `push`
  branch triggers.
