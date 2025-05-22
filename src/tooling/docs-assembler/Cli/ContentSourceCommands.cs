@@ -43,8 +43,8 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			Force = false,
 			AllowIndexing = false
 		};
-		ILinkIndexProvider linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
-		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
+		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
+		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
 		var links = await fetcher.FetchLinkIndex(ctx);
 		var repositories = context.Configuration.ReferenceRepositories.Values.Concat<Repository>([context.Configuration.Narrative]).ToList();
 
@@ -61,12 +61,12 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			if (!registryMapping.TryGetValue(next, out _))
 			{
 				collector.EmitError(context.ConfigurationPath,
-					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexProvider.GetLinkIndexPublicUrl()}");
+					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexReader.RegistryUrl}");
 			}
 			if (!registryMapping.TryGetValue(current, out _))
 			{
 				collector.EmitError(context.ConfigurationPath,
-					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexProvider.GetLinkIndexPublicUrl()}");
+					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexReader.RegistryUrl}");
 			}
 		}
 

@@ -126,7 +126,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.DocumentationOutputDirectory;
 		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, AwsS3LinkIndexProvider.CreateAnonymous(), logger));
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, Aws3LinkIndexReader.CreateAnonymous(), logger));
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();
@@ -361,7 +361,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		}
 	}
 
-	public LinkReference CreateLinkReference()
+	public RepositoryLinks CreateLinkReference()
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
@@ -375,7 +375,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
 			});
 
-		return new LinkReference
+		return new RepositoryLinks
 		{
 			Redirects = redirects,
 			UrlPathPrefix = Context.UrlPathPrefix,

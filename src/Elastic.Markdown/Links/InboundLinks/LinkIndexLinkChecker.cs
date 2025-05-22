@@ -14,7 +14,7 @@ namespace Elastic.Markdown.Links.InboundLinks;
 public class LinkIndexLinkChecker(ILoggerFactory logger)
 {
 	private readonly ILogger _logger = logger.CreateLogger<LinkIndexLinkChecker>();
-	private readonly ILinkIndexProvider _linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
+	private readonly ILinkIndexReader _linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 	private sealed record RepositoryFilter
 	{
 		public string? LinksTo { get; init; }
@@ -65,7 +65,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
-			var localLinkReference = LinkReference.Deserialize(json);
+			var localLinkReference = RepositoryLinks.Deserialize(json);
 			crossLinks = resolver.UpdateLinkReference(repository, localLinkReference);
 		}
 		catch (Exception e)

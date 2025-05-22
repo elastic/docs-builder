@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment, ILinkIndexProvider linkIndexProvider)
+public class AssemblerCrossLinkFetcher(ILoggerFactory logger, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment, ILinkIndexReader linkIndexProvider)
 	: CrossLinkFetcher(linkIndexProvider, logger)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
-		var linkReferences = new Dictionary<string, LinkReference>();
+		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
 		var repositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative]);

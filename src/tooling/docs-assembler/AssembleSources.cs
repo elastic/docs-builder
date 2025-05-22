@@ -62,7 +62,7 @@ public class AssembleSources
 		AssembleContext = assembleContext;
 		TocTopLevelMappings = GetConfiguredSources(assembleContext);
 		HistoryMappings = GetHistoryMapping(assembleContext);
-		var linkIndexProvider = AwsS3LinkIndexProvider.CreateAnonymous();
+		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
 		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);

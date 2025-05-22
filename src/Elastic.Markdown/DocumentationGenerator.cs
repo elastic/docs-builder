@@ -276,11 +276,11 @@ public class DocumentationGenerator
 		return false;
 	}
 
-	private async Task<LinkReference> GenerateLinkReference(Cancel ctx)
+	private async Task<RepositoryLinks> GenerateLinkReference(Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
-		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
+		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
 		return state;
 	}

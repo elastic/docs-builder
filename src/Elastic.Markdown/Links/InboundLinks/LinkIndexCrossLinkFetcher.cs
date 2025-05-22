@@ -11,11 +11,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.InboundLinks;
 
-public class LinksIndexCrossLinkFetcher(ILinkIndexProvider linkIndexProvider, ILoggerFactory logger) : CrossLinkFetcher(linkIndexProvider, logger)
+public class LinksIndexCrossLinkFetcher(ILinkIndexReader linkIndexProvider, ILoggerFactory logger) : CrossLinkFetcher(linkIndexProvider, logger)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
-		var linkReferences = new Dictionary<string, LinkReference>();
+		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
 		var linkIndex = await FetchLinkIndex(ctx);

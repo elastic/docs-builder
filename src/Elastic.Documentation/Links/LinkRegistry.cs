@@ -8,7 +8,7 @@ using Elastic.Documentation.Serialization;
 
 namespace Elastic.Documentation.Links;
 
-public record LinkReferenceRegistry
+public record LinkRegistry
 {
 	/// Map of branch to <see cref="LinkRegistryEntry"/>
 	[JsonPropertyName("repositories")]
@@ -17,7 +17,7 @@ public record LinkReferenceRegistry
 	[JsonIgnore]
 	public string? ETag { get; init; }
 
-	public LinkReferenceRegistry WithLinkRegistryEntry(LinkRegistryEntry entry)
+	public LinkRegistry WithLinkRegistryEntry(LinkRegistryEntry entry)
 	{
 		var copiedRepositories = new Dictionary<string, Dictionary<string, LinkRegistryEntry>>(Repositories);
 		var repository = entry.Repository;
@@ -48,14 +48,14 @@ public record LinkReferenceRegistry
 		return this with { Repositories = copiedRepositories };
 	}
 
-	public static LinkReferenceRegistry Deserialize(Stream json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReferenceRegistry)!;
+	public static LinkRegistry Deserialize(Stream json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
 
-	public static LinkReferenceRegistry Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReferenceRegistry)!;
+	public static LinkRegistry Deserialize(string json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
 
-	public static string Serialize(LinkReferenceRegistry referenceRegistry) =>
-		JsonSerializer.Serialize(referenceRegistry, SourceGenerationContext.Default.LinkReferenceRegistry);
+	public static string Serialize(LinkRegistry registry) =>
+		JsonSerializer.Serialize(registry, SourceGenerationContext.Default.LinkRegistry);
 }
 
 public record LinkRegistryEntry

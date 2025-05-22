@@ -12,8 +12,8 @@ namespace Elastic.Documentation.Serialization;
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(GenerationState))]
-[JsonSerializable(typeof(LinkReference))]
+[JsonSerializable(typeof(RepositoryLinks))]
 [JsonSerializable(typeof(GitCheckoutInformation))]
-[JsonSerializable(typeof(LinkReferenceRegistry))]
+[JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

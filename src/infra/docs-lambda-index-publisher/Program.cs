@@ -27,10 +27,10 @@ return;
 static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 {
 	var s3Client = new AmazonS3Client();
-	ILinkIndexProvider linkIndexProvider = new AwsS3LinkIndexProvider(s3Client, bucketName, indexFile);
+	ILinkIndexReaderWriter linkIndexReaderWriter = new AwsS3LinkIndexReaderWriter(s3Client, bucketName, indexFile);
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
 
-	var linkRegistry = await linkIndexProvider.GetLinkIndex();
+	var linkRegistry = await linkIndexReaderWriter.GetRegistry();
 
 	foreach (var message in ev.Records)
 	{
@@ -38,7 +38,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 		context.Logger.LogInformation("Message body: {MessageBody}", message.Body);
 		try
 		{
-			var s3RecordLinkReferenceTuples = await GetS3RecordLinkReferenceTuples(linkIndexProvider, message);
+			var s3RecordLinkReferenceTuples = await GetS3RecordLinkReferenceTuples(linkIndexReaderWriter, message);
 			foreach (var (s3Record, linkReference) in s3RecordLinkReferenceTuples)
 			{
 				var newEntry = ConvertToLinkIndexEntry(s3Record, linkReference);
@@ -57,7 +57,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	}
 	try
 	{
-		await linkIndexProvider.SaveLinkIndex(linkRegistry);
+		await linkIndexReaderWriter.SaveRegistry(linkRegistry);
 		var response = new SQSBatchResponse(batchItemFailures);
 		if (batchItemFailures.Count > 0)
 			context.Logger.LogInformation("Failed to process {batchItemFailuresCount} of {allMessagesCount} messages. Returning them to the queue.", batchItemFailures.Count, ev.Records.Count);
@@ -81,7 +81,7 @@ static async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	}
 }
 
-static LinkRegistryEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, LinkReference linkReference)
+static LinkRegistryEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNotificationRecord record, RepositoryLinks linkReference)
 {
 	var s3Object = record.S3.Object;
 	var keyTokens = s3Object.Key.Split('/');
@@ -98,14 +98,14 @@ static LinkRegistryEntry ConvertToLinkIndexEntry(S3EventNotification.S3EventNoti
 	};
 }
 
-static async Task<IReadOnlyCollection<(S3EventNotification.S3EventNotificationRecord, LinkReference)>> GetS3RecordLinkReferenceTuples(ILinkIndexProvider linkIndexRepository,
+static async Task<IReadOnlyCollection<(S3EventNotification.S3EventNotificationRecord, RepositoryLinks)>> GetS3RecordLinkReferenceTuples(ILinkIndexReaderWriter linkIndexReaderWriter,
 	SQSEvent.SQSMessage message)
 {
 	var s3Event = S3EventNotification.ParseJson(message.Body);
-	var recordLinkReferenceTuples = new ConcurrentBag<(S3EventNotification.S3EventNotificationRecord, LinkReference)>();
+	var recordLinkReferenceTuples = new ConcurrentBag<(S3EventNotification.S3EventNotificationRecord, RepositoryLinks)>();
 	await Parallel.ForEachAsync(s3Event.Records, async (record, ctx) =>
 	{
-		var linkReference = await linkIndexRepository.GetLinkReference(record.S3.Object.Key, ctx);
+		var linkReference = await linkIndexReaderWriter.GetRepositoryLinks(record.S3.Object.Key, ctx);
 		recordLinkReferenceTuples.Add((record, linkReference));
 	});
 	return recordLinkReferenceTuples;
