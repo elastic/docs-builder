@@ -114,7 +114,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			return new Checkout
 			{
 				Directory = checkoutFolder,
-				HeadReference = gitRef,
+				HeadReference = "",
 				Repository = repository,
 			};
 		}
