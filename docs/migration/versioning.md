@@ -15,10 +15,10 @@ For versioning plan details, check [Docs Versioning plan](https://docs.google.co
 To support multiple deployment models for different repositories, we support the concept of a content source.
 
 Next
-:  The source for the upcoming documentation.
+:   The source for the upcoming documentation.
 
 Current
-:  The source for the active documentation.
+:   The source for the active documentation.
 
 
 Our publish environments are connected to a single content source.
@@ -36,11 +36,11 @@ This allows you as an owner of a repository to choose two different deployment m
 The new documentation system supports 2 deployment models.
 
 Continuous deployment. 
-:  This is the default where a repositories `main` or `master` branch is continuously deployed to production.
+:   This is the default where a repositories `main` or `master` branch is continuously deployed to production.
 
 Tagged deployment
-:  Allows you to 'tag' a single git reference (typically a branch) as `current` which will be used to deploy to production.
-   Allowing you to control the timing of when new documentation should go live.
+:   Allows you to 'tag' a single git reference (typically a branch) as `current` which will be used to deploy to production.
+    Allowing you to control the timing of when new documentation should go live.
 
 
 ### Continuous Deployment
