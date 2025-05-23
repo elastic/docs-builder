@@ -126,7 +126,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 					}
 
 					collector.EmitError(repository, s);
-				}, s => collector.EmitWarning(linksJson, s), uri, out _);
+				}, uri, out _);
 			}
 		}
 		// non-strict for now
