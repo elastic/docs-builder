@@ -196,8 +196,17 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 	private void FetchAndCheckout(Repository repository, string gitRef, IDirectoryInfo checkoutFolder)
 	{
 		ExecIn(checkoutFolder, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", gitRef);
-		if (repository.CheckoutStrategy == CheckoutStrategy.Partial)
-			ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
+		switch (repository.CheckoutStrategy)
+		{
+			case CheckoutStrategy.Full:
+				ExecIn(checkoutFolder, "git", "sparse-checkout", "disable");
+				break;
+			case CheckoutStrategy.Partial:
+				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
+				break;
+			default:
+				throw new ArgumentOutOfRangeException(nameof(repository), repository.CheckoutStrategy, null);
+		}
 		ExecIn(checkoutFolder, "git", "checkout", "--force", gitRef);
 	}
 
