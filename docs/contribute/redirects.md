@@ -138,9 +138,10 @@ redirects:
 
 ```yaml
 redirects:
+  # In this first scenario, the default redirection target remains the same page, with anchors being preserved. 
+  # Omitting the ``anchors`` tag or explicitly setting it as empty are both supported.
   'testing/redirects/8th-page.md':
     to: 'testing/redirects/8th-page.md'
-    anchors: {}
     many:
       - to: 'testing/redirects/second-page.md'
         anchors:
@@ -149,6 +150,7 @@ redirects:
         anchors:
           'item-b':
 
+  # In this scenario, the default redirection target is a different page, and anchors are dropped.
   'testing/redirects/deleted-page.md':
     to: 'testing/redirects/5th-page.md'
     anchors: '!'
