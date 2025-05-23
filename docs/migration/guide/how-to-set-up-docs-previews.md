@@ -28,13 +28,14 @@ on:
   push:
     branches: 
         - main <1>
+        - '\d+.\d+' <2>
   pull_request_target: ~
 
 jobs:
   docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-build.yml <2>
+    uses: elastic/docs-builder/.github/workflows/preview-build.yml <3>
     with:
-      path-pattern: docs/** <3>
+      path-pattern: docs/** <4>
     permissions:
       id-token: write
       deployments: write
@@ -43,8 +44,9 @@ jobs:
 ```
 
 1. You need to adjust this to your default branch. E.g `main`, `master`, etc.
-2. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
-3. This should be the path to your docs folder.
+2. Optional, a match for the branch you wish to publish to production if different from the first.
+3. Reusable workflow: [elastic/docs-builder/.github/workflows/preview-build.yml](https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-build.yml)
+4. This should be the path to your `docs` folder.
 
 :::
 

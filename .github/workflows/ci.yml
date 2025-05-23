@@ -1,6 +1,9 @@
-name: PR
+name: ci
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
 
 permissions:
@@ -14,7 +17,7 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
-  validate-navigation:
+  validate-assembler:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +26,11 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
-      - name: Build
+      - name: Validate Navigation
         run: dotnet run --project src/tooling/docs-assembler -c release -- navigation validate
+
+      - name: Validate Content Sources
+        run: dotnet run --project src/tooling/docs-assembler -c release -- content-source validate
 
   build-lambda:
     uses: ./.github/workflows/build-link-index-updater-lambda.yml

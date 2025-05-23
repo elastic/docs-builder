@@ -30,10 +30,10 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, warningEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
 
-	public FetchedCrossLinks UpdateLinkReference(string repository, LinkReference linkReference)
+	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{
 		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-		dictionary[repository] = linkReference;
+		dictionary[repository] = repositoryLinks;
 		_crossLinks = _crossLinks with
 		{
 			LinkReferences = dictionary.ToFrozenDictionary()
@@ -80,7 +80,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	private static bool TryFullyValidate(Action<string> errorEmitter,
 		IUriEnvironmentResolver uriResolver,
 		FetchedCrossLinks fetchedCrossLinks,
-		LinkReference linkReference,
+		RepositoryLinks repositoryLinks,
 		Uri crossLinkUri,
 		[NotNullWhen(true)] out Uri? resolvedUri)
 	{
@@ -89,7 +89,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		if (string.IsNullOrEmpty(lookupPath) && crossLinkUri.Host.EndsWith(".md"))
 			lookupPath = crossLinkUri.Host;
 
-		if (!LookupLink(errorEmitter, fetchedCrossLinks, linkReference, crossLinkUri, ref lookupPath, out var link, out var lookupFragment))
+		if (!LookupLink(errorEmitter, fetchedCrossLinks, repositoryLinks, crossLinkUri, ref lookupPath, out var link, out var lookupFragment))
 			return false;
 
 		var path = ToTargetUrlPath(lookupPath);
@@ -117,7 +117,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 
 	private static bool LookupLink(Action<string> errorEmitter,
 		FetchedCrossLinks crossLinks,
-		LinkReference linkReference,
+		RepositoryLinks repositoryLinks,
 		Uri crossLinkUri,
 		ref string lookupPath,
 		[NotNullWhen(true)] out LinkMetadata? link,
@@ -125,7 +125,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	{
 		lookupFragment = null;
 
-		if (linkReference.Redirects is not null && linkReference.Redirects.TryGetValue(lookupPath, out var redirect))
+		if (repositoryLinks.Redirects is not null && repositoryLinks.Redirects.TryGetValue(lookupPath, out var redirect))
 		{
 			var targets = (redirect.Many ?? [])
 				.Select(r => r)
@@ -133,10 +133,10 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 				.Where(s => !string.IsNullOrEmpty(s.To))
 				.ToArray();
 
-			return ResolveLinkRedirect(targets, errorEmitter, linkReference, crossLinkUri, ref lookupPath, out link, ref lookupFragment);
+			return ResolveLinkRedirect(targets, errorEmitter, repositoryLinks, crossLinkUri, ref lookupPath, out link, ref lookupFragment);
 		}
 
-		if (linkReference.Links.TryGetValue(lookupPath, out link))
+		if (repositoryLinks.Links.TryGetValue(lookupPath, out link))
 		{
 			lookupFragment = crossLinkUri.Fragment;
 			return true;
@@ -153,7 +153,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	private static bool ResolveLinkRedirect(
 		LinkSingleRedirect[] redirects,
 		Action<string> errorEmitter,
-		LinkReference linkReference,
+		RepositoryLinks repositoryLinks,
 		Uri crossLinkUri,
 		ref string lookupPath, out LinkMetadata? link, ref string? lookupFragment)
 	{
@@ -163,7 +163,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		{
 			if (string.IsNullOrEmpty(redirect.To))
 				continue;
-			if (!linkReference.Links.TryGetValue(redirect.To, out link))
+			if (!repositoryLinks.Links.TryGetValue(redirect.To, out link))
 				continue;
 
 			if (string.IsNullOrEmpty(fragment))
