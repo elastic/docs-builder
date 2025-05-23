@@ -52,7 +52,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 
 		if (!fetchedCrossLinks.LinkReferences.TryGetValue(crossLinkUri.Scheme, out var sourceLinkReference))
 		{
-			errorEmitter($"'{crossLinkUri.Scheme}' was not found in the cross link index.");
+			errorEmitter($"'{crossLinkUri.Scheme}' was not found in the cross link index");
 			return false;
 		}
 
