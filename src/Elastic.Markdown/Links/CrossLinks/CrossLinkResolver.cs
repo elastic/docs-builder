@@ -29,10 +29,10 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
 
-	public FetchedCrossLinks UpdateLinkReference(string repository, LinkReference linkReference)
+	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{
 		var dictionary = _crossLinks.LinkReferences.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-		dictionary[repository] = linkReference;
+		dictionary[repository] = repositoryLinks;
 		_crossLinks = _crossLinks with
 		{
 			LinkReferences = dictionary.ToFrozenDictionary()

@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 

@@ -8,8 +8,8 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
@@ -126,7 +126,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.DocumentationOutputDirectory;
 		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, logger));
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, Aws3LinkIndexReader.CreateAnonymous(), logger));
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();
@@ -369,7 +369,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		}
 	}
 
-	public LinkReference CreateLinkReference()
+	public RepositoryLinks CreateLinkReference()
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
@@ -383,7 +383,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
 			});
 
-		return new LinkReference
+		return new RepositoryLinks
 		{
 			Redirects = redirects,
 			UrlPathPrefix = Context.UrlPathPrefix,

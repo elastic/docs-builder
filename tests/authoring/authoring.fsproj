@@ -60,4 +60,8 @@
     <Compile Include="Directives\IncludeBlocks.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="Linters\WhiteSpaceNormalizers.fs" />
+  </ItemGroup>
+
 </Project>

@@ -330,6 +330,11 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		{
 			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
 		}
+		catch (InvalidProductException e)
+		{
+			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			return new YamlFrontMatter();
+		}
 		catch (Exception e)
 		{
 			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);

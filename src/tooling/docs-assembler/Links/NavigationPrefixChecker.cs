@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Immutable;
+using Amazon.S3;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
@@ -82,9 +84,10 @@ public class NavigationPrefixChecker
 	public async Task CheckAllPublishedLinks(DiagnosticsCollector collector, Cancel ctx) =>
 		await FetchAndValidateCrossLinks(collector, null, null, ctx);
 
-	private async Task FetchAndValidateCrossLinks(DiagnosticsCollector collector, string? updateRepository, LinkReference? updateReference, Cancel ctx)
+	private async Task FetchAndValidateCrossLinks(DiagnosticsCollector collector, string? updateRepository, RepositoryLinks? updateReference, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(_loggerFactory);
+		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
+		var fetcher = new LinksIndexCrossLinkFetcher(linkIndexProvider, _loggerFactory);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var dictionary = new Dictionary<string, SeenPaths>();
@@ -126,12 +129,12 @@ public class NavigationPrefixChecker
 		}
 	}
 
-	private async Task<LinkReference> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
+	private async Task<RepositoryLinks> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{
 		try
 		{
 			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
-			return LinkReference.Deserialize(json);
+			return RepositoryLinks.Deserialize(json);
 		}
 		catch (Exception e)
 		{

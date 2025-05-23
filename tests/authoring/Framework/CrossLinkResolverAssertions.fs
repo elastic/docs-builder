@@ -37,7 +37,6 @@ module CrossLinkResolverAssertions =
         let redirectFileParser = RedirectFile(mockRedirectsFile, docContext)
         redirectFileParser.Redirects
 
-    // Helper to create FetchedCrossLinks
     let private createFetchedCrossLinks (redirectsYamlSnippet: string) (linksData: IDictionary<string, LinkMetadata>) repoName =
         let collector = TestDiagnosticsCollector() :> IDiagnosticsCollector
         let redirectRules = parseRedirectsYaml redirectsYamlSnippet collector
@@ -45,8 +44,8 @@ module CrossLinkResolverAssertions =
         if collector.Errors > 0 then
             failwithf $"Failed to parse redirects YAML: %A{collector}"
 
-        let linkReference =
-            LinkReference(
+        let repositoryLinks =
+            RepositoryLinks(
               Origin = GitCheckoutInformation.Unavailable,
               UrlPathPrefix = null,
               Links = Dictionary(linksData),
@@ -59,7 +58,7 @@ module CrossLinkResolverAssertions =
 
         FetchedCrossLinks(
             DeclaredRepositories = declaredRepos,
-            LinkReferences = FrozenDictionary.ToFrozenDictionary(dict [repoName, linkReference]),
+            LinkReferences = FrozenDictionary.ToFrozenDictionary(dict [repoName, repositoryLinks]),
             FromConfiguration = true,
             LinkIndexEntries = FrozenDictionary<string, LinkRegistryEntry>.Empty
         )

@@ -39,7 +39,7 @@ public record LinkRedirect : LinkSingleRedirect
 	public LinkSingleRedirect[]? Many { get; init; }
 }
 
-public record LinkReference
+public record RepositoryLinks
 {
 	[JsonPropertyName("origin")]
 	public required GitCheckoutInformation Origin { get; init; }
@@ -61,12 +61,12 @@ public record LinkReference
 	public static string SerializeRedirects(Dictionary<string, LinkRedirect>? redirects) =>
 		JsonSerializer.Serialize(redirects, SourceGenerationContext.Default.DictionaryStringLinkRedirect);
 
-	public static LinkReference Deserialize(Stream json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
+	public static RepositoryLinks Deserialize(Stream json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositoryLinks)!;
 
-	public static LinkReference Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
+	public static RepositoryLinks Deserialize(string json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositoryLinks)!;
 
-	public static string Serialize(LinkReference reference) =>
-		JsonSerializer.Serialize(reference, SourceGenerationContext.Default.LinkReference);
+	public static string Serialize(RepositoryLinks reference) =>
+		JsonSerializer.Serialize(reference, SourceGenerationContext.Default.RepositoryLinks);
 }

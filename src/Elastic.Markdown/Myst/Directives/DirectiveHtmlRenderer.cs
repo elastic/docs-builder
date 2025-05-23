@@ -91,7 +91,8 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		{
 			Label = block.Label,
 			Align = block.Align,
-			Alt = block.Alt,
+			Alt = block.Alt ?? string.Empty,
+			Title = block.Title,
 			Height = block.Height,
 			Scale = block.Scale,
 			Target = block.Target,
@@ -128,7 +129,8 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		{
 			Label = block.Label,
 			Align = block.Align,
-			Alt = block.Alt,
+			Alt = block.Alt ?? string.Empty,
+			Title = block.Title,
 			Height = block.Height,
 			Scale = block.Scale,
 			Target = block.Target,

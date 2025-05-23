@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using ProcNet;
@@ -46,129 +47,168 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 		return checkouts;
 	}
 
-	public async Task<IReadOnlyCollection<Checkout>> AcquireAllLatest(Cancel ctx = default)
+	public async Task<IReadOnlyCollection<Checkout>> CloneAll(bool fetchLatest, Cancel ctx = default)
 	{
-		_logger.LogInformation(
-			"Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
+		_logger.LogInformation("Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
 			PublishEnvironment.ContentSource.ToStringFast(true)
 		);
+		var checkouts = new ConcurrentBag<Checkout>();
+
+		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
+		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
 
 		var repositories = new Dictionary<string, Repository>(Configuration.ReferenceRepositories)
 		{
 			{ NarrativeRepository.RepositoryName, Configuration.Narrative }
 		};
-		return await RepositorySourcer.AcquireAllLatest(repositories, PublishEnvironment.ContentSource, ctx);
-	}
-}
 
-public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
-{
-	private readonly ILogger<RepositorySourcer> _logger = logger.CreateLogger<RepositorySourcer>();
-
-	public async Task<IReadOnlyCollection<Checkout>> AcquireAllLatest(Dictionary<string, Repository> repositories, ContentSource source, Cancel ctx = default)
-	{
-		var dict = new ConcurrentDictionary<string, Stopwatch>();
-		var checkouts = new ConcurrentBag<Checkout>();
 		await Parallel.ForEachAsync(repositories,
 			new ParallelOptions
 			{
 				CancellationToken = ctx,
 				MaxDegreeOfParallelism = Environment.ProcessorCount
-			}, async (kv, c) =>
+			}, async (repo, c) =>
 			{
 				await Task.Run(() =>
 				{
-					var name = kv.Key.Trim();
-					var repo = kv.Value;
-					var clone = CloneOrUpdateRepository(kv.Value, name, repo.GetBranch(source), dict);
-					checkouts.Add(clone);
+					if (!linkRegistry.Repositories.TryGetValue(repo.Key, out var entry))
+					{
+						context.Collector.EmitError("", $"'{repo.Key}' does not exist in link index");
+						return;
+					}
+					var branch = repo.Value.GetBranch(PublishEnvironment.ContentSource);
+					var gitRef = branch;
+					if (!fetchLatest)
+					{
+						if (!entry.TryGetValue(branch, out var entryInfo))
+						{
+							context.Collector.EmitError("", $"'{repo.Key}' does not have a '{branch}' entry in link index");
+							return;
+						}
+						gitRef = entryInfo.GitReference;
+					}
+					checkouts.Add(RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest));
 				}, c);
 			}).ConfigureAwait(false);
-
-		return checkouts.ToList().AsReadOnly();
+		return checkouts;
 	}
+}
 
-	public Checkout CloneOrUpdateRepository(Repository repository, string name, string branch, ConcurrentDictionary<string, Stopwatch> dict)
+
+public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
+{
+	private readonly ILogger<RepositorySourcer> _logger = logger.CreateLogger<RepositorySourcer>();
+
+	// <summary>
+	// Clones the repository to the checkout directory and checks out the specified git reference.
+	// </summary>
+	// <param name="repository">The repository to clone.</param>
+	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
+	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1)
 	{
-		var fs = readFileSystem;
-		var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, name));
-		var relativePath = Path.GetRelativePath(Paths.WorkingDirectoryRoot.FullName, checkoutFolder.FullName);
-		var sw = Stopwatch.StartNew();
-
-		_ = dict.AddOrUpdate($"{name} ({branch})", sw, (_, _) => sw);
-
-		string? head;
-		if (checkoutFolder.Exists)
+		var checkoutFolder = readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name));
+		if (attempt > 3)
 		{
-			if (!TryUpdateSource(name, branch, relativePath, checkoutFolder, out head))
-				head = CheckoutFromScratch(repository, name, branch, relativePath, checkoutFolder);
+			collector.EmitError("", $"Failed to clone repository {repository.Name}@{gitRef} after 3 attempts");
+			return new Checkout
+			{
+				Directory = checkoutFolder,
+				HeadReference = "",
+				Repository = repository,
+			};
 		}
+		_logger.LogInformation("{RepositoryName}: Cloning repository {RepositoryName}@{Commit} to {CheckoutFolder}", repository.Name, repository.Name, gitRef,
+			checkoutFolder.FullName);
+		if (!checkoutFolder.Exists)
+		{
+			checkoutFolder.Create();
+			checkoutFolder.Refresh();
+		}
+		var isGitInitialized = GitInit(repository, checkoutFolder);
+		string? head = null;
+		if (isGitInitialized)
+		{
+			try
+			{
+				head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+			}
+			catch (Exception e)
+			{
+				_logger.LogError(e, "{RepositoryName}: Failed to acquire current commit, falling back to recreating from scratch", repository.Name);
+				checkoutFolder.Delete(true);
+				checkoutFolder.Refresh();
+				return CloneRef(repository, gitRef, pull, attempt + 1);
+			}
+		}
+		// Repository already checked out the same commit
+		if (head != null && head == gitRef)
+			// nothing to do, already at the right commit
+			_logger.LogInformation("{RepositoryName}: HEAD already at {GitRef}", repository.Name, gitRef);
 		else
-			head = CheckoutFromScratch(repository, name, branch, relativePath, checkoutFolder);
-
-		sw.Stop();
+		{
+			FetchAndCheckout(repository, gitRef, checkoutFolder);
+			if (!pull)
+			{
+				return new Checkout
+				{
+					Directory = checkoutFolder,
+					HeadReference = gitRef,
+					Repository = repository,
+				};
+			}
+			try
+			{
+				ExecIn(checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", gitRef);
+			}
+			catch (Exception e)
+			{
+				_logger.LogError(e, "{RepositoryName}: Failed to update {GitRef} from {RelativePath}, falling back to recreating from scratch",
+					repository.Name, gitRef, checkoutFolder.FullName);
+				checkoutFolder.Delete(true);
+				checkoutFolder.Refresh();
+				return CloneRef(repository, gitRef, pull, attempt + 1);
+			}
+		}
 
 		return new Checkout
 		{
-			Repository = repository,
 			Directory = checkoutFolder,
-			HeadReference = head
+			HeadReference = gitRef,
+			Repository = repository,
 		};
 	}
 
-	private bool TryUpdateSource(string name, string branch, string relativePath, IDirectoryInfo checkoutFolder, [NotNullWhen(true)] out string? head)
+	/// <summary>
+	/// Initializes the git repository if it is not already initialized.
+	/// Returns true if the repository was already initialized.
+	/// </summary>
+	private bool GitInit(Repository repository, IDirectoryInfo checkoutFolder)
 	{
-		head = null;
-		try
-		{
-			_logger.LogInformation("Pull: {Name}\t{Branch}\t{RelativePath}", name, branch, relativePath);
-			// --allow-unrelated-histories due to shallow clones not finding a common ancestor
-			ExecIn(checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff");
-		}
-		catch (Exception e)
-		{
-			_logger.LogError(e, "Failed to update {Name} from {RelativePath}, falling back to recreating from scratch", name, relativePath);
-			if (checkoutFolder.Exists)
-			{
-				checkoutFolder.Delete(true);
-				checkoutFolder.Refresh();
-			}
-			return false;
-		}
-
-		head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
-
-		return true;
+		var isGitAlreadyInitialized = Directory.Exists(Path.Combine(checkoutFolder.FullName, ".git"));
+		if (isGitAlreadyInitialized)
+			return true;
+		ExecIn(checkoutFolder, "git", "init");
+		ExecIn(checkoutFolder, "git", "remote", "add", "origin", repository.Origin);
+		return false;
 	}
 
-	private string CheckoutFromScratch(Repository repository, string name, string branch, string relativePath,
-		IDirectoryInfo checkoutFolder)
+	private void FetchAndCheckout(Repository repository, string gitRef, IDirectoryInfo checkoutFolder)
 	{
-		_logger.LogInformation("Checkout: {Name}\t{Branch}\t{RelativePath}", name, branch, relativePath);
+		ExecIn(checkoutFolder, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", gitRef);
 		switch (repository.CheckoutStrategy)
 		{
-			case "full":
-				Exec("git", "clone", repository.Origin, checkoutFolder.FullName,
-					"--depth", "1", "--single-branch",
-					"--branch", branch
-				);
+			case CheckoutStrategy.Full:
+				ExecIn(checkoutFolder, "git", "sparse-checkout", "disable");
 				break;
-			case "partial":
-				Exec(
-					"git", "clone", "--filter=blob:none", "--no-checkout", repository.Origin, checkoutFolder.FullName
-				);
-
-				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "--cone");
-				ExecIn(checkoutFolder, "git", "checkout", branch);
+			case CheckoutStrategy.Partial:
 				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
 				break;
+			default:
+				throw new ArgumentOutOfRangeException(nameof(repository), repository.CheckoutStrategy, null);
 		}
-
-		return Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+		ExecIn(checkoutFolder, "git", "checkout", "--force", gitRef);
 	}
-
-	private void Exec(string binary, params string[] args) => ExecIn(null, binary, args);
 
 	private void ExecIn(IDirectoryInfo? workingDirectory, string binary, params string[] args)
 	{
@@ -222,7 +262,6 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			return line;
 		}
 	}
-
 }
 
 public class NoopConsoleWriter : IConsoleOutWriter

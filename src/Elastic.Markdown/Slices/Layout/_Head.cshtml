@@ -35,4 +35,9 @@
 	{
 		<meta property="og:url" content="@Model.CanonicalUrl" />
 	}
+	@if (!string.IsNullOrEmpty(Model.Products))
+	{	
+		<meta class="elastic" name="product_name" content="@(Model.Products)"/>
+		<meta name="DC.subject" content="@(Model.Products)"/>
+	}
 </head>

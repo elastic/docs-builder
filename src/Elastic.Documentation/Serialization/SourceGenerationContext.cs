@@ -8,12 +8,12 @@ using Elastic.Documentation.State;
 
 namespace Elastic.Documentation.Serialization;
 
-// This configures the source generation for json (de)serialization.
+// This configures the source generation for JSON (de)serialization.
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(GenerationState))]
-[JsonSerializable(typeof(LinkReference))]
+[JsonSerializable(typeof(RepositoryLinks))]
 [JsonSerializable(typeof(GitCheckoutInformation))]
-[JsonSerializable(typeof(LinkReferenceRegistry))]
+[JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

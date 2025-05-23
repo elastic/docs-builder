@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Net.Mime;
 using Actions.Core.Services;
@@ -39,11 +41,13 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	/// <summary> Clones all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
+	/// <param name="fetchLatest"> If true fetch the latest commit of the branch instead of the link registry entry ref</param>
 	/// <param name="ctx"></param>
 	[Command("clone-all")]
 	public async Task<int> CloneAll(
 		bool? strict = null,
 		string? environment = null,
+		bool? fetchLatest = null,
 		Cancel ctx = default
 	)
 	{
@@ -55,7 +59,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
-		_ = await cloner.AcquireAllLatest(ctx);
+
+		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
 
 		await collector.StopAsync(ctx);
 
@@ -90,7 +95,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
 		{
 			Force = force ?? false,
-			AllowIndexing = allowIndexing ?? false,
+			AllowIndexing = allowIndexing ?? false
 		};
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
@@ -138,7 +143,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		// It's only used to get the list of repositories.
 		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new RepositorySourcer(logger, assembleContext.CheckoutDirectory, new FileSystem(), collector);
-		var dict = new ConcurrentDictionary<string, Stopwatch>();
 		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
 		{
 			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
@@ -152,8 +156,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			{
 				try
 				{
-					var name = kv.Key.Trim();
-					var checkout = cloner.CloneOrUpdateRepository(kv.Value, name, kv.Value.GetBranch(contentSource), dict);
+					var checkout = cloner.CloneRef(kv.Value, kv.Value.GetBranch(contentSource), true);
 					var outputPath = Directory.CreateTempSubdirectory(checkout.Repository.Name).FullName;
 					var context = new BuildContext(
 						collector,

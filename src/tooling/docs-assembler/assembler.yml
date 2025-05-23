@@ -17,6 +17,12 @@ environments:
       auth: nPocPUG0wiH68jsVeyRSxA
       preview: env-507
       cookies_win: x
+  edge: 
+    uri: https://d34ipnu52o64md.cloudfront.net
+    path_prefix: docs
+    content_source: next
+    google_tag_manager:
+      enabled: false
   dev:
     uri: http://localhost:4000
     content_source: next
@@ -82,6 +88,8 @@ references:
   ecs-logging-ruby:
   ecs-logging:
   ecs:
+    current: "9.0"
+    next: main
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:
@@ -98,5 +106,10 @@ references:
   kibana:
   logstash-docs-md:
   logstash:
+  opentelemetry:
   search-ui:
   integration-docs:
+  docs-builder:
+    current: 9.0
+    next: main
+    skip: true

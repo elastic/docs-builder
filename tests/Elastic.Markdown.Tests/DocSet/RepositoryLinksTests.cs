@@ -9,11 +9,11 @@ using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class LinkReferenceTests : NavigationTestsBase
+public class RepositoryLinksTests : NavigationTestsBase
 {
-	public LinkReferenceTests(ITestOutputHelper output) : base(output) => Reference = Set.CreateLinkReference();
+	public RepositoryLinksTests(ITestOutputHelper output) : base(output) => Reference = Set.CreateLinkReference();
 
-	private LinkReference Reference { get; }
+	private RepositoryLinks Reference { get; }
 
 	[Fact]
 	public void ShouldNotBeNull() =>
@@ -54,7 +54,7 @@ public class LinkReferenceSerializationTests
 	[Fact]
 	public void SerializesCurrent()
 	{
-		var linkReference = new LinkReference
+		var linkReference = new RepositoryLinks
 		{
 			Origin = new GitCheckoutInformation
 			{
@@ -66,7 +66,7 @@ public class LinkReferenceSerializationTests
 			Links = [],
 			CrossLinks = [],
 		};
-		var json = LinkReference.Serialize(linkReference);
+		var json = RepositoryLinks.Serialize(linkReference);
 		// language=json
 		json.Should().Be(
 			"""
@@ -104,7 +104,7 @@ public class LinkReferenceSerializationTests
 			  "redirects": null
 			}
 			""";
-		var linkReference = LinkReference.Deserialize(json);
+		var linkReference = RepositoryLinks.Deserialize(json);
 		linkReference.Origin.Ref.Should().Be("ref");
 	}
 

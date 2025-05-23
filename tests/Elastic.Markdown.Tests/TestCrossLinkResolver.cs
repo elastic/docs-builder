@@ -15,7 +15,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 {
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
 	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
-	private Dictionary<string, LinkReference> LinkReferences { get; } = [];
+	private Dictionary<string, RepositoryLinks> LinkReferences { get; } = [];
 	private HashSet<string> DeclaredRepositories { get; } = [];
 
 	public Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
