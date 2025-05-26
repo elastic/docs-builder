@@ -88,6 +88,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }} - ${{ matrix.command }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
