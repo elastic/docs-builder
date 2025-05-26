@@ -1,5 +1,5 @@
-#!/bin/sh
-set -euo pipefail
+#!/usr/bin/env bash
+set -eu pipefail
 
 # Determine OS type and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -36,7 +36,7 @@ fi
 # Check if docs-builder already exists, but handle non-interactive shells
 if [ -f "$INSTALL_DIR/docs-builder" ]; then
   echo "docs-builder is already installed."
-  
+
   # Check if script is running interactively (has a TTY)
   if [ -t 0 ]; then
     # Running interactively, can prompt for input
