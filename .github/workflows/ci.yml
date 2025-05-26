@@ -91,11 +91,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            command: ./install.sh
+            command: curl -sL https://ela.st/docs-builder-install | sh
           - os: macos-latest
-            command: ./install.sh
+            command: curl -sL https://ela.st/docs-builder-install | sh
           - os: windows-latest
-            command: .\install.ps1
+            command: iex (New-Object System.Net.WebClient).DownloadString('https://ela.st/docs-builder-install-win')
     steps:
       - uses: actions/checkout@v4
       - run: ${{ matrix.command }}
