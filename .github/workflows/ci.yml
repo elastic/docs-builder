@@ -83,3 +83,23 @@ jobs:
 
       - name: Publish AOT
         run: dotnet run --project build -c release -- publishbinaries
+
+  install-script:
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} - ${{ matrix.command }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            command: ./install.sh
+          - os: macos-latest
+            command: ./install.sh
+          - os: windows-latest
+            command: .\install.sh
+          - os: windows-latest
+            command: .\install.ps1
+            shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - run: ${{ matrix.command }}
+        shell: ${{ matrix.shell }}
