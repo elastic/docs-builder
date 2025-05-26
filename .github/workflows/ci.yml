@@ -92,7 +92,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            command: sudo curl -sL https://ela.st/docs-builder-install | sh
+            command: curl -sL https://ela.st/docs-builder-install | sh
           - os: macos-latest
             command: curl -sL https://ela.st/docs-builder-install | sh
           - os: windows-latest
@@ -100,4 +100,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ${{ matrix.command }}
+        shell: bash
       - run: docs-builder --help
