@@ -99,4 +99,3 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ${{ matrix.command }}
-        shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'sh' }}
