@@ -92,14 +92,11 @@ jobs:
         include:
           - os: ubuntu-latest
             command: ./install.sh
-            shell: sh
           - os: macos-latest
             command: ./install.sh
-            shell: sh
           - os: windows-latest
             command: .\install.ps1
-            shell: pwsh
     steps:
       - uses: actions/checkout@v4
       - run: ${{ matrix.command }}
-        shell: ${{ matrix.shell }}
+        shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'sh' }}
