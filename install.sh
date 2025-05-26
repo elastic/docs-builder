@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu pipefail
+set -eu
 
 # Determine OS type and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
