@@ -92,7 +92,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            command: curl -sL https://ela.st/docs-builder-install | sh
+            command: sudo curl -sL https://ela.st/docs-builder-install | sh
           - os: macos-latest
             command: curl -sL https://ela.st/docs-builder-install | sh
           - os: windows-latest
