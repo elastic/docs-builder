@@ -92,10 +92,10 @@ jobs:
         include:
           - os: ubuntu-latest
             command: ./install.sh
+            shell: sh
           - os: macos-latest
             command: ./install.sh
-          - os: windows-latest
-            command: .\install.sh
+            shell: sh
           - os: windows-latest
             command: .\install.ps1
             shell: pwsh
