@@ -95,11 +95,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            command: curl -sL ${{ env.INSTALL_SCRIPT }} | sh
+            command: curl -sL https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.sh | sh
           - os: macos-latest
-            command: curl -sL ${{ env.INSTALL_SCRIPT }} | sh
+            command: curl -sL https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.sh | sh
           - os: windows-latest
-            command: iex (New-Object System.Net.WebClient).DownloadString('https://ela.st/docs-builder-install-win')
+            command: iex (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.ps1')
     steps:
       - uses: actions/checkout@v4
       - run: ${{ matrix.command }}
