@@ -9,6 +9,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using ProcNet;
@@ -25,7 +26,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 
 	private RepositorySourcer RepositorySourcer => new(logger, context.CheckoutDirectory, context.ReadFileSystem, context.Collector);
 
-	public IReadOnlyCollection<Checkout> GetAll()
+	public CheckoutResult GetAll()
 	{
 		var fs = context.ReadFileSystem;
 		var repositories = Configuration.ReferenceRepositories.Values.Concat<Repository>([Configuration.Narrative]);
@@ -43,11 +44,19 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 			};
 			checkouts.Add(checkout);
 		}
-
-		return checkouts;
+		var linkRegistrySnapshotPath = Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
+		if (!fs.File.Exists(linkRegistrySnapshotPath))
+			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
+		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
+		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
+		return new CheckoutResult
+		{
+			Checkouts = checkouts,
+			LinkRegistrySnapshot = linkRegistry
+		};
 	}
 
-	public async Task<IReadOnlyCollection<Checkout>> CloneAll(bool fetchLatest, Cancel ctx = default)
+	public async Task<CheckoutResult> CloneAll(bool fetchLatest, Cancel ctx = default)
 	{
 		_logger.LogInformation("Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
@@ -91,7 +100,16 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 					checkouts.Add(RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest));
 				}, c);
 			}).ConfigureAwait(false);
-		return checkouts;
+		await File.WriteAllTextAsync(
+			Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+			LinkRegistry.Serialize(linkRegistry),
+			ctx
+		);
+		return new CheckoutResult
+		{
+			Checkouts = checkouts,
+			LinkRegistrySnapshot = linkRegistry
+		};
 	}
 }
 
@@ -271,4 +289,11 @@ public class NoopConsoleWriter : IConsoleOutWriter
 	public void Write(Exception e) { }
 
 	public void Write(ConsoleOut consoleOut) { }
+}
+
+public record CheckoutResult
+{
+	public static string LinkRegistrySnapshotFileName => "link-index.snapshot.json";
+	public required LinkRegistry LinkRegistrySnapshot { get; init; }
+	public required IReadOnlyCollection<Checkout> Checkouts { get; init; }
 }
