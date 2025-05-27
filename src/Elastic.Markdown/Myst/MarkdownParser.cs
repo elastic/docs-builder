@@ -31,21 +31,11 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	private BuildContext Build { get; } = build;
 	private IParserResolvers Resolvers { get; } = resolvers;
 
-	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx)
-	{
-		var state = new ParserState(Build)
-		{
-			MarkdownSourcePath = path,
-			YamlFrontMatter = null,
-			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
-			CrossLinkResolver = Resolvers.CrossLinkResolver,
-			SkipValidation = true
-		};
-		var context = new ParserContext(state);
-		return ParseAsync(path, context, MinimalPipeline, ctx);
-	}
+	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) => ParseFromFile(path, matter, Pipeline, ctx);
 
-	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx)
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) => ParseFromFile(path, null, MinimalPipeline, ctx);
+
+	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, Cancel ctx)
 	{
 		var state = new ParserState(Build)
 		{
@@ -55,7 +45,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			CrossLinkResolver = Resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
-		return ParseAsync(path, context, Pipeline, ctx);
+		return ParseAsync(path, context, pipeline, ctx);
 	}
 
 	public Task<MarkdownDocument> ParseSnippetAsync(IFileInfo path, IFileInfo parentPath, YamlFrontMatter? matter, Cancel ctx)

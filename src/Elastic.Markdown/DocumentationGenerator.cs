@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown;
 
+/// Used primarily for testing, do not use in production paths since it might keep references alive to long
 public interface IConversionCollector
 {
 	void Collect(MarkdownFile file, MarkdownDocument document, string html);
@@ -212,7 +213,7 @@ public class DocumentationGenerator
 		}
 	}
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel token)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel ctx)
 	{
 		if (!Context.Force)
 		{
@@ -222,17 +223,28 @@ public class DocumentationGenerator
 				return;
 		}
 
-		if (file is MarkdownFile markdown)
-		{
-			foreach (var exporter in _markdownExporters)
-				_ = await exporter.Export(markdown);
-		}
-
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
-		//TODO send file to OutputFile() so we can validate its scope is defined in navigation.yml
 		var outputFile = OutputFile(file.RelativePath);
 		if (outputFile is not null)
-			await _documentationFileExporter.ProcessFile(Context, file, outputFile, HtmlWriter, _conversionCollector, token);
+		{
+			var context = new ProcessingFileContext
+			{
+				BuildContext = Context,
+				OutputFile = outputFile,
+				ConversionCollector = _conversionCollector,
+				File = file,
+				HtmlWriter = HtmlWriter
+			};
+			await _documentationFileExporter.ProcessFile(context, ctx);
+			if (file is MarkdownFile markdown)
+			{
+				foreach (var exporter in _markdownExporters)
+				{
+					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
+					_ = await exporter.ExportAsync(new MarkdownExportContext { Document = document, File = markdown }, ctx);
+				}
+			}
+		}
 	}
 
 	private IFileInfo? OutputFile(string relativePath)
