@@ -102,7 +102,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 					checkouts.Add(RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest));
 				}, c);
 			}).ConfigureAwait(false);
-		await File.WriteAllTextAsync(
+		await context.WriteFileSystem.File.WriteAllTextAsync(
 			Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistry),
 			ctx
