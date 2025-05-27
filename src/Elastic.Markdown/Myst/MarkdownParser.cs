@@ -31,18 +31,23 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	private BuildContext Build { get; } = build;
 	private IParserResolvers Resolvers { get; } = resolvers;
 
-	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) => ParseFromFile(path, matter, Pipeline, ctx);
+	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) =>
+		ParseFromFile(path, matter, Pipeline, false, ctx);
 
-	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) => ParseFromFile(path, null, MinimalPipeline, ctx);
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
+		ParseFromFile(path, null, MinimalPipeline, true, ctx);
 
-	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, Cancel ctx)
+	private Task<MarkdownDocument> ParseFromFile(
+		IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx
+	)
 	{
 		var state = new ParserState(Build)
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
 			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
-			CrossLinkResolver = Resolvers.CrossLinkResolver
+			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			SkipValidation = skip
 		};
 		var context = new ParserContext(state);
 		return ParseAsync(path, context, pipeline, ctx);
