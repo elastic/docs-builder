@@ -184,7 +184,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			}
 			catch (Exception e)
 			{
-				_logger.LogError(e, "{RepositoryName}: Failed to update {GitRef} from {RelativePath}, falling back to recreating from scratch",
+				_logger.LogError(e, "{RepositoryName}: Failed to update {GitRef} from {Path}, falling back to recreating from scratch",
 					repository.Name, gitRef, checkoutFolder.FullName);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
