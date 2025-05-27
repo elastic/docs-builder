@@ -105,7 +105,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			await assembleContext.Collector.StopAsync(ctx);
 			return 1;
 		}
-
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkoutResult = cloner.GetAll();
 		var checkouts = checkoutResult.Checkouts.ToArray();

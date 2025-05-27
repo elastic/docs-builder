@@ -3,14 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using ProcNet;
 using ProcNet.Std;
@@ -31,24 +28,29 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 		var fs = context.ReadFileSystem;
 		var repositories = Configuration.ReferenceRepositories.Values.Concat<Repository>([Configuration.Narrative]);
 		var checkouts = new List<Checkout>();
-		foreach (var repo in repositories)
-		{
-			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
-			var checkout = new Checkout
-			{
-				Repository = repo,
-				Directory = checkoutFolder,
-				//TODO read from links.json and ensure we check out exactly that git reference
-				//+ validate that git reference belongs to the appropriate branch
-				HeadReference = Guid.NewGuid().ToString("N")
-			};
-			checkouts.Add(checkout);
-		}
 		var linkRegistrySnapshotPath = Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
 		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
+		foreach (var repo in repositories)
+		{
+			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
+			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(context.Collector, checkoutFolder);
+			if (!checkoutFolder.Exists)
+			{
+				context.Collector.EmitError(checkoutFolder.FullName, $"'{repo.Name}' does not exist in link index checkout directory");
+				continue;
+			}
+			var head = gitFacade.GetCurrentCommit();
+			var checkout = new Checkout
+			{
+				Repository = repo,
+				Directory = checkoutFolder,
+				HeadReference = head
+			};
+			checkouts.Add(checkout);
+		}
 		return new CheckoutResult
 		{
 			Checkouts = checkouts,
@@ -126,6 +128,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1)
 	{
 		var checkoutFolder = readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name));
+		IGitRepository git = new SingleCommitOptimizedGitRepository(collector, checkoutFolder);
 		if (attempt > 3)
 		{
 			collector.EmitError("", $"Failed to clone repository {repository.Name}@{gitRef} after 3 attempts");
@@ -143,13 +146,13 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			checkoutFolder.Create();
 			checkoutFolder.Refresh();
 		}
-		var isGitInitialized = GitInit(repository, checkoutFolder);
+		var isGitInitialized = GitInit(git, repository);
 		string? head = null;
 		if (isGitInitialized)
 		{
 			try
 			{
-				head = Capture(checkoutFolder, "git", "rev-parse", "HEAD");
+				head = git.GetCurrentCommit();
 			}
 			catch (Exception e)
 			{
@@ -165,7 +168,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			_logger.LogInformation("{RepositoryName}: HEAD already at {GitRef}", repository.Name, gitRef);
 		else
 		{
-			FetchAndCheckout(repository, gitRef, checkoutFolder);
+			FetchAndCheckout(git, repository, gitRef);
 			if (!pull)
 			{
 				return new Checkout
@@ -177,7 +180,7 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 			}
 			try
 			{
-				ExecIn(checkoutFolder, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", gitRef);
+				git.Pull(gitRef);
 			}
 			catch (Exception e)
 			{
@@ -201,84 +204,31 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 	/// Initializes the git repository if it is not already initialized.
 	/// Returns true if the repository was already initialized.
 	/// </summary>
-	private bool GitInit(Repository repository, IDirectoryInfo checkoutFolder)
+	private static bool GitInit(IGitRepository git, Repository repository)
 	{
-		var isGitAlreadyInitialized = Directory.Exists(Path.Combine(checkoutFolder.FullName, ".git"));
+		var isGitAlreadyInitialized = git.IsInitialized();
 		if (isGitAlreadyInitialized)
 			return true;
-		ExecIn(checkoutFolder, "git", "init");
-		ExecIn(checkoutFolder, "git", "remote", "add", "origin", repository.Origin);
+		git.Init();
+		git.GitAddOrigin(repository.Origin);
 		return false;
 	}
 
-	private void FetchAndCheckout(Repository repository, string gitRef, IDirectoryInfo checkoutFolder)
+	private static void FetchAndCheckout(IGitRepository git, Repository repository, string gitRef)
 	{
-		ExecIn(checkoutFolder, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", gitRef);
+		git.Fetch(gitRef);
 		switch (repository.CheckoutStrategy)
 		{
 			case CheckoutStrategy.Full:
-				ExecIn(checkoutFolder, "git", "sparse-checkout", "disable");
+				git.DisableSparseCheckout();
 				break;
 			case CheckoutStrategy.Partial:
-				ExecIn(checkoutFolder, "git", "sparse-checkout", "set", "docs");
+				git.EnableSparseCheckout("docs");
 				break;
 			default:
 				throw new ArgumentOutOfRangeException(nameof(repository), repository.CheckoutStrategy, null);
 		}
-		ExecIn(checkoutFolder, "git", "checkout", "--force", gitRef);
-	}
-
-	private void ExecIn(IDirectoryInfo? workingDirectory, string binary, params string[] args)
-	{
-		var arguments = new ExecArguments(binary, args)
-		{
-			WorkingDirectory = workingDirectory?.FullName
-		};
-		var result = Proc.Exec(arguments);
-		if (result != 0)
-			collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
-	}
-
-	// ReSharper disable once UnusedMember.Local
-	private string Capture(IDirectoryInfo? workingDirectory, string binary, params string[] args)
-	{
-		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
-		Exception? e = null;
-		for (var i = 0; i <= 9; i++)
-		{
-			try
-			{
-				return CaptureOutput();
-			}
-			catch (Exception ex)
-			{
-				if (ex is not null)
-					e = ex;
-			}
-		}
-
-		if (e is not null)
-			collector.EmitError("", "failure capturing stdout", e);
-
-
-		return string.Empty;
-
-		string CaptureOutput()
-		{
-			var arguments = new StartArguments(binary, args)
-			{
-				WorkingDirectory = workingDirectory?.FullName,
-				//WaitForStreamReadersTimeout = TimeSpan.FromSeconds(3),
-				Timeout = TimeSpan.FromSeconds(3),
-				WaitForExit = TimeSpan.FromSeconds(3),
-				ConsoleOutWriter = NoopConsoleWriter.Instance
-			};
-			var result = Proc.Start(arguments);
-			var line = result.ExitCode != 0
-				? throw new Exception($"Exit code is not 0. Received {result.ExitCode} from {binary}: {workingDirectory}")
-				: result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
-			return line;
-		}
+		git.Checkout(gitRef);
 	}
 }
 
