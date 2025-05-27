@@ -113,6 +113,12 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 			LinkRegistrySnapshot = linkRegistry
 		};
 	}
+
+	public Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) => await File.WriteAllTextAsync(
+			Path.Combine(context.OutputDirectory.FullName, "docs", CheckoutResult.LinkRegistrySnapshotFileName),
+			LinkRegistry.Serialize(linkRegistrySnapshot),
+			ctx
+		);
 }
 
 

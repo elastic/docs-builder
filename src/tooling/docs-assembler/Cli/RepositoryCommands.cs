@@ -125,14 +125,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
 
-		if (checkoutResult.LinkRegistrySnapshot is { } linkRegistry)
-		{
-			await File.WriteAllTextAsync(
-				Path.Combine(assembleContext.OutputDirectory.FullName, "docs", CheckoutResult.LinkRegistrySnapshotFileName),
-				LinkRegistry.Serialize(linkRegistry),
-				ctx
-			);
-		}
+		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 		sitemapBuilder.Generate();
