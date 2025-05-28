@@ -256,6 +256,14 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
+			if (to.Contains("://"))
+			{
+				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
+					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+
+				return;
+			}
+
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
 
