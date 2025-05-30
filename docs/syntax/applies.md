@@ -48,6 +48,51 @@ deprecated 9.9.0
 unavailable
 ```
 
+## When to use `applies_to`
+
+The cumulative model used in our documentation means that a single page reflects the state of a feature across versions and deployments. To support this, **version-related changes must be tagged using the `applies_to` key**. Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
+
+Use version tagging when:
+* A feature is introduced (e.g., preview, beta, or ga)
+* A feature is deprecated (e.g., deprecated)
+* A feature is removed (e.g., removed)
+
+You don’t need version tagging for:
+* Typos, formatting, or style changes
+* Long-standing features being documented for the first time
+* Content updates that don’t reflect a feature lifecycle change
+
+### Versioned vs. unversioned products
+
+Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
+
+```
+applies_to:
+  stack: preview 9.1, ga 9.4
+  deployment:
+    ece: deprecated 9.2, removed 9.8
+```
+Unversioned products use `lifecycle` tags without a version:
+
+```
+applies_to:
+  serverless:
+    elasticsearch: beta
+    observability: removed
+  deployment:
+    ess: deprecated
+```
+
+### Combined states
+You can specify multiple lifecycle states for the same product, separated by commas. For example:
+
+```
+applies_to:
+  stack: preview 9.1, ga 9.4
+```
+
+This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
+
 ## Structured model
 
 ![Applies To Model](images/applies.png)
@@ -168,53 +213,6 @@ as argument.
 Property {preview}`<version>`
 :   definition body
 ```
-
-## Tagging feature lifecycle and version changes
-
-Elastic documentation follows a cumulative model: a single page shows the current state of a feature across versions and deployments. To support this, **version-related changes must be tagged using the `applies_to` key**.
-
-Use the applies_to tag when:
-* A feature is introduced (e.g., preview, beta, or ga)
-* A feature is deprecated (e.g., deprecated)
-* A feature is removed (e.g., removed)
-
-You don’t need version tagging for:
-* Typos, formatting, or style changes
-* Long-standing features being documented for the first time
-* Content updates that don’t reflect a feature lifecycle change
-
-### Versioned vs. unversioned products
-
-Versioned products require a lifecycle tag with a version:
-
-```
-applies_to:
-  stack: preview 9.1, ga 9.4
-  deployment:
-    ece: deprecated 9.2, removed 9.8
-```
-Unversioned products use lifecycle tags without a version:
-
-```
-applies_to:
-  serverless:
-    elasticsearch: beta
-    observability: removed
-  deployment:
-    ess: deprecated
-```
-
-### Combined states
-You can specify multiple lifecycle states for the same product, separated by commas. For example:
-
-```
-applies_to:
-  stack: preview 9.1, ga 9.4
-```
-
-This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
-
-
 
 ## Examples
 
