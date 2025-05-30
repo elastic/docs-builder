@@ -4,18 +4,18 @@ applies_to:
   deployment:
     eck: ga 9.0
     ess: beta 9.1
-    ece: discontinued 9.2.0
-    self: unavailable 9.3.0
+    ece: deprecated 9.2.0
+    self: unavailable
   serverless:
-    security: ga 9.0.0
-    elasticsearch: beta 9.1.0
-    observability: discontinued 9.2.0
-  product: planned 9.5, discontinued 9.7
+    security: unavailable
+    elasticsearch: beta
+    observability: deprecated
+  product: preview 9.5, deprecated 9.7
 ---
 
 # Applies to
 
-Allows you to annotate a page or section's applicability.
+The `applies_to` metadata allows you to specify which product versions, deployment types, and environments a specific page, section, or line applies to. Documentation published using Elastic Docs V3 follows a [cumulative model](../contribute/index.md) where a single page covers multiple versions cumulatively over time, instead of creating separate pages for each minor release.
 
 ### Syntax
 
@@ -25,13 +25,14 @@ Allows you to annotate a page or section's applicability.
 
 Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 
-#### Life cycle:
+#### Life cycle
+
+Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
+
   * `preview`
   * `beta`
-  * `development`
   * `deprecated`
-  * `planned`
-  * `discontinued`
+  * `removed`
   * `unavailable`
   * `ga`
 
@@ -39,31 +40,54 @@ Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 
 Can be in either `major.minor` or `major.minor.patch` format
 
+Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
+
+```
+applies_to:
+  stack: preview 9.1, ga 9.4
+  deployment:
+    ece: deprecated 9.2, removed 9.8
+```
+Unversioned products use `lifecycle` tags without a version:
+
+```
+applies_to:
+  serverless:
+    elasticsearch: beta
+    observability: removed
+```
+
 #### Examples
 
 ```
-planned 9.5, discontinued 9.7
-discontinued 9.2.0
-all
+preview 9.5, ga 9.7
+deprecated 9.9.0
+unavailable
 ```
 
-`all` means generally available for all active versions
+## When to use `applies_to`
 
-```yaml
+Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
+
+Use version tagging when:
+* A feature is introduced (e.g., preview, beta, or ga)
+* A feature is deprecated (e.g., deprecated)
+* A feature is removed (e.g., removed)
+
+You don’t need version tagging for:
+* Typos, formatting, or style changes
+* Long-standing features being documented for the first time
+* Content updates that don’t reflect a feature lifecycle change
+
+### Combined states
+You can specify multiple lifecycle states for the same product, separated by commas. For example:
+
+```
 applies_to:
-  serverless: all
+  stack: preview 9.1, ga 9.4
 ```
 
-`all` can also be specified at a version level
-
-```yaml
-applies_to:
-  stack: beta all
-  serverless: beta
-```
-
-Note `all` just means we won't be rendering the version portion in the HTML.
-
+This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
 
 ## Structured model
 
@@ -91,8 +115,16 @@ This allows you to annotate various facets as defined in [](../migration/version
 
 ## Page annotations
 
-Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status
+All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status.
 
+``` yaml
+---
+applies_to:
+  product: preview 9.5, ga 9.6
+products:
+  - id: cloud-kubernetes
+---
+```
 
 ```yaml
 ---
@@ -101,16 +133,15 @@ applies_to:
   deployment:
     eck: ga 9.0
     ess: beta 9.1
-    ece: discontinued 9.2.0
-    self: unavailable 9.3.0
+    ece: deprecated 9.2.0
+    self: unavailable
   serverless:
-    security: ga 9.0.0
-    elasticsearch: beta 9.1.0
-    observability: discontinued 9.2.0
-  product: planned 9.5, discontinued 9.7
+    security: unavailable
+    elasticsearch: beta
+    observability: deprecated
+  product: preview 9.5, deprecated 9.7
 ---
 ```
-
 
 ## Section annotation [#sections]
 
@@ -119,13 +150,13 @@ stack: ga 9.1
 deployment:
   eck: ga 9.0
   ess: beta 9.1
-  ece: discontinued 9.2.0
-  self: unavailable 9.3.0
+  ece: deprecated 9.2.0
+  self: unavailable
 serverless:
-  security: ga 9.0.0
-  elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
-product: planned 9.5, discontinued 9.7
+  security: unavailable
+  elasticsearch: beta
+  observability: deprecated
+product: preview 9.5, deprecated 9.7
 ```
 
 A header may be followed by an `{applies_to}` directive which will contextualize the applicability
@@ -152,7 +183,7 @@ stack: ga 9.1
 ```
 ````
 
-This will allow the yaml inside the `{applies-to}` directive to be fully highlighted.
+This will allow the yaml inside the `{applies_to}` directive to be fully highlighted.
 
 ## Inline Applies To
 
@@ -181,8 +212,6 @@ Property {preview}`<version>`
 :   definition body
 ```
 
-
-
 ## Examples
 
 #### Stack only
@@ -202,21 +231,24 @@ deployment:
 #### Deployment only
 ```yaml {applies_to}
 deployment:
-  ece: discontinued 9.2.0
-  self: unavailable 9.3.0
+  ece: deprecated 9.2.0
+  self: unavailable
 ```
 
 #### Serverless only
+When a change is released in `ga` for unversioned products, it doesn’t need any specific tagging.
+
 ```yaml {applies_to}
-serverless: ga 9.0.0
+  serverless:
+    elasticsearch: preview
 ```
 
 #### Serverless with project differences
 ```yaml {applies_to}
 serverless:
-  security: ga 9.0.0
-  elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
+  security: unavailable
+  elasticsearch: beta
+  observability: deprecated
 ```
 #### Stack with product
 ```yaml {applies_to}
