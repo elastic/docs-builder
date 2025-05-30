@@ -34,7 +34,7 @@ This section only applies to Elastic Stack version 9.0 docs and later.
 
 Cumulative documentation means that one page can cover multiple product versions, deployment types, and release stages. Instead of creating separate pages for each release, we update the same page with version-specific details. 
 
-Use the `applies_to` tag to indicate which versions, deployment types, or release stages each part of the content is relevant to. Refer to the [Applies to syntax guide](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/applies) for more details.
+Use the [`applies_to`](../syntax/applies.md) tag to indicate which versions, deployment types, or release stages each part of the content is relevant to.
 
 You must always use the `applies_to` tag at the [page](../syntax/applies.md#page-annotations) level. Optionally, you can also use it at the [section](../syntax/applies.md#sections) or [inline](../syntax/applies.md#inline-applies-to) level if certain parts of the content apply only to specific versions, deployment types, or release stages.
 
