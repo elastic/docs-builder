@@ -4,18 +4,18 @@ applies_to:
   deployment:
     eck: ga 9.0
     ess: beta 9.1
-    ece: discontinued 9.2.0
-    self: unavailable 9.3.0
+    ece: deprecated 9.2.0
+    self: unavailable
   serverless:
-    security: ga 9.0.0
-    elasticsearch: beta 9.1.0
-    observability: discontinued 9.2.0
-  product: planned 9.5, discontinued 9.7
+    security: unavailable
+    elasticsearch: beta
+    observability: deprecated
+  product: preview 9.5, deprecated 9.7
 ---
 
 # Applies to
 
-Allows you to annotate a page or section's applicability.
+Allows you to annotate a page or section's applicability. The documentation follows a cumulative model: changes across versions are shown on a single page. Use the `applies_to` tag to reflect a feature’s state across versions. For more on the versioning approach, see [Contribution guide](../contribute/index.md).
 
 ### Syntax
 
@@ -25,13 +25,14 @@ Allows you to annotate a page or section's applicability.
 
 Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 
-#### Life cycle:
+#### Life cycle
+
+Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
+
   * `preview`
   * `beta`
-  * `development`
   * `deprecated`
-  * `planned`
-  * `discontinued`
+  * `removed`
   * `unavailable`
   * `ga`
 
@@ -42,28 +43,10 @@ Can be in either `major.minor` or `major.minor.patch` format
 #### Examples
 
 ```
-planned 9.5, discontinued 9.7
-discontinued 9.2.0
-all
+preview 9.5, ga 9.7
+deprecated 9.9.0
+unavailable
 ```
-
-`all` means generally available for all active versions
-
-```yaml
-applies_to:
-  serverless: all
-```
-
-`all` can also be specified at a version level
-
-```yaml
-applies_to:
-  stack: beta all
-  serverless: beta
-```
-
-Note `all` just means we won't be rendering the version portion in the HTML.
-
 
 ## Structured model
 
@@ -91,8 +74,14 @@ This allows you to annotate various facets as defined in [](../migration/version
 
 ## Page annotations
 
-Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status
+Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status.
 
+``` yaml
+applies_to:
+  product: preview 9.5
+products:
+  -id: cloud-kubernetes
+```
 
 ```yaml
 ---
@@ -101,13 +90,13 @@ applies_to:
   deployment:
     eck: ga 9.0
     ess: beta 9.1
-    ece: discontinued 9.2.0
-    self: unavailable 9.3.0
+    ece: deprecated 9.2.0
+    self: unavailable
   serverless:
-    security: ga 9.0.0
-    elasticsearch: beta 9.1.0
-    observability: discontinued 9.2.0
-  product: planned 9.5, discontinued 9.7
+    security: unavailable
+    elasticsearch: beta
+    observability: deprecated
+  product: preview 9.5, deprecated 9.7
 ---
 ```
 
@@ -119,13 +108,13 @@ stack: ga 9.1
 deployment:
   eck: ga 9.0
   ess: beta 9.1
-  ece: discontinued 9.2.0
-  self: unavailable 9.3.0
+  ece: deprecated 9.2.0
+  self: unavailable
 serverless:
-  security: ga 9.0.0
-  elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
-product: planned 9.5, discontinued 9.7
+  security: unavailable
+  elasticsearch: beta
+  observability: deprecated
+product: preview 9.5, deprecated 9.7
 ```
 
 A header may be followed by an `{applies_to}` directive which will contextualize the applicability
@@ -181,8 +170,6 @@ Property {preview}`<version>`
 :   definition body
 ```
 
-
-
 ## Examples
 
 #### Stack only
@@ -202,21 +189,24 @@ deployment:
 #### Deployment only
 ```yaml {applies_to}
 deployment:
-  ece: discontinued 9.2.0
-  self: unavailable 9.3.0
+  ece: deprecated 9.2.0
+  self: unavailable
 ```
 
 #### Serverless only
+When a change is released in `ga` for unversioned products, it doesn’t need any specific tagging.
+
 ```yaml {applies_to}
-serverless: ga 9.0.0
+  serverless:
+    elasticsearch: preview
 ```
 
 #### Serverless with project differences
 ```yaml {applies_to}
 serverless:
-  security: ga 9.0.0
-  elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
+  security: unavailable
+  elasticsearch: beta
+  observability: deprecated
 ```
 #### Stack with product
 ```yaml {applies_to}
