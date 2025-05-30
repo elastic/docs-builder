@@ -40,6 +40,23 @@ Both versioned and unversioned products use the same lifecycle tags, but only ve
 
 Can be in either `major.minor` or `major.minor.patch` format
 
+Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
+
+```
+applies_to:
+  stack: preview 9.1, ga 9.4
+  deployment:
+    ece: deprecated 9.2, removed 9.8
+```
+Unversioned products use `lifecycle` tags without a version:
+
+```
+applies_to:
+  serverless:
+    elasticsearch: beta
+    observability: removed
+```
+
 #### Examples
 
 ```
@@ -61,25 +78,6 @@ You don’t need version tagging for:
 * Typos, formatting, or style changes
 * Long-standing features being documented for the first time
 * Content updates that don’t reflect a feature lifecycle change
-
-### Versioned vs. unversioned products
-
-Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
-
-```
-applies_to:
-  stack: preview 9.1, ga 9.4
-  deployment:
-    ece: deprecated 9.2, removed 9.8
-```
-Unversioned products use `lifecycle` tags without a version:
-
-```
-applies_to:
-  serverless:
-    elasticsearch: beta
-    observability: removed
-```
 
 ### Combined states
 You can specify multiple lifecycle states for the same product, separated by commas. For example:
@@ -120,10 +118,12 @@ This allows you to annotate various facets as defined in [](../migration/version
 All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status.
 
 ``` yaml
+---
 applies_to:
-  product: preview 9.5
+  product: preview 9.5, ga 9.6
 products:
-  -id: cloud-kubernetes
+  - id: cloud-kubernetes
+---
 ```
 
 ```yaml
