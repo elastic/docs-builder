@@ -149,7 +149,7 @@ You can also auto-generate text for specific headings within files:
 [Link2]: http://some.other.site
 ```
 
-Reference style links are useful when adding links to tables, for example, or to update frequently used links more easily.
+Reference-style links are useful when adding links to tables, for example, or to update frequently used links more easily.
 
 ## Legacy features
 
