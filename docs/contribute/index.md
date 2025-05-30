@@ -24,6 +24,20 @@ To contribute to earlier versions of the Elastic Stack, you must work with our [
 * For **simple bugfixes and enhancements** --> [contribute on the web](on-the-web.md)
 * For **complex or multi-page updates** --> [Contribute locally](locally.md)
 
+Starting with Elastic Stack version 9.0 and later, a new set of docs is no longer published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content using a [cumulative approach](#cumulative-docs).
+
+## Write cumulative documentation [#cumulative-docs]
+
+:::{note}
+This section only applies to Elastic Stack version 9.0 docs and later.
+:::
+
+Cumulative documentation means that one page can cover multiple product versions, deployment types, and release stages. Instead of creating separate pages for each release, we update the same page with version-specific details. 
+
+Use the `applies_to` tag to indicate which versions, deployment types, or release stages each part of the content is relevant to. Refer to the [Applies to syntax guide](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/applies) for more details.
+
+You must always use the `applies_to` tag at the [page](../syntax/applies.md#page-annotations) level. Optionally, you can also use it at the [section](../syntax/applies#sections) or [inline](../syntax/applies#inline-applies-to) level if certain parts of the content apply only to specific versions, deployment types, or release stages.
+
 ## Report a bug
 
 * It's a **documentation** problem --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md)
