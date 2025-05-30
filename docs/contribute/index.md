@@ -26,11 +26,7 @@ To contribute to earlier versions of the Elastic Stack, you must work with our [
 
 Starting with Elastic Stack version 9.0, a new set of docs is no longer published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content using a [cumulative approach](#cumulative-docs).
 
-## Write cumulative documentation [#cumulative-docs]
-
-:::{note}
-This section only applies to Elastic Stack version 9.0 docs and later.
-:::
+#### Write cumulative documentation [#cumulative-docs]
 
 Cumulative documentation means that one page can cover multiple product versions, deployment types, and release stages. Instead of creating separate pages for each release, we update the same page with version-specific details. 
 
