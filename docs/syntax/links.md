@@ -1,11 +1,13 @@
 # Links
 
-A markdown link looks like this:
+A Markdown link looks like this:
 
 ```markdown
 [Link text](destination.md)
 ```
+
 It has two components:
+
 - Link **text** enclosed in square brackets `[ ]`
 - Link **destination** enclosed in parentheses `( )`
 
@@ -132,6 +134,22 @@ You can also auto-generate text for specific headings within files:
 [](#configuration)  
 <!-- Uses the "Configuration" section title from current file -->
 ```
+
+## Reference-style links
+
+`docs-builder` supports reference-style links. For example:
+
+```markdown
+- [Link]
+- [Your own text][Link2]
+
+... Botton of the page ...
+
+[Link]: http://some.site
+[Link2]: http://some.other.site
+```
+
+Reference style links are useful when adding links to tables, for example, or to update frequently used links more easily.
 
 ## Legacy features
 
