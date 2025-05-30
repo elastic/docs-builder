@@ -79,8 +79,6 @@ applies_to:
   serverless:
     elasticsearch: beta
     observability: removed
-  deployment:
-    ess: deprecated
 ```
 
 ### Combined states
@@ -119,7 +117,7 @@ This allows you to annotate various facets as defined in [](../migration/version
 
 ## Page annotations
 
-All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Using yaml frontmatter pages can explicitly indicate to each deployment targets availability and lifecycle status.
+All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status.
 
 ``` yaml
 applies_to:
