@@ -15,7 +15,7 @@ applies_to:
 
 # Applies to
 
-Allows you to annotate a page or section's applicability. The documentation follows a cumulative model: changes across versions are shown on a single page. Use the `applies_to` tag to reflect a feature’s state across versions. For more on the versioning approach, see [Contribution guide](../contribute/index.md).
+The `applies_to` metadata allows you to specify which product versions, deployment types, and environments a specific page, section, or line applies to. Documentation published using Elastic Docs V3 follows a [cumulative model](../contribute/index.md) where a single page covers multiple versions cumulatively over time, instead of creating separate pages for each minor release.
 
 ### Syntax
 
