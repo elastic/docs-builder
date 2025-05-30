@@ -67,7 +67,7 @@ unavailable
 
 ## When to use `applies_to`
 
-The cumulative model used in our documentation means that a single page reflects the state of a feature across versions and deployments. To support this, **version-related changes must be tagged using the `applies_to` key**. Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
+Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
 
 Use version tagging when:
 * A feature is introduced (e.g., preview, beta, or ga)
