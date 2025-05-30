@@ -137,7 +137,23 @@ You can also auto-generate text for specific headings within files:
 
 ## Reference-style links
 
-`docs-builder` supports reference-style links. For example:
+`docs-builder` supports reference-style links.
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+- [Link]
+- [Your own text][Link2]
+
+... References are typically added at the bottom of the page ...
+
+[Link]: https://elastic.co
+[Link2]: https://elastic.co/docs
+
+:::
+
+:::{tab-item} Markdown
 
 ```markdown
 - [Link]
@@ -145,9 +161,14 @@ You can also auto-generate text for specific headings within files:
 
 ... References are typically added at the bottom of the page ...
 
-[Link]: http://some.site
-[Link2]: http://some.other.site
+[Link]: https://elastic.co
+[Link2]: https://elastic.co/docs
 ```
+
+:::
+
+
+::::
 
 Reference-style links are useful when adding links to tables, for example, or to update frequently used links more easily.
 
