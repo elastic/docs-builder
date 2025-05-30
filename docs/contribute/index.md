@@ -24,7 +24,7 @@ To contribute to earlier versions of the Elastic Stack, you must work with our [
 * For **simple bugfixes and enhancements** --> [contribute on the web](on-the-web.md)
 * For **complex or multi-page updates** --> [Contribute locally](locally.md)
 
-Starting with Elastic Stack version 9.0 and later, a new set of docs is no longer published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content using a [cumulative approach](#cumulative-docs).
+Starting with Elastic Stack version 9.0, a new set of docs is no longer published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content using a [cumulative approach](#cumulative-docs).
 
 ## Write cumulative documentation [#cumulative-docs]
 
