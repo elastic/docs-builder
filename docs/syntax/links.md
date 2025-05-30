@@ -170,7 +170,7 @@ You can also auto-generate text for specific headings within files:
 
 ::::
 
-Reference-style links are useful when adding links to tables, for example, or to update frequently used links more easily.
+Reference-style links are useful when adding links to tables, for example, or to update frequently used links more easily. Place them at the end of the document to simplify their management.
 
 ## Legacy features
 
