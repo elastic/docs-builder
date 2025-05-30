@@ -143,7 +143,7 @@ You can also auto-generate text for specific headings within files:
 - [Link]
 - [Your own text][Link2]
 
-... Botton of the page ...
+... Bottom of the page ...
 
 [Link]: http://some.site
 [Link2]: http://some.other.site
