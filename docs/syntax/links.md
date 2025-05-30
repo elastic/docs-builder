@@ -148,7 +148,7 @@ You can also auto-generate text for specific headings within files:
 
 ... References are typically added at the bottom of the page ...
 
-[Link]: https://elastic.co
+[Link]: https://elastic.co/docs
 [Link2]: https://elastic.co/docs
 
 :::
@@ -156,13 +156,12 @@ You can also auto-generate text for specific headings within files:
 :::{tab-item} Markdown
 
 ```markdown
-- [Link]
-- [Your own text][Link2]
+- [Link]: This link uses the reference name as text.
+- [Your own text][Link]: This link overrides the reference name.
 
 ... References are typically added at the bottom of the page ...
 
-[Link]: https://elastic.co
-[Link2]: https://elastic.co/docs
+[Link]: https://elastic.co/docs
 ```
 
 :::
