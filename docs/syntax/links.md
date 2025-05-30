@@ -159,7 +159,10 @@ You can also auto-generate text for specific headings within files:
 - [Link]: This link uses the reference name as text.
 - [Your own text][Link]: This link overrides the reference name.
 
-... References are typically added at the bottom of the page ...
+
+...content of your document...
+
+% References are typically added at the bottom of the page
 
 [Link]: https://elastic.co/docs
 ```
