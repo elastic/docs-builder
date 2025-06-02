@@ -55,27 +55,15 @@ Both versioned and unversioned products use the same lifecycle tags, but only ve
 
 ## When and where to use `applies_to`
 
-The `applies_to` tag can be added at different levels in the documentation: [page-level](#page-annotations), [section-level](#section-annotations), and [inline](#inline-applies-to). Each level uses slightly different syntax and serves a specific purpose:
-* [Page-level](#page-annotations) tagging is **mandatory** and must be included in the frontmatter. It defines the overall applicability of the page across products, deployments, and environments. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
+✅ Use `applies_to` tags when features change state (`introduced`, `deprecated`, `removed`) or when availability differs across deployments and environments.
 
-When the context differs from what was specified at the page level in a specific section or part of the page, it is appropriate to re-establish it.
+❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
 
-* [Section-level](#section-annotations) annotation lets you show or hide specific sections of content depending on the target context. This is helpful when only a part of a page varies between products or versions.
-* [Inline tagging](#inline-applies-to) allows fine-grained annotations within paragraphs or definition lists. It’s useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
+The `applies_to` metadata can be added at different levels in the documentation: 
 
-### When to use `applies_to`
-
-Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
-
-Use version tagging when:
-* A feature is introduced (e.g., preview, beta, or ga)
-* A feature is deprecated (e.g., deprecated)
-* A feature is removed (e.g., removed)
-
-You don’t need version tagging for:
-* Typos, formatting, or style changes
-* Long-standing features being documented for the first time
-* Content updates that don’t reflect a feature lifecycle change
+* [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the overall applicability of the page across products, deployments, and environments.
+* [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.
+* [Inline](#inline-applies-to) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
 
 ### Page annotations
 
