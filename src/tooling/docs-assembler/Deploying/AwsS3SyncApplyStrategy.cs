@@ -29,24 +29,21 @@ public class AwsS3SyncApplyStrategy(
 
 	public async Task Apply(SyncPlan plan, Cancel ctx = default)
 	{
-		var deleteCount = 0;
-		_logger.LogInformation("Processor count: {ProcessorCount}", Environment.ProcessorCount);
+		await Upload(plan, ctx);
+		await Delete(plan, ctx);
+	}
 
-		// Process uploads using directory upload
+	private async Task Upload(SyncPlan plan, Cancel ctx)
+	{
 		var uploadRequests = plan.AddRequests.Cast<UploadRequest>().Concat(plan.UpdateRequests).ToList();
 		if (uploadRequests.Count > 0)
 		{
 			_logger.LogInformation("Starting to process {Count} uploads using directory upload", uploadRequests.Count);
-
-			// Create a temporary directory for uploads
 			var tempDir = Path.Combine(context.WriteFileSystem.Path.GetTempPath(), context.WriteFileSystem.Path.GetRandomFileName());
 			_ = context.WriteFileSystem.Directory.CreateDirectory(tempDir);
-
 			try
 			{
 				_logger.LogInformation("Copying {Count} files to temp directory", uploadRequests.Count);
-
-				// Copy files to temp directory maintaining structure
 				foreach (var upload in uploadRequests)
 				{
 					var destPath = context.WriteFileSystem.Path.Combine(tempDir, upload.DestinationPath);
@@ -54,8 +51,6 @@ public class AwsS3SyncApplyStrategy(
 					_ = context.WriteFileSystem.Directory.CreateDirectory(destDirPath);
 					context.WriteFileSystem.File.Copy(upload.LocalPath, destPath);
 				}
-
-				// Configure directory upload
 				var directoryRequest = new TransferUtilityUploadDirectoryRequest
 				{
 					BucketName = bucketName,
@@ -64,16 +59,10 @@ public class AwsS3SyncApplyStrategy(
 					SearchOption = SearchOption.AllDirectories,
 					UploadFilesConcurrently = true
 				};
-
-				// Track upload progress
 				directoryRequest.UploadDirectoryProgressEvent += DisplayProgress;
-
 				_logger.LogInformation("Uploading {Count} files to S3", uploadRequests.Count);
 				_logger.LogDebug("Starting directory upload from {TempDir}", tempDir);
-
-				// Start the upload
 				await transferUtility.UploadDirectoryAsync(directoryRequest, ctx);
-
 				_logger.LogDebug("Directory upload completed");
 			}
 			finally
@@ -83,7 +72,11 @@ public class AwsS3SyncApplyStrategy(
 					context.WriteFileSystem.Directory.Delete(tempDir, true);
 			}
 		}
+	}
 
+	private async Task Delete(SyncPlan plan, Cancel ctx)
+	{
+		var deleteCount = 0;
 		var deleteRequests = plan.DeleteRequests.ToList();
 		if (deleteRequests.Count > 0)
 		{
@@ -98,7 +91,6 @@ public class AwsS3SyncApplyStrategy(
 						Key = d.DestinationPath
 					}).ToList()
 				};
-
 				var response = await s3Client.DeleteObjectsAsync(deleteObjectsRequest, ctx);
 				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
 				{
