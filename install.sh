@@ -7,7 +7,7 @@ ARCH=$(uname -m)
 
 # Map architecture naming
 if [ "$ARCH" = "x86_64" ]; then
-  ARCH="amd64"
+  ARCH="x64"
 elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
   ARCH="arm64"
 fi

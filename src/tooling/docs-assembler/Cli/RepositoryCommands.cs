@@ -18,11 +18,13 @@ using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using YamlDotNet.Core;
 
 namespace Documentation.Assembler.Cli;
 
@@ -74,6 +76,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="environment"> The environment to build</param>
+	/// <param name="exporters"> configure exporters explicitly available (html,llmtext,es), defaults to html</param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
@@ -81,8 +84,11 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		bool? strict = null,
 		bool? allowIndexing = null,
 		string? environment = null,
+		[ExporterParser] IReadOnlySet<ExportOption>? exporters = null,
 		Cancel ctx = default)
 	{
+		exporters ??= new HashSet<ExportOption>([ExportOption.Html]);
+
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
@@ -104,9 +110,10 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			await assembleContext.Collector.StopAsync(ctx);
 			return 1;
 		}
-
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
-		var checkouts = cloner.GetAll().ToArray();
+		var checkoutResult = cloner.GetAll();
+		var checkouts = checkoutResult.Checkouts.ToArray();
+
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
@@ -121,7 +128,9 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var historyMapper = new PageLegacyUrlMapper(assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
-		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
+		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
+
+		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 		sitemapBuilder.Generate();
@@ -166,7 +175,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 						outputPath
 					);
 					var set = new DocumentationSet(context, logger);
-					var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
+					var generator = new DocumentationGenerator(set, logger, null, null, null, new NoopDocumentationFileExporter());
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();
@@ -194,5 +203,32 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		await collector.StopAsync(ctx);
 
 		return collector.Errors > 0 ? 1 : 0;
+	}
+}
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<ExportOption>>
+{
+	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<ExportOption> result)
+	{
+		result = new HashSet<ExportOption>([ExportOption.Html]);
+		var set = new HashSet<ExportOption>();
+		var ranges = s.Split(',');
+		foreach (var range in ranges)
+		{
+			ExportOption? export = s[range].Trim().ToString().ToLowerInvariant() switch
+			{
+				"llm" => ExportOption.LLMText,
+				"llmtext" => ExportOption.LLMText,
+				"es" => ExportOption.Elasticsearch,
+				"elasticsearch" => ExportOption.Elasticsearch,
+				"html" => ExportOption.Html,
+				_ => null
+			};
+			if (export.HasValue)
+				_ = set.Add(export.Value);
+		}
+		result = set;
+		return true;
 	}
 }

@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.State;
 
 namespace Elastic.Documentation.Serialization;
@@ -16,4 +17,5 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(GitCheckoutInformation))]
 [JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
+[JsonSerializable(typeof(DocumentationDocument))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

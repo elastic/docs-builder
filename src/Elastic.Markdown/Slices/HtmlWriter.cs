@@ -161,7 +161,7 @@ public class HtmlWriter(
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
-	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
+	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -184,8 +184,10 @@ public class HtmlWriter(
 		}
 
 		var document = await markdown.ParseFullAsync(ctx);
+
 		var rendered = await RenderLayout(markdown, document, ctx);
 		collector?.Collect(markdown, document, rendered);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+		return document;
 	}
 }

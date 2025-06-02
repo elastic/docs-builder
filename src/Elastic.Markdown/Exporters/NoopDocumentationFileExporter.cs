@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.Exporters;
 
@@ -12,9 +10,8 @@ public class NoopDocumentationFileExporter : IDocumentationFileExporter
 {
 	public string Name { get; } = nameof(NoopDocumentationFileExporter);
 
-	public Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter,
-		IConversionCollector? conversionCollector, Cancel token) =>
-		Task.CompletedTask;
+	public ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx) =>
+		ValueTask.CompletedTask;
 
 	public Task CopyEmbeddedResource(IFileInfo outputFile, Stream resourceStream, Cancel ctx) => Task.CompletedTask;
 }
