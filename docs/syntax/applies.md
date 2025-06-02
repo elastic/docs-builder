@@ -149,7 +149,7 @@ stack: ga 9.1
 
 This will allow the yaml inside the `{applies_to}` directive to be fully highlighted.
 
-### Inline Applies To
+### Inline annotations
 
 Inline applies to can be placed anywhere using the following syntax
 
