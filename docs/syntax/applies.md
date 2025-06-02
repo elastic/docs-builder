@@ -1,23 +1,22 @@
----
-applies_to:
-  stack: ga 9.1
-  deployment:
-    eck: ga 9.0
-    ess: beta 9.1
-    ece: deprecated 9.2.0
-    self: unavailable
-  serverless:
-    security: unavailable
-    elasticsearch: beta
-    observability: deprecated
-  product: preview 9.5, deprecated 9.7
----
-
 # Applies to
 
 The `applies_to` metadata allows you to specify which product versions, deployment types, and environments a specific page, section, or line applies to. Documentation published using Elastic Docs V3 follows a [cumulative model](../contribute/index.md) where a single page covers multiple versions cumulatively over time, instead of creating separate pages for each minor release.
 
-### Syntax
+## When to use `applies_to`
+
+Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
+
+Use version tagging when:
+* A feature is introduced (e.g., preview, beta, or ga)
+* A feature is deprecated (e.g., deprecated)
+* A feature is removed (e.g., removed)
+
+You don’t need version tagging for:
+* Typos, formatting, or style changes
+* Long-standing features being documented for the first time
+* Content updates that don’t reflect a feature lifecycle change
+
+## Syntax
 
 ```
 <life-cycle> [version], <life-cycle> [version]
@@ -25,9 +24,18 @@ The `applies_to` metadata allows you to specify which product versions, deployme
 
 Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 
+### Combined states
+You can specify multiple lifecycle states for the same product, separated by commas. For example:
+
+```
+applies_to:
+  stack: preview 9.1, ga 9.4
+```
+This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
+
 #### Life cycle
 
-Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
+`applies_to` accepts the following lifecycle states:
 
   * `preview`
   * `beta`
@@ -35,6 +43,8 @@ Both versioned and unversioned products use the same lifecycle tags, but only ve
   * `removed`
   * `unavailable`
   * `ga`
+
+Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
 
 #### Version
 
@@ -64,30 +74,6 @@ preview 9.5, ga 9.7
 deprecated 9.9.0
 unavailable
 ```
-
-## When to use `applies_to`
-
-Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
-
-Use version tagging when:
-* A feature is introduced (e.g., preview, beta, or ga)
-* A feature is deprecated (e.g., deprecated)
-* A feature is removed (e.g., removed)
-
-You don’t need version tagging for:
-* Typos, formatting, or style changes
-* Long-standing features being documented for the first time
-* Content updates that don’t reflect a feature lifecycle change
-
-### Combined states
-You can specify multiple lifecycle states for the same product, separated by commas. For example:
-
-```
-applies_to:
-  stack: preview 9.1, ga 9.4
-```
-
-This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
 
 ## Structured model
 
