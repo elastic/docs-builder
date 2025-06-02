@@ -57,8 +57,6 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 		if (string.IsNullOrEmpty(localLinksJson))
 			throw new ArgumentNullException(nameof(repository));
 
-		_logger.LogInformation("Checking '{Repository}' with local '{LocalLinksJson}'", repository, localLinksJson);
-
 		if (!Path.IsPathRooted(localLinksJson))
 			localLinksJson = Path.Combine(Paths.WorkingDirectoryRoot.FullName, localLinksJson);
 
