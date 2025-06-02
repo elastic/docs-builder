@@ -2,20 +2,6 @@
 
 The `applies_to` metadata allows you to specify which product versions, deployment types, and environments a specific page, section, or line applies to. Documentation published using Elastic Docs V3 follows a [cumulative model](../contribute/index.md) where a single page covers multiple versions cumulatively over time, instead of creating separate pages for each minor release.
 
-## When to use `applies_to`
-
-Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
-
-Use version tagging when:
-* A feature is introduced (e.g., preview, beta, or ga)
-* A feature is deprecated (e.g., deprecated)
-* A feature is removed (e.g., removed)
-
-You don’t need version tagging for:
-* Typos, formatting, or style changes
-* Long-standing features being documented for the first time
-* Content updates that don’t reflect a feature lifecycle change
-
 ## Syntax
 
 ```
@@ -24,29 +10,7 @@ You don’t need version tagging for:
 
 Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 
-### Combined states
-You can specify multiple lifecycle states for the same product, separated by commas. For example:
-
-```
-applies_to:
-  stack: preview 9.1, ga 9.4
-```
-This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
-
-#### Life cycle
-
-`applies_to` accepts the following lifecycle states:
-
-  * `preview`
-  * `beta`
-  * `deprecated`
-  * `removed`
-  * `unavailable`
-  * `ga`
-
-Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
-
-#### Version
+### Version
 
 Can be in either `major.minor` or `major.minor.patch` format
 
@@ -67,39 +31,53 @@ applies_to:
     observability: removed
 ```
 
-#### Examples
+### Combined states
+You can specify multiple lifecycle states for the same product, separated by commas. For example:
 
 ```
-preview 9.5, ga 9.7
-deprecated 9.9.0
-unavailable
-```
-
-## Structured model
-
-![Applies To Model](images/applies.png)
-
-The above model is projected to the following structured yaml.
-
-```yaml
----
 applies_to:
-  stack:
-  deployment:
-    eck:
-    ess:
-    ece:
-    self:
-  serverless:
-    security:
-    elasticsearch:
-    observability:
-  product:
----
+  stack: preview 9.1, ga 9.4
 ```
-This allows you to annotate various facets as defined in [](../migration/versioning.md)
+This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
 
-## Page annotations
+### Life cycle
+
+`applies_to` accepts the following lifecycle states:
+
+  * `preview`
+  * `beta`
+  * `deprecated`
+  * `removed`
+  * `unavailable`
+  * `ga`
+
+Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
+
+## When and where to use `applies_to`
+
+The `applies_to` tag can be added at different levels in the documentation: [page-level](#page-annotations), [section-level](#section-annotations), and [inline](#inline-applies-to). Each level uses slightly different syntax and serves a specific purpose:
+* [Page-level](#page-annotations) tagging is **mandatory** and must be included in the frontmatter. It defines the overall applicability of the page across products, deployments, and environments. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
+
+When the context differs from what was specified at the page level in a specific section or part of the page, it is appropriate to re-establish it.
+
+* [Section-level](#section-annotations) annotation lets you show or hide specific sections of content depending on the target context. This is helpful when only a part of a page varies between products or versions.
+* [Inline tagging](#inline-applies-to) allows fine-grained annotations within paragraphs or definition lists. It’s useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
+
+### When to use `applies_to`
+
+Every page must include a [page-level `applies_to`](#page-annotations) tag to clearly define its scope and availability.
+
+Use version tagging when:
+* A feature is introduced (e.g., preview, beta, or ga)
+* A feature is deprecated (e.g., deprecated)
+* A feature is removed (e.g., removed)
+
+You don’t need version tagging for:
+* Typos, formatting, or style changes
+* Long-standing features being documented for the first time
+* Content updates that don’t reflect a feature lifecycle change
+
+### Page annotations
 
 All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status.
 
@@ -129,7 +107,7 @@ applies_to:
 ---
 ```
 
-## Section annotation [#sections]
+### Section annotations
 
 ```yaml {applies_to}
 stack: ga 9.1
@@ -171,7 +149,7 @@ stack: ga 9.1
 
 This will allow the yaml inside the `{applies_to}` directive to be fully highlighted.
 
-## Inline Applies To
+### Inline Applies To
 
 Inline applies to can be placed anywhere using the following syntax
 
@@ -198,13 +176,36 @@ Property {preview}`<version>`
 :   definition body
 ```
 
+## Structured model
+
+![Applies To Model](images/applies.png)
+
+The above model is projected to the following structured yaml.
+
+```yaml
+---
+applies_to:
+  stack:
+  deployment:
+    eck:
+    ess:
+    ece:
+    self:
+  serverless:
+    security:
+    elasticsearch:
+    observability:
+  product:
+---
+```
+This allows you to annotate various facets as defined in [](../migration/versioning.md)
+
 ## Examples
 
 #### Stack only
 ```yaml {applies_to}
 stack: ga 9.1
 ```
-
 
 #### Stack with deployment
 ```yaml {applies_to}
