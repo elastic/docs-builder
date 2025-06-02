@@ -168,7 +168,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 
 		if (Uri.TryCreate(redirectToPath, UriKind.Absolute, out var targetCrossUri) && targetCrossUri.Scheme != "http" && targetCrossUri.Scheme != "https")
 		{
-			var lookupPath = Path.Combine(targetCrossUri.Host, targetCrossUri.AbsolutePath.TrimStart('/'));
+			var lookupPath = $"{targetCrossUri.Host}/{targetCrossUri.AbsolutePath.TrimStart('/')}";
 			finalPathForResolver = ToTargetUrlPath(lookupPath);
 
 			if (!string.IsNullOrEmpty(targetFragment) && targetFragment != "!")

@@ -63,6 +63,7 @@ module CrossLinkResolverAssertions =
             LinkIndexEntries = FrozenDictionary<string, LinkRegistryEntry>.Empty
         )
 
+    // language=yaml
     let private redirectsYaml = """
   # test scenario 1
   'testing/redirects/multi-topic-page-1-old.md':
