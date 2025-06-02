@@ -69,7 +69,7 @@ public class AwsS3SyncPlanStrategy(IAmazonS3 s3Client, string bucketName, Assemb
 				var addRequest = new AddRequest
 				{
 					LocalPath = localFile.FullName,
-					DestinationPath = relativePath
+					DestinationPath = relativePath.Replace('\\', '/')
 				};
 				addRequests.Add(addRequest);
 			}
