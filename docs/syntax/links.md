@@ -137,7 +137,7 @@ You can also auto-generate text for specific headings within files:
 
 ## Reference-style links
 
-`docs-builder` supports reference-style links.
+`docs-builder` supports reference-style external links.
 
 ::::{tab-set}
 
