@@ -137,13 +137,14 @@ public class DocsSyncTests
 			HttpStatusCode = System.Net.HttpStatusCode.OK
 		});
 
+		var transferredFiles = Array.Empty<string>();
+
 		mockTransferUtility.Setup(utility => utility.UploadDirectoryAsync(
 			It.IsAny<TransferUtilityUploadDirectoryRequest>(),
 			It.IsAny<Cancel>()
 		)).Callback<TransferUtilityUploadDirectoryRequest, Cancel>((request, _) =>
 		{
-			var files = context.ReadFileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
-			files.Length.Should().Be(4); // 3 add requests + 1 update request
+			transferredFiles = context.ReadFileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
 		});
 
 		var applier = new AwsS3SyncApplyStrategy(mockS3Client.Object, mockTransferUtility.Object, "fake", context, new LoggerFactory(), collector);
@@ -152,6 +153,9 @@ public class DocsSyncTests
 		await applier.Apply(plan, Cancel.None);
 
 		// Assert
+		transferredFiles.Length.Should().Be(4); // 3 add requests + 1 update request
+		transferredFiles.Should().NotContain("docs/skip.md");
+
 		mockS3Client.Verify(client => client.DeleteObjectsAsync(
 			It.Is<Amazon.S3.Model.DeleteObjectsRequest>(req => req.Objects.Any(o => o.Key == "docs/delete.md")),
 			It.IsAny<Cancel>()), Times.Once);
