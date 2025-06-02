@@ -38,7 +38,6 @@ public class AwsS3SyncPlanStrategy(IAmazonS3 s3Client, string bucketName, Assemb
 		{
 			var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
 			var destinationPath = relativePath.Replace('\\', '/');
-			_logger.LogInformation("Checking {Path}", relativePath);
 
 			if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
 			{
