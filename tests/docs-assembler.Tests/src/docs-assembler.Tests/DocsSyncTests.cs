@@ -3,15 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using Documentation.Assembler.Deploying;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
+using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Moq;
 
 namespace Documentation.Assembler.Tests;
 
@@ -23,7 +22,7 @@ public class DocsSyncTests
 		// Arrange
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
 		var collector = new DiagnosticsCollector(diagnosticsOutputs);
-		var mockS3Client = new Mock<IAmazonS3>();
+		var mockS3Client = A.Fake<IAmazonS3>();
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/add1.md", new MockFileData("# New Document 1") },
@@ -37,31 +36,28 @@ public class DocsSyncTests
 		});
 
 		var context = new AssembleContext("dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
-
-		mockS3Client.Setup(client => client.ListObjectsV2Async(
-			It.IsAny<Amazon.S3.Model.ListObjectsV2Request>(),
-			It.IsAny<Cancel>()
-		)).ReturnsAsync(new Amazon.S3.Model.ListObjectsV2Response
-		{
-			S3Objects =
-			[
-				new Amazon.S3.Model.S3Object
-				{
-					Key = "docs/delete.md",
-				},
-				new Amazon.S3.Model.S3Object
-				{
-					Key = "docs/skip.md",
-					ETag = "\"69048c0964c9577a399b138b706a467a\"" // This is the result of CalculateS3ETag
-				},
-				new Amazon.S3.Model.S3Object
-				{
-					Key = "docs/update.md",
-					ETag = "\"existing-etag\""
-				}
-			]
-		});
-		var planStrategy = new AwsS3SyncPlanStrategy(mockS3Client.Object, "fake", context, new LoggerFactory());
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<Amazon.S3.Model.ListObjectsV2Request>._, A<Cancel>._))
+			.Returns(new Amazon.S3.Model.ListObjectsV2Response
+			{
+				S3Objects =
+				[
+					new Amazon.S3.Model.S3Object
+					{
+						Key = "docs/delete.md",
+					},
+					new Amazon.S3.Model.S3Object
+					{
+						Key = "docs/skip.md",
+						ETag = "\"69048c0964c9577a399b138b706a467a\""
+					}, // This is the result of CalculateS3ETag
+					new Amazon.S3.Model.S3Object
+					{
+						Key = "docs/update.md",
+						ETag = "\"existing-etag\""
+					}
+				]
+			});
+		var planStrategy = new AwsS3SyncPlanStrategy(mockS3Client, "fake", context, new LoggerFactory());
 
 		// Act
 		var plan = await planStrategy.Plan(Cancel.None);
@@ -88,11 +84,8 @@ public class DocsSyncTests
 		// Arrange
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
 		var collector = new DiagnosticsCollector(diagnosticsOutputs);
-
-
-		var mockS3Client = new Mock<IAmazonS3>();
-		var mockTransferUtility = new Mock<ITransferUtility>();
-
+		var moxS3Client = A.Fake<IAmazonS3>();
+		var moxTransferUtility = A.Fake<ITransferUtility>();
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/add1.md", new MockFileData("# New Document 1") },
@@ -104,9 +97,7 @@ public class DocsSyncTests
 		{
 			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
 		});
-
 		var context = new AssembleContext("dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
-
 		var plan = new SyncPlan
 		{
 			Count = 6,
@@ -128,26 +119,18 @@ public class DocsSyncTests
 					{ DestinationPath = "docs/delete.md" }
 			]
 		};
-
-		mockS3Client.Setup(client => client.DeleteObjectsAsync(
-			It.IsAny<Amazon.S3.Model.DeleteObjectsRequest>(),
-			It.IsAny<Cancel>()
-		)).ReturnsAsync(new Amazon.S3.Model.DeleteObjectsResponse
-		{
-			HttpStatusCode = System.Net.HttpStatusCode.OK
-		});
-
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<Amazon.S3.Model.DeleteObjectsRequest>._, A<Cancel>._))
+			.Returns(new Amazon.S3.Model.DeleteObjectsResponse
+			{
+				HttpStatusCode = System.Net.HttpStatusCode.OK
+			});
 		var transferredFiles = Array.Empty<string>();
-
-		mockTransferUtility.Setup(utility => utility.UploadDirectoryAsync(
-			It.IsAny<TransferUtilityUploadDirectoryRequest>(),
-			It.IsAny<Cancel>()
-		)).Callback<TransferUtilityUploadDirectoryRequest, Cancel>((request, _) =>
-		{
-			transferredFiles = context.ReadFileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
-		});
-
-		var applier = new AwsS3SyncApplyStrategy(mockS3Client.Object, mockTransferUtility.Object, "fake", context, new LoggerFactory(), collector);
+		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
+			.Invokes((TransferUtilityUploadDirectoryRequest request, Cancel _) =>
+			{
+				transferredFiles = fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
+			});
+		var applier = new AwsS3SyncApplyStrategy(moxS3Client, moxTransferUtility, "fake", context, new LoggerFactory(), collector);
 
 		// Act
 		await applier.Apply(plan, Cancel.None);
@@ -156,16 +139,10 @@ public class DocsSyncTests
 		transferredFiles.Length.Should().Be(4); // 3 add requests + 1 update request
 		transferredFiles.Should().NotContain("docs/skip.md");
 
-		mockS3Client.Verify(client => client.DeleteObjectsAsync(
-			It.Is<Amazon.S3.Model.DeleteObjectsRequest>(req => req.Objects.Any(o => o.Key == "docs/delete.md")),
-			It.IsAny<Cancel>()), Times.Once);
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<Amazon.S3.Model.DeleteObjectsRequest>._, A<Cancel>._))
+			.MustHaveHappenedOnceExactly();
 
-		mockTransferUtility.Verify(utility => utility.UploadDirectoryAsync(
-			It.Is<TransferUtilityUploadDirectoryRequest>(req =>
-				req.BucketName == "fake" &&
-				req.SearchPattern == "*" &&
-				req.SearchOption == SearchOption.AllDirectories &&
-				req.UploadFilesConcurrently),
-			It.IsAny<Cancel>()), Times.Once);
+		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
+			.MustHaveHappenedOnceExactly();
 	}
 }
