@@ -18,6 +18,10 @@ public class ErrataFileSourceRepository : ISourceRepository
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	public bool TryGet(string id, [NotNullWhen(true)] out Source? source)
 	{
+		source = new Source(id, string.Empty);
+		if (id == string.Empty)
+			return true;
+
 		using var reader = new Utf8StreamReader(id);
 		var text = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
 		source = new Source(id, text);

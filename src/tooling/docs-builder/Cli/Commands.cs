@@ -152,7 +152,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			metadataOnly ??= metaValue;
 		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
 
-		var generator = new DocumentationGenerator(set, logger, null, null, exporter);
+		var generator = new DocumentationGenerator(set, logger, null, null, null, exporter);
 		_ = await generator.GenerateAll(ctx);
 
 		if (runningOnCi)

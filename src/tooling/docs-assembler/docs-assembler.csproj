@@ -10,6 +10,7 @@
     <PublishAot>true</PublishAot>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
 
     <IsPublishable>true</IsPublishable>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
@@ -19,6 +20,7 @@
     <PackageReference Include="AWSSDK.S3"/>
     <PackageReference Include="ConsoleAppFramework.Abstractions"/>
     <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Proc"  />
     <PackageReference Include="YamlDotNet"  />
     <PackageReference Include="NetEscapades.EnumGenerators" />

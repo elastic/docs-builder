@@ -3,14 +3,23 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Markdown;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
+
+public enum ExportOption
+{
+	Html = 0,
+	LLMText = 1,
+	Elasticsearch = 2
+}
 
 public class AssemblerBuilder(
 	ILoggerFactory logger,
@@ -25,13 +34,29 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, Cancel ctx)
+	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<ExportOption> exportOptions, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
 		context.OutputDirectory.Create();
 
 		var redirects = new Dictionary<string, string>();
+
+		var esExporter =
+			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
+			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
+				? new ElasticsearchMarkdownExporter(logger, context.Collector, url, apiKey)
+				: null;
+
+		var markdownExporters = new List<IMarkdownExporter>(3);
+		if (exportOptions.Contains(ExportOption.LLMText))
+			markdownExporters.Add(new LLMTextExporter());
+		if (exportOptions.Contains(ExportOption.Elasticsearch) && esExporter is { })
+			markdownExporters.Add(esExporter);
+		var noopBuild = !exportOptions.Contains(ExportOption.Html);
+
+		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
+		await Task.WhenAll(tasks);
 
 		foreach (var (_, set) in assembleSets)
 		{
@@ -44,7 +69,7 @@ public class AssemblerBuilder(
 
 			try
 			{
-				var result = await BuildAsync(set, ctx);
+				var result = await BuildAsync(set, noopBuild, markdownExporters.ToArray(), ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
@@ -58,7 +83,8 @@ public class AssemblerBuilder(
 			}
 		}
 
-		await context.Collector.StopAsync(ctx);
+		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
+		await Task.WhenAll(tasks);
 	}
 
 	private static void CollectRedirects(
@@ -90,14 +116,16 @@ public class AssemblerBuilder(
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, bool noop, IMarkdownExporter[]? markdownExporters, Cancel ctx)
 	{
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
 			logger, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
-			positionalNavigation: navigation
+			positionalNavigation: navigation,
+			documentationExporter: noop ? new NoopDocumentationFileExporter() : null,
+			markdownExporters: markdownExporters
 		);
 		return await generator.GenerateAll(ctx);
 	}
