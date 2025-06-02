@@ -89,20 +89,10 @@ public class DocsSyncTests
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
 		var collector = new DiagnosticsCollector(diagnosticsOutputs);
 
-		// Create a real S3 client with minimal configuration
-		var s3Config = new AmazonS3Config
-		{
-			UseHttp = true,
-			ForcePathStyle = true
-		};
-		var s3Client = new AmazonS3Client(new AnonymousAWSCredentials(), s3Config);
+
 		var mockS3Client = new Mock<IAmazonS3>();
 		var mockTransferUtility = new Mock<ITransferUtility>();
 
-		// Setup the mock to use the same config as the real client
-		mockS3Client.SetupGet(x => x.Config).Returns(s3Config);
-
-		// Create a mock filesystem with test files and temp directory
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/add1.md", new MockFileData("# New Document 1") },
@@ -139,7 +129,6 @@ public class DocsSyncTests
 			]
 		};
 
-		// Setup S3 client to handle DeleteObjects operation
 		mockS3Client.Setup(client => client.DeleteObjectsAsync(
 			It.IsAny<Amazon.S3.Model.DeleteObjectsRequest>(),
 			It.IsAny<Cancel>()
@@ -148,7 +137,6 @@ public class DocsSyncTests
 			HttpStatusCode = System.Net.HttpStatusCode.OK
 		});
 
-		// Setup TransferUtility to verify upload request
 		mockTransferUtility.Setup(utility => utility.UploadDirectoryAsync(
 			It.IsAny<TransferUtilityUploadDirectoryRequest>(),
 			It.IsAny<Cancel>()
