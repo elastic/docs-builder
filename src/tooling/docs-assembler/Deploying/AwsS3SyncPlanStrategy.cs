@@ -17,10 +17,18 @@ public class AwsS3SyncPlanStrategy(IAmazonS3 s3Client, string bucketName, Assemb
 	private readonly ILogger<AwsS3SyncPlanStrategy> _logger = loggerFactory.CreateLogger<AwsS3SyncPlanStrategy>();
 	private static readonly ConcurrentDictionary<string, string> EtagCache = new();
 
+	private bool IsSymlink(string path)
+	{
+		var fileInfo = context.ReadFileSystem.FileInfo.New(path);
+		return fileInfo.LinkTarget != null;
+	}
+
 	public async Task<SyncPlan> Plan(Cancel ctx = default)
 	{
 		var remoteObjects = await ListObjects(ctx);
-		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories);
+		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)
+			.Where(f => !IsSymlink(f.FullName))
+			.ToArray();
 		var deleteRequests = new ConcurrentBag<DeleteRequest>();
 		var addRequests = new ConcurrentBag<AddRequest>();
 		var updateRequests = new ConcurrentBag<UpdateRequest>();
