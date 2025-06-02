@@ -67,7 +67,7 @@ The `applies_to` metadata can be added at different levels in the documentation:
 
 ### Page annotations
 
-All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status.
+All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
 
 ``` yaml
 ---
