@@ -10,6 +10,19 @@ The `applies_to` metadata allows you to specify which product versions, deployme
 
 Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 
+### Life cycle
+
+`applies_to` accepts the following lifecycle states:
+
+  * `preview`
+  * `beta`
+  * `deprecated`
+  * `removed`
+  * `unavailable`
+  * `ga`
+
+Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
+
 ### Version
 
 Can be in either `major.minor` or `major.minor.patch` format
@@ -40,19 +53,6 @@ applies_to:
 ```
 This shows that the feature was introduced in version 9.1 as a preview and became generally available in 9.4.
 
-### Life cycle
-
-`applies_to` accepts the following lifecycle states:
-
-  * `preview`
-  * `beta`
-  * `deprecated`
-  * `removed`
-  * `unavailable`
-  * `ga`
-
-Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
-
 ## When and where to use `applies_to`
 
 ✅ Use `applies_to` tags when features change state (`introduced`, `deprecated`, `removed`) or when availability differs across deployments and environments.
@@ -63,7 +63,7 @@ The `applies_to` metadata can be added at different levels in the documentation:
 
 * [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the overall applicability of the page across products, deployments, and environments.
 * [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.
-* [Inline](#inline-applies-to) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
+* [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
 
 ### Page annotations
 
