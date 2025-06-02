@@ -37,10 +37,10 @@ public class AwsS3SyncPlanStrategy(IAmazonS3 s3Client, string bucketName, Assemb
 		await Parallel.ForEachAsync(localObjects, ctx, async (localFile, token) =>
 		{
 			var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
-
+			var destinationPath = relativePath.Replace('\\', '/');
 			_logger.LogInformation("Checking {Path}", relativePath);
 
-			if (remoteObjects.TryGetValue(relativePath, out var remoteObject))
+			if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
 			{
 				// Check if the ETag differs for updates
 				var localETag = await CalculateS3ETag(localFile.FullName, token);
@@ -69,7 +69,7 @@ public class AwsS3SyncPlanStrategy(IAmazonS3 s3Client, string bucketName, Assemb
 				var addRequest = new AddRequest
 				{
 					LocalPath = localFile.FullName,
-					DestinationPath = relativePath.Replace('\\', '/')
+					DestinationPath = destinationPath
 				};
 				addRequests.Add(addRequest);
 			}
