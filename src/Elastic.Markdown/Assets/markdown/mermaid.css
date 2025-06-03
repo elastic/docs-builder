@@ -1,5 +1,5 @@
 .mermaid {
-	@apply border-grey-10 rounded-md border-2 font-sans mt-4;
+	@apply border-grey-10 mt-4 rounded-md border-2 font-sans;
 
 	font-size: 0.875em !important;
 

@@ -1,18 +1,18 @@
-import {initCopyButton} from './copybutton'
-import {initDismissibleBanner} from './dismissible-banner'
-import {initHighlight} from './hljs'
-import {openDetailsWithAnchor} from './open-details-with-anchor'
-import {initNav} from './pages-nav'
-import {initSmoothScroll} from './smooth-scroll'
-import {initTabs} from './tabs'
-import {initTocNav} from './toc-nav'
+import { initCopyButton } from './copybutton'
+import { initDismissibleBanner } from './dismissible-banner'
+import { initHighlight } from './hljs'
+import { openDetailsWithAnchor } from './open-details-with-anchor'
+import { initNav } from './pages-nav'
+import { initSmoothScroll } from './smooth-scroll'
+import { initTabs } from './tabs'
+import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
-import {$, $$} from 'select-dom'
-import {UAParser} from 'ua-parser-js'
+import { $, $$ } from 'select-dom'
+import { UAParser } from 'ua-parser-js'
 
-const {getOS} = new UAParser()
+const { getOS } = new UAParser()
 
 document.addEventListener('htmx:load', function () {
     initTocNav()
@@ -38,9 +38,9 @@ document.addEventListener('htmx:beforeRequest', function (event) {
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
     ) {
-        const {ctrlKey, metaKey, shiftKey}: PointerEvent =
+        const { ctrlKey, metaKey, shiftKey }: PointerEvent =
             event.detail.requestConfig.triggeringEvent
-        const {name: os} = getOS()
+        const { name: os } = getOS()
         const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey
         if (shiftKey || modifierKey) {
             event.preventDefault()
