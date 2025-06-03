@@ -9,5 +9,5 @@ namespace Elastic.Markdown.Helpers;
 
 public static class ShortId
 {
-	public static string Create(params string[] text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("", text))))[..8];
+	public static string Create(params string[] components) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("", components))))[..8];
 }
