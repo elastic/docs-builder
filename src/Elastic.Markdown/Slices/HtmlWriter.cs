@@ -89,7 +89,7 @@ public class HtmlWriter(
 
 	private async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
-		var html = markdown.CreateHtml(document);
+		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
 		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);

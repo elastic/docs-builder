@@ -354,7 +354,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document)
 	{
 		//we manually render title and optionally append an applies block embedded in yaml front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
