@@ -8,6 +8,8 @@ export default defineConfig([
 		'_static/main.js',
 		'_static/mermaid.tiny.js',
 		'_static/mermaid.js',
+		'Assets/mermaid.tiny.js',
+		'Assets/mermaid.js',
 	]),
 	{ files: ['**/*.{js,mjs,cjs,ts}'] },
 	{
