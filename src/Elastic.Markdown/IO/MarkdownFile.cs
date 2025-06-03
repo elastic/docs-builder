@@ -4,6 +4,8 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
@@ -51,6 +53,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
+		Id = ShortId.Create(FilePath);
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
@@ -65,7 +68,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	public Uri NavigationSource { get; set; }
 
-	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
+	public string Id { get; }
 
 	private IDiagnosticsCollector Collector { get; }
 
