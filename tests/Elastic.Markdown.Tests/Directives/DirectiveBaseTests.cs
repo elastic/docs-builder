@@ -83,7 +83,7 @@ $"""
 
 		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
 		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
-		var html = File.CreateHtml(Document).AsSpan();
+		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0

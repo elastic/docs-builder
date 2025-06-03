@@ -16,6 +16,7 @@
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
+    <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.11.3" />
   </ItemGroup>
   <!-- Build -->
@@ -39,7 +40,7 @@
     <PackageVersion Include="Markdig" Version="0.41.1" />
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Proc" Version="0.9.1" />
-    <PackageVersion Include="RazorSlices" Version="0.8.1" />
+    <PackageVersion Include="RazorSlices" Version="0.9.1" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="2.7.0" />

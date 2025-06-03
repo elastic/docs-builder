@@ -68,6 +68,6 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		return Task.FromResult(_crossLinks);
 	}
 
-	public bool TryResolve(Action<string> errorEmitter, Action<string> warningEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
-		CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
 }

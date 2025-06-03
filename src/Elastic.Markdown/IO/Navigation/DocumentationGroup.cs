@@ -4,8 +4,11 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.IO.Navigation;
 
@@ -125,7 +128,7 @@ public class DocumentationGroup : INavigationGroup
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
-	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
+	public string Id { get; }
 
 	public string NavigationRootId => NavigationRoot.Id;
 
@@ -196,7 +199,7 @@ public class DocumentationGroup : INavigationGroup
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
-
+		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
 		if (Index is not null)
 			FilesInOrder = [.. FilesInOrder.Except([Index])];
 	}
