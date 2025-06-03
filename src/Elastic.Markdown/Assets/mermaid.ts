@@ -1,7 +1,7 @@
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
-import mermaid from 'mermaid/dist/mermaid.esm.min.mjs'
+import mermaid from '@mermaid-js/tiny/dist/mermaid.tiny'
 
 var mermaidInitialize = function () {
     mermaid.initialize({

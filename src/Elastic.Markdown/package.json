@@ -16,6 +16,10 @@
       "distDir": "_static",
       "source": "Assets/main.ts"
     },
+    "js2": {
+      "distDir": "_static",
+      "source": "Assets/mermaid.ts"
+    },
     "css": {
       "distDir": "_static",
       "source": "Assets/styles.css"
@@ -53,7 +57,7 @@
     "htmx-ext-head-support": "2.0.4",
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.4",
-    "mermaid": "11.6.0",
+    "@mermaid-js/tiny": "11.6.1",
     "select-dom": "9.3.1",
     "tailwindcss": "4.1.8",
     "ua-parser-js": "2.0.3"
