@@ -1,0 +1,64 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
+using System.IO.Abstractions;
+using Actions.Core.Services;
+using ConsoleAppFramework;
+using Documentation.Builder.Tracking;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Tooling.Filters;
+using Elastic.Markdown;
+using Elastic.Markdown.IO;
+using Microsoft.Extensions.Logging;
+
+namespace Documentation.Builder.Cli;
+
+internal sealed class LinkHealthCommands(ILoggerFactory logger, ICoreService githubActionsService)
+{
+	/// <summary>
+	/// Validates redirect updates in the current branch using the redirects file against changes reported by git.
+	/// </summary>
+	/// <param name="ctx"></param>
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
+	[Command("validate-redirects")]
+	[ConsoleAppFilter<StopwatchFilter>]
+	[ConsoleAppFilter<CatchExceptionFilter>]
+	public async Task<int> ValidateRedirects(Cancel ctx = default)
+	{
+		var log = logger.CreateLogger<Program>();
+		ConsoleApp.Log = msg => log.LogInformation(msg);
+		ConsoleApp.LogError = msg => log.LogError(msg);
+
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+
+		var fs = new FileSystem();
+		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+
+		var buildContext = new BuildContext(collector, fs, fs, root.FullName, null);
+		var sourceFile = buildContext.ConfigurationPath;
+		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
+		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
+
+		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
+		var redirects = redirectFileParser.Redirects;
+
+		if (redirects is null)
+		{
+			collector.EmitError(redirectFileInfo, "It was not possible to parse the redirects file.");
+			await collector.StopAsync(ctx);
+			return collector.Errors;
+		}
+
+		var tracker = new GitRepositoryTracker(collector, root);
+		var changed = tracker.GetChangedFiles();
+
+		foreach (var notFound in changed.Where(c => !redirects.ContainsKey(c)))
+			collector.EmitError(notFound, $"{notFound} has been moved or deleted without a redirect rule being set for it. Please add a redirect rule in this project's {redirectFileInfo.Name}.");
+
+		await collector.StopAsync(ctx);
+		return collector.Errors;
+	}
+}

@@ -18,5 +18,6 @@ ConsoleApp.ServiceProvider = serviceProvider;
 var app = ConsoleApp.Create();
 app.Add<Commands>();
 app.Add<InboundLinkCommands>("inbound-links");
+app.Add<LinkHealthCommands>("health");
 
 await app.RunAsync(args).ConfigureAwait(false);

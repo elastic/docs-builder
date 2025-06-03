@@ -181,6 +181,9 @@ jobs:
         if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
         uses: elastic/docs-builder/.github/actions/bootstrap@main
 
+      - name: Validate Redirect Health
+        uses: elastic/docs-builder/actions/validate-redirects-health@main
+
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation

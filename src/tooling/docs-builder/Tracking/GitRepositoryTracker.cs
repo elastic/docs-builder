@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling.ExternalCommands;
 
 namespace Documentation.Builder.Tracking;
 
-public class GitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
+public partial class GitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
 	public IEnumerable<string> GetChangedFiles()
 	{
@@ -18,7 +19,11 @@ public class GitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo
 
 		var movedOrDeleted = output
 			.Where(line => line.StartsWith('R') || line.StartsWith('D'))
-			.Select(line => line.Split('\t')[1]);
+			.Select(line => line.Split('\t')[1])
+			.Select(line => DocsFolderRegex().Split(line)[1]);
 		return movedOrDeleted;
 	}
+
+	[GeneratedRegex("docs/")]
+	private static partial Regex DocsFolderRegex();
 }

@@ -58,7 +58,8 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 			{
 				WorkingDirectory = workingDirectory.FullName,
 				Timeout = TimeSpan.FromSeconds(3),
-				WaitForExit = TimeSpan.FromSeconds(3)
+				WaitForExit = TimeSpan.FromSeconds(3),
+				ConsoleOutWriter = NoopConsoleWriter.Instance
 			};
 			var result = Proc.Start(arguments);
 			var output = result.ExitCode != 0
