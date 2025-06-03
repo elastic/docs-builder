@@ -198,8 +198,7 @@ public class DocumentationGroup : INavigationGroup
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
-		Id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(FolderName + depth)))[..8];
-
+		Id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(NavigationSource + FolderName + depth)))[..8];
 		if (Index is not null)
 			FilesInOrder = [.. FilesInOrder.Except([Index])];
 	}
