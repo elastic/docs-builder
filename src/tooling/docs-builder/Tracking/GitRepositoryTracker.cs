@@ -10,5 +10,15 @@ namespace Documentation.Builder.Tracking;
 
 public class GitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
-	public IEnumerable<string> GetChangedFiles() => CaptureMultiple("git", "diff", "--name-status", "main...HEAD", "--", "\"./docs\"");
+	public IEnumerable<string> GetChangedFiles()
+	{
+		var output = CaptureMultiple("git", "diff", "--name-status", "main...HEAD", "--", "./docs");
+		if (output.Length == 0)
+			return [];
+
+		var movedOrDeleted = output
+			.Where(line => line.StartsWith('R') || line.StartsWith('D'))
+			.Select(line => line.Split('\t')[1]);
+		return movedOrDeleted;
+	}
 }

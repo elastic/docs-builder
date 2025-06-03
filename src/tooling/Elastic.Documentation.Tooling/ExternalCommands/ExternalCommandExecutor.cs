@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using ProcNet;
+using ProcNet.Std;
 
 namespace Elastic.Documentation.Tooling.ExternalCommands;
 
@@ -57,8 +58,7 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 			{
 				WorkingDirectory = workingDirectory.FullName,
 				Timeout = TimeSpan.FromSeconds(3),
-				WaitForExit = TimeSpan.FromSeconds(3),
-				ConsoleOutWriter = NoopConsoleWriter.Instance
+				WaitForExit = TimeSpan.FromSeconds(3)
 			};
 			var result = Proc.Start(arguments);
 			var output = result.ExitCode != 0
