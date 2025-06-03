@@ -48,6 +48,11 @@
 						<article id="markdown-content" class="content-container markdown-content md:px-4">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderBodyAsync()
+							@if (Model.CurrentDocument.HasMermaidBlock)
+							{
+								<script src="@Model.Static("mermaid.tiny.js")"></script>
+								<script src="@Model.Static("mermaid.js")"></script>
+							}
 						</article>
 						@await RenderPartialAsync(_PrevNextNav.Create(Model))
 					</main>

@@ -20,12 +20,6 @@
       "distDir": "_static",
       "source": "Assets/mermaid.js"
     },
-    "js3": {
-      "distDir": "_static",
-      "source": "node_modules/@mermaid-js/tiny/dist/mermaid.tiny.js",
-      "outputFormat": "global",
-      "optimize": false
-    },
     "css": {
       "distDir": "_static",
       "source": "Assets/styles.css"
