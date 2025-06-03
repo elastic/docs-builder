@@ -36,3 +36,7 @@
 </footer>
 
 <script src="@Model.Static("main.js")"></script>
+@if (Model.CurrentDocument.HasMermaidBlock)
+{
+	<script src="@Model.Static("mermaid.js")"></script>
+}

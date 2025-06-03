@@ -13,6 +13,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
@@ -152,6 +153,8 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 	/// because we need to minimally parse to see the anchors anchor validation is deferred.
 	public IReadOnlyDictionary<string, string?>? AnchorRemapping { get; set; }
 
+	public bool HasMermaidBlock { get; private set; }
+
 	private void ValidateAnchorRemapping()
 	{
 		if (AnchorRemapping is null)
@@ -187,6 +190,9 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			_ = await MinimalParseAsync(ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+
+		HasMermaidBlock = document.Descendants<EnhancedCodeBlock>().Any(b => b.Language == "mermaid");
+
 		return document;
 	}
 
@@ -333,7 +339,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 				Title = deprecatedTitle;
 		}
 
-		// set title on yaml front matter manually.
+		// set title on YAML front matter manually.
 		// frontmatter gets passed around as page information throughout
 		fm.Title = Title;
 		return fm;
@@ -359,7 +365,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	public static string CreateHtml(MarkdownDocument document)
 	{
-		//we manually render title and optionally append an applies block embedded in yaml front matter.
+		//we manually render the title and optionally append an `applies block` embedded in YAML front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
 		if (h1 is not null)
 			_ = document.Remove(h1);
