@@ -1,6 +1,8 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Security.Cryptography;
 using System.Text;
 using Elastic.Markdown.Myst.Settings;
 
@@ -56,7 +58,13 @@ public class ImageViewModel
 	public required string? Target { get; init; }
 	public required string? Width { get; init; }
 	public required string? ImageUrl { get; init; }
-	public string UniqueImageId { get; } = Guid.NewGuid().ToString("N")[..8];
+
+	private string? _uniqueImageId;
+
+	public string UniqueImageId =>
+		_uniqueImageId ??= string.IsNullOrEmpty(ImageUrl)
+			? Guid.NewGuid().ToString("N")[..8] // fallback to a random ID if ImageUrl is null or empty
+			: Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ImageUrl)))[..8];
 	public required string? Screenshot { get; init; }
 
 	public string Style
