@@ -4,7 +4,11 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-	globalIgnores(['_static/main.js', '_static/mermaid.js']),
+	globalIgnores([
+		'_static/main.js',
+		'_static/mermaid.tiny.js',
+		'_static/mermaid.js',
+	]),
 	{ files: ['**/*.{js,mjs,cjs,ts}'] },
 	{
 		files: ['**/*.{js,mjs,cjs,ts}'],
