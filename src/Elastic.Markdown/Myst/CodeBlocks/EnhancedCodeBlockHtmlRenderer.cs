@@ -115,7 +115,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	protected override void Write(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
-		if (block is AppliesToDirective appliesToDirective)
+		if (block is AppliesToCodeBlock appliesToDirective)
 		{
 			RenderAppliesToHtml(renderer, appliesToDirective);
 			return;
@@ -229,9 +229,9 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
+	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToCodeBlock appliesToCodeBlock)
 	{
-		var appliesTo = appliesToDirective.AppliesTo;
+		var appliesTo = appliesToCodeBlock.AppliesTo;
 		var slice = ApplicableToDirective.Create(appliesTo);
 		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
 			return;

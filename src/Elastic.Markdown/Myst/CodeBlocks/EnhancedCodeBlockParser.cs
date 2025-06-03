@@ -34,7 +34,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 		var lineSpan = processor.Line.AsSpan();
 		var codeBlock = lineSpan.IndexOf("{applies_to}") > -1
-			? new AppliesToDirective(this, context)
+			? new AppliesToCodeBlock(this, context)
 			{
 				IndentCount = processor.Indent
 			}
@@ -110,7 +110,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		if (lines.Lines is null)
 			return base.Close(processor, block);
 
-		if (codeBlock is not AppliesToDirective appliesToDirective)
+		if (codeBlock is not AppliesToCodeBlock appliesToDirective)
 			ProcessCodeBlock(lines, language, codeBlock, context);
 		else
 			ProcessAppliesToDirective(appliesToDirective, lines);
@@ -118,23 +118,23 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		return base.Close(processor, block);
 	}
 
-	private static void ProcessAppliesToDirective(AppliesToDirective appliesToDirective, StringLineGroup lines)
+	private static void ProcessAppliesToDirective(AppliesToCodeBlock appliesToCodeBlock, StringLineGroup lines)
 	{
 		var yaml = lines.ToSlice().AsSpan().ToString();
 
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
-			appliesToDirective.AppliesTo = applicableTo;
-			if (appliesToDirective.AppliesTo.Warnings is null)
+			appliesToCodeBlock.AppliesTo = applicableTo;
+			if (appliesToCodeBlock.AppliesTo.Warnings is null)
 				return;
-			foreach (var warning in appliesToDirective.AppliesTo.Warnings)
-				appliesToDirective.EmitWarning(warning);
+			foreach (var warning in appliesToCodeBlock.AppliesTo.Warnings)
+				appliesToCodeBlock.EmitWarning(warning);
 			applicableTo.Warnings = null;
 		}
 		catch (Exception e)
 		{
-			appliesToDirective.EmitError($"Unable to parse applies_to directive: {yaml}", e);
+			appliesToCodeBlock.EmitError($"Unable to parse applies_to directive: {yaml}", e);
 		}
 	}
 

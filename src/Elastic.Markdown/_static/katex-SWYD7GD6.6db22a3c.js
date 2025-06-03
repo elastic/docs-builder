@@ -672,7 +672,9 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "default", ()=>m4);
 var _chunkGTKDMUJJMjs = require("./chunk-GTKDMUJJ.mjs");
 var c0 = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SourceLocation");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SourceLocation");
+    }
     constructor(e, t, a){
         this.lexer = void 0, this.start = void 0, this.end = void 0, this.lexer = e, this.start = t, this.end = a;
     }
@@ -680,7 +682,9 @@ var c0 = class r {
         return t ? !e || !e.loc || !t.loc || e.loc.lexer !== t.loc.lexer ? null : new r(e.loc.lexer, e.loc.start, t.loc.end) : e && e.loc;
     }
 }, v0 = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Token");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Token");
+    }
     constructor(e, t){
         this.text = void 0, this.loc = void 0, this.noexpand = void 0, this.treatAsRelax = void 0, this.text = e, this.loc = t;
     }
@@ -688,7 +692,9 @@ var c0 = class r {
         return new r(t, c0.range(this, e));
     }
 }, z = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ParseError");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ParseError");
+    }
     constructor(e, t){
         this.name = void 0, this.position = void 0, this.length = void 0, this.rawMessage = void 0;
         var a = "KaTeX parse error: " + e, n, s, o = t && t.loc;
@@ -860,7 +866,9 @@ function Ba(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Ba, "getDefaultValue");
 var me = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Settings");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Settings");
+    }
     constructor(e){
         this.displayMode = void 0, this.output = void 0, this.leqno = void 0, this.fleqn = void 0, this.throwOnError = void 0, this.errorColor = void 0, this.macros = void 0, this.minRuleThickness = void 0, this.colorIsTextColor = void 0, this.strict = void 0, this.trust = void 0, this.maxSize = void 0, this.maxExpand = void 0, this.globalGroup = void 0, e = e || {};
         for(var t in Ne)if (Ne.hasOwnProperty(t)) {
@@ -894,7 +902,9 @@ var me = class {
         return !!a;
     }
 }, w0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Style");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Style");
+    }
     constructor(e, t, a){
         this.id = void 0, this.size = void 0, this.cramped = void 0, this.id = e, this.size = t, this.cramped = a;
     }
@@ -1477,7 +1487,9 @@ l0,-` + (t + 144) + `c-2,-159.3,-10,-310.7,-24,-454c-53.3,-528,-210,-949.7,
             throw new Error("Unknown stretchy delimiter.");
     }
 }, "tallDelim"), W0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DocumentFragment");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DocumentFragment");
+    }
     constructor(e){
         this.children = void 0, this.classes = void 0, this.height = void 0, this.depth = void 0, this.maxFontSize = void 0, this.style = void 0, this.children = e, this.classes = [], this.height = 0, this.depth = 0, this.maxFontSize = 0, this.style = {};
     }
@@ -16141,7 +16153,9 @@ var ja = [
 ], $t = (0, _chunkGTKDMUJJMjs.a)(function(e, t) {
     return t.size < 2 ? e : ja[e - 1][t.size - 1];
 }, "sizeAtStyle"), Ie = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Options");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Options");
+    }
     constructor(e){
         this.style = void 0, this.color = void 0, this.size = void 0, this.textSize = void 0, this.phantom = void 0, this.font = void 0, this.fontFamily = void 0, this.fontWeight = void 0, this.fontShape = void 0, this.sizeMultiplier = void 0, this.maxSize = void 0, this.minRuleThickness = void 0, this._fontMetrics = void 0, this.style = e.style, this.color = e.color, this.size = e.size || r.BASESIZE, this.textSize = e.textSize || this.size, this.phantom = !!e.phantom, this.font = e.font || "", this.fontFamily = e.fontFamily || "", this.fontWeight = e.fontWeight || "", this.fontShape = e.fontShape || "", this.sizeMultiplier = Xt[this.size - 1], this.maxSize = e.maxSize, this.minRuleThickness = e.minRuleThickness, this._fontMetrics = void 0;
     }
@@ -16320,7 +16334,9 @@ var mt = {
     for(var o = 0; o < this.children.length; o++)t += this.children[o].toMarkup();
     return t += "</" + e + ">", t;
 }, "toMarkup"), j0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Span");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Span");
+    }
     constructor(e, t, a, n){
         this.children = void 0, this.attributes = void 0, this.classes = void 0, this.height = void 0, this.depth = void 0, this.width = void 0, this.maxFontSize = void 0, this.style = void 0, Sr.call(this, e, a, n), this.children = t || [];
     }
@@ -16337,7 +16353,9 @@ var mt = {
         return zr.call(this, "span");
     }
 }, de = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Anchor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Anchor");
+    }
     constructor(e, t, a, n){
         this.children = void 0, this.attributes = void 0, this.classes = void 0, this.height = void 0, this.depth = void 0, this.maxFontSize = void 0, this.style = void 0, Sr.call(this, t, n), this.children = a || [], this.setAttribute("href", e);
     }
@@ -16354,7 +16372,9 @@ var mt = {
         return zr.call(this, "a");
     }
 }, ct = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Img");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Img");
+    }
     constructor(e, t, a){
         this.src = void 0, this.alt = void 0, this.classes = void 0, this.height = void 0, this.depth = void 0, this.maxFontSize = void 0, this.style = void 0, this.alt = t, this.src = e, this.classes = [
             "mord"
@@ -16380,7 +16400,9 @@ var mt = {
     "\xed": "\u0131\u0301",
     "\xec": "\u0131\u0300"
 }, h0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SymbolNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SymbolNode");
+    }
     constructor(e, t, a, n, s, o, h, c){
         this.text = void 0, this.height = void 0, this.depth = void 0, this.italic = void 0, this.skew = void 0, this.width = void 0, this.maxFontSize = void 0, this.classes = void 0, this.style = void 0, this.text = e, this.height = t || 0, this.depth = a || 0, this.italic = n || 0, this.skew = s || 0, this.width = o || 0, this.classes = h || [], this.style = c || {}, this.maxFontSize = 0;
         var v = Ia(this.text.charCodeAt(0));
@@ -16406,7 +16428,9 @@ var mt = {
         return e ? (t += ">", t += s, t += "</span>", t) : s;
     }
 }, x0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SvgNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SvgNode");
+    }
     constructor(e, t){
         this.children = void 0, this.attributes = void 0, this.children = e || [], this.attributes = t || {};
     }
@@ -16424,7 +16448,9 @@ var mt = {
         return e += "</svg>", e;
     }
 }, M0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "PathNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "PathNode");
+    }
     constructor(e, t){
         this.pathName = void 0, this.alternate = void 0, this.pathName = e, this.alternate = t;
     }
@@ -16436,7 +16462,9 @@ var mt = {
         return this.alternate ? '<path d="' + R.escape(this.alternate) + '"/>' : '<path d="' + R.escape(Ut[this.pathName]) + '"/>';
     }
 }, fe = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LineNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LineNode");
+    }
     constructor(e){
         this.attributes = void 0, this.attributes = e || {};
     }
@@ -17110,7 +17138,7 @@ i(S, u, E, "h", "\u210E");
 var O = "";
 for(a0 = 0; a0 < Oe.length; a0++)K = Oe.charAt(a0), O = String.fromCharCode(55349, 56320 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56372 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56424 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56580 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56684 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56736 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56788 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56840 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56944 + a0), i(l, u, E, K, O), i(S, u, g, K, O), a0 < 26 && (O = String.fromCharCode(55349, 56632 + a0), i(l, u, E, K, O), i(S, u, g, K, O), O = String.fromCharCode(55349, 56476 + a0), i(l, u, E, K, O), i(S, u, g, K, O));
 var K, a0;
-O = "\u{1D55C}";
+O = "\uD835\uDD5C";
 i(l, u, E, "k", O);
 i(S, u, g, "k", O);
 for(L0 = 0; L0 < 10; L0++)D0 = L0.toString(), O = String.fromCharCode(55349, 57294 + L0), i(l, u, E, D0, O), i(S, u, g, D0, O), O = String.fromCharCode(55349, 57314 + L0), i(l, u, E, D0, O), i(S, u, g, D0, O), O = String.fromCharCode(55349, 57324 + L0), i(l, u, E, D0, O), i(S, u, g, D0, O), O = String.fromCharCode(55349, 57334 + L0), i(l, u, E, D0, O), i(S, u, g, D0, O);
@@ -17906,7 +17934,9 @@ function Rr(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Rr, "newDocumentFragment");
 var u0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MathNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MathNode");
+    }
     constructor(e, t, a){
         this.type = void 0, this.attributes = void 0, this.children = void 0, this.classes = void 0, this.type = e, this.attributes = {}, this.children = t || [], this.classes = a || [];
     }
@@ -17934,7 +17964,9 @@ var u0 = class {
         return this.children.map((e)=>e.toText()).join("");
     }
 }, $0 = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "TextNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "TextNode");
+    }
     constructor(e){
         this.text = void 0, this.text = e;
     }
@@ -17948,7 +17980,9 @@ var u0 = class {
         return this.text;
     }
 }, vt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SpaceNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SpaceNode");
+    }
     constructor(e){
         this.width = void 0, this.character = void 0, this.width = e, e >= .05555 && e <= .05556 ? this.character = "\u200A" : e >= .1666 && e <= .1667 ? this.character = "\u2009" : e >= .2222 && e <= .2223 ? this.character = "\u2005" : e >= .2777 && e <= .2778 ? this.character = "\u2005\u200A" : e >= -0.05556 && e <= -0.05555 ? this.character = "\u200A\u2063" : e >= -0.1667 && e <= -0.1666 ? this.character = "\u2009\u2063" : e >= -0.2223 && e <= -0.2222 ? this.character = "\u205F\u2063" : e >= -0.2778 && e <= -0.2777 ? this.character = "\u2005\u2063" : this.character = null;
     }
@@ -23649,7 +23683,9 @@ var pr = (0, _chunkGTKDMUJJMjs.a)((r)=>r.body.replace(/ /g, r.star ? "\u2423" : 
 	]`, t4 = "\\\\[a-zA-Z@]+", r4 = "\\\\[^\uD800-\uDFFF]", a4 = "(" + t4 + ")" + ua + "*", n4 = `\\\\(
 |[ \r	]+
 ?)[ \r	]*`, yt = "[\u0300-\u036F]", i4 = new RegExp(yt + "+$"), s4 = "(" + ua + "+)|" + (n4 + "|") + "([!-\\[\\]-\u2027\u202A-\uD7FF\uF900-\uFFFF]" + (yt + "*") + "|[\uD800-\uDBFF][\uDC00-\uDFFF]" + (yt + "*") + "|\\\\verb\\*([^]).*?\\4|\\\\verb([^*a-zA-Z]).*?\\5" + ("|" + a4) + ("|" + r4 + ")"), Pe = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Lexer");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Lexer");
+    }
     constructor(e, t){
         this.input = void 0, this.settings = void 0, this.tokenRegex = void 0, this.catcodes = void 0, this.input = e, this.settings = t, this.tokenRegex = new RegExp(s4, "g"), this.catcodes = {
             "%": 14,
@@ -23673,7 +23709,9 @@ var pr = (0, _chunkGTKDMUJJMjs.a)((r)=>r.body.replace(/ /g, r.star ? "\u2423" : 
         return new v0(n, new c0(this, t, this.tokenRegex.lastIndex));
     }
 }, xt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Namespace");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Namespace");
+    }
     constructor(e, t){
         e === void 0 && (e = {}), t === void 0 && (t = {}), this.current = void 0, this.builtins = void 0, this.undefStack = void 0, this.current = t, this.builtins = e, this.undefStack = [];
     }
@@ -24273,7 +24311,9 @@ var ca = {
     "\\limits": !0,
     "\\nolimits": !0
 }, wt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MacroExpander");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MacroExpander");
+    }
     constructor(e, t, a){
         this.settings = void 0, this.expansionCount = void 0, this.lexer = void 0, this.macros = void 0, this.stack = void 0, this.mode = void 0, this.settings = t, this.expansionCount = 0, this.feed(e), this.macros = new xt(l4, t.macros), this.mode = a, this.stack = [];
     }
@@ -24932,7 +24972,9 @@ var ca = {
     \u038F: "\u03A9\u0301",
     \u1FFA: "\u03A9\u0300"
 }, Ge = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Parser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Parser");
+    }
     constructor(e, t){
         this.mode = void 0, this.gullet = void 0, this.settings = void 0, this.leftrightDepth = void 0, this.nextToken = void 0, this.mode = "math", this.gullet = new wt(e, t, this.mode), this.settings = t, this.leftrightDepth = 0;
     }

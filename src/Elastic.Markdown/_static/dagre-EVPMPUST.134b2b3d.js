@@ -866,7 +866,9 @@ function or(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(or, "swapXYOne");
 var H = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "List");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "List");
+    }
     constructor(){
         var e = {};
         e._next = e._prev = e, this._sentinel = e;

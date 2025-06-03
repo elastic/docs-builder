@@ -2438,7 +2438,9 @@ var z = class {
     constructor(t){
         this.parentGroup = t;
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "TextDimensionCalculatorWithFont");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "TextDimensionCalculatorWithFont");
+    }
     getMaxDimension(t, e) {
         if (!this.parentGroup) return {
             width: t.reduce((h, u)=>Math.max(u.length, h), 0) * e,
@@ -2485,7 +2487,9 @@ var F = class {
             height: 0
         }, this.axisPosition = "left";
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "BaseAxis");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "BaseAxis");
+    }
     setRange(t) {
         this.range = t, this.axisPosition === "left" || this.axisPosition === "right" ? this.boundingRect.height = t[1] - t[0] : this.boundingRect.width = t[1] - t[0], this.recalculateScale();
     }
@@ -2769,7 +2773,9 @@ var F = class {
     }
 };
 var et = class extends F {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "BandAxis");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "BandAxis");
+    }
     constructor(t, e, s, a, h){
         super(t, a, h, e), this.categories = s, this.scale = (0, _chunkNQURTBEVMjs.ia)().domain(this.categories).range(this.getRange());
     }
@@ -2787,7 +2793,9 @@ var et = class extends F {
     }
 };
 var it = class extends F {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LinearAxis");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LinearAxis");
+    }
     constructor(t, e, s, a, h){
         super(t, a, h, e), this.domain = s, this.scale = (0, _chunkNQURTBEVMjs.ja)().domain(this.domain).range(this.getRange());
     }
@@ -2825,7 +2833,9 @@ var wt = class {
             height: 0
         }, this.showChartTitle = !1;
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ChartTitle");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ChartTitle");
+    }
     setBoundingBoxXY(t) {
         this.boundingRect.x = t.x, this.boundingRect.y = t.y;
     }
@@ -2873,7 +2883,9 @@ var st = class {
         this.orientation = a;
         this.plotIndex = h;
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LinePlot");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LinePlot");
+    }
     getDrawableElement() {
         let t = this.plotData.data.map((s)=>[
                 this.xAxis.getScaleValue(s[0]),
@@ -2906,7 +2918,9 @@ var nt = class {
         this.orientation = h;
         this.plotIndex = u;
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "BarPlot");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "BarPlot");
+    }
     getDrawableElement() {
         let t = this.barData.data.map((h)=>[
                 this.xAxis.getScaleValue(h[0]),
@@ -2961,7 +2975,9 @@ var kt = class {
             height: 0
         };
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "BasePlot");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "BasePlot");
+    }
     setAxes(t, e) {
         this.xAxis = t, this.yAxis = e;
     }
@@ -3019,7 +3035,9 @@ var at = class {
             }, a)
         };
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Orchestrator");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Orchestrator");
+    }
     calculateVerticalSpace() {
         let t = this.chartConfig.width, e = this.chartConfig.height, s = 0, a = 0, h = Math.floor(t * this.chartConfig.plotReservedSpacePercent / 100), u = Math.floor(e * this.chartConfig.plotReservedSpacePercent / 100), d = this.componentStore.plot.calculateSpace({
             width: h,
@@ -3100,7 +3118,9 @@ var at = class {
     }
 };
 var rt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "XYChartBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "XYChartBuilder");
+    }
     static build(t, e, s, a) {
         return new at(t, e, s, a).getDrawableElement();
     }

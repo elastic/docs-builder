@@ -5177,7 +5177,9 @@ var s = class {
         this.init = t;
         this.records = this.init();
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ImperativeState");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ImperativeState");
+    }
     reset() {
         this.records = this.init();
     }

@@ -4528,7 +4528,9 @@ var se = (0, _chunkGTKDMUJJMjs.a)(function(e, t) {
 var zt = 0, Xt = 0, Se = 4, le = 2;
 Mt.yy = Nt;
 var x = {}, Wt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Bounds");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Bounds");
+    }
     constructor(t){
         this.name = "", this.data = {}, this.data.startx = void 0, this.data.stopx = void 0, this.data.starty = void 0, this.data.stopy = void 0, this.data.widthLimit = void 0, this.nextData = {}, this.nextData.startx = void 0, this.nextData.stopx = void 0, this.nextData.starty = void 0, this.nextData.stopy = void 0, this.nextData.cnt = 0, oe(t.db.getConfig());
     }
@@ -4630,7 +4632,9 @@ var Pe = (0, _chunkGTKDMUJJMjs.a)(function(e, t, s) {
     }
     e.bumpLastMargin(x.c4ShapeMargin);
 }, "drawC4ShapeArray"), N = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Point");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Point");
+    }
     constructor(t, s){
         this.x = t, this.y = s;
     }

@@ -2,7 +2,8 @@
 @if (Model.Language == "mermaid")
 {
 	<pre class="mermaid">
-		[CONTENT]
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '1em'}}}%%
+		@(Model.RenderBlock())
 	</pre>
 }
 else {

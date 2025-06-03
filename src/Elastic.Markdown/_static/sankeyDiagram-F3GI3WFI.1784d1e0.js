@@ -1255,14 +1255,18 @@ var tt = [], et = [], Z = new Map, Ft = (0, _chunkGTKDMUJJMjs.a)(()=>{
         this.target = i;
         this.value = u;
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SankeyLink");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SankeyLink");
+    }
 }, Ht = (0, _chunkGTKDMUJJMjs.a)((t, r, i)=>{
     tt.push(new ut(t, r, i));
 }, "addLink"), ft = class {
     constructor(r){
         this.ID = r;
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SankeyNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SankeyNode");
+    }
 }, Yt = (0, _chunkGTKDMUJJMjs.a)((t)=>{
     t = (0, _chunkNQURTBEVMjs.L).sanitizeText(t, (0, _chunkNQURTBEVMjs.X)());
     let r = Z.get(t);
@@ -1730,8 +1734,12 @@ function it() {
 }
 (0, _chunkGTKDMUJJMjs.a)(it, "default");
 var K = class t {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Uid");
-    static #_2 = this.count = 0;
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Uid");
+    }
+    static{
+        this.count = 0;
+    }
     static next(r) {
         return new t(r + ++t.count);
     }

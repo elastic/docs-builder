@@ -999,7 +999,9 @@ var _chunkYPUTD6PBMjs = require("./chunk-YPUTD6PB.mjs");
 var _chunk6BY5RJGCMjs = require("./chunk-6BY5RJGC.mjs");
 var _chunkGTKDMUJJMjs = require("./chunk-GTKDMUJJ.mjs");
 var j = "\0", f = "\0", D = "", b = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Graph");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Graph");
+    }
     constructor(e = {}){
         this._isDirected = (0, _chunkBKDDFIKNMjs.x)(e, "directed") ? e.directed : !0, this._isMultigraph = (0, _chunkBKDDFIKNMjs.x)(e, "multigraph") ? e.multigraph : !1, this._isCompound = (0, _chunkBKDDFIKNMjs.x)(e, "compound") ? e.compound : !1, this._label = void 0, this._defaultNodeLabelFn = (0, _chunk6BY5RJGCMjs.O)(void 0), this._defaultEdgeLabelFn = (0, _chunk6BY5RJGCMjs.O)(void 0), this._nodes = {}, this._isCompound && (this._parent = {}, this._children = {}, this._children[f] = {}), this._in = {}, this._preds = {}, this._out = {}, this._sucs = {}, this._edgeObjs = {}, this._edgeLabels = {};
     }

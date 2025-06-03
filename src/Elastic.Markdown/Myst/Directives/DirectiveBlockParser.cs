@@ -91,12 +91,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{figure-md}") > 0)
 			return new FigureBlock(this, context);
 
-		// this is currently listed as unsupported
-		// leaving the parsing in until we are confident we don't want this
-		// for dev-docs
-		if (info.IndexOf("{mermaid}") > 0)
-			return new MermaidBlock(this, context);
-
 		if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, context);
 

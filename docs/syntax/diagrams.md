@@ -8,7 +8,7 @@ You can embedd diagrams using [mermaid.js](https://mermaid.js.org)
 
 ::::{tab-item} Output
 
-:::{mermaid} 
+```mermaid
 flowchart LR
 A[Jupyter Notebook] --> C
 B[MyST Markdown] --> C
@@ -19,13 +19,13 @@ D --> G[Word]
 D --> H[React]
 D --> I[HTML]
 D <--> J[JATS]
-:::
+```
 
 ::::
 
 ::::{tab-item} Markdown
-```markdown
-:::{mermaid} 
+````markdown
+```mermaid 
 flowchart LR
 A[Jupyter Notebook] --> C
 B[MyST Markdown] --> C
@@ -36,8 +36,8 @@ D --> G[Word]
 D --> H[React]
 D --> I[HTML]
 D <--> J[JATS]
-:::
 ```
+````
 ::::
 
 :::::

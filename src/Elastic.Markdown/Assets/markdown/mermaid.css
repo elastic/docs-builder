@@ -1,5 +1,5 @@
 .mermaid {
-	@apply bg-grey-10 border-grey-20 rounded-xs border-1 font-mono;
+	@apply border-grey-10 rounded-md border-2 font-sans mt-4;
 
 	font-size: 0.875em !important;
 
@@ -83,5 +83,9 @@
 		fill: var(--color-yellow-10) !important;
 		stroke: var(--color-yellow-50) !important;
 		font-size: 1em !important;
+	}
+
+	rect.background {
+		display: none;
 	}
 }

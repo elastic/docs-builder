@@ -4247,7 +4247,9 @@ var ut = [
     "-",
     ""
 ], Y = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ClassMember");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ClassMember");
+    }
     constructor(i, u){
         this.memberType = u, this.visibility = "", this.classifier = "";
         let h = (0, _chunkNQURTBEVMjs.F)(i, (0, _chunkNQURTBEVMjs.X)());

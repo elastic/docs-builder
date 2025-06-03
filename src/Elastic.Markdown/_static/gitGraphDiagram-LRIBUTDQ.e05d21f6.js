@@ -701,14 +701,18 @@ async function p(e, r) {
 (0, _chunkGTKDMUJJMjs.a)(p, "parse");
 (0, _chunkD3PZO57JMjs.f)(p, "parse");
 var m = class extends Error {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MermaidParseError");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MermaidParseError");
+    }
     constructor(e){
         let r = e.lexerErrors.map((s)=>s.message).join(`
 `), i = e.parserErrors.map((s)=>s.message).join(`
 `);
         super(`Parsing failed: ${r} ${i}`), this.result = e;
     }
-    static #_2 = (0, _chunkD3PZO57JMjs.f)(this, "MermaidParseError");
+    static{
+        (0, _chunkD3PZO57JMjs.f)(this, "MermaidParseError");
+    }
 };
 
 },{"./chunk-D3PZO57J.mjs":"hvYhl","./chunk-GTKDMUJJ.mjs":"fruhx","9f96d51fe8d39d44":"1sfG8","b0144b8c49adadab":"cPTHY","528d7735dfe7f1d8":"l9P3J","cfe0e5f7c0a99e3b":"59OO9","@parcel/transformer-js/src/esmodule-helpers.js":"1cdyk"}],"hvYhl":[function(require,module,exports,__globalThis) {
@@ -811,7 +815,9 @@ var Oc = (0, _chunkGTKDMUJJMjs.b)((Jr)=>{
         };
     })(cd || (Jr.Event = cd = {}));
     var Lc = class {
-        static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CallbackList");
+        static{
+            (0, _chunkGTKDMUJJMjs.a)(this, "CallbackList");
+        }
         add(e, t = null, n) {
             this._callbacks || (this._callbacks = [], this._contexts = []), this._callbacks.push(e), this._contexts.push(t), Array.isArray(n) && n.push({
                 dispose: (0, _chunkGTKDMUJJMjs.a)(()=>this.remove(e, t), "dispose")
@@ -845,7 +851,9 @@ var Oc = (0, _chunkGTKDMUJJMjs.b)((Jr)=>{
             this._callbacks = void 0, this._contexts = void 0;
         }
     }, Ds = class r {
-        static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Emitter");
+        static{
+            (0, _chunkGTKDMUJJMjs.a)(this, "Emitter");
+        }
         constructor(e){
             this._options = e;
         }
@@ -899,7 +907,9 @@ var ld = (0, _chunkGTKDMUJJMjs.b)((Qr)=>{
             }
         };
     }), Us = class {
-        static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MutableToken");
+        static{
+            (0, _chunkGTKDMUJJMjs.a)(this, "MutableToken");
+        }
         constructor(){
             this._isCancelled = !1;
         }
@@ -916,7 +926,9 @@ var ld = (0, _chunkGTKDMUJJMjs.b)((Qr)=>{
             this._emitter && (this._emitter.dispose(), this._emitter = void 0);
         }
     }, bc = class {
-        static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CancellationTokenSource");
+        static{
+            (0, _chunkGTKDMUJJMjs.a)(this, "CancellationTokenSource");
+        }
         get token() {
             return this._token || (this._token = new Us), this._token;
         }
@@ -1078,7 +1090,9 @@ function Ht(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Ht, "isLinkingError");
 var Kt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractAstReflection");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractAstReflection");
+    }
     constructor(){
         this.subtypes = {}, this.allSubtypes = {};
     }
@@ -1119,7 +1133,9 @@ function cn(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(cn, "isRootCstNode");
 var Ke = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "StreamImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "StreamImpl");
+    }
     constructor(e, t){
         this.startFn = e, this.nextFn = t;
     }
@@ -1403,7 +1419,9 @@ function V(...r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(V, "stream");
 var st = class extends Ke {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "TreeStreamImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "TreeStreamImpl");
+    }
     constructor(e, t, n){
         super(()=>({
                 iterators: n?.includeRoot ? [
@@ -1655,7 +1673,9 @@ var Vi = {};
     terminalRegex: ()=>Sr
 });
 var Yt = class extends Error {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ErrorWithLocation");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ErrorWithLocation");
+    }
     constructor(e, t){
         super(e ? `${t} at ${e.range.start.line}:${e.range.start.character}` : t);
     }
@@ -2011,7 +2031,9 @@ function ia(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(ia, "isWildcard");
 var kr = class extends Kt {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LangiumGrammarAstReflection");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LangiumGrammarAstReflection");
+    }
     getAllTypes() {
         return [
             "AbstractElement",
@@ -3031,7 +3053,9 @@ var la = [
     _("\uFEFF")
 ];
 var fh = /[0-9a-fA-F]/, Gi = /[0-9]/, dh = /[1-9]/, er = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RegExpParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RegExpParser");
+    }
     constructor(){
         this.idx = 0, this.input = "", this.groupIdx = 0;
     }
@@ -3633,7 +3657,9 @@ var fh = /[0-9a-fA-F]/, Gi = /[0-9]/, dh = /[1-9]/, er = class {
     }
 };
 var at = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "BaseRegExpVisitor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "BaseRegExpVisitor");
+    }
     visitChildren(e) {
         for(let t in e){
             let n = e[t];
@@ -3709,7 +3735,9 @@ var at = class {
     visitQuantifier(e) {}
 };
 var fa = /\r?\n/gm, El = new er, ua = class extends at {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "TerminalRegExpVisitor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "TerminalRegExpVisitor");
+    }
     constructor(){
         super(...arguments), this.isStarting = !0, this.endRegexpStack = [], this.multiline = !1;
     }
@@ -4218,7 +4246,9 @@ function Ih(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Ih, "hasTokenLabel");
 var He = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractProduction");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractProduction");
+    }
     get definition() {
         return this._definition;
     }
@@ -4234,7 +4264,9 @@ var He = class {
         });
     }
 }, z = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NonTerminal");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NonTerminal");
+    }
     constructor(e){
         super([]), this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
@@ -4246,42 +4278,58 @@ var He = class {
         e.visit(this);
     }
 }, Me = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Rule");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Rule");
+    }
     constructor(e){
         super(e.definition), this.orgText = "", (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, J = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Alternative");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Alternative");
+    }
     constructor(e){
         super(e.definition), this.ignoreAmbiguities = !1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, K = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Option");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Option");
+    }
     constructor(e){
         super(e.definition), this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, Q = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionMandatory");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionMandatory");
+    }
     constructor(e){
         super(e.definition), this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, Z = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionMandatoryWithSeparator");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionMandatoryWithSeparator");
+    }
     constructor(e){
         super(e.definition), this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, F = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Repetition");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Repetition");
+    }
     constructor(e){
         super(e.definition), this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, q = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionWithSeparator");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionWithSeparator");
+    }
     constructor(e){
         super(e.definition), this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, X = class extends He {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Alternation");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Alternation");
+    }
     get definition() {
         return this._definition;
     }
@@ -4292,7 +4340,9 @@ var He = class {
         super(e.definition), this.idx = 1, this.ignoreAmbiguities = !1, this.hasPredicates = !1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
 }, D = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Terminal");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Terminal");
+    }
     constructor(e){
         this.idx = 1, (0, _chunkBKDDFIKNMjs.c)(this, (0, _chunkBKDDFIKNMjs.I)(e, (t)=>t !== void 0));
     }
@@ -4379,7 +4429,9 @@ function wr(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(wr, "serializeProduction");
 var De = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "GAstVisitor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "GAstVisitor");
+    }
     visit(e) {
         let t = e;
         switch(t.constructor){
@@ -4443,7 +4495,9 @@ function Be(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Be, "getProductionDslName");
 var vt = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RestWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RestWalker");
+    }
     walk(e, t = []) {
         (0, _chunkBKDDFIKNMjs.n)(e.definition, (n, i)=>{
             let s = (0, _chunkBKDDFIKNMjs.l)(e.definition, i + 1);
@@ -4544,7 +4598,9 @@ function Ch(r) {
 (0, _chunkGTKDMUJJMjs.a)(Ch, "firstForTerminal");
 var Ki = "_~IN~_";
 var wa = class extends vt {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ResyncFollowsWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ResyncFollowsWalker");
+    }
     constructor(e){
         super(), this.topProd = e, this.follows = {};
     }
@@ -4701,7 +4757,9 @@ function Oa(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Oa, "isWholeOptional");
 var Pa = class extends at {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CharCodeFinder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "CharCodeFinder");
+    }
     constructor(e){
         super(), this.targetCharCodes = e, this.found = !1;
     }
@@ -4915,7 +4973,9 @@ function bh(r) {
 var $h = /[^\\][$]/;
 function Mh(r) {
     class e extends at {
-        static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "EndAnchorFinder");
+        static{
+            (0, _chunkGTKDMUJJMjs.a)(this, "EndAnchorFinder");
+        }
         constructor(){
             super(...arguments), this.found = !1;
         }
@@ -4957,7 +5017,9 @@ function Dh(r) {
 var Fh = /[^\\[][\^]|^\^/;
 function Uh(r) {
     class e extends at {
-        static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "StartAnchorFinder");
+        static{
+            (0, _chunkGTKDMUJJMjs.a)(this, "StartAnchorFinder");
+        }
         constructor(){
             super(...arguments), this.found = !1;
         }
@@ -5366,7 +5428,9 @@ var Nn = {
 };
 Object.freeze(Nn);
 var ce = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Lexer");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Lexer");
+    }
     constructor(e, t = Nn){
         if (this.lexerDefinition = e, this.lexerDefinitionErrors = [], this.lexerDefinitionWarning = [], this.patternIdxToConfig = {}, this.charCodeToPatternIdxToConfig = {}, this.modes = [], this.emptyGroups = {}, this.trackStartLines = !0, this.trackEndLines = !0, this.hasCustom = !1, this.canModeBeOptimized = {}, this.TRACE_INIT = (i, s)=>{
             if (this.traceInitPerf === !0) {
@@ -5773,7 +5837,9 @@ function ou(r, e) {
 }
 (0, _chunkGTKDMUJJMjs.a)(ou, "resolveGrammar");
 var Ua = class extends De {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "GastRefResolverVisitor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "GastRefResolverVisitor");
+    }
     constructor(e, t){
         super(), this.nameToTopRule = e, this.errMsgProvider = t, this.errors = [];
     }
@@ -5797,7 +5863,9 @@ var Ua = class extends De {
     }
 };
 var Ga = class extends vt {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractNextPossibleTokensWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractNextPossibleTokensWalker");
+    }
     constructor(e, t){
         super(), this.topProd = e, this.path = t, this.possibleTokTypes = [], this.nextProductionName = "", this.nextProductionOccurrence = 0, this.found = !1, this.isAtEndOfPath = !1;
     }
@@ -5818,7 +5886,9 @@ var Ga = class extends vt {
         (0, _chunkYPUTD6PBMjs.d)(this.ruleStack) ? (this.nextProductionName = "", this.nextProductionOccurrence = 0, this.isAtEndOfPath = !0) : (this.nextProductionName = this.ruleStack.pop(), this.nextProductionOccurrence = this.occurrenceStack.pop());
     }
 }, Zi = class extends Ga {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NextAfterTokenWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NextAfterTokenWalker");
+    }
     constructor(e, t){
         super(e, t), this.path = t, this.nextTerminalName = "", this.nextTerminalOccurrence = 0, this.nextTerminalName = this.path.lastTok.name, this.nextTerminalOccurrence = this.path.lastTokOccurrence;
     }
@@ -5831,7 +5901,9 @@ var Ga = class extends vt {
         }
     }
 }, $r = class extends vt {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractNextTerminalAfterProductionWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractNextTerminalAfterProductionWalker");
+    }
     constructor(e, t){
         super(), this.topRule = e, this.occurrence = t, this.result = {
             token: void 0,
@@ -5843,7 +5915,9 @@ var Ga = class extends vt {
         return this.walk(this.topRule), this.result;
     }
 }, es = class extends $r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterManyWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterManyWalker");
+    }
     walkMany(e, t, n) {
         if (e.idx === this.occurrence) {
             let i = (0, _chunkBKDDFIKNMjs.r)(t.concat(n));
@@ -5851,7 +5925,9 @@ var Ga = class extends vt {
         } else super.walkMany(e, t, n);
     }
 }, Cn = class extends $r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterManySepWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterManySepWalker");
+    }
     walkManySep(e, t, n) {
         if (e.idx === this.occurrence) {
             let i = (0, _chunkBKDDFIKNMjs.r)(t.concat(n));
@@ -5859,7 +5935,9 @@ var Ga = class extends vt {
         } else super.walkManySep(e, t, n);
     }
 }, ts = class extends $r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterAtLeastOneWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterAtLeastOneWalker");
+    }
     walkAtLeastOne(e, t, n) {
         if (e.idx === this.occurrence) {
             let i = (0, _chunkBKDDFIKNMjs.r)(t.concat(n));
@@ -5867,7 +5945,9 @@ var Ga = class extends vt {
         } else super.walkAtLeastOne(e, t, n);
     }
 }, _n = class extends $r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterAtLeastOneSepWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NextTerminalAfterAtLeastOneSepWalker");
+    }
     walkAtLeastOneSep(e, t, n) {
         if (e.idx === this.occurrence) {
             let i = (0, _chunkBKDDFIKNMjs.r)(t.concat(n));
@@ -6226,7 +6306,9 @@ function fu(r, e, t) {
 }
 (0, _chunkGTKDMUJJMjs.a)(fu, "buildSingleAlternativeLookaheadFunction");
 var Wa = class extends vt {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RestDefinitionFinderWalker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RestDefinitionFinderWalker");
+    }
     constructor(e, t, n){
         super(), this.topProd = e, this.targetOccurrence = t, this.targetProdType = n;
     }
@@ -6252,7 +6334,9 @@ var Wa = class extends vt {
         this.checkIsTarget(e, ie.REPETITION_WITH_SEPARATOR, t, n) || super.walkOption(e, t, n);
     }
 }, is = class extends De {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "InsideDefinitionFinderVisitor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "InsideDefinitionFinderVisitor");
+    }
     constructor(e, t, n){
         super(), this.targetOccurrence = e, this.targetProdType = t, this.targetRef = n, this.result = [];
     }
@@ -6443,7 +6527,9 @@ function yu(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(yu, "getExtraProductionArgument");
 var ja = class extends De {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "OccurrenceValidationCollector");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "OccurrenceValidationCollector");
+    }
     constructor(){
         super(...arguments), this.allProductions = [];
     }
@@ -6536,7 +6622,9 @@ function as(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(as, "getFirstNoneTerminal");
 var Ln = class extends De {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "OrCollector");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "OrCollector");
+    }
     constructor(){
         super(...arguments), this.alternations = [];
     }
@@ -6582,7 +6670,9 @@ function Eu(r, e, t) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Eu, "validateAmbiguousAlternationAlternatives");
 var Va = class extends De {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionCollector");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RepetitionCollector");
+    }
     constructor(){
         super(...arguments), this.allProductions = [];
     }
@@ -6742,38 +6832,52 @@ function Dt(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Dt, "isRecognitionException");
 var Fr = class extends Error {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RecognitionException");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RecognitionException");
+    }
     constructor(e, t){
         super(e), this.token = t, this.resyncedTokens = [], Object.setPrototypeOf(this, new.target.prototype), Error.captureStackTrace && Error.captureStackTrace(this, this.constructor);
     }
 }, cr = class extends Fr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MismatchedTokenException");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MismatchedTokenException");
+    }
     constructor(e, t, n){
         super(e, t), this.previousToken = n, this.name = ku;
     }
 }, On = class extends Fr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NoViableAltException");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NoViableAltException");
+    }
     constructor(e, t, n){
         super(e, t), this.previousToken = n, this.name = Iu;
     }
 }, Pn = class extends Fr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "NotAllInputParsedException");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "NotAllInputParsedException");
+    }
     constructor(e, t){
         super(e, t), this.name = Su;
     }
 }, bn = class extends Fr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "EarlyExitException");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "EarlyExitException");
+    }
     constructor(e, t, n){
         super(e, t), this.previousToken = n, this.name = Nu;
     }
 };
 var Ka = {}, qa = "InRuleRecoveryException", Ha = class extends Error {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "InRuleRecoveryException");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "InRuleRecoveryException");
+    }
     constructor(e){
         super(e), this.name = qa;
     }
 }, cs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Recoverable");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Recoverable");
+    }
     initRecoverable(e) {
         this.firstAfterRepMap = {}, this.resyncFollows = {}, this.recoveryEnabled = (0, _chunkBKDDFIKNMjs.x)(e, "recoveryEnabled") ? e.recoveryEnabled : Fe.recoveryEnabled, this.recoveryEnabled && (this.attemptInRepetitionRecovery = hp);
     }
@@ -6909,7 +7013,9 @@ function ls(r, e, t) {
 }
 (0, _chunkGTKDMUJJMjs.a)(ls, "getKeyForAutomaticLookahead");
 var Ct = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LLkLookaheadStrategy");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LLkLookaheadStrategy");
+    }
     constructor(e){
         var t;
         this.maxLookahead = (t = e?.maxLookahead) !== null && t !== void 0 ? t : Fe.maxLookahead;
@@ -6947,7 +7053,9 @@ var Ct = class {
     }
 };
 var fs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LooksAhead");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LooksAhead");
+    }
     initLooksAhead(e) {
         this.dynamicTokensEnabled = (0, _chunkBKDDFIKNMjs.x)(e, "dynamicTokensEnabled") ? e.dynamicTokensEnabled : Fe.dynamicTokensEnabled, this.maxLookahead = (0, _chunkBKDDFIKNMjs.x)(e, "maxLookahead") ? e.maxLookahead : Fe.maxLookahead, this.lookaheadStrategy = (0, _chunkBKDDFIKNMjs.x)(e, "lookaheadStrategy") ? e.lookaheadStrategy : new Ct({
             maxLookahead: this.maxLookahead
@@ -7006,7 +7114,9 @@ var fs = class {
         this.lookAheadFuncsCache.set(e, t);
     }
 }, Xa = class extends De {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DslMethodsCollectorVisitor");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DslMethodsCollectorVisitor");
+    }
     constructor(){
         super(...arguments), this.dslMethods = {
             option: [],
@@ -7142,7 +7252,9 @@ function xp(r, e) {
 }
 (0, _chunkGTKDMUJJMjs.a)(xp, "validateMissingCstMethods");
 var ms = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "TreeBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "TreeBuilder");
+    }
     initTreeBuilder(e) {
         if (this.CST_STACK = [], this.outputCst = e.outputCst, this.nodeLocationTracking = (0, _chunkBKDDFIKNMjs.x)(e, "nodeLocationTracking") ? e.nodeLocationTracking : Fe.nodeLocationTracking, !this.outputCst) this.cstInvocationStateUpdate = (0, _chunkBKDDFIKNMjs.a), this.cstFinallyStateUpdate = (0, _chunkBKDDFIKNMjs.a), this.cstPostTerminal = (0, _chunkBKDDFIKNMjs.a), this.cstPostNonTerminal = (0, _chunkBKDDFIKNMjs.a), this.cstPostRule = (0, _chunkBKDDFIKNMjs.a);
         else if (/full/i.test(this.nodeLocationTracking)) this.recoveryEnabled ? (this.setNodeLocationFromToken = Za, this.setNodeLocationFromNode = Za, this.cstPostRule = (0, _chunkBKDDFIKNMjs.a), this.setInitialNodeLocation = this.setInitialNodeLocationFullRecovery) : (this.setNodeLocationFromToken = (0, _chunkBKDDFIKNMjs.a), this.setNodeLocationFromNode = (0, _chunkBKDDFIKNMjs.a), this.cstPostRule = this.cstPostRuleFull, this.setInitialNodeLocation = this.setInitialNodeLocationFullRegular);
@@ -7237,7 +7349,9 @@ var ms = class {
     }
 };
 var gs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LexerAdapter");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LexerAdapter");
+    }
     initLexerAdapter() {
         this.tokVector = [], this.tokVectorLength = 0, this.currIdx = -1;
     }
@@ -7275,7 +7389,9 @@ var gs = class {
     }
 };
 var ys = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RecognizerApi");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RecognizerApi");
+    }
     ACTION(e) {
         return e.call(this);
     }
@@ -7581,7 +7697,9 @@ var ys = class {
     }
 };
 var xs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RecognizerEngine");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RecognizerEngine");
+    }
     initRecognizerEngine(e, t) {
         if (this.className = this.constructor.name, this.shortRuleNameToFull = {}, this.fullRuleNameToShort = {}, this.ruleShortNameIdx = 256, this.tokenMatcher = br, this.subruleIdx = 0, this.definedRulesNames = [], this.tokensMap = {}, this.isBackTrackingStack = [], this.RULE_STACK = [], this.RULE_OCCURRENCE_STACK = [], this.gastProductionsCache = {}, (0, _chunkBKDDFIKNMjs.x)(t, "serializedGrammar")) throw Error(`The Parser's configuration can no longer contain a <serializedGrammar> property.
 	See: https://chevrotain.io/docs/changes/BREAKING_CHANGES.html#_6-0-0
@@ -7857,7 +7975,9 @@ Make sure that all grammar rule definitions are done before 'performSelfAnalysis
     }
 };
 var Ts = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ErrorHandler");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ErrorHandler");
+    }
     initErrorHandler(e) {
         this._errors = [], this.errorMessageProvider = (0, _chunkBKDDFIKNMjs.x)(e, "errorMessageProvider") ? e.errorMessageProvider : Fe.errorMessageProvider;
     }
@@ -7900,7 +8020,9 @@ var Ts = class {
     }
 };
 var Es = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ContentAssist");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ContentAssist");
+    }
     initContentAssist() {}
     computeContentAssist(e, t) {
         let n = this.gastProductionsCache[e];
@@ -7933,7 +8055,9 @@ var Ep = {
 	See: https://chevrotain.io/docs/guide/internals.html#grammar-recording for details`,
     children: {}
 }, Rs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "GastRecorder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "GastRecorder");
+    }
     initGastRecorder(e) {
         this.recordingProdStack = [], this.RECORDING_PHASE = !1;
     }
@@ -8094,7 +8218,9 @@ function As(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(As, "assertMethodIdxIsValid");
 var ks = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "PerformanceTracer");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "PerformanceTracer");
+    }
     initPerformanceTracer(e) {
         if ((0, _chunkBKDDFIKNMjs.x)(e, "traceInitPerf")) {
             let t = e.traceInitPerf, n = typeof t == "number";
@@ -8148,7 +8274,9 @@ function Is(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Is, "EMPTY_ALT");
 var Dn = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Parser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Parser");
+    }
     static performSelfAnalysis(e) {
         throw Error("The **static** `performSelfAnalysis` method has been deprecated.	\nUse the **instance** method with the same name instead.");
     }
@@ -8229,7 +8357,9 @@ Fu(Dn, [
     ks
 ]);
 var Fn = class extends Dn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "EmbeddedActionsParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "EmbeddedActionsParser");
+    }
     constructor(e, t = Fe){
         let n = (0, _chunkBKDDFIKNMjs.e)(t);
         n.outputCst = !1, super(e, n);
@@ -8241,7 +8371,9 @@ function lr(r, e, t) {
 (0, _chunkGTKDMUJJMjs.a)(lr, "buildATNKey");
 var Ft = 1, vp = 2, Uu = 4, Gu = 5;
 var jr = 7, kp = 8, Ip = 9, Np = 10, Sp = 11, Bu = 12, Un = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractTransition");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractTransition");
+    }
     constructor(e){
         this.target = e;
     }
@@ -8249,12 +8381,16 @@ var jr = 7, kp = 8, Ip = 9, Np = 10, Sp = 11, Bu = 12, Un = class {
         return !1;
     }
 }, Br = class extends Un {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AtomTransition");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AtomTransition");
+    }
     constructor(e, t){
         super(e), this.tokenType = t;
     }
 }, Gn = class extends Un {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "EpsilonTransition");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "EpsilonTransition");
+    }
     constructor(e){
         super(e);
     }
@@ -8262,7 +8398,9 @@ var jr = 7, kp = 8, Ip = 9, Np = 10, Sp = 11, Bu = 12, Un = class {
         return !0;
     }
 }, Wr = class extends Un {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RuleTransition");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RuleTransition");
+    }
     constructor(e, t, n){
         super(e), this.rule = t, this.followState = n;
     }
@@ -8501,7 +8639,9 @@ function Gp(r, e) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Gp, "removeState");
 var Bn = {}, zr = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ATNConfigSet");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ATNConfigSet");
+    }
     constructor(){
         this.map = {}, this.configs = [];
     }
@@ -8544,7 +8684,9 @@ function Bp(r, e) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Bp, "createDFACache");
 var Ns = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "PredicateSet");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "PredicateSet");
+    }
     constructor(){
         this.predicates = [];
     }
@@ -8560,7 +8702,9 @@ var Ns = class {
         return e;
     }
 }, Ku = new Ns, Wn = class extends Ct {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LLStarLookaheadStrategy");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LLStarLookaheadStrategy");
+    }
     constructor(e){
         var t;
         super(), this.logging = (t = e?.logging) !== null && t !== void 0 ? t : (n)=>console.log(n);
@@ -9871,7 +10015,9 @@ var Qf;
     (0, _chunkGTKDMUJJMjs.a)(i, "mergeSort");
 })(Qf || (Qf = {}));
 var Ec = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "FullTextDocument");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "FullTextDocument");
+    }
     constructor(e, t, n, i){
         this._uri = e, this._languageId = t, this._version = n, this._content = i, this._lineOffsets = void 0;
     }
@@ -9978,7 +10124,9 @@ var Ec = class {
     (0, _chunkGTKDMUJJMjs.a)(p, "typedArray"), r.typedArray = p;
 })(m || (m = {}));
 var Vn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CstNodeBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "CstNodeBuilder");
+    }
     constructor(){
         this.nodeStack = [];
     }
@@ -10032,7 +10180,9 @@ var Vn = class {
         e.content.push(t);
     }
 }, zn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractCstNode");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractCstNode");
+    }
     get parent() {
         return this.container;
     }
@@ -10058,7 +10208,9 @@ var Vn = class {
         return this.root.fullText.substring(this.offset, this.end);
     }
 }, fr = class extends zn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LeafCstNodeImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LeafCstNodeImpl");
+    }
     get offset() {
         return this._offset;
     }
@@ -10081,7 +10233,9 @@ var Vn = class {
         super(), this._hidden = s, this._offset = e, this._tokenType = i, this._length = t, this._range = n;
     }
 }, dr = class extends zn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CompositeCstNodeImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "CompositeCstNodeImpl");
+    }
     constructor(){
         super(...arguments), this.content = new Rc(this);
     }
@@ -10127,7 +10281,9 @@ var Vn = class {
         return this.content[this.content.length - 1];
     }
 }, Rc = class r extends Array {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CstNodeContainer");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "CstNodeContainer");
+    }
     constructor(e){
         super(), this.parent = e, Object.setPrototypeOf(this, r.prototype);
     }
@@ -10144,7 +10300,9 @@ var Vn = class {
         for (let t of e)t.container = this.parent;
     }
 }, Xr = class extends dr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "RootCstNodeImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "RootCstNodeImpl");
+    }
     get text() {
         return this._text.substring(this.offset, this.end);
     }
@@ -10161,7 +10319,9 @@ function Ac(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Ac, "isDataTypeNode");
 var Zf = "\u200B", ed = (0, _chunkGTKDMUJJMjs.a)((r)=>r.endsWith(Zf) ? r : r + Zf, "withRuleSuffix"), Kn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractLangiumParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractLangiumParser");
+    }
     constructor(e){
         this._unorderedGroups = new Map, this.lexer = e.parser.Lexer;
         let t = this.lexer.definition;
@@ -10194,7 +10354,9 @@ var Zf = "\u200B", ed = (0, _chunkGTKDMUJJMjs.a)((r)=>r.endsWith(Zf) ? r : r + Z
         this.wrapper.wrapSelfAnalysis();
     }
 }, Hn = class extends Kn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LangiumParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LangiumParser");
+    }
     get current() {
         return this.stack[this.stack.length - 1];
     }
@@ -10322,7 +10484,9 @@ var Zf = "\u200B", ed = (0, _chunkGTKDMUJJMjs.a)((r)=>r.endsWith(Zf) ? r : r + Z
         return this.wrapper.definitionErrors;
     }
 }, bs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractParserErrorMessageProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractParserErrorMessageProvider");
+    }
     buildMismatchTokenMessage(e) {
         return St.buildMismatchTokenMessage(e);
     }
@@ -10336,7 +10500,9 @@ var Zf = "\u200B", ed = (0, _chunkGTKDMUJJMjs.a)((r)=>r.endsWith(Zf) ? r : r + Z
         return St.buildEarlyExitMessage(e);
     }
 }, Yr = class extends bs {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LangiumParserErrorMessageProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LangiumParserErrorMessageProvider");
+    }
     buildMismatchTokenMessage({ expected: e, actual: t }) {
         return `Expecting ${e.LABEL ? "`" + e.LABEL + "`" : e.name.endsWith(":KW") ? `keyword '${e.name.substring(0, e.name.length - 3)}'` : `token of type '${e.name}'`} but found \`${t.image}\`.`;
     }
@@ -10344,7 +10510,9 @@ var Zf = "\u200B", ed = (0, _chunkGTKDMUJJMjs.a)((r)=>r.endsWith(Zf) ? r : r + Z
         return `Expecting end of file but found \`${e.image}\`.`;
     }
 }, qn = class extends Kn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "LangiumCompletionParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "LangiumCompletionParser");
+    }
     constructor(){
         super(...arguments), this.tokens = [], this.elementStack = [], this.lastElementStack = [], this.nextTokenIndex = 0, this.stackSize = 0;
     }
@@ -10417,7 +10585,9 @@ var Zf = "\u200B", ed = (0, _chunkGTKDMUJJMjs.a)((r)=>r.endsWith(Zf) ? r : r + Z
     skipValidations: !0,
     errorMessageProvider: new Yr
 }, vc = class extends Fn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ChevrotainWrapper");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ChevrotainWrapper");
+    }
     constructor(e, t){
         let n = t && "maxLookahead" in t;
         super(e, Object.assign(Object.assign(Object.assign({}, am), {
@@ -10726,7 +10896,9 @@ function id(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(id, "prepareLangiumParser");
 var pr = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultTokenBuilder");
+    }
     buildTokens(e, t) {
         let n = V(Tn(e, !1)), i = this.buildTerminalTokens(n), s = this.buildKeywordTokens(n, i, t);
         return i.forEach((a)=>{
@@ -10773,7 +10945,9 @@ var pr = class {
     }
 };
 var mr = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultValueConverter");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultValueConverter");
+    }
     convert(e, t) {
         let n = t.grammarSource;
         if (Jt(n) && (n = ya(n)), rt(n)) {
@@ -10896,7 +11070,9 @@ async function xe(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(xe, "interruptAndCheck");
 var Ue = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "Deferred");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "Deferred");
+    }
     constructor(){
         this.promise = new Promise((e, t)=>{
             this.resolve = (n)=>(e(n), this), this.reject = (n)=>(t(n), this);
@@ -10904,7 +11080,9 @@ var Ue = class {
     }
 };
 var Gs = class r {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "FullTextDocument");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "FullTextDocument");
+    }
     constructor(e, t, n, i){
         this._uri = e, this._languageId = t, this._version = n, this._content = i, this._lineOffsets = void 0;
     }
@@ -11257,7 +11435,9 @@ var gd;
         (0, _chunkGTKDMUJJMjs.a)(l, "s");
         let u = "", f = "/", d = /^(([^:/?#]+?):)?(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?/;
         class p {
-            static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "f");
+            static{
+                (0, _chunkGTKDMUJJMjs.a)(this, "f");
+            }
             static isUri(y) {
                 return y instanceof p || !!y && typeof y.authority == "string" && typeof y.fragment == "string" && typeof y.path == "string" && typeof y.query == "string" && typeof y.scheme == "string" && typeof y.fsPath == "string" && typeof y.with == "function" && typeof y.toString == "function";
             }
@@ -11322,7 +11502,9 @@ var gd;
         }
         let h = i ? 1 : void 0;
         class g extends p {
-            static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "l");
+            static{
+                (0, _chunkGTKDMUJJMjs.a)(this, "l");
+            }
             _formatted = null;
             _fsPath = null;
             get fsPath() {
@@ -11473,7 +11655,9 @@ var Y;
     r[r.Changed = 0] = "Changed", r[r.Parsed = 1] = "Parsed", r[r.IndexedContent = 2] = "IndexedContent", r[r.ComputedScopes = 3] = "ComputedScopes", r[r.Linked = 4] = "Linked", r[r.IndexedReferences = 5] = "IndexedReferences", r[r.Validated = 6] = "Validated";
 })(Y || (Y = {}));
 var Xn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLangiumDocumentFactory");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLangiumDocumentFactory");
+    }
     constructor(e){
         this.serviceRegistry = e.ServiceRegistry, this.textDocuments = e.workspace.TextDocuments, this.fileSystemProvider = e.workspace.FileSystemProvider;
     }
@@ -11565,7 +11749,9 @@ var Xn = class {
         return ()=>i ?? (i = Zr.create(e.toString(), n.getServices(e).LanguageMetaData.languageId, 0, t ?? ""));
     }
 }, Yn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLangiumDocuments");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLangiumDocuments");
+    }
     constructor(e){
         this.documentMap = new Map, this.langiumDocumentFactory = e.workspace.LangiumDocumentFactory;
     }
@@ -11605,7 +11791,9 @@ var Xn = class {
     }
 };
 var Jn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLinker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLinker");
+    }
     constructor(e){
         this.reflection = e.shared.AstReflection, this.langiumDocuments = ()=>e.shared.workspace.LangiumDocuments, this.scopeProvider = e.references.ScopeProvider, this.astNodeLocator = e.workspace.AstNodeLocator;
     }
@@ -11712,7 +11900,9 @@ function yd(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(yd, "isNamed");
 var Qn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultNameProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultNameProvider");
+    }
     getName(e) {
         if (yd(e)) return e.name;
     }
@@ -11721,7 +11911,9 @@ var Qn = class {
     }
 };
 var Zn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultReferences");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultReferences");
+    }
     constructor(e){
         this.nameProvider = e.references.NameProvider, this.index = e.shared.workspace.IndexManager, this.nodeLocator = e.workspace.AstNodeLocator;
     }
@@ -11773,7 +11965,9 @@ var Zn = class {
     }
 };
 var ft = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MultiMap");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MultiMap");
+    }
     constructor(e){
         if (this.map = new Map, e) for (let [t, n] of e)this.add(t, n);
     }
@@ -11835,7 +12029,9 @@ var ft = class {
         return V(this.map.entries());
     }
 }, gr = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "BiMap");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "BiMap");
+    }
     get size() {
         return this.map.size;
     }
@@ -11860,7 +12056,9 @@ var ft = class {
     }
 };
 var ei = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultScopeComputation");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultScopeComputation");
+    }
     constructor(e){
         this.nameProvider = e.references.NameProvider, this.descriptions = e.workspace.AstNodeDescriptionProvider;
     }
@@ -11891,7 +12089,9 @@ var ei = class {
     }
 };
 var tn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "StreamScope");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "StreamScope");
+    }
     constructor(e, t, n){
         var i;
         this.elements = e, this.outerScope = t, this.caseInsensitive = (i = n?.caseInsensitive) !== null && i !== void 0 ? i : !1;
@@ -11905,7 +12105,9 @@ var tn = class {
         if (this.outerScope) return this.outerScope.getElement(e);
     }
 }, ti = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MapScope");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MapScope");
+    }
     constructor(e, t, n){
         var i;
         this.elements = new Map, this.caseInsensitive = (i = n?.caseInsensitive) !== null && i !== void 0 ? i : !1;
@@ -11931,7 +12133,9 @@ var tn = class {
     }
 };
 var rn = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DisposableCache");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DisposableCache");
+    }
     constructor(){
         this.toDispose = [], this.isDisposed = !1;
     }
@@ -11945,7 +12149,9 @@ var rn = class {
         if (this.isDisposed) throw new Error("This cache has already been disposed");
     }
 }, ri = class extends rn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "SimpleCache");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "SimpleCache");
+    }
     constructor(){
         super(...arguments), this.cache = new Map;
     }
@@ -11969,7 +12175,9 @@ var rn = class {
         this.throwIfDisposed(), this.cache.clear();
     }
 }, yr = class extends rn {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ContextCache");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ContextCache");
+    }
     constructor(e){
         super(), this.cache = new Map, this.converter = e ?? ((t)=>t);
     }
@@ -12002,7 +12210,9 @@ var rn = class {
         return n || (n = new Map, this.cache.set(t, n)), n;
     }
 }, Bs = class extends yr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DocumentCache");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DocumentCache");
+    }
     constructor(e){
         super((t)=>t.toString()), this.onDispose(e.workspace.DocumentBuilder.onUpdate((t, n)=>{
             let i = t.concat(n);
@@ -12010,7 +12220,9 @@ var rn = class {
         }));
     }
 }, nn = class extends ri {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "WorkspaceCache");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "WorkspaceCache");
+    }
     constructor(e){
         super(), this.onDispose(e.workspace.DocumentBuilder.onUpdate(()=>{
             this.clear();
@@ -12018,7 +12230,9 @@ var rn = class {
     }
 };
 var ni = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultScopeProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultScopeProvider");
+    }
     constructor(e){
         this.reflection = e.shared.AstReflection, this.nameProvider = e.references.NameProvider, this.descriptions = e.workspace.AstNodeDescriptionProvider, this.indexManager = e.shared.workspace.IndexManager, this.globalScopeCache = new nn(e.shared);
     }
@@ -12058,7 +12272,9 @@ function xd(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(xd, "isIntermediateReference");
 var ii = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultJsonSerializer");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultJsonSerializer");
+    }
     constructor(e){
         this.ignoreProperties = new Set([
             "$container",
@@ -12176,7 +12392,9 @@ var ii = class {
     }
 };
 var si = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultServiceRegistry");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultServiceRegistry");
+    }
     register(e) {
         if (!this.singleton && !this.map) {
             this.singleton = e;
@@ -12216,7 +12434,9 @@ var sn;
     ];
 })(sn || (sn = {}));
 var oi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ValidationRegistry");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ValidationRegistry");
+    }
     constructor(e){
         this.entries = new ft, this.reflection = e.shared.AstReflection;
     }
@@ -12267,7 +12487,9 @@ var oi = class {
     }
 };
 var ai = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultDocumentValidator");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultDocumentValidator");
+    }
     constructor(e){
         this.validationRegistry = e.validation.ValidationRegistry, this.metadata = e.LanguageMetaData;
     }
@@ -12432,7 +12654,9 @@ var wt;
     r.LexingError = "lexing-error", r.ParsingError = "parsing-error", r.LinkingError = "linking-error";
 })(wt || (wt = {}));
 var ci = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultAstNodeDescriptionProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultAstNodeDescriptionProvider");
+    }
     constructor(e){
         this.astNodeLocator = e.workspace.AstNodeLocator, this.nameProvider = e.references.NameProvider;
     }
@@ -12457,7 +12681,9 @@ var ci = class {
         };
     }
 }, li = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultReferenceDescriptionProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultReferenceDescriptionProvider");
+    }
     constructor(e){
         this.nodeLocator = e.workspace.AstNodeLocator;
     }
@@ -12484,7 +12710,9 @@ var ci = class {
     }
 };
 var ui = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultAstNodeLocator");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultAstNodeLocator");
+    }
     constructor(){
         this.segmentSeparator = "/", this.indexSeparator = "@";
     }
@@ -12512,7 +12740,9 @@ var ui = class {
     }
 };
 var fi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultConfigurationProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultConfigurationProvider");
+    }
     constructor(e){
         this._ready = new Ue, this.settings = {}, this.workspaceConfig = !1, this.serviceRegistry = e.ServiceRegistry;
     }
@@ -12569,7 +12799,9 @@ var xr;
     (0, _chunkGTKDMUJJMjs.a)(e, "create"), r.create = e;
 })(xr || (xr = {}));
 var di = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultDocumentBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultDocumentBuilder");
+    }
     constructor(e){
         this.updateBuildOptions = {
             validation: {
@@ -12715,7 +12947,9 @@ var di = class {
     }
 };
 var hi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultIndexManager");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultIndexManager");
+    }
     constructor(e){
         this.symbolIndex = new Map, this.symbolByTypeIndex = new yr, this.referenceIndex = new Map, this.documents = e.workspace.LangiumDocuments, this.serviceRegistry = e.ServiceRegistry, this.astReflection = e.AstReflection;
     }
@@ -12756,7 +12990,9 @@ var hi = class {
     }
 };
 var pi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultWorkspaceManager");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultWorkspaceManager");
+    }
     constructor(e){
         this.initialBuildOptions = {}, this._ready = new Ue, this.serviceRegistry = e.ServiceRegistry, this.langiumDocuments = e.workspace.LangiumDocuments, this.documentBuilder = e.workspace.DocumentBuilder, this.fileSystemProvider = e.workspace.FileSystemProvider, this.mutex = e.workspace.WorkspaceLock;
     }
@@ -12816,7 +13052,9 @@ var pi = class {
     }
 };
 var mi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLexer");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultLexer");
+    }
     constructor(e){
         let t = e.parser.TokenBuilder.buildTokens(e.Grammar, {
             caseInsensitive: e.LanguageMetaData.caseInsensitive
@@ -13072,7 +13310,9 @@ function Bc(r, e) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Bc, "normalizeOption");
 var Vs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "JSDocCommentImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "JSDocCommentImpl");
+    }
     constructor(e, t){
         this.elements = e, this.range = t;
     }
@@ -13104,7 +13344,9 @@ var Vs = class {
         return t.trim();
     }
 }, gi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "JSDocTagImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "JSDocTagImpl");
+    }
     constructor(e, t, n, i){
         this.name = e, this.content = t, this.inline = n, this.range = i;
     }
@@ -13151,7 +13393,9 @@ function Um(r, e) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Um, "renderLinkDefault");
 var yi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "JSDocTextImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "JSDocTextImpl");
+    }
     constructor(e, t){
         this.inlines = e, this.range = t;
     }
@@ -13174,7 +13418,9 @@ var yi = class {
         return t;
     }
 }, zs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "JSDocLineImpl");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "JSDocLineImpl");
+    }
     constructor(e, t){
         this.text = e, this.range = t;
     }
@@ -13194,7 +13440,9 @@ function Ad(r) {
 }
 (0, _chunkGTKDMUJJMjs.a)(Ad, "fillNewlines");
 var xi = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "JSDocDocumentationProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "JSDocDocumentationProvider");
+    }
     constructor(e){
         this.indexManager = e.shared.workspace.IndexManager, this.commentProvider = e.documentation.CommentProvider;
     }
@@ -13231,7 +13479,9 @@ var xi = class {
     }
 };
 var Ti = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultCommentProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultCommentProvider");
+    }
     constructor(e){
         this.grammarConfig = ()=>e.parser.GrammarConfig;
     }
@@ -13243,7 +13493,9 @@ var Ti = class {
 var le = {};
 (0, _chunkGTKDMUJJMjs.d)(le, (0, _chunkGTKDMUJJMjs.e)(Oc(), 1));
 var Ei = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultAsyncParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultAsyncParser");
+    }
     constructor(e){
         this.syncParser = e.parser.LangiumParser;
     }
@@ -13251,7 +13503,9 @@ var Ei = class {
         return Promise.resolve(this.syncParser.parse(e));
     }
 }, Kc = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractThreadedAsyncParser");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractThreadedAsyncParser");
+    }
     constructor(e){
         this.threadCount = 8, this.terminationDelay = 200, this.workerPool = [], this.queue = [], this.hydrator = e.serializer.Hydrator;
     }
@@ -13296,7 +13550,9 @@ var Ei = class {
         }), this.queue.push(t), t.promise;
     }
 }, Hc = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "ParserWorker");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "ParserWorker");
+    }
     get ready() {
         return this._ready;
     }
@@ -13326,7 +13582,9 @@ var Ei = class {
     }
 };
 var Ri = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultWorkspaceLock");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultWorkspaceLock");
+    }
     constructor(){
         this.previousTokenSource = new w.CancellationTokenSource, this.writeQueue = [], this.readQueue = [], this.done = !0;
     }
@@ -13366,7 +13624,9 @@ var Ri = class {
     }
 };
 var Ai = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "DefaultHydrator");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "DefaultHydrator");
+    }
     constructor(e){
         this.grammarElementIdMap = new gr, this.tokenTypeIdMap = new gr, this.grammar = e.Grammar, this.lexer = e.parser.Lexer, this.linker = e.references.Linker;
     }
@@ -13644,7 +13904,9 @@ var W = {};
 });
 (0, _chunkGTKDMUJJMjs.d)(W, le);
 var qs = class {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "EmptyFileSystemProvider");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "EmptyFileSystemProvider");
+    }
     readFile() {
         throw new Error("No file system is available.");
     }
@@ -13744,8 +14006,12 @@ function cg(r) {
 (0, _chunkGTKDMUJJMjs.a)(cg, "isPieSection");
 H(cg, "isPieSection");
 var lg = "Direction", Ud = class extends Kt {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "MermaidAstReflection");
-    static #_2 = H(this, "MermaidAstReflection");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "MermaidAstReflection");
+    }
+    static{
+        H(this, "MermaidAstReflection");
+    }
     getAllTypes() {
         return [
             "Branch",
@@ -14058,8 +14324,12 @@ var lg = "Direction", Ud = class extends Kt {
     ACC_TITLE: Tg,
     TITLE: Eg
 }, Ag = class extends mr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractMermaidValueConverter");
-    static #_2 = H(this, "AbstractMermaidValueConverter");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractMermaidValueConverter");
+    }
+    static{
+        H(this, "AbstractMermaidValueConverter");
+    }
     runConverter(r, e, t) {
         let n = this.runCommonConverter(r, e, t);
         return n === void 0 && (n = this.runCustomConverter(r, e, t)), n === void 0 ? super.runConverter(r, e, t) : n;
@@ -14075,12 +14345,20 @@ var lg = "Direction", Ud = class extends Kt {
         }
     }
 }, rC = class extends Ag {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CommonValueConverter");
-    static #_2 = H(this, "CommonValueConverter");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "CommonValueConverter");
+    }
+    static{
+        H(this, "CommonValueConverter");
+    }
     runCustomConverter(r, e, t) {}
 }, vg = class extends pr {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "AbstractMermaidTokenBuilder");
-    static #_2 = H(this, "AbstractMermaidTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "AbstractMermaidTokenBuilder");
+    }
+    static{
+        H(this, "AbstractMermaidTokenBuilder");
+    }
     constructor(r){
         super(), this.keywords = new Set(r);
     }
@@ -14091,8 +14369,12 @@ var lg = "Direction", Ud = class extends Kt {
         }), n;
     }
 }, iC = class extends vg {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "CommonTokenBuilder");
-    static #_2 = H(this, "CommonTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "CommonTokenBuilder");
+    }
+    static{
+        H(this, "CommonTokenBuilder");
+    }
 };
 
 },{"d9721ef12d3c49fc":"fjG6A","./chunk-BKDDFIKN.mjs":"hADfH","./chunk-YPUTD6PB.mjs":"aSdv1","./chunk-6BY5RJGC.mjs":"bRXnR","./chunk-GTKDMUJJ.mjs":"fruhx","@parcel/transformer-js/src/esmodule-helpers.js":"1cdyk"}],"fjG6A":[function(require,module,exports,__globalThis) {
@@ -14334,8 +14616,12 @@ parcelHelpers.export(exports, "b", ()=>M);
 var _chunkD3PZO57JMjs = require("./chunk-D3PZO57J.mjs");
 var _chunkGTKDMUJJMjs = require("./chunk-GTKDMUJJ.mjs");
 var v = class extends (0, _chunkD3PZO57JMjs.n) {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "InfoTokenBuilder");
-    static #_2 = (0, _chunkD3PZO57JMjs.f)(this, "InfoTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "InfoTokenBuilder");
+    }
+    static{
+        (0, _chunkD3PZO57JMjs.f)(this, "InfoTokenBuilder");
+    }
     constructor(){
         super([
             "info",
@@ -14368,8 +14654,12 @@ parcelHelpers.export(exports, "b", ()=>M);
 var _chunkD3PZO57JMjs = require("./chunk-D3PZO57J.mjs");
 var _chunkGTKDMUJJMjs = require("./chunk-GTKDMUJJ.mjs");
 var v = class extends (0, _chunkD3PZO57JMjs.n) {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "PacketTokenBuilder");
-    static #_2 = (0, _chunkD3PZO57JMjs.f)(this, "PacketTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "PacketTokenBuilder");
+    }
+    static{
+        (0, _chunkD3PZO57JMjs.f)(this, "PacketTokenBuilder");
+    }
     constructor(){
         super([
             "packet-beta"
@@ -14401,8 +14691,12 @@ parcelHelpers.export(exports, "b", ()=>M);
 var _chunkD3PZO57JMjs = require("./chunk-D3PZO57J.mjs");
 var _chunkGTKDMUJJMjs = require("./chunk-GTKDMUJJ.mjs");
 var C = class extends (0, _chunkD3PZO57JMjs.n) {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "PieTokenBuilder");
-    static #_2 = (0, _chunkD3PZO57JMjs.f)(this, "PieTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "PieTokenBuilder");
+    }
+    static{
+        (0, _chunkD3PZO57JMjs.f)(this, "PieTokenBuilder");
+    }
     constructor(){
         super([
             "pie",
@@ -14410,8 +14704,12 @@ var C = class extends (0, _chunkD3PZO57JMjs.n) {
         ]);
     }
 }, P = class extends (0, _chunkD3PZO57JMjs.l) {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "PieValueConverter");
-    static #_2 = (0, _chunkD3PZO57JMjs.f)(this, "PieValueConverter");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "PieValueConverter");
+    }
+    static{
+        (0, _chunkD3PZO57JMjs.f)(this, "PieValueConverter");
+    }
     runCustomConverter(i, r, a) {
         if (i.name === "PIE_SECTION_LABEL") return r.replace(/"/g, "").trim();
     }
@@ -14441,8 +14739,12 @@ parcelHelpers.export(exports, "b", ()=>v);
 var _chunkD3PZO57JMjs = require("./chunk-D3PZO57J.mjs");
 var _chunkGTKDMUJJMjs = require("./chunk-GTKDMUJJ.mjs");
 var h = class extends (0, _chunkD3PZO57JMjs.n) {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "GitGraphTokenBuilder");
-    static #_2 = (0, _chunkD3PZO57JMjs.f)(this, "GitGraphTokenBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "GitGraphTokenBuilder");
+    }
+    static{
+        (0, _chunkD3PZO57JMjs.f)(this, "GitGraphTokenBuilder");
+    }
     constructor(){
         super([
             "gitGraph"

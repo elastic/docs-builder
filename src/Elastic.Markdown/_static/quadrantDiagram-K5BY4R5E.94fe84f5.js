@@ -2984,7 +2984,9 @@ var V = (0, _chunkNQURTBEVMjs.q)(), qt = class {
         this.classes = new Map;
         this.config = this.getDefaultConfig(), this.themeConfig = this.getDefaultThemeConfig(), this.data = this.getDefaultData();
     }
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "QuadrantBuilder");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "QuadrantBuilder");
+    }
     getDefaultData() {
         return {
             titleText: "",
@@ -3327,7 +3329,9 @@ var V = (0, _chunkNQURTBEVMjs.q)(), qt = class {
     }
 };
 var G = class extends Error {
-    static #_ = (0, _chunkGTKDMUJJMjs.a)(this, "InvalidStyleError");
+    static{
+        (0, _chunkGTKDMUJJMjs.a)(this, "InvalidStyleError");
+    }
     constructor(n, f, u){
         super(`value for ${n} ${f} is invalid, please use a valid ${u}`), this.name = "InvalidStyleError";
     }

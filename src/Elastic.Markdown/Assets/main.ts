@@ -15,17 +15,9 @@ import mermaid from 'mermaid/dist/mermaid.esm.min.mjs'
 
 const {getOS} = new UAParser()
 
-document.addEventListener('htmx:load', function () {
-    initTocNav()
-    initHighlight()
-    initCopyButton()
-    initTabs()
-    initNav()
-    initSmoothScroll()
-    openDetailsWithAnchor()
-    initDismissibleBanner()
+var mermaidInitialize = function () {
     mermaid.initialize({
-        startOnLoad: true, theme: 'base',
+        startOnLoad: false, theme: 'base',
         themeVariables: {
             fontFamily: 'inherit',
             altFontFamily: 'inherit',
@@ -40,7 +32,22 @@ document.addEventListener('htmx:load', function () {
         "journey": {
             "taskFontFamily": "inherit"
         }
-    })
+    });
+    mermaid.run({
+        nodes: document.querySelectorAll('.mermaid'),
+    });
+}
+
+document.addEventListener('htmx:load', function () {
+    initTocNav()
+    initHighlight()
+    initCopyButton()
+    initTabs()
+    initNav()
+    initSmoothScroll()
+    openDetailsWithAnchor()
+    initDismissibleBanner()
+    mermaidInitialize()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
@@ -70,9 +77,9 @@ document.addEventListener('htmx:beforeRequest', function (event) {
         }
     }
 })
-
 document.body.addEventListener('htmx:oobBeforeSwap', function (event) {
     // This is needed to scroll to the top of the page when the content is swapped
+
     if (
         event.target.id === 'main-container' ||
         event.target.id === 'markdown-content' ||
