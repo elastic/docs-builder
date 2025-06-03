@@ -14,6 +14,7 @@
 @import './markdown/images.css';
 @import './modal.css';
 @import './archive.css';
+@import './markdown/stepper.css';
 
 :root {
 	--outline-size: max(2px, 0.08em);
@@ -24,6 +25,13 @@
 	--banner-height: calc(var(--spacing) * 9);
 	/*--offset-top: calc(var(--header-height) + var(--banner-height));*/
 	--offset-top: 72px;
+	--max-text-width: clamp(40ch, 90ch, 100%);
+	--max-sidebar-width: calc(var(--spacing) * 65);
+	--content-spacing: calc(var(--spacing) * 8);
+	--max-layout-width: calc(
+		var(--max-text-width) + (var(--max-sidebar-width) * 2) +
+			calc(var(--content-spacing) * 2)
+	);
 }
 
 @media screen and (min-width: 767px) {
@@ -69,7 +77,7 @@
 		@apply text-blue-elastic hover:text-blue-elastic-100 inline-flex items-center justify-center font-sans font-semibold text-nowrap;
 
 		.link-icon {
-			@apply mr-1 ml-0 size-4 shrink-0;
+			@apply mr-2 ml-0 size-4 shrink-0;
 		}
 
 		.link-arrow {
@@ -93,11 +101,8 @@
 
 		.sidebar-link {
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
+			word-break: break-word;
 		}
-	}
-
-	.content-container {
-		@apply w-full max-w-[80ch];
 	}
 
 	.applies {
@@ -232,12 +237,35 @@
 
 .container {
 	@apply lg:px-3;
+	max-width: var(--max-layout-width) !important;
 
-	max-width: 1250px !important;
+	* {
+		@apply font-body;
+	}
 }
 
 #elastic-nav {
 	min-height: var(--offset-top);
+
+	@media screen and (min-width: 1200px) {
+		.oldNav {
+			& > div {
+				width: 100%;
+				max-width: var(--max-layout-width);
+			}
+			div:has(> div > nav) {
+				flex-grow: 1;
+				justify-content: center;
+			}
+		}
+	}
+	@media screen and (min-width: 1536px) {
+		.oldNav {
+			nav {
+				margin-left: -74px;
+			}
+		}
+	}
 }
 
 body {

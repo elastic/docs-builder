@@ -5,7 +5,6 @@
 module Targets
 
 open Argu
-open System.IO
 open CommandLine
 open Fake.Core
 open Fake.IO
@@ -20,6 +19,7 @@ let private clean _ =
     removeArtifacts "release-notes"
     removeArtifacts "tests"
     removeArtifacts "docs-builder"
+    removeArtifacts "docs-assembler"
 
 let private compile _ = exec { run "dotnet" "build" "-c" "release" }
 
@@ -34,7 +34,7 @@ let private version _ =
 
 let private format _ = exec { run "dotnet" "format" "--verbosity" "quiet" }
 
-let private watch _ = exec { run "dotnet" "watch" "--project" "src/docs-builder" "--no-hot-reload" "--" "serve" }
+let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--no-hot-reload" "--" "serve" }
 
 let private lint _ =
     match exec {
@@ -56,20 +56,23 @@ let private pristineCheck (arguments:ParseResults<Build>) =
     | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
 
 let private publishBinaries _ =
-    exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
-    exec { run "dotnet" "publish" "src/docs-assembler/docs-assembler.csproj" }
+    exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
+    exec { run "dotnet" "publish" "src/tooling/docs-assembler/docs-assembler.csproj" }
 
 let private publishZip _ =
-    exec { run "dotnet" "publish" "src/docs-builder/docs-builder.csproj" }
-    let binary = match OS.Current with Windows -> "docs-builder.exe" | _ -> "docs-builder"
-    Zip.zip
-        ".artifacts/publish/docs-builder/release"
-        $".artifacts/publish/docs-builder/release/docs-builder-%s{OS.Name}-{OS.Arch}.zip"
-        [
-            $".artifacts/publish/docs-builder/release/%s{binary}";
-            ".artifacts/publish/docs-builder/release/LICENSE.txt";
-            ".artifacts/publish/docs-builder/release/NOTICE.txt"
-        ]
+    let zip tool =
+        exec { run "dotnet" "publish" $"src/tooling/{tool}/{tool}.csproj" }
+        let binary = match OS.Current with Windows -> $"{tool}.exe" | _ -> tool
+        Zip.zip
+            $".artifacts/publish/{tool}/release"
+            $".artifacts/publish/{tool}/release/{tool}-%s{OS.Name}-{OS.Arch}.zip"
+            [
+                $".artifacts/publish/{tool}/release/%s{binary}";
+                $".artifacts/publish/{tool}/release/LICENSE.txt";
+                $".artifacts/publish/{tool}/release/NOTICE.txt"
+            ]
+    zip "docs-builder"
+    zip "docs-assembler"
 
 let private publishContainers _ =
 
@@ -85,7 +88,7 @@ let private publishContainers _ =
             }
             match exitCode with | 0 -> "edge;latest" | _ -> "edge"
         let args =
-            ["publish"; $"src/%s{project}/%s{project}.csproj"]
+            ["publish"; $"src/tooling/%s{project}/%s{project}.csproj"]
             @ [
                 "/t:PublishContainer";
                 "-p"; "DebugType=none";
@@ -118,27 +121,6 @@ let private validateLicenses _ =
                 "--packages-filter"; "#System\..*#";]
     exec { run "dotnet" (["dotnet-project-licenses"] @ args) }
 
-let private generateReleaseNotes (arguments:ParseResults<Build>) =
-    let currentVersion = Software.Version.NormalizeToShorter()
-    let releaseNotesPath = Paths.ArtifactPath "release-notes"
-    let output =
-        Paths.RelativePathToRoot <| Path.Combine(releaseNotesPath.FullName, $"release-notes-%s{currentVersion}.md")
-    let tokenArgs =
-        match arguments.TryGetResult Token with
-        | None -> []
-        | Some token -> ["--token"; token;]
-    let releaseNotesArgs =
-        (Software.GithubMoniker.Split("/") |> Seq.toList)
-        @ ["--version"; currentVersion
-           "--label"; "enhancement"; "Features"
-           "--label"; "bug"; "Fixes"
-           "--label"; "documentation"; "Documentation"
-        ] @ tokenArgs
-        @ ["--output"; output]
-        
-    let args = ["release-notes"] @ releaseNotesArgs
-    exec { run "dotnet" args }
-
 let Setup (parsed:ParseResults<Build>) =
     let wireCommandLine (t: Build) =
         match t with
@@ -155,7 +137,7 @@ let Setup (parsed:ParseResults<Build>) =
         | Release ->
             Build.Cmd 
                 [PristineCheck; Build]
-                [ValidateLicenses; ReleaseNotes]
+                [ValidateLicenses;]
                 release
 
         | Publish ->
@@ -174,7 +156,6 @@ let Setup (parsed:ParseResults<Build>) =
         | PublishContainers -> Build.Step publishContainers
         | PublishZip -> Build.Step publishZip
         | ValidateLicenses -> Build.Step validateLicenses
-        | ReleaseNotes -> Build.Step generateReleaseNotes
 
         // flags
         | Single_Target

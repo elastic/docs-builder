@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Documentation.Assembler.Configuration;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
@@ -199,6 +199,49 @@ public class GlobalNavigationPathProviderTests
 		navigation.TopLevelItems.Count.Should().BeLessThan(20);
 		var resolved = navigation.NavigationItems;
 		resolved.Should().NotBeNull();
+
+
+		IPositionalNavigation positionalNavigation = navigation;
+
+		var releaseNotes = positionalNavigation.MarkdownNavigationLookup.Where(kv => kv.Key.Contains("release-notes")).ToArray();
+
+
+		var addToHelm = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("apm-k8s-attacher://reference/apm-webhook-add-helm-repo.md");
+		addToHelm.Should().NotBeNull();
+		var parentGroup = addToHelm!.Parent as GroupNavigationItem;
+		var parents = AssertHasParents(parentGroup, positionalNavigation, addToHelm);
+
+		parents.Select(p => p.CrossLink).Should().ContainInOrder(
+		[
+			"apm-k8s-attacher://reference/apm-get-started-webhook.md",
+			"apm-k8s-attacher://reference/index.md",
+			"docs-content://reference/apm/observability/apm.md",
+			"docs-content://reference/ingestion-tools/index.md",
+			"docs-content://reference/index.md"
+		]);
+
+		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/introduction.md");
+		getStartedIntro.Should().NotBeNull();
+		parentGroup = getStartedIntro!.Parent as GroupNavigationItem;
+		_ = AssertHasParents(parentGroup, positionalNavigation, getStartedIntro);
+
+	}
+
+	private static MarkdownFile[] AssertHasParents(
+		GroupNavigationItem? parent,
+		IPositionalNavigation positionalNavigation,
+		INavigationItem item
+	)
+	{
+		parent.Should().NotBeNull();
+		parent!.Group.Index.Should().NotBeNull();
+		var parents2 = positionalNavigation.GetParents(item);
+		var parents3 = positionalNavigation.GetParentMarkdownFiles(item);
+		var markdown = (item as FileNavigationItem)?.File!;
+		var parents = positionalNavigation.GetParentMarkdownFiles(markdown);
+
+		parents.Should().NotBeEmpty().And.HaveCount(parents2.Length).And.HaveCount(parents3.Length);
+		return parents;
 	}
 
 	[Fact]
@@ -206,8 +249,7 @@ public class GlobalNavigationPathProviderTests
 	{
 		Assert.SkipUnless(HasCheckouts(), $"Requires local checkout folder: {CheckoutDirectory.FullName}");
 
-		await using var collector = new DiagnosticsCollector([]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 
 		var fs = new FileSystem();
 		var assembleContext = new AssembleContext("prod", collector, fs, fs, null, null);

@@ -6,12 +6,13 @@
 	public LayoutViewModel LayoutModel => new()
 	{
 		DocSetName = Model.DocSetName,
-		Title = Model.CurrentDocument.Parent == null ? Model.Title : $"{Model.Title} | {Model.SiteName}",
+		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
 		CurrentDocument = Model.CurrentDocument,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
+		Parents = Model.Parents,
 		NavigationHtml = Model.NavigationHtml,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
@@ -21,7 +22,8 @@
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
-		LegacyUrl = Model.LegacyUrl
+		LegacyPage = Model.LegacyPage,
+		Products = Model.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.DisplayName)) : null,
 	};
 }
 <section id="elastic-docs-v3">

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Elastic.Documentation;
 using Elastic.Markdown.Helpers;
 using YamlDotNet.Serialization;
 
@@ -108,7 +109,7 @@ public record Applicability
 			ProductLifecycle.Beta => "Beta",
 			ProductLifecycle.Development => "Development",
 			ProductLifecycle.Deprecated => "Deprecated",
-			ProductLifecycle.Coming => "Coming",
+			ProductLifecycle.Planned => "Planned",
 			ProductLifecycle.Discontinued => "Discontinued",
 			ProductLifecycle.Unavailable => "Unavailable",
 			ProductLifecycle.GenerallyAvailable => "GA",
@@ -127,7 +128,7 @@ public record Applicability
 			ProductLifecycle.Beta => "beta",
 			ProductLifecycle.Development => "dev",
 			ProductLifecycle.Deprecated => "deprecated",
-			ProductLifecycle.Coming => "coming",
+			ProductLifecycle.Planned => "planned",
 			ProductLifecycle.Discontinued => "discontinued",
 			ProductLifecycle.Unavailable => "unavailable",
 			ProductLifecycle.GenerallyAvailable => "ga",
@@ -168,7 +169,8 @@ public record Applicability
 			"dev" => ProductLifecycle.Development,
 			"development" => ProductLifecycle.Development,
 			"deprecated" => ProductLifecycle.Deprecated,
-			"coming" => ProductLifecycle.Coming,
+			"coming" => ProductLifecycle.Planned,
+			"planned" => ProductLifecycle.Planned,
 			"discontinued" => ProductLifecycle.Discontinued,
 			"unavailable" => ProductLifecycle.Unavailable,
 			"ga" => ProductLifecycle.GenerallyAvailable,

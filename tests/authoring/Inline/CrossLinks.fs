@@ -38,7 +38,7 @@ type ``error when using wrong scheme`` () =
     [<Fact>]
     let ``error on bad scheme`` () =
         markdown
-        |> hasError "'docs-x' is not declared as valid cross link repository in docset.yml under cross_links"
+        |> hasError "'docs-x' was not found in the cross link index"
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings
@@ -89,14 +89,14 @@ type ``link to repository that does not resolve yet`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/">
+                href="elasticsearch:/index.md">
                 Elasticsearch Documentation
                 </a>
             </p>
         """
 
     [<Fact>]
-    let ``has no errors`` () = markdown |> hasNoErrors
+    let ``error when not found in links.json`` () = markdown |> hasError("'elasticsearch' was not found in the cross link index")
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings
@@ -133,14 +133,14 @@ type ``link to repository that does not resolve yet using double slashes`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/elasticsearch/tree/main/">
+                href="elasticsearch://index.md">
                 Elasticsearch Documentation
                 </a>
             </p>
         """
 
     [<Fact>]
-    let ``has no errors`` () = markdown |> hasNoErrors
+    let ``error when not found in links.json`` () = markdown |> hasError("'elasticsearch' was not found in the cross link index")
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings

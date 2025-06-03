@@ -1,8 +1,8 @@
 @using Elastic.Markdown.Helpers
 @using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorSlice<LayoutViewModel>
-<nav id="secondary-nav" class="bg-grey-10 border-t-1 border-grey-20 font-sans font-semibold text-sm text-ink-light md:text-base p-6">
-	<div class="container flex mx-auto justify-between items-center">
+<nav id="secondary-nav" class="bg-grey-10 border-t-1 border-grey-20 font-sans font-semibold text-sm text-ink-light md:text-base">
+	<div class="max-w-(--max-layout-width) flex mx-auto justify-between items-center p-6">
 		<div class="flex gap-2 flex-nowrap items-center">
 			@if (Model.CurrentDocument.YamlFrontMatter?.Layout != LayoutName.LandingPage)
 			{
@@ -21,7 +21,7 @@
 					href="@Model.Link("/release-notes/")"
 					@Htmx.GetHxAttributes(
 						targetUrl: Model.Link("/release-notes/"), 
-						hxSwapOob: "#main-container"
+						hxSwapOob: "#main-container,#secondary-nav"
 					)
 				>
 					Release notes
@@ -32,7 +32,7 @@
 					href="@Model.Link("/troubleshoot/")"
 					@Htmx.GetHxAttributes(
 						targetUrl: Model.Link("/troubleshoot/"),
-						hxSwapOob: "#main-container"
+						hxSwapOob: "#main-container,#secondary-nav"
 					)
 				>
 					Troubleshoot
@@ -43,7 +43,7 @@
 					href="@Model.Link("/reference/")"
 					@Htmx.GetHxAttributes(
 						Model.Link("/reference/"), 
-						hxSwapOob: "#main-container"
+						hxSwapOob: "#main-container,#secondary-nav"
 					)
 				>
 					Reference

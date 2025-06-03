@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 
@@ -27,13 +28,14 @@ toc:
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		var context = new BuildContext(fileSystem);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
+		var context = new BuildContext(collector, fileSystem);
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(TestContext.Current.CancellationToken);
-		await generator.StopDiagnosticCollection(TestContext.Current.CancellationToken);
+		await collector.StopAsync(TestContext.Current.CancellationToken);
 
 		fileSystem.Directory.Exists(".artifacts").Should().BeTrue();
 

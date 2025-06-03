@@ -23,25 +23,37 @@
 
 		private async Task DefaultLayout()
 		{
-			<div class="container h-full grid gap-2 grid-cols-1 md:grid-cols-[calc(var(--spacing)*65)_auto] lg:grid-cols-[calc(var(--spacing)*65)_auto_calc(var(--spacing)*50)] px-6">
+			<div class="max-w-(--max-layout-width) w-full h-full grid
+					grid-cols-1
+					md:grid-cols-[var(--max-sidebar-width)_1fr]
+					lg:grid-cols-[var(--max-sidebar-width)_1fr_var(--max-sidebar-width)]
+				">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
-				@await RenderPartialAsync(_TableOfContents.Create(Model))
-				<main id="content-container" class="w-full flex flex-col order-2 relative pb-30 overflow-x-hidden">
-					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-						<div class="h-[2px] w-full overflow-hidden">
-							<div class="progress w-full h-full bg-pink-70 left-right"></div>
+				<div class="justify-center grid
+					grid-cols-1
+					px-6 lg:px-0
+					lg:grid-cols-[1fr_var(--max-text-width)_1fr]
+					">
+					<div class="spacer"></div>
+					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
+						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+							<div class="h-[2px] w-full overflow-hidden">
+								<div class="progress w-full h-full bg-pink-70 left-right"></div>
+							</div>
+							<div class="sr-only">Loading</div>
 						</div>
-						<div class="sr-only">Loading</div>
-					</div>
-					<div class="content-container md:px-4">
-						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-					</div>
-					<article id="markdown-content" class="content-container markdown-content md:px-4">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderBodyAsync()
-					</article>
-					@await RenderPartialAsync(_PrevNextNav.Create(Model))
-				</main>
+						<div class="content-container md:px-4">
+							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content md:px-4">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+						@await RenderPartialAsync(_PrevNextNav.Create(Model))
+					</main>
+					<div class="spacer"></div>
+				</div>
+				@await RenderPartialAsync(_TableOfContents.Create(Model))
 			</div>
 		}
 
@@ -66,11 +78,11 @@
 @await RenderPartialAsync(_Footer.Create(Model))
 @if (layout is not LayoutName.Archive)
 {
-	<aside id="dismissible-banner" class="admonition note">
+	<aside id="dismissible-banner" class="admonition tip">
 		<div class="container flex justify-between items-center mx-auto">
 			<p>
-				You are viewing the new Elastic Docs experience for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest product versions</a>, including Elastic Stack 9.0.
-				If the page exists in older docs, you can click <strong>View previous version</strong>.
+				Welcome to the docs for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest Elastic product versions</a>, including Elastic Stack 9.0 and Elastic Cloud Serverless.
+				To view previous versions, go to <a class="link text-base" target="_blank" href="https://elastic.co/guide">elastic.co/guide</a>.
 			</p>
 			<button id="dismissible-button">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">

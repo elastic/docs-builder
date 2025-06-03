@@ -21,7 +21,7 @@ namespace Elastic.Markdown.Myst.Directives;
 /// An HTML renderer for a <see cref="DirectiveBlock"/>.
 /// </summary>
 /// <seealso cref="HtmlObjectRenderer{CustomContainer}" />
-public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRenderer<DirectiveBlock>
+public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 {
 	protected override void Write(HtmlRenderer renderer, DirectiveBlock directiveBlock)
 	{
@@ -60,10 +60,16 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 				if (includeBlock.Literal)
 					WriteLiteralIncludeBlock(renderer, includeBlock);
 				else
-					WriteIncludeBlock(renderer, includeBlock, markdownParser);
+					WriteIncludeBlock(renderer, includeBlock);
 				return;
 			case SettingsBlock settingsBlock:
-				WriteSettingsBlock(renderer, settingsBlock, markdownParser);
+				WriteSettingsBlock(renderer, settingsBlock);
+				return;
+			case StepperBlock stepperBlock:
+				WriteStepperBlock(renderer, stepperBlock);
+				return;
+			case StepBlock stepBlock:
+				WriteStepBlock(renderer, stepBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -79,28 +85,14 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 	private static void WriteImage(HtmlRenderer renderer, ImageBlock block)
 	{
 		var imageUrl = block.ImageUrl;
-		if (!string.IsNullOrEmpty(block.ImageUrl))
-		{
-			if (block.ImageUrl.StartsWith('/') || block.ImageUrl.StartsWith("_static"))
-				imageUrl = $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}";
-			else
-			{
-				// `block.Build.ConfigurationPath.DirectoryName` is the directory of the docset.yml file
-				// which is the root of the documentation source
-				// e.g. `/User/username/Projects/docs-builder/docs`
-				// `block.CurrentFile.DirectoryName` is the directory of the current markdown file where the image is referenced
-				// e.g. `/User/username/Projects/docs-builder/docs/page/with/image`
-				// `Path.GetRelativePath` will return the relative path to the docset.yml directory
-				// e.g. `page/with/image`
-				// Hence the full imageUrl will be something like /path-prefix/page/with/image/image.png
-				imageUrl = block.Build.UrlPathPrefix + '/' + Path.GetRelativePath(block.Build.ConfigurationPath.DirectoryName!, block.CurrentFile.DirectoryName!) + "/" + block.ImageUrl;
-			}
-		}
+
 		var slice = Image.Create(new ImageViewModel
 		{
+			DirectiveBlock = block,
 			Label = block.Label,
 			Align = block.Align,
-			Alt = block.Alt,
+			Alt = block.Alt ?? string.Empty,
+			Title = block.Title,
 			Height = block.Height,
 			Scale = block.Scale,
 			Target = block.Target,
@@ -108,7 +100,24 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl,
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteStepperBlock(HtmlRenderer renderer, StepperBlock block)
+	{
+		var slice = Stepper.Create(new StepperViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteStepBlock(HtmlRenderer renderer, StepBlock block)
+	{
+		var slice = Step.Create(new StepViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Anchor = block.Anchor
+		});
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteFigure(HtmlRenderer renderer, ImageBlock block)
@@ -119,9 +128,11 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			: block.ImageUrl;
 		var slice = Figure.Create(new ImageViewModel
 		{
+			DirectiveBlock = block,
 			Label = block.Label,
 			Align = block.Align,
-			Alt = block.Alt,
+			Alt = block.Alt ?? string.Empty,
+			Title = block.Title,
 			Height = block.Height,
 			Scale = block.Scale,
 			Target = block.Target,
@@ -129,7 +140,7 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl,
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>
@@ -139,61 +150,65 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 	{
 		var slice = Slices.Directives.Version.Create(new VersionViewModel
 		{
+			DirectiveBlock = block,
 			Directive = block.Directive,
 			Title = block.Title,
 			VersionClass = block.Class
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteAdmonition(HtmlRenderer renderer, AdmonitionBlock block)
 	{
 		var slice = Admonition.Create(new AdmonitionViewModel
 		{
+			DirectiveBlock = block,
 			Directive = block.Admonition,
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
 			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteDropdown(HtmlRenderer renderer, DropdownBlock block)
 	{
 		var slice = Dropdown.Create(new AdmonitionViewModel
 		{
+			DirectiveBlock = block,
 			Directive = block.Admonition,
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
 			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
-		var slice = TabSet.Create(new TabSetViewModel());
-		RenderRazorSlice(slice, renderer, block);
+		var slice = TabSet.Create(new TabSetViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
 	{
 		var slice = TabItem.Create(new TabItemViewModel
 		{
+			DirectiveBlock = block,
 			Index = block.Index,
 			Title = block.Title,
 			TabSetIndex = block.TabSetIndex,
 			SyncKey = block.SyncKey,
 			TabSetGroupKey = block.TabSetGroupKey
 		});
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
 	{
-		var slice = Mermaid.Create(new MermaidViewModel());
+		var slice = Mermaid.Create(new MermaidViewModel { DirectiveBlock = block });
 		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
@@ -213,13 +228,14 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 				CrossReferenceName = null,
 				Language = block.Language,
 				Caption = null,
-				ApiCallHeader = null
+				ApiCallHeader = null,
+				RawIncludedFileContents = content
 			});
-			RenderRazorSlice(slice, renderer, content);
+			RenderRazorSlice(slice, renderer);
 		}
 	}
 
-	private static void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block, MarkdownParser parser)
+	private static void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
@@ -227,13 +243,15 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = parser.ParseSnippetAsync(snippet, parentPath, block.Context.YamlFrontMatter, default).GetAwaiter().GetResult();
+		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default)
+			.GetAwaiter().GetResult();
 
-		var html = document.ToHtml(parser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
 	}
 
-	private static void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block, MarkdownParser parser)
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
+	private static void WriteSettingsBlock(HtmlRenderer renderer, SettingsBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
 			return;
@@ -261,44 +279,21 @@ public class DirectiveHtmlRenderer(MarkdownParser markdownParser) : HtmlObjectRe
 			SettingsCollection = settings,
 			RenderMarkdown = s =>
 			{
-				var document = parser.ParseStringAsync(s, block.IncludeFrom, block.Context.YamlFrontMatter);
-				var html = document.ToHtml(parser.Pipeline);
+				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, s, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
+				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
 		});
-		RenderRazorSliceNoContent(slice, renderer);
-	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, string contents)
-	{
-		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		_ = renderer
-			.Write(blocks[0])
-			.Write(contents)
-			.Write(blocks[1]);
-	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
-	{
-		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		_ = renderer.Write(blocks[0]);
-		renderer.WriteChildren(obj);
-		_ = renderer.Write(blocks[1]);
-	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSliceNoContent<T>(RazorSlice<T> slice, HtmlRenderer renderer)
-	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		_ = renderer.Write(html);
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
+	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer) => slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
+		where T : DirectiveViewModel
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);

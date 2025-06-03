@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.InlineParsers;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -18,6 +21,11 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	/// or spoken by applications for visually impaired users.
 	/// </summary>
 	public string? Alt { get; set; }
+
+	/// <summary>
+	/// Title text: a short description of the image
+	/// </summary>
+	public string? Title { get; set; }
 
 	/// <summary>
 	/// The desired height of the image. Used to reserve space or scale the image vertically. When the “scale” option
@@ -63,9 +71,10 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Label = Prop("label", "name");
-		Alt = Prop("alt");
-		Align = Prop("align");
+		Alt = Prop("alt")?.ReplaceSubstitutions(context) ?? string.Empty;
+		Title = Prop("title")?.ReplaceSubstitutions(context);
 
+		Align = Prop("align");
 		Height = Prop("height", "h");
 		Width = Prop("width", "w");
 
@@ -95,17 +104,18 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 			return;
 		}
 
-		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
-		if (imageUrl.StartsWith('/'))
-			includeFrom = context.Build.DocumentationSourceDirectory.FullName;
+		ImageUrl = DiagnosticLinkInlineParser.UpdateRelativeUrl(context, imageUrl);
 
-		ImageUrl = imageUrl;
-		var imagePath = Path.Combine(includeFrom, imageUrl.TrimStart('/'));
-		if (context.Build.ReadFileSystem.File.Exists(imagePath))
+		var file = DiagnosticLinkInlineParser.ResolveFile(context, imageUrl);
+		if (file.Exists)
 			Found = true;
 		else
-			this.EmitError($"`{imageUrl}` does not exist. resolved to `{imagePath}");
+			this.EmitError($"`{imageUrl}` does not exist. resolved to `{file}");
+
+		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		{
+			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
+				this.EmitHint($"Image '{imageUrl}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+		}
 	}
 }
-
-

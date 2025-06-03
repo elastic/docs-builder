@@ -168,7 +168,7 @@ hljs.registerLanguage('esql', function () {
         case_insensitive: true, // language is case-insensitive
         keywords: {
             keyword:
-                'FROM ROW SHOW DISSECT DROP ENRICH EVAL GROK KEEP LIMIT RENAME SORT STATS WHERE METADATA',
+                'FROM ROW SHOW DISSECT DROP ENRICH EVAL GROK KEEP LIMIT LOOKUP JOIN MV_EXPAND RENAME SORT STATS WHERE METADATA CHANGE_POINT',
             literal: ['false', 'true', 'null'],
             function: [
                 // aggregate
@@ -180,18 +180,21 @@ hljs.registerLanguage('esql', function () {
                 'MEDIAN_ABSOLUTE_DEVIATION',
                 'MIN',
                 'PERCENTILE',
+                'ST_CENTROID_AGG',
+                'ST_EXTENT_AGG',
+                'STD_DEV',
                 'SUM',
                 'TOP',
                 'VALUES',
                 'WEIGHTED_AVG',
+                // grouping
                 'BUCKET',
-
+                'CATEGORIZE',
                 // conditional
                 'CASE',
                 'COALESCE',
                 'GREATEST',
                 'LEAST',
-
                 //Date
                 'DATE_DIFF',
                 'DATE_EXTRACT',
@@ -199,11 +202,9 @@ hljs.registerLanguage('esql', function () {
                 'DATE_PARSE',
                 'DATE_TRUNC',
                 'NOW',
-
                 //ip
                 'CIDR_MATCH',
                 'IP_PREFIX',
-
                 //math
                 'ABS',
                 'ACOS',
@@ -223,6 +224,8 @@ hljs.registerLanguage('esql', function () {
                 'PI',
                 'POW',
                 'ROUND',
+                'ROUND_TO',
+                'SCALB',
                 'SIGNUM',
                 'SIN',
                 'SINH',
@@ -230,11 +233,10 @@ hljs.registerLanguage('esql', function () {
                 'TAN',
                 'TANH',
                 'TAU',
-
                 //search
+                'KQL',
                 'MATCH',
                 'QSTR',
-
                 //spatial
                 'ST_DISTANCE',
                 'ST_INTERSECTS',
@@ -243,23 +245,30 @@ hljs.registerLanguage('esql', function () {
                 'ST_WITHIN',
                 'ST_X',
                 'ST_Y',
-
+                'ST_ENVELOPE',
+                'ST_XMAX',
+                'ST_XMIN',
+                'ST_YMAX',
+                'ST_YMIN',
                 //string
-
                 'BIT_LENGTH',
                 'BYTE_LENGTH',
                 'CONCAT',
                 'ENDS_WITH',
                 'FROM_BASE64',
+                'HASH',
                 'LEFT',
                 'LENGTH',
                 'LOCATE',
                 'LTRIM',
+                'MD5',
                 'REPEAT',
                 'REPLACE',
                 'REVERSE',
                 'RIGHT',
                 'RTRIM',
+                'SHA1',
+                'SHA256',
                 'SPACE',
                 'SPLIT',
                 'STARTS_WITH',
@@ -268,12 +277,13 @@ hljs.registerLanguage('esql', function () {
                 'TO_LOWER',
                 'TO_UPPER',
                 'TRIM',
-
                 //type conversion
                 'TO_BOOLEAN',
                 'TO_CARTESIANPOINT',
                 'TO_CARTESIANSHAPE',
+                'TO_DATEPERIOD',
                 'TO_DATETIME',
+                'TO_DATE_NANOS',
                 'TO_DEGREES',
                 'TO_DOUBLE',
                 'TO_GEOPOINT',
@@ -283,8 +293,9 @@ hljs.registerLanguage('esql', function () {
                 'TO_LONG',
                 'TO_RADIANS',
                 'TO_STRING',
+                'TO_TIMEDURATION',
+                'TO_UNSIGNED_LONG',
                 'TO_VERSION',
-
                 //multivalued
                 'MV_APPEND',
                 'MV_AVG',
@@ -303,8 +314,6 @@ hljs.registerLanguage('esql', function () {
                 'MV_SLICE',
                 'MV_SUM',
                 'MV_ZIP',
-
-                'KQL',
             ],
         },
         contains: [

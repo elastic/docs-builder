@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Markdig.Parsers;
@@ -28,7 +30,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 
@@ -46,7 +48,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitError(this ParserContext context, string message, Exception? e = null)
@@ -59,7 +61,7 @@ public static class ProcessorDiagnosticExtensions
 			File = context.MarkdownSourcePath.FullName,
 			Message = CreateExceptionMessage(message, e),
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitWarning(this ParserContext context, int line, int column, int length, string message)
@@ -75,87 +77,32 @@ public static class ProcessorDiagnosticExtensions
 			Message = message,
 			Length = length
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
-	public static void EmitError(this BuildContext context, IFileInfo file, string message, Exception? e = null)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Error,
-			File = file.FullName,
-			Message = CreateExceptionMessage(message, e),
-		};
-		context.Collector.Channel.Write(d);
-	}
+	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => EmitDiagnostic(block, Severity.Error, message, e);
 
-	public static void EmitWarning(this BuildContext context, IFileInfo file, string message)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = file.FullName,
-			Message = message,
-		};
-		context.Collector.Channel.Write(d);
-	}
+	public static void EmitWarning(this IBlockExtension block, string message) => EmitDiagnostic(block, Severity.Warning, message);
 
-	public static void EmitError(this DiagnosticsCollector collector, IFileInfo file, string message, Exception? e = null)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Error,
-			File = file.FullName,
-			Message = CreateExceptionMessage(message, e),
-		};
-		collector.Channel.Write(d);
-	}
+	public static void EmitHint(this IBlockExtension block, string message) => EmitDiagnostic(block, Severity.Hint, message);
 
-	public static void EmitWarning(this DiagnosticsCollector collector, IFileInfo file, string message)
-	{
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = file.FullName,
-			Message = message,
-		};
-		collector.Channel.Write(d);
-	}
-
-	public static void EmitError(this IBlockExtension block, string message, Exception? e = null)
+	private static void EmitDiagnostic(IBlockExtension block, Severity severity, string message, Exception? e = null)
 	{
 		if (block.SkipValidation)
 			return;
 
 		var d = new Diagnostic
 		{
-			Severity = Severity.Error,
+			Severity = severity,
 			File = block.CurrentFile.FullName,
 			Line = block.Line + 1,
 			Column = block.Column,
 			Length = block.OpeningLength + 5,
 			Message = CreateExceptionMessage(message, e),
 		};
-		block.Build.Collector.Channel.Write(d);
+		block.Build.Collector.Write(d);
 	}
 
-
-	public static void EmitWarning(this IBlockExtension block, string message)
-	{
-		if (block.SkipValidation)
-			return;
-
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
-			File = block.CurrentFile.FullName,
-			Line = block.Line + 1,
-			Column = block.Column,
-			Length = block.OpeningLength + 4,
-			Message = message
-		};
-		block.Build.Collector.Channel.Write(d);
-	}
 
 	private static void LinkDiagnostic(InlineProcessor processor, Severity severity, Inline inline, int length, string message, Exception? e = null)
 	{
@@ -174,7 +121,7 @@ public static class ProcessorDiagnosticExtensions
 			Message = CreateExceptionMessage(message, e),
 			Length = Math.Max(length, 1)
 		};
-		context.Build.Collector.Channel.Write(d);
+		context.Build.Collector.Write(d);
 	}
 
 	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message) =>

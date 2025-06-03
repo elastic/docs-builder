@@ -74,6 +74,7 @@ document.addEventListener('htmx:beforeRequest', function (event) {
 document.body.addEventListener('htmx:oobBeforeSwap', function (event) {
     // This is needed to scroll to the top of the page when the content is swapped
     if (
+        event.target.id === 'main-container' ||
         event.target.id === 'markdown-content' ||
         event.target.id === 'content-container'
     ) {

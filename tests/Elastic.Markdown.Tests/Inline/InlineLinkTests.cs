@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -96,7 +97,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+public class RepositoryLinksTest(ITestOutputHelper output) : LinkTestBase(output,
 	"""
 	[test][test]
 

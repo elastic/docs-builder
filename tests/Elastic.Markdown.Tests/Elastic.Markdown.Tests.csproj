@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Elastic.Markdown.Refactor\Elastic.Markdown.Refactor.csproj" />
+    <ProjectReference Include="..\..\src\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
   </ItemGroup>
 

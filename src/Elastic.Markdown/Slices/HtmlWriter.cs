@@ -4,10 +4,13 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Legacy;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Discovery;
-using Elastic.Markdown.IO.HistoryMapping;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
 using RazorSlices;
 using IFileInfo = System.IO.Abstractions.IFileInfo;
@@ -16,7 +19,7 @@ namespace Elastic.Markdown.Slices;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default);
+	Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
@@ -31,7 +34,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(INavigation currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -46,7 +49,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(INavigation navigation)
+	private NavigationViewModel CreateNavigationModel(INavigationGroup navigation)
 	{
 		if (navigation is not DocumentationGroup tree)
 			throw new InvalidOperationException("Expected a documentation group");
@@ -54,7 +57,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		return new NavigationViewModel
 		{
 			Title = tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = tree.Index?.Url ?? Set.Build.UrlPathPrefix ?? "/",
+			TitleUrl = tree.Index?.Url ?? Set.Context.UrlPathPrefix ?? "/",
 			Tree = tree,
 			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,
@@ -68,12 +71,16 @@ public class HtmlWriter(
 	IFileSystem writeFileSystem,
 	IDescriptionGenerator descriptionGenerator,
 	INavigationHtmlWriter? navigationHtmlWriter = null,
-	IHistoryMapper? historyMapper = null)
+	ILegacyUrlMapper? legacyUrlMapper = null,
+	IPositionalNavigation? positionalNavigation = null
+)
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
-	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Build));
-	private IHistoryMapper HistoryMapper { get; } = historyMapper ?? new BypassHistoryMapper();
+	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
+	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
+	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;
+
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
@@ -82,32 +89,47 @@ public class HtmlWriter(
 
 	private async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
-		var html = markdown.CreateHtml(document);
+		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
 		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
 
-		var previous = DocumentationSet.GetPrevious(markdown);
-		var next = DocumentationSet.GetNext(markdown);
+		var previous = PositionalNavigation.GetPrevious(markdown);
+		var next = PositionalNavigation.GetNext(markdown);
+		var parents = PositionalNavigation.GetParentMarkdownFiles(markdown);
 
-		var remote = DocumentationSet.Build.Git.RepositoryName;
-		var branch = DocumentationSet.Build.Git.Branch;
+		var remote = DocumentationSet.Context.Git.RepositoryName;
+		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (DocumentationSet.Build.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Build.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
 		{
-			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Build.DocumentationSourceDirectory.FullName);
+			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = Path.Combine(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
 		Uri? reportLinkParameter = null;
-		if (DocumentationSet.Build.CanonicalBaseUrl is not null)
-			reportLinkParameter = new Uri(DocumentationSet.Build.CanonicalBaseUrl, Path.Combine(DocumentationSet.Build.UrlPathPrefix ?? string.Empty, markdown.Url));
+		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
 
-		var legacyUrl = HistoryMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+
+		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
+		{
+			if (Products.AllById.TryGetValue(p, out var product))
+				return product;
+			throw new ArgumentException($"Invalid product id: {p}");
+		});
+
+		var frontMatterProducts = markdown.YamlFrontMatter?.Products ?? [];
+
+		var allProducts = frontMatterProducts
+			.Union(configProducts)
+			.Distinct()
+			.ToHashSet();
 
 		var slice = Index.Create(new IndexViewModel
 		{
@@ -122,22 +144,24 @@ public class HtmlWriter(
 			CurrentDocument = markdown,
 			PreviousDocument = previous,
 			NextDocument = next,
+			Parents = parents,
 			NavigationHtml = navigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Build.AllowIndexing && !markdown.Hidden,
-			CanonicalBaseUrl = DocumentationSet.Build.CanonicalBaseUrl,
-			GoogleTagManager = DocumentationSet.Build.GoogleTagManager,
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown is DetectionRuleFile || !markdown.Hidden),
+			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
+			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			LegacyUrl = legacyUrl
+			LegacyPage = legacyPage,
+			Products = allProducts
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 
-	public async Task WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
+	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -160,8 +184,10 @@ public class HtmlWriter(
 		}
 
 		var document = await markdown.ParseFullAsync(ctx);
+
 		var rendered = await RenderLayout(markdown, document, ctx);
 		collector?.Collect(markdown, document, rendered);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+		return document;
 	}
 }
