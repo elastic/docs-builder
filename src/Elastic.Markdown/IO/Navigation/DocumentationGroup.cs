@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.IO.Navigation;
 
@@ -198,7 +199,7 @@ public class DocumentationGroup : INavigationGroup
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
-		Id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(NavigationSource + FolderName + depth)))[..8];
+		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
 		if (Index is not null)
 			FilesInOrder = [.. FilesInOrder.Except([Index])];
 	}

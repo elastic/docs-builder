@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Settings;
 
 namespace Elastic.Markdown.Slices.Directives;
@@ -64,7 +65,7 @@ public class ImageViewModel
 	public string UniqueImageId =>
 		_uniqueImageId ??= string.IsNullOrEmpty(ImageUrl)
 			? Guid.NewGuid().ToString("N")[..8] // fallback to a random ID if ImageUrl is null or empty
-			: Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ImageUrl)))[..8];
+			: ShortId.Create(ImageUrl);
 	public required string? Screenshot { get; init; }
 
 	public string Style

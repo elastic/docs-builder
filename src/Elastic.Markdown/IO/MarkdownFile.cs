@@ -53,7 +53,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
-		Id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(FilePath)))[..8];
+		Id = ShortId.Create(FilePath);
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
