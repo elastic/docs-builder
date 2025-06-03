@@ -21,6 +21,9 @@
       "source": "Assets/styles.css"
     }
   },
+  "parcelIgnore": [
+    "mermaid/dist/mermaid.esm.min.mjs"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/elastic/docs-builder.git"
@@ -33,6 +36,7 @@
     "eslint": "9.28.0",
     "globals": "16.1.0",
     "parcel": "2.15.2",
+    "parcel-resolver-ignore": "^2.2.0",
     "postcss": "8.5.4",
     "postcss-import": "16.1.0",
     "prettier": "3.5.3",
@@ -49,7 +53,7 @@
     "htmx-ext-head-support": "2.0.4",
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.4",
-    "mermaid": "11.0.2",
+    "mermaid": "11.6.0",
     "select-dom": "9.3.1",
     "tailwindcss": "4.1.8",
     "ua-parser-js": "2.0.3"
