@@ -7,10 +7,12 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
 using RazorSlices;
 using IFileInfo = System.IO.Abstractions.IFileInfo;
@@ -23,7 +25,7 @@ public interface INavigationHtmlWriter
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
-		var slice = Layout._TocTree.Create(model);
+		var slice = Elastic.Documentation.Site.Layout._TocTree.Create(model);
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 }

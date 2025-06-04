@@ -1,0 +1,66 @@
+@using Elastic.Markdown.Helpers
+@inherits RazorSlice<Elastic.Documentation.Site.LayoutViewModel>
+@{
+	var targets =
+		Model.Features.IsPrimaryNavEnabled
+			? Model.Parents.Reverse()
+			: Model.Parents.Reverse().Skip(1);
+
+	var parents = targets.DistinctBy(p => p.CrossLink).ToList();
+	var firstCrumb = parents.FirstOrDefault();
+	var crumbs = parents.Skip(1).TakeLast(2).ToList();
+}
+
+<ol id="breadcrumbs" class="block items-center w-full py-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
+	<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<a
+			itemprop="item"
+			href="@Model.Link("/")"
+		>
+			<span itemprop="name" class="hover:text-black">
+				Docs
+			</span>
+		</a>
+		<meta itemprop="position" content="1">
+	</li>
+	@if (firstCrumb != null)
+	{
+		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+			<span class="px-1">/</span>
+			<a
+				itemprop="item"
+				href="@firstCrumb.Url"
+				@Htmx.GetHxAttributes(firstCrumb.Url, Model.CurrentDocument.NavigationRoot.Id == firstCrumb.NavigationRoot.Id)
+			>
+				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
+			</a>
+			<meta itemprop="position" content="2">
+		</li>
+	}
+	@if (crumbs.Count > 0 && parents.Count > 3)
+	{
+		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+			<span class="px-1">/</span>
+			…
+		</li>
+	}
+	
+	@for (var i = 0; i < crumbs.Count; i++)
+	{
+	    var item = crumbs[i];
+		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+			<span class="px-1">/</span>
+			<a
+				itemprop="item" 
+				href="@item.Url"
+				@Htmx.GetHxAttributes(item.Url, Model.CurrentDocument.NavigationRoot.Id == item.NavigationRoot.Id)
+			>
+				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
+			</a>
+			<meta itemprop="position" content="@(i+3)">
+		</li>
+	}
+	<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
+		<span class="px-1">/</span>
+	</li>
+</ol>

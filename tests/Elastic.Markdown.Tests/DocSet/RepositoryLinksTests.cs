@@ -4,6 +4,7 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 

@@ -4,35 +4,32 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
-using System.Text;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.IO.Navigation;
 
-public interface INavigationItem
-{
-	string Id { get; }
-	INavigationItem? Parent { get; set; }
-	int Depth { get; }
-}
-
-[DebuggerDisplay("Toc >{Depth} {Group.FolderName}")]
-public record TocNavigationItem(int Depth, DocumentationGroup Group, Uri Source, INavigationItem? Parent)
-	: GroupNavigationItem(Depth, Group, Parent)
+[DebuggerDisplay("Toc >{Depth} {DocumentationGroup.FolderName}")]
+public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup, Uri Source, INavigationItem? Parent)
+	: GroupNavigationItem(Depth, DocumentationGroup, Parent)
 {
 	/// Only used for tests
 	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup =>
-		Group.NavigationItems.OfType<TocNavigationItem>().ToDictionary(i => i.Source, i => i);
+		DocumentationGroup.NavigationItems.OfType<TocNavigationItem>().ToDictionary(i => i.Source, i => i);
 }
 
-[DebuggerDisplay("Group >{Depth} {Group.FolderName}")]
-public record GroupNavigationItem(int Depth, DocumentationGroup Group, INavigationItem? Parent) : INavigationItem
+[DebuggerDisplay("Group >{Depth} {DocumentationGroup.FolderName}")]
+public record GroupNavigationItem(int Depth, DocumentationGroup DocumentationGroup, INavigationItem? Parent) : IGroupNavigationItem
 {
-	public string Id { get; } = Group.Id;
+	public string Id { get; } = DocumentationGroup.Id;
 	public INavigationItem? Parent { get; set; } = Parent;
+	public IPageInformation? Index { get; } = DocumentationGroup.Index;
+	public IPageInformation? Current => DocumentationGroup.Index;
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; } = DocumentationGroup.NavigationItems;
+	public INavigationGroup NavigationRoot { get; } = Parent?.NavigationRoot ?? DocumentationGroup;
+	public INavigationGroup Group { get; } = DocumentationGroup;
 }
 
 [DebuggerDisplay("File >{Depth} {File.RelativePath}")]
@@ -40,17 +37,8 @@ public record FileNavigationItem(int Depth, MarkdownFile File, INavigationItem? 
 {
 	public string Id { get; } = File.Id;
 	public INavigationItem? Parent { get; set; } = Parent;
-}
-
-public interface INavigationGroup : INavigationItem
-{
-	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
-	string? IndexFileName { get; }
-}
-
-public interface INavigationScope
-{
-	INavigationGroup NavigationRoot { get; }
+	public IPageInformation? Current => File;
+	public INavigationGroup NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
 }
 
 public class TableOfContentsTreeCollector
@@ -137,6 +125,8 @@ public class DocumentationGroup : INavigationGroup
 	public Uri NavigationSource { get; set; }
 
 	public MarkdownFile? Index { get; set; }
+
+	public IPageInformation? Current => Index;
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 

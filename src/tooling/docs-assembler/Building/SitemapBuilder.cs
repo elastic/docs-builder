@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Xml.Linq;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Building;

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
 using Documentation.Builder.Diagnostics.LiveMode;
+using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;

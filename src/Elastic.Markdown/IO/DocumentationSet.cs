@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
@@ -56,8 +57,8 @@ public interface IPositionalNavigation
 		{
 			if (parent is FileNavigationItem f)
 				parents.Add(f.File);
-			if (parent is GroupNavigationItem { Group.Index: not null } g)
-				parents.Add(g.Group.Index);
+			if (parent is GroupNavigationItem { DocumentationGroup.Index: not null } g)
+				parents.Add(g.DocumentationGroup.Index);
 			if (parent is DocumentationGroup { Index: not null } dg)
 				parents.Add(dg.Index);
 		}
@@ -195,8 +196,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		if (item is GroupNavigationItem g)
 		{
 			var index = new List<(string, INavigationItem)>();
-			if (g.Group.Index is not null)
-				index.Add((g.Group.Index.CrossLink, g));
+			if (g.DocumentationGroup.Index is not null)
+				index.Add((g.DocumentationGroup.Index.CrossLink, g));
 
 			return index.Concat(g.Group.NavigationItems.SelectMany(Pairs).ToArray())
 				.DistinctBy(kv => kv.Item1)

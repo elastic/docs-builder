@@ -1,0 +1,71 @@
+@inherits RazorSlice<Elastic.Documentation.Site.NavigationViewModel>
+<div class="pb-20 font-body" hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator">
+	@{
+		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
+	} 
+	@if (Model.IsPrimaryNavEnabled && current is { Index: not null })
+	{
+		<div class="sticky top-0 py-6 bg-white z-10 border-b-1 border-grey-20 pr-4">
+			<div tabindex="0" id="pages-dropdown" class="block group border-1 border-grey-20 rounded-sm font-sans relative">
+				<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+					<div>
+						<a
+							class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
+							href="@current.Index?.Url"
+							@Htmx.GetNavHxAttributes(true)>
+							@current.Index?.NavigationTitle
+						</a>
+					</div>
+					<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="w-4 group-open:rotate-180">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+						</svg>
+					</div>
+				</button>
+				<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
+					<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+						@foreach (var item in Model.TopLevelItems)
+						{
+							if (item.Index == null) continue;
+							if (item.Id == current?.Id) continue;
+							<li class="block">
+								<a
+									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Index.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+									href="@item.Index.Url"
+									@Htmx.GetNavHxAttributes(false, "mouseover")>
+									@item.Index.NavigationTitle
+								</a>
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+		</div>
+	}
+	else
+	{
+		<a
+			href="@Model.TitleUrl"
+			@Htmx.GetNavHxAttributes(current is null || Model.Tree.Id == current.Id)
+			class="inline-block mx-4 mt-6 font-semibold text-ink hover:text-black">
+			@Model.Title
+		</a>
+	}
+	
+	<ul class="block px-4">
+		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+		{
+			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+			Level = 0,
+			SubTree = Model.Tree,
+			RootNavigationId = Model.Tree.Id,
+		}))
+	</ul>
+</div>

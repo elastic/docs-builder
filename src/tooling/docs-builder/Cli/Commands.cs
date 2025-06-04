@@ -8,6 +8,7 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.Documentation.Refactor;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;

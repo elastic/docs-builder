@@ -4,19 +4,16 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
-using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers.Roundtrip;
@@ -24,7 +21,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope
+public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope, IPageInformation
 {
 	private string? _navigationTitle;
 
@@ -90,11 +87,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string? NavigationTitle
+	public string NavigationTitle
 	{
-		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-		private set => _navigationTitle = value?.StripMarkdown();
+		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title ?? string.Empty;
+		private set => _navigationTitle = value.StripMarkdown();
 	}
+
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
@@ -220,8 +218,10 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
-		YamlFrontMatter = ProcessYamlFrontMatter(document);
-		NavigationTitle = YamlFrontMatter.NavigationTitle;
+		var yamlFrontMatter = ProcessYamlFrontMatter(document);
+		YamlFrontMatter = yamlFrontMatter;
+		if (yamlFrontMatter.NavigationTitle is not null)
+			NavigationTitle = yamlFrontMatter.NavigationTitle;
 
 		var subs = GetSubstitutions();
 

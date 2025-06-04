@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown;

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;

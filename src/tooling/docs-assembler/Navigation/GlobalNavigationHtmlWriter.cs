@@ -5,6 +5,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Slices;
 

@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 
