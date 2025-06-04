@@ -2,8 +2,6 @@
   "name": "elastic-markdown",
   "version": "1.0.0",
   "description": "",
-  "main": "_static/main.js",
-  "source": "Assets/index.js",
   "scripts": {
     "watch": "parcel watch",
     "build": "parcel build",
@@ -13,12 +11,13 @@
   },
   "targets": {
     "js": {
-      "distDir": "_static",
-      "source": "Assets/main.ts"
+      "source": "Assets/main.ts",
+      "distDir": "_static"
+
     },
     "css": {
-      "distDir": "_static",
-      "source": "Assets/styles.css"
+      "source": "Assets/styles.css",
+      "distDir": "_static"
     }
   },
   "repository": {
@@ -43,11 +42,20 @@
     "defaults"
   ],
   "dependencies": {
+    "@elastic/datemath": "5.0.3",
+    "@elastic/eui": "102.3.0",
+    "@elastic/eui-theme-borealis": "1.1.0",
+    "@emotion/css": "11.13.5",
+    "@emotion/react": "11.14.0",
+    "@r2wc/react-to-web-component": "2.0.4",
     "clipboard": "2.0.11",
     "highlight.js": "11.11.1",
     "htmx-ext-head-support": "2.0.4",
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.4",
+    "moment": "2.30.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "select-dom": "9.3.1",
     "tailwindcss": "4.1.8",
     "ua-parser-js": "2.0.3"
