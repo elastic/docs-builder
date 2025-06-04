@@ -1,8 +1,52 @@
 # Diagrams
 
-You can embedd diagrams using [mermaid.js](https://mermaid.js.org)
+You can create and embed diagrams using Mermaid.js, a docs-as-code diagramming tool.
 
-## Flowcharts
+Using Mermaid diagrams has several advantages:
+
+- Diagrams as code: You can version and edit diagrams without having to use third-party tools.
+- Easier contribution: External contributors can add or edit new diagrams easily.
+- Consistent look and feel: All Mermaid diagrams are rendered using the same style.
+- Improved accessibility: Text can be copied and read by a text-to-speech engine.
+
+## Create Mermaid diagrams
+
+To create a Mermaid, you can use the following editors:
+
+- [Mermaid Live Editor](https://mermaid.live/): Instantly previews Mermaid diagrams.
+- [Mermaid Chart](https://www.mermaidchart.com/app/dashboard): Visual editor for Mermaid.
+- Create diagrams in Visual Studio Code and preview them using the [VS Code extension](https://docs.mermaidchart.com/plugins/visual-studio-code).
+- Other tools, including AI tools, can generate Mermaid diagrams.
+
+For reference documentation on the Mermaid language, refer to [mermaid.js](https://mermaid.js.org).
+
+## Syntax guidelines
+
+When creating Mermaid diagrams, keep these guidelines in mind:
+
+- Use clear, descriptive node names.
+- Use comments (`%% comment text`) to document complex diagrams.
+- Break complex diagrams into smaller, more manageable ones.
+- Use consistent naming conventions throughout your diagrams.
+
+## Supported Diagram Types
+
+Mermaid.js supports various diagram types to visualize different kinds of information:
+
+- Flowcharts: Visualize processes and workflows.
+- Sequence Diagrams: Show interactions between components over time.
+- Gantt Charts: Illustrate project schedules and timelines.
+- Class Diagrams: Represent object-oriented structures.
+- Entity Relationship Diagrams: Model database structures.
+- State Diagrams: Illustrate state machines and transitions.
+- Pie Charts: Display proportional data.
+- User Journey Maps: Visualize user experiences.
+
+For a full list of supported diagrams, see the [Mermaid.js](https://mermaid.js.org/intro/) documentation.
+
+### Flowcharts
+
+This is an example flowchart made with Mermaid:
 
 :::::{tab-set}
 
@@ -43,8 +87,13 @@ D <--> J[JATS]
 :::::
 
 
-## Sequence Diagram
+### Sequence diagrams
 
+This is an example sequence diagram made with Mermaid:
+
+:::::{tab-set}
+
+::::{tab-item} Output
 
 ```mermaid
 sequenceDiagram
@@ -60,7 +109,35 @@ sequenceDiagram
     Bob-->>John: Jolly good!
 ```
 
-## Gant charts
+::::
+
+::::{tab-item} Markdown
+````markdown
+```mermaid 
+sequenceDiagram
+    participant Alice
+    participant Bob
+    Alice->>John: Hello John, how are you?
+    loop HealthCheck
+        John->>John: Fight against hypochondria
+    end
+    Note right of John: Rational thoughts <br/>prevail!
+    John-->>Alice: Great!
+    John->>Bob: How about you?
+    Bob-->>John: Jolly good!
+```
+````
+::::
+
+:::::
+
+### Gantt charts
+
+This is an example Gantt chart made with Mermaid:
+
+:::::{tab-set}
+
+::::{tab-item} Output
 
 ```mermaid
 gantt
@@ -75,7 +152,34 @@ Future task               :         des3, after des2, 5d
 Future task2               :         des4, after des3, 5d
 ```
 
-## Class Diagram
+::::
+
+::::{tab-item} Markdown
+````markdown
+```mermaid 
+gantt
+dateFormat  YYYY-MM-DD
+title Adding GANTT diagram to mermaid
+excludes weekdays 2014-01-10
+
+section A section
+Completed task            :done,    des1, 2014-01-06,2014-01-08
+Active task               :active,  des2, 2014-01-09, 3d
+Future task               :         des3, after des2, 5d
+Future task2               :         des4, after des3, 5d
+```
+````
+::::
+
+:::::
+
+### Class diagrams
+
+This is an example class diagram made with Mermaid:
+
+:::::{tab-set}
+
+::::{tab-item} Output
 
 ```mermaid
 classDiagram
@@ -94,71 +198,35 @@ Class01 : int gorilla
 Class08 <--> C2: Cool label
 ```
 
-## Git Graph
+::::
 
-```mermaid
- gitGraph
-       commit
-       commit
-       branch develop
-       commit
-       commit
-       commit
-       checkout main
-       commit
-       commit
+::::{tab-item} Markdown
+````markdown
+```mermaid 
+classDiagram
+Class01 <|-- AveryLongClass : Cool
+Class03 *-- Class04
+Class05 o-- Class06
+Class07 .. Class08
+Class09 --> C2 : Where am i?
+Class09 --* C3
+Class09 --|> Class07
+Class07 : equals()
+Class07 : Object[] elementData
+Class01 : size()
+Class01 : int chimp
+Class01 : int gorilla
+Class08 <--> C2: Cool label
 ```
+````
+::::
 
+:::::
 
-## Entity Relation Diagram
+## Troubleshooting
 
-```mermaid
-erDiagram
-    CUSTOMER ||--o{ ORDER : places
-    ORDER ||--|{ LINE-ITEM : contains
-    CUSTOMER }|..|{ DELIVERY-ADDRESS : uses
-```
+These are the most common issues when creating Mermaid diagrams and their solution:
 
-## User Journey
-
-```mermaid
-journey
-    title My working day
-    section Go to work
-      Make tea: 5: Me
-      Go upstairs: 3: Me
-      Do work: 1: Me, Cat
-    section Go home
-      Go downstairs: 5: Me
-      Sit down: 5: Me
-```
-
-## Quadrant Chart
-
-```mermaid
-quadrantChart
-    title Reach and engagement of campaigns
-    x-axis Low Reach --> High Reach
-    y-axis Low Engagement --> High Engagement
-    quadrant-1 We should expand
-    quadrant-2 Need to promote
-    quadrant-3 Re-evaluate
-    quadrant-4 May be improved
-    Campaign A: [0.3, 0.6]
-    Campaign B: [0.45, 0.23]
-    Campaign C: [0.57, 0.69]
-    Campaign D: [0.78, 0.34]
-    Campaign E: [0.40, 0.34]
-    Campaign F: [0.35, 0.78]
-```
-
-## XY Chart
-
-```mermaid
-xychart-beta
-    title "Sales Revenue"
-    x-axis [jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec]
-    y-axis "Revenue (in $)" 4000 --> 11000
-    bar [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
-    line [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
-```
+- Syntax errors: Ensure proper indentation and syntax.
+- Rendering issues: Check for unsupported characters or syntax.
+- Performance: Simplify diagrams with many nodes for better performance.
