@@ -19,13 +19,6 @@
 }
 @(await RenderPartialAsync(_Header.Create(Model)))
 
-
-HELLO
-
-<version-dropdown></version-dropdown>
-
-HELLO
-
 <div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
 	@functions {
 
@@ -55,6 +48,8 @@ HELLO
 						</div>
 						<article id="markdown-content" class="content-container markdown-content md:px-4">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							<version-dropdown></version-dropdown>
+
 							@await RenderBodyAsync()
 						</article>
 						@await RenderPartialAsync(_PrevNextNav.Create(Model))
