@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Site.FileProviders;
 
 public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 {
-	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(IDocumentationContext).Assembly, "Elastic.Markdown._static");
+	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(IDocumentationContext).Assembly, "Elastic.Documentation.Site._static");
 	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
 
 	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
@@ -24,7 +24,7 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		if (solutionRoot != null)
 		{
 
-			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Markdown", "_static");
+			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
 			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
 		}
 #else

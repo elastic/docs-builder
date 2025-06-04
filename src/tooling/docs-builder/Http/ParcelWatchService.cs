@@ -23,7 +23,7 @@ public class ParcelWatchService : IHostedService
 			RedirectStandardError = true,
 			UseShellExecute = false,
 			CreateNoWindow = true,
-			WorkingDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Markdown")
+			WorkingDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.Site")
 		})!;
 
 		_process.EnableRaisingEvents = true;
