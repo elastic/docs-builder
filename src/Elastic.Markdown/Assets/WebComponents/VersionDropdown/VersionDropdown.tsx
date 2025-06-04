@@ -12,6 +12,31 @@ import {
 } from '@elastic/eui';
 import { useState } from 'react';
 
+import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon';
+
+import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down';
+import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left';
+import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document';
+import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search';
+import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash';
+import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user';
+import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench';
+import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize';
+import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right';
+
+// One or more icons are passed in as an object of iconKey (string): IconComponent
+appendIconComponentCache({
+    arrowDown: EuiIconArrowDown,
+    arrowLeft: EuiIconArrowLeft,
+    arrowRight: EuiIconArrowRight,
+    document: EuiIconDocument,
+    search: EuiIconSearch,
+    trash: EuiIconTrash,
+    user: EuiIconUser,
+    wrench: EuiIconWrench,
+    visualizeApp: EuiIconVisualizeApp
+});
+
 const VersionDropdown =() => {
     const [isPopoverOpen, setPopover] = useState(false);
 
