@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;

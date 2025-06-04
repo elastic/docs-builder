@@ -7,6 +7,8 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
+using Elastic.ApiExplorer;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
@@ -155,6 +157,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		var generator = new DocumentationGenerator(set, logger, null, null, null, exporter);
 		_ = await generator.GenerateAll(ctx);
+
+		var openApiGenerator = new OpenApiGenerator(context, logger);
+		await openApiGenerator.Generate();
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);

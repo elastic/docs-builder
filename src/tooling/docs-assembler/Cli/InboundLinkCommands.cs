@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown.IO;

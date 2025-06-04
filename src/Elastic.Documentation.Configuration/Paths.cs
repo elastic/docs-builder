@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 
-namespace Elastic.Documentation.Site;
+namespace Elastic.Documentation.Configuration;
 
 public static class Paths
 {

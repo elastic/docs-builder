@@ -7,6 +7,7 @@ using Amazon.S3;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;

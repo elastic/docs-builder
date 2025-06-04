@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 
 using Cysharp.IO;
-
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;

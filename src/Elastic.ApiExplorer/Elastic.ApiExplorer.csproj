@@ -13,4 +13,8 @@
       <PackageReference Include="Utf8StreamReader" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    </ItemGroup>
+
 </Project>
