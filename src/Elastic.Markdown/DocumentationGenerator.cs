@@ -177,7 +177,7 @@ public class DocumentationGenerator
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
 		var keysNotInUse = definedKeys.Except(inUse).ToArray();
-		// If we have less than 20 unused keys emit them separately
+		// If we have less than 20 unused keys, emit them separately,
 		// Otherwise emit one hint with all of them for brevity
 		if (keysNotInUse.Length >= 20)
 		{

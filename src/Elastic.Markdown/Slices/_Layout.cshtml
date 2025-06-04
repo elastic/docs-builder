@@ -1,0 +1,37 @@
+@inherits RazorLayoutSlice<Elastic.Documentation.Site.LayoutViewModel>
+@implements IUsesLayout<Elastic.Documentation.Site._Layout, Elastic.Documentation.Site.LayoutViewModel>
+@functions {
+	public LayoutViewModel LayoutModel => Model;
+}
+			<div class="max-w-(--max-layout-width) w-full h-full grid
+					grid-cols-1
+					md:grid-cols-[var(--max-sidebar-width)_1fr]
+					lg:grid-cols-[var(--max-sidebar-width)_1fr_var(--max-sidebar-width)]
+				">
+				@await RenderPartialAsync(_PagesNav.Create(Model))
+				<div class="justify-center grid
+					grid-cols-1
+					px-6 lg:px-0
+					lg:grid-cols-[1fr_var(--max-text-width)_1fr]
+					">
+					<div class="spacer"></div>
+					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
+						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+							<div class="h-[2px] w-full overflow-hidden">
+								<div class="progress w-full h-full bg-pink-70 left-right"></div>
+							</div>
+							<div class="sr-only">Loading</div>
+						</div>
+						<div class="content-container md:px-4">
+							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content md:px-4">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+						@await RenderPartialAsync(_PrevNextNav.Create(Model))
+					</main>
+					<div class="spacer"></div>
+				</div>
+				@await RenderPartialAsync(_TableOfContents.Create(Model))
+			</div>

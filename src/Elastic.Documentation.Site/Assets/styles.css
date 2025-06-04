@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@config "../tailwind.config.js";
+
 @import './fonts.css';
 @import './theme.css';
 @import './markdown/typography.css';
@@ -14,6 +16,7 @@
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';
+
 
 :root {
 	--outline-size: max(2px, 0.08em);
