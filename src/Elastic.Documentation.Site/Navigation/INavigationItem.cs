@@ -33,6 +33,8 @@ public interface INavigationGroup : INavigationItem
 {
 	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 	string? IndexFileName { get; }
+
+	IGroupNavigationItem GroupNavigationItem { get; }
 }
 
 

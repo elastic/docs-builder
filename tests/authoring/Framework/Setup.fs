@@ -10,6 +10,7 @@ open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
+open Elastic.Documentation.Site
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations

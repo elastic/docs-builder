@@ -60,7 +60,7 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		{
 			Title = tree.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = tree.Index?.Url ?? Set.Context.UrlPathPrefix ?? "/",
-			Tree = tree,
+			Tree = tree.GroupNavigationItem,
 			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,
 			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigationItem>().ToList()

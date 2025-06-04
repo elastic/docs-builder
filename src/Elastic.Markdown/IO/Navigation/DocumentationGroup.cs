@@ -86,6 +86,7 @@ public class TableOfContentsTree : DocumentationGroup
 		if (NavigationItems.Count == 1 && NavigationItems.First() is GroupNavigationItem { Group.NavigationItems.Count: 0 })
 			NavigationItems = [];
 
+
 	}
 
 	internal TableOfContentsTree(
@@ -136,6 +137,8 @@ public class DocumentationGroup : INavigationGroup
 
 	public string? IndexFileName => Index?.FileName;
 
+	public IGroupNavigationItem GroupNavigationItem { get; }
+
 	public int Depth { get; set; }
 
 	public INavigationItem? Parent { get; set; }
@@ -175,7 +178,7 @@ public class DocumentationGroup : INavigationGroup
 		NavigationSource = navigationSource;
 		_treeCollector = treeCollector;
 		Depth = depth;
-		// Virtual calls don't use state so while ugly not an issue
+		// Virtual calls don't use state, so while ugly not an issue
 		// We'll need to address this more structurally
 		// ReSharper disable VirtualMemberCallInConstructor
 		toplevelTree ??= DefaultNavigation;
@@ -192,6 +195,8 @@ public class DocumentationGroup : INavigationGroup
 		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
 		if (Index is not null)
 			FilesInOrder = [.. FilesInOrder.Except([Index])];
+
+		GroupNavigationItem = new GroupNavigationItem(Depth, this, null);
 	}
 
 	private MarkdownFile? ProcessTocItems(
@@ -247,7 +252,7 @@ public class DocumentationGroup : INavigationGroup
 					var group = new DocumentationGroup(virtualIndex.RelativePath,
 						_treeCollector, context, lookups with
 						{
-							TableOfContents = file.Children
+							TableOfContents = file.Children,
 						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
 					navigationItems.Add(new GroupNavigationItem(depth, group, this));

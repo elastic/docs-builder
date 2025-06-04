@@ -66,11 +66,11 @@ public record GlobalNavigation : IPositionalNavigation
 					fileNavigationItem.Parent = parent;
 					_ = markdownFiles.Add(fileNavigationItem.File);
 					break;
-				case GroupNavigationItem { Group.Index: not null } groupNavigationItem:
+				case GroupNavigationItem { DocumentationGroup.Index: not null } groupNavigationItem:
 					var index = Interlocked.Increment(ref navigationIndex);
-					groupNavigationItem.Group.Index.NavigationIndex = index;
+					groupNavigationItem.DocumentationGroup.Index.NavigationIndex = index;
 					groupNavigationItem.Parent = parent;
-					_ = markdownFiles.Add(groupNavigationItem.Group.Index);
+					_ = markdownFiles.Add(groupNavigationItem.DocumentationGroup.Index);
 					UpdateNavigationIndex(markdownFiles, groupNavigationItem.Group.NavigationItems, groupNavigationItem, ref navigationIndex);
 					break;
 				case DocumentationGroup { Index: not null } documentationGroup:

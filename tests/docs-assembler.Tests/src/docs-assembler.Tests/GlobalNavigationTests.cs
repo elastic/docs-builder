@@ -236,7 +236,7 @@ public class GlobalNavigationPathProviderTests
 	)
 	{
 		parent.Should().NotBeNull();
-		parent!.Group.Index.Should().NotBeNull();
+		parent!.DocumentationGroup.Index.Should().NotBeNull();
 		var parents2 = positionalNavigation.GetParents(item);
 		var parents3 = positionalNavigation.GetParentMarkdownFiles(item);
 		var markdown = (item as FileNavigationItem)?.File!;

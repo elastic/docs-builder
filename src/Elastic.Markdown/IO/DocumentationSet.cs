@@ -167,8 +167,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
 			EnabledExtensions = EnabledExtensions,
-			FilesGroupedByFolder = FilesGroupedByFolder,
-			//IndexedTableOfContents = indexedTableOfContents ?? new Dictionary<Uri, TableOfContentsReference>().ToFrozenDictionary()
+			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
 		Tree = new TableOfContentsTree(this, Source, Context, lookups, treeCollector, ref fileIndex);

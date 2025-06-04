@@ -78,7 +78,7 @@ public class GlobalNavigationHtmlWriter(
 		{
 			Title = group.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = group.Index?.Url ?? "/",
-			Tree = group,
+			Tree = group.GroupNavigationItem,
 			IsPrimaryNavEnabled = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems
