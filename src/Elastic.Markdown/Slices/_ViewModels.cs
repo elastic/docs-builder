@@ -46,11 +46,6 @@ public class IndexViewModel
 public class LayoutViewModel
 {
 	public required string DocSetName { get; init; }
-
-	/// Used to identify the navigation for the current compilation
-	/// We want to reset users sessionStorage every time this changes to invalidate
-	/// the guids that no longer exist
-	public static string CurrentNavigationId { get; } = Guid.NewGuid().ToString("N")[..8];
 	public string Title { get; set; } = "Elastic Documentation";
 	public required string Description { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }

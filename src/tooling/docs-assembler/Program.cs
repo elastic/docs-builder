@@ -26,6 +26,7 @@ app.Add<InboundLinkCommands>("inbound-links");
 app.Add<RepositoryCommands>("repo");
 app.Add<NavigationCommands>("navigation");
 app.Add<ContentSourceCommands>("content-source");
+app.Add<DeployCommands>("deploy");
 
 var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
 var command = githubActions?.GetInput("COMMAND");

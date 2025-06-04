@@ -1,6 +1,5 @@
 @inherits RazorSlice<VersionViewModel>
 <div class="@Model.Directive"><p>
 	<span class="versionmodified @Model.VersionClass">@Model.Title</span>
-	[CONTENT]
-
+	@Model.RenderBlock()
 </p></div>
