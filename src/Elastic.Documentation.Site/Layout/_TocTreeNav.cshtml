@@ -66,9 +66,9 @@
 			}
 		</li>
 	}
-	if (item is { Current: not null } page && Model.SubTree.Index != page.Current)
+	else if (item is { Current: { Url: not null } } && Model.SubTree.Index?.Url != item.Current.Url)
 	{
-		var f = page.Current;
+		var f = item.Current;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@f.Url"
