@@ -23,15 +23,15 @@
 							<div class="sr-only">Loading</div>
 						</div>
 						<div class="content-container md:px-4">
-							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+							@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._Breadcrumbs.Create(Model))
 						</div>
 						<article id="markdown-content" class="content-container markdown-content md:px-4">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderBodyAsync()
 						</article>
-						@await RenderPartialAsync(_PrevNextNav.Create(Model))
+						@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._PrevNextNav.Create(Model))
 					</main>
 					<div class="spacer"></div>
 				</div>
-				@await RenderPartialAsync(_TableOfContents.Create(Model))
+				@await RenderPartialAsync(Elastic.Markdown.Slices.Layout._TableOfContents.Create(Model))
 			</div>
