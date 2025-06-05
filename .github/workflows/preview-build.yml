@@ -178,8 +178,39 @@ jobs:
           esac
 
       - name: Bootstrap Action Workspace
-        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
+        if: |
+          '1' == '0' && env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
         uses: elastic/docs-builder/.github/actions/bootstrap@main
+
+      ## BEGIN TEMPORARY USE THIS AND REVERT BACK TO OUR BOOTSTRAP ACTION ONCE THIS IS MERGED
+      - shell: bash
+        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
+        run: |
+          git fetch --prune --unshallow --tags
+          git tag --list
+      - uses: actions/setup-dotnet@v4
+        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
+        with:
+          global-json-file: global.json
+
+      - id: dotnet
+        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
+        shell: bash
+        run: |
+          dotnet tool restore
+          REPO_VERSION=$(dotnet minver -t=v -p=canary.0 -v=e -m=0.1)
+          echo "Version Number: ${REPO_VERSION}"
+          echo "REPO_VERSION=${REPO_VERSION}" >> $GITHUB_ENV
+          echo "full-version=${REPO_VERSION}" >> $GITHUB_OUTPUT
+          echo "major-version=$(echo ${REPO_VERSION} | cut -d"." -f1)" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-node@v4
+        if: env.MATCH == 'true' && (github.repository == 'elastic/docs-builder' && steps.deployment.outputs.result)
+        with:
+          cache: npm
+          cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
+          node-version-file: .nvmrc
+      ## END TEMPORARY USE THIS AND REVERT BACK TO OUR BOOTSTRAP ACTION ONCE THIS IS MERGED
 
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
