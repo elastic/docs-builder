@@ -61,26 +61,3 @@ public record PageTocItem
 	public required string Slug { get; init; }
 	public required int Level { get; init; }
 }
-
-
-public class NavigationViewModel
-{
-	public required string Title { get; init; }
-	public required string TitleUrl { get; init; }
-	public required IGroupNavigationItem Tree { get; init; }
-	/// controls whether to split the navigation tree automatically
-	public required bool IsPrimaryNavEnabled { get; init; }
-	public required bool IsGlobalAssemblyBuild { get; init; }
-	//public required IEnumerable<GroupNavigationItem> TopLevelItems { get; init; }
-	public required IEnumerable<IGroupNavigationItem> TopLevelItems { get; init; }
-}
-
-public class NavigationTreeItem
-{
-	public required int Level { get; init; }
-	//public required MarkdownFile CurrentDocument { get; init; }
-	public required IGroupNavigationItem SubTree { get; init; }
-	public required bool IsPrimaryNavEnabled { get; init; }
-	public required bool IsGlobalAssemblyBuild { get; init; }
-	public required string RootNavigationId { get; set; }
-}

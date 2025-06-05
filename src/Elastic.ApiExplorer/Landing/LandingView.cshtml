@@ -1,7 +1,6 @@
-@using Elastic.ApiExplorer.ApiListing
 @using Elastic.Documentation.Configuration.Assembler
 @using Elastic.Documentation.Configuration.Builder
-@inherits RazorSliceHttpResult<IndexViewModel>
+@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => new()
@@ -10,10 +9,10 @@
 		Description = "",
 		Layout = null,
 		PageTocItems = [],
-		CurrentDocument = Model.ApiInformation,
+		CurrentDocument = Model.Landing,
 		Previous = null,
 		Next = null,
-		NavigationHtml = "",
+		NavigationHtml = Model.NavigationHtml,
 		LegacyPage = null,
 		UrlPathPrefix = null,
 		GithubEditUrl = null,
@@ -30,4 +29,5 @@
 	};
 }
 <section id="elastic-docs-v3">
+	<h1>@Model.</h1>
 </section>

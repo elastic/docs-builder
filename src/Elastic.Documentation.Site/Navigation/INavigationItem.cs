@@ -18,6 +18,7 @@ public interface INavigationItem : INavigationScope
 	IPageInformation? Current { get; }
 }
 
+// TODO make generic TINdex and TNavigationItem
 public interface IGroupNavigationItem : INavigationItem
 {
 	IPageInformation? Index { get; }

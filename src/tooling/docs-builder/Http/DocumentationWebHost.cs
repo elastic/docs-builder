@@ -150,6 +150,9 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, "index.md", ctx));
 
+		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeApiFile(holder, "", ctx));
+
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
@@ -159,7 +162,7 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-		var path = Path.Combine(holder.ApiPath.FullName, slug + ".html");
+		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{

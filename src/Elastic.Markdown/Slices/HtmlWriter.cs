@@ -2,10 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site;
@@ -19,56 +17,6 @@ using RazorSlices;
 using IFileInfo = System.IO.Abstractions.IFileInfo;
 
 namespace Elastic.Markdown.Slices;
-
-public interface INavigationHtmlWriter
-{
-	Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default);
-
-	async Task<string> Render(NavigationViewModel model, Cancel ctx)
-	{
-		var slice = Elastic.Documentation.Site.Layout._TocTree.Create(model);
-		return await slice.RenderAsync(cancellationToken: ctx);
-	}
-}
-
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavigationItem siteRoot)
-	: INavigationHtmlWriter
-{
-	//private DocumentationSet Set { get; } = set;
-
-	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
-
-	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
-	{
-		var navigation = context.Configuration.Features.IsPrimaryNavEnabled
-			? currentRootNavigation
-			: siteRoot;
-
-		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
-			return value;
-
-		var model = CreateNavigationModel(navigation);
-		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[navigation.Id] = value;
-		return value;
-	}
-
-	private NavigationViewModel CreateNavigationModel(IGroupNavigationItem navigation)
-	{
-		if (navigation is not DocumentationGroup tree)
-			throw new InvalidOperationException("Expected a documentation group");
-
-		return new NavigationViewModel
-		{
-			Title = tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = tree.Index?.Url ?? context.UrlPathPrefix ?? "/",
-			Tree = tree.GroupNavigationItem,
-			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = false,
-			TopLevelItems = siteRoot.NavigationItems.OfType<IGroupNavigationItem>().ToList()
-		};
-	}
-}
 
 public class HtmlWriter(
 	DocumentationSet documentationSet,

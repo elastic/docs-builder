@@ -3,18 +3,13 @@
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
 }
-			<div class="max-w-(--max-layout-width) w-full h-full grid
+			<div class="w-full h-full grid
 					grid-cols-1
 					md:grid-cols-[var(--max-sidebar-width)_1fr]
 					lg:grid-cols-[var(--max-sidebar-width)_1fr]
 				">
 				@await RenderPartialAsync(_PagesNav.Create(Model))
-				<div class="justify-center grid
-					grid-cols-1
-					px-6 lg:px-0
-					lg:grid-cols-[1fr_var(--max-text-width)]
-					">
-					<div class="spacer"></div>
+				<div class="justify-center px-6 lg:px-0">
 					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
 						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
 							<div class="h-[2px] w-full overflow-hidden">

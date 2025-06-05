@@ -10,6 +10,7 @@ using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;

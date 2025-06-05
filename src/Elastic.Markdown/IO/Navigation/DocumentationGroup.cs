@@ -12,6 +12,9 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 
+//TODO see if we can remove these proxy classes `TocNavigationItem` and `GroupNavigationItem`
+//They wrap `DocumentationGroup` which is now by itself a `IGroupNavigationItem`
+
 [DebuggerDisplay("Toc >{Depth} {DocumentationGroup.FolderName}")]
 public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup, Uri Source, IGroupNavigationItem? Parent)
 	: GroupNavigationItem(Depth, DocumentationGroup, Parent)
@@ -82,7 +85,7 @@ public class TableOfContentsTree : DocumentationGroup
 		TreeCollector.Collect(source, this);
 		DocumentationSet = documentationSet;
 
-		//edge case if tree only holds a single group ensure we collapse it down to the root (this)
+		//edge case if a tree only holds a single group, ensure we collapse it down to the root (this)
 		if (NavigationItems.Count == 1 && NavigationItems.First() is GroupNavigationItem { NavigationItems.Count: 0 })
 			NavigationItems = [];
 
@@ -118,8 +121,6 @@ public class DocumentationGroup : IGroupNavigationItem
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
 	public string Id { get; }
-
-	public string NavigationRootId => NavigationRoot.Id;
 
 	public IGroupNavigationItem NavigationRoot { get; set; }
 

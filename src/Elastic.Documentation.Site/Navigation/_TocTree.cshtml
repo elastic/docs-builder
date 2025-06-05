@@ -1,4 +1,5 @@
-@inherits RazorSlice<Elastic.Documentation.Site.NavigationViewModel>
+@using Elastic.Documentation.Site.Navigation
+@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
 <div class="pb-20 font-body" hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator">
 	@{
 		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
