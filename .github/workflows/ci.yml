@@ -46,7 +46,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           cache: npm
-          cache-dependency-path: src/Elastic.Markdown/package-lock.json
+          cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
           node-version-file: .nvmrc
       
       - name: Install dependencies
