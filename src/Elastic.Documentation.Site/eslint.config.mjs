@@ -4,7 +4,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-	globalIgnores(['_static/main.js']),
+	globalIgnores(['_static/main.js', 'tailwind.config.js']),
 	{ files: ['**/*.{js,mjs,cjs,ts}'] },
 	{
 		files: ['**/*.{js,mjs,cjs,ts}'],
