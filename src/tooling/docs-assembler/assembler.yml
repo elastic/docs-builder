@@ -106,6 +106,8 @@ references:
   kibana:
   logstash-docs-md:
   logstash:
+    current: "9.0"
+    next: main
   opentelemetry:
   search-ui:
   integration-docs:
