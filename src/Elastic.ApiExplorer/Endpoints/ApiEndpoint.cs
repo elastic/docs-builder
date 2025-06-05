@@ -39,7 +39,7 @@ public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml
 		};
-		var slice = Endpoints.EndpointView.Create(viewModel);
+		var slice = EndpointView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }

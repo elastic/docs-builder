@@ -17,13 +17,16 @@ namespace Elastic.ApiExplorer;
 
 public static class OpenApiReader
 {
-	public static async Task<OpenApiDocument> Create()
+	public static async Task<OpenApiDocument?> Create(IFileInfo openApiSpecification)
 	{
+		if (!openApiSpecification.Exists)
+			return null;
+
 		var settings = new OpenApiReaderSettings
 		{
 			LeaveStreamOpen = false
 		};
-		await using var fs = File.Open("/Users/mpdreamz/Projects/docs-builder/src/Elastic.ApiExplorer/elasticsearch-openapi.json", FileMode.Open);
+		await using var fs = File.Open(openApiSpecification.FullName, FileMode.Open);
 		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
 		return openApiDocument.Document;
 	}
@@ -95,7 +98,13 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		var openApiDocument = await OpenApiReader.Create();
+		if (context.Configuration.OpenApiSpecification is null)
+			return;
+
+		var openApiDocument = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);
+		if (openApiDocument is null)
+			return;
+
 		var navigation = CreateNavigation(openApiDocument);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
 

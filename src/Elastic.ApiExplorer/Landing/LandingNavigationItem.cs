@@ -27,7 +27,7 @@ public class ApiLanding(IGroupNavigationItem root, string url) : IPageInformatio
 			NavigationHtml = context.NavigationHtml,
 			ApiInfo = context.Model.Info,
 		};
-		var slice = Landing.LandingView.Create(viewModel);
+		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }

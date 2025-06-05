@@ -40,7 +40,7 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml
 		};
-		var slice = Operations.OperationView.Create(viewModel);
+		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }
