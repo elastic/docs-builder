@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: 
       run: 
-        working-directory: src/Elastic.Markdown
+        working-directory: src/Elastic.Documentation.Site
     steps:
       - uses: actions/checkout@v4
 
