@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -195,16 +196,17 @@ public class DocumentationGenerator
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
 		_logger.LogInformation($"Copying static files to output directory");
-		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
+		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
+		var embeddedStaticFiles = assembly
 			.GetManifestResourceNames()
 			.ToList();
 		foreach (var a in embeddedStaticFiles)
 		{
-			await using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(a);
+			await using var resourceStream = assembly.GetManifestResourceStream(a);
 			if (resourceStream == null)
 				continue;
 
-			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
+			var path = a.Replace("Elastic.Documentation.Site.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			var outputFile = OutputFile(path);
 			if (outputFile is null)

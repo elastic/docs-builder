@@ -49,7 +49,7 @@ public record GlobalNavigation : IPositionalNavigation
 			.ToFrozenDictionary();
 	}
 
-	private static void UpdateNavigationIndex(
+	private void UpdateNavigationIndex(
 		HashSet<MarkdownFile> markdownFiles,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		INavigationItem? parent,
@@ -80,7 +80,9 @@ public record GlobalNavigation : IPositionalNavigation
 					_ = markdownFiles.Add(documentationGroup.Index);
 					UpdateNavigationIndex(markdownFiles, documentationGroup.NavigationItems, documentationGroup, ref navigationIndex);
 					break;
-
+				default:
+					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");
+					break;
 			}
 		}
 	}

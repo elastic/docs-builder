@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site;
@@ -30,17 +31,18 @@ public interface INavigationHtmlWriter
 	}
 }
 
-public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigationHtmlWriter
+public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INavigationGroup siteRoot)
+	: INavigationHtmlWriter
 {
-	private DocumentationSet Set { get; } = set;
+	//private DocumentationSet Set { get; } = set;
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
 	public async Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
-		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
+		var navigation = context.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
-			: Set.Tree;
+			: siteRoot;
 
 		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
 			return value;
@@ -59,11 +61,11 @@ public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigati
 		return new NavigationViewModel
 		{
 			Title = tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = tree.Index?.Url ?? Set.Context.UrlPathPrefix ?? "/",
+			TitleUrl = tree.Index?.Url ?? context.UrlPathPrefix ?? "/",
 			Tree = tree.GroupNavigationItem,
-			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
+			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigationItem>().ToList()
+			TopLevelItems = siteRoot.NavigationItems.OfType<IGroupNavigationItem>().ToList()
 		};
 	}
 }
@@ -78,7 +80,10 @@ public class HtmlWriter(
 )
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
-	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
+
+	private INavigationHtmlWriter NavigationHtmlWriter { get; } =
+		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Tree);
+
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;

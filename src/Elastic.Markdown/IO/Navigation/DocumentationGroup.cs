@@ -28,7 +28,7 @@ public record GroupNavigationItem(int Depth, DocumentationGroup DocumentationGro
 	public INavigationItem? Parent { get; set; } = Parent;
 	public IPageInformation? Index { get; } = DocumentationGroup.Index;
 	public IPageInformation? Current => DocumentationGroup.Index;
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; } = DocumentationGroup.NavigationItems;
+	public IReadOnlyCollection<INavigationItem> NavigationItems => DocumentationGroup.NavigationItems;
 	public INavigationGroup NavigationRoot { get; } = Parent?.NavigationRoot ?? DocumentationGroup;
 	public INavigationGroup Group { get; } = DocumentationGroup;
 }
