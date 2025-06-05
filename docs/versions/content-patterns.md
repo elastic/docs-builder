@@ -17,11 +17,9 @@ Choose from:
 
 **Use case:** Provide signals that a page applies to the reader
 
-**Number to use:** Minimum to add clarity. See [basic concepts and principles](/versions/index.md#basic-concepts-and-principles). 
+**Number to use:** All relevant facets that apply to the page. Each page must have at least one valid `applies_to` value specified. See [basic concepts and principles](/versions/index.md#basic-concepts-and-principles). 
 
 **Approach:**
-
-Add tags for all **versioning facets** relevant to the page.
 
 See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-states) to learn when to specify versions in these tags.
 
