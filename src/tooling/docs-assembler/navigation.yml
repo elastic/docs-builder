@@ -291,6 +291,30 @@ toc:
       - toc: opentelemetry://reference
         path_prefix: reference/opentelemetry
         # Children include all EDOT distribution docs.
+        children:
+          - toc: opentelemetry://reference/quickstart
+            path_prefix: reference/opentelemetry/quickstart
+          - toc: opentelemetry://reference/architecture
+            path_prefix: reference/opentelemetry/architecture
+          - toc: opentelemetry://reference/use-cases
+            path_prefix: reference/opentelemetry/use-cases
+          - toc: opentelemetry://reference/compatibility
+            path_prefix: reference/opentelemetry/compatibility
+          - toc: opentelemetry://reference/edot-collector
+            path_prefix: reference/opentelemetry/edot-collector
+          - toc: opentelemetry://reference/edot-sdks
+            path_prefix: reference/opentelemetry/edot-sdks
+            children:
+              - toc: opentelemetry://reference/edot-sdks/dotnet
+                path_prefix: reference/opentelemetry/edot-sdks/dotnet
+              - toc: opentelemetry://reference/edot-sdks/java
+                path_prefix: reference/opentelemetry/edot-sdks/java
+              - toc: opentelemetry://reference/edot-sdks/nodejs
+                path_prefix: reference/opentelemetry/edot-sdks/nodejs
+              - toc: opentelemetry://reference/edot-sdks/php
+                path_prefix: reference/opentelemetry/edot-sdks/php
+              - toc: opentelemetry://reference/edot-sdks/python
+                path_prefix: reference/opentelemetry/edot-sdks/python
 
       # Ingestion tools
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml
