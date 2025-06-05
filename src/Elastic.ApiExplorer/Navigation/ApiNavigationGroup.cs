@@ -15,7 +15,7 @@ public class ApiGroupNavigationItem(int depth, ApiNavigationGroup group) : IGrou
 	public INavigationItem? Parent { get; set; } = group.Parent;
 	public int Depth { get; } = depth;
 	public IPageInformation? Current { get; } = group.Current;
-	public IPageInformation? Index { get; }
+	public IPageInformation? Index { get; set; }
 	public IReadOnlyCollection<INavigationItem> NavigationItems => group.NavigationItems;
 	public INavigationGroup Group { get; } = group;
 }
@@ -27,7 +27,7 @@ public class ApiNavigationGroup : INavigationGroup
 	public INavigationItem? Parent { get; set; }
 	public int Depth { get; }
 	public IPageInformation? Current { get; }
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; }
 	public string? IndexFileName { get; }
 	public IGroupNavigationItem GroupNavigationItem { get; set; }
 

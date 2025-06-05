@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.ApiListing;
+using Elastic.ApiExplorer.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -33,9 +34,30 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 
+	public static ApiGroupNavigationItem CreateNavigation(OpenApiDocument openApiDocument)
+	{
+		var group = new ApiNavigationGroup();
+		var rootNavigation = new ApiGroupNavigationItem(0, group);
+		var rootItems = new List<ApiGroupNavigationItem>();
+
+		foreach (var path in openApiDocument.Paths)
+		{
+			var pathGroup = new ApiNavigationGroup();
+			var pathNavigation = new ApiGroupNavigationItem(0, pathGroup);
+			foreach (var operation in path.Value.Operations)
+			{
+			}
+			rootItems.Add(pathNavigation);
+		}
+
+		group.NavigationItems = rootItems;
+		return rootNavigation;
+	}
+
 	public async Task Generate(Cancel ctx = default)
 	{
 		var openApiDocument = await OpenApiReader.Create();
+		var navigation = CreateNavigation(openApiDocument);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
 
 		foreach (var path in openApiDocument.Paths)
