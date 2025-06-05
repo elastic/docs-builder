@@ -6,10 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
@@ -56,10 +58,10 @@ public interface IPositionalNavigation
 		{
 			if (parent is FileNavigationItem f)
 				parents.Add(f.File);
-			if (parent is GroupNavigationItem { Group.Index: not null } g)
-				parents.Add(g.Group.Index);
-			if (parent is DocumentationGroup { Index: not null } dg)
-				parents.Add(dg.Index);
+			if (parent is GroupNavigationItem { DocumentationGroup.MarkdownFileIndex: not null } g)
+				parents.Add(g.DocumentationGroup.MarkdownFileIndex);
+			if (parent is DocumentationGroup { MarkdownFileIndex: not null } dg)
+				parents.Add(dg.MarkdownFileIndex);
 		}
 		return [.. parents];
 	}
@@ -166,8 +168,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
 			EnabledExtensions = EnabledExtensions,
-			FilesGroupedByFolder = FilesGroupedByFolder,
-			//IndexedTableOfContents = indexedTableOfContents ?? new Dictionary<Uri, TableOfContentsReference>().ToFrozenDictionary()
+			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
 		Tree = new TableOfContentsTree(this, Source, Context, lookups, treeCollector, ref fileIndex);
@@ -195,10 +196,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		if (item is GroupNavigationItem g)
 		{
 			var index = new List<(string, INavigationItem)>();
-			if (g.Group.Index is not null)
-				index.Add((g.Group.Index.CrossLink, g));
+			if (g.DocumentationGroup.Index is not null)
+				index.Add((g.DocumentationGroup.Index.CrossLink, g));
 
-			return index.Concat(g.Group.NavigationItems.SelectMany(Pairs).ToArray())
+			return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
 				.DistinctBy(kv => kv.Item1)
 				.ToArray();
 		}
@@ -256,6 +257,14 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
+			if (to.Contains("://"))
+			{
+				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
+					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+
+				return;
+			}
+
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
 

@@ -16,7 +16,10 @@
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
+    <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.11.3" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.0.0-preview9" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.5" />
   </ItemGroup>
   <!-- Build -->
   <ItemGroup>
@@ -39,7 +42,7 @@
     <PackageVersion Include="Markdig" Version="0.41.1" />
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Proc" Version="0.9.1" />
-    <PackageVersion Include="RazorSlices" Version="0.8.1" />
+    <PackageVersion Include="RazorSlices" Version="0.9.0" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="2.7.0" />
@@ -54,14 +57,17 @@
   <ItemGroup>
     <PackageVersion Include="AngleSharp.Diffing" Version="1.0.0" />
     <PackageVersion Include="DiffPlex" Version="1.7.2" />
-    <PackageVersion Include="FluentAssertions" Version="6.12.1" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <PackageVersion Include="FsUnit.xUnit" Version="7.0.1" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.4.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2024.3.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.0.14" />
     <PackageVersion Include="Unquote" Version="7.0.1" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
-    <PackageVersion Include="xunit.v3" Version="1.1.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageVersion>
+    <PackageVersion Include="xunit.v3" Version="2.0.2" />
   </ItemGroup>
 </Project>

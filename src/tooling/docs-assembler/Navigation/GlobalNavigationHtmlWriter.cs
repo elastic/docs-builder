@@ -5,6 +5,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Slices;
 
@@ -43,7 +45,7 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
@@ -76,7 +78,7 @@ public class GlobalNavigationHtmlWriter(
 		{
 			Title = group.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = group.Index?.Url ?? "/",
-			Tree = group,
+			Tree = group.GroupNavigationItem,
 			IsPrimaryNavEnabled = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems

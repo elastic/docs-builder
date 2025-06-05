@@ -16,6 +16,8 @@ subs:
 
 features:
   primary-nav: false
+
+api: elasticsearch-openapi.json
   
 toc:
   - file: index.md

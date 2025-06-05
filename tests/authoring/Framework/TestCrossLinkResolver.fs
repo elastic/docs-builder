@@ -86,7 +86,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                 )
             Task.FromResult crossLinks
 
-        member this.TryResolve(errorEmitter, warningEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
+        member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             let indexEntries =
                 this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
                     Repository = e.Key,
@@ -104,6 +104,6 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                     LinkIndexEntries=indexEntries.ToFrozenDictionary()
 
                 )
-            CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri);
+            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri);
 
 

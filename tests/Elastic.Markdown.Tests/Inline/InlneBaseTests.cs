@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -132,7 +134,7 @@ $"""
 		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
 
 		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
-		var html = File.CreateHtml(Document).AsSpan();
+		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0 && !TestingFullDocument

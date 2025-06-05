@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 
@@ -48,10 +49,10 @@ public record GlobalNavigation : IPositionalNavigation
 			.ToFrozenDictionary();
 	}
 
-	private static void UpdateNavigationIndex(
+	private void UpdateNavigationIndex(
 		HashSet<MarkdownFile> markdownFiles,
 		IReadOnlyCollection<INavigationItem> navigationItems,
-		INavigationItem? parent,
+		IGroupNavigationItem? parent,
 		ref int navigationIndex
 	)
 	{
@@ -65,26 +66,28 @@ public record GlobalNavigation : IPositionalNavigation
 					fileNavigationItem.Parent = parent;
 					_ = markdownFiles.Add(fileNavigationItem.File);
 					break;
-				case GroupNavigationItem { Group.Index: not null } groupNavigationItem:
+				case GroupNavigationItem { DocumentationGroup.MarkdownFileIndex: not null } groupNavigationItem:
 					var index = Interlocked.Increment(ref navigationIndex);
-					groupNavigationItem.Group.Index.NavigationIndex = index;
+					groupNavigationItem.DocumentationGroup.MarkdownFileIndex.NavigationIndex = index;
 					groupNavigationItem.Parent = parent;
-					_ = markdownFiles.Add(groupNavigationItem.Group.Index);
-					UpdateNavigationIndex(markdownFiles, groupNavigationItem.Group.NavigationItems, groupNavigationItem, ref navigationIndex);
+					_ = markdownFiles.Add(groupNavigationItem.DocumentationGroup.MarkdownFileIndex);
+					UpdateNavigationIndex(markdownFiles, groupNavigationItem.NavigationItems, groupNavigationItem, ref navigationIndex);
 					break;
-				case DocumentationGroup { Index: not null } documentationGroup:
+				case DocumentationGroup { MarkdownFileIndex: not null } documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
-					documentationGroup.Index.NavigationIndex = groupIndex;
+					documentationGroup.MarkdownFileIndex.NavigationIndex = groupIndex;
 					documentationGroup.Parent = parent;
-					_ = markdownFiles.Add(documentationGroup.Index);
+					_ = markdownFiles.Add(documentationGroup.MarkdownFileIndex);
 					UpdateNavigationIndex(markdownFiles, documentationGroup.NavigationItems, documentationGroup, ref navigationIndex);
 					break;
-
+				default:
+					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");
+					break;
 			}
 		}
 	}
 
-	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<TocReference> node, int depth, INavigationItem? parent = null)
+	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<TocReference> node, int depth, IGroupNavigationItem? parent = null)
 	{
 		var list = new List<INavigationItem>();
 		foreach (var toc in node)

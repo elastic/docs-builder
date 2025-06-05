@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 

@@ -2,15 +2,15 @@ stack: 8.18
 
 mappings:
   en/apm/agent/android: 0.x
-  en/apm/agent/dotnet: 1.x
-  en/apm/agent/go: 2.x
-  en/apm/agent/java: 1.x
-  en/apm/agent/nodejs: 4.x
+  en/apm/agent/dotnet: undefined
+  en/apm/agent/go: 1.x
+  en/apm/agent/java: undefined
+  en/apm/agent/nodejs: 3.x
   en/apm/agent/php: undefined
-  en/apm/agent/python: 6.x
-  en/apm/agent/ruby: 4.x
-  en/apm/agent/rum-js: 5.x
-  en/apm/agent/swift: 1.x
+  en/apm/agent/python: 5.x
+  en/apm/agent/ruby: 3.x
+  en/apm/agent/rum-js: 4.x
+  en/apm/agent/swift: 0.x
   en/apm/attacher: undefined
   en/apm/lambda: undefined
   en/beats/auditbeat: stack
@@ -29,7 +29,7 @@ mappings:
   en/cloud-heroku: undefined
   en/cloud-on-k8s: 2.16
   en/cloud: undefined
-  en/ecctl: 1.14
+  en/ecctl: 1.13
   en/ecs-logging: undefined
   en/ecs-logging/dotnet: undefined
   en/ecs-logging/go-logrus: undefined

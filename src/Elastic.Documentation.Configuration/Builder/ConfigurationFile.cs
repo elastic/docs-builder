@@ -50,6 +50,8 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public IDirectoryInfo ScopeDirectory { get; }
 
+	public IFileInfo? OpenApiSpecification { get; }
+
 	/// This is a documentation set that is not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
@@ -107,6 +109,13 @@ public record ConfigurationFile : ITableOfContentsScope
 						break;
 					case "toc":
 						// read this later
+						break;
+					case "api":
+						var specification = reader.ReadString(entry.Entry);
+						if (specification is null)
+							break;
+						var path = Path.Combine(context.DocumentationSourceDirectory.FullName, specification);
+						OpenApiSpecification = context.ReadFileSystem.FileInfo.New(path);
 						break;
 					case "products":
 						if (entry.Entry.Value is not YamlSequenceNode sequence)

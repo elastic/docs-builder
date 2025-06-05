@@ -4,10 +4,14 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
+using Elastic.ApiExplorer;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Refactor;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
@@ -41,7 +45,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		var host = new DocumentationWebHost(path, port, logger, new FileSystem());
+		var host = new DocumentationWebHost(path, port, logger, new FileSystem(), new MockFileSystem());
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 	}
@@ -154,6 +158,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		var generator = new DocumentationGenerator(set, logger, null, null, null, exporter);
 		_ = await generator.GenerateAll(ctx);
+
+		var openApiGenerator = new OpenApiGenerator(context, logger);
+		await openApiGenerator.Generate(ctx);
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
