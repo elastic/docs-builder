@@ -29,9 +29,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		switch (directiveBlock)
 		{
-			case MermaidBlock mermaidBlock:
-				WriteMermaid(renderer, mermaidBlock);
-				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
 				return;
@@ -206,12 +203,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer);
 	}
 
-	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
-	{
-		var slice = Mermaid.Create(new MermaidViewModel { DirectiveBlock = block });
-		RenderRazorSliceRawContent(slice, renderer, block);
-	}
-
 	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
 		if (!block.Found || block.IncludePath is null)
@@ -289,71 +280,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer) => slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer) =>
+		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
 
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
-		where T : DirectiveViewModel
-	{
-		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		_ = renderer.Write(blocks[0]);
-		foreach (var o in obj)
-			Render(o);
-
-		_ = renderer.Write(blocks[1]);
-
-		void RenderLeaf(LeafBlock p)
-		{
-			_ = renderer.WriteLeafRawLines(p, true, false, false);
-			renderer.EnableHtmlForInline = false;
-			foreach (var oo in p.Inline ?? [])
-			{
-				if (oo is SubstitutionLeaf sl)
-					_ = renderer.Write(sl.Replacement);
-				else if (oo is LiteralInline li)
-					renderer.Write(li);
-				else if (oo is LineBreakInline)
-					_ = renderer.WriteLine();
-				else if (oo is Role r)
-				{
-					_ = renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
-					renderer.WriteChildren(r);
-				}
-
-				else
-					_ = renderer.Write($"(LeafBlock: {oo.GetType().Name}");
-			}
-
-			renderer.EnableHtmlForInline = true;
-		}
-
-		void RenderListBlock(ListBlock l)
-		{
-			foreach (var bb in l)
-			{
-				if (bb is LeafBlock lbi)
-					RenderLeaf(lbi);
-				else if (bb is ListItemBlock ll)
-				{
-					_ = renderer.Write(ll.TriviaBefore);
-					_ = renderer.Write("-");
-					foreach (var lll in ll)
-						Render(lll);
-				}
-				else
-					_ = renderer.Write($"(ListBlock: {l.GetType().Name}");
-			}
-		}
-
-		void Render(Block o)
-		{
-			if (o is LeafBlock p)
-				RenderLeaf(p);
-			else if (o is ListBlock l)
-				RenderListBlock(l);
-			else
-				_ = renderer.Write($"(Block: {o.GetType().Name}");
-		}
-	}
 }

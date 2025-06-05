@@ -122,8 +122,6 @@ public class SettingsViewModel
 	public required Func<string, string> RenderMarkdown { get; init; }
 }
 
-public class MermaidViewModel : DirectiveViewModel;
-
 public class StepperViewModel : DirectiveViewModel;
 
 public class StepViewModel : DirectiveViewModel

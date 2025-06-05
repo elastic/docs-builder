@@ -24,7 +24,7 @@ serverless:
 
     [<Fact>]
     let ``parses to AppliesDirective`` () =
-        let directives = markdown |> converts "index.md" |> parses<AppliesToDirective>
+        let directives = markdown |> converts "index.md" |> parses<AppliesToCodeBlock>
         test <@ directives.Length = 1 @>
 
         directives |> appliesToDirective (ApplicableTo(
@@ -47,7 +47,7 @@ serverless:
 
     [<Fact>]
     let ``parses to AppliesDirective`` () =
-        let directives = markdown |> converts "index.md" |> parses<AppliesToDirective>
+        let directives = markdown |> converts "index.md" |> parses<AppliesToCodeBlock>
         test <@ directives.Length = 1 @>
 
         directives |> appliesToDirective (ApplicableTo(
