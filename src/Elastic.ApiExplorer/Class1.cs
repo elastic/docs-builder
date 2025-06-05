@@ -76,7 +76,6 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 
 		foreach (var path in openApiDocument.Paths)
 		{
-			path.Value.Extensions
 			var endpointUrl = $"{url}/{path.Key.Trim('/').Replace('/', '-').Replace("{", "").Replace("}", "")}";
 			var apiEndpoint = new ApiEndpoint(endpointUrl, path.Key, path.Value, rootNavigation);
 			var endpointNavigationItem = new EndpointNavigationItem(1, apiEndpoint, rootNavigation, rootNavigation);
