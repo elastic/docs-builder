@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
-using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
@@ -24,7 +23,8 @@ public class ApiLanding(IGroupNavigationItem root, string url) : IPageInformatio
 		{
 			Landing = this,
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml
+			NavigationHtml = context.NavigationHtml,
+			ApiInfo = context.Model.Info,
 		};
 		var slice = Landing.LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
