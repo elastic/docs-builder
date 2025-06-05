@@ -3,9 +3,9 @@
 @using Elastic.Markdown.Slices.Components
 @using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
-@implements IUsesLayout<Elastic.Markdown.Slices._Layout, LayoutViewModel>
+@implements IUsesLayout<Elastic.Markdown.Slices._Layout, GlobalLayoutViewModel>
 @functions {
-	public LayoutViewModel LayoutModel => new()
+	public GlobalLayoutViewModel LayoutModel => new()
 	{
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		DocSetName = Model.DocSetName,

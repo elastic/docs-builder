@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
 
@@ -38,7 +39,7 @@ public record FileNavigationItem(int Depth, MarkdownFile File, INavigationItem? 
 {
 	public string Id { get; } = File.Id;
 	public INavigationItem? Parent { get; set; } = Parent;
-	public IPageInformation? Current => File;
+	public IPageInformation Current => File;
 	public INavigationGroup NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
 }
 

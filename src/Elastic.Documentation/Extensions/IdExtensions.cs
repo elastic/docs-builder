@@ -5,7 +5,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Elastic.Markdown.Helpers;
+namespace Elastic.Documentation.Extensions;
 
 public static class ShortId
 {

@@ -4,9 +4,9 @@
 
 using System.Text;
 
-namespace Elastic.Markdown.Helpers;
+namespace Elastic.Documentation.Extensions;
 
-internal sealed class ReusableStringWriter : TextWriter
+public sealed class ReusableStringWriter : TextWriter
 {
 	private static UnicodeEncoding? CurrentEncoding;
 

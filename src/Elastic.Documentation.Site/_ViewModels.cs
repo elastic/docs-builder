@@ -10,7 +10,7 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Documentation.Site;
 
-public class LayoutViewModel
+public class GlobalLayoutViewModel
 {
 	public required string DocSetName { get; init; }
 	public string Title { get; set; } = "Elastic Documentation";
@@ -45,6 +45,7 @@ public class LayoutViewModel
 			: $"{UrlPathPrefix}/{staticPath}?v={contentHash}";
 	}
 
+	// TODO move to @inject
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
 	public string Link(string path)

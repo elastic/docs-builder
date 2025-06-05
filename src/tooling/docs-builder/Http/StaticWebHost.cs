@@ -3,12 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling;
-using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

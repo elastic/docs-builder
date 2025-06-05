@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
