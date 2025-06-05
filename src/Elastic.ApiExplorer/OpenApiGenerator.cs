@@ -11,56 +11,8 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer;
-
-public static class OpenApiReader
-{
-	public static async Task<OpenApiDocument?> Create(IFileInfo openApiSpecification)
-	{
-		if (!openApiSpecification.Exists)
-			return null;
-
-		var settings = new OpenApiReaderSettings
-		{
-			LeaveStreamOpen = false
-		};
-		await using var fs = File.Open(openApiSpecification.FullName, FileMode.Open);
-		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
-		return openApiDocument.Document;
-	}
-}
-
-public interface IPageRenderer<in T>
-{
-	Task RenderAsync(FileSystemStream stream, T context, CancellationToken ctx = default);
-}
-
-public interface IRenderContext<out T>
-{
-	BuildContext BuildContext { get; }
-	T Model { get; }
-}
-
-public record RenderContext<T>(BuildContext BuildContext, T Model) : IRenderContext<T>;
-
-public abstract class ApiViewModel
-{
-	public required string NavigationHtml { get; init; }
-	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
-}
-
-
-public record ApiRenderContext(
-	BuildContext BuildContext,
-	OpenApiDocument Model,
-	StaticFileContentHashProvider StaticFileContentHashProvider
-)
-	: RenderContext<OpenApiDocument>(BuildContext, Model)
-{
-	public required string NavigationHtml { get; init; }
-}
 
 public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 {
