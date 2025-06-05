@@ -9,12 +9,11 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
-using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.IO.Navigation;
 
 [DebuggerDisplay("Toc >{Depth} {DocumentationGroup.FolderName}")]
-public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup, Uri Source, INavigationItem? Parent)
+public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup, Uri Source, IGroupNavigationItem? Parent)
 	: GroupNavigationItem(Depth, DocumentationGroup, Parent)
 {
 	/// Only used for tests
@@ -23,24 +22,23 @@ public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup
 }
 
 [DebuggerDisplay("Group >{Depth} {DocumentationGroup.FolderName}")]
-public record GroupNavigationItem(int Depth, DocumentationGroup DocumentationGroup, INavigationItem? Parent) : IGroupNavigationItem
+public record GroupNavigationItem(int Depth, DocumentationGroup DocumentationGroup, IGroupNavigationItem? Parent) : IGroupNavigationItem
 {
 	public string Id { get; } = DocumentationGroup.Id;
-	public INavigationItem? Parent { get; set; } = Parent;
+	public IGroupNavigationItem? Parent { get; set; } = Parent;
 	public IPageInformation? Index { get; } = DocumentationGroup.Index;
 	public IPageInformation? Current => DocumentationGroup.Index;
 	public IReadOnlyCollection<INavigationItem> NavigationItems => DocumentationGroup.NavigationItems;
-	public INavigationGroup NavigationRoot { get; } = Parent?.NavigationRoot ?? DocumentationGroup;
-	public INavigationGroup Group { get; } = DocumentationGroup;
+	public IGroupNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? DocumentationGroup;
 }
 
 [DebuggerDisplay("File >{Depth} {File.RelativePath}")]
-public record FileNavigationItem(int Depth, MarkdownFile File, INavigationItem? Parent) : INavigationItem
+public record FileNavigationItem(int Depth, MarkdownFile File, IGroupNavigationItem? Parent) : INavigationItem
 {
 	public string Id { get; } = File.Id;
-	public INavigationItem? Parent { get; set; } = Parent;
+	public IGroupNavigationItem? Parent { get; set; } = Parent;
 	public IPageInformation Current => File;
-	public INavigationGroup NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
+	public IGroupNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
 }
 
 public class TableOfContentsTreeCollector
@@ -85,7 +83,7 @@ public class TableOfContentsTree : DocumentationGroup
 		DocumentationSet = documentationSet;
 
 		//edge case if tree only holds a single group ensure we collapse it down to the root (this)
-		if (NavigationItems.Count == 1 && NavigationItems.First() is GroupNavigationItem { Group.NavigationItems.Count: 0 })
+		if (NavigationItems.Count == 1 && NavigationItems.First() is GroupNavigationItem { NavigationItems.Count: 0 })
 			NavigationItems = [];
 
 
@@ -115,7 +113,7 @@ public class TableOfContentsTree : DocumentationGroup
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
-public class DocumentationGroup : INavigationGroup
+public class DocumentationGroup : IGroupNavigationItem
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
@@ -123,11 +121,13 @@ public class DocumentationGroup : INavigationGroup
 
 	public string NavigationRootId => NavigationRoot.Id;
 
-	public INavigationGroup NavigationRoot { get; set; }
+	public IGroupNavigationItem NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
-	public MarkdownFile? Index { get; set; }
+	public MarkdownFile? MarkdownFileIndex { get; set; }
+
+	public IPageInformation? Index => MarkdownFileIndex;
 
 	public IPageInformation? Current => Index;
 
@@ -137,13 +137,11 @@ public class DocumentationGroup : INavigationGroup
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; }
 
-	public string? IndexFileName => Index?.FileName;
-
 	public IGroupNavigationItem GroupNavigationItem { get; }
 
 	public int Depth { get; set; }
 
-	public INavigationItem? Parent { get; set; }
+	public IGroupNavigationItem? Parent { get; set; }
 
 	public string FolderName { get; }
 
@@ -171,7 +169,7 @@ public class DocumentationGroup : INavigationGroup
 		ref int fileIndex,
 		int depth,
 		DocumentationGroup? toplevelTree,
-		INavigationItem? parent,
+		IGroupNavigationItem? parent,
 		MarkdownFile? index = null
 	)
 	{
@@ -189,14 +187,14 @@ public class DocumentationGroup : INavigationGroup
 		// ReSharper enable VirtualMemberCallInConstructor
 		NavigationRoot = toplevelTree;
 		// ReSharper restore VirtualMemberCallInConstructor
-		Index = ProcessTocItems(context, toplevelTree, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
+		MarkdownFileIndex = ProcessTocItems(context, toplevelTree, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
 		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
-		if (Index is not null)
-			FilesInOrder = [.. FilesInOrder.Except([Index])];
+		if (MarkdownFileIndex is not null)
+			FilesInOrder = [.. FilesInOrder.Except([MarkdownFileIndex])];
 
 		GroupNavigationItem = new GroupNavigationItem(Depth, this, null);
 	}
@@ -325,7 +323,7 @@ public class DocumentationGroup : INavigationGroup
 		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
-		await (Index?.MinimalParseAsync(ctx) ?? Task.CompletedTask);
+		await (MarkdownFileIndex?.MinimalParseAsync(ctx) ?? Task.CompletedTask);
 
 		_resolved = true;
 	}

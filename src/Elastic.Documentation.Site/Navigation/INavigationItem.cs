@@ -6,37 +6,23 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public interface INavigationScope
 {
-	INavigationGroup NavigationRoot { get; }
+	IGroupNavigationItem NavigationRoot { get; }
 }
 
 public interface INavigationItem : INavigationScope
 {
 	string Id { get; }
-	INavigationItem? Parent { get; set; }
+	IGroupNavigationItem? Parent { get; set; }
 	int Depth { get; }
 	//TODO not nullable
 	IPageInformation? Current { get; }
 }
 
-//TODO the difference between this and INavigationGroup smells
 public interface IGroupNavigationItem : INavigationItem
 {
 	IPageInformation? Index { get; }
 	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
-	INavigationGroup Group { get; }
 }
-
-
-
-
-public interface INavigationGroup : INavigationItem
-{
-	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
-	string? IndexFileName { get; }
-
-	IGroupNavigationItem GroupNavigationItem { get; }
-}
-
 
 public interface IPageInformation : INavigationScope
 {

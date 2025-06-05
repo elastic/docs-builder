@@ -63,7 +63,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigationGroup NavigationRoot { get; set; }
+	public IGroupNavigationItem NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 

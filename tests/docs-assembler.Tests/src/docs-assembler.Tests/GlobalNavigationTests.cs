@@ -137,15 +137,15 @@ public class GlobalNavigationPathProviderTests
 
 		referenceNav.Should().NotBeNull();
 		referenceNav.NavigationLookup.Should().NotContainKey(clients);
-		referenceNav.Group.NavigationItems.OfType<TocNavigationItem>()
+		referenceNav.NavigationItems.OfType<TocNavigationItem>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
-		referenceNav.Group.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
+		referenceNav.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
 
 		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestNav.Should().NotBeNull();
 		ingestNav.NavigationLookup.Should().NotContainKey(clients);
-		ingestNav.Group.NavigationItems.OfType<TocNavigationItem>()
+		ingestNav.NavigationItems.OfType<TocNavigationItem>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
 

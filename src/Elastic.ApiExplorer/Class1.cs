@@ -36,21 +36,19 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 
 	public static ApiGroupNavigationItem CreateNavigation(OpenApiDocument openApiDocument)
 	{
-		var group = new ApiNavigationGroup();
-		var rootNavigation = new ApiGroupNavigationItem(0, group);
+		var rootNavigation = new ApiGroupNavigationItem(0, null, null);
 		var rootItems = new List<ApiGroupNavigationItem>();
 
 		foreach (var path in openApiDocument.Paths)
 		{
-			var pathGroup = new ApiNavigationGroup();
-			var pathNavigation = new ApiGroupNavigationItem(0, pathGroup);
+			var pathNavigation = new ApiGroupNavigationItem(0, rootNavigation, rootNavigation);
 			foreach (var operation in path.Value.Operations)
 			{
 			}
 			rootItems.Add(pathNavigation);
 		}
 
-		group.NavigationItems = rootItems;
+		rootNavigation.NavigationItems = rootItems;
 		return rootNavigation;
 	}
 

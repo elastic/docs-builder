@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.ApiListing;
 
 public class ApiInformation(string pathKey, IOpenApiPathItem pathValue) : IPageInformation
 {
-	public INavigationGroup NavigationRoot { get; } = new ApiNavigationGroup();
+	public IGroupNavigationItem NavigationRoot { get; } = new ApiGroupNavigationItem(0, null, null);
 	public string Url { get; } = pathKey;
 	public string NavigationTitle { get; } = pathValue.Summary;
 	public string CrossLink { get; } = pathValue.Summary; //TODO

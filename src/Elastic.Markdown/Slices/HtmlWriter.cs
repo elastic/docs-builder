@@ -22,7 +22,7 @@ namespace Elastic.Markdown.Slices;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default);
+	Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
@@ -31,14 +31,14 @@ public interface INavigationHtmlWriter
 	}
 }
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INavigationGroup siteRoot)
+public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavigationItem siteRoot)
 	: INavigationHtmlWriter
 {
 	//private DocumentationSet Set { get; } = set;
 
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		var navigation = context.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -53,7 +53,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INavigation
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(INavigationGroup navigation)
+	private NavigationViewModel CreateNavigationModel(IGroupNavigationItem navigation)
 	{
 		if (navigation is not DocumentationGroup tree)
 			throw new InvalidOperationException("Expected a documentation group");
@@ -120,7 +120,7 @@ public class HtmlWriter(
 			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Tree.MarkdownFileIndex?.Title ?? "Elastic Documentation";
 
 		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 

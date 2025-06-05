@@ -29,7 +29,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
-		var index = (parent as DocumentationGroup)?.Index;
+		var index = (parent as DocumentationGroup)?.MarkdownFileIndex;
 		index.Should().NotBeNull();
 		index.RelativePath.Should().Be("index.md");
 
