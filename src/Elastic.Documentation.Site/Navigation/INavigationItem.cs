@@ -36,8 +36,5 @@ public interface IPageInformation : INavigationScope
 {
 	string Url { get; }
 	string NavigationTitle { get; }
-
-	//TODO investigate if this is needed, only used by breadcrumbs to deduplicate
-	string CrossLink { get; }
 }
 

@@ -6,7 +6,8 @@
 			? Model.Parents.Reverse()
 			: Model.Parents.Reverse().Skip(1);
 
-	var parents = targets.DistinctBy(p => p.CrossLink).ToList();
+	//TODO should we even distinctby
+	var parents = targets.DistinctBy(p => p.Url).ToList();
 	var firstCrumb = parents.FirstOrDefault();
 	var crumbs = parents.Skip(1).TakeLast(2).ToList();
 }

@@ -21,12 +21,10 @@ public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 
 		//TODO
 		NavigationTitle = pathValue.Summary;
-		CrossLink = pathValue.Summary;
 		Url = url;
 	}
 
 	public string NavigationTitle { get; }
-	public string CrossLink { get; }
 	public string Url { get; }
 	public string Route { get; }
 	public IOpenApiPathItem PathValue { get; }

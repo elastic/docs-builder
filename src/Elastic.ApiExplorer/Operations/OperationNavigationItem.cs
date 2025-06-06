@@ -21,12 +21,10 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 
 		//TODO
 		NavigationTitle = $"{operationType.ToString().ToLowerInvariant()} {operation.OperationId}";
-		CrossLink = "";
 		Url = url;
 	}
 
 	public string NavigationTitle { get; }
-	public string CrossLink { get; }
 	public string Url { get; }
 
 	public OperationType OperationType { get; }

@@ -17,7 +17,6 @@ public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> r
 
 	//TODO
 	public string NavigationTitle { get; } = "API Documentation";
-	public string CrossLink { get; } = string.Empty;
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
