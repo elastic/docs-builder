@@ -207,7 +207,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 				if (d is not MarkdownFile md)
 				{
-					context.EmitError(context.ConfigurationPath, $"{d.RelativePath} is not a Markdown file.");
+					if (d is not SnippetFile)
+						context.EmitError(context.ConfigurationPath, $"{d.RelativePath} is not a Markdown file.");
 					continue;
 				}
 
