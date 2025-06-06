@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Xml.Linq;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Building;
@@ -57,7 +58,7 @@ public class SitemapBuilder(
 					result.Add(file);
 					break;
 				case GroupNavigationItem group:
-					result.AddRange(GetNavigationItems(group.Group.NavigationItems));
+					result.AddRange(GetNavigationItems(group.NavigationItems));
 					break;
 				case DocumentationGroup group:
 					result.AddRange(GetNavigationItems(group.NavigationItems));

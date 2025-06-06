@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Hosting;
 
@@ -22,7 +24,7 @@ public class ParcelWatchService : IHostedService
 			RedirectStandardError = true,
 			UseShellExecute = false,
 			CreateNoWindow = true,
-			WorkingDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Markdown")
+			WorkingDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.Site")
 		})!;
 
 		_process.EnableRaisingEvents = true;

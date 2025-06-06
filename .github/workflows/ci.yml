@@ -39,14 +39,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults: 
       run: 
-        working-directory: src/Elastic.Markdown
+        working-directory: src/Elastic.Documentation.Site
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           cache: npm
-          cache-dependency-path: src/Elastic.Markdown/package-lock.json
+          cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
           node-version-file: .nvmrc
       
       - name: Install dependencies

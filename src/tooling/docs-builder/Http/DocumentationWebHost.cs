@@ -6,6 +6,8 @@ using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
 using Documentation.Builder.Diagnostics.LiveMode;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
@@ -25,9 +27,11 @@ public class DocumentationWebHost
 
 	private readonly BuildContext _context;
 	private readonly IHostedService _hostedService;
+	private readonly IFileSystem _writeFileSystem;
 
-	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem fileSystem)
+	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem readFs, IFileSystem writeFs)
 	{
+		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
 
@@ -41,19 +45,18 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		_context = new BuildContext(collector, fileSystem, fileSystem, path, null)
+		_context = new BuildContext(collector, readFs, writeFs, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
+		var generatorState = new ReloadableGeneratorState(_context.DocumentationSourceDirectory, _context.DocumentationOutputDirectory, _context, logger);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
 				s.FolderToMonitor = _context.DocumentationSourceDirectory.FullName;
 				s.ClientFileExtensions = ".md,.yml";
 			})
-			.AddSingleton<ReloadableGeneratorState>(_ =>
-				new ReloadableGeneratorState(_context.DocumentationSourceDirectory, null, _context, logger)
-			)
+			.AddSingleton<ReloadableGeneratorState>(_ => generatorState)
 			.AddHostedService<ReloadGeneratorService>();
 
 		if (IsDotNetWatchBuild())
@@ -147,8 +150,27 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, "index.md", ctx));
 
+		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeApiFile(holder, "", ctx));
+
+		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
+			ServeApiFile(holder, slug, ctx));
+
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
+	}
+
+	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
+	{
+		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
+		var info = _writeFileSystem.FileInfo.New(path);
+		if (info.Exists)
+		{
+			var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
+			return Results.Content(contents, "text/html");
+		}
+
+		return Results.NotFound();
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)

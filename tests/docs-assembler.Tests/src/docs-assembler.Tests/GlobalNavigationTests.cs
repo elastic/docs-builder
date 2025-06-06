@@ -5,8 +5,11 @@
 using System.IO.Abstractions;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
@@ -134,15 +137,15 @@ public class GlobalNavigationPathProviderTests
 
 		referenceNav.Should().NotBeNull();
 		referenceNav.NavigationLookup.Should().NotContainKey(clients);
-		referenceNav.Group.NavigationItems.OfType<TocNavigationItem>()
+		referenceNav.NavigationItems.OfType<TocNavigationItem>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
-		referenceNav.Group.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
+		referenceNav.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
 
 		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestNav.Should().NotBeNull();
 		ingestNav.NavigationLookup.Should().NotContainKey(clients);
-		ingestNav.Group.NavigationItems.OfType<TocNavigationItem>()
+		ingestNav.NavigationItems.OfType<TocNavigationItem>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
 
@@ -234,7 +237,7 @@ public class GlobalNavigationPathProviderTests
 	)
 	{
 		parent.Should().NotBeNull();
-		parent!.Group.Index.Should().NotBeNull();
+		parent!.DocumentationGroup.Index.Should().NotBeNull();
 		var parents2 = positionalNavigation.GetParents(item);
 		var parents3 = positionalNavigation.GetParentMarkdownFiles(item);
 		var markdown = (item as FileNavigationItem)?.File!;

@@ -1,0 +1,52 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+<nav id="secondary-nav" class="bg-grey-10 border-t-1 border-grey-20 font-sans font-semibold text-sm text-ink-light md:text-base">
+	<div class="max-w-(--max-layout-width) flex mx-auto justify-between items-center p-6">
+		<div class="flex gap-2 flex-nowrap items-center">
+			@if (Model.Layout != LayoutName.LandingPage)
+			{
+				@* ReSharper disable once Html.IdNotResolved *@
+				<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+					</svg>
+				</label>
+			}
+			<a href="@Model.Link("/")" class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
+		</div>
+		<ul class="flex gap-6">
+			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+				<a
+					href="@Model.Link("/release-notes/")"
+					@Htmx.GetHxAttributes(
+						targetUrl: Model.Link("/release-notes/"), 
+						hxSwapOob: "#main-container,#secondary-nav"
+					)
+				>
+					Release notes
+				</a>
+			</li>
+			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+				<a
+					href="@Model.Link("/troubleshoot/")"
+					@Htmx.GetHxAttributes(
+						targetUrl: Model.Link("/troubleshoot/"),
+						hxSwapOob: "#main-container,#secondary-nav"
+					)
+				>
+					Troubleshoot
+				</a>
+			</li>
+			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+				<a
+					href="@Model.Link("/reference/")"
+					@Htmx.GetHxAttributes(
+						Model.Link("/reference/"), 
+						hxSwapOob: "#main-container,#secondary-nav"
+					)
+				>
+					Reference
+				</a>
+			</li>
+		</ul>
+	</div>
+</nav>

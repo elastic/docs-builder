@@ -5,9 +5,12 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -177,7 +180,7 @@ public class DocumentationGenerator
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
 		var keysNotInUse = definedKeys.Except(inUse).ToArray();
-		// If we have less than 20 unused keys emit them separately
+		// If we have less than 20 unused keys, emit them separately,
 		// Otherwise emit one hint with all of them for brevity
 		if (keysNotInUse.Length >= 20)
 		{
@@ -194,16 +197,17 @@ public class DocumentationGenerator
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
 		_logger.LogInformation($"Copying static files to output directory");
-		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
+		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
+		var embeddedStaticFiles = assembly
 			.GetManifestResourceNames()
 			.ToList();
 		foreach (var a in embeddedStaticFiles)
 		{
-			await using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(a);
+			await using var resourceStream = assembly.GetManifestResourceStream(a);
 			if (resourceStream == null)
 				continue;
 
-			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
+			var path = a.Replace("Elastic.Documentation.Site.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			var outputFile = OutputFile(path);
 			if (outputFile is null)
