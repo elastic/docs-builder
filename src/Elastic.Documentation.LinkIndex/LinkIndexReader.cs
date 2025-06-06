@@ -15,7 +15,7 @@ public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elasti
 
 	// <summary>
 	// Using <see cref="AnonymousAWSCredentials"/> to access the link index
-	// allows to read from the link index without the need to provide AWS credentials.
+	// allows reading from the link index without the need to provide AWS credentials.
 	// </summary>
 	public static Aws3LinkIndexReader CreateAnonymous()
 	{
