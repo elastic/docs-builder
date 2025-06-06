@@ -39,7 +39,7 @@ deployment:
   self: unavailable 9.3.0
 ```
 
-*see [`applies`](/syntax/applies.md#sections)*
+*see [`applies`](/syntax/applies.md#section-annotations)*
 
 **Use case:** Provide signals about a section’s scope so a user can choose to read or skip it as needed
 
