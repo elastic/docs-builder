@@ -33,8 +33,11 @@ public interface IPositionalNavigation
 {
 	FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 
-	MarkdownFile? GetPrevious(MarkdownFile current);
-	MarkdownFile? GetNext(MarkdownFile current);
+	INavigationItem? GetPrevious(MarkdownFile current);
+	INavigationItem? GetNext(MarkdownFile current);
+	INavigationItem GetCurrent(MarkdownFile file) =>
+		MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem)
+			? navigationItem : throw new InvalidOperationException($"Could not find navigation item for {file.CrossLink}");
 
 	INavigationItem[] GetParents(INavigationItem current)
 	{
@@ -50,27 +53,8 @@ public interface IPositionalNavigation
 
 		return [.. parents];
 	}
-	MarkdownFile[] GetParentMarkdownFiles(INavigationItem current)
-	{
-		var parents = new List<MarkdownFile>();
-		var navigationParents = GetParents(current);
-		foreach (var parent in navigationParents)
-		{
-			if (parent is FileNavigationItem f)
-				parents.Add(f.Model);
-			if (parent is DocumentationGroup { MarkdownFileIndex: not null } g)
-				parents.Add(g.MarkdownFileIndex);
-			if (parent is DocumentationGroup { MarkdownFileIndex: not null } dg)
-				parents.Add(dg.MarkdownFileIndex);
-		}
-		return [.. parents];
-	}
-	MarkdownFile[] GetParentMarkdownFiles(MarkdownFile file)
-	{
-		if (MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem))
-			return GetParentMarkdownFiles(navigationItem);
-		return [];
-	}
+	INavigationItem[] GetParentsOfMarkdownFile(MarkdownFile file) =>
+		MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem) ? GetParents(navigationItem) : [];
 }
 
 public record NavigationLookups : INavigationLookups
@@ -79,7 +63,6 @@ public record NavigationLookups : INavigationLookups
 	public required IReadOnlyCollection<ITocItem> TableOfContents { get; init; }
 	public required IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; init; }
 	public required FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; init; }
-	//public required FrozenDictionary<Uri, TableOfContentsReference> IndexedTableOfContents { get; init; }
 }
 
 public class DocumentationSet : INavigationLookups, IPositionalNavigation
@@ -300,7 +283,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
 	}
 
-	public MarkdownFile? GetPrevious(MarkdownFile current)
+	public INavigationItem? GetPrevious(MarkdownFile current)
 	{
 		var index = current.NavigationIndex;
 		do
@@ -309,14 +292,17 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			if (previous is null)
 				return null;
 			if (!previous.Hidden)
-				return previous;
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
 			index--;
 		} while (index > 0);
 
 		return null;
 	}
 
-	public MarkdownFile? GetNext(MarkdownFile current)
+	public INavigationItem? GetNext(MarkdownFile current)
 	{
 		var index = current.NavigationIndex;
 		do
@@ -325,7 +311,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			if (previous is null)
 				return null;
 			if (!previous.Hidden)
-				return previous;
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
 			index++;
 		} while (index <= MarkdownFiles.Count - 1);
 

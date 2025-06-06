@@ -11,6 +11,9 @@ public interface INavigationScope
 
 public interface INavigationItem : INavigationScope
 {
+	string Url { get; }
+	string NavigationTitle { get; }
+
 	//TODO the setter smells
 	INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }
@@ -32,9 +35,5 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation>
 	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
 }
 
-public interface IPageInformation : INavigationScope
-{
-	string Url { get; }
-	string NavigationTitle { get; }
-}
+public interface IPageInformation : INavigationScope;
 

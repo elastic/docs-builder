@@ -17,6 +17,8 @@ public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group) :
 {
 	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; } = Group;
 	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
+	public string Url => Model.Url;
+	public string NavigationTitle => Model.NavigationTitle;
 }
 
 public class TableOfContentsTreeCollector
@@ -104,6 +106,10 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 	public MarkdownFile MarkdownFileIndex { get; set; }
 
 	public MarkdownFile Index => MarkdownFileIndex;
+
+	public string Url => Index.Url;
+
+	public string NavigationTitle => Index.NavigationTitle;
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
@@ -277,10 +283,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 			}
 		}
 
-		return indexFile ?? files.FirstOrDefault()
-			// We typically do not want to throw hard exceptions, however, this is truly exceptional and should be rare
-			// This greatly simplifies the logic of the navigation builder as we can assume the index is never null for IGroupNavigationItem
-			?? throw new InvalidOperationException($"No index file found.");
+		var index = indexFile ?? files.FirstOrDefault() ?? groups.FirstOrDefault()?.Index;
+		return index ?? throw new InvalidOperationException($"No index file found. {depth}, {fileIndex}");
 	}
 
 	private bool _resolved;

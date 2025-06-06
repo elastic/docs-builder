@@ -10,11 +10,11 @@
 		var f = group.Index;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
-				href="@f.Url"
+				href="@group.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
 			>
-				@f.NavigationTitle
+				@group.NavigationTitle
 			</a>
 		</li>
 	}
@@ -24,10 +24,10 @@
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
-					href="@(g.Index?.Url ?? "")"
+					href="@(g.Url ?? "")"
 					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRoot.Id == Model.RootNavigationId || true)
 					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "")">
-					@(g.Index?.NavigationTitle ?? "Untitled")
+					@(g.NavigationTitle ?? "Untitled")
 				</a>
 				<label for="@folder.Id" class="group/label flex mr-2 items-start">
 					<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
@@ -63,16 +63,16 @@
 			}
 		</li>
 	}
-	else if (item is ILeafNavigationItem<IPageInformation> leaf && Model.SubTree.Index?.Url != leaf.Model.Url)
+	else if (item is ILeafNavigationItem<IPageInformation> leaf && Model.SubTree.Url != leaf.Url)
 	{
 		var f = leaf.Model;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
-				href="@f.Url"
+				href="@leaf.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
 			>
-				@f.NavigationTitle
+				@leaf.NavigationTitle
 			</a>
 		</li>
 	}

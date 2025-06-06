@@ -212,19 +212,20 @@ public class GlobalNavigationPathProviderTests
 
 		var releaseNotes = positionalNavigation.MarkdownNavigationLookup.Where(kv => kv.Key.Contains("release-notes")).ToArray();
 
-
 		var addToHelm = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("apm-k8s-attacher://reference/apm-webhook-add-helm-repo.md");
 		addToHelm.Should().NotBeNull();
 		var parentGroup = addToHelm!.Parent as DocumentationGroup;
 		var parents = AssertHasParents(parentGroup, positionalNavigation, addToHelm);
 
-		parents.Select(p => p.CrossLink).Should().ContainInOrder(
+		parents
+			.Select(p => p.Url).Should().ContainInOrder(
 		[
-			"apm-k8s-attacher://reference/apm-get-started-webhook.md",
-			"apm-k8s-attacher://reference/index.md",
-			"docs-content://reference/apm/observability/apm.md",
-			"docs-content://reference/ingestion-tools/index.md",
-			"docs-content://reference/index.md"
+			"/docs/reference/apm/k8s-attacher/apm-get-started-webhook",
+			"/docs/reference/apm/k8s-attacher",
+			"/docs/reference/apm/observability/apm",
+			"/docs/reference/ingestion-tools/",
+			"/docs/reference/",
+			"/docs/"
 		]);
 
 		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/introduction.md");
@@ -234,7 +235,7 @@ public class GlobalNavigationPathProviderTests
 
 	}
 
-	private static MarkdownFile[] AssertHasParents(
+	private static INavigationItem[] AssertHasParents(
 		DocumentationGroup? parent,
 		IPositionalNavigation positionalNavigation,
 		INavigationItem item
@@ -243,9 +244,9 @@ public class GlobalNavigationPathProviderTests
 		parent.Should().NotBeNull();
 		parent.Index.Should().NotBeNull();
 		var parents2 = positionalNavigation.GetParents(item);
-		var parents3 = positionalNavigation.GetParentMarkdownFiles(item);
+		var parents3 = positionalNavigation.GetParents(item);
 		var markdown = (item as FileNavigationItem)?.Model!;
-		var parents = positionalNavigation.GetParentMarkdownFiles(markdown);
+		var parents = positionalNavigation.GetParentsOfMarkdownFile(markdown);
 
 		parents.Should().NotBeEmpty().And.HaveCount(parents2.Length).And.HaveCount(parents3.Length);
 		return parents;

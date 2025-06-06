@@ -10,13 +10,9 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> root, string url) : IPageInformation, IPageRenderer<ApiRenderContext>
+public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> root) : IPageInformation, IPageRenderer<ApiRenderContext>
 {
 	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = root;
-	public string Url { get; } = url;
-
-	//TODO
-	public string NavigationTitle { get; } = "API Documentation";
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
@@ -26,6 +22,7 @@ public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> r
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml,
 			ApiInfo = context.Model.Info,
+			CurrentNavigationItem = context.CurrentNavigation
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -40,6 +37,11 @@ public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNav
 	public ApiLanding Index { get; }
 	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
+	public string Url { get; }
+
+	//TODO
+	public string NavigationTitle { get; } = "API Documentation";
+
 
 	public LandingNavigationItem(string url)
 	{
@@ -47,7 +49,8 @@ public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNav
 		NavigationRoot = this;
 		Id = ShortId.Create("root");
 
-		var landing = new ApiLanding(this, url);
+		var landing = new ApiLanding(this);
+		Url = url;
 
 		Index = landing;
 	}

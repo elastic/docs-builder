@@ -13,21 +13,16 @@ namespace Elastic.ApiExplorer.Endpoints;
 
 public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 {
-	public ApiEndpoint(string url, string route, IOpenApiPathItem pathValue, LandingNavigationItem navigationRoot)
+	public ApiEndpoint(string route, IOpenApiPathItem openApiPath, LandingNavigationItem navigationRoot)
 	{
 		Route = route;
-		PathValue = pathValue;
+		OpenApiPath = openApiPath;
 		NavigationRoot = navigationRoot;
 
-		//TODO
-		NavigationTitle = pathValue.Summary;
-		Url = url;
 	}
 
-	public string NavigationTitle { get; }
-	public string Url { get; }
 	public string Route { get; }
-	public IOpenApiPathItem PathValue { get; }
+	public IOpenApiPathItem OpenApiPath { get; }
 	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
@@ -36,7 +31,9 @@ public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 		{
 			ApiEndpoint = this,
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml
+			NavigationHtml = context.NavigationHtml,
+			CurrentNavigationItem = context.CurrentNavigation
+
 		};
 		var slice = EndpointView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -45,7 +42,7 @@ public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 
 public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, OperationNavigationItem>
 {
-	public EndpointNavigationItem(int depth, ApiEndpoint apiEndpoint, LandingNavigationItem parent, LandingNavigationItem root)
+	public EndpointNavigationItem(int depth, string url, ApiEndpoint apiEndpoint, LandingNavigationItem parent, LandingNavigationItem root)
 	{
 		Parent = parent;
 		Depth = depth;
@@ -53,11 +50,16 @@ public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, Operation
 		Id = NavigationRoot.Id;
 
 		Index = apiEndpoint;
+		Url = url;
+		//TODO
+		NavigationTitle = apiEndpoint.OpenApiPath.Summary;
 	}
 
 	public string Id { get; }
 	public int Depth { get; }
 	public ApiEndpoint Index { get; }
+	public string Url { get; }
+	public string NavigationTitle { get; }
 
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
 

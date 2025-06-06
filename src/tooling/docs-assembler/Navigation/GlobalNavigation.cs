@@ -168,7 +168,7 @@ public record GlobalNavigation : IPositionalNavigation
 		return list.ToArray().AsReadOnly();
 	}
 
-	public MarkdownFile? GetPrevious(MarkdownFile current)
+	public INavigationItem? GetPrevious(MarkdownFile current)
 	{
 		var index = current.NavigationIndex;
 		do
@@ -177,14 +177,17 @@ public record GlobalNavigation : IPositionalNavigation
 			if (previous is null)
 				return null;
 			if (!previous.Hidden)
-				return previous;
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
 			index--;
-		} while (index >= 0);
+		} while (index > 0);
 
 		return null;
 	}
 
-	public MarkdownFile? GetNext(MarkdownFile current)
+	public INavigationItem? GetNext(MarkdownFile current)
 	{
 		var index = current.NavigationIndex;
 		do
@@ -193,10 +196,15 @@ public record GlobalNavigation : IPositionalNavigation
 			if (previous is null)
 				return null;
 			if (!previous.Hidden)
-				return previous;
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
 			index++;
-		} while (index <= MarkdownFiles.Count);
+		} while (index <= MarkdownFiles.Count - 1);
 
 		return null;
 	}
+
+
 }

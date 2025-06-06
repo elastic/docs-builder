@@ -49,9 +49,10 @@ public class HtmlWriter(
 
 		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
 
+		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);
 		var next = PositionalNavigation.GetNext(markdown);
-		var parents = PositionalNavigation.GetParentMarkdownFiles(markdown);
+		var parents = PositionalNavigation.GetParentsOfMarkdownFile(markdown);
 
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;
@@ -97,6 +98,7 @@ public class HtmlWriter(
 			PageTocItems = [.. markdown.PageTableOfContent.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
+			CurrentNavigationItem = current,
 			PreviousDocument = previous,
 			NextDocument = next,
 			Parents = parents,
