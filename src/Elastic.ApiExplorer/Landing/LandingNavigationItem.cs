@@ -3,21 +3,15 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Endpoints;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class ApiLanding(IGroupNavigationItem root, string url) : IPageInformation, IPageRenderer<ApiRenderContext>
+public class ApiLanding : INavigationModel, IPageRenderer<ApiRenderContext>
 {
-	public IGroupNavigationItem NavigationRoot { get; } = root;
-	public string Url { get; } = url;
-
-	//TODO
-	public string NavigationTitle { get; } = "API Documentation";
-	public string CrossLink { get; } = string.Empty;
-
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new LandingViewModel
@@ -26,34 +20,36 @@ public class ApiLanding(IGroupNavigationItem root, string url) : IPageInformatio
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml,
 			ApiInfo = context.Model.Info,
+			CurrentNavigationItem = context.CurrentNavigation
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }
 
-public class LandingNavigationItem : IGroupNavigationItem
+public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNavigationItem>
 {
-	public IGroupNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
-	public IGroupNavigationItem? Parent { get; set; }
 	public int Depth { get; }
-	public IPageInformation Current { get; set; }
-	public IPageInformation Index { get; set; }
-	public ApiLanding Landing { get; set; }
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
+	public ApiLanding Index { get; }
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
+	public string Url { get; }
+
+	//TODO
+	public string NavigationTitle { get; } = "API Documentation";
+
 
 	public LandingNavigationItem(string url)
 	{
-		Parent = null;
 		Depth = 0;
 		NavigationRoot = this;
 		Id = ShortId.Create("root");
 
-		var landing = new ApiLanding(this, url);
+		var landing = new ApiLanding();
+		Url = url;
 
 		Index = landing;
-		Current = landing;
-		Landing = landing;
 	}
 }

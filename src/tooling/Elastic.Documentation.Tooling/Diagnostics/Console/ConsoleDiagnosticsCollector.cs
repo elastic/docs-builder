@@ -4,7 +4,6 @@
 
 using Actions.Core.Services;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;

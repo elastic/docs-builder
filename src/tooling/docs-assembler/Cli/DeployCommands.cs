@@ -4,7 +4,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using System.Text.Json;
 using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Transfer;

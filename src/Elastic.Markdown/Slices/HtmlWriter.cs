@@ -6,12 +6,10 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using Markdig.Syntax;
 using RazorSlices;
 using IFileInfo = System.IO.Abstractions.IFileInfo;
@@ -49,9 +47,10 @@ public class HtmlWriter(
 
 		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
 
+		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);
 		var next = PositionalNavigation.GetNext(markdown);
-		var parents = PositionalNavigation.GetParentMarkdownFiles(markdown);
+		var parents = PositionalNavigation.GetParentsOfMarkdownFile(markdown);
 
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;
@@ -68,7 +67,7 @@ public class HtmlWriter(
 			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-		var siteName = DocumentationSet.Tree.MarkdownFileIndex?.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
 
 		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
@@ -97,6 +96,7 @@ public class HtmlWriter(
 			PageTocItems = [.. markdown.PageTableOfContent.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
+			CurrentNavigationItem = current,
 			PreviousDocument = previous,
 			NextDocument = next,
 			Parents = parents,

@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;

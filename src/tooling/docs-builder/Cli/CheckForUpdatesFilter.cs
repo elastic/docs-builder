@@ -6,9 +6,6 @@ using System.Reflection;
 using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Site;
-using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO;
 
 namespace Documentation.Builder.Cli;
 

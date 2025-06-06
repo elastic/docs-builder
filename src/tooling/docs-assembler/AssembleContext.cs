@@ -7,8 +7,6 @@ using System.Reflection;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Site;
-using Elastic.Markdown.IO;
 
 namespace Documentation.Assembler;
 

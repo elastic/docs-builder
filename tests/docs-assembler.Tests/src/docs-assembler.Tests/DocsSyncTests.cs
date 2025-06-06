@@ -8,8 +8,6 @@ using Amazon.S3.Transfer;
 using Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Site;
-using Elastic.Markdown.IO;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;

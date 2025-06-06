@@ -4,7 +4,6 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
-using Amazon.S3;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;

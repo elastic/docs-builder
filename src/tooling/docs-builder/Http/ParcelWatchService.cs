@@ -4,8 +4,6 @@
 
 using System.Diagnostics;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Site;
-using Elastic.Markdown.IO;
 using Microsoft.Extensions.Hosting;
 
 namespace Documentation.Builder.Http;

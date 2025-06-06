@@ -4,7 +4,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using JetBrains.Annotations;

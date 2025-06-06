@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Net;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -15,7 +14,7 @@ public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elasti
 
 	// <summary>
 	// Using <see cref="AnonymousAWSCredentials"/> to access the link index
-	// allows to read from the link index without the need to provide AWS credentials.
+	// allows reading from the link index without the need to provide AWS credentials.
 	// </summary>
 	public static Aws3LinkIndexReader CreateAnonymous()
 	{

@@ -7,7 +7,6 @@ using System.IO.Abstractions;
 using Documentation.Assembler.Extensions;
 using Elastic.Documentation;
 using Elastic.Markdown;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
 

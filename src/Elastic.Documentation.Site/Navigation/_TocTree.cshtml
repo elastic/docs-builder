@@ -12,9 +12,9 @@
 					<div>
 						<a
 							class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
-							href="@current.Index?.Url"
+							href="@current.Url"
 							@Htmx.GetNavHxAttributes(true)>
-							@current.Index?.NavigationTitle
+							@current.NavigationTitle
 						</a>
 					</div>
 					<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
@@ -33,14 +33,13 @@
 					<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
 						@foreach (var item in Model.TopLevelItems)
 						{
-							if (item.Index == null) continue;
 							if (item.Id == current?.Id) continue;
 							<li class="block">
 								<a
-									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Index.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
-									href="@item.Index.Url"
+									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+									href="@item.Url"
 									@Htmx.GetNavHxAttributes(false, "mouseover")>
-									@item.Index.NavigationTitle
+									@item.NavigationTitle
 								</a>
 							</li>
 						}

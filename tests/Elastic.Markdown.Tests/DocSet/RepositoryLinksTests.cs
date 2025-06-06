@@ -5,8 +5,6 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
-using Elastic.Documentation.Site;
-using Elastic.Markdown.IO;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;

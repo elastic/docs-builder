@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 

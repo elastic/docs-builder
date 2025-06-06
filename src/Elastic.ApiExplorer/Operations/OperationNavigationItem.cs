@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Endpoints;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi.Models;
@@ -10,62 +11,44 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
+public record ApiOperation(OperationType OperationType, OpenApiOperation Operation) : INavigationModel, IPageRenderer<ApiRenderContext>
 {
-	public ApiOperation(string url, OperationType operationType, OpenApiOperation operation, IGroupNavigationItem navigationRoot)
-	{
-		OperationType = operationType;
-		Operation = operation;
-		NavigationRoot = navigationRoot;
-
-		//TODO
-		NavigationTitle = $"{operationType.ToString().ToLowerInvariant()} {operation.OperationId}";
-		CrossLink = "";
-		Url = url;
-	}
-
-	public string NavigationTitle { get; }
-	public string CrossLink { get; }
-	public string Url { get; }
-
-	public OperationType OperationType { get; }
-	public OpenApiOperation Operation { get; }
-	public IGroupNavigationItem NavigationRoot { get; }
-
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new OperationViewModel
 		{
 			Operation = this,
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml
+			NavigationHtml = context.NavigationHtml,
+			CurrentNavigationItem = context.CurrentNavigation
 		};
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }
 
-public class OperationNavigationItem : IGroupNavigationItem
+public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 {
-	public OperationNavigationItem(int depth, ApiOperation apiOperation, IGroupNavigationItem? parent, LandingNavigationItem root)
+	public OperationNavigationItem(int depth, string url, ApiOperation apiOperation, EndpointNavigationItem parent, LandingNavigationItem root)
 	{
 		Parent = parent;
 		Depth = depth;
 		//Current = group.Current;
 		NavigationRoot = root;
 		Id = NavigationRoot.Id;
-
-		Index = apiOperation;
-		Current = apiOperation;
-		Operation = apiOperation;
+		Model = apiOperation;
+		Url = url;
+		//TODO
+		NavigationTitle = $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
 	}
 
-	public IGroupNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
-	public IGroupNavigationItem? Parent { get; set; }
 	public int Depth { get; }
-	public IPageInformation Current { get; }
-	public IPageInformation Index { get; }
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
-	public ApiOperation Operation { get; set; }
+	public ApiOperation Model { get; }
+	public string Url { get; }
+
+	public string NavigationTitle { get; }
+
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 }

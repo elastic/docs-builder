@@ -17,4 +17,5 @@ public record ApiRenderContext(
 	: RenderContext<OpenApiDocument>(BuildContext, Model)
 {
 	public required string NavigationHtml { get; init; }
+	public required INavigationItem CurrentNavigation { get; init; }
 }
