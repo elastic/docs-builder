@@ -67,7 +67,7 @@ public class HtmlWriter(
 			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-		var siteName = DocumentationSet.Tree.MarkdownFileIndex.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
 
 		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 

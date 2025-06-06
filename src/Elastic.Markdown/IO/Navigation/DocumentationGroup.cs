@@ -102,10 +102,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public Uri NavigationSource { get; set; }
 
-	//TODO remove in favor of index
-	public MarkdownFile MarkdownFileIndex { get; set; }
-
-	public MarkdownFile Index => MarkdownFileIndex;
+	public MarkdownFile Index { get; }
 
 	public string Url => Index.Url;
 
@@ -164,14 +161,14 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		// ReSharper enable VirtualMemberCallInConstructor
 		NavigationRoot = toplevelTree;
 		// ReSharper restore VirtualMemberCallInConstructor
-		MarkdownFileIndex = ProcessTocItems(context, toplevelTree, lookups, depth, virtualIndexFile, ref fileIndex, out var groups, out var files, out var navigationItems);
+		Index = ProcessTocItems(context, toplevelTree, lookups, depth, virtualIndexFile, ref fileIndex, out var groups, out var files, out var navigationItems);
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
 		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
 
-		FilesInOrder = [.. FilesInOrder.Except([MarkdownFileIndex])];
+		FilesInOrder = [.. FilesInOrder.Except([Index])];
 	}
 
 	private MarkdownFile ProcessTocItems(BuildContext context,
@@ -298,7 +295,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
-		_ = await MarkdownFileIndex.MinimalParseAsync(ctx);
+		_ = await Index.MinimalParseAsync(ctx);
 
 		_resolved = true;
 	}

@@ -22,14 +22,14 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 
 		var parent = nav.Parent;
 
-		// ensure we link back up to main toc in docset yaml
+		// ensure we link back up to the main toc in docset yaml
 		parent.Should().NotBeNull();
 
 		// its parent should be null
 		parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
-		var index = (parent as DocumentationGroup)?.MarkdownFileIndex;
+		var index = (parent as DocumentationGroup)?.Index;
 		index.Should().NotBeNull();
 		index.RelativePath.Should().Be("index.md");
 
