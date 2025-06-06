@@ -15,14 +15,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class LinkHealthCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class ValidationCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirects file against changes reported by git.
 	/// </summary>
 	/// <param name="ctx"></param>
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
-	[Command("validate-redirects")]
+	[Command("validate")]
 	[ConsoleAppFilter<StopwatchFilter>]
 	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateRedirects(Cancel ctx = default)

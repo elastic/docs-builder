@@ -6,7 +6,6 @@ using ConsoleAppFramework;
 using Documentation.Builder.Cli;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
-using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, services => services
@@ -18,6 +17,6 @@ ConsoleApp.ServiceProvider = serviceProvider;
 var app = ConsoleApp.Create();
 app.Add<Commands>();
 app.Add<InboundLinkCommands>("inbound-links");
-app.Add<LinkHealthCommands>("health");
+app.Add<ValidationCommands>("diff");
 
 await app.RunAsync(args).ConfigureAwait(false);
