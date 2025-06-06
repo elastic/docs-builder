@@ -15,6 +15,7 @@ namespace Elastic.Markdown.IO.Navigation;
 //TODO see if we can remove these proxy classes `TocNavigationItem` and `GroupNavigationItem`
 //They wrap `DocumentationGroup` which is now by itself a `IGroupNavigationItem`
 
+/*
 [DebuggerDisplay("Toc >{Depth} {DocumentationGroup.FolderName}")]
 public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup, Uri Source, IGroupNavigationItem? Parent)
 	: GroupNavigationItem(Depth, DocumentationGroup, Parent)
@@ -33,7 +34,7 @@ public record GroupNavigationItem(int Depth, DocumentationGroup DocumentationGro
 	public IPageInformation? Current => DocumentationGroup.Index;
 	public IReadOnlyCollection<INavigationItem> NavigationItems => DocumentationGroup.NavigationItems;
 	public IGroupNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? DocumentationGroup;
-}
+}*/
 
 [DebuggerDisplay("File >{Depth} {File.RelativePath}")]
 public record FileNavigationItem(int Depth, MarkdownFile File, IGroupNavigationItem? Parent) : INavigationItem
@@ -86,7 +87,7 @@ public class TableOfContentsTree : DocumentationGroup
 		DocumentationSet = documentationSet;
 
 		//edge case if a tree only holds a single group, ensure we collapse it down to the root (this)
-		if (NavigationItems.Count == 1 && NavigationItems.First() is GroupNavigationItem { NavigationItems.Count: 0 })
+		if (NavigationItems.Count == 1 && NavigationItems.First() is DocumentationGroup { NavigationItems.Count: 0 })
 			NavigationItems = [];
 
 
@@ -197,7 +198,7 @@ public class DocumentationGroup : IGroupNavigationItem
 		if (MarkdownFileIndex is not null)
 			FilesInOrder = [.. FilesInOrder.Except([MarkdownFileIndex])];
 
-		GroupNavigationItem = new GroupNavigationItem(Depth, this, null);
+		GroupNavigationItem = this;
 	}
 
 	private MarkdownFile? ProcessTocItems(
@@ -256,7 +257,7 @@ public class DocumentationGroup : IGroupNavigationItem
 							TableOfContents = file.Children,
 						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
 					groups.Add(group);
-					navigationItems.Add(new GroupNavigationItem(depth, group, this));
+					navigationItems.Add(group);
 					indexFile ??= virtualIndex;
 					continue;
 				}
@@ -293,7 +294,7 @@ public class DocumentationGroup : IGroupNavigationItem
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
 
 					group = toc;
-					navigationItems.Add(new TocNavigationItem(depth, toc, tocReference.Source, this));
+					navigationItems.Add(toc);
 				}
 				else
 				{
@@ -301,7 +302,7 @@ public class DocumentationGroup : IGroupNavigationItem
 					{
 						TableOfContents = children
 					}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this);
-					navigationItems.Add(new GroupNavigationItem(depth, group, this));
+					navigationItems.Add(group);
 				}
 
 				groups.Add(group);

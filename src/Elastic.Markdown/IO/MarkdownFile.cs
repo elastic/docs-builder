@@ -23,7 +23,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope, IPageInformation
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInformation
 {
 	private string? _navigationTitle;
 

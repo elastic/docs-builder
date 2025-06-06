@@ -57,9 +57,6 @@ public class SitemapBuilder(
 				case FileNavigationItem file:
 					result.Add(file);
 					break;
-				case GroupNavigationItem group:
-					result.AddRange(GetNavigationItems(group.NavigationItems));
-					break;
 				case DocumentationGroup group:
 					result.AddRange(GetNavigationItems(group.NavigationItems));
 					break;

@@ -136,26 +136,30 @@ public class GlobalNavigationPathProviderTests
 		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
 
 		referenceNav.Should().NotBeNull();
-		referenceNav.NavigationLookup.Should().NotContainKey(clients);
-		referenceNav.NavigationItems.OfType<TocNavigationItem>()
+		var navigationLookup = referenceNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		navigationLookup.Should().NotContainKey(clients);
+		referenceNav.NavigationItems.OfType<TableOfContentsTree>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
-		referenceNav.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
+		referenceNav.NavigationItems.Should().HaveSameCount(navigationLookup);
 
-		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
+		var ingestNav = navigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestNav.Should().NotBeNull();
-		ingestNav.NavigationLookup.Should().NotContainKey(clients);
-		ingestNav.NavigationItems.OfType<TocNavigationItem>()
+		var ingestLookup = ingestNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		ingestLookup.Should().NotContainKey(clients);
+		ingestNav.NavigationItems.OfType<TableOfContentsTree>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
 
-		var apmNav = ingestNav.NavigationLookup[new Uri("docs-content://reference/apm/")];
+		var apmNav = ingestLookup[new Uri("docs-content://reference/apm/")];
 		apmNav.Should().NotBeNull();
 
-		var apmAgentsNav = apmNav.NavigationLookup[expectedParent];
+		var apmLookup = apmNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		var apmAgentsNav = apmLookup[expectedParent];
 		apmAgentsNav.Should().NotBeNull();
 
-		var dotnetAgentNav = apmAgentsNav.NavigationLookup[sut];
+		var apmAgentLookup = apmAgentsNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		var dotnetAgentNav = apmAgentLookup[sut];
 		dotnetAgentNav.Should().NotBeNull();
 
 		var resolved = navigation.NavigationItems;
@@ -211,7 +215,7 @@ public class GlobalNavigationPathProviderTests
 
 		var addToHelm = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("apm-k8s-attacher://reference/apm-webhook-add-helm-repo.md");
 		addToHelm.Should().NotBeNull();
-		var parentGroup = addToHelm!.Parent as GroupNavigationItem;
+		var parentGroup = addToHelm!.Parent as DocumentationGroup;
 		var parents = AssertHasParents(parentGroup, positionalNavigation, addToHelm);
 
 		parents.Select(p => p.CrossLink).Should().ContainInOrder(
@@ -225,19 +229,19 @@ public class GlobalNavigationPathProviderTests
 
 		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/introduction.md");
 		getStartedIntro.Should().NotBeNull();
-		parentGroup = getStartedIntro!.Parent as GroupNavigationItem;
+		parentGroup = getStartedIntro!.Parent as DocumentationGroup;
 		_ = AssertHasParents(parentGroup, positionalNavigation, getStartedIntro);
 
 	}
 
 	private static MarkdownFile[] AssertHasParents(
-		GroupNavigationItem? parent,
+		DocumentationGroup? parent,
 		IPositionalNavigation positionalNavigation,
 		INavigationItem item
 	)
 	{
 		parent.Should().NotBeNull();
-		parent!.DocumentationGroup.Index.Should().NotBeNull();
+		parent.Index.Should().NotBeNull();
 		var parents2 = positionalNavigation.GetParents(item);
 		var parents3 = positionalNavigation.GetParentMarkdownFiles(item);
 		var markdown = (item as FileNavigationItem)?.File!;

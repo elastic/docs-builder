@@ -58,8 +58,8 @@ public interface IPositionalNavigation
 		{
 			if (parent is FileNavigationItem f)
 				parents.Add(f.File);
-			if (parent is GroupNavigationItem { DocumentationGroup.MarkdownFileIndex: not null } g)
-				parents.Add(g.DocumentationGroup.MarkdownFileIndex);
+			if (parent is DocumentationGroup { MarkdownFileIndex: not null } g)
+				parents.Add(g.MarkdownFileIndex);
 			if (parent is DocumentationGroup { MarkdownFileIndex: not null } dg)
 				parents.Add(dg.MarkdownFileIndex);
 		}
@@ -193,11 +193,11 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		if (item is FileNavigationItem f)
 			return [(f.File.CrossLink, item)];
-		if (item is GroupNavigationItem g)
+		if (item is DocumentationGroup g)
 		{
 			var index = new List<(string, INavigationItem)>();
-			if (g.DocumentationGroup.Index is not null)
-				index.Add((g.DocumentationGroup.Index.CrossLink, g));
+			if (g.Index is not null)
+				index.Add((g.Index.CrossLink, g));
 
 			return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
 				.DistinctBy(kv => kv.Item1)
