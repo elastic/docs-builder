@@ -13,10 +13,10 @@ using Elastic.Documentation.Site.Navigation;
 namespace Elastic.Markdown.IO.Navigation;
 
 [DebuggerDisplay("Current: {Current.RelativePath}")]
-public record FileNavigationItem(MarkdownFile Current, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile, IRootNavigationItem<IPageInformation, INavigationItem>>
+public record FileNavigationItem(MarkdownFile Current, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile>
 {
-	public IRootNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; } = Group;
-	public IRootNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; } = Group;
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
 }
 
 public class TableOfContentsTreeCollector
@@ -90,13 +90,13 @@ public class TableOfContentsTree : DocumentationGroup
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
-public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationItem, DocumentationGroup>
+public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationItem>
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
 	public string Id { get; }
 
-	public DocumentationGroup NavigationRoot { get; protected init; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; protected init; }
 
 	public Uri NavigationSource { get; set; }
 
@@ -113,7 +113,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public int Depth { get; }
 
-	public IRootNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 
 	public string FolderName { get; }
 

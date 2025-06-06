@@ -31,7 +31,7 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 
 	public OperationType OperationType { get; }
 	public OpenApiOperation Operation { get; }
-	public IRootNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default)
 	{
@@ -46,7 +46,7 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 	}
 }
 
-public class OperationNavigationItem : ILeafNavigationItem<ApiOperation, LandingNavigationItem>
+public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 {
 	public OperationNavigationItem(int depth, ApiOperation apiOperation, EndpointNavigationItem parent, LandingNavigationItem root)
 	{
@@ -59,10 +59,10 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation, Landing
 		Current = apiOperation;
 	}
 
-	public LandingNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
 	public ApiOperation Current { get; }
 
-	public IRootNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }

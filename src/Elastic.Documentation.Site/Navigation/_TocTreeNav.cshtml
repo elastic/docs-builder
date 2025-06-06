@@ -5,7 +5,7 @@
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
-	if (item is IRootNavigationItem<IPageInformation, INavigationItem> { NavigationItems.Count: 0, Index: not null } group)
+	if (item is INodeNavigationItem<IPageInformation, INavigationItem> { NavigationItems.Count: 0, Index: not null } group)
 	{
 		var f = group.Index;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
@@ -18,7 +18,7 @@
 			</a>
 		</li>
 	}
-	else if (item is INodeNavigationItem<IPageInformation, INavigationItem, IRootNavigationItem<IPageInformation, INavigationItem>> folder)
+	else if (item is INodeNavigationItem<IPageInformation, INavigationItem> folder)
 	{
 		var g = folder;
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4")">
@@ -63,7 +63,7 @@
 			}
 		</li>
 	}
-	else if (item is ILeafNavigationItem<IPageInformation, IRootNavigationItem<IPageInformation, INavigationItem>> leaf && Model.SubTree.Index?.Url != leaf.Current.Url)
+	else if (item is ILeafNavigationItem<IPageInformation> leaf && Model.SubTree.Index?.Url != leaf.Current.Url)
 	{
 		var f = leaf.Current;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">

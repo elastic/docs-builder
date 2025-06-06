@@ -8,10 +8,10 @@ public class NavigationViewModel
 {
 	public required string Title { get; init; }
 	public required string TitleUrl { get; init; }
-	public required IRootNavigationItem<IPageInformation, INavigationItem> Tree { get; init; }
+	public required INodeNavigationItem<IPageInformation, INavigationItem> Tree { get; init; }
 	/// controls whether to split the navigation tree automatically
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }
 	//public required IEnumerable<GroupNavigationItem> TopLevelItems { get; init; }
-	public required IEnumerable<IRootNavigationItem<IPageInformation, INavigationItem>> TopLevelItems { get; init; }
+	public required IEnumerable<INodeNavigationItem<IPageInformation, INavigationItem>> TopLevelItems { get; init; }
 }
