@@ -12,8 +12,8 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 
-[DebuggerDisplay("Current: {Current.RelativePath}")]
-public record FileNavigationItem(MarkdownFile Current, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile>
+[DebuggerDisplay("Current: {Model.RelativePath}")]
+public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile>
 {
 	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; } = Group;
 	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;

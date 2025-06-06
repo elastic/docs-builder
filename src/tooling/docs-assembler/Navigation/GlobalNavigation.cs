@@ -62,10 +62,10 @@ public record GlobalNavigation : IPositionalNavigation
 			{
 				case FileNavigationItem fileNavigationItem:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
-					fileNavigationItem.Current.NavigationIndex = fileIndex;
+					fileNavigationItem.Model.NavigationIndex = fileIndex;
 					if (parent is not null)
 						fileNavigationItem.Parent = parent;
-					_ = markdownFiles.Add(fileNavigationItem.Current);
+					_ = markdownFiles.Add(fileNavigationItem.Model);
 					break;
 				case DocumentationGroup { MarkdownFileIndex: not null } documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);

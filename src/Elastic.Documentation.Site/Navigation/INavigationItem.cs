@@ -15,21 +15,21 @@ public interface INavigationItem : INavigationScope
 	INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }
 
-public interface ILeafNavigationItem<out TCurrent> : INavigationItem
-	where TCurrent : IPageInformation
+public interface ILeafNavigationItem<out TModel> : INavigationItem
+	where TModel : IPageInformation
 {
-	TCurrent Current { get; }
+	TModel Model { get; }
 }
 
-public interface INodeNavigationItem<out TIndex, out TNavigation>
+public interface INodeNavigationItem<out TIndex, out TChildNavigation>
 	: INavigationItem
 	where TIndex : IPageInformation
-	where TNavigation : INavigationItem
+	where TChildNavigation : INavigationItem
 {
 	int Depth { get; }
 	string Id { get; }
 	TIndex Index { get; }
-	IReadOnlyCollection<TNavigation> NavigationItems { get; }
+	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
 }
 
 public interface IPageInformation : INavigationScope

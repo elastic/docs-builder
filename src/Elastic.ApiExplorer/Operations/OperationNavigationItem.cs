@@ -54,13 +54,13 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 		NavigationRoot = root;
 		Id = NavigationRoot.Id;
 
-		Current = apiOperation;
+		Model = apiOperation;
 	}
 
 	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
-	public ApiOperation Current { get; }
+	public ApiOperation Model { get; }
 
 	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }

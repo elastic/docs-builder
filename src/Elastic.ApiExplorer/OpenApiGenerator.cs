@@ -72,7 +72,7 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		{
 			_ = await Render(endpoint.Index, renderContext, ctx);
 			foreach (var operation in endpoint.NavigationItems)
-				_ = await Render(operation.Current, renderContext, ctx);
+				_ = await Render(operation.Model, renderContext, ctx);
 		}
 	}
 

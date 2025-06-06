@@ -32,7 +32,7 @@ public class SitemapBuilder(
 				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
 				flattenedNavigationItems
 					.OfType<FileNavigationItem>()
-					.Select(n => n.Current.Url)
+					.Select(n => n.Model.Url)
 					.Distinct()
 					.Select(u => new Uri(BaseUri, u))
 					.Select(u => new XElement("url", [

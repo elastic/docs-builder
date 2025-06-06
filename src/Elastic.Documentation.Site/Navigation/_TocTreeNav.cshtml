@@ -63,9 +63,9 @@
 			}
 		</li>
 	}
-	else if (item is ILeafNavigationItem<IPageInformation> leaf && Model.SubTree.Index?.Url != leaf.Current.Url)
+	else if (item is ILeafNavigationItem<IPageInformation> leaf && Model.SubTree.Index?.Url != leaf.Model.Url)
 	{
-		var f = leaf.Current;
+		var f = leaf.Model;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@f.Url"
