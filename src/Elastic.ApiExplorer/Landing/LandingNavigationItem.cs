@@ -10,10 +10,8 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> root) : IPageInformation, IPageRenderer<ApiRenderContext>
+public class ApiLanding : INavigationModel, IPageRenderer<ApiRenderContext>
 {
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = root;
-
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new LandingViewModel
@@ -31,11 +29,11 @@ public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> r
 
 public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNavigationItem>
 {
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
 	public ApiLanding Index { get; }
-	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
 	public string Url { get; }
 
@@ -49,7 +47,7 @@ public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNav
 		NavigationRoot = this;
 		Id = ShortId.Create("root");
 
-		var landing = new ApiLanding(this);
+		var landing = new ApiLanding();
 		Url = url;
 
 		Index = landing;

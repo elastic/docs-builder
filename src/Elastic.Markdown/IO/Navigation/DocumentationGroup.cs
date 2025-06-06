@@ -15,8 +15,8 @@ namespace Elastic.Markdown.IO.Navigation;
 [DebuggerDisplay("Current: {Model.RelativePath}")]
 public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile>
 {
-	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; } = Group;
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = Group;
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
 	public string Url => Model.Url;
 	public string NavigationTitle => Model.NavigationTitle;
 }
@@ -98,7 +98,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public string Id { get; }
 
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; protected init; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; protected init; }
 
 	public Uri NavigationSource { get; set; }
 
@@ -119,7 +119,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public int Depth { get; }
 
-	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	public string FolderName { get; }
 

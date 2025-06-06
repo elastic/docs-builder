@@ -11,21 +11,9 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
+public record ApiOperation(OperationType OperationType, OpenApiOperation Operation) : INavigationModel, IPageRenderer<ApiRenderContext>
 {
-	public ApiOperation(OperationType operationType, OpenApiOperation operation, LandingNavigationItem navigationRoot)
-	{
-		OperationType = operationType;
-		Operation = operation;
-		NavigationRoot = navigationRoot;
-
-	}
-
-	public OperationType OperationType { get; }
-	public OpenApiOperation Operation { get; }
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
-
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new OperationViewModel
 		{
@@ -54,7 +42,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 		NavigationTitle = $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
 	}
 
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
 	public ApiOperation Model { get; }
@@ -62,5 +50,5 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 
 	public string NavigationTitle { get; }
 
-	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 }

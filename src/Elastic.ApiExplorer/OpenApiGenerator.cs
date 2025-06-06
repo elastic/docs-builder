@@ -29,13 +29,13 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		foreach (var path in openApiDocument.Paths)
 		{
 			var endpointUrl = $"{url}/{path.Key.Trim('/').Replace('/', '-').Replace("{", "").Replace("}", "")}";
-			var apiEndpoint = new ApiEndpoint(path.Key, path.Value, rootNavigation);
+			var apiEndpoint = new ApiEndpoint(path.Key, path.Value);
 			var endpointNavigationItem = new EndpointNavigationItem(1, endpointUrl, apiEndpoint, rootNavigation, rootNavigation);
 			var endpointNavigationItems = new List<OperationNavigationItem>();
 			foreach (var operation in path.Value.Operations)
 			{
 				var operationUrl = $"{endpointUrl}/{operation.Key.ToString().ToLowerInvariant()}";
-				var apiOperation = new ApiOperation(operation.Key, operation.Value, rootNavigation);
+				var apiOperation = new ApiOperation(operation.Key, operation.Value);
 				var navigation = new OperationNavigationItem(2, operationUrl, apiOperation, endpointNavigationItem, rootNavigation);
 				endpointNavigationItems.Add(navigation);
 			}
@@ -78,7 +78,7 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 	}
 
 	private async Task<IFileInfo> Render<T>(T page, ApiRenderContext renderContext, Cancel ctx)
-		where T : IPageInformation, IPageRenderer<ApiRenderContext>
+		where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
 		var outputFile = OutputFile(renderContext.CurrentNavigation);
 		if (!outputFile.Directory!.Exists)

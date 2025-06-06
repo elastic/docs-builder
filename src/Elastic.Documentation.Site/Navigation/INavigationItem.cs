@@ -4,29 +4,27 @@
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public interface INavigationScope
-{
-	INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
-}
+public interface INavigationModel;
 
-public interface INavigationItem : INavigationScope
+public interface INavigationItem
 {
 	string Url { get; }
 	string NavigationTitle { get; }
+	INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
 	//TODO the setter smells
-	INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 }
 
 public interface ILeafNavigationItem<out TModel> : INavigationItem
-	where TModel : IPageInformation
+	where TModel : INavigationModel
 {
 	TModel Model { get; }
 }
 
 public interface INodeNavigationItem<out TIndex, out TChildNavigation>
 	: INavigationItem
-	where TIndex : IPageInformation
+	where TIndex : INavigationModel
 	where TChildNavigation : INavigationItem
 {
 	int Depth { get; }
@@ -34,6 +32,4 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation>
 	TIndex Index { get; }
 	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
 }
-
-public interface IPageInformation : INavigationScope;
 

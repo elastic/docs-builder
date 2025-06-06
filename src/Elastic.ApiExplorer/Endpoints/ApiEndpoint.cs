@@ -11,19 +11,17 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Endpoints;
 
-public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
+public record ApiEndpoint : INavigationModel, IPageRenderer<ApiRenderContext>
 {
-	public ApiEndpoint(string route, IOpenApiPathItem openApiPath, LandingNavigationItem navigationRoot)
+	public ApiEndpoint(string route, IOpenApiPathItem openApiPath)
 	{
 		Route = route;
 		OpenApiPath = openApiPath;
-		NavigationRoot = navigationRoot;
 
 	}
 
 	public string Route { get; }
 	public IOpenApiPathItem OpenApiPath { get; }
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
@@ -63,7 +61,7 @@ public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, Operation
 
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
 
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
-	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 }

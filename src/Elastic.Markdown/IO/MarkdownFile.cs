@@ -22,7 +22,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInformation
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
 {
 	private string? _navigationTitle;
 
@@ -60,7 +60,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInfo
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 

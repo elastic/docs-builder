@@ -36,7 +36,7 @@
 							if (item.Id == current?.Id) continue;
 							<li class="block">
 								<a
-									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.Index.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 									href="@item.Url"
 									@Htmx.GetNavHxAttributes(false, "mouseover")>
 									@item.NavigationTitle

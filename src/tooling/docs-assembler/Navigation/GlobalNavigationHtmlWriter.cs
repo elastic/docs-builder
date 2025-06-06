@@ -46,7 +46,7 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(INodeNavigationItem<IPageInformation, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
