@@ -12,12 +12,11 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 
-[DebuggerDisplay("File {File.RelativePath}")]
-public record FileNavigationItem(MarkdownFile File, INodeNavigationItem? Parent) : ILeafNavigationItem
+[DebuggerDisplay("Current: {Current.RelativePath}")]
+public record FileNavigationItem(MarkdownFile Current, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile>
 {
-	public INodeNavigationItem? Parent { get; set; } = Parent;
-	public IPageInformation Current => File;
-	public INodeNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; } = Group;
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
 }
 
 public class TableOfContentsTreeCollector
@@ -91,21 +90,20 @@ public class TableOfContentsTree : DocumentationGroup
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
-public class DocumentationGroup : INodeNavigationItem
+public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationItem>
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
 	public string Id { get; }
 
-	public INodeNavigationItem NavigationRoot { get; set; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
+	//TODO remove in favor of index
 	public MarkdownFile MarkdownFileIndex { get; set; }
 
-	public IPageInformation Index => MarkdownFileIndex;
-
-	public IPageInformation Current => Index;
+	public MarkdownFile Index => MarkdownFileIndex;
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
@@ -115,7 +113,7 @@ public class DocumentationGroup : INodeNavigationItem
 
 	public int Depth { get; }
 
-	public INodeNavigationItem? Parent { get; set; }
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 
 	public string FolderName { get; }
 
@@ -142,7 +140,7 @@ public class DocumentationGroup : INodeNavigationItem
 		ref int fileIndex,
 		int depth,
 		DocumentationGroup? toplevelTree,
-		INodeNavigationItem? parent,
+		DocumentationGroup? parent,
 		MarkdownFile? virtualIndexFile = null
 	)
 	{

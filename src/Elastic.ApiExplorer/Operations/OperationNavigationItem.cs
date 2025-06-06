@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Endpoints;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi.Models;
@@ -12,7 +13,7 @@ namespace Elastic.ApiExplorer.Operations;
 
 public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 {
-	public ApiOperation(string url, OperationType operationType, OpenApiOperation operation, INodeNavigationItem navigationRoot)
+	public ApiOperation(string url, OperationType operationType, OpenApiOperation operation, LandingNavigationItem navigationRoot)
 	{
 		OperationType = operationType;
 		Operation = operation;
@@ -30,7 +31,7 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 
 	public OperationType OperationType { get; }
 	public OpenApiOperation Operation { get; }
-	public INodeNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default)
 	{
@@ -45,9 +46,9 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 	}
 }
 
-public class OperationNavigationItem : INodeNavigationItem
+public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 {
-	public OperationNavigationItem(int depth, ApiOperation apiOperation, INodeNavigationItem parent, LandingNavigationItem root)
+	public OperationNavigationItem(int depth, ApiOperation apiOperation, EndpointNavigationItem parent, LandingNavigationItem root)
 	{
 		Parent = parent;
 		Depth = depth;
@@ -55,17 +56,13 @@ public class OperationNavigationItem : INodeNavigationItem
 		NavigationRoot = root;
 		Id = NavigationRoot.Id;
 
-		Index = apiOperation;
 		Current = apiOperation;
-		Operation = apiOperation;
 	}
 
-	public INodeNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
-	public INodeNavigationItem? Parent { get; set; }
 	public int Depth { get; }
-	public IPageInformation Current { get; }
-	public IPageInformation Index { get; }
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
-	public ApiOperation Operation { get; set; }
+	public ApiOperation Current { get; }
+
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }

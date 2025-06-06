@@ -52,7 +52,7 @@ public record GlobalNavigation : IPositionalNavigation
 	private void UpdateNavigationIndex(
 		HashSet<MarkdownFile> markdownFiles,
 		IReadOnlyCollection<INavigationItem> navigationItems,
-		INodeNavigationItem? parent,
+		INodeNavigationItem<IPageInformation, INavigationItem>? parent,
 		ref int navigationIndex
 	)
 	{
@@ -62,14 +62,16 @@ public record GlobalNavigation : IPositionalNavigation
 			{
 				case FileNavigationItem fileNavigationItem:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
-					fileNavigationItem.File.NavigationIndex = fileIndex;
-					fileNavigationItem.Parent = parent;
-					_ = markdownFiles.Add(fileNavigationItem.File);
+					fileNavigationItem.Current.NavigationIndex = fileIndex;
+					if (parent is not null)
+						fileNavigationItem.Parent = parent;
+					_ = markdownFiles.Add(fileNavigationItem.Current);
 					break;
 				case DocumentationGroup { MarkdownFileIndex: not null } documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
 					documentationGroup.MarkdownFileIndex.NavigationIndex = groupIndex;
-					documentationGroup.Parent = parent;
+					if (parent is not null)
+						documentationGroup.Parent = parent;
 					_ = markdownFiles.Add(documentationGroup.MarkdownFileIndex);
 					UpdateNavigationIndex(markdownFiles, documentationGroup.NavigationItems, documentationGroup, ref navigationIndex);
 					break;

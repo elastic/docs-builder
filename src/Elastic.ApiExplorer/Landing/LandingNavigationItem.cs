@@ -3,15 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Endpoints;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class ApiLanding(INodeNavigationItem root, string url) : IPageInformation, IPageRenderer<ApiRenderContext>
+public class ApiLanding(INodeNavigationItem<IPageInformation, INavigationItem> root, string url) : IPageInformation, IPageRenderer<ApiRenderContext>
 {
-	public INodeNavigationItem NavigationRoot { get; } = root;
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; } = root;
 	public string Url { get; } = url;
 
 	//TODO
@@ -32,16 +33,14 @@ public class ApiLanding(INodeNavigationItem root, string url) : IPageInformation
 	}
 }
 
-public class LandingNavigationItem : INodeNavigationItem
+public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNavigationItem>
 {
-	public INodeNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
-	public IPageInformation Current { get; set; }
-	public IPageInformation Index { get; set; }
-	public INodeNavigationItem? Parent { get; set; }
-	public ApiLanding Landing { get; set; }
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
+	public ApiLanding Index { get; }
+	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
 
 	public LandingNavigationItem(string url)
 	{
@@ -52,7 +51,5 @@ public class LandingNavigationItem : INodeNavigationItem
 		var landing = new ApiLanding(this, url);
 
 		Index = landing;
-		Current = landing;
-		Landing = landing;
 	}
 }

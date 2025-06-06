@@ -57,7 +57,7 @@ public interface IPositionalNavigation
 		foreach (var parent in navigationParents)
 		{
 			if (parent is FileNavigationItem f)
-				parents.Add(f.File);
+				parents.Add(f.Current);
 			if (parent is DocumentationGroup { MarkdownFileIndex: not null } g)
 				parents.Add(g.MarkdownFileIndex);
 			if (parent is DocumentationGroup { MarkdownFileIndex: not null } dg)
@@ -192,7 +192,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	public static (string, INavigationItem)[] Pairs(INavigationItem item)
 	{
 		if (item is FileNavigationItem f)
-			return [(f.File.CrossLink, item)];
+			return [(f.Current.CrossLink, item)];
 		if (item is DocumentationGroup g)
 		{
 			var index = new List<(string, INavigationItem)>();

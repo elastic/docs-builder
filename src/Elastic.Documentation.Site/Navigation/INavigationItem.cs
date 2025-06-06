@@ -6,26 +6,30 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public interface INavigationScope
 {
-	INodeNavigationItem NavigationRoot { get; }
+	INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 }
 
 public interface INavigationItem : INavigationScope
 {
-	INodeNavigationItem? Parent { get; set; }
+	//TODO the setter smells
+	INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }
 
-public interface ILeafNavigationItem : INavigationItem
+public interface ILeafNavigationItem<out TCurrent> : INavigationItem
+	where TCurrent : IPageInformation
 {
-	IPageInformation Current { get; }
+	TCurrent Current { get; }
 }
 
 // TODO make generic TINdex and TNavigationItem
-public interface INodeNavigationItem : INavigationItem
+public interface INodeNavigationItem<out TIndex, out TNavigation> : INavigationItem
+	where TIndex : IPageInformation
+	where TNavigation : INavigationItem
 {
 	int Depth { get; }
 	string Id { get; }
-	IPageInformation Index { get; }
-	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+	TIndex Index { get; }
+	IReadOnlyCollection<TNavigation> NavigationItems { get; }
 }
 
 public interface IPageInformation : INavigationScope

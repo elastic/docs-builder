@@ -16,7 +16,8 @@ public class GlobalNavigationHtmlWriter(
 	GlobalNavigationFile navigationFile,
 	AssembleContext assembleContext,
 	GlobalNavigation globalNavigation,
-	AssembleSources assembleSources) : INavigationHtmlWriter
+	AssembleSources assembleSources
+) : INavigationHtmlWriter
 {
 	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
 
@@ -45,7 +46,7 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(INodeNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INodeNavigationItem<IPageInformation, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
