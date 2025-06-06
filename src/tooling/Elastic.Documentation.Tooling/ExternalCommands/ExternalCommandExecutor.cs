@@ -12,18 +12,12 @@ namespace Elastic.Documentation.Tooling.ExternalCommands;
 public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, IDirectoryInfo workingDirectory)
 {
 	protected IDirectoryInfo WorkingDirectory => workingDirectory;
-	protected void ExecIn(string binary, params string[] args)
+	protected void ExecIn(Dictionary<string, string> environmentVars, string binary, params string[] args)
 	{
 		var arguments = new ExecArguments(binary, args)
 		{
 			WorkingDirectory = workingDirectory.FullName,
-			Environment = new Dictionary<string, string>
-			{
-				// Disable git editor prompts:
-				// There are cases where `git pull` would prompt for an editor to write a commit message.
-				// This env variable prevents that.
-				{ "GIT_EDITOR", "true" }
-			},
+			Environment = environmentVars
 		};
 		var result = Proc.Exec(arguments);
 		if (result != 0)

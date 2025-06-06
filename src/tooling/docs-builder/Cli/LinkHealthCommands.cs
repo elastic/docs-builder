@@ -7,11 +7,10 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Tracking;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
-using Elastic.Markdown;
-using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
