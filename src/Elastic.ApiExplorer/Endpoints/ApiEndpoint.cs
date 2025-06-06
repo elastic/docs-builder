@@ -30,7 +30,7 @@ public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 	public string Url { get; }
 	public string Route { get; }
 	public IOpenApiPathItem PathValue { get; }
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	public IRootNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
@@ -45,7 +45,7 @@ public record ApiEndpoint : IPageInformation, IPageRenderer<ApiRenderContext>
 	}
 }
 
-public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, OperationNavigationItem>
+public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, OperationNavigationItem, LandingNavigationItem>
 {
 	public EndpointNavigationItem(int depth, ApiEndpoint apiEndpoint, LandingNavigationItem parent, LandingNavigationItem root)
 	{
@@ -63,7 +63,7 @@ public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, Operation
 
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
 
-	public INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	public LandingNavigationItem NavigationRoot { get; }
 
-	public INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	public IRootNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }

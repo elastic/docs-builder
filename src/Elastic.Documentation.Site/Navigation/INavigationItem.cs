@@ -4,25 +4,27 @@
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public interface INavigationScope
+public interface INavigationScope<out TRoot>
+	where TRoot : IRootNavigationItem<IPageInformation, INavigationItem>
 {
-	INodeNavigationItem<IPageInformation, INavigationItem> NavigationRoot { get; }
+	TRoot NavigationRoot { get; }
 }
 
-public interface INavigationItem : INavigationScope
+public interface INavigationItem
 {
 	//TODO the setter smells
-	INodeNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
+	IRootNavigationItem<IPageInformation, INavigationItem>? Parent { get; set; }
 }
 
-public interface ILeafNavigationItem<out TCurrent> : INavigationItem
+public interface ILeafNavigationItem<out TCurrent, out TRoot> : INavigationItem, INavigationScope<TRoot>
 	where TCurrent : IPageInformation
+	where TRoot : IRootNavigationItem<IPageInformation, INavigationItem>
 {
 	TCurrent Current { get; }
 }
 
-// TODO make generic TINdex and TNavigationItem
-public interface INodeNavigationItem<out TIndex, out TNavigation> : INavigationItem
+public interface IRootNavigationItem<out TIndex, out TNavigation>
+	: INavigationItem
 	where TIndex : IPageInformation
 	where TNavigation : INavigationItem
 {
@@ -32,7 +34,13 @@ public interface INodeNavigationItem<out TIndex, out TNavigation> : INavigationI
 	IReadOnlyCollection<TNavigation> NavigationItems { get; }
 }
 
-public interface IPageInformation : INavigationScope
+public interface INodeNavigationItem<out TIndex, out TNavigation, out TRoot>
+	: IRootNavigationItem<TIndex, TNavigation>, INavigationScope<TRoot>
+	where TIndex : IPageInformation
+	where TNavigation : INavigationItem
+	where TRoot : IRootNavigationItem<IPageInformation, INavigationItem>;
+
+public interface IPageInformation : INavigationScope<IRootNavigationItem<IPageInformation, INavigationItem>>
 {
 	string Url { get; }
 	string NavigationTitle { get; }
