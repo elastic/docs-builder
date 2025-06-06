@@ -1,0 +1,10 @@
+name: 'Validate Redirects Health'
+description: 'Validates moved and deleted files received redirect rules'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate Redirects
+      shell: bash
+      run: |
+        dotnet run --project src/tooling/docs-builder/docs-builder.csproj -- health validate-redirects
