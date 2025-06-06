@@ -35,9 +35,7 @@ public interface IPositionalNavigation
 
 	INavigationItem? GetPrevious(MarkdownFile current);
 	INavigationItem? GetNext(MarkdownFile current);
-	INavigationItem GetCurrent(MarkdownFile file) =>
-		MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem)
-			? navigationItem : throw new InvalidOperationException($"Could not find navigation item for {file.CrossLink}");
+	INavigationItem? GetCurrent(MarkdownFile file) => MarkdownNavigationLookup.GetValueOrDefault(file.CrossLink);
 
 	INavigationItem[] GetParents(INavigationItem current)
 	{

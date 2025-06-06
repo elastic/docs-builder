@@ -26,7 +26,7 @@ public class IndexViewModel
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 
-	public required INavigationItem CurrentNavigationItem { get; init; }
+	public required INavigationItem? CurrentNavigationItem { get; init; }
 	public required INavigationItem? PreviousDocument { get; init; }
 	public required INavigationItem? NextDocument { get; init; }
 	public required INavigationItem[] Parents { get; init; }

@@ -18,7 +18,7 @@ public class GlobalLayoutViewModel
 	public required LayoutName? Layout { get; init; }
 
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
-	public required INavigationItem CurrentNavigationItem { get; init; }
+	public required INavigationItem? CurrentNavigationItem { get; init; }
 	public required INavigationItem? Previous { get; init; }
 	public required INavigationItem? Next { get; init; }
 	public required string NavigationHtml { get; init; }
@@ -29,7 +29,8 @@ public class GlobalLayoutViewModel
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
-	public string? CanonicalUrl => CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
+	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
+		new Uri(CanonicalBaseUrl, CurrentNavigationItem?.Url).ToString().TrimEnd('/') : null;
 	public required FeatureFlags Features { get; init; }
 
 	public required INavigationItem[] Parents { get; init; }
