@@ -5,10 +5,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Slices;
 
 namespace Documentation.Assembler.Navigation;
 
@@ -77,8 +75,8 @@ public class GlobalNavigationHtmlWriter(
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
 		{
-			Title = group.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = group.Index?.Url ?? "/",
+			Title = group.Index.NavigationTitle,
+			TitleUrl = group.Index.Url,
 			Tree = group,
 			IsPrimaryNavEnabled = true,
 			IsGlobalAssemblyBuild = true,

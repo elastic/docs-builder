@@ -8,7 +8,6 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
@@ -117,7 +116,7 @@ public class GlobalNavigationPathProviderTests
 		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
 		referenceToc.Should().NotBeNull();
-		referenceToc!.TocReferences.Should().NotContainKey(clients);
+		referenceToc.TocReferences.Should().NotContainKey(clients);
 
 		var ingestTools = referenceToc.TocReferences[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestTools.Should().NotBeNull();
@@ -214,7 +213,7 @@ public class GlobalNavigationPathProviderTests
 
 		var addToHelm = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("apm-k8s-attacher://reference/apm-webhook-add-helm-repo.md");
 		addToHelm.Should().NotBeNull();
-		var parentGroup = addToHelm!.Parent as DocumentationGroup;
+		var parentGroup = addToHelm.Parent as DocumentationGroup;
 		var parents = AssertHasParents(parentGroup, positionalNavigation, addToHelm);
 
 		parents
@@ -230,7 +229,7 @@ public class GlobalNavigationPathProviderTests
 
 		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/introduction.md");
 		getStartedIntro.Should().NotBeNull();
-		parentGroup = getStartedIntro!.Parent as DocumentationGroup;
+		parentGroup = getStartedIntro.Parent as DocumentationGroup;
 		_ = AssertHasParents(parentGroup, positionalNavigation, getStartedIntro);
 
 	}

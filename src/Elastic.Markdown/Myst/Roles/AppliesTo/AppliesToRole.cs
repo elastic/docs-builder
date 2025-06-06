@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;

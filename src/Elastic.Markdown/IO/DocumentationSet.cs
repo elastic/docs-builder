@@ -176,9 +176,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			return [(f.Model.CrossLink, item)];
 		if (item is DocumentationGroup g)
 		{
-			var index = new List<(string, INavigationItem)>();
-			if (g.Index is not null)
-				index.Add((g.Index.CrossLink, g));
+			var index = new List<(string, INavigationItem)>
+			{
+				(g.Index.CrossLink, g)
+			};
 
 			return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
 				.DistinctBy(kv => kv.Item1)

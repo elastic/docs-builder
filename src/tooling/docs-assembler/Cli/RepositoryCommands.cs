@@ -2,11 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO.Abstractions;
 using System.Net.Mime;
 using Actions.Core.Services;
@@ -19,13 +15,11 @@ using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Links;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
 
 namespace Documentation.Assembler.Cli;
 

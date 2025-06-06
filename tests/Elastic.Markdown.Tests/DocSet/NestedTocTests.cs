@@ -17,7 +17,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 
 		doc.Should().NotBeNull();
 		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc!.CrossLink);
+		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc.CrossLink);
 		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
 
 		var parent = nav.Parent;

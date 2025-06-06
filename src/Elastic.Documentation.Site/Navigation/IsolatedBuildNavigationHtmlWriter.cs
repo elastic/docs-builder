@@ -30,8 +30,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INodeNaviga
 	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> navigation) =>
 		new()
 		{
-			Title = navigation.NavigationTitle ?? "Docs",
-			TitleUrl = navigation.Url ?? context.UrlPathPrefix ?? "/",
+			Title = navigation.NavigationTitle,
+			TitleUrl = navigation.Url,
 			Tree = navigation,
 			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,

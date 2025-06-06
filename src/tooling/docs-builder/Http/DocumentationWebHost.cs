@@ -9,7 +9,6 @@ using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
-using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

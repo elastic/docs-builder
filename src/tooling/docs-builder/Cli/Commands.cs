@@ -11,7 +11,6 @@ using Documentation.Builder.Http;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Refactor;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;

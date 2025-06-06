@@ -298,7 +298,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
 		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
 
-		await (MarkdownFileIndex?.MinimalParseAsync(ctx) ?? Task.CompletedTask);
+		_ = await MarkdownFileIndex.MinimalParseAsync(ctx);
 
 		_resolved = true;
 	}

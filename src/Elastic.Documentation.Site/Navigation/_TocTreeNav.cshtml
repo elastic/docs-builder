@@ -23,10 +23,10 @@
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
-					href="@(g.Url ?? "")"
+					href="@(g.Url)"
 					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRoot.Id == Model.RootNavigationId || true)
 					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "")">
-					@(g.NavigationTitle ?? "Untitled")
+					@(g.NavigationTitle)
 				</a>
 				<label for="@folder.Id" class="group/label flex mr-2 items-start">
 					<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
