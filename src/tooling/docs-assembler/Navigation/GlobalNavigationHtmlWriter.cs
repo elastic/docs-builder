@@ -45,7 +45,7 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INodeNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
@@ -78,7 +78,7 @@ public class GlobalNavigationHtmlWriter(
 		{
 			Title = group.Index?.NavigationTitle ?? "Docs",
 			TitleUrl = group.Index?.Url ?? "/",
-			Tree = group.GroupNavigationItem,
+			Tree = group,
 			IsPrimaryNavEnabled = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems

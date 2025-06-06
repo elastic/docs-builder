@@ -12,37 +12,12 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 
-//TODO see if we can remove these proxy classes `TocNavigationItem` and `GroupNavigationItem`
-//They wrap `DocumentationGroup` which is now by itself a `IGroupNavigationItem`
-
-/*
-[DebuggerDisplay("Toc >{Depth} {DocumentationGroup.FolderName}")]
-public record TocNavigationItem(int Depth, DocumentationGroup DocumentationGroup, Uri Source, IGroupNavigationItem? Parent)
-	: GroupNavigationItem(Depth, DocumentationGroup, Parent)
+[DebuggerDisplay("File {File.RelativePath}")]
+public record FileNavigationItem(MarkdownFile File, INodeNavigationItem? Parent) : ILeafNavigationItem
 {
-	/// Only used for tests
-	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup =>
-		DocumentationGroup.NavigationItems.OfType<TocNavigationItem>().ToDictionary(i => i.Source, i => i);
-}
-
-[DebuggerDisplay("Group >{Depth} {DocumentationGroup.FolderName}")]
-public record GroupNavigationItem(int Depth, DocumentationGroup DocumentationGroup, IGroupNavigationItem? Parent) : IGroupNavigationItem
-{
-	public string Id { get; } = DocumentationGroup.Id;
-	public IGroupNavigationItem? Parent { get; set; } = Parent;
-	public IPageInformation? Index { get; } = DocumentationGroup.Index;
-	public IPageInformation? Current => DocumentationGroup.Index;
-	public IReadOnlyCollection<INavigationItem> NavigationItems => DocumentationGroup.NavigationItems;
-	public IGroupNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? DocumentationGroup;
-}*/
-
-[DebuggerDisplay("File >{Depth} {File.RelativePath}")]
-public record FileNavigationItem(int Depth, MarkdownFile File, IGroupNavigationItem? Parent) : INavigationItem
-{
-	public string Id { get; } = File.Id;
-	public IGroupNavigationItem? Parent { get; set; } = Parent;
+	public INodeNavigationItem? Parent { get; set; } = Parent;
 	public IPageInformation Current => File;
-	public IGroupNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
+	public INodeNavigationItem NavigationRoot { get; } = Parent?.NavigationRoot ?? File.NavigationRoot;
 }
 
 public class TableOfContentsTreeCollector
@@ -102,9 +77,8 @@ public class TableOfContentsTree : DocumentationGroup
 		ref int fileIndex,
 		int depth,
 		DocumentationGroup? toplevelTree,
-		DocumentationGroup? parent,
-		MarkdownFile? index = null
-	) : base(folderName, treeCollector, context, lookups, source, ref fileIndex, depth, toplevelTree, parent, index)
+		DocumentationGroup? parent
+	) : base(folderName, treeCollector, context, lookups, source, ref fileIndex, depth, toplevelTree, parent)
 	{
 		Source = source;
 		TreeCollector = treeCollector;
@@ -117,21 +91,21 @@ public class TableOfContentsTree : DocumentationGroup
 }
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
-public class DocumentationGroup : IGroupNavigationItem
+public class DocumentationGroup : INodeNavigationItem
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
 
 	public string Id { get; }
 
-	public IGroupNavigationItem NavigationRoot { get; set; }
+	public INodeNavigationItem NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
-	public MarkdownFile? MarkdownFileIndex { get; set; }
+	public MarkdownFile MarkdownFileIndex { get; set; }
 
-	public IPageInformation? Index => MarkdownFileIndex;
+	public IPageInformation Index => MarkdownFileIndex;
 
-	public IPageInformation? Current => Index;
+	public IPageInformation Current => Index;
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
@@ -139,11 +113,9 @@ public class DocumentationGroup : IGroupNavigationItem
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; }
 
-	public IGroupNavigationItem GroupNavigationItem { get; }
+	public int Depth { get; }
 
-	public int Depth { get; set; }
-
-	public IGroupNavigationItem? Parent { get; set; }
+	public INodeNavigationItem? Parent { get; set; }
 
 	public string FolderName { get; }
 
@@ -156,14 +128,13 @@ public class DocumentationGroup : IGroupNavigationItem
 		Uri navigationSource,
 		ref int fileIndex
 	)
-		: this(".", treeCollector, context, lookups, navigationSource, ref fileIndex, depth: 0, null, null)
+		: this(".", treeCollector, context, lookups, navigationSource, ref fileIndex, depth: 0, toplevelTree: null, parent: null)
 	{
 		NavigationSource = navigationSource;
 		_treeCollector = treeCollector;
 	}
 
-	protected DocumentationGroup(
-		string folderName,
+	protected DocumentationGroup(string folderName,
 		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
 		NavigationLookups lookups,
@@ -171,8 +142,8 @@ public class DocumentationGroup : IGroupNavigationItem
 		ref int fileIndex,
 		int depth,
 		DocumentationGroup? toplevelTree,
-		IGroupNavigationItem? parent,
-		MarkdownFile? index = null
+		INodeNavigationItem? parent,
+		MarkdownFile? virtualIndexFile = null
 	)
 	{
 		Parent = parent;
@@ -189,24 +160,21 @@ public class DocumentationGroup : IGroupNavigationItem
 		// ReSharper enable VirtualMemberCallInConstructor
 		NavigationRoot = toplevelTree;
 		// ReSharper restore VirtualMemberCallInConstructor
-		MarkdownFileIndex = ProcessTocItems(context, toplevelTree, index, lookups, depth, ref fileIndex, out var groups, out var files, out var navigationItems);
+		MarkdownFileIndex = ProcessTocItems(context, toplevelTree, lookups, depth, virtualIndexFile, ref fileIndex, out var groups, out var files, out var navigationItems);
 
 		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
 		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
-		if (MarkdownFileIndex is not null)
-			FilesInOrder = [.. FilesInOrder.Except([MarkdownFileIndex])];
 
-		GroupNavigationItem = this;
+		FilesInOrder = [.. FilesInOrder.Except([MarkdownFileIndex])];
 	}
 
-	private MarkdownFile? ProcessTocItems(
-		BuildContext context,
+	private MarkdownFile ProcessTocItems(BuildContext context,
 		DocumentationGroup topLevelGroup,
-		MarkdownFile? configuredIndex,
 		NavigationLookups lookups,
 		int depth,
+		MarkdownFile? virtualIndexFile,
 		ref int fileIndex,
 		out List<DocumentationGroup> groups,
 		out List<MarkdownFile> files,
@@ -215,8 +183,8 @@ public class DocumentationGroup : IGroupNavigationItem
 		groups = [];
 		navigationItems = [];
 		files = [];
-		var indexFile = configuredIndex;
-		foreach (var (tocItem, index) in lookups.TableOfContents.Select((t, i) => (t, i)))
+		var indexFile = virtualIndexFile;
+		foreach (var tocItem in lookups.TableOfContents)
 		{
 			if (tocItem is FileReference file)
 			{
@@ -234,8 +202,10 @@ public class DocumentationGroup : IGroupNavigationItem
 				}
 
 				if (d is not MarkdownFile md)
+				{
+					context.EmitError(context.ConfigurationPath, $"{d.RelativePath} is not a Markdown file.");
 					continue;
-
+				}
 
 				md.Hidden = file.Hidden;
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
@@ -247,18 +217,18 @@ public class DocumentationGroup : IGroupNavigationItem
 				foreach (var extension in lookups.EnabledExtensions)
 					extension.Visit(d, tocItem);
 
-				if (file.Children.Count > 0 && d is MarkdownFile virtualIndex)
+				if (file.Children.Count > 0)
 				{
 					if (file.Hidden)
 						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.RelativePath}");
-					var group = new DocumentationGroup(virtualIndex.RelativePath,
+					var group = new DocumentationGroup(md.RelativePath,
 						_treeCollector, context, lookups with
 						{
 							TableOfContents = file.Children,
-						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, virtualIndex);
+						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, md);
 					groups.Add(group);
 					navigationItems.Add(group);
-					indexFile ??= virtualIndex;
+					indexFile ??= md;
 					continue;
 				}
 
@@ -266,12 +236,12 @@ public class DocumentationGroup : IGroupNavigationItem
 				if (file.RelativePath.EndsWith("index.md") && d is MarkdownFile i)
 					indexFile ??= i;
 
-				// add the page to navigation items unless it's the index file
+				// Add the page to navigation items unless it's the index file
 				// the index file can either be the discovered `index.md` or the parent group's
-				// explicit index page. E.g. when grouping related files together.
-				// if the page is referenced as hidden in the TOC do not include it in the navigation
+				// explicit index page. E.g., when grouping related files together.
+				// If the page is referenced as hidden in the TOC do not include it in the navigation
 				if (indexFile != md && !md.Hidden)
-					navigationItems.Add(new FileNavigationItem(depth, md, this));
+					navigationItems.Add(new FileNavigationItem(md, this));
 			}
 			else if (tocItem is FolderReference folder)
 			{
@@ -309,10 +279,10 @@ public class DocumentationGroup : IGroupNavigationItem
 			}
 		}
 
-		if (indexFile is not null)
-			indexFile.IsIndex = true;
-
-		return indexFile ?? files.FirstOrDefault();
+		return indexFile ?? files.FirstOrDefault()
+			// We typically do not want to throw hard exceptions, however, this is truly exceptional and should be rare
+			// This greatly simplifies the logic of the navigation builder as we can assume the index is never null for IGroupNavigationItem
+			?? throw new InvalidOperationException($"No index file found.");
 	}
 
 	private bool _resolved;

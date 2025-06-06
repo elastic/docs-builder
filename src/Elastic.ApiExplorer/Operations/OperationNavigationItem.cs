@@ -12,7 +12,7 @@ namespace Elastic.ApiExplorer.Operations;
 
 public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 {
-	public ApiOperation(string url, OperationType operationType, OpenApiOperation operation, IGroupNavigationItem navigationRoot)
+	public ApiOperation(string url, OperationType operationType, OpenApiOperation operation, INodeNavigationItem navigationRoot)
 	{
 		OperationType = operationType;
 		Operation = operation;
@@ -30,7 +30,7 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 
 	public OperationType OperationType { get; }
 	public OpenApiOperation Operation { get; }
-	public IGroupNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem NavigationRoot { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default)
 	{
@@ -45,9 +45,9 @@ public record ApiOperation : IPageInformation, IPageRenderer<ApiRenderContext>
 	}
 }
 
-public class OperationNavigationItem : IGroupNavigationItem
+public class OperationNavigationItem : INodeNavigationItem
 {
-	public OperationNavigationItem(int depth, ApiOperation apiOperation, IGroupNavigationItem? parent, LandingNavigationItem root)
+	public OperationNavigationItem(int depth, ApiOperation apiOperation, INodeNavigationItem parent, LandingNavigationItem root)
 	{
 		Parent = parent;
 		Depth = depth;
@@ -60,9 +60,9 @@ public class OperationNavigationItem : IGroupNavigationItem
 		Operation = apiOperation;
 	}
 
-	public IGroupNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem NavigationRoot { get; }
 	public string Id { get; }
-	public IGroupNavigationItem? Parent { get; set; }
+	public INodeNavigationItem? Parent { get; set; }
 	public int Depth { get; }
 	public IPageInformation Current { get; }
 	public IPageInformation Index { get; }

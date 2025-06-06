@@ -39,8 +39,8 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 			if (link.Url?.StartsWith('/') == true)
 			{
-				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as IGroupNavigationItem;
-				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as IGroupNavigationItem;
+				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INodeNavigationItem;
+				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem;
 				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
 				_ = renderer.Write(" hx-get=\"");
 				_ = renderer.WriteEscapeUrl(url);

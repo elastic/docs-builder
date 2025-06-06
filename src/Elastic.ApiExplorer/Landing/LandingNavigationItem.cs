@@ -9,9 +9,9 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class ApiLanding(IGroupNavigationItem root, string url) : IPageInformation, IPageRenderer<ApiRenderContext>
+public class ApiLanding(INodeNavigationItem root, string url) : IPageInformation, IPageRenderer<ApiRenderContext>
 {
-	public IGroupNavigationItem NavigationRoot { get; } = root;
+	public INodeNavigationItem NavigationRoot { get; } = root;
 	public string Url { get; } = url;
 
 	//TODO
@@ -32,20 +32,19 @@ public class ApiLanding(IGroupNavigationItem root, string url) : IPageInformatio
 	}
 }
 
-public class LandingNavigationItem : IGroupNavigationItem
+public class LandingNavigationItem : INodeNavigationItem
 {
-	public IGroupNavigationItem NavigationRoot { get; }
+	public INodeNavigationItem NavigationRoot { get; }
 	public string Id { get; }
-	public IGroupNavigationItem? Parent { get; set; }
 	public int Depth { get; }
 	public IPageInformation Current { get; set; }
 	public IPageInformation Index { get; set; }
+	public INodeNavigationItem? Parent { get; set; }
 	public ApiLanding Landing { get; set; }
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 
 	public LandingNavigationItem(string url)
 	{
-		Parent = null;
 		Depth = 0;
 		NavigationRoot = this;
 		Id = ShortId.Create("root");

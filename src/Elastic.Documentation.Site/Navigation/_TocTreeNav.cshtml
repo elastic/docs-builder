@@ -5,8 +5,7 @@
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
-	var id = item.Id;
-	if (item is IGroupNavigationItem { NavigationItems.Count: 0, Index: not null } group)
+	if (item is INodeNavigationItem { NavigationItems.Count: 0, Index: not null } group)
 	{
 		var f = group.Index;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
@@ -14,13 +13,12 @@
 				href="@f.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link group-[.current]/li:text-blue-elastic!"
-				id="page-@id"
 			>
 				@f.NavigationTitle
 			</a>
 		</li>
 	}
-	else if (item is IGroupNavigationItem folder)
+	else if (item is INodeNavigationItem folder)
 	{
 		var g = folder;
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4")">
@@ -28,11 +26,10 @@
 				<a
 					href="@(g.Index?.Url ?? "")"
 					@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && g.NavigationRoot.Id == Model.RootNavigationId || true)
-					id="page-@(g.Index?.NavigationRoot.Id ?? id)"
 					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "")">
 					@(g.Index?.NavigationTitle ?? "Untitled")
 				</a>
-				<label for="@id" class="group/label flex mr-2 items-start">
+				<label for="@folder.Id" class="group/label flex mr-2 items-start">
 					<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -66,15 +63,14 @@
 			}
 		</li>
 	}
-	else if (item is { Current: { Url: not null } } && Model.SubTree.Index?.Url != item.Current.Url)
+	else if (item is ILeafNavigationItem leaf && Model.SubTree.Index?.Url != leaf.Current.Url)
 	{
-		var f = item.Current;
+		var f = leaf.Current;
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@f.Url"
 				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && f.NavigationRoot.Id == Model.RootNavigationId || true)
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
-				id="page-@id"
 			>
 				@f.NavigationTitle
 			</a>

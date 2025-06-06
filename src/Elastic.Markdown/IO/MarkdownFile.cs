@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
@@ -44,7 +43,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInfo
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		IsIndex = FileName == "index.md";
 
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
@@ -52,7 +50,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInfo
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
-		Id = ShortId.Create(FilePath);
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
@@ -63,11 +60,9 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInfo
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public IGroupNavigationItem NavigationRoot { get; set; }
+	public INodeNavigationItem NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
-
-	public string Id { get; }
 
 	private IDiagnosticsCollector Collector { get; }
 
@@ -76,8 +71,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IPageInfo
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
-
-	public bool IsIndex { get; internal set; }
 
 	public string? Title
 	{

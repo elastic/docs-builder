@@ -52,7 +52,7 @@ public record GlobalNavigation : IPositionalNavigation
 	private void UpdateNavigationIndex(
 		HashSet<MarkdownFile> markdownFiles,
 		IReadOnlyCollection<INavigationItem> navigationItems,
-		IGroupNavigationItem? parent,
+		INodeNavigationItem? parent,
 		ref int navigationIndex
 	)
 	{

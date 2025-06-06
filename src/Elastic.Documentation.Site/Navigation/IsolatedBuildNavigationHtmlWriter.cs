@@ -7,12 +7,12 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavigationItem siteRoot)
+public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INodeNavigationItem siteRoot)
 	: INavigationHtmlWriter
 {
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INodeNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		var navigation = context.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -27,7 +27,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavig
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(IGroupNavigationItem navigation) =>
+	private NavigationViewModel CreateNavigationModel(INodeNavigationItem navigation) =>
 		new()
 		{
 			Title = navigation.Index?.NavigationTitle ?? "Docs",
@@ -35,6 +35,6 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavig
 			Tree = navigation,
 			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = siteRoot.NavigationItems.OfType<IGroupNavigationItem>().ToList()
+			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem>().ToList()
 		};
 }
