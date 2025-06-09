@@ -37,7 +37,7 @@
     "postcss-import": "16.1.0",
     "prettier": "3.5.3",
     "prettier-plugin-tailwindcss": "0.6.12",
-    "typescript-eslint": "8.33.0"
+    "typescript-eslint": "8.33.1"
   },
   "browserslist": [
     "defaults"
