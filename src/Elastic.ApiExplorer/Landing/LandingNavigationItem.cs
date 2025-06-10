@@ -36,6 +36,7 @@ public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNav
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
 	public string Url { get; }
+	public bool Hidden => false;
 
 	//TODO
 	public string NavigationTitle { get; } = "API Documentation";

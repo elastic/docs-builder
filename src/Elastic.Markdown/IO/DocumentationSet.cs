@@ -35,7 +35,8 @@ public interface IPositionalNavigation
 
 	INavigationItem? GetPrevious(MarkdownFile current);
 	INavigationItem? GetNext(MarkdownFile current);
-	INavigationItem? GetCurrent(MarkdownFile file) => MarkdownNavigationLookup.GetValueOrDefault(file.CrossLink);
+	INavigationItem GetCurrent(MarkdownFile file) =>
+		MarkdownNavigationLookup.GetValueOrDefault(file.CrossLink) ?? throw new InvalidOperationException($"Could not find {file.CrossLink} in navigation");
 
 	INavigationItem[] GetParents(INavigationItem current)
 	{
@@ -164,6 +165,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		MarkdownNavigationLookup = Tree.NavigationItems
 			.SelectMany(Pairs)
+			.Concat(Pairs(Tree))
+			.DistinctBy(kv => kv.Item1)
 			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
 			.ToFrozenDictionary();
 
@@ -290,11 +293,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
 			if (previous is null)
 				return null;
-			if (!previous.Hidden)
-			{
-				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
-					return navigationItem;
-			}
+			if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem) && !navigationItem.Hidden)
+				return navigationItem;
 			index--;
 		} while (index > 0);
 
@@ -309,11 +309,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
 			if (previous is null)
 				return null;
-			if (!previous.Hidden)
-			{
-				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
-					return navigationItem;
-			}
+			if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem) && !navigationItem.Hidden)
+				return navigationItem;
 			index++;
 		} while (index <= MarkdownFiles.Count - 1);
 
@@ -369,7 +366,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			: k.LinkReferenceRelativePath, v =>
 			{
 				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
+				var nav = ((IPositionalNavigation)this).GetCurrent(v.File);
+				return new LinkMetadata { Anchors = anchors, Hidden = nav.Hidden };
 			});
 
 		return new RepositoryLinks

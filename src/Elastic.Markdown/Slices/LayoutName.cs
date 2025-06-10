@@ -4,7 +4,7 @@
 
 using System.Runtime.Serialization;
 
-namespace Elastic.Documentation.Site;
+namespace Elastic.Markdown.Slices;
 
 public enum LayoutName
 {

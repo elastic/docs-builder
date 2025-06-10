@@ -207,6 +207,9 @@ public class DocumentationWebHost
 				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
 					return Results.NotFound();
 
+				if (Path.GetExtension(s) is "" or not ".md")
+					return Results.NotFound();
+
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
 				return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);
 		}

@@ -13,7 +13,7 @@ using Elastic.Documentation.Site.Navigation;
 namespace Elastic.Markdown.IO.Navigation;
 
 [DebuggerDisplay("Current: {Model.RelativePath}")]
-public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group) : ILeafNavigationItem<MarkdownFile>
+public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group, bool Hidden = false) : ILeafNavigationItem<MarkdownFile>
 {
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = Group;
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
@@ -107,6 +107,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 	public string Url => Index.Url;
 
 	public string NavigationTitle => Index.NavigationTitle;
+
+	public bool Hidden => false;
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
@@ -209,7 +211,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					continue;
 				}
 
-				md.Hidden = file.Hidden;
 				var navigationIndex = Interlocked.Increment(ref fileIndex);
 				md.NavigationIndex = navigationIndex;
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
@@ -242,8 +243,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				// the index file can either be the discovered `index.md` or the parent group's
 				// explicit index page. E.g., when grouping related files together.
 				// If the page is referenced as hidden in the TOC do not include it in the navigation
-				if (indexFile != md && !md.Hidden)
-					navigationItems.Add(new FileNavigationItem(md, this));
+				if (indexFile != md)
+					navigationItems.Add(new FileNavigationItem(md, this, file.Hidden));
 			}
 			else if (tocItem is FolderReference folder)
 			{

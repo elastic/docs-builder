@@ -58,6 +58,7 @@ public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, Operation
 	public ApiEndpoint Index { get; }
 	public string Url { get; }
 	public string NavigationTitle { get; }
+	public bool Hidden => false;
 
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
 
