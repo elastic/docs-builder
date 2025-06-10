@@ -329,7 +329,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
 
-	public string FirstInterestingUrl => NavigationIndexedByOrder.Values.OfType<FileNavigationItem>().First().Url;
+	public string FirstInterestingUrl =>
+		NavigationIndexedByOrder.Values.OfType<DocumentationGroup>().First().Url;
 
 	public DocumentationFile? DocumentationFileLookup(IFileInfo sourceFile)
 	{
