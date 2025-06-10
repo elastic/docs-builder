@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -24,5 +25,20 @@ public class ReaderTests
 
 		x.Should().NotBeNull();
 		x.BaseUri.Should().NotBeNull();
+	}
+
+	[Fact]
+	public async Task Navigation()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var context = new BuildContext(collector, new FileSystem());
+		var generator = new OpenApiGenerator(context, NullLoggerFactory.Instance);
+		context.Configuration.OpenApiSpecification.Should().NotBeNull();
+
+		var openApiDocument = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);
+		openApiDocument.Should().NotBeNull();
+		var navigation = OpenApiGenerator.CreateNavigation(openApiDocument);
+
+		navigation.Should().NotBeNull();
 	}
 }

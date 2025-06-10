@@ -17,7 +17,7 @@ subs:
 features:
   primary-nav: false
 
-api: elasticsearch-openapi.json
+api: kibana-openapi.json
   
 toc:
   - file: index.md

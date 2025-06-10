@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 
 namespace Elastic.ApiExplorer;
@@ -26,6 +27,70 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		var rootNavigation = new LandingNavigationItem(url);
 		var rootItems = new List<EndpointNavigationItem>();
 
+
+		var grouped = openApiDocument.Paths
+			.Select(p =>
+			{
+				var op = p.Value.Operations.First();
+				var extensions = op.Value.Extensions;
+				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is OpenApiAny anyNs
+					? anyNs.Node.GetValue<string>()
+					: null;
+				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is OpenApiAny anyApi
+					? anyApi.Node.GetValue<string>()
+					: null;
+				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
+				if (tag is not null)
+				{
+				}
+				var classification = openApiDocument.Info.Description == "Elasticsearch Request & Response Specification" ? ClassifyElasticsearchTag(tag ?? "global") : string.Empty;
+
+				return new
+				{
+					Classification = classification,
+					Namespace = ns,
+					Api = api,
+					Tag = tag,
+					Path = p
+				};
+			})
+			.GroupBy(g => g.Classification)
+			.ToArray();
+
+		var aggregatedPaths = new Dictionary<string, Dictionary<string, Dictionary<string, List<ApiEndpoint>>>>();
+
+		foreach (var group in grouped)
+		{
+			var cl = group.Key;
+			if (!aggregatedPaths.ContainsKey(cl))
+				aggregatedPaths[cl] = [];
+
+			foreach (var tagGroup in group.GroupBy(g => g.Tag))
+			{
+				var tag = tagGroup.Key ?? "global";
+				if (!aggregatedPaths[cl].ContainsKey(tag))
+					aggregatedPaths[cl][tag] = [];
+
+				foreach (var endpoint in tagGroup)
+				{
+					var api = endpoint.Namespace is null ? endpoint.Api ?? "global" : $"{endpoint.Namespace}.{endpoint.Api}";
+					if (!aggregatedPaths[cl][tag].ContainsKey(api))
+						aggregatedPaths[cl][tag][api] = [];
+
+					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value);
+					aggregatedPaths[cl][tag][api].Add(apiEndpoint);
+				}
+			}
+		}
+
+		foreach (var group in aggregatedPaths)
+		{
+
+
+		}
+
+
+		// default routine
 		foreach (var path in openApiDocument.Paths)
 		{
 			var endpointUrl = $"{url}/{path.Key.Trim('/').Replace('/', '-').Replace("{", "").Replace("}", "")}";
@@ -96,6 +161,70 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 			return fileInfo;
 		}
 	}
+
+	private static string ClassifyElasticsearchTag(string tag)
+	{
+#pragma warning disable IDE0066
+		switch (tag)
+#pragma warning restore IDE0066
+		{
+			case "sql":
+			case "eql":
+			case "esql":
+			case "search":
+			case "document":
+				return "common";
+
+			case "autoscaling":
+			case "ccr":
+			case "indices":
+			case "data stream":
+			case "ilm":
+			case "slm":
+			case "cluster":
+			case "rollup":
+			case "searchable_snapshots":
+			case "shutdown":
+			case "snapshot":
+			case "script":
+			case "search_application":
+			case "connector":
+				return "management";
+
+			case "cat":
+			case "license":
+			case "info":
+			case "tasks":
+			case "xpack":
+			case "health_report":
+			case "features":
+			case "migration":
+			case "watcher":
+				return "info";
+
+
+			case "ml trained model":
+			case "ml anomaly":
+			case "ml data frame":
+			case "ml":
+			case "inference":
+			case "text_structure":
+			case "query_rules":
+			case "analytics":
+			case "graph":
+				return "ai/ml";
+
+			case "ingest":
+			case "enrich":
+			case "transform":
+			case "fleet":
+			case "logstash":
+			case "synonyms":
+				return "ingest";
+
+			case "security":
+				return "security";
+		}
+		return "unknown";
+	}
 }
-
-
