@@ -32,6 +32,8 @@ public interface INavigationItem
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	bool Hidden { get; }
+
+	int NavigationIndex { get; set; }
 }
 
 /// Represents a leaf node in the navigation tree with associated model data.

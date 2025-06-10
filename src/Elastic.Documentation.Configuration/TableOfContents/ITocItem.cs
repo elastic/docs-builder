@@ -22,4 +22,7 @@ public record TocReference(Uri Source, ITableOfContentsScope TableOfContentsScop
 {
 	public IReadOnlyDictionary<Uri, TocReference> TocReferences { get; } =
 		Children.OfType<TocReference>().ToDictionary(kv => kv.Source, kv => kv);
+
+	public bool IsPhantom { get; init; }
 }
+

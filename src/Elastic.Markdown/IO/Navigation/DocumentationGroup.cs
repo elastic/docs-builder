@@ -19,6 +19,7 @@ public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group, b
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
 	public string Url => Model.Url;
 	public string NavigationTitle => Model.NavigationTitle;
+	public int NavigationIndex { get; set; }
 }
 
 public class TableOfContentsTreeCollector
@@ -47,7 +48,6 @@ public class TableOfContentsTree : DocumentationGroup
 	//TODO remove documentation set argument once navigation.yml fully bootstraps.
 	//See GlobalNavigation.BuildNavigation which has fallback logic that needs to be removed
 	public TableOfContentsTree(
-		DocumentationSet documentationSet,
 		Uri source,
 		BuildContext context,
 		NavigationLookups lookups,
@@ -60,7 +60,6 @@ public class TableOfContentsTree : DocumentationGroup
 
 		Source = source;
 		TreeCollector.Collect(source, this);
-		DocumentationSet = documentationSet;
 
 		//edge case if a tree only holds a single group, ensure we collapse it down to the root (this)
 		if (NavigationItems.Count == 1 && NavigationItems.First() is DocumentationGroup { NavigationItems.Count: 0 })
@@ -108,7 +107,9 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public string NavigationTitle => Index.NavigationTitle;
 
-	public bool Hidden => false;
+	public bool Hidden { get; set; }
+
+	public int NavigationIndex { get; set; }
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
@@ -187,6 +188,15 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		navigationItems = [];
 		files = [];
 		var indexFile = virtualIndexFile;
+
+		var list = navigationItems;
+
+		void AddToNavigationItems(INavigationItem item, ref int fileIndex)
+		{
+			item.NavigationIndex = Interlocked.Increment(ref fileIndex);
+			list.Add(item);
+		}
+
 		foreach (var tocItem in lookups.TableOfContents)
 		{
 			if (tocItem is FileReference file)
@@ -211,8 +221,10 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					continue;
 				}
 
-				var navigationIndex = Interlocked.Increment(ref fileIndex);
-				md.NavigationIndex = navigationIndex;
+				//var navigationIndex = Interlocked.Increment(ref fileIndex);
+				//md.NavigationIndex = navigationIndex;
+				md.PartOfNavigation = true;
+
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
 				md.NavigationRoot = topLevelGroup;
 				md.NavigationSource = NavigationSource;
@@ -230,7 +242,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 							TableOfContents = file.Children,
 						}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this, md);
 					groups.Add(group);
-					navigationItems.Add(group);
+					AddToNavigationItems(group, ref fileIndex);
 					indexFile ??= md;
 					continue;
 				}
@@ -244,7 +256,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				// explicit index page. E.g., when grouping related files together.
 				// If the page is referenced as hidden in the TOC do not include it in the navigation
 				if (indexFile != md)
-					navigationItems.Add(new FileNavigationItem(md, this, file.Hidden));
+					AddToNavigationItems(new FileNavigationItem(md, this, file.Hidden), ref fileIndex);
 			}
 			else if (tocItem is FolderReference folder)
 			{
@@ -267,7 +279,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					}, ref fileIndex, depth + 1, topLevelGroup, this);
 
 					group = toc;
-					navigationItems.Add(toc);
+					AddToNavigationItems(toc, ref fileIndex);
 				}
 				else
 				{
@@ -275,7 +287,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					{
 						TableOfContents = children
 					}, NavigationSource, ref fileIndex, depth + 1, topLevelGroup, this);
-					navigationItems.Add(group);
+					AddToNavigationItems(group, ref fileIndex);
 				}
 
 				groups.Add(group);

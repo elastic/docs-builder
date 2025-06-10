@@ -65,4 +65,6 @@ public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, Operation
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+
+	public int NavigationIndex { get; set; }
 }

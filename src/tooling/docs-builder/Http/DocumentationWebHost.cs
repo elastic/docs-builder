@@ -202,7 +202,7 @@ public class DocumentationWebHost
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
 				if (s == "index.md")
-					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Value.Url);
+					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Url);
 
 				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
 					return Results.NotFound();

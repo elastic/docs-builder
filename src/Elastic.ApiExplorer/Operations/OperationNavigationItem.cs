@@ -52,4 +52,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 	public string NavigationTitle { get; }
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+
+	public int NavigationIndex { get; set; }
+
 }

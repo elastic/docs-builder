@@ -34,6 +34,7 @@ public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNav
 	public int Depth { get; }
 	public ApiLanding Index { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+	public int NavigationIndex { get; set; }
 	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
 	public string Url { get; }
 	public bool Hidden => false;

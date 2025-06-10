@@ -59,6 +59,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		NavigationSource = set.Source;
 	}
 
+	public bool PartOfNavigation { get; set; }
+
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
@@ -136,7 +138,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		}
 	}
 
-	public int NavigationIndex { get; set; } = -1;
+	//public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;
 	private string? _title;
