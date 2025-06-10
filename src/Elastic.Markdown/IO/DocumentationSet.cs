@@ -329,6 +329,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
 
+	public string FirstInterestingUrl => NavigationIndexedByOrder.Values.OfType<FileNavigationItem>().First().Url;
+
 	public DocumentationFile? DocumentationFileLookup(IFileInfo sourceFile)
 	{
 		var relativePath = Path.GetRelativePath(SourceDirectory.FullName, sourceFile.FullName);
@@ -377,15 +379,17 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
-		var links = MarkdownFiles
-			.Select(m => (m.LinkReferenceRelativePath, File: m))
+		var links = NavigationIndexedByOrder
+			.Select(kv => kv.Value)
+			.OfType<FileNavigationItem>()
+			.Select(m => (m.Model.LinkReferenceRelativePath, Navigation: m))
 			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 			? k.LinkReferenceRelativePath.Replace('\\', '/')
 			: k.LinkReferenceRelativePath, v =>
 			{
-				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
-				var nav = ((IPositionalNavigation)this).GetCurrent(v.File);
-				return new LinkMetadata { Anchors = anchors, Hidden = nav.Hidden };
+				var md = v.Navigation.Model;
+				var anchors = md.Anchors.Count == 0 ? null : md.Anchors.ToArray();
+				return new LinkMetadata { Anchors = anchors, Hidden = v.Navigation.Hidden };
 			});
 
 		return new RepositoryLinks

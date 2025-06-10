@@ -162,7 +162,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		await openApiGenerator.Generate(ctx);
 
 		if (runningOnCi)
-			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Url);
+			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
 
 		await collector.StopAsync(ctx);
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
