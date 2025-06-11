@@ -24,6 +24,7 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
+	private readonly BuildContext _context;
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
 
@@ -43,18 +44,18 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, path, null)
+		_context = new BuildContext(collector, readFs, writeFs, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
-		GeneratorState = new ReloadableGeneratorState(Context.DocumentationSourceDirectory, Context.DocumentationOutputDirectory, Context, logger);
+		var generatorState = new ReloadableGeneratorState(_context.DocumentationSourceDirectory, _context.DocumentationOutputDirectory, _context, logger);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
-				s.FolderToMonitor = Context.DocumentationSourceDirectory.FullName;
+				s.FolderToMonitor = _context.DocumentationSourceDirectory.FullName;
 				s.ClientFileExtensions = ".md,.yml";
 			})
-			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
+			.AddSingleton<ReloadableGeneratorState>(_ => generatorState)
 			.AddHostedService<ReloadGeneratorService>();
 
 		if (IsDotNetWatchBuild())
@@ -65,10 +66,6 @@ public class DocumentationWebHost
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}
-
-	public ReloadableGeneratorState GeneratorState { get; }
-
-	public BuildContext Context { get; }
 
 	private static bool IsDotNetWatchBuild() => Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
 
@@ -144,7 +141,7 @@ public class DocumentationWebHost
 			.UseStaticFiles(
 				new StaticFileOptions
 				{
-					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
+					FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
 					RequestPath = "/_static"
 				})
 			.UseRouting();
@@ -205,12 +202,9 @@ public class DocumentationWebHost
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
 				if (s == "index.md")
-					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Url);
+					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Value.Url);
 
 				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
-					return Results.NotFound();
-
-				if (Path.GetExtension(s) is "" or not ".md")
 					return Results.NotFound();
 
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);

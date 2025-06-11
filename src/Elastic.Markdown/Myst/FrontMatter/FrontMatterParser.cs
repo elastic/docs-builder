@@ -4,7 +4,6 @@
 
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Site;
-using Elastic.Markdown.Slices;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;

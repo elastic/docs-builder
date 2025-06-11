@@ -58,13 +58,10 @@ public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, Operation
 	public ApiEndpoint Index { get; }
 	public string Url { get; }
 	public string NavigationTitle { get; }
-	public bool Hidden => false;
 
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
 
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
 }

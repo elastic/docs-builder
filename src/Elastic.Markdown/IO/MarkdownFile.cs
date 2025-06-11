@@ -15,7 +15,6 @@ using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
-using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers.Roundtrip;
@@ -59,8 +58,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		NavigationSource = set.Source;
 	}
 
-	public bool PartOfNavigation { get; set; }
-
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
@@ -69,6 +66,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 
 	private IDiagnosticsCollector Collector { get; }
 
+	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
@@ -138,7 +136,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		}
 	}
 
-	//public int NavigationIndex { get; set; } = -1;
+	public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;
 	private string? _title;

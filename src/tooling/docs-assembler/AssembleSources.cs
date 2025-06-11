@@ -14,7 +14,6 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.RepresentationModel;
 
@@ -49,26 +48,26 @@ public class AssembleSources
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
-	public static async Task<AssembleSources> AssembleAsync(ILoggerFactory logger, AssembleContext context, Checkout[] checkouts, Cancel ctx)
+	public static async Task<AssembleSources> AssembleAsync(AssembleContext context, Checkout[] checkouts, Cancel ctx)
 	{
-		var sources = new AssembleSources(logger, context, checkouts);
+		var sources = new AssembleSources(context, checkouts);
 		foreach (var (_, set) in sources.AssembleSets)
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
 		return sources;
 	}
 
-	private AssembleSources(ILoggerFactory logger, AssembleContext assembleContext, Checkout[] checkouts)
+	private AssembleSources(AssembleContext assembleContext, Checkout[] checkouts)
 	{
 		AssembleContext = assembleContext;
 		TocTopLevelMappings = GetConfiguredSources(assembleContext);
 		HistoryMappings = GetHistoryMapping(assembleContext);
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(NullLoggerFactory.Instance, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
 		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logger, assembleContext, c, crossLinkResolver, TreeCollector))
+			.Select(c => new AssemblerDocumentationSet(NullLoggerFactory.Instance, assembleContext, c, crossLinkResolver, TreeCollector))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 

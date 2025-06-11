@@ -30,10 +30,6 @@ public interface INavigationItem
 	/// TODO: This should be read-only however currently needs the setter in assembler.
 	/// </remarks>
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	bool Hidden { get; }
-
-	int NavigationIndex { get; set; }
 }
 
 /// Represents a leaf node in the navigation tree with associated model data.

@@ -23,20 +23,25 @@ public record GlobalNavigation : IPositionalNavigation
 
 	public FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 
-	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
+	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; set; }
+
 
 	public GlobalNavigation(AssembleSources assembleSources, GlobalNavigationFile navigationFile)
 	{
 		_assembleSources = assembleSources;
 		_navigationFile = navigationFile;
-		NavigationItems = BuildNavigation(navigationFile.TableOfContents.Concat(navigationFile.Phantoms).ToArray(), 0);
+		NavigationItems = BuildNavigation(navigationFile.TableOfContents, 0);
 		var navigationIndex = 0;
-		var allNavigationItems = new HashSet<INavigationItem>();
-		UpdateNavigationIndex(allNavigationItems, NavigationItems, null, ref navigationIndex);
-		TopLevelItems = NavigationItems.OfType<TableOfContentsTree>().Where(t => !t.Hidden).ToList();
+		var markdownFiles = new HashSet<MarkdownFile>();
+		UpdateNavigationIndex(markdownFiles, NavigationItems, null, ref navigationIndex);
+		TopLevelItems = NavigationItems.OfType<TableOfContentsTree>().ToList();
 		NavigationLookup = TopLevelItems.ToDictionary(kv => kv.Source, kv => kv);
+		var grouped = markdownFiles.GroupBy(f => f.NavigationIndex).ToList();
+		var files = grouped
+			.Select(g => g.First())
+			.ToList();
 
-		NavigationIndexedByOrder = allNavigationItems.ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+		MarkdownFiles = files.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
 
 		MarkdownNavigationLookup = NavigationItems
 			.SelectMany(DocumentationSet.Pairs)
@@ -45,7 +50,7 @@ public record GlobalNavigation : IPositionalNavigation
 	}
 
 	private void UpdateNavigationIndex(
-		HashSet<INavigationItem> allNavigationItems,
+		HashSet<MarkdownFile> markdownFiles,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		ref int navigationIndex
@@ -57,18 +62,18 @@ public record GlobalNavigation : IPositionalNavigation
 			{
 				case FileNavigationItem fileNavigationItem:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
-					fileNavigationItem.NavigationIndex = fileIndex;
+					fileNavigationItem.Model.NavigationIndex = fileIndex;
 					if (parent is not null)
 						fileNavigationItem.Parent = parent;
-					_ = allNavigationItems.Add(fileNavigationItem);
+					_ = markdownFiles.Add(fileNavigationItem.Model);
 					break;
 				case DocumentationGroup documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
-					documentationGroup.NavigationIndex = groupIndex;
+					documentationGroup.Index.NavigationIndex = groupIndex;
 					if (parent is not null)
 						documentationGroup.Parent = parent;
-					_ = allNavigationItems.Add(documentationGroup);
-					UpdateNavigationIndex(allNavigationItems, documentationGroup.NavigationItems, documentationGroup, ref navigationIndex);
+					_ = markdownFiles.Add(documentationGroup.Index);
+					UpdateNavigationIndex(markdownFiles, documentationGroup.NavigationItems, documentationGroup, ref navigationIndex);
 					break;
 				default:
 					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");
@@ -84,8 +89,43 @@ public record GlobalNavigation : IPositionalNavigation
 		{
 			if (!_assembleSources.TreeCollector.TryGetTableOfContentsTree(toc.Source, out var tree))
 			{
-				_navigationFile.EmitError($"{toc.Source} does not define a toc.yml or docset.yml file");
-				continue;
+				_navigationFile.EmitWarning($"No {nameof(TableOfContentsTree)} found for {toc.Source}");
+				if (!_assembleSources.TocTopLevelMappings.TryGetValue(toc.Source, out var topLevel))
+				{
+					_navigationFile.EmitError(
+						$"Can not create temporary {nameof(TableOfContentsTree)} for {toc.Source} since no top level source could be located for it"
+					);
+					continue;
+				}
+
+				// TODO passing DocumentationSet to TableOfContentsTree constructor is temporary
+				// We only build this fallback in order to aid with bootstrapping the navigation
+				if (!_assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevel.TopLevelSource, out tree))
+				{
+					_navigationFile.EmitError(
+						$"Can not create temporary {nameof(TableOfContentsTree)} for {topLevel.TopLevelSource} since no top level source could be located for it"
+					);
+					continue;
+				}
+
+				var documentationSet = tree.DocumentationSet ?? (tree.Parent as TableOfContentsTree)?.DocumentationSet
+					?? throw new InvalidOperationException($"Can not fall back for {toc.Source} because no documentation set is available");
+
+				var lookups = new NavigationLookups
+				{
+					FlatMappedFiles = new Dictionary<string, DocumentationFile>().ToFrozenDictionary(),
+					TableOfContents = [],
+					EnabledExtensions = documentationSet.EnabledExtensions,
+					FilesGroupedByFolder = new Dictionary<string, DocumentationFile[]>().ToFrozenDictionary(),
+				};
+
+				var fileIndex = 0;
+				tree = new TableOfContentsTree(
+					documentationSet,
+					toc.Source,
+					documentationSet.Context,
+					lookups,
+					_assembleSources.TreeCollector, ref fileIndex);
 			}
 
 			var navigationItem = tree;
@@ -123,11 +163,48 @@ public record GlobalNavigation : IPositionalNavigation
 
 			tree.NavigationItems = cleanNavigationItems.ToArray();
 			list.Add(navigationItem);
-
-			if (toc.IsPhantom)
-				navigationItem.Hidden = true;
 		}
 
 		return list.ToArray().AsReadOnly();
 	}
+
+	public INavigationItem? GetPrevious(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
+			index--;
+		} while (index > 0);
+
+		return null;
+	}
+
+	public INavigationItem? GetNext(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
+			index++;
+		} while (index <= MarkdownFiles.Count - 1);
+
+		return null;
+	}
+
+
 }

@@ -47,12 +47,8 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
 	public int Depth { get; }
 	public ApiOperation Model { get; }
 	public string Url { get; }
-	public bool Hidden => false;
 
 	public string NavigationTitle { get; }
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
-
 }

@@ -46,9 +46,6 @@ public class GlobalNavigationHtmlWriter(
 
 	public async Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
-		if (Phantoms.Contains(navigationSource))
-			return string.Empty;
-
 		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
 

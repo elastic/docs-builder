@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
@@ -120,22 +119,16 @@ public abstract class CrossLinkFetcher(ILinkIndexReader linkIndexProvider, ILogg
 		}
 	}
 
-	private readonly ConcurrentDictionary<string, RepositoryLinks> _cachedLinkReferences = new();
-
 	private async Task<RepositoryLinks?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
 	{
-		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
+		var cachedFileName = $"links-elastic-{repository}-main-{linkRegistryEntry.ETag}.json";
 		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
-		if (_cachedLinkReferences.TryGetValue(cachedFileName, out var cachedLinkReference))
-			return cachedLinkReference;
-
 		if (File.Exists(cachedPath))
 		{
 			try
 			{
 				var json = await File.ReadAllTextAsync(cachedPath);
 				var linkReference = Deserialize(json);
-				_ = _cachedLinkReferences.TryAdd(cachedFileName, linkReference);
 				return linkReference;
 			}
 			catch (Exception e)

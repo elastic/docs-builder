@@ -90,7 +90,7 @@ public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSyste
 
 		_changes[changeSet] = [new Change(changeSet.From, sourceContent, change)];
 
-		foreach (var markdownFile in documentationSet.MarkdownFiles)
+		foreach (var (_, markdownFile) in documentationSet.MarkdownFiles)
 		{
 			await ProcessMarkdownFile(
 				changeSet,

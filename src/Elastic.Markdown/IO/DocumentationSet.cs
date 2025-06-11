@@ -32,42 +32,10 @@ public interface INavigationLookups
 public interface IPositionalNavigation
 {
 	FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
-	FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
-	INavigationItem? GetPrevious(MarkdownFile current)
-	{
-		if (!MarkdownNavigationLookup.TryGetValue(current.CrossLink, out var currentNavigation))
-			return null;
-		var index = currentNavigation.NavigationIndex;
-		do
-		{
-			var previous = NavigationIndexedByOrder.GetValueOrDefault(index - 1);
-			if (previous is not null && !previous.Hidden)
-				return previous;
-			index--;
-		} while (index > 0);
-
-		return null;
-	}
-
-	INavigationItem? GetNext(MarkdownFile current)
-	{
-		if (!MarkdownNavigationLookup.TryGetValue(current.CrossLink, out var currentNavigation))
-			return null;
-		var index = currentNavigation.NavigationIndex;
-		do
-		{
-			var next = NavigationIndexedByOrder.GetValueOrDefault(index + 1);
-			if (next is not null && !next.Hidden)
-				return next;
-			index++;
-		} while (index <= NavigationIndexedByOrder.Count - 1);
-
-		return null;
-	}
-
-	INavigationItem GetCurrent(MarkdownFile file) =>
-		MarkdownNavigationLookup.GetValueOrDefault(file.CrossLink) ?? throw new InvalidOperationException($"Could not find {file.CrossLink} in navigation");
+	INavigationItem? GetPrevious(MarkdownFile current);
+	INavigationItem? GetNext(MarkdownFile current);
+	INavigationItem? GetCurrent(MarkdownFile file) => MarkdownNavigationLookup.GetValueOrDefault(file.CrossLink);
 
 	INavigationItem[] GetParents(INavigationItem current)
 	{
@@ -184,43 +152,22 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
-		Tree = new TableOfContentsTree(Source, Context, lookups, treeCollector, ref fileIndex);
+		Tree = new TableOfContentsTree(this, Source, Context, lookups, treeCollector, ref fileIndex);
 
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 
-		var excludedChildren = markdownFiles.Where(f => !f.PartOfNavigation).ToArray();
+		var excludedChildren = markdownFiles.Where(f => f.NavigationIndex == -1).ToArray();
 		foreach (var excludedChild in excludedChildren)
 			Context.EmitError(Context.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
 
-		MarkdownFiles = markdownFiles.Where(f => f.PartOfNavigation).ToFrozenSet();
-		NavigationIndexedByOrder = CreateNavigationLookup(Tree)
-			.ToDictionary(n => n.NavigationIndex, n => n)
-			.ToFrozenDictionary();
+		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
 
 		MarkdownNavigationLookup = Tree.NavigationItems
 			.SelectMany(Pairs)
-			.Concat(Pairs(Tree))
-			.DistinctBy(kv => kv.Item1)
 			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
 			.ToFrozenDictionary();
 
 		ValidateRedirectsExists();
-	}
-
-	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
-
-	private static IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
-	{
-		if (item is ILeafNavigationItem<INavigationModel> leaf)
-			return [leaf];
-
-		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
-		{
-			var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
-			return items.Concat([node]).ToArray();
-		}
-
-		return [];
 	}
 
 	public static (string, INavigationItem)[] Pairs(INavigationItem item)
@@ -327,15 +274,50 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		}
 	}
 
-	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
-
-	public string FirstInterestingUrl =>
-		NavigationIndexedByOrder.Values.OfType<DocumentationGroup>().First().Url;
+	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; }
 
 	public DocumentationFile? DocumentationFileLookup(IFileInfo sourceFile)
 	{
 		var relativePath = Path.GetRelativePath(SourceDirectory.FullName, sourceFile.FullName);
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
+	}
+
+	public INavigationItem? GetPrevious(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
+			index--;
+		} while (index > 0);
+
+		return null;
+	}
+
+	public INavigationItem? GetNext(MarkdownFile current)
+	{
+		var index = current.NavigationIndex;
+		do
+		{
+			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
+			if (previous is null)
+				return null;
+			if (!previous.Hidden)
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
+			index++;
+		} while (index <= MarkdownFiles.Count - 1);
+
+		return null;
 	}
 
 	public async Task ResolveDirectoryTree(Cancel ctx) =>
@@ -380,17 +362,14 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
-		var links = NavigationIndexedByOrder
-			.Select(kv => kv.Value)
-			.OfType<FileNavigationItem>()
-			.Select(m => (m.Model.LinkReferenceRelativePath, Navigation: m))
+		var links = MarkdownFiles.Values
+			.Select(m => (m.LinkReferenceRelativePath, File: m))
 			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 			? k.LinkReferenceRelativePath.Replace('\\', '/')
 			: k.LinkReferenceRelativePath, v =>
 			{
-				var md = v.Navigation.Model;
-				var anchors = md.Anchors.Count == 0 ? null : md.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = v.Navigation.Hidden };
+				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
+				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
 			});
 
 		return new RepositoryLinks
