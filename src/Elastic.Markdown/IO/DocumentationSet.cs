@@ -380,18 +380,36 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
-		var links = NavigationIndexedByOrder
-			.Select(kv => kv.Value)
+		// reference/aggregations/metrics.md
+		var markdownInNavigation = NavigationIndexedByOrder.Values
 			.OfType<FileNavigationItem>()
-			.Select(m => (m.Model.LinkReferenceRelativePath, Navigation: m))
-			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-			? k.LinkReferenceRelativePath.Replace('\\', '/')
-			: k.LinkReferenceRelativePath, v =>
+			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
+			.Concat(NavigationIndexedByOrder.Values
+				.OfType<DocumentationGroup>()
+				.Select(g => (Markdown: g.Index, Navigation: (INavigationItem)g))
+			)
+			.ToList();
+
+		var links = markdownInNavigation
+			.Select(tuple =>
 			{
-				var md = v.Navigation.Model;
-				var anchors = md.Anchors.Count == 0 ? null : md.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = v.Navigation.Hidden };
-			});
+				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+					? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
+					: tuple.Markdown.LinkReferenceRelativePath;
+				return (Path: path, tuple.Markdown, tuple.Navigation);
+			})
+			.DistinctBy(tuple => tuple.Path)
+			.ToDictionary(
+				tuple => tuple.Path,
+				tuple =>
+				{
+					var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
+					return new LinkMetadata
+					{
+						Anchors = anchors,
+						Hidden = tuple.Navigation.Hidden
+					};
+				});
 
 		return new RepositoryLinks
 		{
