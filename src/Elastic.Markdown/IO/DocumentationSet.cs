@@ -380,7 +380,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
-		// reference/aggregations/metrics.md
 		var markdownInNavigation = NavigationIndexedByOrder.Values
 			.OfType<FileNavigationItem>()
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
