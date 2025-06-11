@@ -221,10 +221,9 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					continue;
 				}
 
-				//var navigationIndex = Interlocked.Increment(ref fileIndex);
-				//md.NavigationIndex = navigationIndex;
 				md.PartOfNavigation = true;
 
+				// TODO these have to be refactor to be pure navigational properties
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
 				md.NavigationRoot = topLevelGroup;
 				md.NavigationSource = NavigationSource;
