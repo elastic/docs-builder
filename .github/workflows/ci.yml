@@ -83,3 +83,24 @@ jobs:
 
       - name: Publish AOT
         run: dotnet run --project build -c release -- publishbinaries
+
+  install-script:
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} - ${{ matrix.command }}
+    env: 
+      INSTALL_SCRIPT: https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.sh
+      INSTALL_SCRIPT_PWSH: https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.ps1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            command: curl -sL https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.sh | sh
+          - os: macos-latest
+            command: curl -sL https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.sh | sh
+          - os: windows-latest
+            command: iex (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/elastic/docs-builder/${{ github.sha }}/install.ps1')
+    steps:
+      - uses: actions/checkout@v4
+      - run: ${{ matrix.command }}
+      - run: docs-builder --help
