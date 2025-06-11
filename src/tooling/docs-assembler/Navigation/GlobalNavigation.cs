@@ -17,9 +17,9 @@ public record GlobalNavigation : IPositionalNavigation
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 
-	public IReadOnlyCollection<TocNavigationItem> TopLevelItems { get; }
+	public IReadOnlyCollection<TableOfContentsTree> TopLevelItems { get; }
 
-	public IReadOnlyDictionary<Uri, TocNavigationItem> NavigationLookup { get; }
+	public IReadOnlyDictionary<Uri, TableOfContentsTree> NavigationLookup { get; }
 
 	public FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 
@@ -34,7 +34,7 @@ public record GlobalNavigation : IPositionalNavigation
 		var navigationIndex = 0;
 		var markdownFiles = new HashSet<MarkdownFile>();
 		UpdateNavigationIndex(markdownFiles, NavigationItems, null, ref navigationIndex);
-		TopLevelItems = NavigationItems.OfType<TocNavigationItem>().ToList();
+		TopLevelItems = NavigationItems.OfType<TableOfContentsTree>().ToList();
 		NavigationLookup = TopLevelItems.ToDictionary(kv => kv.Source, kv => kv);
 		var grouped = markdownFiles.GroupBy(f => f.NavigationIndex).ToList();
 		var files = grouped
@@ -52,7 +52,7 @@ public record GlobalNavigation : IPositionalNavigation
 	private void UpdateNavigationIndex(
 		HashSet<MarkdownFile> markdownFiles,
 		IReadOnlyCollection<INavigationItem> navigationItems,
-		IGroupNavigationItem? parent,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		ref int navigationIndex
 	)
 	{
@@ -62,22 +62,17 @@ public record GlobalNavigation : IPositionalNavigation
 			{
 				case FileNavigationItem fileNavigationItem:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
-					fileNavigationItem.File.NavigationIndex = fileIndex;
-					fileNavigationItem.Parent = parent;
-					_ = markdownFiles.Add(fileNavigationItem.File);
+					fileNavigationItem.Model.NavigationIndex = fileIndex;
+					if (parent is not null)
+						fileNavigationItem.Parent = parent;
+					_ = markdownFiles.Add(fileNavigationItem.Model);
 					break;
-				case GroupNavigationItem { DocumentationGroup.MarkdownFileIndex: not null } groupNavigationItem:
-					var index = Interlocked.Increment(ref navigationIndex);
-					groupNavigationItem.DocumentationGroup.MarkdownFileIndex.NavigationIndex = index;
-					groupNavigationItem.Parent = parent;
-					_ = markdownFiles.Add(groupNavigationItem.DocumentationGroup.MarkdownFileIndex);
-					UpdateNavigationIndex(markdownFiles, groupNavigationItem.NavigationItems, groupNavigationItem, ref navigationIndex);
-					break;
-				case DocumentationGroup { MarkdownFileIndex: not null } documentationGroup:
+				case DocumentationGroup documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
-					documentationGroup.MarkdownFileIndex.NavigationIndex = groupIndex;
-					documentationGroup.Parent = parent;
-					_ = markdownFiles.Add(documentationGroup.MarkdownFileIndex);
+					documentationGroup.Index.NavigationIndex = groupIndex;
+					if (parent is not null)
+						documentationGroup.Parent = parent;
+					_ = markdownFiles.Add(documentationGroup.Index);
 					UpdateNavigationIndex(markdownFiles, documentationGroup.NavigationItems, documentationGroup, ref navigationIndex);
 					break;
 				default:
@@ -87,7 +82,7 @@ public record GlobalNavigation : IPositionalNavigation
 		}
 	}
 
-	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<TocReference> node, int depth, IGroupNavigationItem? parent = null)
+	private IReadOnlyCollection<INavigationItem> BuildNavigation(IReadOnlyCollection<TocReference> node, int depth)
 	{
 		var list = new List<INavigationItem>();
 		foreach (var toc in node)
@@ -133,7 +128,7 @@ public record GlobalNavigation : IPositionalNavigation
 					_assembleSources.TreeCollector, ref fileIndex);
 			}
 
-			var navigationItem = new TocNavigationItem(depth, tree, toc.Source, parent);
+			var navigationItem = tree;
 			var tocChildren = toc.Children.OfType<TocReference>().ToArray();
 			var tocNavigationItems = BuildNavigation(tocChildren, depth + 1);
 
@@ -146,7 +141,7 @@ public record GlobalNavigation : IPositionalNavigation
 			var seenSources = new HashSet<Uri>();
 			foreach (var item in allNavigationItems)
 			{
-				if (item is not TocNavigationItem tocNav)
+				if (item is not TableOfContentsTree tocNav)
 				{
 					cleanNavigationItems.Add(item);
 					continue;
@@ -173,7 +168,7 @@ public record GlobalNavigation : IPositionalNavigation
 		return list.ToArray().AsReadOnly();
 	}
 
-	public MarkdownFile? GetPrevious(MarkdownFile current)
+	public INavigationItem? GetPrevious(MarkdownFile current)
 	{
 		var index = current.NavigationIndex;
 		do
@@ -182,14 +177,17 @@ public record GlobalNavigation : IPositionalNavigation
 			if (previous is null)
 				return null;
 			if (!previous.Hidden)
-				return previous;
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
 			index--;
-		} while (index >= 0);
+		} while (index > 0);
 
 		return null;
 	}
 
-	public MarkdownFile? GetNext(MarkdownFile current)
+	public INavigationItem? GetNext(MarkdownFile current)
 	{
 		var index = current.NavigationIndex;
 		do
@@ -198,10 +196,15 @@ public record GlobalNavigation : IPositionalNavigation
 			if (previous is null)
 				return null;
 			if (!previous.Hidden)
-				return previous;
+			{
+				if (MarkdownNavigationLookup.TryGetValue(previous.CrossLink, out var navigationItem))
+					return navigationItem;
+			}
 			index++;
-		} while (index <= MarkdownFiles.Count);
+		} while (index <= MarkdownFiles.Count - 1);
 
 		return null;
 	}
+
+
 }

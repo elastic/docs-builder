@@ -8,10 +8,8 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
-using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.InboundLinks;
 using Microsoft.Extensions.Logging;
 

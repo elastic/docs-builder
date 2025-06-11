@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -24,9 +25,11 @@ public class IndexViewModel
 	public required DocumentationGroup Tree { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
-	public required MarkdownFile? PreviousDocument { get; init; }
-	public required MarkdownFile? NextDocument { get; init; }
-	public required MarkdownFile[] Parents { get; init; }
+
+	public required INavigationItem? CurrentNavigationItem { get; init; }
+	public required INavigationItem? PreviousDocument { get; init; }
+	public required INavigationItem? NextDocument { get; init; }
+	public required INavigationItem[] Parents { get; init; }
 
 	public required string NavigationHtml { get; init; }
 	public required LegacyPageMapping? LegacyPage { get; init; }

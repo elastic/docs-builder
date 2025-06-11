@@ -4,7 +4,6 @@
 
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 

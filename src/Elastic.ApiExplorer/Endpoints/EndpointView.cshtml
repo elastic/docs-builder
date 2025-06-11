@@ -9,7 +9,7 @@
 		Description = "",
 		Layout = null,
 		PageTocItems = [],
-		CurrentDocument = Model.ApiEndpoint,
+		CurrentNavigationItem = Model.CurrentNavigationItem,
 		Previous = null,
 		Next = null,
 		NavigationHtml = Model.NavigationHtml,
@@ -29,5 +29,5 @@
 	};
 }
 <section id="elastic-docs-v3">
-	<h1>@Model.ApiEndpoint.Url</h1>
+	<h1>@Model.CurrentNavigationItem.Url</h1>
 </section>

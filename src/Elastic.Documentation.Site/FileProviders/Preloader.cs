@@ -5,7 +5,7 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace Elastic.Markdown.Helpers;
+namespace Elastic.Documentation.Site.FileProviders;
 
 public static partial class FontPreloader
 {

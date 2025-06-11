@@ -65,6 +65,8 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   beats:
+    current: "9.0"
+    next: main
   cloud-on-k8s:
   cloud:
     current: master
