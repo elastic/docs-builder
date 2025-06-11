@@ -22,12 +22,12 @@ namespace Documentation.Builder.Cli;
 
 internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
 {
+	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
+		ConsoleApp.Log = msg => _log.LogInformation(msg);
+		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
 
 	/// <summary>
@@ -45,6 +45,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	{
 		AssignOutputLogger();
 		var host = new DocumentationWebHost(path, port, logger, new FileSystem(), new MockFileSystem());
+		_log.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
+			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
+		);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 	}
@@ -162,7 +165,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		await openApiGenerator.Generate(ctx);
 
 		if (runningOnCi)
-			await githubActionsService.SetOutputAsync("landing-page-path", set.MarkdownFiles.First().Value.Url);
+			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
 
 		await collector.StopAsync(ctx);
 		if (bool.TryParse(githubActionsService.GetInput("strict"), out var strictValue) && strictValue)
