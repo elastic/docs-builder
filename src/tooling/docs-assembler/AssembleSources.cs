@@ -109,9 +109,9 @@ public class AssembleSources
 			.ToFrozenDictionary();
 	}
 
-	private static FrozenDictionary<string, List<string>> GetHistoryMapping(AssembleContext context)
+	private static FrozenDictionary<string, IReadOnlyCollection<string>> GetHistoryMapping(AssembleContext context)
 	{
-		var dictionary = new Dictionary<string, List<string>>();
+		var dictionary = new Dictionary<string, IReadOnlyCollection<string>>();
 		var reader = new YamlStreamReader(context.HistoryMappingPath, context.Collector);
 		string? stack = null;
 		foreach (var entry in reader.Read())
@@ -126,7 +126,7 @@ public class AssembleSources
 
 		return dictionary.OrderByDescending(x => x.Key.Length).ToFrozenDictionary();
 
-		static void ReadHistoryMappings(IDictionary<string, List<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry, string? newStack)
+		static void ReadHistoryMappings(IDictionary<string, IReadOnlyCollection<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry, string? newStack)
 		{
 			if (entry.Entry.Value is not YamlMappingNode mappings)
 			{

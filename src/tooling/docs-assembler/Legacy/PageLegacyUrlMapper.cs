@@ -8,11 +8,11 @@ namespace Documentation.Assembler.Legacy;
 
 public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
-	private IReadOnlyDictionary<string, List<string>> PreviousUrls { get; }
+	private IReadOnlyDictionary<string, IReadOnlyCollection<string>> PreviousUrls { get; }
 
-	public PageLegacyUrlMapper(IReadOnlyDictionary<string, List<string>> previousUrls) => PreviousUrls = previousUrls;
+	public PageLegacyUrlMapper(IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls) => PreviousUrls = previousUrls;
 
-	public List<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
+	public IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
 		if (mappedPages is null)
 			return [];

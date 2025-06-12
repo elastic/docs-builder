@@ -11,7 +11,11 @@
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
-		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
+		PageTocItems = Model.PageTocItems.Where(i => i is
+			{
+				Level: 2 or 3
+			})
+			.ToList(),
 		CurrentNavigationItem = Model.CurrentNavigationItem,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
@@ -27,8 +31,8 @@
 		ReportIssueUrl = Model.ReportIssueUrl,
 		LegacyPages = Model.LegacyPages,
 		CurrentVersion = Model.CurrentVersion,
-		VersionDropdown = JsonSerializer.Serialize(Model.VersionDropdownItems, ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
-		Products = Model.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.DisplayName)) : null,
+		VersionDropdown = JsonSerializer.Serialize(Model.VersionDropdownItems,
+			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

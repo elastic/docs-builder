@@ -16,7 +16,9 @@ public class MarkdownLayoutViewModel : GlobalLayoutViewModel
 
 	public required INavigationItem[] Parents { get; init; }
 
-	public required LegacyPageMapping? LegacyPage { get; init; }
+	public required string? CurrentVersion { get; init; }
+
+	public required LegacyPageMapping[] LegacyPages { get; init; }
 
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 
@@ -29,4 +31,3 @@ public record PageTocItem
 	public required string Slug { get; init; }
 	public required int Level { get; init; }
 }
-
