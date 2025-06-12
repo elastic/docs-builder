@@ -32,7 +32,7 @@ internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubAct
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
 
-		path ??= "";
+		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 
