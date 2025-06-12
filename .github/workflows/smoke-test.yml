@@ -39,3 +39,9 @@ jobs:
       
       - name: Verify landing-page-path output
         run: test ${{ steps.docs-build.outputs.landing-page-path }} == ${{ matrix.landing-page-path-output }}
+
+      - name: Verify link validation
+        id: docs-build
+        run: |
+          dotnet run --project src/tooling/docs-builder inbound-links validate-link-reference
+      

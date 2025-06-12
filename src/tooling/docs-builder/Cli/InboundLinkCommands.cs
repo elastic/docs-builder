@@ -69,16 +69,17 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	/// Validate a locally published links.json file against all published links.json files in the registry
 	/// </summary>
 	/// <param name="file">Path to `links.json` defaults to '.artifacts/docs/html/links.json'</param>
+	/// <param name="path"> -p, Defaults to the `{pwd}` folder</param>
 	/// <param name="ctx"></param>
 	[Command("validate-link-reference")]
 	[ConsoleAppFilter<StopwatchFilter>]
 	[ConsoleAppFilter<CatchExceptionFilter>]
-	public async Task<int> ValidateLocalLinkReference([Argument] string? file = null, Cancel ctx = default)
+	public async Task<int> ValidateLocalLinkReference(string? file = null, string? path = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
 		file ??= ".artifacts/docs/html/links.json";
 		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var root = !string.IsNullOrEmpty(path) ? fs.DirectoryInfo.New(path) : fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
