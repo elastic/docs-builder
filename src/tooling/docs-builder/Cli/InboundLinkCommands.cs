@@ -18,13 +18,13 @@ namespace Documentation.Builder.Cli;
 internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logger);
+	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
 
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
+		ConsoleApp.Log = msg => _log.LogInformation(msg);
+		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
@@ -83,8 +83,11 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
+		var resolvedFile = Path.Combine(root.FullName, file);
+		_log.LogInformation("Validating {File} in {Directory}", file, root.FullName);
+
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
-		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, file, ctx);
+		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, resolvedFile, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
 	}
