@@ -83,6 +83,13 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		if (runningOnCi && !Paths.TryFindDocsFolderFromRoot(fs, root, out _, out _))
+		{
+			_log.LogInformation("Running in CI on a folder with no docset.yml file in {Directory}, skipping the validation", root.FullName);
+			return 0;
+		}
+
 		var resolvedFile = Path.Combine(root.FullName, file);
 		_log.LogInformation("Validating {File} in {Directory}", file, root.FullName);
 

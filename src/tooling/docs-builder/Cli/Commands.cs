@@ -125,8 +125,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 				CanonicalBaseUrl = canonicalBaseUri
 			};
 		}
-		// On CI, we are running on merge commit which may have changes against an older
-		// docs folder (this can happen on out of date PR's).
+		// On CI, we are running on a merge commit which may have changes against an older
+		// docs folder (this can happen on out-of-date PR's).
 		// At some point in the future we can remove this try catch
 		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in"))
 		{
