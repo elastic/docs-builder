@@ -100,9 +100,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
     }
 
     const WIDTH = 175
-
-    console.log('items', items)
-
+    
     const topLevelItems = items.map((item, index) => {
         return {
             name: item.name,
@@ -110,9 +108,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             href: item.href,
         }
     })
-
-    console.log('toplevelitems', topLevelItems)
-
+    
     const subpanels = convertToPanels(items)
 
     const panels: EuiContextMenuPanelDescriptor[] = [
@@ -138,9 +134,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
         },
         ...subpanels,
     ]
-
-    console.log(panels)
-
+    
     // const panels = [
     //     {
     //         id: 0,
