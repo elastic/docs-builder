@@ -13,11 +13,11 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
-  ech:   "Elastic Cloud Hosted"
-  kib:   "Kibana"
-  
+
 features:
   primary-nav: false
+
+api: elasticsearch-openapi.json
   
 toc:
   - file: index.md
@@ -89,6 +89,7 @@ toc:
       - file: links.md
       - file: passthrough.md
       - file: sidebars.md
+      - file: stepper.md
       - file: substitutions.md
       - file: sundries.md
       - file: tables.md

@@ -14,21 +14,22 @@ If a page uses an image that exists outside the folder that contains the `toc.ym
 ## Block-level images
 
 ```markdown
-![APM](/syntax/img/apm.png)
+![APM](/syntax/images/apm.png)
 ```
 
-![APM](/syntax/img/apm.png)
+![APM](/syntax/images/apm.png)
+
 
 Or, use the `image` directive.
 
 ```markdown
-:::{image} /syntax/img/observability.png
+:::{image} /syntax/images/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
 ```
 
-:::{image} /syntax/img/observability.png
+:::{image} /syntax/images/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
@@ -38,22 +39,23 @@ Or, use the `image` directive.
 Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
 
 ```markdown
-:::{image} /syntax/img/apm.png
+
+:::{image} /syntax/images/apm.png
 :screenshot:
 :::
 ```
 
-:::{image} /syntax/img/apm.png
+:::{image} /syntax/images/apm.png
 :screenshot:
 :::
 
 ## Inline images
 
 ```markdown
-Here is the same image used inline ![Elasticsearch](/syntax/img/observability.png "elasticsearch =50%x50%")
+Here is the same image used inline ![Elasticsearch](/syntax/images/observability.png "elasticsearch =50%x50%")
 ```
 
-Here is the same image used inline ![Elasticsearch](/syntax/img/observability.png "elasticsearch =50%x50%")
+Here is the same image used inline ![Elasticsearch](/syntax/images/observability.png "elasticsearch =50%x50%")
 
 
 ### Inline image titles
@@ -61,13 +63,13 @@ Here is the same image used inline ![Elasticsearch](/syntax/img/observability.pn
 Titles are optional making this the minimal syntax required
 
 ```markdown
-![Elasticsearch](/syntax/img/observability.png)
+![Elasticsearch](/syntax/images/observability.png)
 ```
 
 Including a title can be done by supplying it as an optional argument.
 
 ```markdown
-![Elasticsearch](/syntax/img/observability.png "elasticsearch")
+![Elasticsearch](/syntax/images/observability.png "elasticsearch")
 ```
 
 ### Inline image sizing
@@ -78,8 +80,8 @@ This is done to maintain maximum compatibility with markdown parsers
 and previewers. 
 
 ```markdown
-![alt](/syntax/img/apm.png "title =WxH")
-![alt](/syntax/img/apm.png "title =W")
+![alt](img.png "title =WxH")
+![alt](img.png "title =W")
 ```
 
 `W` and `H` can be either an absolute number in pixels or a number followed by `%` to indicate relative sizing.
@@ -87,9 +89,9 @@ and previewers.
 If `H` is omitted `W` is used as the height as well.
 
 ```markdown
-![alt](/syntax/img/apm.png "title =250x330")
-![alt](/syntax/img/apm.png "title =50%x40%")
-![alt](/syntax/img/apm.png "title =50%")
+![alt](img.png "title =250x330")
+![alt](img.png "title =50%x40%")
+![alt](img.png "title =50%")
 ```
 
 
@@ -97,17 +99,16 @@ If `H` is omitted `W` is used as the height as well.
 ### SVG 
 
 ```markdown
-![Elasticsearch](/syntax/img/alerts.svg)
+![Elasticsearch](/syntax/images/alerts.svg)
 ```
-![Elasticsearch](/syntax/img/alerts.svg)
+![Elasticsearch](/syntax/images/alerts.svg)
 
 ### GIF
 
 ```markdown
-![Elasticsearch](/syntax/img/timeslider.gif)
+![Elasticsearch](/syntax/images/timeslider.gif)
 ```
-![Elasticsearch](/syntax/img/timeslider.gif)
-
+![Elasticsearch](/syntax/images/timeslider.gif)
 
 ## Asciidoc syntax
 

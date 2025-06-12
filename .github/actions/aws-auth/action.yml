@@ -37,7 +37,7 @@ runs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"result=arn:aws:iam::{os.environ["AWS_ACCOUNT_ID"]}:role/{prefix}{hash}")
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
+      uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
       with:
         role-to-assume: ${{ steps.role_arn.outputs.result }}
         aws-region: ${{ inputs.aws_region }}

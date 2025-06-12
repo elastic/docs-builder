@@ -1,11 +1,13 @@
 # Links
 
-A markdown link looks like this:
+A Markdown link looks like this:
 
 ```markdown
 [Link text](destination.md)
 ```
+
 It has two components:
+
 - Link **text** enclosed in square brackets `[ ]`
 - Link **destination** enclosed in parentheses `( )`
 
@@ -132,6 +134,41 @@ You can also auto-generate text for specific headings within files:
 [](#configuration)  
 <!-- Uses the "Configuration" section title from current file -->
 ```
+
+## Reference-style links
+
+`docs-builder` supports reference-style external links.
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+- [Link]: This link uses the reference name as text.
+- [Your own text][Link]: This link overrides the reference name.
+
+% References are typically added at the bottom of the page
+
+[Link]: https://elastic.co/docs
+
+:::
+
+:::{tab-item} Markdown
+
+```markdown
+- [Link]: This link uses the reference name as text.
+- [Your own text][Link]: This link overrides the reference name.
+
+% References are typically added at the bottom of the page
+
+[Link]: https://elastic.co/docs
+```
+
+:::
+
+
+::::
+
+Reference-style links are useful when adding links to tables, for example, or to update frequently used links more easily. Place them at the end of the document to simplify their management.
 
 ## Legacy features
 

@@ -6,7 +6,7 @@ namespace authoring
 
 open System.Diagnostics
 open System.Linq
-open Elastic.Markdown.Diagnostics
+open Elastic.Documentation.Diagnostics
 open FsUnitTyped
 open Swensen.Unquote
 
@@ -54,4 +54,19 @@ module DiagnosticsCollectorAssertions =
         | Some e ->
             let message = e.Message
             test <@ message.Contains(expected) @>
-        | None -> failwithf "Expected errors but no errors were logged"
+        | None -> failwithf "Expected warnings but no warnings were logged"
+
+    [<DebuggerStepThrough>]
+    let hasHint (expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+        actual.Context.Collector.Hints |> shouldBeGreaterThan 0
+        let errorDiagnostics = actual.Context.Collector.Diagnostics
+                                   .Where(fun d -> d.Severity = Severity.Hint)
+                                   .ToArray()
+                                   |> List.ofArray
+                                   |> List.tryHead
+        match errorDiagnostics with
+        | Some e ->
+            let message = e.Message
+            test <@ message.Contains(expected) @>
+        | None -> failwithf "Expected hints but no hints were logged"

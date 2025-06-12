@@ -9,14 +9,12 @@ open System.Diagnostics
 open System.IO
 open AngleSharp.Diffing
 open AngleSharp.Diffing.Core
-open AngleSharp.Dom
 open AngleSharp.Html
 open AngleSharp.Html.Parser
-open DiffPlex.DiffBuilder
-open DiffPlex.DiffBuilder.Model
 open JetBrains.Annotations
-open Swensen.Unquote
 open Xunit.Sdk
+
+#nowarn 3261 // TODO: Remove this and fix it. Adding this to unblock the code for now.
 
 [<AutoOpen>]
 module HtmlAssertions =
@@ -90,7 +88,7 @@ actual: {actual}
             match querySelector with
             | Some q -> document.QuerySelector q
             | None -> document.Body
-
+        
         let links = element.QuerySelectorAll("a")
         links
         |> Seq.iter(fun l ->

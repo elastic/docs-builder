@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Samboy063.Tomlet" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
+    <PackageReference Include="YamlDotNet"/>
+    <PackageReference Include="System.IO.Abstractions" />
+  </ItemGroup>
+</Project>

@@ -69,11 +69,14 @@ These examples show the syntax first, followed by the rendered admonition.
 ::::
 
 **DOs**<br>
-✅ Use custom admonitions as needed
+✅ **Do:** Use custom admonitions as needed
 
 **DON'Ts**<br>
-❌ Stack admonitions<br>
-❌ Overload a page with too many admonitions<br>
+❌ **Don't:** Stack admonitions<br>
+❌ **Don't:** Overload a page with too many admonitions
+
+[More details: Admonitions →](admonitions.md)
+<br>
 <br>
 
 ---
@@ -97,11 +100,11 @@ A default anchor is automatically created for each [heading](#headings), in the 
 :::
 
 **DOs**<br>
-✅ Create custom anchors for repeated structural headings like "Example request"<br>
+✅ **Do:** Create custom anchors for repeated structural headings like "Example request"<br>
 
 **DON'Ts**<br>
-❌ Include punctuation marks in custom anchors<br>
-❌ Define custom anchors in text that is not a heading
+❌ **Don't:** Include punctuation marks in custom anchors<br>
+❌ **Don't:** Define custom anchors in text that is not a heading
 
 [More details: Links →](links.md#same-page-links-anchors)
 <br>
@@ -142,14 +145,14 @@ The `applies_to` tags are scope signals for readers, not comprehensive metadata.
 % TODO restore details when guidance has settled
 
 **DOs**<br>
-✅ Define a set of [page-level tags](applies.md#page-annotations) in a front matter block<br>
-✅ Add section-level tags in an `{applies_to}` [directive](applies.md#sections) after a heading<br>
-✅ Indicate versions (`major.minor` with an optional `[.patch]`) and release phases like `beta`
+✅ **Do:** Define a set of [page-level tags](applies.md#page-annotations) in a front matter block<br>
+✅ **Do:** Add section-level tags in an `{applies_to}` [directive](applies.md#sections) after a heading<br>
+✅ **Do:** Indicate versions (`major.minor` with an optional `[.patch]`) and release phases like `beta`
 
 **DON'Ts**<br>
-❌ Include `applies_to` tags in admonitions<br>
-❌ Add `applies_to` tags to general, broadly applicable content<br>
-❌ Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)
+❌ **Don't:** Include `applies_to` tags in admonitions<br>
+❌ **Don't:** Add `applies_to` tags to general, broadly applicable content<br>
+❌ **Don't:** Use `Coming (x.x.x)` tags, except in special cases (don't pre-announce features)
 <br>
 <br>
 
@@ -177,12 +180,12 @@ elasticsearch.hosts: ["http://localhost:9200"]
 
 
 **DOs**<br>
-✅ Include code blocks within lists or other block elements as needed<br>
-✅ Add language identifiers like `yaml`, `json`, `bash`
+✅ **Do:** Include code blocks within lists or other block elements as needed<br>
+✅ **Do:** Add language identifiers like `yaml`, `json`, `bash`
 
 **DON'Ts**<br>
-❌ Place code blocks in admonitions<br>
-❌ Use inline code formatting (single backticks) for multi-line content<br>
+❌ **Don't:** Place code blocks in admonitions<br>
+❌ **Don't:** Use inline code formatting (single backticks) for multi-line content
 
 [More details: Code →](code.md)
 <br>
@@ -250,12 +253,12 @@ Add comments with `//` or `#` to magically create callouts.
 :::
 
 **DOs**<br>
-✅ Keep callout text short and specific<br>
-✅ Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
-✅ Make sure there's a corresponding list item for each explicit callout marker in a code block
+✅ **Do:** Keep callout text short and specific<br>
+✅ **Do:** Use only one type of callout per code block (don't mix [explicit](#explicit-callout) and [magic](#magic-callout))<br>
+✅ **Do:** Make sure there's a corresponding list item for each explicit callout marker in a code block
 
 **DON'Ts**<br>
-❌ Overuse callouts -- they can impede readability<br>
+❌ **Don't:** Overuse callouts &mdash; they can impede readability
 
 [More details: Code callouts→](code.md#code-callouts)
 <br>
@@ -297,11 +300,11 @@ Regular text after multi-line comment
 :::
 
 **DOs**<br>
-✅ Add a space after `%` to start a single-line comment<br>
+✅ **Do:** Add a space after the `%` in single-line comments
 
 **DON'Ts**<br>
-❌ Use `#` or `//` for comments; they're reserved for [magic callouts](#magic-callout)<br>
-
+❌ **Don't:** Use `#` or `//` for comments (reserved for [magic callouts](#magic-callout))
+<br>
 <br>
 
 ---
@@ -325,11 +328,11 @@ Collapsible content
 ::::
 
 **DOs**<br>
-✅ Use dropdowns for text, lists, images, code blocks, and tables<br>
-✅ Add `:open:` to auto-expand a dropdown by default
+✅ **Do:** Use dropdowns for text, lists, images, code blocks, and tables<br>
+✅ **Do:** Add `:open:` to auto-expand a dropdown by default
 
 **DON'Ts**<br>
-❌ Use dropdowns for very long paragraphs or entire sections<br>
+❌ **Don't:** Use dropdowns for very long paragraphs or entire sections
 
 [More details: Dropdowns →](dropdowns.md)
 <br>
@@ -350,7 +353,7 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 :::
 
 ::::{dropdown} Output
-:::{image} img/headings.png
+:::{image} images/headings.png
 :screenshot:
 :alt: Heading levels
 :width: 300px
@@ -359,13 +362,13 @@ Title of a page or a section. To create a heading, add number signs `#` at the b
 ::::
 
 **DOs**<br>
-✅ Start every page with a Heading 1<br>
-✅ Use only one Heading 1 per page<br>
-✅ Define custom anchors for repeated headings<br>
+✅ **Do:** Start every page with a Heading 1<br>
+✅ **Do:** Use only one Heading 1 per page<br>
+✅ **Do:** Define custom anchors for repeated headings
 
 **DON'Ts**<br>
-❌ Use headings in tabs or dropdowns<br>
-❌ Go deeper than Heading 4
+❌ **Don't:** Use headings in tabs or dropdowns<br>
+❌ **Don't:** Go deeper than Heading 4
 
 [More details: Headings →](headings.md)
 <br>
@@ -378,23 +381,23 @@ Standard Markdown images: `[alt text]` in square brackets, followed by the image
 
 :::{dropdown} Syntax
 ```markdown
-![Bear emerging from hibernation](img/bear.png)
+![Bear emerging from hibernation](images/bear.png)
 ```
 :::
 
 :::{dropdown} Output
-![Bear emerging from hibernation](img/bear.png)
+![Bear emerging from hibernation](images/bear.png)
 :::
 
 **DOs**<br>
-✅ Store images in a centralized directory<br> 
-✅ Follow v3 [best practices for screenshots](../versions/index.md#screenshots)<br>
-✅ Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border<br>
+✅ **Do:** Store images in a centralized directory<br> 
+✅ **Do:** Follow v3 [best practices for screenshots](../versions/index.md#screenshots)<br>
+✅ **Do:** Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border
 
 **DON'Ts**<br>
-❌ Use lots of UI screenshots that create a maintenance burden<br>
-❌ Include confidential info or PII in an image<br>
-❌ Add a drop shadow or torn edge effect
+❌ **Don't:** Use lots of UI screenshots that create a maintenance burden<br>
+❌ **Don't:** Include confidential info or PII in an image<br>
+❌ **Don't:** Add a drop shadow or torn edge effect
 
 [More details: Images →](images.md)
 <br>
@@ -410,14 +413,14 @@ Elastic Docs v3 supports standard Markdown inline formatting.
 `**strong**` &nbsp;&nbsp;&nbsp;**bold**  <br>
 \` `monospace` \` &nbsp;&nbsp;&nbsp; `inline code` (single backticks) <br>
 `~~strikethrough~~` &nbsp;&nbsp;&nbsp; ~~strikethrough~~ <br>
-`\* escaped` &nbsp;&nbsp;&nbsp; \* escaped character <br>
+`\* escaped` &nbsp;&nbsp;&nbsp; \* escaped character 
 
 **DOs**<br>
-✅ Use `_emphasis_` to introduce a term<br>
-✅ Use inline `code` in headings and other elements as needed
+✅ **Do:** Use `_emphasis_` to introduce a term<br>
+✅ **Do:** Use inline `code` in headings and other elements as needed
 
 **DON'Ts**<br>
-❌ Overuse `**strong**` or `_emphasis_` -- aim for readability
+❌ **Don't:** Overuse `**strong**` or `_emphasis_` &mdash; aim for readability
 <br>
 <br>
 
@@ -437,13 +440,13 @@ Standard Markdown links to doc pages, sections (anchors), or external content. P
 :::
 
 **DOs**<br>
-✅ Use inline formatting in link text: `[**bold link**](bold-page.md)`<br>
-✅ Autogenerate link text from the page or section title: `[](use-title.md#section)`<br>
-✅ Define a custom [anchor](#anchors) by adding `[anchor-text]` at the end of a heading line
+✅ **Do:** Use inline formatting in link text: `[**bold link**](bold-page.md)`<br>
+✅ **Do:** Autogenerate link text from the page or section title: `[](use-title.md#section)`<br>
+✅ **Do:** Define a custom [anchor](#anchors) by adding `[anchor-text]` at the end of a heading line
 
 **DON'Ts**<br>
-❌ Use unclear, inaccessible link text like "click here" or "this"<br>
-❌ Include terminal punctuation in link text
+❌ **Don't:** Use unclear, inaccessible link text like "click here" or "this"<br>
+❌ **Don't:** Include terminal punctuation in link text
 
 [More details: Links →](links.md)
 <br>
@@ -470,15 +473,15 @@ Standard Markdown ordered (numbered) and unordered (bulleted) lists. Indent with
 :::
 
 **DOs** <br>
-✅ Add code blocks, images, admonitions, and other content within a list item<br>
-✅ Nest lists, mixing ordered and unordered as needed<br>
-✅ Use parallel structure and phrasing in list items<br>
-✅ Capitalize only the first word of list items (sentence case)<br>
-✅ Use terminal punctuation consistently and only for complete sentences<br>
+✅ **Do:** Add code blocks, images, admonitions, and other content within a list item<br>
+✅ **Do:** Nest lists, mixing ordered and unordered as needed<br>
+✅ **Do:** Use parallel structure and phrasing in list items<br>
+✅ **Do:** Capitalize only the first word of list items (sentence case)<br>
+✅ **Do:** Use terminal punctuation consistently and only for complete sentences
 
 **DON'Ts** <br>
-❌ Use lists solely for layout purposes <br>
-❌ Use lists for structured data or comparisons — use tables instead
+❌ **Don't:** Use lists solely for layout purposes <br>
+❌ **Don't:** Use lists for structured data or comparisons — use tables instead
 
 [More details: Lists →](lists.md)
 <br>
@@ -510,20 +513,20 @@ Page title (Markdown H1):
 
 :::{dropdown} Output
 
-![Rendered nav title](img/nav-title.png)
+![Rendered nav title](images/nav-title.png)
 
 :::
 
 
 **DOs**<br>
-✅ Use active phrasing and shorter forms<br>
-✅ Make sure the navigation title clearly identifies the page topic<br>
-✅ Omit product names that appear in the full H1 page title
+✅ **Do:** Use active phrasing and shorter forms<br>
+✅ **Do:** Make sure the navigation title clearly identifies the page topic<br>
+✅ **Do:** Omit product names that appear in the full H1 page title
 
 **DON'Ts**<br>
-❌ Duplicate the H1 page title<br>
-❌ Use a long navigation title or lots of punctuation<br>
-❌ Abbreviate with periods or ellipses
+❌ **Don't:** Duplicate the H1 page title<br>
+❌ **Don't:** Use a long navigation title or lots of punctuation<br>
+❌ **Don't:** Abbreviate with periods or ellipses
 
 [More details: Title →](./titles.md)
 <br>
@@ -571,13 +574,13 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 :::
 
 **DOs** <br>
-✅ Check the global `docset.yml` file for existing product and feature name subs<br>
-✅ Use substitutions in code blocks by setting `subs=true`  <br>
-✅ Define new page-specific substitutions as needed  
+✅ **Do:** Check the global `docset.yml` file for existing product and feature name subs<br>
+✅ **Do:** Use substitutions in code blocks by setting `subs=true`  <br>
+✅ **Do:** Define new page-specific substitutions as needed  
 
 **DON'Ts**<br>
-❌ Override a `docset.yml` sub by defining a page-level sub with the same key (causes build errors)<br>
-❌ Use substitutions for common words that don't need to be standardized  
+❌ **Don't:** Override a `docset.yml` sub by defining a page-level sub with the same key (causes build errors)<br>
+❌ **Don't:** Use substitutions for common words that don't need to be standardized  
 
 [More details: Substitutions →](./substitutions.md)
 <br>
@@ -620,16 +623,16 @@ Tab 2 content
 :::::
 
 **DOs**<br>
-✅ Use clear, descriptive tab labels<br>
-✅ Make sure all tabs have the same type of content and similar goals<br>
-✅ Keep tab content scannable and self-contained (don't make the user switch tabs to follow steps or compare content)<br>
-✅ Include other block elements in tabs, like [admonitions](#admonitions)
+✅ **Do:** Use clear, descriptive tab labels<br>
+✅ **Do:** Make sure all tabs have the same type of content and similar goals<br>
+✅ **Do:** Keep tab content scannable and self-contained (don't make users switch tabs to follow steps or compare content)<br>
+✅ **Do:** Include other block elements in tabs, like [admonitions](#admonitions)
 
 **DON'Ts**<br>
-❌ Nest tabs<br>
-❌ Split step-by-step procedures across tabs<br>
-❌ Use more than 6 tabs (use as few as possible)<br>
-❌ Use tabs in [dropdowns](#dropdowns)
+❌ **Don't:** Nest tabs<br>
+❌ **Don't:** Split step-by-step procedures across tabs<br>
+❌ **Don't:** Use more than 6 tabs (use as few as possible)<br>
+❌ **Don't:** Use tabs in [dropdowns](#dropdowns)
 
 
 [More details: Tabs →](tabs.md)
@@ -659,13 +662,13 @@ Standard table layout for structured data. Automatically scrolls horizontally if
 :::
 
 **DOs**<br>
-✅ Use leading and trailing pipes for clarity<br>
-✅ Add spaces for readability (they're trimmed)<br>
-✅ Keep cell content scannable and parallel<br>
-✅ Use standard Markdown text alignment when necessary (`:-- --: :--:`)<br>
+✅ **Do:** Use leading and trailing pipes for clarity<br>
+✅ **Do:** Add spaces for readability (they're trimmed)<br>
+✅ **Do:** Keep cell content scannable and parallel<br>
+✅ **Do:** Use standard Markdown text alignment when necessary (`:-- --: :--:`)
 
 **DON'Ts**<br>
-❌ Insert block elements or multiple paragraphs in a table cell<br>
-❌ Use a table solely for position or spacing purposes<br>
+❌ **Don't:** Insert block elements or multiple paragraphs in a table cell<br>
+❌ **Don't:** Use a table solely for position or spacing purposes
 
 [More details: Tables →](tables.md)

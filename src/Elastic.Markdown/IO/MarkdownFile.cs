@@ -4,10 +4,12 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Configuration;
-using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -16,11 +18,12 @@ using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
+using Markdig.Renderers.Roundtrip;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
 {
 	private string? _navigationTitle;
 
@@ -37,11 +40,10 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		BuildContext build,
 		DocumentationSet set
 	)
-		: base(sourceFile, rootPath)
+		: base(sourceFile, rootPath, build.Git.RepositoryName)
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		IsIndex = FileName == "index.md";
 
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
@@ -52,33 +54,25 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
+
 		NavigationRoot = set.Tree;
 		NavigationSource = set.Source;
 	}
 
+	public bool PartOfNavigation { get; set; }
+
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigation NavigationRoot { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
-	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
+	private IDiagnosticsCollector Collector { get; }
 
-	private DiagnosticsCollector Collector { get; }
-
-	public DocumentationGroup? Parent
-	{
-		get => FileName == "index.md" ? _parent?.Parent : _parent;
-		set => _parent = value;
-	}
-
-	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
-
-	public bool IsIndex { get; internal set; }
 
 	public string? Title
 	{
@@ -90,11 +84,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string? NavigationTitle
+	public string NavigationTitle
 	{
-		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-		private set => _navigationTitle = value?.StripMarkdown();
+		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title ?? string.Empty;
+		private set => _navigationTitle = value.StripMarkdown();
 	}
+
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
@@ -135,8 +130,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 				_url = DefaultUrlPath;
 				return _url;
 			}
-			var path = RelativePath;
-			var crossLink = new Uri($"{_set.Build.Git.RepositoryName}://{path}");
+			var crossLink = new Uri(CrossLink);
 			var uri = _set.LinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
 			_url = uri.AbsolutePath;
 			return _url;
@@ -144,27 +138,10 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public int NavigationIndex { get; internal set; } = -1;
-
-	public string? GroupId { get; set; }
+	//public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;
-	private DocumentationGroup? _parent;
 	private string? _title;
-
-	public MarkdownFile[] YieldParents()
-	{
-		var parents = new List<MarkdownFile>();
-		var parent = Parent;
-		do
-		{
-			if (parent is { Index: not null } && parent.Index != this)
-				parents.Add(parent.Index);
-			parent = parent?.Parent;
-		} while (parent != null);
-
-		return [.. parents];
-	}
 
 	/// this get set by documentationset when validating redirects
 	/// because we need to minimally parse to see the anchors anchor validation is deferred.
@@ -208,6 +185,17 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		return document;
 	}
 
+	public static string ToLLMText(MarkdownDocument document)
+	{
+		using var sw = new StringWriter();
+		var rr = new RoundtripRenderer(sw);
+		rr.Write(document);
+		var outputMarkdown = sw.ToString();
+
+		return outputMarkdown;
+
+	}
+
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
 		var globalSubstitutions = _globalSubstitutions;
@@ -227,8 +215,10 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
-		YamlFrontMatter = ProcessYamlFrontMatter(document);
-		NavigationTitle = YamlFrontMatter.NavigationTitle;
+		var yamlFrontMatter = ProcessYamlFrontMatter(document);
+		YamlFrontMatter = yamlFrontMatter;
+		if (yamlFrontMatter.NavigationTitle is not null)
+			NavigationTitle = yamlFrontMatter.NavigationTitle;
 
 		var subs = GetSubstitutions();
 
@@ -292,12 +282,17 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
-				return new PageTocItem { Heading = header, Slug = (h.Item2 ?? header).Slugify(), Level = h.Level };
+				return new PageTocItem
+				{
+					Heading = header,
+					Slug = (h.Item2 ?? h.Item1).Slugify(),
+					Level = h.Level
+				};
 			})
 			.Concat(includedTocs)
 			.Select(toc => subs.Count == 0
 				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Build.Collector, out var r)
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
 					? toc with { Heading = r }
 					: toc)
 			.ToList();
@@ -347,6 +342,11 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		{
 			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
 		}
+		catch (InvalidProductException e)
+		{
+			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			return new YamlFrontMatter();
+		}
 		catch (Exception e)
 		{
 			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
@@ -354,7 +354,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document)
 	{
 		//we manually render title and optionally append an applies block embedded in yaml front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
@@ -362,5 +362,4 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			_ = document.Remove(h1);
 		return document.ToHtml(MarkdownParser.Pipeline);
 	}
-
 }

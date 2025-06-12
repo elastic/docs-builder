@@ -5,8 +5,8 @@ Follow these steps to contribute to Elastic docs.
 * [Prerequisites](#prerequisites)
 * [Step 1: Install `docs-builder`](#step-one)
 * [Step 2: Clone a content repository](#step-two)
-* [Step 3: Serve the Documentation](#step-three)
-* [Step 4: Write docs!](#step-four)
+* [Step 3: Serve the documentation](#step-three)
+* [Step 4: Write the docs](#step-four)
 * [Step 5: Push your changes](#step-five)
 
 ## Prerequisites
@@ -28,77 +28,70 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
 ::::{tab-set}
 
-:::{tab-item} macOS
+:::{tab-item} macOS & Linux
 
-1. **Download the Binary:**
-   Download the latest macOS binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
+1. **Download and run the install script**   
+
+   Run this command to download and install the latest version of `docs-builder`:
+
    ```sh
-   curl -LO https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-mac-arm64.zip
+   curl -sL https://ela.st/docs-builder-install | sh
+   ```
+   
+   This downloads the latest binary, makes it executable, and installs it to your user PATH.
+   You can optionally specify a specific version to install:
+
+   ```sh
+   DOCS_BUILDER_VERSION=0.40.0 curl -sL https://ela.st/docs-builder-install | sh
    ```
 
-2. **Extract the Binary:**
-   Unzip the downloaded file:
-   ```sh
-   unzip docs-builder-mac-arm64.zip
-   ```
+   To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
+2. **Run docs-builder from a docs folder**
+
+   Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000:
+
    ```sh
-   ./docs-builder serve -p ./path/to/docs
+   docs-builder serve
    ```
+   The path to the `docset.yml` file that you want to build can be specified with `-p`.
+
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
+
+If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
 
 :::
 
 :::{tab-item} Windows
 
-1. **Download the Binary:**
-   Download the latest Windows binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   Invoke-WebRequest -Uri https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-win-x64.zip -OutFile docs-builder-win-x64.zip
+1. **Download and run the install script**   
+
+   Run this command to download and install the latest version of `docs-builder`:
+
+   ```powershell
+   iex (New-Object System.Net.WebClient).DownloadString('https://ela.st/docs-builder-install-win')
    ```
 
-2. **Extract the Binary:**
-   Unzip the downloaded file. You can use tools like WinZip, 7-Zip, or the built-in Windows extraction tool.
-   ```sh
-   Expand-Archive -Path docs-builder-win-x64.zip -DestinationPath .
+   This downloads the latest binary, makes it executable, and installs it to your user PATH.
+   You can optionally specify a specific version to install:
+
+   ```powershell
+   $env:DOCS_BUILDER_VERSION = '0.40.0'; iwr -useb https://ela.st/docs-builder-install.ps1 | iex
    ```
 
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
-   ```sh
-   .\docs-builder serve -p ./path/to/docs
-   ```
+   To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
+2. **Run docs-builder from a docs folder**
+
+   Use the `serve` command from any docs folder to start serving the documentation at http://localhost:3000:
+
+   ```sh
+   docs-builder serve
+   ```
+   The path to the `docset.yml` file that you want to build can be specified with `-p`.
 :::
-
-:::{tab-item} Linux
-
-1. **Download the Binary:**
-   Download the latest Linux binary from [releases](https://github.com/elastic/docs-builder/releases/latest/):
-   ```sh
-   wget https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-linux-x64.zip
-   ```
-
-2. **Extract the Binary:**
-   Unzip the downloaded file:
-   ```sh
-   unzip docs-builder-linux-x64.zip
-   ```
-
-3. **Run the Binary:**
-   Use the `serve` command to start serving the documentation at http://localhost:3000. The path to the `docset.yml` file that you want to build can be specified with `-p`:
-   ```sh
-   ./docs-builder serve -p ./path/to/docs
-   ```
-
-:::
-
 ::::
 
-:::{tip}
-Place the `docs-builder` binary file in a system path so that you can run it from any folder. On macOS, you can do this by running `sudo mv docs-builder /usr/local/bin/docs-builder`.
-:::
 
 ## Clone a content repository [#step-two]
 
@@ -107,42 +100,71 @@ Documentation lives in many repositories across Elastic. If you're unsure which 
 :::
 
 In this guide, we'll clone the [`docs-content`](https://github.com/elastic/docs-content) repository. The `docs-content` repository is the home for narrative documentation at Elastic. Clone this repo to a directory of your choice:
+
 ```sh
 git clone https://github.com/elastic/docs-content.git
 ```
 
-## Serve the Documentation [#step-three]
+## Serve the documentation [#step-three]
 
-1. **Navigate to the `docs-builder` clone location:**
-   ```sh
-   cd docs-content
-   ```
+Static-site generators like docs-builder can serve docs locally. This means you can edit the source and see the result in the browser in real time.
 
-1. **Run the Binary:**
-   Run the binary with the `serve` command to build and serve the content set to http://localhost:3000. Specify the path to the `docset.yml` file that you want to build with `-p`.
+To serve the local copy of the documentation in your browser, follow these steps:
 
-   For example, if `docs-builder` and `docs-content` are in the same top-level directory, you would run:
-   ```sh
-   # macOS/Linux
-   ./docs-builder serve -p ./migration-test
+::::::{stepper}
 
-   # Windows
-   .\docs-builder serve -p .\migration-test
-   ```
+:::::{step} Go to the docs-builder clone location
 
+```sh
+cd docs-content
+```
+:::::
+
+:::::{step} Run docs-builder
+
+Run the `docs-builder` binary with the `serve` command to build and serve the content set to http://localhost:3000. If necessary, specify the path to the `docset.yml` file that you want to build with `-p`.
+
+For example:
+
+::::{tab-set}
+
+:::{tab-item} macOS & Linux
+
+```sh
+docs-builder serve -p ./migration-test
+```
+:::
+
+:::{tab-item} Windows
+
+```powershell
+docs-builder serve -p .\migration-test
+```
+:::
+::::
+:::::
+
+:::::{step} Open the documentation in the browser
 Now you should be able to view the documentation locally by navigating to http://localhost:3000.
+:::::
+::::::
 
-## Step 4: Write docs [#step-four]
+## Step 4: Write the docs [#step-four]
 
-We write docs in markdown. See our [syntax](../syntax/index.md) guide for the flavor of markdown that we support and all of our custom directives that enable you to add a little extra pizazz to your docs.
+We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown that we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
 
 ## Step 5: Push your changes [#step-five]
 
-After you've made your changes locally,
+After you've made your changes locally:
 
 * [Push your commits](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
 * [Open a Pull Request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
 
-## Step 5: View on elastic.co/docs
+## Step 5: View the preview
 
-soon...
+You can open a docs preview from the Deployments page of the repository. For example, [https://github.com/elastic/docs-content/deployments](https://github.com/elastic/docs-content/deployments).
+
+1. Select the pull request or branch.
+2. Select the ↗ icon next to the timestamp.
+
+The preview URL is in the form `https://docs-v3-preview.elastic.dev/elastic/<repository>/tree/branch`.

@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Documentation.Assembler.Configuration;
-using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.State;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;

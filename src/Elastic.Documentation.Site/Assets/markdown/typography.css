@@ -1,0 +1,59 @@
+.markdown-content {
+	@apply text-ink font-body text-base text-pretty;
+
+	h1 {
+		@apply text-ink-dark text-5xl font-semibold;
+		line-height: 1.2em;
+	}
+
+	h2 {
+		@apply text-ink-dark mt-10 text-4xl font-bold;
+		line-height: 1.2em;
+	}
+
+	h3 {
+		@apply text-ink-dark mt-8 text-2xl font-bold;
+		line-height: 1.2em;
+	}
+
+	h4 {
+		@apply text-ink-dark mt-8 text-xl font-bold;
+		line-height: 1.2em;
+	}
+
+	h5 {
+		@apply text-ink-dark mt-8 text-base font-bold;
+		line-height: 1.2em;
+	}
+
+	h6 {
+		@apply text-ink-dark mt-8 text-sm font-bold;
+		line-height: 1.2em;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-sans;
+		a {
+			@apply text-ink-dark hover:text-ink-dark font-sans no-underline;
+		}
+	}
+
+	p {
+		@apply mt-4;
+		line-height: 1.5em;
+	}
+
+	a {
+		@apply font-body text-blue-elastic hover:text-blue-elastic-100 underline;
+
+		&[target='_blank']::after {
+			@apply ml-0.5;
+			content: url("data:image/svg+xml; utf8, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='grey' height='16'><path d='M6.22 8.72a.75.75 0 0 0 1.06 1.06l5.22-5.22v1.69a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75h-3.5a.75.75 0 0 0 0 1.5h1.69L6.22 8.72Z' /><path d='M3.5 6.75c0-.69.56-1.25 1.25-1.25H7A.75.75 0 0 0 7 4H4.75A2.75 2.75 0 0 0 2 6.75v4.5A2.75 2.75 0 0 0 4.75 14h4.5A2.75 2.75 0 0 0 12 11.25V9a.75.75 0 0 0-1.5 0v2.25c0 .69-.56 1.25-1.25 1.25h-4.5c-.69 0-1.25-.56-1.25-1.25v-4.5Z' /></svg>");
+		}
+	}
+}

@@ -10,13 +10,13 @@ open System.Collections.Frozen
 open System.Runtime.InteropServices
 open System.Threading.Tasks
 open System.Linq
+open Elastic.Documentation.Configuration.Builder
+open Elastic.Documentation.Links
 open Elastic.Markdown.Links.CrossLinks
-open Elastic.Markdown.IO.Configuration
-open Elastic.Markdown.IO.State
 
 type TestCrossLinkResolver (config: ConfigurationFile) =
 
-    let references = Dictionary<string, LinkReference>()
+    let references = Dictionary<string, RepositoryLinks>()
     let declared = HashSet<string>()
     let uriResolver = IsolatedBuildEnvironmentUriResolver()
 
@@ -28,7 +28,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
         member this.UriResolver = uriResolver
 
         member this.FetchLinks(ctx) =
-            let redirects = LinkReference.SerializeRedirects config.Redirects
+            let redirects = RepositoryLinks.SerializeRedirects config.Redirects
             // language=json
             let json = $$"""{
   "origin": {
@@ -69,7 +69,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
             this.DeclaredRepositories.Add("elasticsearch") |> ignore
 
             let indexEntries =
-                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, LinkReference>) -> LinkIndexEntry(
+                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
                     Repository = e.Key,
                     Path = $"elastic/asciidocalypse/{e.Key}/links.json",
                     Branch = "main",
@@ -86,9 +86,9 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                 )
             Task.FromResult crossLinks
 
-        member this.TryResolve(errorEmitter, warningEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
+        member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             let indexEntries =
-                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, LinkReference>) -> LinkIndexEntry(
+                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
                     Repository = e.Key,
                     Path = $"elastic/asciidocalypse/{e.Key}/links.json",
                     Branch = "main",
@@ -104,6 +104,6 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
                     LinkIndexEntries=indexEntries.ToFrozenDictionary()
 
                 )
-            CrossLinkResolver.TryResolve(errorEmitter, warningEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri);
+            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri);
 
 
