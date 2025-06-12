@@ -22,7 +22,9 @@ public class GlobalLayoutViewModel
 	public required INavigationItem? Previous { get; init; }
 	public required INavigationItem? Next { get; init; }
 	public required string NavigationHtml { get; init; }
-	public required LegacyPageMapping? LegacyPage { get; init; }
+	public required LegacyPageMapping[] LegacyPages { get; init; }
+	public required string? CurrentVersion { get; init; }
+	public required string? VersionDropdown { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }

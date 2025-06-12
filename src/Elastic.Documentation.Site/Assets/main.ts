@@ -11,6 +11,7 @@ import 'htmx-ext-preload'
 import 'htmx.org'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
+import './web-components/VersionDropdown'
 
 const { getOS } = new UAParser()
 

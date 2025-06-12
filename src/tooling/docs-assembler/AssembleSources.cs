@@ -40,7 +40,7 @@ public class AssembleSources
 
 	public FrozenDictionary<Uri, TocTopLevelMapping> TocTopLevelMappings { get; }
 
-	public FrozenDictionary<string, string> HistoryMappings { get; }
+	public FrozenDictionary<string, List<string>> HistoryMappings { get; }
 
 	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
 
@@ -108,19 +108,15 @@ public class AssembleSources
 			.ToFrozenDictionary();
 	}
 
-	private static FrozenDictionary<string, string> GetHistoryMapping(AssembleContext context)
+	private static FrozenDictionary<string, List<string>> GetHistoryMapping(AssembleContext context)
 	{
-		var dictionary = new Dictionary<string, string>();
+		var dictionary = new Dictionary<string, List<string>>();
 		var reader = new YamlStreamReader(context.HistoryMappingPath, context.Collector);
 		string? stack = null;
 		foreach (var entry in reader.Read())
 		{
 			switch (entry.Key)
 			{
-				case "stack":
-					stack = reader.ReadString(entry.Entry);
-					break;
-
 				case "mappings":
 					ReadHistoryMappings(dictionary, reader, entry, stack);
 					break;
@@ -129,7 +125,7 @@ public class AssembleSources
 
 		return dictionary.OrderByDescending(x => x.Key.Length).ToFrozenDictionary();
 
-		static void ReadHistoryMappings(IDictionary<string, string> dictionary, YamlStreamReader reader, YamlToplevelKey entry, string? newStack)
+		static void ReadHistoryMappings(IDictionary<string, List<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry, string? newStack)
 		{
 			if (entry.Entry.Value is not YamlMappingNode mappings)
 			{
@@ -140,19 +136,11 @@ public class AssembleSources
 			foreach (var mapping in mappings)
 			{
 				var mappingKey = $"{((YamlScalarNode)mapping.Key).Value}/";
-				var mappingValue = ((YamlScalarNode)mapping.Value).Value;
-				if (mappingKey.Length == 1 || mappingValue is null)
-				{
-					reader.EmitWarning($"'{mapping.Key}' or '{mapping.Value}' is not a valid mapping");
-					continue;
-				}
-
-				if (mappingValue.Equals("stack", StringComparison.OrdinalIgnoreCase) && newStack is not null)
-					mappingValue = newStack;
+				var mappingValues = ((YamlSequenceNode)mapping.Value).Children.OfType<YamlScalarNode>().Where(x => x.Value is not null).Select(x => x.Value!).ToList();
 				if (dictionary.TryGetValue(mappingKey, out _))
-					reader.EmitWarning($"'{mappingKey}' is already mapped to '{mappingValue}'");
+					reader.EmitWarning($"'{mappingKey}' is already mapped to '{mappingValues}'");
 				else
-					dictionary[mappingKey] = mappingValue;
+					dictionary[mappingKey] = mappingValues;
 			}
 		}
 	}
