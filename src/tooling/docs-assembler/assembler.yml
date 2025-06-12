@@ -50,131 +50,133 @@ narrative:
 #   next: <git_ref>
 ###
 
-versions:
-  stack:
-    # This is the default versioning scheme, used for most of the docs.
-    # It uses the stack version as the current version.
-    base: '9.0'
-    current: '9.0.1' # https://artifacts.elastic.co/releases/stack.json
-    legacy_versions: [ '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17' ]
-  apm_agent_android:
-    current: '1.0.0' # https://github.com/elastic/apm-agent-android/releases
-    legacy_versions: [ '0.x' ]
-  apm_agent_dotnet:
-    current: '1.32.0' # https://github.com/elastic/apm-agent-dotnet/releases
-    legacy_versions: [ '1.8' ]
-  apm_agent_go:
-    current: '2.7.1' # https://github.com/elastic/apm-agent-go/releases
-    legacy_versions: [ '1.x', '0.5' ]
-  apm_agent_java:
-    current: '1.54.0' # https://github.com/elastic/apm-agent-java/releases
-    legacy_versions: [ '0.7', '0.6' ]
-  apm_agent_nodejs:
-    current: '4.13.0' # https://github.com/elastic/apm-agent-nodejs/releases
-    legacy_versions: [ '3.x', '2.x', '1.x' ]
-  apm_agent_php:
-    current: '1.15.0' # https://github.com/elastic/apm-agent-php/releases
-    legacy_versions: []
-  apm_agent_python:
-    current: '6.23.0' # https://github.com/elastic/apm-agent-python/releases
-    legacy_versions: [ '5.x', '4.x', '3.x', '2.x', '1.x' ]
-  apm_agent_ruby:
-    current: '4.7.3' # https://github.com/elastic/apm-agent-ruby/releases
-    legacy_versions: [ '3.x', '2.x', '1.x' ]
-  apm_agent_rum_js:
-    current: '5.17.0' # https://github.com/elastic/apm-agent-rum-js/releases
-    legacy_versions: [ '4.x', '3.x', '2.x', '1.x', '0.x' ]
-  apm_agent_ios:
-    current: '1.2.1' # https://github.com/elastic/apm-agent-ios/releases
-    legacy_versions: [ '0.x' ]
-  apm_k8s_attacher:
-    current: '1.1.3' # https://github.com/elastic/apm-k8s-attacher/releases
-    legacy_versions: []
-  apm_aws_lambda:
-    current: '1.5.8' # https://github.com/elastic/apm-aws-lambda/releases
-    legacy_versions: []
-  cloud_enterprise:
-    path_prefix: en/cloud-enterprise
-    current: '4.1.0' # https://github.com/elastic/cloud/blob/master/version
-    legacy_versions: [ '3.8', '3.7', '3.6', '3.5', '3.4', '3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4', '2.3', '2.2', '2.1', '2.0', '1.1', '1.0' ]
-  cloud_heroku:
-    current: 'current'
-    legacy_versions: []
-  cloud_on_k8s:
-    current: '3.0.0' # https://github.com/elastic/cloud-on-k8s/releases
-    legacy_versions: [ '2.16', '2.15', '2.14', '2.13', '2.12', '2.11', '2.10', '2.9', '2.8', '2.7', '2.6', '2.5', '2.4', '2.3', '2.2', '2.1', '2.0', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0', '1.0-beta', '0.9', '0.8' ]
-  cloud:
-    current: 'current'
-    legacy_versions: []
-  ecctl:
-    current: '1.14.3' # https://github.com/elastic/ecctl/releases
-    legacy_versions: [ '1.13', '1.12', '1.11', '1.10', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
-  ecs_logging:
-    current: 'current'
-    legacy_versions: []
-  ecs_logging_dotnet:
-    current: '8.18.1' # https://github.com/elastic/ecs-dotnet/releases
-    legacy_versions: []
-  ecs_logging_go_logrus:
-    current: '1.0.0' # https://github.com/elastic/ecs-logging-go-logrus/releases
-    legacy_versions: []
-  ecs_logging_go_zap:
-    current: '1.0.3' # https://github.com/elastic/ecs-logging-go-zap/releases
-    legacy_versions: []
-  ecs_logging_go_zerolog:
-    current: '0.2.0' # https://github.com/elastic/ecs-logging-go-zerolog/releases
-    legacy_versions: []
-  ecs_logging_java:
-    current: '1.7.0' # https://github.com/elastic/ecs-logging-java/releases
-    legacy_versions: [ '0.x' ]
-  ecs_logging_nodejs:
-    current: '1.5.3' # https://github.com/elastic/ecs-logging-nodejs/tags
-    legacy_versions: []
-  ecs_logging_php:
-    current: '2.0.0' # https://github.com/elastic/ecs-logging-php/releases
-    legacy_versions: []
-  ecs_logging_python:
-    current: '2.2.0' # https://github.com/elastic/ecs-logging-python/releases
-    legacy_versions: []
-  ecs_logging_ruby:
-    current: '1.0.0' # https://github.com/elastic/ecs-logging-ruby/tags
-    legacy_versions: []
-  ecs:
-    current: '9.0' #
-    legacy_versions: [ '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '1.12', '1.11', '1.10', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
-  elastic-stack-glossary:
-    current: 'current'
-    legacy_versions: []
-  curator:
-    current: '8.0'
-    legacy_versions: [ '7.0', '6.0', '5.8', '5.7', '5.6', '5.5', '5.4', '5.3', '5.2', '5.1', '5.0', '4.3', '4.2', '4.1', '4.0', '3.5', '3.4', '3.3' ]
-  eland:
-    current: '9.0.1' # https://github.com/elastic/eland/releases
-    legacy_versions: []
-  esf:
-    current: '1.20.1' # https://github.com/elastic/elastic-serverless-forwarder/releases
-    legacy_versions: []
-  ingest-overview:
-    current: 'current'
-    legacy_versions: []
-  integrations-developer:
-    current: 'current'
-    legacy_versions: []
-  integrations:
-    current: 'current'
-    legacy_versions: []
-  logstash-versioned-plugins:
-    current: 'current'
-    legacy_versions: []
-  reference-architectures:
-    current: 'current'
-    legacy_versions: []
-  search-ui:
-    current: '1.24.0' # https://github.com/elastic/search-ui
-    legacy_versions: []
-  serverless:
-    current: 'current'
-    legacy_versions: []
+### This is not yet ready but already added
+
+#versions:
+#  stack:
+#    # This is the default versioning scheme, used for most of the docs.
+#    # It uses the stack version as the current version.
+#    base: '9.0'
+#    current: '9.0.1' # https://artifacts.elastic.co/releases/stack.json
+#    legacy_versions: [ '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17' ]
+#  apm_agent_android:
+#    current: '1.0.0' # https://github.com/elastic/apm-agent-android/releases
+#    legacy_versions: [ '0.x' ]
+#  apm_agent_dotnet:
+#    current: '1.32.0' # https://github.com/elastic/apm-agent-dotnet/releases
+#    legacy_versions: [ '1.8' ]
+#  apm_agent_go:
+#    current: '2.7.1' # https://github.com/elastic/apm-agent-go/releases
+#    legacy_versions: [ '1.x', '0.5' ]
+#  apm_agent_java:
+#    current: '1.54.0' # https://github.com/elastic/apm-agent-java/releases
+#    legacy_versions: [ '0.7', '0.6' ]
+#  apm_agent_nodejs:
+#    current: '4.13.0' # https://github.com/elastic/apm-agent-nodejs/releases
+#    legacy_versions: [ '3.x', '2.x', '1.x' ]
+#  apm_agent_php:
+#    current: '1.15.0' # https://github.com/elastic/apm-agent-php/releases
+#    legacy_versions: []
+#  apm_agent_python:
+#    current: '6.23.0' # https://github.com/elastic/apm-agent-python/releases
+#    legacy_versions: [ '5.x', '4.x', '3.x', '2.x', '1.x' ]
+#  apm_agent_ruby:
+#    current: '4.7.3' # https://github.com/elastic/apm-agent-ruby/releases
+#    legacy_versions: [ '3.x', '2.x', '1.x' ]
+#  apm_agent_rum_js:
+#    current: '5.17.0' # https://github.com/elastic/apm-agent-rum-js/releases
+#    legacy_versions: [ '4.x', '3.x', '2.x', '1.x', '0.x' ]
+#  apm_agent_ios:
+#    current: '1.2.1' # https://github.com/elastic/apm-agent-ios/releases
+#    legacy_versions: [ '0.x' ]
+#  apm_k8s_attacher:
+#    current: '1.1.3' # https://github.com/elastic/apm-k8s-attacher/releases
+#    legacy_versions: []
+#  apm_aws_lambda:
+#    current: '1.5.8' # https://github.com/elastic/apm-aws-lambda/releases
+#    legacy_versions: []
+#  cloud_enterprise:
+#    path_prefix: en/cloud-enterprise
+#    current: '4.1.0' # https://github.com/elastic/cloud/blob/master/version
+#    legacy_versions: [ '3.8', '3.7', '3.6', '3.5', '3.4', '3.3', '3.2', '3.1', '3.0', '2.7', '2.6', '2.5', '2.4', '2.3', '2.2', '2.1', '2.0', '1.1', '1.0' ]
+#  cloud_heroku:
+#    current: 'current'
+#    legacy_versions: []
+#  cloud_on_k8s:
+#    current: '3.0.0' # https://github.com/elastic/cloud-on-k8s/releases
+#    legacy_versions: [ '2.16', '2.15', '2.14', '2.13', '2.12', '2.11', '2.10', '2.9', '2.8', '2.7', '2.6', '2.5', '2.4', '2.3', '2.2', '2.1', '2.0', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0', '1.0-beta', '0.9', '0.8' ]
+#  cloud:
+#    current: 'current'
+#    legacy_versions: []
+#  ecctl:
+#    current: '1.14.3' # https://github.com/elastic/ecctl/releases
+#    legacy_versions: [ '1.13', '1.12', '1.11', '1.10', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
+#  ecs_logging:
+#    current: 'current'
+#    legacy_versions: []
+#  ecs_logging_dotnet:
+#    current: '8.18.1' # https://github.com/elastic/ecs-dotnet/releases
+#    legacy_versions: []
+#  ecs_logging_go_logrus:
+#    current: '1.0.0' # https://github.com/elastic/ecs-logging-go-logrus/releases
+#    legacy_versions: []
+#  ecs_logging_go_zap:
+#    current: '1.0.3' # https://github.com/elastic/ecs-logging-go-zap/releases
+#    legacy_versions: []
+#  ecs_logging_go_zerolog:
+#    current: '0.2.0' # https://github.com/elastic/ecs-logging-go-zerolog/releases
+#    legacy_versions: []
+#  ecs_logging_java:
+#    current: '1.7.0' # https://github.com/elastic/ecs-logging-java/releases
+#    legacy_versions: [ '0.x' ]
+#  ecs_logging_nodejs:
+#    current: '1.5.3' # https://github.com/elastic/ecs-logging-nodejs/tags
+#    legacy_versions: []
+#  ecs_logging_php:
+#    current: '2.0.0' # https://github.com/elastic/ecs-logging-php/releases
+#    legacy_versions: []
+#  ecs_logging_python:
+#    current: '2.2.0' # https://github.com/elastic/ecs-logging-python/releases
+#    legacy_versions: []
+#  ecs_logging_ruby:
+#    current: '1.0.0' # https://github.com/elastic/ecs-logging-ruby/tags
+#    legacy_versions: []
+#  ecs:
+#    current: '9.0' #
+#    legacy_versions: [ '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '1.12', '1.11', '1.10', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
+#  elastic-stack-glossary:
+#    current: 'current'
+#    legacy_versions: []
+#  curator:
+#    current: '8.0'
+#    legacy_versions: [ '7.0', '6.0', '5.8', '5.7', '5.6', '5.5', '5.4', '5.3', '5.2', '5.1', '5.0', '4.3', '4.2', '4.1', '4.0', '3.5', '3.4', '3.3' ]
+#  eland:
+#    current: '9.0.1' # https://github.com/elastic/eland/releases
+#    legacy_versions: []
+#  esf:
+#    current: '1.20.1' # https://github.com/elastic/elastic-serverless-forwarder/releases
+#    legacy_versions: []
+#  ingest-overview:
+#    current: 'current'
+#    legacy_versions: []
+#  integrations-developer:
+#    current: 'current'
+#    legacy_versions: []
+#  integrations:
+#    current: 'current'
+#    legacy_versions: []
+#  logstash-versioned-plugins:
+#    current: 'current'
+#    legacy_versions: []
+#  reference-architectures:
+#    current: 'current'
+#    legacy_versions: []
+#  search-ui:
+#    current: '1.24.0' # https://github.com/elastic/search-ui
+#    legacy_versions: []
+#  serverless:
+#    current: 'current'
+#    legacy_versions: []
 
 references:
   apm-server:
