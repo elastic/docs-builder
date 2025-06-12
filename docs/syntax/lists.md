@@ -205,7 +205,7 @@ To include a paragraph of text within a list item, indent the content by four sp
 
 3. This is a list item with an image:
 
-    ![Image](./img/apm.png)
+    ![Image](./images/apm.png)
 
 4. This is a list item with an admonition:
 
@@ -229,7 +229,7 @@ To include a paragraph of text within a list item, indent the content by four sp
 
 3. This is a list item with an image:
 
-    ![Image](./img/apm.png)
+    ![Image](./images/apm.png)
 
 4. This is a list item with an admonition:
 

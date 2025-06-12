@@ -63,3 +63,123 @@ sub:
 	[Fact]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
 }
+
+public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - id: "apm"
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void ReadsProducts()
+	{
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter!.Products.Should().NotBeNull()
+			.And.HaveCount(1);
+		File.YamlFrontMatter!.Products!.First().Id.Should().Be("apm");
+	}
+}
+
+public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - id: "apm"
+	  - id: "elasticsearch"
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void ReadsProducts()
+	{
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter!.Products.Should().NotBeNull()
+			.And.HaveCount(2);
+		File.YamlFrontMatter!.Products!.First().Id.Should().Be("apm");
+		File.YamlFrontMatter!.Products!.Last().Id.Should().Be("elasticsearch");
+	}
+}
+
+public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - id: aapm
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"aapm\". Did you mean \"apm\"?"));
+	}
+}
+
+public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - id: apmagent
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"apmagent\". Did you mean \"apm-agent\"?"));
+	}
+}
+
+public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - id: Apm
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Apm\". Did you mean \"apm\"?"));
+	}
+}
+
+public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	products:
+	  - id: ""
+	---
+
+	# APM
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Product 'id' field is required."));
+	}
+}

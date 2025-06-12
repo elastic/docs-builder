@@ -7,8 +7,8 @@ namespace authoring
 open System
 open System.Collections.Concurrent
 open System.IO.Abstractions
+open Elastic.Documentation.Diagnostics
 open Elastic.Markdown
-open Elastic.Markdown.Diagnostics
 open Elastic.Markdown.IO
 open Markdig.Syntax
 open Microsoft.Extensions.Logging
@@ -26,8 +26,10 @@ type TestDiagnosticsOutput() =
                 match diagnostic.Severity with
                 | Severity.Error ->
                     output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{line})")
-                | _ ->
+                | Severity.Warning ->
                     output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{line})")
+                | _ ->
+                    output.WriteLine($"Hint : {diagnostic.Message} ({diagnostic.File}:{line})")
             | _ -> ()
 
 
@@ -98,8 +100,9 @@ and MarkdownTestContext =
 
     member this.Bootstrap () = backgroundTask {
         let! ctx = Async.CancellationToken
-        do! this.Generator.GenerateAll(ctx)
-        do! this.Generator.StopDiagnosticCollection(ctx)
+        let _ = this.Collector.StartAsync(ctx)
+        let! _ = this.Generator.GenerateAll(ctx)
+        do! this.Collector.StopAsync(ctx)
 
         let results =
             this.ConversionCollector.Results

@@ -27,7 +27,7 @@ type ``admonition in list`` () =
 				        <span>Note</span>
 			        </div>
 			        <div class="admonition-content">
-				        Hello, World!
+				        <p>Hello, World!</p>
 			        </div>
 		        </div>
 	        </li>
@@ -71,7 +71,7 @@ type ``nested admonition in list`` () =
  						            <span>Note</span>
  					            </div>
  					            <div class="admonition-content">
- 						            Hello, World!
+ 						            <p>Hello, World!</p>
  					            </div>
  				            </div>
  			            </li>
@@ -130,7 +130,7 @@ type ``nested admonition in list 2`` () =
  					                <span>Note</span>
  				                </div>
  				                <div class="admonition-content">
- 					                Hello, World!
+ 					                <p>Hello, World!</p>
  				                </div>
  			                </div>
  		                </li>
@@ -188,7 +188,7 @@ type ``nested admonition in list 3`` () =
  						            <span>Note</span>
  					            </div>
  					            <div class="admonition-content">
- 						            Hello, World!
+ 						            <p>Hello, World!</p>
  					            </div>
  				            </div>
  			            </li>

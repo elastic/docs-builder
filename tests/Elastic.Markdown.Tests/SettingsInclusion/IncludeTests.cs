@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.IO;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;

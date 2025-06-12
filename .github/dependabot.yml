@@ -16,6 +16,12 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
+    groups:
+      tailwindcss:
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/postcss'
+          - 'prettier-plugin-tailwindcss'
     labels:
       - chore
   - package-ecosystem: nuget
@@ -24,5 +30,10 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
+    groups: 
+      system-io-abstractions:
+        patterns:
+          - 'System.IO.Abstractions'
+          - 'System.IO.Abstractions.*'
     labels:
       - chore

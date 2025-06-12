@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Plugins.DetectionRules;
+using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Markdig.Syntax;
@@ -20,7 +23,7 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	private Dictionary<string, DetectionRuleFile> Files { get; } = [];
 
-	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.Path] = df;
+	public void AddDetectionRuleFile(DetectionRuleFile df, RuleReference ruleReference) => Files[ruleReference.RelativePath] = df;
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
@@ -61,7 +64,7 @@ $"""
 """;
 			foreach (var r in group.OrderBy(r => r.Rule.Name))
 			{
-				var url = Files[r.Path].Url;
+				var url = Files[r.RelativePath].Url;
 				markdown +=
 $"""
 [{r.Rule.Name}](!{url}) <br>

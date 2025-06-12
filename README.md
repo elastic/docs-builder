@@ -1,5 +1,7 @@
 # docs-builder
 
+[![ci](https://github.com/elastic/docs-builder/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/elastic/docs-builder/actions/workflows/ci.yml)
+
 You've reached the home of the latest incarnation of the documentation tooling.
 
 This repository is host to:
@@ -172,6 +174,8 @@ based on the labels of the pull requests merged into the `main` branch.
 See the [release-drafter configuration](./.github/release-drafter.yml) for more details.
 
 ## Creating a New Release
+
+To create a new release trigger the [release](https://github.com/elastic/docs-builder/actions/workflows/release.yml) workflow on the `main` branch.
 
 Every time a pull request is merged into the `main` branch, release-drafter will
 create a draft release or update the existing draft release in the [Releases](https://github.com/elastic/docs-builder/releases) page.

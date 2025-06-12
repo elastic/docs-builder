@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
@@ -14,18 +13,24 @@ public class RuleDocumentationFileExporter(IFileSystem readFileSystem, IFileSyst
 {
 	public override string Name { get; } = nameof(RuleDocumentationFileExporter);
 
-	public override async Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter,
-		IConversionCollector? conversionCollector, Cancel token)
+	public override async ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx)
 	{
-		if (file is DetectionRuleFile df)
-			await htmlWriter.WriteAsync(DetectionRuleFile.OutputPath(outputFile, context), df, conversionCollector, token);
-		else if (file is MarkdownFile markdown)
-			await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, token);
-		else
+		var htmlWriter = context.HtmlWriter;
+		var outputFile = context.OutputFile;
+		var conversionCollector = context.ConversionCollector;
+		switch (context.File)
 		{
-			if (outputFile.Directory is { Exists: false })
-				outputFile.Directory.Create();
-			await CopyFileFsAware(file, outputFile, token);
+			case DetectionRuleFile df:
+				context.MarkdownDocument = await htmlWriter.WriteAsync(DetectionRuleFile.OutputPath(outputFile, context.BuildContext), df, conversionCollector, ctx);
+				break;
+			case MarkdownFile markdown:
+				context.MarkdownDocument = await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, ctx);
+				break;
+			default:
+				if (outputFile.Directory is { Exists: false })
+					outputFile.Directory.Create();
+				await CopyFileFsAware(context.File, outputFile, ctx);
+				break;
 		}
 	}
 }

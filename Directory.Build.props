@@ -28,5 +28,10 @@
   <ItemGroup>
     <Using Include="System.Threading.CancellationToken" Alias="Cancel" />
   </ItemGroup>
+  <!-- MinVer Configuration -->
+  <PropertyGroup>
+    <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+  </PropertyGroup>
   
 </Project>

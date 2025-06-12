@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;

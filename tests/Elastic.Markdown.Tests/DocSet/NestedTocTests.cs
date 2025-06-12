@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -15,16 +16,22 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md")) as MarkdownFile;
 
 		doc.Should().NotBeNull();
+		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
+		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc.CrossLink);
+		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
 
-		// ensure we link back up to main toc in docset yaml
-		doc!.Parent.Should().NotBeNull();
+		var parent = nav.Parent;
+
+		// ensure we link back up to the main toc in docset yaml
+		parent.Should().NotBeNull();
 
 		// its parent should be null
-		doc.Parent!.Parent.Should().BeNull();
+		parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
-		doc.Parent.Index.Should().NotBeNull();
-		doc.Parent.Index!.RelativePath.Should().Be("index.md");
+		var index = (parent as DocumentationGroup)?.Index;
+		index.Should().NotBeNull();
+		index.RelativePath.Should().Be("index.md");
 
 	}
 }
