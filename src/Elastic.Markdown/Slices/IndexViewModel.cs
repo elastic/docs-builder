@@ -63,10 +63,11 @@ public class VersionDrownDownItemViewModel
 	[JsonPropertyName("children")]
 	public required VersionDrownDownItemViewModel[]? Children { get; init; }
 
+	// This logic currently only handles one level of children. Although the model supports multiple levels, it is not currently used.
 	public static VersionDrownDownItemViewModel[] FromLegacyPageMappings(LegacyPageMapping[] legacyPageMappings)
 	{
-		var potentialGroups = GetGroupedVersions(legacyPageMappings);
-		return potentialGroups.Select(m =>
+		var groupedVersions = GroupByMajorVersion(legacyPageMappings);
+		return groupedVersions.Select(m =>
 		{
 			if (m.Value.Count != 1)
 			{
@@ -93,7 +94,10 @@ public class VersionDrownDownItemViewModel
 		}).ToArray();
 	}
 
-	private static Dictionary<string, List<string>> GetGroupedVersions(LegacyPageMapping[] legacyPageMappings) =>
+	// The legacy page mappings provide a list of versions.
+	// But in the actual dropdown, we want to group them by major version
+	// E.g., 8.0 – 8.18 should be grouped under 8.x
+	private static Dictionary<string, List<string>> GroupByMajorVersion(LegacyPageMapping[] legacyPageMappings) =>
 		legacyPageMappings.Aggregate<LegacyPageMapping, Dictionary<string, List<string>>>([], (acc, curr) =>
 		{
 			var major = curr.Version.Split('.')[0];
