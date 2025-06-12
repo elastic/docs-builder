@@ -5,7 +5,6 @@
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -26,7 +25,7 @@ public class IndexViewModel
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 
-	public required INavigationItem? CurrentNavigationItem { get; init; }
+	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? PreviousDocument { get; init; }
 	public required INavigationItem? NextDocument { get; init; }
 	public required INavigationItem[] Parents { get; init; }

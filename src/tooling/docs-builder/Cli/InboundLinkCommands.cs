@@ -18,13 +18,13 @@ namespace Documentation.Builder.Cli;
 internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logger);
+	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
 
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
+		ConsoleApp.Log = msg => _log.LogInformation(msg);
+		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
@@ -69,21 +69,38 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 	/// Validate a locally published links.json file against all published links.json files in the registry
 	/// </summary>
 	/// <param name="file">Path to `links.json` defaults to '.artifacts/docs/html/links.json'</param>
+	/// <param name="path"> -p, Defaults to the `{pwd}` folder</param>
 	/// <param name="ctx"></param>
 	[Command("validate-link-reference")]
 	[ConsoleAppFilter<StopwatchFilter>]
 	[ConsoleAppFilter<CatchExceptionFilter>]
-	public async Task<int> ValidateLocalLinkReference([Argument] string? file = null, Cancel ctx = default)
+	public async Task<int> ValidateLocalLinkReference(string? file = null, string? path = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();
 		file ??= ".artifacts/docs/html/links.json";
 		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var root = !string.IsNullOrEmpty(path) ? fs.DirectoryInfo.New(path) : fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
+		var resolvedFile = fs.FileInfo.New(Path.Combine(root.FullName, file));
+
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		if (runningOnCi && !resolvedFile.Exists)
+		{
+			_log.LogInformation("Running on CI after a build that produced no {File}, skipping the validation", resolvedFile.FullName);
+			return 0;
+		}
+		if (runningOnCi && !Paths.TryFindDocsFolderFromRoot(fs, root, out _, out _))
+		{
+			_log.LogInformation("Running on CI, {Directory} has no documentation, skipping the validation", root.FullName);
+			return 0;
+		}
+
+		_log.LogInformation("Validating {File} in {Directory}", file, root.FullName);
+
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
-		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, file, ctx);
+		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, resolvedFile.FullName, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
 	}
