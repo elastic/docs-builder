@@ -83,18 +83,24 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
+		var resolvedFile = fs.FileInfo.New(Path.Combine(root.FullName, file));
+
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		if (runningOnCi && !resolvedFile.Exists)
+		{
+			_log.LogInformation("Running on CI after a build that produced no {File}, skipping the validation", resolvedFile.FullName);
+			return 0;
+		}
 		if (runningOnCi && !Paths.TryFindDocsFolderFromRoot(fs, root, out _, out _))
 		{
-			_log.LogInformation("Running in CI on a folder with no docset.yml file in {Directory}, skipping the validation", root.FullName);
+			_log.LogInformation("Running on CI, {Directory} has no documentation, skipping the validation", root.FullName);
 			return 0;
 		}
 
-		var resolvedFile = Path.Combine(root.FullName, file);
 		_log.LogInformation("Validating {File} in {Directory}", file, root.FullName);
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
-		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, resolvedFile, ctx);
+		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, resolvedFile.FullName, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
 	}
