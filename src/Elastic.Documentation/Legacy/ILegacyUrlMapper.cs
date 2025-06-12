@@ -11,7 +11,7 @@ public record LegacyPageMapping(string Url, string Version)
 
 public interface ILegacyUrlMapper
 {
-	List<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
+	IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
 }
 
 public record NoopLegacyUrlMapper : ILegacyUrlMapper

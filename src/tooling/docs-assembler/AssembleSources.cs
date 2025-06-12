@@ -40,7 +40,7 @@ public class AssembleSources
 
 	public FrozenDictionary<Uri, TocTopLevelMapping> TocTopLevelMappings { get; }
 
-	public FrozenDictionary<string, List<string>> HistoryMappings { get; }
+	public FrozenDictionary<string, IReadOnlyCollection<string>> HistoryMappings { get; }
 
 	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
 
