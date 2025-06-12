@@ -4,12 +4,13 @@
 
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using SoftCircuits.IniFileParser;
 
 namespace Elastic.Documentation;
 
-public record GitCheckoutInformation
+public partial record GitCheckoutInformation
 {
 	public static GitCheckoutInformation Unavailable { get; } = new()
 	{
@@ -99,7 +100,7 @@ public record GitCheckoutInformation
 			remote = "elastic/docs-builder-unknown";
 			logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
 		}
-		remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
+		remote = CutOffGitExtension().Replace(remote, string.Empty);
 
 		var info = new GitCheckoutInformation
 		{
@@ -139,4 +140,7 @@ public record GitCheckoutInformation
 			return remote ?? string.Empty;
 		}
 	}
+
+	[GeneratedRegex(@"\.git$", RegexOptions.IgnoreCase, "en-US")]
+	private static partial Regex CutOffGitExtension();
 }
