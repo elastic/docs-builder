@@ -69,6 +69,7 @@ public class VersionDrownDownItemViewModel
 		var groupedVersions = GroupByMajorVersion(legacyPageMappings);
 		return groupedVersions.Select(m =>
 		{
+			// If there is more than one version, we need to create a dropdown
 			if (m.Value.Count != 1)
 			{
 				return new VersionDrownDownItemViewModel
@@ -85,6 +86,8 @@ public class VersionDrownDownItemViewModel
 			}
 
 			var legacyPageMapping = legacyPageMappings.First(x => x.Version == m.Value.First());
+
+			// If there is only one version, we don't need to create a dropdown
 			return new VersionDrownDownItemViewModel
 			{
 				Name = legacyPageMapping.Version,
