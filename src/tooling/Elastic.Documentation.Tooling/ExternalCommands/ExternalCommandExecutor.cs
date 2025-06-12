@@ -64,7 +64,9 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 	}
 
 
-	protected string Capture(string binary, params string[] args)
+	protected string Capture(string binary, params string[] args) => Capture(false, binary, args);
+
+	protected string Capture(bool muteExceptions, string binary, params string[] args)
 	{
 		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
 		Exception? e = null;
@@ -81,7 +83,7 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 			}
 		}
 
-		if (e is not null)
+		if (e is not null && !muteExceptions)
 			collector.EmitError("", "failure capturing stdout", e);
 
 		return string.Empty;
@@ -96,9 +98,11 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 				ConsoleOutWriter = NoopConsoleWriter.Instance
 			};
 			var result = Proc.Start(arguments);
-			var line = result.ExitCode != 0
-				? throw new Exception($"Exit code is not 0. Received {result.ExitCode} from {binary}: {workingDirectory}")
-				: result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}");
+			var line = (result.ExitCode, muteExceptions) switch
+			{
+				(0, _) or (not 0, true) => result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}"),
+				(not 0, false) => throw new Exception($"Exit code is not 0. Received {result.ExitCode} from {binary}: {workingDirectory}")
+			};
 			return line;
 		}
 	}

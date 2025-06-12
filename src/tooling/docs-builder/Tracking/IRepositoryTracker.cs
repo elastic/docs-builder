@@ -6,5 +6,5 @@ namespace Documentation.Builder.Tracking;
 
 public interface IRepositoryTracker
 {
-	IEnumerable<string> GetChangedFiles();
+	IEnumerable<string> GetChangedFiles(string lookupPath);
 }

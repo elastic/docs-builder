@@ -15,21 +15,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class ValidationCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirects file against changes reported by git.
 	/// </summary>
+	/// <param name="path">The baseline path to perform the check</param>
 	/// <param name="ctx"></param>
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	[Command("validate")]
 	[ConsoleAppFilter<StopwatchFilter>]
 	[ConsoleAppFilter<CatchExceptionFilter>]
-	public async Task<int> ValidateRedirects(Cancel ctx = default)
+	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
 	{
 		var log = logger.CreateLogger<Program>();
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
+
+		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 
@@ -51,11 +54,11 @@ internal sealed class ValidationCommands(ILoggerFactory logger, ICoreService git
 			return collector.Errors;
 		}
 
-		var tracker = new GitRepositoryTracker(collector, root);
-		var changed = tracker.GetChangedFiles();
+		var tracker = new LocalGitRepositoryTracker(collector, root);
+		var changed = tracker.GetChangedFiles(path);
 
 		foreach (var notFound in changed.Where(c => !redirects.ContainsKey(c)))
-			collector.EmitError(notFound, $"{notFound} has been moved or deleted without a redirect rule being set for it. Please add a redirect rule in this project's {redirectFileInfo.Name}.");
+			collector.EmitError(notFound, $"{notFound} does not have a redirect rule set. Please add a redirect rule in this project's {redirectFileInfo.Name}.");
 
 		await collector.StopAsync(ctx);
 		return collector.Errors;
