@@ -7,12 +7,12 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavigationItem siteRoot)
+public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INodeNavigationItem<INavigationModel, INavigationItem> siteRoot)
 	: INavigationHtmlWriter
 {
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		var navigation = context.Configuration.Features.IsPrimaryNavEnabled
 			? currentRootNavigation
@@ -27,14 +27,14 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IGroupNavig
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(IGroupNavigationItem navigation) =>
+	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> navigation) =>
 		new()
 		{
-			Title = navigation.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = navigation.Index?.Url ?? context.UrlPathPrefix ?? "/",
+			Title = navigation.NavigationTitle,
+			TitleUrl = navigation.Url,
 			Tree = navigation,
 			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = siteRoot.NavigationItems.OfType<IGroupNavigationItem>().ToList()
+			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
 		};
 }

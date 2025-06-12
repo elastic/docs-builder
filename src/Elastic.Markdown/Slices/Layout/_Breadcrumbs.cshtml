@@ -1,4 +1,3 @@
-@using Elastic.Markdown.Helpers
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @{
 	var targets =
@@ -6,7 +5,8 @@
 			? Model.Parents.Reverse()
 			: Model.Parents.Reverse().Skip(1);
 
-	var parents = targets.DistinctBy(p => p.CrossLink).ToList();
+	//TODO should we even distinctby
+	var parents = targets.DistinctBy(p => p.Url).ToList();
 	var firstCrumb = parents.FirstOrDefault();
 	var crumbs = parents.Skip(1).TakeLast(2).ToList();
 }
@@ -30,7 +30,7 @@
 			<a
 				itemprop="item"
 				href="@firstCrumb.Url"
-				@Htmx.GetHxAttributes(firstCrumb.Url, Model.CurrentDocument.NavigationRoot.Id == firstCrumb.NavigationRoot.Id)
+				@Htmx.GetHxAttributes(firstCrumb.Url, Model.CurrentNavigationItem?.NavigationRoot.Id == firstCrumb.NavigationRoot.Id)
 			>
 				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
@@ -53,7 +53,7 @@
 			<a
 				itemprop="item" 
 				href="@item.Url"
-				@Htmx.GetHxAttributes(item.Url, Model.CurrentDocument.NavigationRoot.Id == item.NavigationRoot.Id)
+				@Htmx.GetHxAttributes(item.Url, Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)
 			>
 				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
 			</a>

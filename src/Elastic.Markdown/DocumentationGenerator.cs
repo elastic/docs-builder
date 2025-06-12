@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Reflection;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
-using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Elastic.Documentation.Links;

@@ -1,5 +1,3 @@
-@using Elastic.Documentation.Site
-@using Elastic.Documentation.Site.Navigation
 @using Elastic.Markdown.Slices.Components
 @using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
@@ -12,10 +10,10 @@
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
-		CurrentDocument = Model.CurrentDocument,
+		CurrentNavigationItem = Model.CurrentNavigationItem,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
-		Parents = Model.Parents.Cast<IPageInformation>().ToArray(),
+		Parents = Model.Parents,
 		NavigationHtml = Model.NavigationHtml,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
