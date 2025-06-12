@@ -29,7 +29,7 @@
 					</svg>
 				</div>
 			</button>
-			<div class="hidden group-focus-within:block left-0 right-0 absolute top-full w-max max-w-65">
+			<div class="hidden group-focus-within:block left-0 right-0 absolute top-full w-max min-w-30 max-w-60">
 				<ul class="mt-1 py-0 mb-4 bg-white border-1 border-grey-20 rounded-sm shadow-md">
 					<li class="block">
 						<a
@@ -52,8 +52,7 @@
 						<li class="block">
 							<a
 								class="block py-1 px-4 text-sm hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
-								href="@legacyPage"
-								@Htmx.GetNavHxAttributes(false, "mouseover")>
+								href="@legacyPage">
 								@legacyPage.Version
 							</a>
 						</li>
@@ -71,9 +70,9 @@
 					@* } *@
 					@if (Model.LegacyPages.Length == 0)
 					{
-						<li class="block">
+						<li class="block border-t-1 border-grey-20">
 							<div class="py-2 px-4 text-sm">
-								There are no previous versions of this page.
+								There is no previous version of this page.
 							</div>
 						</li>
 					}
