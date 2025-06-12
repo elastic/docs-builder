@@ -6,24 +6,13 @@ using System.Collections.Frozen;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
-public record Product(string Id, string DisplayName, HashSet<Product>? SubProduct = null);
+public record Product(string Id, string DisplayName);
 
 public static class Products
 {
 	public static FrozenSet<Product> All { get; } = [
 		new("apm", "APM"),
-		new("apm-agent", "APM Agent", [
-			new Product("apm-agent-android", "APM Android Agent"),
-			new Product("apm-agent-dotnet", "APM .NET Agent"),
-			new Product("apm-agent-go", "APM Go Agent"),
-			new Product("apm-agent-java", "APM Java Agent"),
-			new Product("apm-agent-nodejs", "APM Node.js Agent"),
-			new Product("apm-agent-php", "APM PHP Agent"),
-			new Product("apm-agent-python", "APM Python Agent"),
-			new Product("apm-agent-ruby", "APM Ruby Agent"),
-			new Product("apm-agent-rum-js", "APM RUM JS Agent"),
-			new Product("apm-agent-ios", "APM RUM React Agent"),
-		]),
+		new("apm-agent", "APM Agent"),
 		new("auditbeat", "Auditbeat"),
 		new("beats", "Beats"),
 		new("cloud-control-ecctl", "Elastic Cloud Control ECCTL"),
