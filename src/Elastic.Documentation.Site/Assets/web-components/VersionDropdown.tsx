@@ -1,7 +1,5 @@
 import {
     EuiButton,
-    EuiContextMenuItem,
-    EuiContextMenuPanel,
     EuiContextMenu,
     EuiFlexGroup,
     EuiFlexItem,
@@ -72,7 +70,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
     const convertItems = (
         items: VersionDropdownItem[]
     ): EuiContextMenuPanelItemDescriptor[] => {
-        return items.map((item, index) => {
+        return items.map((item) => {
             return {
                 name: item.name,
                 href: item.href,
