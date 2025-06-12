@@ -39,6 +39,11 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```
    
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
+   You can optionally specify a specific version to install:
+
+   ```sh
+   DOCS_BUILDER_VERSION=0.40.0 curl -sL https://ela.st/docs-builder-install | sh
+   ```
 
    To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
@@ -68,6 +73,11 @@ If you get a `Permission denied` error, make sure that you aren't trying to run 
    ```
 
    This downloads the latest binary, makes it executable, and installs it to your user PATH.
+   You can optionally specify a specific version to install:
+
+   ```powershell
+   $env:DOCS_BUILDER_VERSION = '0.40.0'; iwr -useb https://ela.st/docs-builder-install.ps1 | iex
+   ```
 
    To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
