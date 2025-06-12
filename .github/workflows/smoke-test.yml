@@ -42,5 +42,5 @@ jobs:
 
       - name: Verify link validation
         run: |
-          dotnet run --project src/tooling/docs-builder inbound-links validate-link-reference
+          dotnet run --project src/tooling/docs-builder inbound-links validate-link-reference -p test-repo
       
