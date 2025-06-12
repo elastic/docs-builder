@@ -32,7 +32,7 @@ internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubAct
 		ConsoleApp.Log = msg => log.LogInformation(msg);
 		ConsoleApp.LogError = msg => log.LogError(msg);
 
-		path ??= "docs";
+		path ??= "";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
 
@@ -57,8 +57,20 @@ internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubAct
 		var tracker = new LocalGitRepositoryTracker(collector, root);
 		var changed = tracker.GetChangedFiles(path);
 
-		foreach (var notFound in changed.Where(c => !redirects.ContainsKey(c)))
-			collector.EmitError(notFound, $"{notFound} does not have a redirect rule set. Please add a redirect rule in this project's {redirectFileInfo.Name}.");
+		foreach (var notFound in changed.Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
+																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
+		{
+			if (notFound is RenamedGitChange renamed)
+			{
+				collector.EmitError(redirectFileInfo.Name,
+					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
+			}
+			else if (notFound.ChangeType is GitChangeType.Deleted)
+			{
+				collector.EmitError(redirectFileInfo.Name,
+					$"File '{notFound.FilePath}' was deleted but it has no redirect targets. This will lead to broken links.");
+			}
+		}
 
 		await collector.StopAsync(ctx);
 		return collector.Errors;

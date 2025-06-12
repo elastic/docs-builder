@@ -4,7 +4,17 @@
 
 namespace Documentation.Builder.Tracking;
 
+public enum GitChangeType
+{
+	Added,
+	Modified,
+	Deleted,
+	Renamed,
+	Untracked,
+	Other
+}
+
 public interface IRepositoryTracker
 {
-	IEnumerable<string> GetChangedFiles(string lookupPath);
+	IEnumerable<GitChange> GetChangedFiles(string lookupPath);
 }
