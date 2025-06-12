@@ -74,30 +74,32 @@ public record GitCheckoutInformation
 		using var streamReader = new StreamReader(stream);
 		ini.Load(streamReader);
 
-		var remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var remote = BranchTrackingRemote(branch, ini);
+		logger?.LogInformation("Remote from branch: {GitRemote}", remote);
 		if (string.IsNullOrEmpty(remote))
 		{
-			remote = BranchTrackingRemote(branch, ini);
-			logger?.LogInformation("Remote from branch: {GitRemote}", remote);
-			if (string.IsNullOrEmpty(remote))
-			{
-				remote = BranchTrackingRemote("main", ini);
-				logger?.LogInformation("Remote from main branch: {GitRemote}", remote);
-			}
-
-			if (string.IsNullOrEmpty(remote))
-			{
-				remote = BranchTrackingRemote("master", ini);
-				logger?.LogInformation("Remote from master branch: {GitRemote}", remote);
-			}
-
-			if (string.IsNullOrEmpty(remote))
-			{
-				remote = "elastic/docs-builder-unknown";
-				logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
-			}
-			remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
+			remote = BranchTrackingRemote("main", ini);
+			logger?.LogInformation("Remote from main branch: {GitRemote}", remote);
 		}
+
+		if (string.IsNullOrEmpty(remote))
+		{
+			remote = BranchTrackingRemote("master", ini);
+			logger?.LogInformation("Remote from master branch: {GitRemote}", remote);
+		}
+
+		if (string.IsNullOrEmpty(remote))
+		{
+			remote = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+			logger?.LogInformation("Remote from GITHUB_REPOSITORY: {GitRemote}", remote);
+		}
+
+		if (string.IsNullOrEmpty(remote))
+		{
+			remote = "elastic/docs-builder-unknown";
+			logger?.LogInformation("Remote from fallback: {GitRemote}", remote);
+		}
+		remote = remote.AsSpan().TrimEnd("git").TrimEnd('.').ToString();
 
 		var info = new GitCheckoutInformation
 		{

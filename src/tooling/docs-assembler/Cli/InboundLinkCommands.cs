@@ -73,7 +73,7 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		file ??= ".artifacts/docs/html/links.json";
 		var fs = new FileSystem();
 		var root = !string.IsNullOrEmpty(path) ? fs.DirectoryInfo.New(path) : fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
+		var repository = GitCheckoutInformation.Create(root, fs, logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
 		var resolvedFile = fs.FileInfo.New(Path.Combine(root.FullName, file));
