@@ -61,6 +61,7 @@ The products frontmatter is a list of objects, each object has an `id` field.
 | `cloud-terraform`                           | Elastic Cloud Terraform                       |
 | `ecs`                                       | Elastic Common Schema (ECS)                   |
 | `ecs-logging`                               | ECS Logging                                   |
+| `edot-cf`                                   | EDOT Cloud Forwarder                          |
 | `edot-sdk`                                  | Elastic Distribution of OpenTelemetry SDK     |
 | `edot-collector`                            | Elastic Distribution of OpenTelemetry Collector |
 | `elastic-agent`                             | Elastic Agent                                 |
