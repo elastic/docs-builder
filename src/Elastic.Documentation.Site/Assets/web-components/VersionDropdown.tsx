@@ -1,5 +1,3 @@
-import * as React from 'react';
-import r2wc from "@r2wc/react-to-web-component"
 import {
     EuiButton,
     EuiContextMenuItem,
@@ -11,26 +9,26 @@ import {
     EuiPopover,
     EuiText,
     useGeneratedHtmlId,
-} from '@elastic/eui';
-import { useState } from 'react';
-
-import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon';
-
-import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down';
-import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left';
-import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document';
-import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search';
-import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash';
-import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user';
-import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench';
-import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize';
-import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right';
-import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check';
-import { css } from '@emotion/react';
+} from '@elastic/eui'
+import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
+import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
+import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
+import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
+import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
+import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
+import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search'
+import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
+import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user'
+import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
+import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 import {
     EuiContextMenuPanelDescriptor,
-    EuiContextMenuPanelItemDescriptor
-} from "@elastic/eui/src/components/context_menu/context_menu";
+    EuiContextMenuPanelItemDescriptor,
+} from '@elastic/eui/src/components/context_menu/context_menu'
+import { css } from '@emotion/react'
+import r2wc from '@r2wc/react-to-web-component'
+import * as React from 'react'
+import { useState } from 'react'
 
 // One or more icons are passed in as an object of iconKey (string): IconComponent
 appendIconComponentCache({
@@ -44,35 +42,36 @@ appendIconComponentCache({
     wrench: EuiIconWrench,
     visualizeApp: EuiIconVisualizeApp,
     check: EuiIconCheck,
-});
+})
 
 type VersionDropdownItem = {
-    name: string,
+    name: string
     href?: string
-    children?: VersionDropdownItem[];
+    children?: VersionDropdownItem[]
 }
 
 type VersionDropdownProps = {
     items: VersionDropdownItem[]
 }
 
-
 const VersionDropdown = ({ items }: VersionDropdownProps) => {
-    const [isPopoverOpen, setPopover] = useState(false);
-    
+    const [isPopoverOpen, setPopover] = useState(false)
+
     const contextMenuPopoverId = useGeneratedHtmlId({
         prefix: 'contextMenuPopover',
-    });
+    })
 
     const onButtonClick = () => {
-        setPopover(!isPopoverOpen);
-    };
+        setPopover(!isPopoverOpen)
+    }
 
     const closePopover = () => {
-        setPopover(false);
-    };
-    
-    const convertItems = (items: VersionDropdownItem[]): EuiContextMenuPanelItemDescriptor[] => {
+        setPopover(false)
+    }
+
+    const convertItems = (
+        items: VersionDropdownItem[]
+    ): EuiContextMenuPanelItemDescriptor[] => {
         return items.map((item, index) => {
             return {
                 name: item.name,
@@ -80,68 +79,67 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             }
         })
     }
-    
-    const convertToPanels = (items: VersionDropdownItem[]): EuiContextMenuPanelDescriptor[] => {
 
+    const convertToPanels = (
+        items: VersionDropdownItem[]
+    ): EuiContextMenuPanelDescriptor[] => {
         return items.flatMap((item, index) => {
-             if (item.children == null) {
-                 return [];
-             } else {
-                 return {
-                     id: index + 1,
-                     title: item.name,
-                     initialFocusedItemIndex: 0,
-                     width: WIDTH,
-                     size: 's',
-                     items: item.children ? convertItems(item.children) : []
-                 }
-             }
+            if (item.children == null) {
+                return []
+            } else {
+                return {
+                    id: index + 1,
+                    title: item.name,
+                    initialFocusedItemIndex: 0,
+                    width: WIDTH,
+                    size: 's',
+                    items: item.children ? convertItems(item.children) : [],
+                }
+            }
         })
     }
-    
-    const WIDTH = 175;
-    
-    console.log('items', items);
-    
+
+    const WIDTH = 175
+
+    console.log('items', items)
+
     const topLevelItems = items.map((item, index) => {
         return {
             name: item.name,
             panel: item.children?.length ? index + 1 : undefined,
-            href: item.href
+            href: item.href,
         }
     })
-    
-    console.log('toplevelitems', topLevelItems);
-    
-    const subpanels = convertToPanels(items);
-    
-    const panels: EuiContextMenuPanelDescriptor[] = [
-            {
-                id: 0,
-                title: <EuiFlexGroup gutterSize="s" alignItems="center">
-                            <EuiFlexItem grow={0}>
-                                <EuiIcon type="check" />
-                            </EuiFlexItem>
-                            <EuiFlexItem grow={1}>
-                                Current (9.0+)
-                            </EuiFlexItem>
-                </EuiFlexGroup>,
-                width: WIDTH,
-                size: 's',
-                items: [
-                    ...topLevelItems,
-                    {
-                        name: 'All versions',
-                        href: 'https://elastic.co'
-                    },
-                ],
-            },
-        ...subpanels
-    ]
-    
-    console.log(panels);
-    
 
+    console.log('toplevelitems', topLevelItems)
+
+    const subpanels = convertToPanels(items)
+
+    const panels: EuiContextMenuPanelDescriptor[] = [
+        {
+            id: 0,
+            title: (
+                <EuiFlexGroup gutterSize="s" alignItems="center">
+                    <EuiFlexItem grow={0}>
+                        <EuiIcon type="check" />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={1}>Current (9.0+)</EuiFlexItem>
+                </EuiFlexGroup>
+            ),
+            width: WIDTH,
+            size: 's',
+            items: [
+                ...topLevelItems,
+                {
+                    name: 'All versions',
+                    href: 'https://elastic.co',
+                },
+            ],
+        },
+        ...subpanels,
+    ]
+
+    console.log(panels)
 
     // const panels = [
     //     {
@@ -258,12 +256,25 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
     // ];
 
     const button = (
-        <EuiButton iconType="arrowDown" iconSide="right" onClick={onButtonClick} size="s" color="text" style={{ borderRadius: 9999 }}>
-            <EuiText size="xs" css={css`font-weight: 600; font-size: .875rem`}>
+        <EuiButton
+            iconType="arrowDown"
+            iconSide="right"
+            onClick={onButtonClick}
+            size="s"
+            color="text"
+            style={{ borderRadius: 9999 }}
+        >
+            <EuiText
+                size="xs"
+                css={css`
+                    font-weight: 600;
+                    font-size: 0.875rem;
+                `}
+            >
                 Current (9.0+)
             </EuiText>
         </EuiButton>
-    );
+    )
 
     return (
         <EuiPopover
@@ -274,14 +285,17 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             panelPaddingSize="none"
             anchorPosition="downLeft"
             repositionOnScroll={true}
-        >        
+        >
             <EuiContextMenu initialPanelId={0} size="s" panels={panels} />
         </EuiPopover>
-    );
-};
+    )
+}
 
-customElements.define('version-dropdown', r2wc(VersionDropdown, { 
-    props: {
-        items: "json"
-    }
-}));
+customElements.define(
+    'version-dropdown',
+    r2wc(VersionDropdown, {
+        props: {
+            items: 'json',
+        },
+    })
+)

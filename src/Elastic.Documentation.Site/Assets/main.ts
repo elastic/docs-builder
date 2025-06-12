@@ -6,12 +6,12 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
+import './web-components/VersionDropdown'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
-import './web-components/VersionDropdown'
 
 const { getOS } = new UAParser()
 
