@@ -83,7 +83,7 @@ public record BuildContext : IDocumentationContext
 
 		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, Path.Combine(".artifacts", "docs", "html")));
+			: WriteFileSystem.DirectoryInfo.New(Path.Combine(rootFolder.FullName, Path.Combine(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
