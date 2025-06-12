@@ -210,7 +210,6 @@ toc:
       # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
       - toc: elasticsearch://reference/elasticsearch
         path_prefix: reference/elasticsearch
-        
         # Children include: Configuration, JVM settings, Roles,
         # Elasticsearch privileges, Index settings, Index lifecycle actions,
         # REST APIs, Mapping, Elasticsearch audit events, Command line tools
@@ -337,7 +336,6 @@ toc:
                   # APM .NET agent
                   # ✅ https://github.com/elastic/apm-agent-dotnet/blob/main/docs/reference/toc.yml
                   - toc: apm-agent-dotnet://reference
-                    versions: apm_agent_dotnet
                     path_prefix: reference/apm/agents/dotnet
                     # Children include the entire AsciiDoc book
 
