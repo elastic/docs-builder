@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Legacy;
+using Elastic.Documentation.LegacyPageLookup;
 
 namespace Documentation.Assembler.Legacy;
 
@@ -30,10 +32,9 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 
 		if (versions.Value is null)
 			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty)];
-
 		return versions.Value
 			.Select(
 				v => new LegacyPageMapping(mappedPage, v)
-			).ToList();
+			).ToArray();
 	}
 }

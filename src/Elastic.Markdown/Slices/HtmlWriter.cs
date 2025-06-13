@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
+using Elastic.Documentation.LegacyPageLookup;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -85,6 +86,8 @@ public class HtmlWriter(
 			.Distinct()
 			.ToHashSet();
 
+		var legacyPageLookup = new LegacyPageLookup(new FileSystem());
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,
@@ -111,7 +114,8 @@ public class HtmlWriter(
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = legacyPages.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
-			LegacyPages = legacyPages.Count > 1 ? [legacyPages.ElementAt(1)] : [],
+			LegacyPages = legacyPages.Skip(1).Where(
+				l => Uri.TryCreate(l.ToString(), UriKind.Absolute, out var uri) && legacyPageLookup.PathExists(uri.AbsolutePath)).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages.Skip(1).ToArray()),
 			Products = allProducts
 		});
