@@ -8,7 +8,7 @@ The `applies_to` metadata allows you to specify which product versions, deployme
 <life-cycle> [version], <life-cycle> [version]
 ```
 
-Taking a mandatory [life-cycle](#life-cycle) with an optional version.
+Taking a mandatory [life-cycle](#life-cycle) with an optional [version](#version).
 
 ### Life cycle
 
