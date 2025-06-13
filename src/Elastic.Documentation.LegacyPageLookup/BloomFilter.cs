@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Elastic.Documentation.LegacyPageLookup;
@@ -89,39 +90,17 @@ public class BloomFilter
 	}
 
 	/// <summary>
-	/// Hashes the input data using Murmur3 with a given seed.
+	/// Hashes the input data using SHA256 with a given seed.
 	/// </summary>
 	private int GetHash(byte[] data, int seed)
 	{
-		// Using a seeded MurmurHash3 implementation for good distribution.
-		// A simple GetHashCode() is not sufficient as it can change between versions/processes.
-		// Here we use a custom implementation detail for demonstration.
-		// In a real-world scenario, you might use a library like System.IO.Hashing.MurmurHash3.
-		const uint c1 = 0xcc9e2d51;
-		const uint c2 = 0x1b873593;
-		const int r1 = 15;
-		const int m = 5;
-		const uint n = 0xe6546b64;
-
-		var hash = (uint)seed;
-		var length = data.Length;
-		var nblocks = length / 4;
-
-		for (var i = 0; i < nblocks; i++)
-		{
-			var k = BitConverter.ToUInt32(data, i * 4);
-			k *= c1;
-			k = (k << r1) | (k >> (32 - r1));
-			k *= c2;
-
-			hash ^= k;
-			hash = (hash << 13) | (hash >> 19);
-			hash = (hash * m) + n;
-		}
-
-		// This is a simplified hash generation. A full implementation would handle the tail.
-		// For our purpose, this is sufficient to generate distinct hashes per seed.
-		return (int)(Math.Abs(hash) % _bitArray.Length);
+		var seedBytes = BitConverter.GetBytes(seed);
+		var combinedBytes = new byte[data.Length + seedBytes.Length];
+		Buffer.BlockCopy(data, 0, combinedBytes, 0, data.Length);
+		Buffer.BlockCopy(seedBytes, 0, combinedBytes, data.Length, seedBytes.Length);
+		var hashBytes = SHA256.HashData(combinedBytes);
+		var hashInt = BitConverter.ToInt32(hashBytes, 0);
+		return Math.Abs(hashInt % _bitArray.Length);
 	}
 
 	/// <summary>
