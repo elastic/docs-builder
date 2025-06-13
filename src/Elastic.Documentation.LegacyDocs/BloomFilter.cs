@@ -6,9 +6,9 @@ using System.Collections;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Elastic.Documentation.LegacyPageLookup;
+namespace Elastic.Documentation.LegacyDocs;
 
-public class BloomFilter
+internal sealed class BloomFilter
 {
 	/// <summary>
 	/// The bit array for the filter.

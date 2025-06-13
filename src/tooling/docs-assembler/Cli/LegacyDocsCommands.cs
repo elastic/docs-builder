@@ -6,8 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Elastic.Documentation.Configuration;
-using Elastic.Documentation.LegacyPageLookup;
+using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 
@@ -34,7 +33,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService git
 			NoHints = true
 		}.StartAsync(ctx);
 		var pagesProvider = new LocalPagesProvider(builtDocsDir);
-		var legacyPageLookup = new LegacyPageLookup(new FileSystem());
+		var legacyPageLookup = new LegacyPageChecker(new FileSystem());
 		legacyPageLookup.GenerateBloomFilterBinary(pagesProvider);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
@@ -49,7 +48,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService git
 		{
 			NoHints = true
 		}.StartAsync(ctx);
-		var legacyPageLookup = new LegacyPageLookup(new FileSystem());
+		var legacyPageLookup = new LegacyPageChecker(new FileSystem());
 		var result = legacyPageLookup.PathExists(path);
 		Console.WriteLine(result ? "exists" : "does not exist");
 		await collector.StopAsync(ctx);

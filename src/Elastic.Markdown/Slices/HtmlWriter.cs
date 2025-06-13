@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
-using Elastic.Documentation.LegacyPageLookup;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;

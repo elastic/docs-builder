@@ -4,18 +4,18 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Legacy;
-using Elastic.Documentation.LegacyPageLookup;
+using Elastic.Documentation.LegacyDocs;
 
 namespace Documentation.Assembler.Legacy;
 
 public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
 	private IReadOnlyDictionary<string, IReadOnlyCollection<string>> PreviousUrls { get; }
-	private LegacyPageLookup LegacyPageLookup { get; }
-	public PageLegacyUrlMapper(LegacyPageLookup legacyPageLookup, IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls)
+	private LegacyPageChecker LegacyPageChecker { get; }
+	public PageLegacyUrlMapper(LegacyPageChecker legacyPageChecker, IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls)
 	{
 		PreviousUrls = previousUrls;
-		LegacyPageLookup = legacyPageLookup;
+		LegacyPageChecker = legacyPageChecker;
 	}
 
 	public IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
@@ -41,7 +41,7 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 				{
 					var legacyPageMapping = new LegacyPageMapping(mappedPage, v, true);
 					var path = Uri.TryCreate(legacyPageMapping.ToString(), UriKind.Absolute, out var uri) ? uri : null;
-					var exists = LegacyPageLookup.PathExists(path?.AbsolutePath!);
+					var exists = LegacyPageChecker.PathExists(path?.AbsolutePath!);
 					return legacyPageMapping with { Exists = exists };
 				}
 			).ToArray();

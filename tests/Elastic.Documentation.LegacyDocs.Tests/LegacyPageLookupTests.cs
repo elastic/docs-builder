@@ -7,12 +7,12 @@ using FluentAssertions;
 
 namespace Elastic.Documentation.LegacyDocs.Tests;
 
-public class LegacyPageLookupTests
+public class LegacyPageCheckerTests
 {
 	[Fact]
 	public void TestVersions()
 	{
-		var legacyPageLookup = new LegacyPageLookup.LegacyPageLookup(new FileSystem());
+		var legacyPageChecker = new LegacyPageChecker(new FileSystem());
 		var expected = new Dictionary<string, bool>
 		{
 			["8.0"] = false,
@@ -37,7 +37,7 @@ public class LegacyPageLookupTests
 		};
 		foreach (var (version, value) in expected)
 		{
-			var result = legacyPageLookup.PathExists(
+			var result = legacyPageChecker.PathExists(
 				$"/guide/en/elasticsearch/reference/{version}/elasticsearch-intro-what-is-es.html"
 			);
 			_ = result.Should().Be(value, $"Expected {version} to be {value}");

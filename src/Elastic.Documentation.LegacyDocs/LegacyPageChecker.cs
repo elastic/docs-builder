@@ -5,9 +5,9 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 
-namespace Elastic.Documentation.LegacyPageLookup;
+namespace Elastic.Documentation.LegacyDocs;
 
-public class LegacyPageLookup(IFileSystem fs)
+public class LegacyPageChecker(IFileSystem fs)
 {
 	private BloomFilter? _bloomFilter;
 	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.LegacyDocs", "legacy-pages.bloom.bin");
