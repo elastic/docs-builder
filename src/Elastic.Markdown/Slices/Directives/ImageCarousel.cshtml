@@ -36,38 +36,3 @@
         </div>
     }
 </div>
-
-<style>
-    /* Add CSS to hide any duplicate image containers that appear after the carousel */
-    #@(Model.Id) ~ p:has(a[href*="epr.elastic.co"]),
-    #@(Model.Id) ~ div:has(a[href*="epr.elastic.co"]) {
-        display: none !important;
-    }
-</style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        initImageCarousel();
-        
-        // Additional script to hide any duplicates
-        const carousel = document.getElementById("@Model.Id");
-        if (carousel) {
-            const carouselLinks = Array.from(carousel.querySelectorAll('a.carousel-image-reference')).map(a => a.href);
-            const allLinks = document.querySelectorAll('a[href*="epr.elastic.co"]');
-            
-            // Go through all links and hide their containers if they're duplicates of carousel images
-            allLinks.forEach(link => {
-                // Skip links inside carousel
-                if (link.closest('.carousel-container') === carousel) return;
-                
-                if (carouselLinks.includes(link.href)) {
-                    // Find container to hide
-                    const container = link.closest('p') || link.closest('div:not(.carousel-container)');
-                    if (container) {
-                        container.style.display = 'none';
-                    }
-                }
-            });
-        }
-    });
-</script>

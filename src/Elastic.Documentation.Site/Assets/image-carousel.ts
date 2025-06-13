@@ -20,62 +20,55 @@ class ImageCarousel {
     this.prevButton = this.container.querySelector('.carousel-prev');
     this.nextButton = this.container.querySelector('.carousel-next');
     
-    // Force initialization - make all slides inactive first
-    this.slides.forEach(slide => {
-      slide.setAttribute('data-active', 'false');
-      slide.style.display = 'none';
-      slide.style.opacity = '0';
-    });
-    
-    // Then make the first slide active
-    if (this.slides.length > 0) {
-      this.slides[0].setAttribute('data-active', 'true');
-      this.slides[0].style.display = 'block';
-      this.slides[0].style.opacity = '1';
-      
-      // Also initialize indicators
-      if (this.indicators.length > 0) {
-        this.indicators.forEach(indicator => {
-          indicator.setAttribute('data-active', 'false');
-        });
-        this.indicators[0].setAttribute('data-active', 'true');
-      }
-    }
-    
-    this.init();
+    this.initializeSlides();
+    this.setupEventListeners();
   }
-  
-  private init(): void {
-    // Set up event listeners for controls
-    if (this.prevButton) {
-      this.prevButton.addEventListener('click', () => this.prevSlide());
-    }
-    
-    if (this.nextButton) {
-      this.nextButton.addEventListener('click', () => this.nextSlide());
-    }
-    
-    // Set up indicators
+
+  private initializeSlides(): void {
+    // Initialize all slides as inactive
+    this.slides.forEach((slide, index) => {
+      this.setSlideState(slide, index === 0);
+    });
+
+    // Initialize indicators
+    this.indicators.forEach((indicator, index) => {
+      this.setIndicatorState(indicator, index === 0);
+    });
+  }
+
+  private setSlideState(slide: HTMLElement, isActive: boolean): void {
+    slide.setAttribute('data-active', isActive.toString());
+    slide.style.display = isActive ? 'block' : 'none';
+    slide.style.opacity = isActive ? '1' : '0';
+  }
+
+  private setIndicatorState(indicator: HTMLElement, isActive: boolean): void {
+    indicator.setAttribute('data-active', isActive.toString());
+  }
+
+  private setupEventListeners(): void {
+    // Navigation controls
+    this.prevButton?.addEventListener('click', () => this.prevSlide());
+    this.nextButton?.addEventListener('click', () => this.nextSlide());
+
+    // Indicators
     this.indicators.forEach((indicator, index) => {
       indicator.addEventListener('click', () => this.goToSlide(index));
     });
-    
-    // Set up keyboard navigation
+
+    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (!this.isInViewport()) return;
       
-      if (e.key === 'ArrowLeft') {
-        this.prevSlide();
-      } else if (e.key === 'ArrowRight') {
-        this.nextSlide();
-      }
+      if (e.key === 'ArrowLeft') this.prevSlide();
+      else if (e.key === 'ArrowRight') this.nextSlide();
     });
-    
-    // Set up touch events for mobile
+
+    // Touch events
     this.container.addEventListener('touchstart', (e) => {
       this.touchStartX = e.changedTouches[0].screenX;
     });
-    
+
     this.container.addEventListener('touchend', (e) => {
       this.touchEndX = e.changedTouches[0].screenX;
       this.handleSwipe();
@@ -93,20 +86,14 @@ class ImageCarousel {
   }
   
   private goToSlide(index: number): void {
-    // Hide current slide
-    this.slides[this.currentIndex].setAttribute('data-active', 'false');
-    this.slides[this.currentIndex].style.display = 'none';
-    this.slides[this.currentIndex].style.opacity = '0';
-    
-    // Show new slide
-    this.slides[index].setAttribute('data-active', 'true');
-    this.slides[index].style.display = 'block';
-    this.slides[index].style.opacity = '1';
+    // Update slides
+    this.setSlideState(this.slides[this.currentIndex], false);
+    this.setSlideState(this.slides[index], true);
     
     // Update indicators
     if (this.indicators.length > 0) {
-      this.indicators[this.currentIndex].setAttribute('data-active', 'false');
-      this.indicators[index].setAttribute('data-active', 'true');
+      this.setIndicatorState(this.indicators[this.currentIndex], false);
+      this.setIndicatorState(this.indicators[index], true);
     }
     
     this.currentIndex = index;
@@ -118,13 +105,8 @@ class ImageCarousel {
     
     if (Math.abs(diff) < threshold) return;
     
-    if (diff > 0) {
-      // Swipe left - next slide
-      this.nextSlide();
-    } else {
-      // Swipe right - previous slide
-      this.prevSlide();
-    }
+    if (diff > 0) this.nextSlide();
+    else this.prevSlide();
   }
   
   private isInViewport(): boolean {
@@ -329,16 +311,6 @@ function findSectionForCarousel(carousel: Element): Element | null {
   }
   return section;
 }
-
-// Make function available globally
-declare global {
-  interface Window {
-    initImageCarousel: typeof initImageCarousel;
-  }
-}
-
-// Assign the function to the global window object
-window.initImageCarousel = initImageCarousel;
 
 // Initialize all carousels when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
