@@ -107,9 +107,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.ApiExplorer.Tests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Site", "src\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj", "{89B83007-71E6-4B57-BA78-2544BFA476DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.LegacyPageLookup", "src\Elastic.Documentation.LegacyPageLookup\Elastic.Documentation.LegacyPageLookup.csproj", "{111E7029-BB29-4039-9B45-04776798A8DD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.LegacyDocs", "src\Elastic.Documentation.LegacyDocs\Elastic.Documentation.LegacyDocs.csproj", "{111E7029-BB29-4039-9B45-04776798A8DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.LegacyPageLookup.Tests", "tests\Elastic.Documentation.LegacyPageLookup.Tests\Elastic.Documentation.LegacyPageLookup.Tests.csproj", "{164F55EC-9412-4CD4-81AD-3598B57632A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.LegacyDocs.Tests", "tests\Elastic.Documentation.LegacyDocs.Tests\Elastic.Documentation.LegacyDocs.Tests.csproj", "{164F55EC-9412-4CD4-81AD-3598B57632A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -12,7 +12,6 @@
 
         <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
         <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
-        <RootNamespace>Elastic.Documentation.LegacyPageLookup.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -30,6 +29,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Elastic.Documentation.LegacyPageLookup\Elastic.Documentation.LegacyPageLookup.csproj" />
+        <ProjectReference Include="..\..\src\Elastic.Documentation.LegacyDocs\Elastic.Documentation.LegacyDocs.csproj" />
     </ItemGroup>
 </Project>

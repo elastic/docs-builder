@@ -11,8 +11,12 @@ namespace Documentation.Assembler.Legacy;
 public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
 	private IReadOnlyDictionary<string, IReadOnlyCollection<string>> PreviousUrls { get; }
-
-	public PageLegacyUrlMapper(IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls) => PreviousUrls = previousUrls;
+	private LegacyPageLookup LegacyPageLookup { get; }
+	public PageLegacyUrlMapper(LegacyPageLookup legacyPageLookup, IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls)
+	{
+		PreviousUrls = previousUrls;
+		LegacyPageLookup = legacyPageLookup;
+	}
 
 	public IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
@@ -20,7 +24,7 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 			return [];
 
 		if (mappedPages.Count == 0)
-			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty)];
+			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty, false)];
 
 		var mappedPage = mappedPages.First();
 
@@ -31,10 +35,15 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 		});
 
 		if (versions.Value is null)
-			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty)];
+			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty, false)];
 		return versions.Value
-			.Select(
-				v => new LegacyPageMapping(mappedPage, v)
+			.Select(v =>
+				{
+					var legacyPageMapping = new LegacyPageMapping(mappedPage, v, true);
+					var path = Uri.TryCreate(legacyPageMapping.ToString(), UriKind.Absolute, out var uri) ? uri : null;
+					var exists = LegacyPageLookup.PathExists(path?.AbsolutePath!);
+					return legacyPageMapping with { Exists = exists };
+				}
 			).ToArray();
 	}
 }

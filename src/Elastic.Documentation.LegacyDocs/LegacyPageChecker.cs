@@ -10,7 +10,7 @@ namespace Elastic.Documentation.LegacyPageLookup;
 public class LegacyPageLookup(IFileSystem fs)
 {
 	private BloomFilter? _bloomFilter;
-	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.LegacyPageLookup", "legacy-pages.bloom.bin");
+	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.LegacyDocs", "legacy-pages.bloom.bin");
 
 
 	public bool PathExists(string path)

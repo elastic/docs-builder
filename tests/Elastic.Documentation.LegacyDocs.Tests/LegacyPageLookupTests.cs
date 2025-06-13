@@ -5,14 +5,14 @@
 using System.IO.Abstractions;
 using FluentAssertions;
 
-namespace Elastic.Documentation.LegacyPageLookup.Tests;
+namespace Elastic.Documentation.LegacyDocs.Tests;
 
 public class LegacyPageLookupTests
 {
 	[Fact]
 	public void TestVersions()
 	{
-		var legacyPageLookup = new LegacyPageLookup(new FileSystem());
+		var legacyPageLookup = new LegacyPageLookup.LegacyPageLookup(new FileSystem());
 		var expected = new Dictionary<string, bool>
 		{
 			["8.0"] = false,

@@ -15,6 +15,7 @@ using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.LegacyPageLookup;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -128,7 +129,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
 
-		var historyMapper = new PageLegacyUrlMapper(assembleSources.HistoryMappings);
+		var historyMapper = new PageLegacyUrlMapper(new LegacyPageLookup(new FileSystem()), assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);

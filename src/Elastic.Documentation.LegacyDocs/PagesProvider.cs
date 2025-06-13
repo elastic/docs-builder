@@ -12,6 +12,10 @@ public interface IPagesProvider
 	IEnumerable<string> GetPages();
 }
 
+/// <summary>
+/// Gets pages from a local checked-out elastic/built-docs repository
+/// </summary>
+/// <param name="gitRepositoryPath"></param>
 public class LocalPagesProvider(string gitRepositoryPath) : IPagesProvider
 {
 	public IEnumerable<string> GetPages() =>

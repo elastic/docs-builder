@@ -86,8 +86,6 @@ public class HtmlWriter(
 			.Distinct()
 			.ToHashSet();
 
-		var legacyPageLookup = new LegacyPageLookup(new FileSystem());
-
 		var slice = Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,
@@ -114,8 +112,7 @@ public class HtmlWriter(
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = legacyPages.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
-			LegacyPages = legacyPages.Skip(1).Where(
-				l => Uri.TryCreate(l.ToString(), UriKind.Absolute, out var uri) && legacyPageLookup.PathExists(uri.AbsolutePath)).ToArray(),
+			LegacyPages = legacyPages.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages.Skip(1).ToArray()),
 			Products = allProducts
 		});
