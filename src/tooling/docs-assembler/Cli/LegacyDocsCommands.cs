@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LegacyPageLookup;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class LegacyDocsCommands(ILoggerFactory logger)
+internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
 	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
 
@@ -28,7 +29,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger)
 	public async Task<int> CreateBloomBin(string builtDocsDir, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger)
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);
@@ -44,7 +45,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger)
 	public async Task<int> PageExists(string path, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger)
+		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);

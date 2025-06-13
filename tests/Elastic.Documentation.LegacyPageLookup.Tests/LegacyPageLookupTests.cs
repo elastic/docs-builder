@@ -10,7 +10,7 @@ namespace Elastic.Documentation.LegacyPageLookup.Tests;
 public class LegacyPageLookupTests
 {
 	[Fact]
-	public void Test1()
+	public void TestVersions()
 	{
 		var legacyPageLookup = new LegacyPageLookup(new FileSystem());
 		var expected = new Dictionary<string, bool>
