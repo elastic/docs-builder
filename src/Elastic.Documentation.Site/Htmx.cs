@@ -8,8 +8,7 @@ namespace Elastic.Documentation.Site;
 
 public static class Htmx
 {
-	public static string GetHxSelectOob(bool hasSameTopLevelGroup) => hasSameTopLevelGroup ? "#content-container,#toc-nav" : "#main-container";
-
+	public static string GetHxSelectOob(bool hasSameTopLevelGroup) => "#version-dropdown," + (hasSameTopLevelGroup ? "#content-container,#toc-nav" : "#main-container");
 	public const string Preload = "mousedown";
 	public const string HxSwap = "none";
 	public const string HxPushUrl = "true";

@@ -1,3 +1,4 @@
+@using System.Text.Json
 @using Elastic.Markdown.Slices.Components
 @using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
@@ -10,7 +11,11 @@
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
-		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
+		PageTocItems = Model.PageTocItems.Where(i => i is
+			{
+				Level: 2 or 3
+			})
+			.ToList(),
 		CurrentNavigationItem = Model.CurrentNavigationItem,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
@@ -24,7 +29,10 @@
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
-		LegacyPage = Model.LegacyPage
+		LegacyPages = Model.LegacyPages,
+		CurrentVersion = Model.CurrentVersion,
+		VersionDropdown = JsonSerializer.Serialize(Model.VersionDropdownItems,
+			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

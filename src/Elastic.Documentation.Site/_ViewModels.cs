@@ -25,6 +25,8 @@ public class GlobalLayoutViewModel
 	public required INavigationItem? Previous { get; init; }
 	public required INavigationItem? Next { get; init; }
 
+	public required string? VersionDropdown { get; init; }
+
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
@@ -32,7 +34,6 @@ public class GlobalLayoutViewModel
 		new Uri(CanonicalBaseUrl, CurrentNavigationItem?.Url).ToString().TrimEnd('/') : null;
 
 	public required FeatureFlags Features { get; init; }
-
 	// TODO move to @inject
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
 	public required bool AllowIndexing { get; init; }
@@ -55,4 +56,3 @@ public class GlobalLayoutViewModel
 		return $"{UrlPathPrefix}/{path}";
 	}
 }
-
