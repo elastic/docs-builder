@@ -8,7 +8,7 @@ Welcome, **contributor**!
 
 Whether you're a technical writer or you've only edited Elastic docs once or twice, you're a valued contributor. Every word matters!
 
-:::{carousel}
+::::{carousel}
 :id: nested-carousel-example
 :controls: true
 :indicators: true
@@ -24,7 +24,7 @@ Whether you're a technical writer or you've only edited Elastic docs once or twi
 :alt: Third image description
 :title: Third image title
 :::
-:::
+::::
 
 ## Contribute to the docs [#contribute]
 
