@@ -25,8 +25,9 @@ Options:
   --force <bool?>            Force a full rebuild of the destination folder (Default: null)
 
 Commands:
-  generate    Converts a source markdown folder or file to an output folder
-  serve       Continuously serve a documentation folder at http://localhost:3000.
+  generate        Converts a source markdown folder or file to an output folder
+  serve           Continuously serve a documentation folder at http://localhost:3000.
+  diff validate   Validates redirect rules have been applied to the current branch.
     File systems changes will be reflected without having to restart the server.
 ```
 
@@ -118,6 +119,16 @@ https://github.com/elastic/{your-repository}/settings/pages
 
 ---
 
+## Validating redirection rules
+
+If documentation is moved, renamed or deleted, `docs-builder` can verify if changes in the working branch in relation to the default branch are reflected in the repository's `redirects.yml`. Verification in the local machine is currently supported.
+
+`docs-builder diff validate <path>`
+
+`<path>` is an optional parameter to customize the documentation folder path. It defaults to `docs`.
+
+---
+
 ## Run without docker
 
 You can use the .NET CLI to publish a self-contained `docs-builder` native code
@@ -140,7 +151,7 @@ existing surveyed tools
 
 # Local Development
 
-## Preqrequisites
+## Prerequisites
 
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 - [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)

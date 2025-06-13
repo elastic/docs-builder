@@ -17,5 +17,6 @@ ConsoleApp.ServiceProvider = serviceProvider;
 var app = ConsoleApp.Create();
 app.Add<Commands>();
 app.Add<InboundLinkCommands>("inbound-links");
+app.Add<DiffCommands>("diff");
 
 await app.RunAsync(args).ConfigureAwait(false);
