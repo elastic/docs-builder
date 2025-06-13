@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Elastic.Documentation.LegacyDocs\Elastic.Documentation.LegacyDocs.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
@@ -37,9 +38,5 @@
     <EmbeddedResource Include="assembler.yml" />
     <EmbeddedResource Include="navigation.yml" />
     <EmbeddedResource Include="legacy-url-mappings.yml" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="Configuration\" />
   </ItemGroup>
 </Project>

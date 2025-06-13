@@ -4,9 +4,9 @@
 
 namespace Elastic.Documentation.Legacy;
 
-public record LegacyPageMapping(string Url, string Version)
+public record LegacyPageMapping(string RawUrl, string Version, bool Exists)
 {
-	public override string ToString() => Url.Replace("/current/", $"/{Version}/");
+	public override string ToString() => RawUrl.Replace("/current/", $"/{Version}/");
 };
 
 public interface ILegacyUrlMapper

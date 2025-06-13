@@ -111,7 +111,7 @@ public class HtmlWriter(
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = legacyPages.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
-			LegacyPages = legacyPages.Count > 1 ? [legacyPages.ElementAt(1)] : [],
+			LegacyPages = legacyPages.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages.Skip(1).ToArray()),
 			Products = allProducts
 		});
