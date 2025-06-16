@@ -97,7 +97,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 			title = title[..matches.Index];
 		}
-		link.Title = title?.ReplaceSubstitutions(context);
+		link.Title = title.ReplaceSubstitutions(context);
 	}
 
 	private static bool IsInCommentBlock(LinkInline link) =>

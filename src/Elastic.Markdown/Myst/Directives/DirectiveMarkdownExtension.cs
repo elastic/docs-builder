@@ -24,7 +24,7 @@ public static class DirectiveMarkdownBuilderExtensions
 /// Extension to allow custom containers.
 /// </summary>
 /// <seealso cref="IMarkdownExtension" />
-public class DirectiveMarkdownExtension() : IMarkdownExtension
+public class DirectiveMarkdownExtension : IMarkdownExtension
 {
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{

@@ -4,33 +4,66 @@
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public interface INavigationScope
+/// Represents navigation model data for documentation elements.
+public interface INavigationModel
 {
-	IGroupNavigationItem NavigationRoot { get; }
+	// This interface serves as a marker interface for navigation models
+	// It's used as a constraint in other navigation-related interfaces
 }
 
-public interface INavigationItem : INavigationScope
+/// Represents an item in the navigation hierarchy.
+public interface INavigationItem
 {
-	string Id { get; }
-	IGroupNavigationItem? Parent { get; set; }
-	int Depth { get; }
-	//TODO not nullable
-	IPageInformation? Current { get; }
-}
-
-// TODO make generic TINdex and TNavigationItem
-public interface IGroupNavigationItem : INavigationItem
-{
-	IPageInformation? Index { get; }
-	IReadOnlyCollection<INavigationItem> NavigationItems { get; }
-}
-
-public interface IPageInformation : INavigationScope
-{
+	/// Gets the URL for this navigation item.
 	string Url { get; }
+
+	/// Gets the title displayed in navigation.
 	string NavigationTitle { get; }
 
-	//TODO investigate if this is needed, only used by breadcrumbs to deduplicate
-	string CrossLink { get; }
+	/// Gets the root navigation item.
+	INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+
+	/// <summary>
+	/// Gets or sets the parent navigation item.
+	/// </summary>
+	/// <remarks>
+	/// TODO: This should be read-only however currently needs the setter in assembler.
+	/// </remarks>
+	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+
+	bool Hidden { get; }
+
+	int NavigationIndex { get; set; }
 }
 
+/// Represents a leaf node in the navigation tree with associated model data.
+/// <typeparam name="TModel">The type attached to the navigation model.</typeparam>
+public interface ILeafNavigationItem<out TModel> : INavigationItem
+	where TModel : INavigationModel
+{
+	/// Gets the navigation model associated with this navigation item.
+	TModel Model { get; }
+}
+
+
+/// Represents a node in the navigation tree that can contain child items.
+/// <typeparam name="TIndex">The type of the index model.</typeparam>
+/// <typeparam name="TChildNavigation">The type of child navigation items.</typeparam>
+public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INavigationItem
+	where TIndex : INavigationModel
+	where TChildNavigation : INavigationItem
+{
+	/// Gets the depth level in the navigation hierarchy.
+	int Depth { get; }
+
+	/// Gets the unique identifier for this node.
+	string Id { get; }
+
+	/// Gets the index model associated with this node.
+	TIndex Index { get; }
+
+	/// <summary>
+	/// Gets the collection of child navigation items.
+	/// </summary>
+	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
+}

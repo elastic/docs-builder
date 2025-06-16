@@ -1,21 +1,25 @@
-@using Elastic.Documentation.Site
-@using Elastic.Documentation.Site.Navigation
+@using System.Text.Json
 @using Elastic.Markdown.Slices.Components
 @using Markdig
 @inherits RazorSliceHttpResult<IndexViewModel>
-@implements IUsesLayout<Elastic.Markdown.Slices._Layout, GlobalLayoutViewModel>
+@implements IUsesLayout<Elastic.Markdown.Slices._Layout, MarkdownLayoutViewModel>
 @functions {
-	public GlobalLayoutViewModel LayoutModel => new()
+	public MarkdownLayoutViewModel LayoutModel => new()
 	{
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
+		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != LayoutName.LandingPage,
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
-		PageTocItems = Model.PageTocItems.Where(i => i is { Level: 2 or 3 }).ToList(),
-		CurrentDocument = Model.CurrentDocument,
+		PageTocItems = Model.PageTocItems.Where(i => i is
+			{
+				Level: 2 or 3
+			})
+			.ToList(),
+		CurrentNavigationItem = Model.CurrentNavigationItem,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
-		Parents = Model.Parents.Cast<IPageInformation>().ToArray(),
+		Parents = Model.Parents,
 		NavigationHtml = Model.NavigationHtml,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
@@ -25,9 +29,22 @@
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
-		LegacyPage = Model.LegacyPage,
-		Products = Model.Products is { Count: > 0} products ? string.Join(",", products.Select(p => p.DisplayName)) : null,
+		LegacyPages = Model.LegacyPages,
+		CurrentVersion = Model.CurrentVersion,
+		VersionDropdown = JsonSerializer.Serialize(Model.VersionDropdownItems,
+			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
 	};
+	protected override Task ExecuteSectionAsync(string name)
+	{
+		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
+		{
+			var products = string.Join(",", Model.Products.Select(p => p.DisplayName));
+			<meta class="elastic" name="product_name" content="@(products)"/>
+			<meta name="DC.subject" content="@(products)"/>
+		}
+
+		return Task.CompletedTask;
+	}
 }
 <section id="elastic-docs-v3">
 	@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@

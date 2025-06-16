@@ -5,13 +5,11 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using Amazon.S3;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;

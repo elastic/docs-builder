@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Site.FileProviders;
 
 public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 {
-	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(IDocumentationContext).Assembly, "Elastic.Documentation.Site._static");
+	private readonly EmbeddedFileProvider _embeddedProvider = new(typeof(EmbeddedOrPhysicalFileProvider).Assembly, "Elastic.Documentation.Site._static");
 	private readonly PhysicalFileProvider? _staticFilesInDocsFolder;
 
 	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;

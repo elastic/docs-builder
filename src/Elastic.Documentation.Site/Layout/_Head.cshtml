@@ -1,6 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-@using Elastic.Markdown.Helpers
-<head hx-head="merge">
+@using FontPreloader = Elastic.Documentation.Site.FileProviders.FontPreloader
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
 	<meta name="description" content="@Model.Description">
@@ -35,9 +34,3 @@
 	{
 		<meta property="og:url" content="@Model.CanonicalUrl" />
 	}
-	@if (!string.IsNullOrEmpty(Model.Products))
-	{	
-		<meta class="elastic" name="product_name" content="@(Model.Products)"/>
-		<meta name="DC.subject" content="@(Model.Products)"/>
-	}
-</head>

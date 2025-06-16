@@ -210,7 +210,10 @@ public record GlobalNavigationFile : ITableOfContentsScope
 					if (source != null && !source.Contains("://"))
 						source = ContentSourceMoniker.CreateString(NarrativeRepository.RepositoryName, source);
 					var sourceUri = new Uri(source!);
-					var tocReference = new TocReference(sourceUri, this, "", []);
+					var tocReference = new TocReference(sourceUri, this, "", [])
+					{
+						IsPhantom = true
+					};
 					return tocReference;
 			}
 		}

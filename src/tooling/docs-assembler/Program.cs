@@ -8,7 +8,6 @@ using Documentation.Assembler.Cli;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
-using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, services => services
@@ -27,6 +26,7 @@ app.Add<RepositoryCommands>("repo");
 app.Add<NavigationCommands>("navigation");
 app.Add<ContentSourceCommands>("content-source");
 app.Add<DeployCommands>("deploy");
+app.Add<LegacyDocsCommands>("legacy-docs");
 
 var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
 var command = githubActions?.GetInput("COMMAND");

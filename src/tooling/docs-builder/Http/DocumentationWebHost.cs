@@ -9,7 +9,6 @@ using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
-using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -25,7 +24,6 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly BuildContext _context;
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
 
@@ -45,18 +43,18 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		_context = new BuildContext(collector, readFs, writeFs, path, null)
+		Context = new BuildContext(collector, readFs, writeFs, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
-		var generatorState = new ReloadableGeneratorState(_context.DocumentationSourceDirectory, _context.DocumentationOutputDirectory, _context, logger);
+		GeneratorState = new ReloadableGeneratorState(Context.DocumentationSourceDirectory, Context.DocumentationOutputDirectory, Context, logger);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
-				s.FolderToMonitor = _context.DocumentationSourceDirectory.FullName;
+				s.FolderToMonitor = Context.DocumentationSourceDirectory.FullName;
 				s.ClientFileExtensions = ".md,.yml";
 			})
-			.AddSingleton<ReloadableGeneratorState>(_ => generatorState)
+			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
 			.AddHostedService<ReloadGeneratorService>();
 
 		if (IsDotNetWatchBuild())
@@ -67,6 +65,10 @@ public class DocumentationWebHost
 		_webApplication = builder.Build();
 		SetUpRoutes();
 	}
+
+	public ReloadableGeneratorState GeneratorState { get; }
+
+	public BuildContext Context { get; }
 
 	private static bool IsDotNetWatchBuild() => Environment.GetEnvironmentVariable("DOTNET_WATCH") is not null;
 
@@ -142,7 +144,7 @@ public class DocumentationWebHost
 			.UseStaticFiles(
 				new StaticFileOptions
 				{
-					FileProvider = new EmbeddedOrPhysicalFileProvider(_context),
+					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
 					RequestPath = "/_static"
 				})
 			.UseRouting();
@@ -203,9 +205,12 @@ public class DocumentationWebHost
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
 				if (s == "index.md")
-					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Value.Url);
+					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Url);
 
 				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
+					return Results.NotFound();
+
+				if (Path.GetExtension(s) is "" or not ".md")
 					return Results.NotFound();
 
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);

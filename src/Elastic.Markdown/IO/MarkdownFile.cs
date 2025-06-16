@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
@@ -16,6 +15,7 @@ using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers.Roundtrip;
@@ -23,7 +23,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope, IPageInformation
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
 {
 	private string? _navigationTitle;
 
@@ -44,7 +44,6 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		IsIndex = FileName == "index.md";
 
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
@@ -52,7 +51,6 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
-		Id = ShortId.Create(FilePath);
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
@@ -61,23 +59,20 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		NavigationSource = set.Source;
 	}
 
+	public bool PartOfNavigation { get; set; }
+
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public IGroupNavigationItem NavigationRoot { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
-	public string Id { get; }
-
 	private IDiagnosticsCollector Collector { get; }
 
-	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
-
-	public bool IsIndex { get; internal set; }
 
 	public string? Title
 	{
@@ -143,7 +138,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public int NavigationIndex { get; set; } = -1;
+	//public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;
 	private string? _title;

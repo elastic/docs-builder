@@ -1,8 +1,9 @@
+@using Elastic.Documentation.Configuration.Builder
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 <nav id="secondary-nav" class="bg-grey-10 border-t-1 border-grey-20 font-sans font-semibold text-sm text-ink-light md:text-base">
 	<div class="max-w-(--max-layout-width) flex mx-auto justify-between items-center p-6">
 		<div class="flex gap-2 flex-nowrap items-center">
-			@if (Model.Layout != LayoutName.LandingPage)
+			@if (Model.RenderHamburgerIcon)
 			{
 				@* ReSharper disable once Html.IdNotResolved *@
 				<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
@@ -12,6 +13,13 @@
 				</label>
 			}
 			<a href="@Model.Link("/")" class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
+			
+			@if (Model.Features.IsVersionDropdownEnabled && Model.VersionDropdown is not null)
+			{
+				<div id="version-dropdown">
+					<version-dropdown items='@(new HtmlString(Model.VersionDropdown))' />
+				</div>
+			}
 		</div>
 		<ul class="flex gap-6">
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">

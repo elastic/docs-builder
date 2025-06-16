@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Configuration;
@@ -50,4 +51,47 @@ public static class Paths
 		return new DirectoryInfo(elasticPath);
 	}
 
+	public static (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IFileSystem readFileSystem, IDirectoryInfo rootPath)
+	{
+		string[] files = ["docset.yml", "_docset.yml"];
+		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
+		var mostLikelyTargets =
+			from file in files
+			from folder in knownFolders
+			select Path.Combine(folder, file);
+
+		var knownConfigPath = mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
+		var configurationPath = knownConfigPath is null ? null : readFileSystem.FileInfo.New(knownConfigPath);
+		if (configurationPath is not null)
+			return (configurationPath.Directory!, configurationPath);
+
+		configurationPath = rootPath
+			.EnumerateFiles("*docset.yml", SearchOption.AllDirectories)
+			.FirstOrDefault()
+		?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
+
+		var docsFolder = configurationPath.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
+
+		return (docsFolder, configurationPath);
+	}
+
+	public static bool TryFindDocsFolderFromRoot(
+		IFileSystem readFileSystem,
+		IDirectoryInfo rootPath,
+		[NotNullWhen(true)] out IDirectoryInfo? docDirectory,
+		[NotNullWhen(true)] out IFileInfo? configurationPath
+	)
+	{
+		docDirectory = null;
+		configurationPath = null;
+		try
+		{
+			(docDirectory, configurationPath) = FindDocsFolderFromRoot(readFileSystem, rootPath);
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
 }

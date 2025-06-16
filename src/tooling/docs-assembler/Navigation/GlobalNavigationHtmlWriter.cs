@@ -5,10 +5,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Slices;
 
 namespace Documentation.Assembler.Navigation;
 
@@ -16,7 +14,8 @@ public class GlobalNavigationHtmlWriter(
 	GlobalNavigationFile navigationFile,
 	AssembleContext assembleContext,
 	GlobalNavigation globalNavigation,
-	AssembleSources assembleSources) : INavigationHtmlWriter
+	AssembleSources assembleSources
+) : INavigationHtmlWriter
 {
 	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
 
@@ -45,8 +44,11 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(IGroupNavigationItem currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
+		if (Phantoms.Contains(navigationSource))
+			return string.Empty;
+
 		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
 			return string.Empty;
 
@@ -76,9 +78,9 @@ public class GlobalNavigationHtmlWriter(
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
 		{
-			Title = group.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = group.Index?.Url ?? "/",
-			Tree = group.GroupNavigationItem,
+			Title = group.Index.NavigationTitle,
+			TitleUrl = group.Index.Url,
+			Tree = group,
 			IsPrimaryNavEnabled = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems
