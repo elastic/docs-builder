@@ -128,7 +128,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
-		var legacyPageChecker = new LegacyPageChecker(assembleContext.ReadFileSystem);
+		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
