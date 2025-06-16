@@ -79,7 +79,7 @@ internal sealed class BloomFilter
 	/// <returns>False if the item is definitely not in the set, True if it might be.</returns>
 	public bool Check(string item)
 	{
-		var itemBytes = Encoding.UTF8.GetBytes(item.Replace("/guide/en/", ""));
+		var itemBytes = Encoding.UTF8.GetBytes(item);
 		for (var i = 0; i < HashCount; i++)
 		{
 			var hash = GetHash(itemBytes, i);

@@ -19,7 +19,7 @@ public class LocalPagesProvider(string gitRepositoryPath) : IPagesProvider
 		Directory.EnumerateFiles(Path.Combine(gitRepositoryPath, "html", "en"), "*.html", SearchOption.AllDirectories)
 			.Select(i =>
 			{
-				var relativePath = Path.GetRelativePath(Path.Combine(gitRepositoryPath, "html", "en"), i).Replace('\\', '/');
+				var relativePath = "/guide/" + Path.GetRelativePath(Path.Combine(gitRepositoryPath, "html"), i).Replace('\\', '/');
 				return relativePath;
 			});
 }
