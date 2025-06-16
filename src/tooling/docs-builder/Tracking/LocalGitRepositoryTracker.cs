@@ -18,9 +18,9 @@ public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirector
 		var defaultBranch = GetDefaultBranch();
 		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", $"./{lookupPath}");
 		var localChanges = CaptureMultiple("git", "status", "--porcelain");
-		_ = Capture("git", "stash", "push", "--", $"./{lookupPath}");
+		ExecInSilent([], "git", "stash", "push", "--", $"./{lookupPath}");
 		var localUnstagedChanges = CaptureMultiple("git", "stash", "show", "--name-status", "-u");
-		_ = Capture("git", "stash", "pop");
+		ExecInSilent([], "git", "stash", "pop");
 
 		return [.. GetCommitChanges(commitChanges), .. GetLocalChanges(localChanges), .. GetCommitChanges(localUnstagedChanges)];
 	}

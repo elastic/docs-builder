@@ -24,6 +24,19 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 			collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 	}
 
+	protected void ExecInSilent(Dictionary<string, string> environmentVars, string binary, params string[] args)
+	{
+		var arguments = new StartArguments(binary, args)
+		{
+			Environment = environmentVars,
+			WorkingDirectory = workingDirectory.FullName,
+			ConsoleOutWriter = NoopConsoleWriter.Instance
+		};
+		var result = Proc.Start(arguments);
+		if (result.ExitCode != 0)
+			collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+	}
+
 	protected string[] CaptureMultiple(string binary, params string[] args)
 	{
 		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
