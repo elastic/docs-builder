@@ -19,9 +19,7 @@
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.11.3" />
     <PackageVersion Include="Microsoft.OpenApi" Version="2.0.0-preview9" />
-    <PackageVersion Include="Octokit" Version="14.0.0" />
     <PackageVersion Include="System.Text.Json" Version="9.0.5" />
-    <PackageVersion Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.0.14" />
   </ItemGroup>
   <!-- Build -->
   <ItemGroup>
