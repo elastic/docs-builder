@@ -114,9 +114,7 @@ internal sealed class BloomFilter
 		var itemList = new List<string>(items);
 		var filter = new BloomFilter(itemList.Count, falsePositiveProbability);
 		foreach (var item in itemList)
-		{
 			filter.Add(item);
-		}
 
 		return filter;
 	}
@@ -166,9 +164,7 @@ internal sealed class BloomFilter
 		for (var i = 0; i < size; i++)
 		{
 			if ((bitArrayBytes[i / 8] & (1 << (i % 8))) != 0)
-			{
 				filter._bitArray[i] = true;
-			}
 		}
 
 		return filter;
