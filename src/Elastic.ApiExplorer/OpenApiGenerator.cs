@@ -12,8 +12,43 @@ using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Models.Interfaces;
 
 namespace Elastic.ApiExplorer;
+
+public class ApiGroupingNavigationItem : INodeNavigationItem<ApiEndpoint, INavigationItem>
+{
+	public ApiGroupingNavigationItem(int depth, INodeNavigationItem<INavigationModel, INavigationItem> parentGroup, LandingNavigationItem rootNavigation)
+	{
+		Parent = parentGroup;
+		Depth = depth;
+		NavigationRoot = rootNavigation;
+		Id = NavigationRoot.Id;
+
+		Index = apiEndpoint;
+		//TODO
+		NavigationTitle = apiEndpoint.OpenApiPath.Summary;
+	}
+
+	public string Id { get; }
+	public int Depth { get; }
+	public ApiEndpoint Index { get; }
+	public string Url => NavigationItems.First().Url;
+	public string NavigationTitle { get; }
+	public bool Hidden => false;
+
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
+
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+
+	public int NavigationIndex { get; set; }
+}
+
+public record ApiClassification(string Name, string Description, ApiTag[] Tags);
+public record ApiTag(string Name, string Description);
+public record ApiEndpoint(string Route, IOpenApiPathItem OpenApiPath);
 
 public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 {
@@ -25,8 +60,6 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 	{
 		var url = "/api";
 		var rootNavigation = new LandingNavigationItem(url);
-		var rootItems = new List<EndpointNavigationItem>();
-
 
 		var grouped = openApiDocument.Paths
 			.Select(p =>
@@ -57,59 +90,66 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 			.GroupBy(g => g.Classification)
 			.ToArray();
 
-		var aggregatedPaths = new Dictionary<string, Dictionary<string, Dictionary<string, List<ApiEndpoint>>>>();
+		var classifications = new List<ApiClassification>();
+		foreach (var group in grouped)
+		{
+			var tags = new List<ApiTag>();
+			foreach (var tagGroup in group.GroupBy(g => g.Tag))
+			{
+				var tag = new ApiTag(tagGroup.Key ?? "global", "");
+				tags.Add(tag);
+			}
 
+			var classification = new ApiClassification(group.Key, "", tags.ToArray());
+			classifications.Add(classification);
+		}
+
+
+		var rootItems = new List<ApiGroupingNavigationItem>();
 		foreach (var group in grouped)
 		{
 			var cl = group.Key;
-			if (!aggregatedPaths.ContainsKey(cl))
-				aggregatedPaths[cl] = [];
 
+			var categoryItem = new ApiGroupingNavigationItem(1, rootNavigation, rootNavigation);
+			var tagItems = new List<ApiGroupingNavigationItem>();
 			foreach (var tagGroup in group.GroupBy(g => g.Tag))
 			{
 				var tag = tagGroup.Key ?? "global";
-				if (!aggregatedPaths[cl].ContainsKey(tag))
-					aggregatedPaths[cl][tag] = [];
 
+				var tagNavigationItem = new ApiGroupingNavigationItem(1, categoryItem, rootNavigation);
+
+				var endpointItems = new List<EndpointNavigationItem>();
 				foreach (var endpoint in tagGroup)
 				{
 					var api = endpoint.Namespace is null ? endpoint.Api ?? "global" : $"{endpoint.Namespace}.{endpoint.Api}";
-					if (!aggregatedPaths[cl][tag].ContainsKey(api))
-						aggregatedPaths[cl][tag][api] = [];
+
+					var path = endpoint.Path;
+					var endpointUrl = $"{url}/{path.Key.Trim('/').Replace('/', '-').Replace("{", "").Replace("}", "")}";
 
 					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value);
-					aggregatedPaths[cl][tag][api].Add(apiEndpoint);
+					var operationItems = new List<OperationNavigationItem>();
+					var endpointNavigationItem = new EndpointNavigationItem(1, endpointUrl, apiEndpoint, tagNavigationItem, rootNavigation);
+					if (endpoint.Path.Value.Operations.Count > 1)
+					{
+						foreach (var operation in endpoint.Path.Value.Operations)
+						{
+							var operationUrl = $"{endpointUrl}/{operation.Key.ToString().ToLowerInvariant()}";
+							var apiOperation = new ApiOperation(operation.Key, operation.Value);
+							var navigation = new OperationNavigationItem(2, operationUrl, apiOperation, endpointNavigationItem, rootNavigation);
+							operationItems.Add(navigation);
+						}
+						endpointNavigationItem.NavigationItems = operationItems;
+					}
+					endpointItems.Add(endpointNavigationItem);
 				}
+				tagNavigationItem.NavigationItems = endpointItems;
+				tagItems.Add(tagNavigationItem);
 			}
+			categoryItem.NavigationItems = tagItems;
+			rootItems.Add(categoryItem);
 		}
-
-		foreach (var group in aggregatedPaths)
-		{
-
-
-		}
-
-
-		// default routine
-		foreach (var path in openApiDocument.Paths)
-		{
-			var endpointUrl = $"{url}/{path.Key.Trim('/').Replace('/', '-').Replace("{", "").Replace("}", "")}";
-			var apiEndpoint = new ApiEndpoint(path.Key, path.Value);
-			var endpointNavigationItem = new EndpointNavigationItem(1, endpointUrl, apiEndpoint, rootNavigation, rootNavigation);
-			var endpointNavigationItems = new List<OperationNavigationItem>();
-			foreach (var operation in path.Value.Operations)
-			{
-				var operationUrl = $"{endpointUrl}/{operation.Key.ToString().ToLowerInvariant()}";
-				var apiOperation = new ApiOperation(operation.Key, operation.Value);
-				var navigation = new OperationNavigationItem(2, operationUrl, apiOperation, endpointNavigationItem, rootNavigation);
-				endpointNavigationItems.Add(navigation);
-			}
-
-			endpointNavigationItem.NavigationItems = endpointNavigationItems;
-			rootItems.Add(endpointNavigationItem);
-		}
-
 		rootNavigation.NavigationItems = rootItems;
+
 		return rootNavigation;
 	}
 

@@ -40,7 +40,7 @@ public record ApiEndpoint : INavigationModel, IPageRenderer<ApiRenderContext>
 
 public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, OperationNavigationItem>
 {
-	public EndpointNavigationItem(int depth, string url, ApiEndpoint apiEndpoint, LandingNavigationItem parent, LandingNavigationItem root)
+	public EndpointNavigationItem(int depth, string url, ApiEndpoint apiEndpoint, ApiGroupingNavigationItem parent, LandingNavigationItem root)
 	{
 		Parent = parent;
 		Depth = depth;

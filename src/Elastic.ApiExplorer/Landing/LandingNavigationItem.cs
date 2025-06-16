@@ -27,7 +27,7 @@ public class ApiLanding : INavigationModel, IPageRenderer<ApiRenderContext>
 	}
 }
 
-public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNavigationItem>
+public class LandingNavigationItem : INodeNavigationItem<ApiLanding, ApiGroupingNavigationItem>
 {
 	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
@@ -35,7 +35,7 @@ public class LandingNavigationItem : INodeNavigationItem<ApiLanding, EndpointNav
 	public ApiLanding Index { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
-	public IReadOnlyCollection<EndpointNavigationItem> NavigationItems { get; set; } = [];
+	public IReadOnlyCollection<ApiGroupingNavigationItem> NavigationItems { get; set; } = [];
 	public string Url { get; }
 	public bool Hidden => false;
 
