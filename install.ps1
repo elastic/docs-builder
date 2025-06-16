@@ -1,8 +1,11 @@
 # PowerShell script to install docs-builder binary
 
 # Use AppData\Local for user-specific installation instead of Program Files
-$targetDir = Join-Path -Path $env:LOCALAPPDATA -ChildPath "docs-builder"
+$targetDir  = Join-Path -Path $env:LOCALAPPDATA -ChildPath "docs-builder"
 $targetPath = Join-Path -Path $targetDir -ChildPath "docs-builder.exe"
+
+$version = $env:DOCS_BUILDER_VERSION
+if (-not $version) { $version = 'latest' }
 
 # Check if docs-builder already exists
 if (Test-Path -Path $targetPath) {
@@ -20,10 +23,15 @@ if (-not (Test-Path -Path $targetDir)) {
     New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 }
 
-# Download the latest Windows binary from releases
+if ($version -eq 'latest') {
+    $downloadUrl = "https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-win-x64.zip"
+} else {
+    $downloadUrl = "https://github.com/elastic/docs-builder/releases/download/$version/docs-builder-win-x64.zip"
+}
+
 $tempZipPath = "$env:TEMP\docs-builder-win-x64.zip"
 Write-Host "Downloading docs-builder binary..."
-Invoke-WebRequest -Uri "https://github.com/elastic/docs-builder/releases/latest/download/docs-builder-win-x64.zip" -OutFile $tempZipPath
+Invoke-WebRequest -Uri $downloadUrl -OutFile $tempZipPath
 
 # Create a temporary directory for extraction
 $tempExtractPath = "$env:TEMP\docs-builder-extract"
@@ -53,8 +61,8 @@ if ($currentPath -notlike "*$targetDir*") {
 }
 
 # Clean up temporary files
-Remove-Item -Path $tempZipPath -Force
+Remove-Item -Path $tempZipPath    -Force
 Remove-Item -Path $tempExtractPath -Recurse -Force
 
-Write-Host "docs-builder has been installed successfully and is available in your PATH."
+Write-Host "docs-builder ($version) has been installed successfully and is available in your PATH."
 Write-Host "You may need to restart your terminal or PowerShell session for the PATH changes to take effect."

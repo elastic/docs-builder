@@ -7,7 +7,7 @@ namespace Elastic.Documentation.Configuration.Builder;
 public class FeatureFlags(Dictionary<string, bool> featureFlags)
 {
 	public bool IsPrimaryNavEnabled => IsEnabled("primary-nav");
-	public bool IsLandingPageEnabled => IsEnabled("landing-page");
+	public bool IsVersionDropdownEnabled => IsEnabled("version-dropdown");
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

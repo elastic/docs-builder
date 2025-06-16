@@ -4,8 +4,8 @@
 
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;

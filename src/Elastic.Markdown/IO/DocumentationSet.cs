@@ -6,10 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
@@ -30,9 +32,42 @@ public interface INavigationLookups
 public interface IPositionalNavigation
 {
 	FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
+	FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
-	MarkdownFile? GetPrevious(MarkdownFile current);
-	MarkdownFile? GetNext(MarkdownFile current);
+	INavigationItem? GetPrevious(MarkdownFile current)
+	{
+		if (!MarkdownNavigationLookup.TryGetValue(current.CrossLink, out var currentNavigation))
+			return null;
+		var index = currentNavigation.NavigationIndex;
+		do
+		{
+			var previous = NavigationIndexedByOrder.GetValueOrDefault(index - 1);
+			if (previous is not null && !previous.Hidden)
+				return previous;
+			index--;
+		} while (index > 0);
+
+		return null;
+	}
+
+	INavigationItem? GetNext(MarkdownFile current)
+	{
+		if (!MarkdownNavigationLookup.TryGetValue(current.CrossLink, out var currentNavigation))
+			return null;
+		var index = currentNavigation.NavigationIndex;
+		do
+		{
+			var next = NavigationIndexedByOrder.GetValueOrDefault(index + 1);
+			if (next is not null && !next.Hidden)
+				return next;
+			index++;
+		} while (index <= NavigationIndexedByOrder.Count - 1);
+
+		return null;
+	}
+
+	INavigationItem GetCurrent(MarkdownFile file) =>
+		MarkdownNavigationLookup.GetValueOrDefault(file.CrossLink) ?? throw new InvalidOperationException($"Could not find {file.CrossLink} in navigation");
 
 	INavigationItem[] GetParents(INavigationItem current)
 	{
@@ -48,27 +83,8 @@ public interface IPositionalNavigation
 
 		return [.. parents];
 	}
-	MarkdownFile[] GetParentMarkdownFiles(INavigationItem current)
-	{
-		var parents = new List<MarkdownFile>();
-		var navigationParents = GetParents(current);
-		foreach (var parent in navigationParents)
-		{
-			if (parent is FileNavigationItem f)
-				parents.Add(f.File);
-			if (parent is GroupNavigationItem { Group.Index: not null } g)
-				parents.Add(g.Group.Index);
-			if (parent is DocumentationGroup { Index: not null } dg)
-				parents.Add(dg.Index);
-		}
-		return [.. parents];
-	}
-	MarkdownFile[] GetParentMarkdownFiles(MarkdownFile file)
-	{
-		if (MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem))
-			return GetParentMarkdownFiles(navigationItem);
-		return [];
-	}
+	INavigationItem[] GetParentsOfMarkdownFile(MarkdownFile file) =>
+		MarkdownNavigationLookup.TryGetValue(file.CrossLink, out var navigationItem) ? GetParents(navigationItem) : [];
 }
 
 public record NavigationLookups : INavigationLookups
@@ -77,7 +93,6 @@ public record NavigationLookups : INavigationLookups
 	public required IReadOnlyCollection<ITocItem> TableOfContents { get; init; }
 	public required IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; init; }
 	public required FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; init; }
-	//public required FrozenDictionary<Uri, TableOfContentsReference> IndexedTableOfContents { get; init; }
 }
 
 public class DocumentationSet : INavigationLookups, IPositionalNavigation
@@ -166,39 +181,60 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
 			EnabledExtensions = EnabledExtensions,
-			FilesGroupedByFolder = FilesGroupedByFolder,
-			//IndexedTableOfContents = indexedTableOfContents ?? new Dictionary<Uri, TableOfContentsReference>().ToFrozenDictionary()
+			FilesGroupedByFolder = FilesGroupedByFolder
 		};
 
-		Tree = new TableOfContentsTree(this, Source, Context, lookups, treeCollector, ref fileIndex);
+		Tree = new TableOfContentsTree(Source, Context, lookups, treeCollector, ref fileIndex);
 
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 
-		var excludedChildren = markdownFiles.Where(f => f.NavigationIndex == -1).ToArray();
+		var excludedChildren = markdownFiles.Where(f => !f.PartOfNavigation).ToArray();
 		foreach (var excludedChild in excludedChildren)
 			Context.EmitError(Context.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
 
-		MarkdownFiles = markdownFiles.Where(f => f.NavigationIndex > -1).ToDictionary(i => i.NavigationIndex, i => i).ToFrozenDictionary();
+		MarkdownFiles = markdownFiles.Where(f => f.PartOfNavigation).ToFrozenSet();
+		NavigationIndexedByOrder = CreateNavigationLookup(Tree)
+			.ToDictionary(n => n.NavigationIndex, n => n)
+			.ToFrozenDictionary();
 
 		MarkdownNavigationLookup = Tree.NavigationItems
 			.SelectMany(Pairs)
+			.Concat(Pairs(Tree))
+			.DistinctBy(kv => kv.Item1)
 			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
 			.ToFrozenDictionary();
 
 		ValidateRedirectsExists();
 	}
 
+	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
+
+	private static IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
+	{
+		if (item is ILeafNavigationItem<INavigationModel> leaf)
+			return [leaf];
+
+		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+		{
+			var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
+			return items.Concat([node]).ToArray();
+		}
+
+		return [];
+	}
+
 	public static (string, INavigationItem)[] Pairs(INavigationItem item)
 	{
 		if (item is FileNavigationItem f)
-			return [(f.File.CrossLink, item)];
-		if (item is GroupNavigationItem g)
+			return [(f.Model.CrossLink, item)];
+		if (item is DocumentationGroup g)
 		{
-			var index = new List<(string, INavigationItem)>();
-			if (g.Group.Index is not null)
-				index.Add((g.Group.Index.CrossLink, g));
+			var index = new List<(string, INavigationItem)>
+			{
+				(g.Index.CrossLink, g)
+			};
 
-			return index.Concat(g.Group.NavigationItems.SelectMany(Pairs).ToArray())
+			return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
 				.DistinctBy(kv => kv.Item1)
 				.ToArray();
 		}
@@ -291,44 +327,15 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		}
 	}
 
-	public FrozenDictionary<int, MarkdownFile> MarkdownFiles { get; }
+	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
+
+	public string FirstInterestingUrl =>
+		NavigationIndexedByOrder.Values.OfType<DocumentationGroup>().First().Url;
 
 	public DocumentationFile? DocumentationFileLookup(IFileInfo sourceFile)
 	{
 		var relativePath = Path.GetRelativePath(SourceDirectory.FullName, sourceFile.FullName);
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
-	}
-
-	public MarkdownFile? GetPrevious(MarkdownFile current)
-	{
-		var index = current.NavigationIndex;
-		do
-		{
-			var previous = MarkdownFiles.GetValueOrDefault(index - 1);
-			if (previous is null)
-				return null;
-			if (!previous.Hidden)
-				return previous;
-			index--;
-		} while (index > 0);
-
-		return null;
-	}
-
-	public MarkdownFile? GetNext(MarkdownFile current)
-	{
-		var index = current.NavigationIndex;
-		do
-		{
-			var previous = MarkdownFiles.GetValueOrDefault(index + 1);
-			if (previous is null)
-				return null;
-			if (!previous.Hidden)
-				return previous;
-			index++;
-		} while (index <= MarkdownFiles.Count - 1);
-
-		return null;
 	}
 
 	public async Task ResolveDirectoryTree(Cancel ctx) =>
@@ -373,15 +380,35 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
-		var links = MarkdownFiles.Values
-			.Select(m => (m.LinkReferenceRelativePath, File: m))
-			.ToDictionary(k => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-			? k.LinkReferenceRelativePath.Replace('\\', '/')
-			: k.LinkReferenceRelativePath, v =>
+		var markdownInNavigation = NavigationIndexedByOrder.Values
+			.OfType<FileNavigationItem>()
+			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
+			.Concat(NavigationIndexedByOrder.Values
+				.OfType<DocumentationGroup>()
+				.Select(g => (Markdown: g.Index, Navigation: (INavigationItem)g))
+			)
+			.ToList();
+
+		var links = markdownInNavigation
+			.Select(tuple =>
 			{
-				var anchors = v.File.Anchors.Count == 0 ? null : v.File.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = v.File.Hidden };
-			});
+				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+					? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
+					: tuple.Markdown.LinkReferenceRelativePath;
+				return (Path: path, tuple.Markdown, tuple.Navigation);
+			})
+			.DistinctBy(tuple => tuple.Path)
+			.ToDictionary(
+				tuple => tuple.Path,
+				tuple =>
+				{
+					var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
+					return new LinkMetadata
+					{
+						Anchors = anchors,
+						Hidden = tuple.Navigation.Hidden
+					};
+				});
 
 		return new RepositoryLinks
 		{

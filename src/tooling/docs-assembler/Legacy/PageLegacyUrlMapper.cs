@@ -8,26 +8,32 @@ namespace Documentation.Assembler.Legacy;
 
 public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
-	private IReadOnlyDictionary<string, string> PreviousUrls { get; }
+	private IReadOnlyDictionary<string, IReadOnlyCollection<string>> PreviousUrls { get; }
 
-	public PageLegacyUrlMapper(IReadOnlyDictionary<string, string> previousUrls) => PreviousUrls = previousUrls;
+	public PageLegacyUrlMapper(IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls) => PreviousUrls = previousUrls;
 
-	public LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
+	public IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
 		if (mappedPages is null)
-			return null;
+			return [];
 
-		foreach (var mappedPage in mappedPages)
+		if (mappedPages.Count == 0)
+			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty)];
+
+		var mappedPage = mappedPages.First();
+
+		var versions = PreviousUrls.FirstOrDefault(kv =>
 		{
-			var versionMarker = PreviousUrls.FirstOrDefault(x => mappedPage.Contains(x.Key));
-			if (versionMarker.Key != string.Empty && versionMarker.Value != "undefined")
-			{
-				return mappedPage.Contains("current")
-					? new LegacyPageMapping(mappedPage.Replace($"{versionMarker.Key}current/", $"{versionMarker.Key}{versionMarker.Value}/"), versionMarker.Value)
-					: null;
-			}
-		}
+			var (key, _) = kv;
+			return mappedPage.Contains(key, StringComparison.OrdinalIgnoreCase);
+		});
 
-		return new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty);
+		if (versions.Value is null)
+			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty)];
+
+		return versions.Value
+			.Select(
+				v => new LegacyPageMapping(mappedPage, v)
+			).ToList();
 	}
 }

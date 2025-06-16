@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.IO;
 using FluentAssertions;

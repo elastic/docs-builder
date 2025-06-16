@@ -4,13 +4,12 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -24,7 +23,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
 {
 	private string? _navigationTitle;
 
@@ -45,7 +44,6 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		IsIndex = FileName == "index.md";
 
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
@@ -53,7 +51,6 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
 		_set = set;
-		Id = ShortId.Create(FilePath);
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
@@ -62,23 +59,20 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		NavigationSource = set.Source;
 	}
 
+	public bool PartOfNavigation { get; set; }
+
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigationGroup NavigationRoot { get; set; }
+	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
-	public string Id { get; }
-
 	private IDiagnosticsCollector Collector { get; }
 
-	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
-
-	public bool IsIndex { get; internal set; }
 
 	public string? Title
 	{
@@ -90,11 +84,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string? NavigationTitle
+	public string NavigationTitle
 	{
-		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-		private set => _navigationTitle = value?.StripMarkdown();
+		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title ?? string.Empty;
+		private set => _navigationTitle = value.StripMarkdown();
 	}
+
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
@@ -143,7 +138,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public int NavigationIndex { get; set; } = -1;
+	//public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;
 	private string? _title;
@@ -220,8 +215,10 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
-		YamlFrontMatter = ProcessYamlFrontMatter(document);
-		NavigationTitle = YamlFrontMatter.NavigationTitle;
+		var yamlFrontMatter = ProcessYamlFrontMatter(document);
+		YamlFrontMatter = yamlFrontMatter;
+		if (yamlFrontMatter.NavigationTitle is not null)
+			NavigationTitle = yamlFrontMatter.NavigationTitle;
 
 		var subs = GetSubstitutions();
 

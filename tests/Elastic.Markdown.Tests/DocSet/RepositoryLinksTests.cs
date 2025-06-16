@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.IO;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;

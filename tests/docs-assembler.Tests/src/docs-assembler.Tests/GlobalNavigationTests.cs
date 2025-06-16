@@ -5,11 +5,14 @@
 using System.IO.Abstractions;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Tests;
 
@@ -59,7 +62,7 @@ public class GlobalNavigationPathProviderTests
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
 
-		var assembleSources = await AssembleSources.AssembleAsync(Context, checkouts, TestContext.Current.CancellationToken);
+		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, Context, checkouts, TestContext.Current.CancellationToken);
 		return assembleSources;
 	}
 
@@ -114,7 +117,7 @@ public class GlobalNavigationPathProviderTests
 		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
 		referenceToc.Should().NotBeNull();
-		referenceToc!.TocReferences.Should().NotContainKey(clients);
+		referenceToc.TocReferences.Should().NotContainKey(clients);
 
 		var ingestTools = referenceToc.TocReferences[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestTools.Should().NotBeNull();
@@ -133,26 +136,30 @@ public class GlobalNavigationPathProviderTests
 		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
 
 		referenceNav.Should().NotBeNull();
-		referenceNav.NavigationLookup.Should().NotContainKey(clients);
-		referenceNav.Group.NavigationItems.OfType<TocNavigationItem>()
+		var navigationLookup = referenceNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		navigationLookup.Should().NotContainKey(clients);
+		referenceNav.NavigationItems.OfType<TableOfContentsTree>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
-		referenceNav.Group.NavigationItems.Should().HaveSameCount(referenceNav.NavigationLookup);
+		referenceNav.NavigationItems.Should().HaveSameCount(navigationLookup);
 
-		var ingestNav = referenceNav.NavigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
+		var ingestNav = navigationLookup[new Uri("docs-content://reference/ingestion-tools/")];
 		ingestNav.Should().NotBeNull();
-		ingestNav.NavigationLookup.Should().NotContainKey(clients);
-		ingestNav.Group.NavigationItems.OfType<TocNavigationItem>()
+		var ingestLookup = ingestNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		ingestLookup.Should().NotContainKey(clients);
+		ingestNav.NavigationItems.OfType<TableOfContentsTree>()
 			.Select(n => n.Source)
 			.Should().NotContain(clients);
 
-		var apmNav = ingestNav.NavigationLookup[new Uri("docs-content://reference/apm/")];
+		var apmNav = ingestLookup[new Uri("docs-content://reference/apm/")];
 		apmNav.Should().NotBeNull();
 
-		var apmAgentsNav = apmNav.NavigationLookup[expectedParent];
+		var apmLookup = apmNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		var apmAgentsNav = apmLookup[expectedParent];
 		apmAgentsNav.Should().NotBeNull();
 
-		var dotnetAgentNav = apmAgentsNav.NavigationLookup[sut];
+		var apmAgentLookup = apmAgentsNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
+		var dotnetAgentNav = apmAgentLookup[sut];
 		dotnetAgentNav.Should().NotBeNull();
 
 		var resolved = navigation.NavigationItems;
@@ -205,40 +212,41 @@ public class GlobalNavigationPathProviderTests
 
 		var releaseNotes = positionalNavigation.MarkdownNavigationLookup.Where(kv => kv.Key.Contains("release-notes")).ToArray();
 
-
 		var addToHelm = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("apm-k8s-attacher://reference/apm-webhook-add-helm-repo.md");
 		addToHelm.Should().NotBeNull();
-		var parentGroup = addToHelm!.Parent as GroupNavigationItem;
+		var parentGroup = addToHelm.Parent as DocumentationGroup;
 		var parents = AssertHasParents(parentGroup, positionalNavigation, addToHelm);
 
-		parents.Select(p => p.CrossLink).Should().ContainInOrder(
+		parents
+			.Select(p => p.Url).Should().ContainInOrder(
 		[
-			"apm-k8s-attacher://reference/apm-get-started-webhook.md",
-			"apm-k8s-attacher://reference/index.md",
-			"docs-content://reference/apm/observability/apm.md",
-			"docs-content://reference/ingestion-tools/index.md",
-			"docs-content://reference/index.md"
+			"/docs/reference/apm/k8s-attacher/apm-get-started-webhook",
+			"/docs/reference/apm/k8s-attacher",
+			"/docs/reference/apm/observability/apm",
+			"/docs/reference/ingestion-tools/",
+			"/docs/reference/",
+			"/docs/"
 		]);
 
 		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/introduction.md");
 		getStartedIntro.Should().NotBeNull();
-		parentGroup = getStartedIntro!.Parent as GroupNavigationItem;
+		parentGroup = getStartedIntro.Parent as DocumentationGroup;
 		_ = AssertHasParents(parentGroup, positionalNavigation, getStartedIntro);
 
 	}
 
-	private static MarkdownFile[] AssertHasParents(
-		GroupNavigationItem? parent,
+	private static INavigationItem[] AssertHasParents(
+		DocumentationGroup? parent,
 		IPositionalNavigation positionalNavigation,
 		INavigationItem item
 	)
 	{
 		parent.Should().NotBeNull();
-		parent!.Group.Index.Should().NotBeNull();
+		parent.Index.Should().NotBeNull();
 		var parents2 = positionalNavigation.GetParents(item);
-		var parents3 = positionalNavigation.GetParentMarkdownFiles(item);
-		var markdown = (item as FileNavigationItem)?.File!;
-		var parents = positionalNavigation.GetParentMarkdownFiles(markdown);
+		var parents3 = positionalNavigation.GetParents(item);
+		var markdown = (item as FileNavigationItem)?.Model!;
+		var parents = positionalNavigation.GetParentsOfMarkdownFile(markdown);
 
 		parents.Should().NotBeEmpty().And.HaveCount(parents2.Length).And.HaveCount(parents3.Length);
 		return parents;
@@ -260,7 +268,7 @@ public class GlobalNavigationPathProviderTests
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
 
-		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
+		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, assembleContext, checkouts, TestContext.Current.CancellationToken);
 		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();

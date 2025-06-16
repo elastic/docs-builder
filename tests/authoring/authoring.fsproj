@@ -5,7 +5,7 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
 
     <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
     <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>

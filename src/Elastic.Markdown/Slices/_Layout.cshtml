@@ -1,96 +1,76 @@
-@using Elastic.Markdown.Myst.FrontMatter
-@inherits RazorLayoutSlice<LayoutViewModel>
-<!DOCTYPE html>
-<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
-@await RenderPartialAsync(_Head.Create(Model))
-
-@{
-	var layout = Model.CurrentDocument.YamlFrontMatter?.Layout;
-}
-
-<body
-	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
-	hx-ext="preload, head-support"
-	data-root-path="@Model.Link("/")">
-@if (Model.GoogleTagManager.Enabled)
-{
-	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
-	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-}
-@(await RenderPartialAsync(_Header.Create(Model)))
-<div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
-	@functions {
-
-		private async Task DefaultLayout()
+@inherits RazorLayoutSlice<MarkdownLayoutViewModel>
+@implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model;
+	protected override Task ExecuteSectionAsync(string name)
+	{
+		if (name == GlobalSections.Footer && Model.Layout is not LayoutName.Archive)
 		{
-			<div class="max-w-(--max-layout-width) w-full h-full grid
+			<aside id="dismissible-banner" class="admonition tip">
+				<div class="container flex justify-between items-center mx-auto">
+					<p>
+						Welcome to the docs for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest Elastic product versions</a>, including Elastic Stack 9.0 and Elastic Cloud Serverless.
+						To view previous versions, go to <a class="link text-base" target="_blank" href="https://elastic.co/guide">elastic.co/guide</a>.
+					</p>
+					<button id="dismissible-button">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+						</svg>
+					</button>
+				</div>
+			</aside>
+		}
+		return Task.CompletedTask;
+	}
+	private async Task RenderDefault()
+	{
+		<div class="max-w-(--max-layout-width) w-full h-full grid
 					grid-cols-1
 					md:grid-cols-[var(--max-sidebar-width)_1fr]
 					lg:grid-cols-[var(--max-sidebar-width)_1fr_var(--max-sidebar-width)]
 				">
-				@await RenderPartialAsync(_PagesNav.Create(Model))
-				<div class="justify-center grid
+			@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+			<div class="justify-center grid
 					grid-cols-1
 					px-6 lg:px-0
 					lg:grid-cols-[1fr_var(--max-text-width)_1fr]
 					">
-					<div class="spacer"></div>
-					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
-						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-							<div class="h-[2px] w-full overflow-hidden">
-								<div class="progress w-full h-full bg-pink-70 left-right"></div>
-							</div>
-							<div class="sr-only">Loading</div>
+				<div class="spacer"></div>
+				<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
+					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+						<div class="h-[2px] w-full overflow-hidden">
+							<div class="progress w-full h-full bg-pink-70 left-right"></div>
 						</div>
-						<div class="content-container md:px-4">
-							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-						</div>
-						<article id="markdown-content" class="content-container markdown-content md:px-4">
-							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-							@await RenderBodyAsync()
-						</article>
-						@await RenderPartialAsync(_PrevNextNav.Create(Model))
-					</main>
-					<div class="spacer"></div>
-				</div>
-				@await RenderPartialAsync(_TableOfContents.Create(Model))
+						<div class="sr-only">Loading</div>
+					</div>
+					<div class="content-container md:px-4">
+						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+					</div>
+					<article id="markdown-content" class="content-container markdown-content md:px-4">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						@await RenderBodyAsync()
+					</article>
+					@await RenderPartialAsync(_PrevNextNav.Create(Model))
+				</main>
+				<div class="spacer"></div>
 			</div>
-		}
-
-	}
-
-	@switch (layout)
-	{
-		case LayoutName.NotFound:
-			await RenderPartialAsync(_NotFound.Create(Model));
-			break;
-		case LayoutName.LandingPage:
-			await RenderPartialAsync(_LandingPage.Create(Model));
-			break;
-		case LayoutName.Archive:
-			await RenderPartialAsync(_Archive.Create(Model));
-			break;
-		default:
-			await DefaultLayout();
-			break;
-	}
-</div>
-@await RenderPartialAsync(_Footer.Create(Model))
-@if (layout is not LayoutName.Archive)
-{
-	<aside id="dismissible-banner" class="admonition tip">
-		<div class="container flex justify-between items-center mx-auto">
-			<p>
-				Welcome to the docs for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest Elastic product versions</a>, including Elastic Stack 9.0 and Elastic Cloud Serverless.
-				To view previous versions, go to <a class="link text-base" target="_blank" href="https://elastic.co/guide">elastic.co/guide</a>.
-			</p>
-			<button id="dismissible-button">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-				</svg>
-			</button>
+			@await RenderPartialAsync(_TableOfContents.Create(Model))
 		</div>
-	</aside>
+	}
 }
-</body>
-</html>
+
+@switch (Model.Layout)
+{
+	case LayoutName.NotFound:
+		await RenderPartialAsync(_NotFound.Create(Model));
+		break;
+	case LayoutName.LandingPage:
+		await RenderPartialAsync(_LandingPage.Create(Model));
+		break;
+	case LayoutName.Archive:
+		await RenderPartialAsync(_Archive.Create(Model));
+		break;
+	default:
+		await RenderDefault();
+		break;
+}

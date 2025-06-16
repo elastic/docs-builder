@@ -2,69 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
 using RazorSlices;
 using IFileInfo = System.IO.Abstractions.IFileInfo;
 
 namespace Elastic.Markdown.Slices;
-
-public interface INavigationHtmlWriter
-{
-	Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default);
-
-	async Task<string> Render(NavigationViewModel model, Cancel ctx)
-	{
-		var slice = Layout._TocTree.Create(model);
-		return await slice.RenderAsync(cancellationToken: ctx);
-	}
-}
-
-public class IsolatedBuildNavigationHtmlWriter(DocumentationSet set) : INavigationHtmlWriter
-{
-	private DocumentationSet Set { get; } = set;
-
-	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
-
-	public async Task<string> RenderNavigation(INavigationGroup currentRootNavigation, Uri navigationSource, Cancel ctx = default)
-	{
-		var navigation = Set.Configuration.Features.IsPrimaryNavEnabled
-			? currentRootNavigation
-			: Set.Tree;
-
-		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
-			return value;
-
-		var model = CreateNavigationModel(navigation);
-		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[navigation.Id] = value;
-		return value;
-	}
-
-	private NavigationViewModel CreateNavigationModel(INavigationGroup navigation)
-	{
-		if (navigation is not DocumentationGroup tree)
-			throw new InvalidOperationException("Expected a documentation group");
-
-		return new NavigationViewModel
-		{
-			Title = tree.Index?.NavigationTitle ?? "Docs",
-			TitleUrl = tree.Index?.Url ?? Set.Context.UrlPathPrefix ?? "/",
-			Tree = tree,
-			IsPrimaryNavEnabled = Set.Configuration.Features.IsPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = false,
-			TopLevelItems = Set.Tree.NavigationItems.OfType<GroupNavigationItem>().ToList()
-		};
-	}
-}
 
 public class HtmlWriter(
 	DocumentationSet documentationSet,
@@ -76,7 +26,10 @@ public class HtmlWriter(
 )
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
-	public INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet);
+
+	private INavigationHtmlWriter NavigationHtmlWriter { get; } =
+		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Tree);
+
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;
@@ -94,9 +47,10 @@ public class HtmlWriter(
 
 		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
 
+		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);
 		var next = PositionalNavigation.GetNext(markdown);
-		var parents = PositionalNavigation.GetParentMarkdownFiles(markdown);
+		var parents = PositionalNavigation.GetParentsOfMarkdownFile(markdown);
 
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;
@@ -113,9 +67,9 @@ public class HtmlWriter(
 			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-		var siteName = DocumentationSet.Tree.Index?.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
 
-		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
 		{
@@ -142,6 +96,7 @@ public class HtmlWriter(
 			PageTocItems = [.. markdown.PageTableOfContent.Values],
 			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
+			CurrentNavigationItem = current,
 			PreviousDocument = previous,
 			NextDocument = next,
 			Parents = parents,
@@ -149,13 +104,15 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown is DetectionRuleFile || !markdown.Hidden),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			LegacyPage = legacyPage,
+			CurrentVersion = legacyPages.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
+			LegacyPages = legacyPages.Count > 1 ? [legacyPages.ElementAt(1)] : [],
+			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages.Skip(1).ToArray()),
 			Products = allProducts
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);

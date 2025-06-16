@@ -14,4 +14,5 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(PublishEnvironment))]
 [YamlSerializable(typeof(GoogleTagManager))]
 [YamlSerializable(typeof(ContentSource))]
+[YamlSerializable(typeof(VersionEntry))]
 public partial class YamlStaticContext;

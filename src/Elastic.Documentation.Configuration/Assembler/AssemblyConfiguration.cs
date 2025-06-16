@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
-using Elastic.Documentation.Serialization;
 using YamlDotNet.Serialization;
 using YamlStaticContext = Elastic.Documentation.Configuration.Serialization.YamlStaticContext;
 
@@ -67,6 +66,9 @@ public record AssemblyConfiguration
 
 		return repository;
 	}
+
+	[YamlMember(Alias = "versions")]
+	public Dictionary<string, VersionEntry> Versions { get; set; } = [];
 
 	[YamlMember(Alias = "narrative")]
 	public NarrativeRepository Narrative { get; set; } = new();

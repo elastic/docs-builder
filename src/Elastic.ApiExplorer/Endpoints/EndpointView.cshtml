@@ -1,0 +1,25 @@
+@using Elastic.Documentation.Configuration.Assembler
+@using Elastic.Documentation.Configuration.Builder
+@inherits RazorSliceHttpResult<IndexViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => new()
+	{
+		DocSetName = "Api Explorer",
+		Description = "",
+		CurrentNavigationItem = Model.CurrentNavigationItem,
+		Previous = null,
+		Next = null,
+		NavigationHtml = Model.NavigationHtml,
+		UrlPathPrefix = null,
+		VersionDropdown = null,
+		AllowIndexing = false,
+		CanonicalBaseUrl = null,
+		GoogleTagManager = new GoogleTagManagerConfiguration(),
+		Features = new FeatureFlags([]),
+		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
+	};
+}
+<section id="elastic-docs-v3">
+	<h1>@Model.CurrentNavigationItem.Url</h1>
+</section>

@@ -9,7 +9,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Microsoft.Extensions.Logging;
-using ProcNet;
 using ProcNet.Std;
 
 namespace Documentation.Assembler.Sourcing;

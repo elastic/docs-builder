@@ -8,7 +8,6 @@ using Documentation.Assembler.Cli;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
-using Elastic.Markdown.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, services => services

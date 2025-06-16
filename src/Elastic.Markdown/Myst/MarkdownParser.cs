@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
-
 using Cysharp.IO;
-
-using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -16,7 +13,6 @@ using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Linters;
 using Elastic.Markdown.Myst.Renderers;
-using Elastic.Markdown.Myst.Roles;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
 
 using Markdig;

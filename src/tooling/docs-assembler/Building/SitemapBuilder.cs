@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Xml.Linq;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Building;
@@ -31,7 +32,7 @@ public class SitemapBuilder(
 				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
 				flattenedNavigationItems
 					.OfType<FileNavigationItem>()
-					.Select(n => n.File.Url)
+					.Select(n => n.Model.Url)
 					.Distinct()
 					.Select(u => new Uri(BaseUri, u))
 					.Select(u => new XElement("url", [
@@ -55,9 +56,6 @@ public class SitemapBuilder(
 			{
 				case FileNavigationItem file:
 					result.Add(file);
-					break;
-				case GroupNavigationItem group:
-					result.AddRange(GetNavigationItems(group.Group.NavigationItems));
 					break;
 				case DocumentationGroup group:
 					result.AddRange(GetNavigationItems(group.NavigationItems));

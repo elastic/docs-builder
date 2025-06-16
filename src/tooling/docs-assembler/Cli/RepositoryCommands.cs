@@ -2,11 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO.Abstractions;
 using System.Net.Mime;
 using Actions.Core.Services;
@@ -17,33 +13,31 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Links;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
 
 namespace Documentation.Assembler.Cli;
 
 internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger)
 {
+	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
+
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
+		ConsoleApp.Log = msg => _log.LogInformation(msg);
+		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
 
-	// would love to use libgit2 so there is no git dependency but
-	// libgit2 is magnitudes slower to clone repositories https://github.com/libgit2/libgit2/issues/4674
 	/// <summary> Clones all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
-	/// <param name="fetchLatest"> If true fetch the latest commit of the branch instead of the link registry entry ref</param>
+	/// <param name="fetchLatest"> If true, fetch the latest commit of the branch instead of the link registry entry ref</param>
 	/// <param name="ctx"></param>
 	[Command("clone-all")]
 	public async Task<int> CloneAll(
@@ -93,10 +87,14 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
+		_log.LogInformation("Building all repositories for environment {Environment}", environment);
+
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);
+
+		_log.LogInformation("Creating assemble context");
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
 		{
@@ -104,12 +102,15 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			AllowIndexing = allowIndexing ?? false
 		};
 
+		_log.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
 		{
 			await assembleContext.Collector.StopAsync(ctx);
 			return 1;
 		}
+
+		_log.LogInformation("Get all clone directory information");
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
 		var checkoutResult = cloner.GetAll();
 		var checkouts = checkoutResult.Checkouts.ToArray();
@@ -117,9 +118,11 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
-		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, ctx);
+		_log.LogInformation("Preparing all assemble sources for build");
+		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
+		_log.LogInformation("Create global navigation");
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);

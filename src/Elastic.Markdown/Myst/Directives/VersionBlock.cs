@@ -4,7 +4,6 @@
 
 using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
 using static System.StringSplitOptions;
 
 namespace Elastic.Markdown.Myst.Directives;
