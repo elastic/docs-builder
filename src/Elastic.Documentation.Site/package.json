@@ -32,7 +32,7 @@
     "@elastic/eui-theme-borealis": "^2.0.0",
     "@emotion/css": "^11.13.5",
     "@emotion/react": "^11.14.0",
-    "@eslint/js": "9.28.0",
+    "@eslint/js": "9.29.0",
     "@r2wc/react-to-web-component": "^2.0.4",
     "@tailwindcss/postcss": "4.1.8",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
