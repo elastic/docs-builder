@@ -18,10 +18,10 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 		LegacyPageChecker = legacyPageChecker;
 	}
 
-	public IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
+	public IReadOnlyCollection<LegacyPageMapping>? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
 		if (mappedPages is null)
-			return [];
+			return null;
 
 		if (mappedPages.Count == 0)
 			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty, false)];
