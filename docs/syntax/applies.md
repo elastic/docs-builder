@@ -3,8 +3,8 @@
 Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
-	•	Which Elastic products and deployment models the content applies to.
-	•	When a feature changes state relative to the base version.
+* Which Elastic products and deployment models the content applies to.
+* When a feature changes state relative to the base version.
 
 This is what the `applies_to` metadata is for. It can be used at the page, section, or inline level to specify applicability with precision.
 
@@ -22,15 +22,13 @@ The `applies_to` metadata can be added at different levels in the documentation:
 
 ✅ Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every page.
 
-✅ Use applies_to tags when features change state in a specific update or release.
+✅ Use `applies_to` tags when features change state in a specific update or release.
 
 ❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
 
 ❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has been established earlier.
 
 ❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you do not need to tag a new GA feature.
-
-❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
 
 ## Syntax
 
@@ -77,7 +75,7 @@ applies_to:
 ### Lifecycle examples
 
 #### Unversioned products
-Unversioned products aren’t following a fixed versioning scheme and are released a lot more often than versioned products. All users are using the same version of this product.
+Unversioned products don't follow a fixed versioning scheme and are released a lot more often than versioned products. All users are using the same version of this product.
 * When a change is released in `ga`, it **doesn’t need any specific tagging**.
 * When a change is introduced as preview or beta, use `preview` or `beta` as value for the corresponding key within the `applies_to`:
 
@@ -87,7 +85,7 @@ Unversioned products aren’t following a fixed versioning scheme and are releas
       serverless: preview
     ---
     ```
-* When a change introduces a deprecation, use deprecated as value for the corresponding key within the applies_to:
+* When a change introduces a deprecation, use deprecated as value for the corresponding key within the `applies_to`:
 
     ```
     ---
@@ -162,7 +160,7 @@ applies_to:
 
 ### Page annotations
 
-All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use yaml frontmatter to indicate each deployment targets availability and lifecycle status. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
+All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment targets availability and lifecycle status. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
 
 #### Page annotation examples
 
@@ -234,7 +232,7 @@ the `{applies_to}` directive **MUST** be preceded by a heading directly.
 :::
 
 
-Note that this directive needs triple backticks since its content is literal. See also [](index.md#literal-directives)
+Note that this directive requires triple backticks since its content is literal. See also [](index.md#literal-directives)
 
 ````markdown
 ```{applies_to}
@@ -250,7 +248,7 @@ stack: ga 9.1
 ```
 ````
 
-This will allow the yaml inside the `{applies_to}` directive to be fully highlighted.
+This will allow the YAML inside the `{applies_to}` directive to be fully highlighted.
 
 #### Section annotation examples
 
@@ -336,7 +334,7 @@ Property {preview}`<version>`
 
 ![Applies To Model](images/applies.png)
 
-The above model is projected to the following structured yaml.
+The above model is projected to the following structured YAML.
 
 ```yaml
 ---
