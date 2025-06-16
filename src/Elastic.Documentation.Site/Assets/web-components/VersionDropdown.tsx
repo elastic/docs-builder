@@ -45,7 +45,7 @@ appendIconComponentCache({
 type VersionDropdownItem = {
     name: string
     href?: string
-    disabled: boolean,
+    disabled: boolean
     children?: VersionDropdownItem[]
 }
 
@@ -54,7 +54,7 @@ type VersionDropdownProps = {
     items: VersionDropdownItem[]
 }
 
-const VersionDropdown = ({ currentVersion,items }: VersionDropdownProps) => {
+const VersionDropdown = ({ currentVersion, items }: VersionDropdownProps) => {
     const [isPopoverOpen, setPopover] = useState(false)
 
     const contextMenuPopoverId = useGeneratedHtmlId({
@@ -122,7 +122,9 @@ const VersionDropdown = ({ currentVersion,items }: VersionDropdownProps) => {
                     <EuiFlexItem grow={0}>
                         <EuiIcon type="check" />
                     </EuiFlexItem>
-                    <EuiFlexItem grow={1}>Current ({currentVersion})</EuiFlexItem>
+                    <EuiFlexItem grow={1}>
+                        Current ({currentVersion})
+                    </EuiFlexItem>
                 </EuiFlexGroup>
             ),
             width: WIDTH,
