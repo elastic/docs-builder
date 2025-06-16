@@ -69,7 +69,7 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
 
-		var legacyPage = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
 		{
@@ -104,13 +104,15 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown is DetectionRuleFile || !markdown.Hidden),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			LegacyPage = legacyPage,
+			CurrentVersion = legacyPages.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
+			LegacyPages = legacyPages.Count > 1 ? [legacyPages.ElementAt(1)] : [],
+			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages.Skip(1).ToArray()),
 			Products = allProducts
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);

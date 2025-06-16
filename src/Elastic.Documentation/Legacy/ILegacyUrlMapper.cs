@@ -4,14 +4,17 @@
 
 namespace Elastic.Documentation.Legacy;
 
-public record LegacyPageMapping(string Url, string Version);
+public record LegacyPageMapping(string Url, string Version)
+{
+	public override string ToString() => Url.Replace("/current/", $"/{Version}/");
+};
 
 public interface ILegacyUrlMapper
 {
-	LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
+	IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages);
 }
 
 public record NoopLegacyUrlMapper : ILegacyUrlMapper
 {
-	public LegacyPageMapping? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages) => null;
+	public IReadOnlyCollection<LegacyPageMapping> MapLegacyUrl(IReadOnlyCollection<string>? mappedPages) => [];
 }

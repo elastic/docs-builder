@@ -11,6 +11,7 @@
 phantoms:
   - toc: elasticsearch://reference
   - toc: docs-content://release-notes
+  - toc: docs-content://
   - toc: cloud://release-notes
 
 toc:

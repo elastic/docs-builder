@@ -23,6 +23,7 @@ public static class Products
 		new("cloud-terraform", "Elastic Cloud Terraform"),
 		new("ecs", "Elastic Common Schema (ECS)"),
 		new("ecs-logging", "ECS Logging"),
+		new("edot-cf", "EDOT Cloud Forwarder"),
 		new("edot-sdk", "Elastic Distribution of OpenTelemetry SDK"),
 		new("edot-collector", "Elastic Distribution of OpenTelemetry Collector"),
 		new("elastic-agent", "Elastic Agent"),

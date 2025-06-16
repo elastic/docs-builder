@@ -12,6 +12,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Tests;
 
@@ -61,7 +62,7 @@ public class GlobalNavigationPathProviderTests
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
 
-		var assembleSources = await AssembleSources.AssembleAsync(Context, checkouts, TestContext.Current.CancellationToken);
+		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, Context, checkouts, TestContext.Current.CancellationToken);
 		return assembleSources;
 	}
 
@@ -267,7 +268,7 @@ public class GlobalNavigationPathProviderTests
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
 
-		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, TestContext.Current.CancellationToken);
+		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, assembleContext, checkouts, TestContext.Current.CancellationToken);
 		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();

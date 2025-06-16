@@ -1,13 +1,20 @@
-@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@inherits RazorSlice<MarkdownLayoutViewModel>
 <aside class="sidebar hidden lg:block max-w-65 md:hidden">
-	<nav id="toc-nav" class="sidebar-nav">
+	<nav id="toc-nav" class="sidebar-nav h-full">
 		<div id="page-version-dropdown" tabindex="1"
 		     class="mt-6 block group font-sans text-sm relative z-50">
 			<button
 				class="text-left border-1 rounded-2xl grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-1 py-1 group-open:border-b-1 border-grey-20">
 				<div>
 					<span class="page-version-dropdown_active text-ink">
-						Current version
+						@if (Model.CurrentVersion is not null)
+						{
+							<span>Current version (@Model.CurrentVersion)</span>
+						}
+						else
+						{
+							<span>Current version</span>
+						}
 					</span>
 				</div>
 				<div class="flex items-center my-auto justify-center size-5 hover:bg-grey-20 rounded-xl">
@@ -22,37 +29,42 @@
 					</svg>
 				</div>
 			</button>
-			<div class="hidden group-focus-within:block left-0 right-0 absolute top-full w-max">
-				<ul class="mt-1 py-0 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+			<div class="hidden group-focus-within:block left-0 right-0 absolute top-full w-max min-w-30 max-w-60">
+				<ul class="mt-1 py-0 mb-4 bg-white border-1 border-grey-20 rounded-sm shadow-md">
 					<li class="block">
 						<a
-							class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
+
+							class="block py-2 px-4 font-semibold text-grey-60 cursor-default"
 							@Htmx.GetNavHxAttributes(false, "mouseover")
 						>
-							Current version ✓
+							@if (Model.CurrentVersion is not null)
+							{
+								<span>@Model.CurrentVersion ✓</span>
+							}
+							else
+							{
+								<span>current ✓</span>
+							}
 						</a>						
 					</li>
-					<li class="block">
-						@if (Model.LegacyPage is not null)
-						{
+					@foreach (var legacyPage in Model.LegacyPages)
+					{
+						<li class="block">
 							<a
-								class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
-								href="@Model.LegacyPage.Url"
-								@Htmx.GetNavHxAttributes(false, "mouseover")>
-								Previous
-								version @(string.IsNullOrEmpty(Model.LegacyPage.Version) ? string.Empty : $"({Model.LegacyPage.Version})")
+								class="block py-1 px-4 text-sm hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
+								href="@legacyPage">
+								@legacyPage.Version
 							</a>
-						}
-						else
-						{
-							<a
-								class="block py-2 px-4 font-semibold text-grey-60 cursor-default"
-								@Htmx.GetNavHxAttributes(false, "mouseover")
-								title="Current is the only version of this page.">
-								Previous version
-							</a>
-						}
-					</li>
+						</li>
+					}
+					@if (Model.LegacyPages.Length == 0)
+					{
+						<li class="block border-t-1 border-grey-20">
+							<div class="py-2 px-4 text-sm">
+								There is no previous version of this page.
+							</div>
+						</li>
+					}
 				</ul>
 			</div>
 		</div>

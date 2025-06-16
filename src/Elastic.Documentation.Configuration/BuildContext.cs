@@ -77,13 +77,13 @@ public record BuildContext : IDocumentationContext
 			? ReadFileSystem.DirectoryInfo.New(source)
 			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName));
 
-		(DocumentationSourceDirectory, ConfigurationPath) = FindDocsFolderFromRoot(rootFolder);
+		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
 		DocumentationCheckoutDirectory = Paths.DetermineSourceDirectoryRoot(DocumentationSourceDirectory);
 
 		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, Path.Combine(".artifacts", "docs", "html")));
+			: WriteFileSystem.DirectoryInfo.New(Path.Combine(rootFolder.FullName, Path.Combine(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
@@ -94,31 +94,6 @@ public record BuildContext : IDocumentationContext
 		{
 			Enabled = false
 		};
-	}
-
-	private (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IDirectoryInfo rootPath)
-	{
-		string[] files = ["docset.yml", "_docset.yml"];
-		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
-		var mostLikelyTargets =
-			from file in files
-			from folder in knownFolders
-			select Path.Combine(folder, file);
-
-		var knownConfigPath = mostLikelyTargets.FirstOrDefault(ReadFileSystem.File.Exists);
-		var configurationPath = knownConfigPath is null ? null : ReadFileSystem.FileInfo.New(knownConfigPath);
-		if (configurationPath is not null)
-			return (configurationPath.Directory!, configurationPath);
-
-		configurationPath = rootPath
-			.EnumerateFiles("*docset.yml", SearchOption.AllDirectories)
-			.FirstOrDefault()
-			?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
-
-		var docsFolder = configurationPath.Directory
-			?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
-
-		return (docsFolder, configurationPath);
 	}
 
 }
