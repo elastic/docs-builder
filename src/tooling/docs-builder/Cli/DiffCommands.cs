@@ -57,7 +57,7 @@ internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubAct
 		var tracker = new LocalGitRepositoryTracker(collector, root);
 		var changed = tracker.GetChangedFiles(path);
 
-		foreach (var notFound in changed.Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
+		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
 		{
 			if (notFound is RenamedGitChange renamed)
