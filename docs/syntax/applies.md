@@ -1,6 +1,36 @@
 # Applies to
 
-The `applies_to` metadata allows you to specify which product versions, deployment types, and environments a specific page, section, or line applies to. Documentation published using Elastic Docs V3 follows a [cumulative model](../contribute/index.md) where a single page covers multiple versions cumulatively over time, instead of creating separate pages for each minor release.
+Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+
+To support this, source files use a tagging system to indicate:
+	•	Which Elastic products and deployment models the content applies to.
+	•	When a feature changes state relative to the base version.
+
+This is what the `applies_to` metadata is for. It can be used at the page, section, or inline level to specify applicability with precision.
+
+## When and where to use `applies_to`
+
+The `applies_to` metadata can be added at different levels in the documentation: 
+
+* [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the overall applicability of the page across products, deployments, and environments.
+* [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.
+* [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
+
+### Do’s and don’ts
+
+✅ Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when availability differs across deployments and environments.
+
+✅ Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every page.
+
+✅ Use applies_to tags when features change state in a specific update or release.
+
+❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
+
+❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has been established earlier.
+
+❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you do not need to tag a new GA feature.
+
+❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
 
 ## Syntax
 
@@ -20,8 +50,6 @@ Taking a mandatory [life-cycle](#life-cycle) with an optional [version](#version
   * `removed`
   * `unavailable`
   * `ga`
-
-Both versioned and unversioned products use the same lifecycle tags, but only versioned products can be marked `ga`. Unversioned products are considered `ga` by default and don’t need specification.
 
 ### Version
 
@@ -44,17 +72,7 @@ applies_to:
     observability: removed
 ```
 
-## When and where to use `applies_to`
-
-✅ Use `applies_to` tags when features change state (`introduced`, `deprecated`, `removed`) or when availability differs across deployments and environments.
-
-❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
-
-The `applies_to` metadata can be added at different levels in the documentation: 
-
-* [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the overall applicability of the page across products, deployments, and environments.
-* [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.
-* [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
+## Examples
 
 ### Lifecycle examples
 
