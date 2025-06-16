@@ -17,7 +17,7 @@
 			@if (Model.Features.IsVersionDropdownEnabled && Model.VersionDropdown is not null)
 			{
 				<div id="version-dropdown">
-					<version-dropdown items='@(new HtmlString(Model.VersionDropdown))' />
+					<version-dropdown current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdown))' />
 				</div>
 			}
 		</div>

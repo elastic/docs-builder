@@ -45,14 +45,16 @@ appendIconComponentCache({
 type VersionDropdownItem = {
     name: string
     href?: string
+    disabled: boolean,
     children?: VersionDropdownItem[]
 }
 
 type VersionDropdownProps = {
+    currentVersion: string
     items: VersionDropdownItem[]
 }
 
-const VersionDropdown = ({ items }: VersionDropdownProps) => {
+const VersionDropdown = ({ currentVersion,items }: VersionDropdownProps) => {
     const [isPopoverOpen, setPopover] = useState(false)
 
     const contextMenuPopoverId = useGeneratedHtmlId({
@@ -74,6 +76,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             return {
                 name: item.name,
                 href: item.href,
+                disabled: item.disabled,
             }
         })
     }
@@ -90,6 +93,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
                     title: item.name,
                     initialFocusedItemIndex: 0,
                     width: WIDTH,
+                    disabled: item.disabled,
                     size: 's',
                     items: item.children ? convertItems(item.children) : [],
                 }
@@ -104,6 +108,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             name: item.name,
             panel: item.children?.length ? index + 1 : undefined,
             href: item.href,
+            disabled: item.disabled,
         }
     })
 
@@ -117,7 +122,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
                     <EuiFlexItem grow={0}>
                         <EuiIcon type="check" />
                     </EuiFlexItem>
-                    <EuiFlexItem grow={1}>Current (9.0+)</EuiFlexItem>
+                    <EuiFlexItem grow={1}>Current ({currentVersion})</EuiFlexItem>
                 </EuiFlexGroup>
             ),
             width: WIDTH,
@@ -149,7 +154,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
                     font-size: 0.875rem;
                 `}
             >
-                Current (9.0+)
+                Current ({currentVersion})
             </EuiText>
         </EuiButton>
     )
@@ -174,6 +179,7 @@ customElements.define(
     r2wc(VersionDropdown, {
         props: {
             items: 'json',
+            currentVersion: 'string',
         },
     })
 )

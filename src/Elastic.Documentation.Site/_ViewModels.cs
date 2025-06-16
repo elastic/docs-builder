@@ -26,6 +26,7 @@ public class GlobalLayoutViewModel
 	public required INavigationItem? Next { get; init; }
 
 	public required string? VersionDropdown { get; init; }
+	public required string? CurrentVersion { get; init; }
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
