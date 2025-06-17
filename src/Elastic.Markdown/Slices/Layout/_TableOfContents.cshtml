@@ -47,7 +47,7 @@
 							}
 						</a>						
 					</li>
-					@foreach (var legacyPage in Model.LegacyPages)
+					@foreach (var legacyPage in Model.LegacyPages ?? [])
 					{
 						<li class="block">
 							@if (legacyPage.Exists)
@@ -68,11 +68,18 @@
 							
 						</li>
 					}
-					@if (Model.LegacyPages.Length == 0)
+					@if (Model.LegacyPages is null) // This means there is no mapping because the page is new in v3
 					{
 						<li class="block border-t-1 border-grey-20">
 							<div class="py-1 px-4 text-sm">
 								There is no previous version of this page.
+							</div>
+						</li>
+					} else if (Model.LegacyPages.Length == 0) // This means there is a legacy page mapping with 0 entries, which means the page was fully migrated and is also redirecting to the new system.
+					{
+						<li class="block border-t-1 border-grey-20">
+							<div class="py-1 px-4 text-sm">
+								This page was fully migrated to the current version.
 							</div>
 						</li>
 					}

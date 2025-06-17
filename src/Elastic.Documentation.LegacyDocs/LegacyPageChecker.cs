@@ -2,15 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.LegacyDocs;
 
-public class LegacyPageChecker(IFileSystem fs)
+public class LegacyPageChecker
 {
 	private BloomFilter? _bloomFilter;
-	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.LegacyDocs", "legacy-pages.bloom.bin");
+	private const string RootNamespace = "Elastic.Documentation.LegacyDocs";
+	private const string FileName = "legacy-pages.bloom.bin";
+	private const string ResourceName = $"{RootNamespace}.{FileName}";
+	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", RootNamespace, FileName);
 
 
 	public bool PathExists(string path)
@@ -19,11 +21,13 @@ public class LegacyPageChecker(IFileSystem fs)
 		return _bloomFilter.Check(path);
 	}
 
-	private BloomFilter LoadBloomFilter()
+	private static BloomFilter LoadBloomFilter()
 	{
-		var bloomFilterBinaryInfo = fs.FileInfo.New(_bloomFilterBinaryPath);
-		_bloomFilter ??= BloomFilter.Load(bloomFilterBinaryInfo.FullName);
-		return _bloomFilter;
+		var assembly = typeof(LegacyPageChecker).Assembly;
+		using var stream = assembly.GetManifestResourceStream(ResourceName) ?? throw new FileNotFoundException(
+			$"Embedded resource '{ResourceName}' not found in assembly '{assembly.FullName}'. " +
+			"Ensure the Build Action for 'legacy-pages.bloom.bin' is 'Embedded Resource' and the path/name is correct.");
+		return BloomFilter.Load(stream);
 	}
 
 	public void GenerateBloomFilterBinary(IPagesProvider pagesProvider)

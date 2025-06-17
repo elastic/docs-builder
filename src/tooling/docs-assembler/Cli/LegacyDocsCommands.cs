@@ -33,8 +33,8 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService git
 			NoHints = true
 		}.StartAsync(ctx);
 		var pagesProvider = new LocalPagesProvider(builtDocsDir);
-		var legacyPageLookup = new LegacyPageChecker(new FileSystem());
-		legacyPageLookup.GenerateBloomFilterBinary(pagesProvider);
+		var legacyPageChecker = new LegacyPageChecker();
+		legacyPageChecker.GenerateBloomFilterBinary(pagesProvider);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
 	}
@@ -48,8 +48,8 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService git
 		{
 			NoHints = true
 		}.StartAsync(ctx);
-		var legacyPageLookup = new LegacyPageChecker(new FileSystem());
-		var result = legacyPageLookup.PathExists(path);
+		var legacyPageChecker = new LegacyPageChecker();
+		var result = legacyPageChecker.PathExists(path);
 		Console.WriteLine(result ? "exists" : "does not exist");
 		await collector.StopAsync(ctx);
 		return collector.Errors;

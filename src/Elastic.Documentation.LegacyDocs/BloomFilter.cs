@@ -141,14 +141,16 @@ internal sealed class BloomFilter
 	}
 
 	/// <summary>
-	/// Loads a Bloom Filter from a binary file.
+	/// Loads a Bloom Filter from a stream.
+	/// The stream is expected to contain data in the same format as Save() produces.
 	/// </summary>
-	/// <param name="filePath">The path to the file containing the filter data.</param>
+	/// <param name="stream">The stream containing the filter data.</param>
 	/// <returns>A new BloomFilter instance.</returns>
-	public static BloomFilter Load(string filePath)
+	public static BloomFilter Load(Stream stream)
 	{
-		using var stream = File.OpenRead(filePath);
-		using var reader = new BinaryReader(stream);
+		// Use a BinaryReader, but leave the stream open as it's managed externally.
+		using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+
 		// 1. Read metadata (Size and HashCount)
 		var size = reader.ReadInt32();
 		var hashCount = reader.ReadInt32();

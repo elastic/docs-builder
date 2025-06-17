@@ -237,15 +237,6 @@ public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDir
 	}
 }
 
-public class NoopConsoleWriter : IConsoleOutWriter
-{
-	public static readonly NoopConsoleWriter Instance = new();
-
-	public void Write(Exception e) { }
-
-	public void Write(ConsoleOut consoleOut) { }
-}
-
 public record CheckoutResult
 {
 	public static string LinkRegistrySnapshotFileName => "link-index.snapshot.json";

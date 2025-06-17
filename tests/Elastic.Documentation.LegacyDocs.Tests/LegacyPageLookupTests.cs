@@ -12,7 +12,7 @@ public class LegacyPageCheckerTests
 	[Fact]
 	public void TestVersions()
 	{
-		var legacyPageChecker = new LegacyPageChecker(new FileSystem());
+		var legacyPageChecker = new LegacyPageChecker();
 		var expected = new Dictionary<string, bool>
 		{
 			["8.0"] = false,
