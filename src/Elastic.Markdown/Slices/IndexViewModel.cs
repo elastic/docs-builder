@@ -33,9 +33,9 @@ public class IndexViewModel
 	public required INavigationItem[] Parents { get; init; }
 
 	public required string NavigationHtml { get; init; }
-	public required string? CurrentVersion { get; init; }
-	public required LegacyPageMapping[] LegacyPages { get; init; }
-	public required VersionDrownDownItemViewModel[] VersionDropdownItems { get; init; }
+	public required string CurrentVersion { get; init; }
+	public required LegacyPageMapping[]? LegacyPages { get; init; }
+	public required VersionDrownDownItemViewModel[]? VersionDropdownItems { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }
@@ -63,8 +63,12 @@ public class VersionDrownDownItemViewModel
 	public required VersionDrownDownItemViewModel[]? Children { get; init; }
 
 	// This logic currently only handles one level of children. Although the model supports multiple levels, it is not currently used.
-	public static VersionDrownDownItemViewModel[] FromLegacyPageMappings(LegacyPageMapping[] legacyPageMappings)
+	public static VersionDrownDownItemViewModel[]? FromLegacyPageMappings(LegacyPageMapping[]? legacyPageMappings)
 	{
+		if (legacyPageMappings is null)
+		{
+			return null;
+		}
 		var groupedVersions = GroupByMajorVersion(legacyPageMappings);
 		return groupedVersions.Select(m =>
 		{

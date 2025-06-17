@@ -110,9 +110,9 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			CurrentVersion = legacyPages.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
-			LegacyPages = legacyPages.Count > 1 ? [legacyPages.ElementAt(1)] : [],
-			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages.Skip(1).ToArray()),
+			CurrentVersion = legacyPages?.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
+			LegacyPages = legacyPages?.Skip(1).ToArray(),
+			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);

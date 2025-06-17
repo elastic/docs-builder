@@ -136,7 +136,7 @@ public class AssembleSources
 
 			foreach (var mapping in mappings)
 			{
-				var mappingKey = $"{((YamlScalarNode)mapping.Key).Value}/";
+				var mappingKey = $"{((YamlScalarNode)mapping.Key).Value}";
 				var mappingValues = ((YamlSequenceNode)mapping.Value).Children.OfType<YamlScalarNode>().Where(x => x.Value is not null).Select(x => x.Value!).ToList();
 				if (dictionary.TryGetValue(mappingKey, out _))
 					reader.EmitWarning($"'{mappingKey}' is already mapped to '{mappingValues}'");

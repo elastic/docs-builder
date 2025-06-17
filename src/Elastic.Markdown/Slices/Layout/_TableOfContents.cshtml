@@ -34,7 +34,7 @@
 					<li class="block">
 						<a
 
-							class="block py-2 px-4 font-semibold text-grey-60 cursor-default"
+							class="block py-1 px-4 font-semibold text-grey-60 cursor-default"
 							@Htmx.GetNavHxAttributes(false, "mouseover")
 						>
 							@if (Model.CurrentVersion is not null)
@@ -47,21 +47,39 @@
 							}
 						</a>						
 					</li>
-					@foreach (var legacyPage in Model.LegacyPages)
+					@foreach (var legacyPage in Model.LegacyPages ?? [])
 					{
 						<li class="block">
-							<a
-								class="block py-1 px-4 text-sm hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
-								href="@legacyPage">
-								@legacyPage.Version
-							</a>
+							@if (legacyPage.Exists)
+							{
+								<a
+									class="block py-1 px-4 text-sm hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold text-ink rounded-sm"
+									href="@legacyPage">
+									@legacyPage.Version
+								</a>
+							}
+							else
+							{
+								<a
+									class="block py-1 px-4 font-semibold text-grey-60 cursor-default">
+									@legacyPage.Version
+								</a>
+							}
+							
 						</li>
 					}
-					@if (Model.LegacyPages.Length == 0)
+					@if (Model.LegacyPages is null) // This means there is no mapping because the page is new in v3
 					{
 						<li class="block border-t-1 border-grey-20">
-							<div class="py-2 px-4 text-sm">
+							<div class="py-1 px-4 text-sm">
 								There is no previous version of this page.
+							</div>
+						</li>
+					} else if (Model.LegacyPages.Length == 0) // This means there is a legacy page mapping with 0 entries, which means the page was fully migrated and is also redirecting to the new system.
+					{
+						<li class="block border-t-1 border-grey-20">
+							<div class="py-1 px-4 text-sm">
+								This page was fully migrated to the current version.
 							</div>
 						</li>
 					}
