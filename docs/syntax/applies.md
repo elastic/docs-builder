@@ -1,6 +1,6 @@
 # Applies to
 
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/index.md#cumulative-docs): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
 * Which Elastic products and deployment models the content applies to.
