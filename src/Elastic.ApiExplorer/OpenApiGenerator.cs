@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.ApiExplorer.Endpoints;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration;
@@ -16,39 +15,15 @@ using Microsoft.OpenApi.Models.Interfaces;
 
 namespace Elastic.ApiExplorer;
 
-public class ApiGroupingNavigationItem : INodeNavigationItem<ApiEndpoint, INavigationItem>
-{
-	public ApiGroupingNavigationItem(int depth, INodeNavigationItem<INavigationModel, INavigationItem> parentGroup, LandingNavigationItem rootNavigation)
-	{
-		Parent = parentGroup;
-		Depth = depth;
-		NavigationRoot = rootNavigation;
-		Id = NavigationRoot.Id;
+public interface IApiModel : INavigationModel;
 
-		Index = apiEndpoint;
-		//TODO
-		NavigationTitle = apiEndpoint.OpenApiPath.Summary;
-	}
+public interface IApiGroupingModel : IApiModel;
 
-	public string Id { get; }
-	public int Depth { get; }
-	public ApiEndpoint Index { get; }
-	public string Url => NavigationItems.First().Url;
-	public string NavigationTitle { get; }
-	public bool Hidden => false;
+public record ApiClassification(string Name, string Description, IReadOnlyCollection<ApiTag> Tags) : IApiGroupingModel;
 
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
+public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel;
 
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
-}
-
-public record ApiClassification(string Name, string Description, ApiTag[] Tags);
-public record ApiTag(string Name, string Description);
-public record ApiEndpoint(string Route, IOpenApiPathItem OpenApiPath);
+public record ApiEndpoint(string Route, IOpenApiPathItem OpenApiPath, List<ApiOperation> Operations) : IApiGroupingModel;
 
 public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 {
@@ -76,7 +51,7 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 				if (tag is not null)
 				{
 				}
-				var classification = openApiDocument.Info.Description == "Elasticsearch Request & Response Specification" ? ClassifyElasticsearchTag(tag ?? "global") : string.Empty;
+				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification" ? ClassifyElasticsearchTag(tag ?? "unknown") : "unknown";
 
 				return new
 				{
@@ -90,67 +65,112 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 			.GroupBy(g => g.Classification)
 			.ToArray();
 
+		// intermediate grouping of models to create the navigation tree
+		// this is two-phased because we need to know if an endpoint has one or more operations
 		var classifications = new List<ApiClassification>();
 		foreach (var group in grouped)
 		{
 			var tags = new List<ApiTag>();
 			foreach (var tagGroup in group.GroupBy(g => g.Tag))
 			{
-				var tag = new ApiTag(tagGroup.Key ?? "global", "");
+				var endpoints = new List<ApiEndpoint>();
+				foreach (var endpoint in tagGroup)
+				{
+					var api = endpoint.Namespace is null ? endpoint.Api ?? null : $"{endpoint.Namespace}.{endpoint.Api}";
+					var operations = new List<ApiOperation>();
+					foreach (var operation in endpoint.Path.Value.Operations)
+					{
+						var apiOperation = new ApiOperation(operation.Key, operation.Value);
+						operations.Add(apiOperation);
+					}
+					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value, operations);
+					endpoints.Add(apiEndpoint);
+				}
+				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", endpoints);
 				tags.Add(tag);
 			}
-
-			var classification = new ApiClassification(group.Key, "", tags.ToArray());
+			var classification = new ApiClassification(group.Key, "", tags);
 			classifications.Add(classification);
 		}
 
-
-		var rootItems = new List<ApiGroupingNavigationItem>();
-		foreach (var group in grouped)
+		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+		var hasClassifications = classifications.Count > 1;
+		foreach (var classification in classifications)
 		{
-			var cl = group.Key;
-
-			var categoryItem = new ApiGroupingNavigationItem(1, rootNavigation, rootNavigation);
-			var tagItems = new List<ApiGroupingNavigationItem>();
-			foreach (var tagGroup in group.GroupBy(g => g.Tag))
+			if (hasClassifications)
 			{
-				var tag = tagGroup.Key ?? "global";
+				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
+				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-				var tagNavigationItem = new ApiGroupingNavigationItem(1, categoryItem, rootNavigation);
-
-				var endpointItems = new List<EndpointNavigationItem>();
-				foreach (var endpoint in tagGroup)
-				{
-					var api = endpoint.Namespace is null ? endpoint.Api ?? "global" : $"{endpoint.Namespace}.{endpoint.Api}";
-
-					var path = endpoint.Path;
-					var endpointUrl = $"{url}/{path.Key.Trim('/').Replace('/', '-').Replace("{", "").Replace("}", "")}";
-
-					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value);
-					var operationItems = new List<OperationNavigationItem>();
-					var endpointNavigationItem = new EndpointNavigationItem(1, endpointUrl, apiEndpoint, tagNavigationItem, rootNavigation);
-					if (endpoint.Path.Value.Operations.Count > 1)
-					{
-						foreach (var operation in endpoint.Path.Value.Operations)
-						{
-							var operationUrl = $"{endpointUrl}/{operation.Key.ToString().ToLowerInvariant()}";
-							var apiOperation = new ApiOperation(operation.Key, operation.Value);
-							var navigation = new OperationNavigationItem(2, operationUrl, apiOperation, endpointNavigationItem, rootNavigation);
-							operationItems.Add(navigation);
-						}
-						endpointNavigationItem.NavigationItems = operationItems;
-					}
-					endpointItems.Add(endpointNavigationItem);
-				}
-				tagNavigationItem.NavigationItems = endpointItems;
-				tagItems.Add(tagNavigationItem);
+				CreateTagNavigationItems(classification, rootNavigation, classificationNavigationItem, tagNavigationItems);
+				topLevelNavigationItems.Add(classificationNavigationItem);
+				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
+				if (classificationNavigationItem.NavigationItems.Count == 0)
+					classificationNavigationItem.NavigationItems = tagNavigationItems;
 			}
-			categoryItem.NavigationItems = tagItems;
-			rootItems.Add(categoryItem);
+			else
+				CreateTagNavigationItems(classification, rootNavigation, rootNavigation, topLevelNavigationItems);
 		}
-		rootNavigation.NavigationItems = rootItems;
-
+		rootNavigation.NavigationItems = topLevelNavigationItems;
 		return rootNavigation;
+	}
+
+	private static void CreateTagNavigationItems(ApiClassification classification, LandingNavigationItem rootNavigation,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
+	)
+	{
+		var hasTags = classification.Tags.Count > 1;
+		foreach (var tag in classification.Tags)
+		{
+			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
+			if (hasTags)
+			{
+				var tagNavigationItem = new TagNavigationItem(tag, rootNavigation, parent);
+				CreateEndpointNavigationItems(rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
+				parentNavigationItems.Add(tagNavigationItem);
+				tagNavigationItem.NavigationItems = endpointNavigationItems;
+			}
+			else
+			{
+				CreateEndpointNavigationItems(rootNavigation, tag, parent, endpointNavigationItems);
+				if (parent is ClassificationNavigationItem classificationNavigationItem)
+					classificationNavigationItem.NavigationItems = endpointNavigationItems;
+				else if (parent is LandingNavigationItem landingNavigationItem)
+					landingNavigationItem.NavigationItems = endpointNavigationItems;
+			}
+		}
+	}
+
+	private static void CreateEndpointNavigationItems(
+		LandingNavigationItem rootNavigation,
+		ApiTag tag,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
+	)
+	{
+		foreach (var endpoint in tag.Endpoints)
+		{
+			if (endpoint.Operations.Count > 1)
+			{
+				var endpointNavigationItem = new EndpointNavigationItem(endpoint, rootNavigation, parentNavigationItem);
+				var operationNavigationItems = new List<OperationNavigationItem>();
+				foreach (var operation in endpoint.Operations)
+				{
+					var operationNavigationItem = new OperationNavigationItem(operation, rootNavigation, endpointNavigationItem);
+					operationNavigationItems.Add(operationNavigationItem);
+				}
+				endpointNavigationItem.NavigationItems = operationNavigationItems;
+				endpointNavigationItems.Add(endpointNavigationItem);
+			}
+			else
+			{
+				var operation = endpoint.Operations.First();
+				var operationNavigationItem = new OperationNavigationItem(operation, rootNavigation, parentNavigationItem);
+				endpointNavigationItems.Add(operationNavigationItem);
+
+			}
+		}
 	}
 
 	public async Task Generate(Cancel ctx = default)
@@ -174,12 +194,12 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 			CurrentNavigation = navigation,
 		};
 		_ = await Render(navigation.Index, renderContext, ctx);
-		foreach (var endpoint in navigation.NavigationItems)
-		{
-			_ = await Render(endpoint.Index, renderContext, ctx);
-			foreach (var operation in endpoint.NavigationItems)
-				_ = await Render(operation.Model, renderContext, ctx);
-		}
+		//foreach (var endpoint in navigation.NavigationItems)
+		//{
+		//_ = await Render(endpoint.Index, renderContext, ctx);
+		//foreach (var operation in endpoint.NavigationItems)
+		//	_ = await Render(operation.Model, renderContext, ctx);
+		//}
 	}
 
 	private async Task<IFileInfo> Render<T>(T page, ApiRenderContext renderContext, Cancel ctx)

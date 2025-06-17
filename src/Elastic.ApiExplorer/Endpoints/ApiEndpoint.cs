@@ -37,34 +37,3 @@ public record ApiEndpoint : INavigationModel, IPageRenderer<ApiRenderContext>
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }
-
-public class EndpointNavigationItem : INodeNavigationItem<ApiEndpoint, OperationNavigationItem>
-{
-	public EndpointNavigationItem(int depth, string url, ApiEndpoint apiEndpoint, ApiGroupingNavigationItem parent, LandingNavigationItem root)
-	{
-		Parent = parent;
-		Depth = depth;
-		NavigationRoot = root;
-		Id = NavigationRoot.Id;
-
-		Index = apiEndpoint;
-		Url = url;
-		//TODO
-		NavigationTitle = apiEndpoint.OpenApiPath.Summary;
-	}
-
-	public string Id { get; }
-	public int Depth { get; }
-	public ApiEndpoint Index { get; }
-	public string Url { get; }
-	public string NavigationTitle { get; }
-	public bool Hidden => false;
-
-	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
-
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
-}

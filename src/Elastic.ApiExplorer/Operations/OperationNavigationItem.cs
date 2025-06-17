@@ -26,33 +26,3 @@ public record ApiOperation(OperationType OperationType, OpenApiOperation Operati
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }
-
-public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
-{
-	public OperationNavigationItem(int depth, string url, ApiOperation apiOperation, EndpointNavigationItem parent, LandingNavigationItem root)
-	{
-		Parent = parent;
-		Depth = depth;
-		//Current = group.Current;
-		NavigationRoot = root;
-		Id = NavigationRoot.Id;
-		Model = apiOperation;
-		Url = url;
-		//TODO
-		NavigationTitle = $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
-	}
-
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	public string Id { get; }
-	public int Depth { get; }
-	public ApiOperation Model { get; }
-	public string Url { get; }
-	public bool Hidden => false;
-
-	public string NavigationTitle { get; }
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
-
-}
