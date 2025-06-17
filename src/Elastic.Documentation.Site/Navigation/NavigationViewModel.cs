@@ -9,9 +9,10 @@ public class NavigationViewModel
 	public required string Title { get; init; }
 	public required string TitleUrl { get; init; }
 	public required INodeNavigationItem<INavigationModel, INavigationItem> Tree { get; init; }
-	/// controls whether to split the navigation tree automatically
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }
-	//public required IEnumerable<GroupNavigationItem> TopLevelItems { get; init; }
 	public required IEnumerable<INodeNavigationItem<INavigationModel, INavigationItem>> TopLevelItems { get; init; }
+
+	/// controls whether to split the navigation tree automatically
+	public required bool IsUsingNavigationDropdown { get; init; }
 }

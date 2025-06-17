@@ -10,7 +10,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class ApiLanding : IApiGroupingModel, IPageRenderer<ApiRenderContext>
+public class ApiLanding : IApiGroupingModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
@@ -27,9 +27,9 @@ public class ApiLanding : IApiGroupingModel, IPageRenderer<ApiRenderContext>
 	}
 }
 
-public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>
+public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>
 {
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
 	public ApiLanding Index { get; }
@@ -40,7 +40,7 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public bool Hidden => false;
 
 	//TODO
-	public string NavigationTitle { get; } = "API Documentation";
+	public string NavigationTitle { get; } = "API Overview";
 
 	public LandingNavigationItem(string url)
 	{
@@ -53,6 +53,9 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 
 		Index = landing;
 	}
+
+	/// <inheritdoc />
+	public bool IsUsingNavigationDropdown => NavigationItems.OfType<ClassificationNavigationItem>().Any();
 }
 
 public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationItem> : INodeNavigationItem<TGroupingModel, TNavigationItem>
@@ -61,7 +64,7 @@ public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationI
 
 public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>(
 	TGroupingModel groupingModel,
-	LandingNavigationItem rootNavigation,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent)
 	: IApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	where TGroupingModel : IApiGroupingModel
@@ -74,7 +77,7 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	public abstract string NavigationTitle { get; }
 
 	/// <inheritdoc />
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
@@ -97,16 +100,19 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 }
 
 public class ClassificationNavigationItem(ApiClassification classification, LandingNavigationItem rootNavigation, LandingNavigationItem parent)
-	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent)
+	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent), IRootNavigationItem<ApiClassification, INavigationItem>
 {
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = classification.Name;
 
 	/// <inheritdoc />
 	public override string Id { get; } = ShortId.Create(classification.Name);
+
+	/// <inheritdoc />
+	public bool IsUsingNavigationDropdown => true;
 }
 
-public class TagNavigationItem(ApiTag tag, LandingNavigationItem rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
+public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
 	: ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
 {
 	/// <inheritdoc />
@@ -118,17 +124,17 @@ public class TagNavigationItem(ApiTag tag, LandingNavigationItem rootNavigation,
 
 public interface IEndpointOrOperationNavigationItem : INavigationItem;
 
-public class EndpointNavigationItem(ApiEndpoint endpoint, LandingNavigationItem rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
+public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
 	: IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>, IEndpointOrOperationNavigationItem
 {
 	/// <inheritdoc />
-	public string Url => "TODO ENDPOINT URL";
+	public string Url => NavigationItems.First().Url;
 
 	/// <inheritdoc />
 	public string NavigationTitle { get; } = endpoint.Route;
 
 	/// <inheritdoc />
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
@@ -151,23 +157,36 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, LandingNavigationItem 
 	/// <inheritdoc />
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
 }
-public class OperationNavigationItem(
-	ApiOperation apiOperation,
-	LandingNavigationItem root,
-	IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent)
-	: ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
+public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
 {
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = root;
+#pragma warning disable IDE0290
+	public OperationNavigationItem(
+#pragma warning restore IDE0290
+		ApiOperation apiOperation,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
+	)
+	{
+		NavigationRoot = root;
+		Id = ShortId.Create(apiOperation.Operation.OperationId ?? apiOperation.OperationType.ToString());
+		Model = apiOperation;
+		NavigationTitle = apiOperation.Operation.Summary ?? $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
+		Parent = parent;
+		var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
+		Url = $"/api/endpoints/{moniker}";
+	}
+
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	//TODO enum to string
-	public string Id { get; } = ShortId.Create(apiOperation.Operation.OperationId ?? apiOperation.OperationType.ToString());
+	public string Id { get; }
 	public int Depth { get; } = 1;
-	public ApiOperation Model { get; } = apiOperation;
-	public string Url { get; } = "TODO OPERATION URL";
+	public ApiOperation Model { get; }
+	public string Url { get; }
 	public bool Hidden => false;
 
-	public string NavigationTitle { get; } = $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
+	public string NavigationTitle { get; }
 
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	public int NavigationIndex { get; set; }
 

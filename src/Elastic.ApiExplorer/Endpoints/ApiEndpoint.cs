@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.ApiExplorer.Landing;
-using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi.Models.Interfaces;
 using RazorSlices;
@@ -17,7 +15,6 @@ public record ApiEndpoint : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
 		Route = route;
 		OpenApiPath = openApiPath;
-
 	}
 
 	public string Route { get; }

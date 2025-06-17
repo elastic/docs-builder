@@ -11,7 +11,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record ApiOperation(OperationType OperationType, OpenApiOperation Operation) : INavigationModel, IPageRenderer<ApiRenderContext>
+public record ApiOperation(OperationType OperationType, OpenApiOperation Operation, string Route, string? ApiName) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{

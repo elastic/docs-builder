@@ -15,15 +15,27 @@ using Microsoft.OpenApi.Models.Interfaces;
 
 namespace Elastic.ApiExplorer;
 
-public interface IApiModel : INavigationModel;
+public interface IApiModel : INavigationModel, IPageRenderer<ApiRenderContext>;
 
 public interface IApiGroupingModel : IApiModel;
 
-public record ApiClassification(string Name, string Description, IReadOnlyCollection<ApiTag> Tags) : IApiGroupingModel;
+public record ApiClassification(string Name, string Description, IReadOnlyCollection<ApiTag> Tags) : IApiGroupingModel
+{
+	/// <inheritdoc />
+	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+}
 
-public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel;
+public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
+{
+	/// <inheritdoc />
+	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+}
 
-public record ApiEndpoint(string Route, IOpenApiPathItem OpenApiPath, List<ApiOperation> Operations) : IApiGroupingModel;
+public record ApiEndpoint(string Route, IOpenApiPathItem OpenApiPath, List<ApiOperation> Operations, string? Name) : IApiGroupingModel
+{
+	/// <inheritdoc />
+	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+}
 
 public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 {
@@ -80,10 +92,10 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 					var operations = new List<ApiOperation>();
 					foreach (var operation in endpoint.Path.Value.Operations)
 					{
-						var apiOperation = new ApiOperation(operation.Key, operation.Value);
+						var apiOperation = new ApiOperation(operation.Key, operation.Value, endpoint.Path.Key, api);
 						operations.Add(apiOperation);
 					}
-					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value, operations);
+					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value, operations, api);
 					endpoints.Add(apiEndpoint);
 				}
 				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", endpoints);
@@ -102,7 +114,7 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-				CreateTagNavigationItems(classification, rootNavigation, classificationNavigationItem, tagNavigationItems);
+				CreateTagNavigationItems(classification, classificationNavigationItem, classificationNavigationItem, tagNavigationItems);
 				topLevelNavigationItems.Add(classificationNavigationItem);
 				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
 				if (classificationNavigationItem.NavigationItems.Count == 0)
@@ -115,7 +127,9 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		return rootNavigation;
 	}
 
-	private static void CreateTagNavigationItems(ApiClassification classification, LandingNavigationItem rootNavigation,
+	private static void CreateTagNavigationItems(
+		ApiClassification classification,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
 		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
 	)
@@ -143,7 +157,7 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 	}
 
 	private static void CreateEndpointNavigationItems(
-		LandingNavigationItem rootNavigation,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
 		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
@@ -186,29 +200,46 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
-		var navigationHtml = await navigationRenderer.RenderNavigation(navigation, new Uri("http://ignored.example"), ctx);
+
 
 		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
 		{
-			NavigationHtml = navigationHtml,
-			CurrentNavigation = navigation,
+			NavigationHtml = string.Empty,
+			CurrentNavigation = navigation
 		};
-		_ = await Render(navigation.Index, renderContext, ctx);
-		//foreach (var endpoint in navigation.NavigationItems)
-		//{
-		//_ = await Render(endpoint.Index, renderContext, ctx);
-		//foreach (var operation in endpoint.NavigationItems)
-		//	_ = await Render(operation.Model, renderContext, ctx);
-		//}
+		_ = await Render(navigation, navigation.Index, renderContext, navigationRenderer, ctx);
+		await RenderNavigationItems(navigation);
+
+		async Task RenderNavigationItems(INavigationItem currentNavigation)
+		{
+			if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
+			{
+				_ = await Render(node, node.Index, renderContext, navigationRenderer, ctx);
+				foreach (var child in node.NavigationItems)
+					await RenderNavigationItems(child);
+			}
+
+			else if (currentNavigation is ILeafNavigationItem<IApiModel> leaf)
+				_ = await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx);
+			else
+			{
+
+			}
+		}
 	}
 
-	private async Task<IFileInfo> Render<T>(T page, ApiRenderContext renderContext, Cancel ctx)
+	private async Task<IFileInfo> Render<T>(INavigationItem current, T page, ApiRenderContext renderContext, IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
 		where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
-		var outputFile = OutputFile(renderContext.CurrentNavigation);
+		var outputFile = OutputFile(current);
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
+		var navigationHtml = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), ctx);
+		renderContext = renderContext with
+		{
+			NavigationHtml = navigationHtml
+		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);
 		return outputFile;

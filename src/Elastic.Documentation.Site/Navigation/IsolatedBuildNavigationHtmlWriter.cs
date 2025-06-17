@@ -7,14 +7,14 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INodeNavigationItem<INavigationModel, INavigationItem> siteRoot)
+public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
 	: INavigationHtmlWriter
 {
 	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
-		var navigation = context.Configuration.Features.IsPrimaryNavEnabled
+		var navigation = context.Configuration.Features.IsPrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
 			? currentRootNavigation
 			: siteRoot;
 
@@ -27,13 +27,14 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, INodeNaviga
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> navigation) =>
+	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
 		new()
 		{
 			Title = navigation.NavigationTitle,
 			TitleUrl = navigation.Url,
 			Tree = navigation,
 			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
+			IsUsingNavigationDropdown = context.Configuration.Features.IsPrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
 			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
 		};

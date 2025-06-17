@@ -21,7 +21,7 @@ public interface INavigationItem
 	string NavigationTitle { get; }
 
 	/// Gets the root navigation item.
-	INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 
 	/// <summary>
 	/// Gets or sets the parent navigation item.
@@ -66,4 +66,11 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 	/// Gets the collection of child navigation items.
 	/// </summary>
 	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
+}
+
+public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>
+	where TIndex : INavigationModel
+	where TChildNavigation : INavigationItem
+{
+	bool IsUsingNavigationDropdown { get; }
 }
