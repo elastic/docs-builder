@@ -289,6 +289,7 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		var navigationHtml = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), ctx);
 		renderContext = renderContext with
 		{
+			CurrentNavigation = current,
 			NavigationHtml = navigationHtml
 		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);

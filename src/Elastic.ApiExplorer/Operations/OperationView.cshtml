@@ -1,3 +1,4 @@
+@using Elastic.ApiExplorer.Landing
 @using Elastic.Documentation.Configuration.Assembler
 @using Elastic.Documentation.Configuration.Builder
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
@@ -20,9 +21,20 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
 	};
 }
-
-@if (Model.CurrentNavigationItem.)
-
+@{
+	var parent = Model.CurrentNavigationItem.Parent as EndpointNavigationItem;
+}
+@if (parent is not null && parent.NavigationItems.Count > 0 && parent.NavigationItems.All(n => n.Hidden))
+{
+	<ul>
+	@foreach (var overload in parent.NavigationItems)
+	{
+		<li>
+			<a href="@overload.Url">@overload.Model.OperationType @overload.Model.Route</a>
+		</li>
+	}
+	</ul>
+}
 
 <section id="elastic-docs-v3">
 	<h1>Id: @Model.Operation.Operation.OperationId</h1>
