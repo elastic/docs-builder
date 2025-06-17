@@ -31,7 +31,7 @@ public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEnd
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public record ApiEndpoint(string Route, IOpenApiPathItem OpenApiPath, List<ApiOperation> Operations, string? Name) : IApiGroupingModel
+public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGroupingModel
 {
 	/// <inheritdoc />
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
@@ -48,6 +48,54 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		var url = "/api";
 		var rootNavigation = new LandingNavigationItem(url);
 
+		var ops = openApiDocument.Paths
+			.SelectMany(p => p.Value.Operations.Select(op => (Path: p, Operation: op)))
+			.Select(pair =>
+			{
+				var op = pair.Operation;
+				var extensions = op.Value.Extensions;
+				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is OpenApiAny anyNs
+					? anyNs.Node.GetValue<string>()
+					: null;
+				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is OpenApiAny anyApi
+					? anyApi.Node.GetValue<string>()
+					: null;
+				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
+				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
+					? ClassifyElasticsearchTag(tag ?? "unknown")
+					: "unknown";
+
+				var apiString = ns is null
+					? api ?? op.Value.Summary ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
+				return new
+				{
+					Classification = classification,
+					Api = apiString,
+					Tag = tag,
+					pair.Path,
+					pair.Operation
+				};
+			})
+			.ToArray();
+
+		var nestedGrouping =
+			(
+				from op in ops
+				group op by op.Classification
+				into classificationGroup
+				from tagGroup in
+				from op in classificationGroup
+				group op by op.Tag
+				into apiGroups
+				from apiGroup in
+				from op in apiGroups
+				group op by op.Api
+				group apiGroup by apiGroups.Key
+				group tagGroup by classificationGroup.Key
+			).ToArray();
+
+
+		/*
 		var grouped = openApiDocument.Paths
 			.Select(p =>
 			{
@@ -60,48 +108,48 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 					? anyApi.Node.GetValue<string>()
 					: null;
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				if (tag is not null)
-				{
-				}
-				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification" ? ClassifyElasticsearchTag(tag ?? "unknown") : "unknown";
+				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
+					? ClassifyElasticsearchTag(tag ?? "unknown")
+					: "unknown";
 
+				var apiString = ns is null ? api ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
 				return new
 				{
 					Classification = classification,
-					Namespace = ns,
-					Api = api,
+					Api = apiString,
 					Tag = tag,
 					Path = p
 				};
 			})
 			.GroupBy(g => g.Classification)
 			.ToArray();
+		*/
 
 		// intermediate grouping of models to create the navigation tree
 		// this is two-phased because we need to know if an endpoint has one or more operations
 		var classifications = new List<ApiClassification>();
-		foreach (var group in grouped)
+		foreach (var classificationGroup in nestedGrouping)
 		{
 			var tags = new List<ApiTag>();
-			foreach (var tagGroup in group.GroupBy(g => g.Tag))
+			foreach (var tagGroup in classificationGroup)
 			{
-				var endpoints = new List<ApiEndpoint>();
-				foreach (var endpoint in tagGroup)
+				var apis = new List<ApiEndpoint>();
+				foreach (var apiGroup in tagGroup)
 				{
-					var api = endpoint.Namespace is null ? endpoint.Api ?? null : $"{endpoint.Namespace}.{endpoint.Api}";
 					var operations = new List<ApiOperation>();
-					foreach (var operation in endpoint.Path.Value.Operations)
+					foreach (var api in apiGroup)
 					{
-						var apiOperation = new ApiOperation(operation.Key, operation.Value, endpoint.Path.Key, api);
+						var operation = api.Operation;
+						var apiOperation = new ApiOperation(operation.Key, operation.Value, api.Path.Key, api.Path.Value, apiGroup.Key);
 						operations.Add(apiOperation);
 					}
-					var apiEndpoint = new ApiEndpoint(endpoint.Path.Key, endpoint.Path.Value, operations, api);
-					endpoints.Add(apiEndpoint);
+					var apiEndpoint = new ApiEndpoint(operations, apiGroup.Key);
+					apis.Add(apiEndpoint);
 				}
-				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", endpoints);
+				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", apis);
 				tags.Add(tag);
 			}
-			var classification = new ApiClassification(group.Key, "", tags);
+			var classification = new ApiClassification(classificationGroup.Key, "", tags);
 			classifications.Add(classification);
 		}
 
@@ -171,7 +219,10 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 				var operationNavigationItems = new List<OperationNavigationItem>();
 				foreach (var operation in endpoint.Operations)
 				{
-					var operationNavigationItem = new OperationNavigationItem(operation, rootNavigation, endpointNavigationItem);
+					var operationNavigationItem = new OperationNavigationItem(operation, rootNavigation, endpointNavigationItem)
+					{
+						Hidden = true
+					};
 					operationNavigationItems.Add(operationNavigationItem);
 				}
 				endpointNavigationItem.NavigationItems = operationNavigationItems;
@@ -219,12 +270,12 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 					await RenderNavigationItems(child);
 			}
 
+#pragma warning disable IDE0045
 			else if (currentNavigation is ILeafNavigationItem<IApiModel> leaf)
+#pragma warning restore IDE0045
 				_ = await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx);
 			else
-			{
-
-			}
+				throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 

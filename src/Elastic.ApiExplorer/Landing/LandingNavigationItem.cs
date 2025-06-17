@@ -131,7 +131,7 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 	public string Url => NavigationItems.First().Url;
 
 	/// <inheritdoc />
-	public string NavigationTitle { get; } = endpoint.Route;
+	public string NavigationTitle { get; } = endpoint.Operations.First().ApiName;
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
@@ -149,45 +149,11 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 	public int Depth => 0;
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(endpoint.Route);
+	public string Id { get; } = ShortId.Create(endpoint.Operations.First().ApiName + endpoint.Operations.First().Route);
 
 	/// <inheritdoc />
 	public ApiEndpoint Index { get; } = endpoint;
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
-}
-public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
-{
-#pragma warning disable IDE0290
-	public OperationNavigationItem(
-#pragma warning restore IDE0290
-		ApiOperation apiOperation,
-		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
-		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
-	)
-	{
-		NavigationRoot = root;
-		Id = ShortId.Create(apiOperation.Operation.OperationId ?? apiOperation.OperationType.ToString());
-		Model = apiOperation;
-		NavigationTitle = apiOperation.Operation.Summary ?? $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
-		Parent = parent;
-		var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
-		Url = $"/api/endpoints/{moniker}";
-	}
-
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	//TODO enum to string
-	public string Id { get; }
-	public int Depth { get; } = 1;
-	public ApiOperation Model { get; }
-	public string Url { get; }
-	public bool Hidden => false;
-
-	public string NavigationTitle { get; }
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-
-	public int NavigationIndex { get; set; }
-
 }
