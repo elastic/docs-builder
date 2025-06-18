@@ -7,7 +7,7 @@ using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Endpoints;
 
-public class IndexViewModel : ApiViewModel
+public class IndexViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiEndpoint ApiEndpoint { get; init; }
 }

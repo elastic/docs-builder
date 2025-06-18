@@ -18,18 +18,14 @@ public record ApiEndpoint : INavigationModel, IPageRenderer<ApiRenderContext>
 	}
 
 	public string Route { get; }
+
 	public IOpenApiPathItem OpenApiPath { get; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new IndexViewModel
+		var viewModel = new IndexViewModel(context)
 		{
-			ApiEndpoint = this,
-			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml,
-			CurrentNavigationItem = context.CurrentNavigation,
-			MarkdownRenderer = context.MarkdownRenderer
-
+			ApiEndpoint = this
 		};
 		var slice = EndpointView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

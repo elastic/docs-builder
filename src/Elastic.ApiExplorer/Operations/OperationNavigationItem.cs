@@ -16,13 +16,9 @@ public record ApiOperation(OperationType OperationType, OpenApiOperation Operati
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new OperationViewModel
+		var viewModel = new OperationViewModel(context)
 		{
-			Operation = this,
-			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml,
-			CurrentNavigationItem = context.CurrentNavigation,
-			MarkdownRenderer = context.MarkdownRenderer
+			Operation = this
 		};
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

@@ -14,14 +14,10 @@ public class ApiLanding : IApiGroupingModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new LandingViewModel
+		var viewModel = new LandingViewModel(context)
 		{
 			Landing = this,
-			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml,
-			ApiInfo = context.Model.Info,
-			CurrentNavigationItem = context.CurrentNavigation,
-			MarkdownRenderer = context.MarkdownRenderer
+			ApiInfo = context.Model.Info
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

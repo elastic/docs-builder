@@ -8,7 +8,7 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.Slices;
 
-public class MarkdownLayoutViewModel : GlobalLayoutViewModel
+public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 {
 	public required string? GithubEditUrl { get; init; }
 

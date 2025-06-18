@@ -3,20 +3,43 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer;
 
-public abstract class ApiViewModel
+public abstract class ApiViewModel(ApiRenderContext context)
 {
-	public required string NavigationHtml { get; init; }
-	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
-	public required INavigationItem CurrentNavigationItem { get; init; }
-	public required IMarkdownStringRenderer MarkdownRenderer { get; init; }
+	public string NavigationHtml { get; } = context.NavigationHtml;
+	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context.StaticFileContentHashProvider;
+	public INavigationItem CurrentNavigationItem { get; } = context.CurrentNavigation;
+	public IMarkdownStringRenderer MarkdownRenderer { get; } = context.MarkdownRenderer;
+	public BuildContext BuildContext { get; } = context.BuildContext;
 
 
 	public HtmlString RenderMarkdown(string? markdown) =>
-		string.IsNullOrEmpty(markdown) ? new(string.Empty) : new(MarkdownRenderer.Render(markdown, null));
+		new(string.IsNullOrEmpty(markdown) ? string.Empty : MarkdownRenderer.Render(markdown, null));
+
+
+	public GlobalLayoutViewModel CreateGlobalLayoutModel() =>
+		new()
+		{
+			DocSetName = "Api Explorer",
+			Description = "",
+			CurrentNavigationItem = CurrentNavigationItem,
+			Previous = null,
+			Next = null,
+			NavigationHtml = NavigationHtml,
+			UrlPathPrefix = BuildContext.UrlPathPrefix,
+			AllowIndexing = BuildContext.AllowIndexing,
+			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
+			GoogleTagManager = new GoogleTagManagerConfiguration(),
+			Features = new FeatureFlags([]),
+			StaticFileContentHashProvider = StaticFileContentHashProvider
+		};
 }

@@ -4,7 +4,7 @@
 
 namespace Elastic.ApiExplorer.Operations;
 
-public class OperationViewModel : ApiViewModel
+public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiOperation Operation { get; init; }
 
