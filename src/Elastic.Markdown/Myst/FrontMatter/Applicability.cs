@@ -17,7 +17,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public AppliesCollection(Applicability[] items) => _items = items;
 
 	// <lifecycle> [version]
-	public static bool TryParse(string? value, out AppliesCollection? availability)
+	public static bool TryParse(string? value, IList<string> warnings, out AppliesCollection? availability)
 	{
 		availability = null;
 		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
@@ -30,7 +30,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		var applications = new List<Applicability>(items.Length);
 		foreach (var item in items)
 		{
-			if (Applicability.TryParse(item.Trim(), out var a))
+			if (Applicability.TryParse(item.Trim(), warnings, out var a))
 				applications.Add(a);
 		}
 
@@ -64,7 +64,10 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 
 	public static explicit operator AppliesCollection(string b)
 	{
-		var productAvailability = TryParse(b, out var version) ? version : null;
+		var warnings = new List<string>();
+		var productAvailability = TryParse(b, warnings, out var version) ? version : null;
+		if (warnings.Count > 0)
+			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, warnings));
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string array.");
 	}
 
@@ -141,11 +144,14 @@ public record Applicability
 
 	public static explicit operator Applicability(string b)
 	{
-		var productAvailability = TryParse(b, out var version) ? version : TryParse(b + ".0", out version) ? version : null;
+		var warnings = new List<string>();
+		var productAvailability = TryParse(b, warnings, out var version) ? version : TryParse(b + ".0", warnings, out version) ? version : null;
+		if (warnings.Count > 0)
+			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, warnings));
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string.");
 	}
 
-	public static bool TryParse(string? value, [NotNullWhen(true)] out Applicability? availability)
+	public static bool TryParse(string? value, IList<string> warnings, [NotNullWhen(true)] out Applicability? availability)
 	{
 		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
 		{
@@ -160,21 +166,27 @@ public record Applicability
 			return false;
 		}
 
-		var lifecycle = tokens[0].ToLowerInvariant() switch
+		var lookup = tokens[0].ToLowerInvariant();
+		var lifecycle = lookup switch
 		{
 			"preview" => ProductLifecycle.TechnicalPreview,
 			"tech-preview" => ProductLifecycle.TechnicalPreview,
 			"beta" => ProductLifecycle.Beta,
+			"ga" => ProductLifecycle.GenerallyAvailable,
+			"deprecated" => ProductLifecycle.Deprecated,
+			"removed" => ProductLifecycle.Removed,
+			"unavailable" => ProductLifecycle.Unavailable,
+
+			// OBSOLETE should be removed once docs are cleaned up
 			"dev" => ProductLifecycle.Development,
 			"development" => ProductLifecycle.Development,
-			"deprecated" => ProductLifecycle.Deprecated,
 			"coming" => ProductLifecycle.Planned,
 			"planned" => ProductLifecycle.Planned,
 			"discontinued" => ProductLifecycle.Discontinued,
-			"unavailable" => ProductLifecycle.Unavailable,
-			"ga" => ProductLifecycle.GenerallyAvailable,
 			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
 		};
+		if (lifecycle is ProductLifecycle.Planned or ProductLifecycle.Deprecated or ProductLifecycle.Development)
+			warnings.Add($"The '{lookup}' lifecycle is deprecated and will be removed in a future release.");
 
 		var version = tokens.Length < 2
 			? null

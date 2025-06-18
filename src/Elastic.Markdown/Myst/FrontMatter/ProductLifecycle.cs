@@ -15,22 +15,27 @@ public enum ProductLifecycle
 	// beta (ditto)
 	[YamlMember(Alias = "beta")]
 	Beta,
-	// dev (ditto, though it's uncertain whether it's ever used or still needed)
-	[YamlMember(Alias = "development")]
-	Development,
+	// ga (replaces "added" in the current docs system since it was not entirely clear how/if that overlapped with beta/preview states)
+	[YamlMember(Alias = "ga")]
+	GenerallyAvailable,
 	// deprecated (exists in current docs system per https://github.com/elastic/docs?tab=readme-ov-file#additions-and-deprecations)
 	[YamlMember(Alias = "deprecated")]
 	Deprecated,
-	// coming (ditto)
-	[YamlMember(Alias = "planned")]
-	Planned,
-	// discontinued (historically we've immediately removed content when the feature ceases to be supported, but this might not be the case with pages that contain information that spans versions)
-	[YamlMember(Alias = "discontinued")]
-	Discontinued,
+	// removed content
+	[YamlMember(Alias = "removed")]
+	Removed,
 	// unavailable (for content that doesn't exist in a specific context and is never coming or not coming anytime soon)
 	[YamlMember(Alias = "unavailable")]
 	Unavailable,
-	// ga (replaces "added" in the current docs system since it was not entirely clear how/if that overlapped with beta/preview states)
-	[YamlMember(Alias = "ga")]
-	GenerallyAvailable
+
+	// TODO remove these enum members in a future version when docs have been cleaned up
+	// discontinued (historically we've immediately removed content when the feature ceases to be supported, but this might not be the case with pages that contain information that spans versions)
+	[YamlMember(Alias = "discontinued")]
+	Discontinued,
+	// coming (ditto)
+	[YamlMember(Alias = "planned")]
+	Planned,
+	// dev (ditto, though it's uncertain whether it's ever used or still needed)
+	[YamlMember(Alias = "development")]
+	Development,
 }

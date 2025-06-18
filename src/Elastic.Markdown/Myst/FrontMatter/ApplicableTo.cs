@@ -149,19 +149,19 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (unknownKeys.Count > 0)
 			warnings.Add($"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}");
 
-		if (TryGetApplicabilityOverTime(dictionary, "stack", out var stackAvailability))
+		if (TryGetApplicabilityOverTime(dictionary, "stack", warnings, out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
 
-		if (TryGetApplicabilityOverTime(dictionary, "product", out var productAvailability))
+		if (TryGetApplicabilityOverTime(dictionary, "product", warnings, out var productAvailability))
 			applicableTo.Product = productAvailability;
 
-		AssignServerless(dictionary, applicableTo);
-		AssignDeploymentType(dictionary, applicableTo);
+		AssignServerless(dictionary, applicableTo, warnings);
+		AssignDeploymentType(dictionary, applicableTo, warnings);
 
-		if (TryGetDeployment(dictionary, out var deployment))
+		if (TryGetDeployment(dictionary, warnings, out var deployment))
 			applicableTo.Deployment = deployment;
 
-		if (TryGetProjectApplicability(dictionary, out var serverless))
+		if (TryGetProjectApplicability(dictionary, warnings, out var serverless))
 			applicableTo.Serverless = serverless;
 
 		if (warnings.Count > 0)
@@ -169,7 +169,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		return applicableTo;
 	}
 
-	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo)
+	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<string> warnings)
 	{
 		if (!dictionary.TryGetValue("deployment", out var deploymentType))
 			return;
@@ -178,7 +178,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			applicableTo.Deployment = DeploymentApplicability.All;
 		else if (deploymentType is string deploymentTypeString)
 		{
-			var av = AppliesCollection.TryParse(deploymentTypeString, out var a) ? a : null;
+			var av = AppliesCollection.TryParse(deploymentTypeString, warnings, out var a) ? a : null;
 			applicableTo.Deployment = new DeploymentApplicability
 			{
 				Ece = av,
@@ -189,34 +189,35 @@ public class ApplicableToConverter : IYamlTypeConverter
 		}
 		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
 		{
-			if (TryGetDeployment(deploymentDictionary, out var applicability))
+			if (TryGetDeployment(deploymentDictionary, warnings, out var applicability))
 				applicableTo.Deployment = applicability;
 		}
 	}
 
-	private static bool TryGetDeployment(Dictionary<object, object?> dictionary, [NotNullWhen(true)] out DeploymentApplicability? applicability)
+	private static bool TryGetDeployment(Dictionary<object, object?> dictionary, List<string> warnings,
+		[NotNullWhen(true)] out DeploymentApplicability? applicability)
 	{
 		applicability = null;
 		var d = new DeploymentApplicability();
 		var assigned = false;
-		if (TryGetApplicabilityOverTime(dictionary, "ece", out var ece))
+		if (TryGetApplicabilityOverTime(dictionary, "ece", warnings, out var ece))
 		{
 			d.Ece = ece;
 			assigned = true;
 		}
-		if (TryGetApplicabilityOverTime(dictionary, "eck", out var eck))
+		if (TryGetApplicabilityOverTime(dictionary, "eck", warnings, out var eck))
 		{
 			d.Eck = eck;
 			assigned = true;
 		}
 
-		if (TryGetApplicabilityOverTime(dictionary, "ess", out var ess))
+		if (TryGetApplicabilityOverTime(dictionary, "ess", warnings, out var ess))
 		{
 			d.Ess = ess;
 			assigned = true;
 		}
 
-		if (TryGetApplicabilityOverTime(dictionary, "self", out var self))
+		if (TryGetApplicabilityOverTime(dictionary, "self", warnings, out var self))
 		{
 			d.Self = self;
 			assigned = true;
@@ -231,7 +232,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		return false;
 	}
 
-	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo)
+	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<string> warnings)
 	{
 		if (!dictionary.TryGetValue("serverless", out var serverless))
 			return;
@@ -240,7 +241,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			applicableTo.Serverless = ServerlessProjectApplicability.All;
 		else if (serverless is string serverlessString)
 		{
-			var av = AppliesCollection.TryParse(serverlessString, out var a) ? a : null;
+			var av = AppliesCollection.TryParse(serverlessString, warnings, out var a) ? a : null;
 			applicableTo.Serverless = new ServerlessProjectApplicability
 			{
 				Elasticsearch = av,
@@ -250,31 +251,30 @@ public class ApplicableToConverter : IYamlTypeConverter
 		}
 		else if (serverless is Dictionary<object, object?> serverlessDictionary)
 		{
-			if (TryGetProjectApplicability(serverlessDictionary, out var applicability))
+			if (TryGetProjectApplicability(serverlessDictionary, warnings, out var applicability))
 				applicableTo.Serverless = applicability;
 		}
 	}
 
-	private static bool TryGetProjectApplicability(
-		Dictionary<object, object?> dictionary,
-		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability
-	)
+	private static bool TryGetProjectApplicability(Dictionary<object, object?> dictionary,
+		List<string> warnings,
+		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability)
 	{
 		applicability = null;
 		var serverlessAvailability = new ServerlessProjectApplicability();
 		var assigned = false;
-		if (TryGetApplicabilityOverTime(dictionary, "elasticsearch", out var elasticsearch))
+		if (TryGetApplicabilityOverTime(dictionary, "elasticsearch", warnings, out var elasticsearch))
 		{
 			serverlessAvailability.Elasticsearch = elasticsearch;
 			assigned = true;
 		}
-		if (TryGetApplicabilityOverTime(dictionary, "observability", out var observability))
+		if (TryGetApplicabilityOverTime(dictionary, "observability", warnings, out var observability))
 		{
 			serverlessAvailability.Observability = observability;
 			assigned = true;
 		}
 
-		if (TryGetApplicabilityOverTime(dictionary, "security", out var security))
+		if (TryGetApplicabilityOverTime(dictionary, "security", warnings, out var security))
 		{
 			serverlessAvailability.Security = security;
 			assigned = true;
@@ -286,7 +286,8 @@ public class ApplicableToConverter : IYamlTypeConverter
 		return true;
 	}
 
-	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, out AppliesCollection? availability)
+	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, List<string> warnings,
+		out AppliesCollection? availability)
 	{
 		availability = null;
 		if (!dictionary.TryGetValue(key, out var target))
@@ -295,7 +296,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (target is null || (target is string s && string.IsNullOrWhiteSpace(s)))
 			availability = AppliesCollection.GenerallyAvailable;
 		else if (target is string stackString)
-			availability = AppliesCollection.TryParse(stackString, out var a) ? a : null;
+			availability = AppliesCollection.TryParse(stackString, warnings, out var a) ? a : null;
 		return availability is not null;
 	}
 

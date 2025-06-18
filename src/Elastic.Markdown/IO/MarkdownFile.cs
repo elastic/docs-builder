@@ -320,6 +320,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw);
 
+		if (fm.AppliesTo?.Warnings is not null)
+		{
+			foreach (var warning in fm.AppliesTo.Warnings)
+				Collector.EmitWarning(FilePath, warning);
+		}
+
 		// TODO remove when migration tool and our demo content sets are updated
 		var deprecatedTitle = fm.Title;
 		if (!string.IsNullOrEmpty(deprecatedTitle))
