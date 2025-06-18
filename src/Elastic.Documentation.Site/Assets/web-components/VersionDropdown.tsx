@@ -252,6 +252,9 @@ const VersionDropdown = ({
                     .euiContextMenuPanel__title {
                         position: sticky;
                         top: 0;
+                        // !important because clicking on the title
+                        // makes the background transparent
+                        // and you unexpectedly see the items behind it.
                         background-color: ${euiTheme.colors
                             .backgroundBasePlain} !important;
                     }
