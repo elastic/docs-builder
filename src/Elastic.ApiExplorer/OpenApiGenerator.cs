@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -37,7 +38,7 @@ public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGro
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
+public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer markdownStringRenderer, ILoggerFactory logger)
 {
 	private readonly ILogger _logger = logger.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
@@ -256,7 +257,8 @@ public class OpenApiGenerator(BuildContext context, ILoggerFactory logger)
 		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = navigation
+			CurrentNavigation = navigation,
+			MarkdownRenderer = markdownStringRenderer
 		};
 		_ = await Render(navigation, navigation.Index, renderContext, navigationRenderer, ctx);
 		await RenderNavigationItems(navigation);

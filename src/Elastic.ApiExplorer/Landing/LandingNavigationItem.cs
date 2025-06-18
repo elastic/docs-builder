@@ -20,7 +20,8 @@ public class ApiLanding : IApiGroupingModel
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml,
 			ApiInfo = context.Model.Info,
-			CurrentNavigationItem = context.CurrentNavigation
+			CurrentNavigationItem = context.CurrentNavigation,
+			MarkdownRenderer = context.MarkdownRenderer
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

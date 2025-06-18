@@ -27,7 +27,8 @@ public record ApiEndpoint : INavigationModel, IPageRenderer<ApiRenderContext>
 			ApiEndpoint = this,
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml,
-			CurrentNavigationItem = context.CurrentNavigation
+			CurrentNavigationItem = context.CurrentNavigation,
+			MarkdownRenderer = context.MarkdownRenderer
 
 		};
 		var slice = EndpointView.Create(viewModel);

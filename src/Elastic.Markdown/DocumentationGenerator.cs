@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.Json;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
@@ -49,6 +50,7 @@ public class DocumentationGenerator
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
 	public ICrossLinkResolver Resolver { get; }
+	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,

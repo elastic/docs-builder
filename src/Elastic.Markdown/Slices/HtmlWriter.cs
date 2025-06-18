@@ -24,6 +24,7 @@ public class HtmlWriter(
 	ILegacyUrlMapper? legacyUrlMapper = null,
 	IPositionalNavigation? positionalNavigation = null
 )
+	: IMarkdownStringRenderer
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
@@ -33,6 +34,14 @@ public class HtmlWriter(
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private IPositionalNavigation PositionalNavigation { get; } = positionalNavigation ?? documentationSet;
+
+	/// <inheritdoc />
+	public string Render(string markdown, IFileInfo? source)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		return MarkdownFile.CreateHtml(parsed);
+	}
 
 	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
@@ -147,4 +156,5 @@ public class HtmlWriter(
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
 		return document;
 	}
+
 }

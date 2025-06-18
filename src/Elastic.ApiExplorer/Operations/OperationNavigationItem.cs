@@ -21,7 +21,8 @@ public record ApiOperation(OperationType OperationType, OpenApiOperation Operati
 			Operation = this,
 			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
 			NavigationHtml = context.NavigationHtml,
-			CurrentNavigationItem = context.CurrentNavigation
+			CurrentNavigationItem = context.CurrentNavigation,
+			MarkdownRenderer = context.MarkdownRenderer
 		};
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

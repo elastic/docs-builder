@@ -44,7 +44,7 @@
 <section id="elastic-api-v3">
 	<h1>@operation.Summary</h1>
 	<p>
-		@operation.Description
+		@(Model.RenderMarkdown(operation.Description))
 	</p>
 	<ul class="api-url-listing">
 		@foreach (var overload in allOperations)
@@ -64,12 +64,12 @@
 	}
 	@if (pathParameters.Length > 0)
 	{
-		<h3>Path Parameters</h3>
+		<h4>Path Parameters</h4>
 		<dl>
 		@foreach (var path in pathParameters)
 		{
 			<dt id="@path.Name"><a href="#@path.Name"><code>@path.Name</code></a></dt>
-			<dd>@path.Description</dd>
+			<dd>@Model.RenderMarkdown(path.Description)</dd>
 		}
 		</dl>
 	}
@@ -78,12 +78,25 @@
 	}
 	@if (queryStringParameters.Length > 0)
 	{
-		<h3>Query String Parameters</h3>
+		<h4>Query String Parameters</h4>
 		<dl>
 			@foreach (var path in queryStringParameters)
 			{
 				<dt id="@path.Name"><a href="#@path.Name"><code>@path.Name</code></a></dt>
-				<dd>@path.Description</dd>
+				<dd>@Model.RenderMarkdown(path.Description)</dd>
+			}
+		</dl>
+	}
+	@if (operation.RequestBody is not null)
+	{
+		<h3>Request Body</h3>
+		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
+		{
+			<p>@operation.RequestBody.Description</p>
+		}
+		<dl>
+			@foreach (var path in operation.RequestBody.Content)
+			{
 			}
 		</dl>
 	}

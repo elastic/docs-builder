@@ -98,4 +98,7 @@
 	h3 {
 		@apply border-b-grey-20 border-b-1 pb-2;
 	}
+	h4 {
+		@apply border-b-grey-20 border-b-1 pb-2;
+	}
 }

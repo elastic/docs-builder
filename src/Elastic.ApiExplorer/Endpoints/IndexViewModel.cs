@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Landing;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Endpoints;
 
 public class IndexViewModel : ApiViewModel
 {
 	public required ApiEndpoint ApiEndpoint { get; init; }
-
 }
