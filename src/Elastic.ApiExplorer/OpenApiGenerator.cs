@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
@@ -300,7 +301,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		IFileInfo OutputFile(INavigationItem currentNavigation)
 		{
 			const string indexHtml = "index.html";
-			var fileName = currentNavigation.Url + "/" + indexHtml;
+			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
 			var fileInfo = _writeFileSystem.FileInfo.New(Path.Combine(context.DocumentationOutputDirectory.FullName, fileName.Trim('/')));
 			return fileInfo;
 		}

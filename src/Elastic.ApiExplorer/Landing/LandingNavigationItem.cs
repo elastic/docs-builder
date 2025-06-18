@@ -146,7 +146,7 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 	public int Depth => 0;
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(endpoint.Operations.First().ApiName + endpoint.Operations.First().Route);
+	public string Id { get; } = ShortId.Create(nameof(EndpointNavigationItem), endpoint.Operations.First().ApiName, endpoint.Operations.First().Route);
 
 	/// <inheritdoc />
 	public ApiEndpoint Index { get; } = endpoint;
