@@ -188,6 +188,8 @@ public record Applicability
 			"discontinued" => ProductLifecycle.Discontinued,
 			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
 		};
+
+		// TODO emit as error when all docs have been updated
 		if (lifecycle is ProductLifecycle.Planned or ProductLifecycle.Deprecated or ProductLifecycle.Development)
 			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
