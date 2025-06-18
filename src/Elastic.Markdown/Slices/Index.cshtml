@@ -31,18 +31,23 @@
 		ReportIssueUrl = Model.ReportIssueUrl,
 		LegacyPages = Model.LegacyPages,
 		CurrentVersion = Model.CurrentVersion,
-		VersionDropdown = JsonSerializer.Serialize(Model.VersionDropdownItems,
+		AllVersionsUrl = Model.AllVersionsUrl,
+		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{
+		if (name == GlobalSections.Head)
+		{
+			<meta class="elastic" name="product_version" content="@Model.CurrentVersion"/>
+			<meta name="DC.identifier" content="@Model.CurrentVersion"/>
+		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{
 			var products = string.Join(",", Model.Products.Select(p => p.DisplayName));
 			<meta class="elastic" name="product_name" content="@(products)"/>
 			<meta name="DC.subject" content="@(products)"/>
 		}
-
 		return Task.CompletedTask;
 	}
 }

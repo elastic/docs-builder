@@ -16,13 +16,17 @@ public class MarkdownLayoutViewModel : GlobalLayoutViewModel
 
 	public required INavigationItem[] Parents { get; init; }
 
-	public required string? CurrentVersion { get; init; }
-
 	public required LegacyPageMapping[]? LegacyPages { get; init; }
 
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 
 	public required LayoutName? Layout { get; init; }
+
+	public required string? VersionDropdownSerializedModel { get; init; }
+
+	public required string? CurrentVersion { get; init; }
+
+	public required string? AllVersionsUrl { get; init; }
 }
 
 public record PageTocItem

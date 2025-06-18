@@ -1,3 +1,5 @@
+'strict'
+
 import {
     EuiButton,
     EuiContextMenu,
@@ -6,7 +8,12 @@ import {
     EuiIcon,
     EuiPopover,
     EuiText,
+    EuiPanel,
+    EuiLink,
+    useEuiOverflowScroll,
     useGeneratedHtmlId,
+    useEuiTheme,
+    useEuiFontSize,
 } from '@elastic/eui'
 import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
 import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
@@ -45,15 +52,23 @@ appendIconComponentCache({
 type VersionDropdownItem = {
     name: string
     href?: string
+    disabled: boolean
     children?: VersionDropdownItem[]
 }
 
 type VersionDropdownProps = {
-    items: VersionDropdownItem[]
+    currentVersion?: string
+    allVersionsUrl?: string
+    items?: VersionDropdownItem[]
 }
 
-const VersionDropdown = ({ items }: VersionDropdownProps) => {
+const VersionDropdown = ({
+    allVersionsUrl,
+    currentVersion,
+    items,
+}: VersionDropdownProps) => {
     const [isPopoverOpen, setPopover] = useState(false)
+    const { euiTheme } = useEuiTheme()
 
     const contextMenuPopoverId = useGeneratedHtmlId({
         prefix: 'contextMenuPopover',
@@ -74,6 +89,7 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             return {
                 name: item.name,
                 href: item.href,
+                disabled: item.disabled,
             }
         })
     }
@@ -81,56 +97,112 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
     const convertToPanels = (
         items: VersionDropdownItem[]
     ): EuiContextMenuPanelDescriptor[] => {
-        return items.flatMap((item, index) => {
-            if (item.children == null) {
-                return []
-            } else {
-                return {
-                    id: index + 1,
-                    title: item.name,
-                    initialFocusedItemIndex: 0,
-                    width: WIDTH,
-                    size: 's',
-                    items: item.children ? convertItems(item.children) : [],
-                }
-            }
-        })
+        return items == null
+            ? []
+            : items.flatMap((item, index) => {
+                  if (item.children == null) {
+                      return []
+                  } else {
+                      return {
+                          id: index + 1,
+                          title: item.name,
+                          initialFocusedItemIndex: 0,
+                          width: WIDTH,
+                          disabled: item.disabled,
+                          size: 's',
+                          items: item.children
+                              ? convertItems(item.children)
+                              : [],
+                      }
+                  }
+              })
     }
 
     const WIDTH = 175
 
-    const topLevelItems = items.map((item, index) => {
-        return {
-            name: item.name,
-            panel: item.children?.length ? index + 1 : undefined,
-            href: item.href,
-        }
-    })
+    const topLevelItems = () =>
+        items.map((item, index) => {
+            return {
+                name: item.name,
+                panel: item.children?.length ? index + 1 : undefined,
+                href: item.href,
+                disabled: item.disabled,
+            }
+        })
 
-    const subpanels = convertToPanels(items)
+    const subpanels = () => convertToPanels(items)
 
-    const panels: EuiContextMenuPanelDescriptor[] = [
+    const panels = (): EuiContextMenuPanelDescriptor[] => [
         {
             id: 0,
             title: (
                 <EuiFlexGroup gutterSize="s" alignItems="center">
                     <EuiFlexItem grow={0}>
-                        <EuiIcon type="check" />
+                        <EuiIcon type="check" size="s" />
                     </EuiFlexItem>
-                    <EuiFlexItem grow={1}>Current (9.0+)</EuiFlexItem>
+                    <EuiFlexItem grow={1}>
+                        <EuiText size="s">{currentVersion}</EuiText>
+                    </EuiFlexItem>
                 </EuiFlexGroup>
             ),
             width: WIDTH,
             size: 's',
             items: [
-                ...topLevelItems,
-                {
-                    name: 'All versions',
-                    href: 'https://elastic.co',
-                },
+                ...(items == null
+                    ? [
+                          {
+                              renderItem: () => (
+                                  <EuiPanel paddingSize="s" hasShadow={false}>
+                                      <EuiText size="xs" color="subdued">
+                                          There are no other versions available
+                                          for this page.
+                                      </EuiText>
+                                  </EuiPanel>
+                              ),
+                          },
+                      ]
+                    : topLevelItems()),
+                ...(items?.length === 0
+                    ? [
+                          {
+                              renderItem: () => (
+                                  <EuiPanel paddingSize="s" hasShadow={false}>
+                                      <EuiText size="xs" color="subdued">
+                                          This page was fully migrated to the
+                                          current version.
+                                      </EuiText>
+                                  </EuiPanel>
+                              ),
+                          },
+                      ]
+                    : []),
+                ...(allVersionsUrl != null
+                    ? [
+                          {
+                              renderItem: () => (
+                                  <EuiPanel
+                                      css={css`
+                                          border-top: 1px solid
+                                              ${euiTheme.border.color};
+                                          padding: ${euiTheme.size.s};
+                                      `}
+                                  >
+                                      <EuiLink
+                                          href="/docs/versions"
+                                          color="text"
+                                      >
+                                          <EuiText size="s">
+                                              View all versions
+                                          </EuiText>
+                                      </EuiLink>
+                                  </EuiPanel>
+                              ),
+                          },
+                      ]
+                    : []),
             ],
         },
-        ...subpanels,
+        ...(items != null ? subpanels() : []),
     ]
 
     const button = (
@@ -143,13 +215,12 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             style={{ borderRadius: 9999 }}
         >
             <EuiText
-                size="xs"
                 css={css`
-                    font-weight: 600;
-                    font-size: 0.875rem;
+                    font-weight: ${euiTheme.font.weight.bold};
+                    font-size: ${useEuiFontSize('xs').fontSize};
                 `}
             >
-                Current (9.0+)
+                Current version ({currentVersion})
             </EuiText>
         </EuiButton>
     )
@@ -161,10 +232,35 @@ const VersionDropdown = ({ items }: VersionDropdownProps) => {
             isOpen={isPopoverOpen}
             closePopover={closePopover}
             panelPaddingSize="none"
-            anchorPosition="downLeft"
+            anchorPosition="downRight"
             repositionOnScroll={true}
         >
-            <EuiContextMenu initialPanelId={0} size="s" panels={panels} />
+            <EuiContextMenu
+                initialPanelId={0}
+                size="s"
+                panels={panels()}
+                css={css`
+                    max-height: 70vh;
+                    // This is needed because the CSS reset we are using
+                    // is probably not fully compatible with the EUI
+                    button {
+                        cursor: pointer;
+                        &:disabled {
+                            cursor: default;
+                        }
+                    }
+                    .euiContextMenuPanel__title {
+                        position: sticky;
+                        top: 0;
+                        // !important because clicking on the title
+                        // makes the background transparent
+                        // and you unexpectedly see the items behind it.
+                        background-color: ${euiTheme.colors
+                            .backgroundBasePlain} !important;
+                    }
+                    ${useEuiOverflowScroll('y')}
+                `}
+            />
         </EuiPopover>
     )
 }
@@ -174,6 +270,8 @@ customElements.define(
     r2wc(VersionDropdown, {
         props: {
             items: 'json',
+            currentVersion: 'string',
+            allVersionsUrl: 'string',
         },
     })
 )
