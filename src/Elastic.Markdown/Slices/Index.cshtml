@@ -31,7 +31,8 @@
 		ReportIssueUrl = Model.ReportIssueUrl,
 		LegacyPages = Model.LegacyPages,
 		CurrentVersion = Model.CurrentVersion,
-		VersionDropdown = JsonSerializer.Serialize(Model.VersionDropdownItems,
+		AllVersionsUrl = Model.AllVersionsUrl,
+		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
 	};
 	protected override Task ExecuteSectionAsync(string name)

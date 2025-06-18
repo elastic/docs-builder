@@ -85,6 +85,11 @@ public class HtmlWriter(
 			.Distinct()
 			.ToHashSet();
 
+		string? allVersionsUrl = null;
+
+		if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
+			allVersionsUrl = item.Url;
+
 		var slice = Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,
@@ -111,6 +116,7 @@ public class HtmlWriter(
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = legacyPages?.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
+			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts

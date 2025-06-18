@@ -34,6 +34,8 @@ public class IndexViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string CurrentVersion { get; init; }
+
+	public required string? AllVersionsUrl { get; init; }
 	public required LegacyPageMapping[]? LegacyPages { get; init; }
 	public required VersionDrownDownItemViewModel[]? VersionDropdownItems { get; init; }
 	public required string? UrlPathPrefix { get; init; }

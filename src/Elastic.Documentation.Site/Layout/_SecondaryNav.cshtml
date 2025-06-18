@@ -13,13 +13,6 @@
 				</label>
 			}
 			<a href="@Model.Link("/")" class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
-			
-			@if (Model.Features.IsVersionDropdownEnabled && Model.VersionDropdown is not null)
-			{
-				<div id="version-dropdown">
-					<version-dropdown current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdown))' />
-				</div>
-			}
 		</div>
 		<ul class="flex gap-6">
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">

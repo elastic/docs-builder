@@ -1,7 +1,15 @@
 @inherits RazorSlice<MarkdownLayoutViewModel>
 <aside class="sidebar hidden lg:block max-w-65 md:hidden">
 	<nav id="toc-nav" class="sidebar-nav h-full">
-		<div id="page-version-dropdown" tabindex="1"
+		@if (Model.Features.IsVersionDropdownEnabled)
+		{
+			<div class="mt-6">
+				<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))' />
+			</div>
+		}
+		else
+		{
+			<div id="page-version-dropdown" tabindex="1"
 		     class="mt-6 block group font-sans text-sm relative z-50">
 			<button
 				class="text-left border-1 rounded-2xl grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-1 py-1 group-open:border-b-1 border-grey-20">
@@ -65,7 +73,7 @@
 									@legacyPage.Version
 								</a>
 							}
-							
+
 						</li>
 					}
 					@if (Model.LegacyPages is null) // This means there is no mapping because the page is new in v3
@@ -75,7 +83,8 @@
 								There is no previous version of this page.
 							</div>
 						</li>
-					} else if (Model.LegacyPages.Length == 0) // This means there is a legacy page mapping with 0 entries, which means the page was fully migrated and is also redirecting to the new system.
+					}
+					else if (Model.LegacyPages.Length == 0) // This means there is a legacy page mapping with 0 entries, which means the page was fully migrated and is also redirecting to the new system.
 					{
 						<li class="block border-t-1 border-grey-20">
 							<div class="py-1 px-4 text-sm">
@@ -86,6 +95,7 @@
 				</ul>
 			</div>
 		</div>
+		}
 		<ul class="mt-6">
 
 			@if (Model.GithubEditUrl is not null)
