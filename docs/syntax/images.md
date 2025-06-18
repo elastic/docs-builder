@@ -125,46 +125,35 @@ The image carousel directive builds upon the image directive.
 :id: nested-carousel-example
 :controls: true
 :indicators: true
-:fixed-height: 750px
+:fixed-height: 350px
 
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-mailbox_not_analyzed_overview.png
+:::{image} images/apm.png
 :alt: First image description
 :title: First image title
 :::
 
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-ai_security_mailbox_overview.png
+:::{image} images/applies.png
 :alt: Second image description
 :title: Second image title
 :::
 
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-audit_overview.png
-:alt: Third image description
-:title: Third image title
-:::
-
 ::::
 ```
-
 ::::{carousel}
 
 :id: nested-carousel-example
 :controls: true
 :indicators: true
-:fixed-height: 750px
+:fixed-height: 350px
 
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-mailbox_not_analyzed_overview.png
+:::{image} images/apm.png
 :alt: First image description
 :title: First image title
 :::
 
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-ai_security_mailbox_overview.png
+:::{image} images/applies.png
 :alt: Second image description
 :title: Second image title
-:::
-
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-audit_overview.png
-:alt: Third image description
-:title: Third image title
 :::
 
 ::::
