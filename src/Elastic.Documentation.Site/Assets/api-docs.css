@@ -1,4 +1,3 @@
-
 .api-url-listing {
 	@apply mt-4;
 	margin-left: 0 !important;
@@ -32,34 +31,49 @@
 		list-style-type: none;
 		margin-left: 0;
 		a {
-			@apply no-underline w-full p-4 pl-4 pr-4 inline-block text-grey-80;
-			@apply border rounded-sm border-grey-20 bg-grey-10;
+			@apply text-grey-80 inline-block w-full p-4 pr-4 pl-4 no-underline;
+			@apply border-grey-20 bg-grey-10 rounded-sm border;
 		}
 		a.current {
-			@apply border-grey-30 bg-white p-4 text-grey-120;
+			@apply border-grey-30 text-grey-120 bg-white p-4;
 			font-weight: bold;
 		}
 		a:hover {
-			@apply border-grey-30 bg-white text-grey-120;
+			@apply border-grey-30 text-grey-120 bg-white;
 			font-weight: bold;
 		}
 	}
 	li:only-child {
 		a.current {
-			@apply border rounded-sm border-grey-20 bg-white;
+			@apply border-grey-20 rounded-sm border bg-white;
 		}
 		a.current:hover {
 			@apply border-grey-20 bg-white;
 		}
-
 	}
 	.api-method {
-		@apply border rounded-sm;
+		@apply rounded-sm border;
 		padding-left: var(--spacing);
 		padding-right: var(--spacing);
-		font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
-		font-feature-settings: var(--default-mono-font-feature-settings, normal);
-		font-variation-settings: var(--default-mono-font-variation-settings, normal);
+		font-family: var(
+			--default-mono-font-family,
+			ui-monospace,
+			SFMono-Regular,
+			Menlo,
+			Monaco,
+			Consolas,
+			'Liberation Mono',
+			'Courier New',
+			monospace
+		);
+		font-feature-settings: var(
+			--default-mono-font-feature-settings,
+			normal
+		);
+		font-variation-settings: var(
+			--default-mono-font-variation-settings,
+			normal
+		);
 		font-size: 0.8em;
 		display: inline-block;
 		font-weight: bold;
@@ -80,8 +94,7 @@
 		margin-left: calc(var(--spacing) * 2);
 		display: inline-block;
 	}
-	.api-url-list-item
-	{
+	.api-url-list-item {
 		@apply mt-4;
 	}
 }
@@ -89,7 +102,7 @@
 	dt a {
 		@apply no-underline;
 		code {
-			@apply p-1 inline-block;
+			@apply inline-block p-1;
 		}
 	}
 	h1 {
