@@ -128,7 +128,7 @@ applies_to:
 
     [<Fact>]
     let ``should warn of deprecated lifecycle state`` () =
-        markdown |> hasWarning "The 'coming' lifecycle is deprecated and will be removed"
+        markdown |> hasHint "The 'coming' lifecycle is deprecated and will be removed"
 
 type ``parses product planned`` () =
     static let markdown = frontMatter """
@@ -138,7 +138,7 @@ applies_to:
 
     [<Fact>]
     let ``should warn of deprecated lifecycle state`` () =
-        markdown |> hasWarning "The 'planned' lifecycle is deprecated and will be removed"
+        markdown |> hasHint "The 'planned' lifecycle is deprecated and will be removed"
 
 type ``parses product removed`` () =
     static let markdown = frontMatter """

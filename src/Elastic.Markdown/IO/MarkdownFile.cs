@@ -320,10 +320,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw);
 
-		if (fm.AppliesTo?.Warnings is not null)
+		if (fm.AppliesTo?.Diagnostics is not null)
 		{
-			foreach (var warning in fm.AppliesTo.Warnings)
-				Collector.EmitWarning(FilePath, warning);
+			foreach (var (severity, message) in fm.AppliesTo.Diagnostics)
+				Collector.Emit(severity, FilePath, message);
 		}
 
 		// TODO remove when migration tool and our demo content sets are updated

@@ -17,6 +17,7 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 	HashSet<string> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
 
+	void Emit(Severity severity, string file, string message);
 	void EmitError(string file, string message, Exception? e = null);
 	void EmitWarning(string file, string message);
 	void EmitHint(string file, string message);
@@ -27,6 +28,10 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 
 public static class DiagnosticsCollectorExtensions
 {
+
+	public static void Emit(this IDiagnosticsCollector collector, Severity severity, IFileInfo file, string message) =>
+		collector.Emit(severity, file.FullName, message);
+
 	public static void EmitError(this IDiagnosticsCollector collector, IFileInfo file, string message, Exception? e = null) =>
 		collector.EmitError(file.FullName, message, e);
 

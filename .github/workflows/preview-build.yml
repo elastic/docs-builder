@@ -200,7 +200,7 @@ jobs:
         with:
           prefix: ${{ env.PATH_PREFIX }}
           strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
-          metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'true') }}
+          metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'false') }}
 
       - name: 'Validate inbound links'
         if: |

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
@@ -17,7 +18,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public AppliesCollection(Applicability[] items) => _items = items;
 
 	// <lifecycle> [version]
-	public static bool TryParse(string? value, IList<string> warnings, out AppliesCollection? availability)
+	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, out AppliesCollection? availability)
 	{
 		availability = null;
 		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
@@ -30,7 +31,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		var applications = new List<Applicability>(items.Length);
 		foreach (var item in items)
 		{
-			if (Applicability.TryParse(item.Trim(), warnings, out var a))
+			if (Applicability.TryParse(item.Trim(), diagnostics, out var a))
 				applications.Add(a);
 		}
 
@@ -64,10 +65,10 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 
 	public static explicit operator AppliesCollection(string b)
 	{
-		var warnings = new List<string>();
-		var productAvailability = TryParse(b, warnings, out var version) ? version : null;
-		if (warnings.Count > 0)
-			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, warnings));
+		var diagnostics = new List<(Severity, string)>();
+		var productAvailability = TryParse(b, diagnostics, out var version) ? version : null;
+		if (diagnostics.Count > 0)
+			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics));
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string array.");
 	}
 
@@ -146,14 +147,14 @@ public record Applicability
 
 	public static explicit operator Applicability(string b)
 	{
-		var warnings = new List<string>();
-		var productAvailability = TryParse(b, warnings, out var version) ? version : TryParse(b + ".0", warnings, out version) ? version : null;
-		if (warnings.Count > 0)
-			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, warnings));
+		var diagnostics = new List<(Severity, string)>();
+		var productAvailability = TryParse(b, diagnostics, out var version) ? version : TryParse(b + ".0", diagnostics, out version) ? version : null;
+		if (diagnostics.Count > 0)
+			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics));
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string.");
 	}
 
-	public static bool TryParse(string? value, IList<string> warnings, [NotNullWhen(true)] out Applicability? availability)
+	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, [NotNullWhen(true)] out Applicability? availability)
 	{
 		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
 		{
@@ -188,7 +189,7 @@ public record Applicability
 			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
 		};
 		if (lifecycle is ProductLifecycle.Planned or ProductLifecycle.Deprecated or ProductLifecycle.Development)
-			warnings.Add($"The '{lookup}' lifecycle is deprecated and will be removed in a future release.");
+			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
 		var version = tokens.Length < 2
 			? null
