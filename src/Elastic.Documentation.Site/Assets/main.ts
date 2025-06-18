@@ -25,7 +25,7 @@ document.addEventListener('htmx:load', function () {
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()
-    initImageCarousel();
+    initImageCarousel()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
