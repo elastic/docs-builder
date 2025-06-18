@@ -14,7 +14,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 
 	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
-		var navigation = context.Configuration.Features.IsPrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
+		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
 			? currentRootNavigation
 			: siteRoot;
 
@@ -33,8 +33,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			Title = navigation.NavigationTitle,
 			TitleUrl = navigation.Url,
 			Tree = navigation,
-			IsPrimaryNavEnabled = context.Configuration.Features.IsPrimaryNavEnabled,
-			IsUsingNavigationDropdown = context.Configuration.Features.IsPrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
+			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
+			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
 			IsGlobalAssemblyBuild = false,
 			TopLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList()
 		};

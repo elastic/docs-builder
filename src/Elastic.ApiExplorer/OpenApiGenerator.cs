@@ -12,7 +12,6 @@ using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Models.Interfaces;
 
 namespace Elastic.ApiExplorer;
 

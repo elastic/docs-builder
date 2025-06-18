@@ -1,7 +1,7 @@
 @inherits RazorSlice<MarkdownLayoutViewModel>
 <aside class="sidebar hidden lg:block max-w-65 md:hidden">
 	<nav id="toc-nav" class="sidebar-nav h-full">
-		@if (Model.Features.IsVersionDropdownEnabled)
+		@if (Model.Features.VersionDropdownEnabled)
 		{
 			<div class="mt-6">
 				<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))' />

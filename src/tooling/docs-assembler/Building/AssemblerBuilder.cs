@@ -30,6 +30,8 @@ public class AssemblerBuilder(
 	ILegacyUrlMapper? legacyUrlMapper
 )
 {
+	private readonly ILogger<AssemblerBuilder> _logger = logger.CreateLogger<AssemblerBuilder>();
+
 	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
@@ -118,6 +120,7 @@ public class AssemblerBuilder(
 
 	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, bool noop, IMarkdownExporter[]? markdownExporters, Cancel ctx)
 	{
+		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
 			logger, HtmlWriter,
@@ -130,4 +133,14 @@ public class AssemblerBuilder(
 		return await generator.GenerateAll(ctx);
 	}
 
+	private void SetFeatureFlags(AssemblerDocumentationSet set)
+	{
+		// Enable primary nav by default
+		set.DocumentationSet.Configuration.Features.PrimaryNavEnabled = true;
+		foreach (var configurationFeatureFlag in set.AssembleContext.Environment.FeatureFlags)
+		{
+			_logger.LogInformation("Setting feature flag: {ConfigurationFeatureFlagKey}={ConfigurationFeatureFlagValue}", configurationFeatureFlag.Key, configurationFeatureFlag.Value);
+			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
+		}
+	}
 }
