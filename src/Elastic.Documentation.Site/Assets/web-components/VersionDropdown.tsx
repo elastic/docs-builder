@@ -241,6 +241,8 @@ const VersionDropdown = ({
                 panels={panels()}
                 css={css`
                     max-height: 70vh;
+                    // This is needed because the CSS reset we are using
+                    // is probably not fully compatible with the EUI
                     button {
                         cursor: pointer;
                         &:disabled {
