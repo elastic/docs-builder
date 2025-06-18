@@ -43,9 +43,9 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 
-	public static LandingNavigationItem CreateNavigation(OpenApiDocument openApiDocument)
+	public LandingNavigationItem CreateNavigation(OpenApiDocument openApiDocument)
 	{
-		var url = "/api";
+		var url = $"{context.UrlPathPrefix}/api";
 		var rootNavigation = new LandingNavigationItem(url);
 
 		var ops = openApiDocument.Paths
@@ -175,7 +175,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		return rootNavigation;
 	}
 
-	private static void CreateTagNavigationItems(
+	private void CreateTagNavigationItems(
 		ApiClassification classification,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
@@ -204,7 +204,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		}
 	}
 
-	private static void CreateEndpointNavigationItems(
+	private void CreateEndpointNavigationItems(
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
@@ -219,7 +219,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 				var operationNavigationItems = new List<OperationNavigationItem>();
 				foreach (var operation in endpoint.Operations)
 				{
-					var operationNavigationItem = new OperationNavigationItem(operation, rootNavigation, endpointNavigationItem)
+					var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, operation, rootNavigation, endpointNavigationItem)
 					{
 						Hidden = true
 					};
@@ -231,7 +231,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 			else
 			{
 				var operation = endpoint.Operations.First();
-				var operationNavigationItem = new OperationNavigationItem(operation, rootNavigation, parentNavigationItem);
+				var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, operation, rootNavigation, parentNavigationItem);
 				endpointNavigationItems.Add(operationNavigationItem);
 
 			}

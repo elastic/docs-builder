@@ -28,6 +28,7 @@ public record ApiOperation(OperationType OperationType, OpenApiOperation Operati
 public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
 {
 	public OperationNavigationItem(
+		string? urlPathPrefix,
 		ApiOperation apiOperation,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
@@ -38,7 +39,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
 		var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
-		Url = $"/api/endpoints/{moniker}";
+		Url = $"{urlPathPrefix}/api/endpoints/{moniker}";
 		Id = ShortId.Create(Url);
 	}
 

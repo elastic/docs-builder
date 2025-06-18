@@ -38,7 +38,7 @@ public class ReaderTests
 
 		var openApiDocument = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);
 		openApiDocument.Should().NotBeNull();
-		var navigation = OpenApiGenerator.CreateNavigation(openApiDocument);
+		var navigation = generator.CreateNavigation(openApiDocument);
 
 		navigation.Should().NotBeNull();
 	}
