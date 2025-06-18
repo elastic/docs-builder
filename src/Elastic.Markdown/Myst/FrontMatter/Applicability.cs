@@ -115,6 +115,7 @@ public record Applicability
 			ProductLifecycle.Discontinued => "Discontinued",
 			ProductLifecycle.Unavailable => "Unavailable",
 			ProductLifecycle.GenerallyAvailable => "GA",
+			ProductLifecycle.Removed => "Removed",
 			_ => throw new ArgumentOutOfRangeException(nameof(Lifecycle), Lifecycle, null)
 		};
 
@@ -134,6 +135,7 @@ public record Applicability
 			ProductLifecycle.Discontinued => "discontinued",
 			ProductLifecycle.Unavailable => "unavailable",
 			ProductLifecycle.GenerallyAvailable => "ga",
+			ProductLifecycle.Removed => "removed",
 			_ => throw new ArgumentOutOfRangeException()
 		};
 		_ = sb.Append(lifecycle);
