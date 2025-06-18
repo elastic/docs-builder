@@ -1,6 +1,8 @@
 @using Elastic.ApiExplorer.Landing
+@using Elastic.ApiExplorer.Operations
 @using Elastic.Documentation.Configuration.Assembler
 @using Elastic.Documentation.Configuration.Builder
+@using Microsoft.OpenApi.Models
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
@@ -23,21 +25,70 @@
 }
 @{
 	var parent = Model.CurrentNavigationItem.Parent as EndpointNavigationItem;
-}
-@if (parent is not null && parent.NavigationItems.Count > 0 && parent.NavigationItems.All(n => n.Hidden))
-{
-	<ul>
-	@foreach (var overload in parent.NavigationItems)
-	{
-		<li>
-			<a href="@overload.Url">@overload.Model.OperationType @overload.Model.Route</a>
-		</li>
-	}
-	</ul>
+	var self = Model.CurrentNavigationItem as OperationNavigationItem;
+	var allOperations =
+		parent is not null && parent.NavigationItems.Count > 0 && parent.NavigationItems.All(n => n.Hidden)
+			? parent.NavigationItems
+			: self is not null
+				? [self]
+				: [];
+
+	var operation = Model.Operation.Operation;
 }
 
-<section id="elastic-docs-v3">
-	<h1>Id: @Model.Operation.Operation.OperationId</h1>
-	<h2>Name: @Model.Operation.ApiName</h2>
-	<h2>Url: @Model.Operation.OperationType.ToString() @Model.Operation.Route</h2>
+<div class="w-full h-full grid
+					grid-cols-1
+					md:grid-cols-[1fr_var(--max-examples-width)]
+					lg:grid-cols-[1fr_var(--max-examples-width)]
+				">
+<section id="elastic-api-v3">
+	<h1>@operation.Summary</h1>
+	<p>
+		@operation.Description
+	</p>
+	<ul class="api-url-listing">
+		@foreach (var overload in allOperations)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
+			<li class="api-url-list-item">
+				<a href="@overload.Url" class="@current">
+					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					 <span class="api-url">@overload.Model.Route</span>
+				</a>
+			</li>
+		}
+	</ul>
+	@{
+		var pathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [];
+	}
+	@if (pathParameters.Length > 0)
+	{
+		<h3>Path Parameters</h3>
+		<dl>
+		@foreach (var path in pathParameters)
+		{
+			<dt id="@path.Name"><a href="#@path.Name"><code>@path.Name</code></a></dt>
+			<dd>@path.Description</dd>
+		}
+		</dl>
+	}
+	@{
+		var queryStringParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Query).ToArray() ?? [];
+	}
+	@if (queryStringParameters.Length > 0)
+	{
+		<h3>Query String Parameters</h3>
+		<dl>
+			@foreach (var path in queryStringParameters)
+			{
+				<dt id="@path.Name"><a href="#@path.Name"><code>@path.Name</code></a></dt>
+				<dd>@path.Description</dd>
+			}
+		</dl>
+	}
 </section>
+<aside>
+
+</aside>
+</div>

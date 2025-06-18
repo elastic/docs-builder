@@ -12,6 +12,7 @@
     
     <IsPublishable>true</IsPublishable>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <StartupHookSupport Condition="'$(Configuration)' == 'Debug'">true</StartupHookSupport>
   </PropertyGroup>
   
   <ItemGroup>
