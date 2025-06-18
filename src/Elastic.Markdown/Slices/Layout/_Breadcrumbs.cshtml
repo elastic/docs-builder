@@ -12,21 +12,9 @@
 }
 
 <ol id="breadcrumbs" class="block items-center w-full py-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-	<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-		<a
-			itemprop="item"
-			href="@Model.Link("/")"
-		>
-			<span itemprop="name" class="hover:text-black">
-				Docs
-			</span>
-		</a>
-		<meta itemprop="position" content="1">
-	</li>
 	@if (firstCrumb != null)
 	{
 		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-			<span class="px-1">/</span>
 			<a
 				itemprop="item"
 				href="@firstCrumb.Url"
@@ -34,7 +22,7 @@
 			>
 				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
-			<meta itemprop="position" content="2">
+			<meta itemprop="position" content="1">
 		</li>
 	}
 	@if (crumbs.Count > 0 && parents.Count > 3)
@@ -57,7 +45,7 @@
 			>
 				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
 			</a>
-			<meta itemprop="position" content="@(i+3)">
+			<meta itemprop="position" content="@(i+2)">
 		</li>
 	}
 	<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
