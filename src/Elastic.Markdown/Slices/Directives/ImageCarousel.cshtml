@@ -1,6 +1,10 @@
 @inherits RazorSlice<ImageCarouselViewModel>
-<div class="carousel-container" id="@Model.Id">
-    <div class="carousel-track">
+@{
+    var hasFixedHeight = !string.IsNullOrEmpty(Model.FixedHeight);
+    var trackStyle = hasFixedHeight ? $"height: {Model.FixedHeight};" : "";
+}
+<div class="carousel-container" id="@Model.Id" @(hasFixedHeight ? "data-fixed-height" : "")>
+    <div class="carousel-track" style="@trackStyle">
         @for (int i = 0; i < Model.Images.Count; i++)
         {
             var image = Model.Images[i];

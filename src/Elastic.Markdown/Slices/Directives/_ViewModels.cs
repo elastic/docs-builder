@@ -139,4 +139,5 @@ public class ImageCarouselViewModel : DirectiveViewModel
 	public required string Id { get; init; }
 	public bool? ShowControls { get; init; }
 	public bool? ShowIndicators { get; init; }
+	public string? FixedHeight { get; init; }
 }

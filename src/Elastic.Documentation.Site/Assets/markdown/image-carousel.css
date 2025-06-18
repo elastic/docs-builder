@@ -8,7 +8,7 @@
 .carousel-track {
   width: 100%;
   position: relative;
-  min-height: 200px; /* Ensure container has height even when slides are absolute */
+  min-height: 200px;
 }
 
 .carousel-slide {
@@ -92,6 +92,39 @@
   background-color: black;
 }
 
+/* Fixed height carousel styles */
+.carousel-container[data-fixed-height] .carousel-track {
+  min-height: auto;
+  overflow: hidden;
+}
+
+.carousel-container[data-fixed-height] .carousel-slide {
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.carousel-container[data-fixed-height] .carousel-slide[data-active="true"] {
+  position: relative;
+  height: 100%;
+  top: auto;
+  left: auto;
+}
+
+.carousel-container[data-fixed-height] .carousel-image-reference {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-container[data-fixed-height] .carousel-image-reference img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+}
 @media (max-width: 768px) {
   .carousel-control {
     width: 30px;

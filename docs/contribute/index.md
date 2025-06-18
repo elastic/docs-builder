@@ -8,24 +8,6 @@ Welcome, **contributor**!
 
 Whether you're a technical writer or you've only edited Elastic docs once or twice, you're a valued contributor. Every word matters!
 
-::::{carousel}
-:id: nested-carousel-example
-:controls: true
-:indicators: true
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-mailbox_not_analyzed_overview.png
-:alt: First image description
-:title: First image title
-:::
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-ai_security_mailbox_overview.png
-:alt: Second image description
-:title: Second image title
-:::
-:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-audit_overview.png
-:alt: Third image description
-:title: Third image title
-:::
-::::
-
 ## Contribute to the docs [#contribute]
 
 The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs.

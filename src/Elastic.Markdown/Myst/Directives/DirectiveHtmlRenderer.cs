@@ -127,7 +127,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				ImageUrl = img.ImageUrl
 			}).ToList(),
 			ShowControls = block.ShowControls,
-			ShowIndicators = block.ShowIndicators
+			ShowIndicators = block.ShowIndicators,
+			FixedHeight = block.FixedHeight
 		});
 		RenderRazorSlice(slice, renderer);
 	}
