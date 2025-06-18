@@ -1,7 +1,7 @@
 @inherits RazorSlice<MarkdownLayoutViewModel>
 @{
 	var targets =
-		Model.Features.IsPrimaryNavEnabled
+		Model.Features.PrimaryNavEnabled
 			? Model.Parents.Reverse()
 			: Model.Parents.Reverse().Skip(1);
 
