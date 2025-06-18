@@ -10,7 +10,7 @@ applies_to:
     security: ga 9.0.0
     elasticsearch: beta 9.1.0
     observability: discontinued 9.2.0
-  product: planned 9.5, discontinued 9.7
+  product: preview 9.5, discontinued 9.7
 ---
 
 # Applies to
@@ -28,12 +28,10 @@ Taking a mandatory [life-cycle](#life-cycle) with an optional version.
 #### Life cycle:
   * `preview`
   * `beta`
-  * `development`
-  * `deprecated`
-  * `planned`
-  * `discontinued`
-  * `unavailable`
   * `ga`
+  * `deprecated`
+  * `removed`
+  * `unavailable`
 
 #### Version
 
@@ -42,7 +40,7 @@ Can be in either `major.minor` or `major.minor.patch` format
 #### Examples
 
 ```
-planned 9.5, discontinued 9.7
+preview 9.5, discontinued 9.7
 discontinued 9.2.0
 all
 ```
@@ -107,7 +105,7 @@ applies_to:
     security: ga 9.0.0
     elasticsearch: beta 9.1.0
     observability: discontinued 9.2.0
-  product: planned 9.5, discontinued 9.7
+  product: preview 9.5, discontinued 9.7
 ---
 ```
 
@@ -125,7 +123,7 @@ serverless:
   security: ga 9.0.0
   elasticsearch: beta 9.1.0
   observability: discontinued 9.2.0
-product: planned 9.5, discontinued 9.7
+product: preview 9.5, discontinued 9.7
 ```
 
 A header may be followed by an `{applies_to}` directive which will contextualize the applicability
