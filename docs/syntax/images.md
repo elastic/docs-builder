@@ -114,3 +114,57 @@ image::images/metrics-alert-filters-and-group.png[Metric threshold filter and gr
 ```asciidoc
 image::images/synthetics-get-started-projects.png[]
 ```
+
+## Image carousel
+
+The image carousel directive builds upon the image directive.
+
+```markdown
+::::{carousel}
+
+:id: nested-carousel-example
+:controls: true
+:indicators: true
+:fixed-height: 750px
+
+:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-mailbox_not_analyzed_overview.png
+:alt: First image description
+:title: First image title
+:::
+
+:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-ai_security_mailbox_overview.png
+:alt: Second image description
+:title: Second image title
+:::
+
+:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-audit_overview.png
+:alt: Third image description
+:title: Third image title
+:::
+
+::::
+```
+
+::::{carousel}
+
+:id: nested-carousel-example
+:controls: true
+:indicators: true
+:fixed-height: 750px
+
+:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-mailbox_not_analyzed_overview.png
+:alt: First image description
+:title: First image title
+:::
+
+:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-ai_security_mailbox_overview.png
+:alt: Second image description
+:title: Second image title
+:::
+
+:::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-audit_overview.png
+:alt: Third image description
+:title: Third image title
+:::
+
+::::
