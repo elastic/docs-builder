@@ -163,42 +163,50 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 		while (!string.IsNullOrEmpty(listKeysResponse.NextToken));
 
 		var toPut = sourcedRedirects
-			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
-			.ToList();
+			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value });
 		var toDelete = existingRedirects
 			.Except(sourcedRedirects.Keys)
-			.Select(k => new DeleteKeyRequestListItem { Key = k })
-			.ToList();
+			.Select(k => new DeleteKeyRequestListItem { Key = k });
 
 		ConsoleApp.Log("Updating redirects in KVS");
 		const int batchSize = 500;
 
-		for (var i = 0; i < toPut.Count; i += batchSize)
-		{
-			var batch = toPut.Skip(i).Take(batchSize).ToList();
-			var update = await kvsClient.UpdateKeysAsync(new UpdateKeysRequest
-			{
-				KvsARN = kvsArn,
-				IfMatch = eTag,
-				Puts = batch
-			}, ctx);
-			eTag = update.ETag;
-		}
-
-		for (var i = 0; i < toDelete.Count; i += batchSize)
-		{
-			var batch = toDelete.Skip(i).Take(batchSize).ToList();
-			var update = await kvsClient.UpdateKeysAsync(new UpdateKeysRequest
-			{
-				KvsARN = kvsArn,
-				IfMatch = eTag,
-				Deletes = batch
-			}, ctx);
-			eTag = update.ETag;
-		}
+		eTag = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toPut, batchSize, "Puts", ctx);
+		_ = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toDelete, batchSize, "Deletes", ctx);
 
 		await collector.StopAsync(ctx);
 		return collector.Errors;
+	}
+
+	private static async Task<string> ProcessBatchUpdatesAsync(
+		IAmazonCloudFrontKeyValueStore kvsClient,
+		string kvsArn,
+		string eTag,
+		IEnumerable<object> items,
+		int batchSize,
+		string operation,
+		Cancel ctx)
+	{
+		var enumerable = items.ToList();
+		for (var i = 0; i < enumerable.Count; i += batchSize)
+		{
+			var batch = enumerable.Skip(i).Take(batchSize);
+			var updateRequest = new UpdateKeysRequest
+			{
+				KvsARN = kvsArn,
+				IfMatch = eTag
+			};
+
+			if (operation.Equals("Puts", StringComparison.InvariantCulture))
+				updateRequest.Puts = batch.Cast<PutKeyRequestListItem>().ToList();
+			else if (operation.Equals("Deletes", StringComparison.InvariantCulture))
+				updateRequest.Deletes = batch.Cast<DeleteKeyRequestListItem>().ToList();
+
+			var update = await kvsClient.UpdateKeysAsync(updateRequest, ctx);
+			eTag = update.ETag;
+		}
+
+		return eTag;
 	}
 
 }
