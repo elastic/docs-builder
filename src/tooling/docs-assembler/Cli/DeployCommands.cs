@@ -17,6 +17,7 @@ using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
+using DescribeKeyValueStoreRequest = Amazon.CloudFront.Model.DescribeKeyValueStoreRequest;
 
 namespace Documentation.Assembler.Cli;
 
@@ -143,10 +144,7 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 		var kvsClient = new AmazonCloudFrontKeyValueStoreClient();
 
 		ConsoleApp.Log("Describing KVS");
-		var describeResponse = await cfClient.DescribeKeyValueStoreAsync(new Amazon.CloudFront.Model.DescribeKeyValueStoreRequest()
-		{
-			Name = kvsName
-		}, ctx);
+		var describeResponse = await cfClient.DescribeKeyValueStoreAsync(new DescribeKeyValueStoreRequest { Name = kvsName }, ctx);
 
 		var kvsArn = describeResponse.KeyValueStore.ARN;
 		var eTag = describeResponse.ETag;
