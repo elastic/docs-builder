@@ -136,7 +136,11 @@ const VersionDropdown = ({
         {
             id: 0,
             title: (
-                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                <EuiFlexGroup
+                    gutterSize="s"
+                    alignItems="center"
+                    responsive={false}
+                >
                     <EuiFlexItem grow={0}>
                         <EuiIcon type="check" size="s" />
                     </EuiFlexItem>
