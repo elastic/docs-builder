@@ -188,7 +188,7 @@ const VersionDropdown = ({
                                       `}
                                   >
                                       <EuiLink
-                                          href="/docs/versions"
+                                          href={allVersionsUrl}
                                           color="text"
                                       >
                                           <EuiText size="s">
