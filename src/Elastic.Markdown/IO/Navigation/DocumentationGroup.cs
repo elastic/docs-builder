@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
@@ -11,84 +10,6 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
-
-[DebuggerDisplay("Current: {Model.RelativePath}")]
-public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group, bool Hidden = false) : ILeafNavigationItem<MarkdownFile>
-{
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = Group;
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
-	public string Url => Model.Url;
-	public string NavigationTitle => Model.NavigationTitle;
-	public int NavigationIndex { get; set; }
-}
-
-public class TableOfContentsTreeCollector
-{
-	private Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
-
-	public void Collect(Uri source, TableOfContentsTree tree) =>
-		NestedTableOfContentsTrees[source] = tree;
-
-	public void Collect(TocReference tocReference, TableOfContentsTree tree) =>
-		NestedTableOfContentsTrees[tocReference.Source] = tree;
-
-	public bool TryGetTableOfContentsTree(Uri source, [NotNullWhen(true)] out TableOfContentsTree? tree) =>
-		NestedTableOfContentsTrees.TryGetValue(source, out tree);
-}
-
-
-[DebuggerDisplay("Toc >{Depth} {FolderName} ({NavigationItems.Count} items)")]
-public class TableOfContentsTree : DocumentationGroup, IRootNavigationItem<MarkdownFile, INavigationItem>
-{
-	public Uri Source { get; }
-
-	public TableOfContentsTreeCollector TreeCollector { get; }
-
-	public TableOfContentsTree(
-		Uri source,
-		BuildContext context,
-		NavigationLookups lookups,
-		TableOfContentsTreeCollector treeCollector,
-		ref int fileIndex)
-		: base(".", treeCollector, context, lookups, source, ref fileIndex, 0, null, null)
-	{
-		TreeCollector = treeCollector;
-		NavigationRoot = this;
-
-		Source = source;
-		TreeCollector.Collect(source, this);
-
-		//edge case if a tree only holds a single group, ensure we collapse it down to the root (this)
-		if (NavigationItems.Count == 1 && NavigationItems.First() is DocumentationGroup { NavigationItems.Count: 0 })
-			NavigationItems = [];
-
-
-	}
-
-	internal TableOfContentsTree(
-		Uri source,
-		string folderName,
-		TableOfContentsTreeCollector treeCollector,
-		BuildContext context,
-		NavigationLookups lookups,
-		ref int fileIndex,
-		int depth,
-		IRootNavigationItem<MarkdownFile, INavigationItem> toplevelTree,
-		DocumentationGroup? parent
-	) : base(folderName, treeCollector, context, lookups, source, ref fileIndex, depth, toplevelTree, parent)
-	{
-		Source = source;
-		TreeCollector = treeCollector;
-		NavigationRoot = this;
-		TreeCollector.Collect(source, this);
-	}
-
-	protected override IRootNavigationItem<MarkdownFile, INavigationItem> DefaultNavigation => this;
-
-	// We rely on IsPrimaryNavEnabled to determine if we should show the dropdown
-	/// <inheritdoc />
-	public bool IsUsingNavigationDropdown => false;
-}
 
 [DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
 public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationItem>

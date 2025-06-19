@@ -4,9 +4,17 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.CodeBlocks;
+using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Dropdown;
+using Elastic.Markdown.Myst.Directives.Image;
+using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Mermaid;
+using Elastic.Markdown.Myst.Directives.Settings;
+using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
-using Elastic.Markdown.Myst.Settings;
-using Elastic.Markdown.Slices.Directives;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -86,7 +94,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var imageUrl = block.ImageUrl;
 
-		var slice = Image.Create(new ImageViewModel
+		var slice = ImageView.Create(new ImageViewModel
 		{
 			DirectiveBlock = block,
 			Label = block.Label,
@@ -105,13 +113,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteStepperBlock(HtmlRenderer renderer, StepperBlock block)
 	{
-		var slice = Stepper.Create(new StepperViewModel { DirectiveBlock = block });
+		var slice = StepperView.Create(new StepperViewModel { DirectiveBlock = block });
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteStepBlock(HtmlRenderer renderer, StepBlock block)
 	{
-		var slice = Step.Create(new StepViewModel
+		var slice = StepView.Create(new StepViewModel
 		{
 			DirectiveBlock = block,
 			Title = block.Title,
@@ -126,7 +134,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					   (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
-		var slice = Figure.Create(new ImageViewModel
+		var slice = FigureView.Create(new ImageViewModel
 		{
 			DirectiveBlock = block,
 			Label = block.Label,
@@ -148,7 +156,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteVersion(HtmlRenderer renderer, VersionBlock block)
 	{
-		var slice = Slices.Directives.Version.Create(new VersionViewModel
+		var slice = VersionView.Create(new VersionViewModel
 		{
 			DirectiveBlock = block,
 			Directive = block.Directive,
@@ -160,7 +168,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteAdmonition(HtmlRenderer renderer, AdmonitionBlock block)
 	{
-		var slice = Admonition.Create(new AdmonitionViewModel
+		var slice = AdmonitionView.Create(new AdmonitionViewModel
 		{
 			DirectiveBlock = block,
 			Directive = block.Admonition,
@@ -174,7 +182,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteDropdown(HtmlRenderer renderer, DropdownBlock block)
 	{
-		var slice = Dropdown.Create(new AdmonitionViewModel
+		var slice = DropdownView.Create(new AdmonitionViewModel
 		{
 			DirectiveBlock = block,
 			Directive = block.Admonition,
@@ -188,13 +196,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
-		var slice = TabSet.Create(new TabSetViewModel { DirectiveBlock = block });
+		var slice = TabSetView.Create(new TabSetViewModel { DirectiveBlock = block });
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)
 	{
-		var slice = TabItem.Create(new TabItemViewModel
+		var slice = TabItemView.Create(new TabItemViewModel
 		{
 			DirectiveBlock = block,
 			Index = block.Index,
@@ -208,7 +216,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
 	{
-		var slice = Mermaid.Create(new MermaidViewModel { DirectiveBlock = block });
+		var slice = MermaidView.Create(new MermaidViewModel { DirectiveBlock = block });
 		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
@@ -274,7 +282,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 		}
 
-		var slice = Slices.Directives.Settings.Create(new SettingsViewModel
+		var slice = SettingsView.Create(new SettingsViewModel
 		{
 			SettingsCollection = settings,
 			RenderMarkdown = s =>

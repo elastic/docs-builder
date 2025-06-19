@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Version.VersionViewModel>
+<div class="@Model.Directive"><p>
+	<span class="versionmodified @Model.VersionClass">@Model.Title</span>
+	@Model.RenderBlock()
+</p></div>

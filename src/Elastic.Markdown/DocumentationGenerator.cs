@@ -15,7 +15,6 @@ using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Slices;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
