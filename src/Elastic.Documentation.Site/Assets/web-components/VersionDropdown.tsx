@@ -249,16 +249,14 @@ const VersionDropdown = ({
                             cursor: default;
                         }
                     }
+                    .euiContextMenuPanel > div:not(.euiContextMenuPanel__title) {
+                        max-height: 70vh;
+                        ${useEuiOverflowScroll("y")}
+                    }
                     .euiContextMenuPanel__title {
-                        position: sticky;
-                        top: 0;
-                        // !important because clicking on the title
-                        // makes the background transparent
-                        // and you unexpectedly see the items behind it.
                         background-color: ${euiTheme.colors
                             .backgroundBasePlain} !important;
                     }
-                    ${useEuiOverflowScroll('y')}
                 `}
             />
         </EuiPopover>
