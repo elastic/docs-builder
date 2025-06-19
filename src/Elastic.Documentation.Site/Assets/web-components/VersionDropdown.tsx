@@ -249,12 +249,13 @@ const VersionDropdown = ({
                             cursor: default;
                         }
                     }
-                    .euiContextMenuPanel > div:not(.euiContextMenuPanel__title) {
+                    .euiContextMenuPanel
+                        > div:not(.euiContextMenuPanel__title) {
                         // I'm using this height so that the last element
                         // is cut in half to make it clear to the user that
                         // there is more content.
                         max-height: 28.3rem;
-                        ${useEuiOverflowScroll("y")}
+                        ${useEuiOverflowScroll('y')}
                     }
                     .euiContextMenuPanel__title {
                         background-color: ${euiTheme.colors
