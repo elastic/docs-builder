@@ -14,8 +14,6 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 {
 	public List<ImageBlock> Images { get; } = [];
 	public string? Id { get; set; }
-	public bool? ShowControls { get; set; }
-	public bool? ShowIndicators { get; set; }
 	public string? FixedHeight { get; set; }
 
 	public override string Directive => "carousel";
@@ -24,8 +22,6 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 	{
 		// Parse options
 		Id = Prop("id");
-		ShowControls = TryPropBool("controls");
-		ShowIndicators = TryPropBool("indicators");
 		FixedHeight = Prop("fixed-height");
 
 		// Process child image blocks directly

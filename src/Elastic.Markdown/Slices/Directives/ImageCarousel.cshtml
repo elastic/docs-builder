@@ -16,7 +16,7 @@
         }
     </div>
     
-    @if (Model.ShowControls == true && Model.Images.Count > 1)
+    @if (Model.Images.Count > 1)
     {
         <button type="button" class="carousel-control carousel-prev" aria-label="Previous slide">
             <span aria-hidden="true">←</span>
@@ -26,7 +26,7 @@
         </button>
     }
     
-    @if (Model.ShowIndicators == true && Model.Images.Count > 1)
+    @if (Model.Images.Count > 1)
     {
         <div class="carousel-indicators">
             @for (int i = 0; i < Model.Images.Count; i++)

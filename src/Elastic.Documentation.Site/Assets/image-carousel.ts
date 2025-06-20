@@ -133,9 +133,8 @@ export function initImageCarousel(): void {
     const carousels = document.querySelectorAll('.carousel-container')
 
     // Process each carousel
-    carousels.forEach((carousel) => {
-        const id = carousel.id
-        if (!id) return
+    carousels.forEach((carouselElement) => {
+        const carousel = carouselElement as HTMLElement
 
         // Get the existing track
         let track = carousel.querySelector('.carousel-track')

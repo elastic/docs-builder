@@ -3,8 +3,6 @@ navigation_title: Contribute
 ---
 
 ::::{carousel}
-:controls: true
-:indicators: true
 :fixed-height: 750px
 :::{image} https://epr.elastic.co/package/abnormal_security/1.8.0/img/abnormal_security-mailbox_not_analyzed_overview.png
 :alt: First image description
