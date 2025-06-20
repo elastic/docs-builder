@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Search;
@@ -18,4 +19,5 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
 [JsonSerializable(typeof(DocumentationDocument))]
+[JsonSerializable(typeof(FrozenDictionary<string, string>))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;
