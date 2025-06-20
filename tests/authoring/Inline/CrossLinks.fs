@@ -31,17 +31,20 @@ type ``cross-link makes it into html`` () =
 
 type ``error when using wrong scheme`` () =
 
-    static let markdown = Setup.Markdown """
-[APM Server binary](docs-x:/solutions/observability/apps/apm-server-binary.md)
-"""
-
     [<Fact>]
     let ``error on bad scheme`` () =
+        let markdown = Setup.Markdown """
+[APM Server binary](docs-x:/solutions/observability/apps/apm-server-binary.md)
+"""
         markdown
         |> hasError "'docs-x' was not found in the cross link index"
 
     [<Fact>]
-    let ``has no warning`` () = markdown |> hasNoWarnings
+    let ``has no warning`` () =
+        let markdown = Setup.Markdown """
+[APM Server binary](docs-x:/solutions/observability/apps/apm-server-binary.md)
+"""
+        markdown |> hasNoWarnings
 
 type ``error when bad anchor is used`` () =
 
