@@ -20,12 +20,6 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["primary-nav"] = value;
 	}
 
-	public bool VersionDropdownEnabled
-	{
-		get => IsEnabled("version-dropdown");
-		set => _featureFlags["version-dropdown"] = value;
-	}
-
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
