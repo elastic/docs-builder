@@ -1,7 +1,16 @@
 @inherits RazorSlice<ImageCarouselViewModel>
 @{
-    var hasFixedHeight = !string.IsNullOrEmpty(Model.FixedHeight);
-    var trackStyle = hasFixedHeight ? $"height: {Model.FixedHeight};" : "";
+    // Convert semantic height values to pixel values
+    string? pixelHeight = Model.FixedHeight?.ToLower() switch
+    {
+        "small" => "350px",
+        "medium" => "750px",
+        "auto" or null or "" => null,
+        _ => null // Default to none for invalid values
+    };
+    
+    var hasFixedHeight = !string.IsNullOrEmpty(pixelHeight);
+    var trackStyle = hasFixedHeight ? $"height: {pixelHeight};" : "";
 }
 <div class="carousel-container" @(hasFixedHeight ? "data-fixed-height" : "")>
     <div class="carousel-track" style="@trackStyle">

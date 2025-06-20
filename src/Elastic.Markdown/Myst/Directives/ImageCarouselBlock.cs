@@ -24,6 +24,16 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 		Id = Prop("id");
 		FixedHeight = Prop("fixed-height");
 
+		// Validate fixed-height option
+		if (!string.IsNullOrEmpty(FixedHeight))
+		{
+			var validHeights = new[] { "auto", "small", "medium" };
+			if (!validHeights.Contains(FixedHeight.ToLower()))
+			{
+				this.EmitWarning($"Invalid fixed-height value '{FixedHeight}'. Valid options are: auto, small, medium. Defaulting to 'auto'.");
+			}
+		}
+
 		// Process child image blocks directly
 		foreach (var block in this)
 		{
