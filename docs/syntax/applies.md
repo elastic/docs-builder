@@ -38,7 +38,7 @@ When you write or edit documentation, only specify the keys that apply to that c
 Each key accepts values with the following syntax:
 
 ```
-<life-cycle> [version], <life-cycle> [version]
+<key>: <life-cycle> [version]
 ```
 
 Where:
