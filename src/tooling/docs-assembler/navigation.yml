@@ -125,14 +125,38 @@ toc:
       - toc: docs-content://release-notes/elastic-observability
         path_prefix: release-notes/observability
         children:
+          # EDOT Android
+          # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-android://release-notes
+            path_prefix: release-notes/edot/sdks/android
+          # EDOT iOS
+          # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
+          - toc: apm-agent-ios://release-notes
+            path_prefix: release-notes/edot/sdks/ios         
+          # EDOT Java
+          # https://github.com/elastic/elastic-otel-java/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-java://release-notes
+            path_prefix: release-notes/edot/sdks/java
+          # EDOT .NET
+          # https://github.com/elastic/elastic-otel-dotnet/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-dotnet://release-notes
+            path_prefix: release-notes/edot/sdks/dotnet
+          # EDOT Node
+          # https://github.com/elastic/elastic-otel-node/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-node://release-notes
+            path_prefix: release-notes/edot/sdks/node
+          # EDOT Python
+          # https://github.com/elastic/elastic-otel-python/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-python://release-notes
+            path_prefix: release-notes/edot/sdks/python
+          # EDOT PHP
+          # https://github.com/elastic/elastic-otel-php/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-php://release-notes
+            path_prefix: release-notes/edot/sdks/php
           # APM
           # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-apm/toc.yml
           - toc: apm-server://release-notes
             path_prefix: release-notes/apm
-          # APM Android agent
-          # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
-          - toc: apm-agent-android://release-notes
-            path_prefix: release-notes/apm/agents/android
           # APM .NET agent
           # https://github.com/elastic/apm-agent-dotnet/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-dotnet://release-notes
@@ -141,10 +165,6 @@ toc:
           # https://github.com/elastic/apm-agent-go/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-go://release-notes
             path_prefix: release-notes/apm/agents/go
-          # APM iOS agent
-          # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
-          - toc: apm-agent-ios://release-notes
-            path_prefix: release-notes/apm/agents/ios
           # APM Java agent
           # https://github.com/elastic/apm-agent-java/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-java://release-notes
