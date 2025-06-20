@@ -32,6 +32,11 @@ The `applies_to` metadata can be added at different levels in the documentation:
 
 ## Syntax
 
+The `applies_to` metadata supports an [exhaustive list of keys](#structured-model).
+
+When you write or edit documentation, only specify the keys that apply to that content.
+Each key accepts values with the following syntax:
+
 ```
 <life-cycle> [version], <life-cycle> [version]
 ```
