@@ -41,7 +41,13 @@ Each key accepts values with the following syntax:
 <life-cycle> [version], <life-cycle> [version]
 ```
 
-Taking a mandatory [life-cycle](#life-cycle) with an optional [version](#version).
+Where:
+
+- The [life-cycle](#life-cycle) is mandatory
+- The [version](#version) is optional
+- You can specify multiple states by separating them with a comma. For example: `stack: preview 9.1, ga 9.4`
+
+Note that a key without any value doesn't show any badge in the output.
 
 ### Life cycle
 
