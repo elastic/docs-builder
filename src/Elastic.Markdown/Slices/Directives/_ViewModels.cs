@@ -136,7 +136,6 @@ public class StepViewModel : DirectiveViewModel
 public class ImageCarouselViewModel : DirectiveViewModel
 {
 	public required List<ImageViewModel> Images { get; init; }
-	public required string Id { get; init; }
 	public bool? ShowControls { get; init; }
 	public bool? ShowIndicators { get; init; }
 	public string? FixedHeight { get; init; }

@@ -111,7 +111,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = ImageCarousel.Create(new ImageCarouselViewModel
 		{
 			DirectiveBlock = block,
-			Id = block.Id ?? Guid.NewGuid().ToString(),
 			Images = block.Images.Select(img => new ImageViewModel
 			{
 				DirectiveBlock = img,

@@ -8,12 +8,10 @@ class ImageCarousel {
     private touchStartX: number = 0
     private touchEndX: number = 0
 
-    constructor(containerId: string) {
-        this.container = document.getElementById(containerId)!
+    constructor(container: HTMLElement) {
+        this.container = container
         if (!this.container) {
-            console.warn(
-                `Carousel container with ID "${containerId}" not found`
-            )
+            console.warn('Carousel container element is null or undefined')
             return
         }
 
@@ -303,7 +301,7 @@ export function initImageCarousel(): void {
         }
 
         // Initialize this carousel
-        new ImageCarousel(id)
+        new ImageCarousel(carousel)
     })
 }
 

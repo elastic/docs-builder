@@ -3,7 +3,7 @@
     var hasFixedHeight = !string.IsNullOrEmpty(Model.FixedHeight);
     var trackStyle = hasFixedHeight ? $"height: {Model.FixedHeight};" : "";
 }
-<div class="carousel-container" id="@Model.Id" @(hasFixedHeight ? "data-fixed-height" : "")>
+<div class="carousel-container" @(hasFixedHeight ? "data-fixed-height" : "")>
     <div class="carousel-track" style="@trackStyle">
         @for (int i = 0; i < Model.Images.Count; i++)
         {
