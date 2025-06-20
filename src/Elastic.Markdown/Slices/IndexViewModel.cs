@@ -34,6 +34,8 @@ public class IndexViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string CurrentVersion { get; init; }
+
+	public required string? AllVersionsUrl { get; init; }
 	public required LegacyPageMapping[]? LegacyPages { get; init; }
 	public required VersionDrownDownItemViewModel[]? VersionDropdownItems { get; init; }
 	public required string? UrlPathPrefix { get; init; }
@@ -59,6 +61,9 @@ public class VersionDrownDownItemViewModel
 	[JsonPropertyName("href")]
 	public required string? Href { get; init; }
 
+	[JsonPropertyName("disabled")]
+	public required bool IsDisabled { get; init; }
+
 	[JsonPropertyName("children")]
 	public required VersionDrownDownItemViewModel[]? Children { get; init; }
 
@@ -66,9 +71,7 @@ public class VersionDrownDownItemViewModel
 	public static VersionDrownDownItemViewModel[]? FromLegacyPageMappings(LegacyPageMapping[]? legacyPageMappings)
 	{
 		if (legacyPageMappings is null)
-		{
 			return null;
-		}
 		var groupedVersions = GroupByMajorVersion(legacyPageMappings);
 		return groupedVersions.Select(m =>
 		{
@@ -79,10 +82,12 @@ public class VersionDrownDownItemViewModel
 				{
 					Name = m.Key,
 					Href = null,
+					IsDisabled = false,
 					Children = m.Value.Select(v => new VersionDrownDownItemViewModel
 					{
 						Name = v,
 						Href = legacyPageMappings.First(x => x.Version == v).ToString(),
+						IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
 						Children = null
 					}).ToArray()
 				};
@@ -95,6 +100,7 @@ public class VersionDrownDownItemViewModel
 			{
 				Name = legacyPageMapping.Version,
 				Href = legacyPageMapping.ToString(),
+				IsDisabled = !legacyPageMapping.Exists,
 				Children = null
 			};
 		}).ToArray();

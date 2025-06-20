@@ -136,7 +136,7 @@ type Setup =
     static member Document ([<LanguageInjection("markdown")>]m: string) =
         lazy (task { return! Setup.Generator [Index m] None } |> Async.AwaitTask |> Async.RunSynchronously)
 
-    /// Pass a markdown fragment to the test setup
+    /// Pass a Markdown fragment to the test setup
     static member Markdown ([<LanguageInjection("markdown")>]m: string) =
         // language=markdown
         let m = $"""# Test Document

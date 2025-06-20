@@ -15,6 +15,5 @@
     <PackageReference Include="Samboy063.Tomlet" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
     <PackageReference Include="YamlDotNet"/>
-    <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 </Project>

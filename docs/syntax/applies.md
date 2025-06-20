@@ -10,7 +10,7 @@ This is what the `applies_to` metadata is for. It can be used at the page, secti
 
 ## When and where to use `applies_to`
 
-The `applies_to` metadata can be added at different levels in the documentation: 
+The `applies_to` metadata can be added at different levels in the documentation:
 
 * [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the overall applicability of the page across products, deployments, and environments.
 * [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.

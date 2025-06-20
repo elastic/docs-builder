@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.ApiExplorer;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
@@ -36,15 +37,15 @@ public class ReloadableGeneratorState(
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);
 
-		await ReloadApiReferences(ctx);
+		await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
 	}
 
-	private async Task ReloadApiReferences(Cancel ctx)
+	private async Task ReloadApiReferences(IMarkdownStringRenderer markdownStringRenderer, Cancel ctx)
 	{
 		if (ApiPath.Exists)
 			ApiPath.Delete(true);
 		ApiPath.Create();
-		var generator = new OpenApiGenerator(context, logger);
+		var generator = new OpenApiGenerator(context, markdownStringRenderer, logger);
 		await generator.Generate(ctx);
 	}
 }

@@ -3,51 +3,53 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.ApiExplorer.Endpoints;
 using Elastic.ApiExplorer.Landing;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Models.Interfaces;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record ApiOperation(OperationType OperationType, OpenApiOperation Operation) : INavigationModel, IPageRenderer<ApiRenderContext>
+public record ApiOperation(OperationType OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new OperationViewModel
+		var viewModel = new OperationViewModel(context)
 		{
-			Operation = this,
-			StaticFileContentHashProvider = context.StaticFileContentHashProvider,
-			NavigationHtml = context.NavigationHtml,
-			CurrentNavigationItem = context.CurrentNavigation
+			Operation = this
 		};
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 }
 
-public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>
+public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
 {
-	public OperationNavigationItem(int depth, string url, ApiOperation apiOperation, EndpointNavigationItem parent, LandingNavigationItem root)
+	public OperationNavigationItem(
+		string? urlPathPrefix,
+		ApiOperation apiOperation,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
+	)
 	{
-		Parent = parent;
-		Depth = depth;
-		//Current = group.Current;
 		NavigationRoot = root;
-		Id = NavigationRoot.Id;
 		Model = apiOperation;
-		Url = url;
-		//TODO
-		NavigationTitle = $"{apiOperation.OperationType.ToString().ToLowerInvariant()} {apiOperation.Operation.OperationId}";
+		NavigationTitle = apiOperation.ApiName;
+		Parent = parent;
+		var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
+		Url = $"{urlPathPrefix}/api/endpoints/{moniker}";
+		Id = ShortId.Create(Url);
 	}
 
-	public INodeNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	//TODO enum to string
 	public string Id { get; }
-	public int Depth { get; }
+	public int Depth { get; } = 1;
 	public ApiOperation Model { get; }
 	public string Url { get; }
-	public bool Hidden => false;
+	public bool Hidden { get; set; }
 
 	public string NavigationTitle { get; }
 

@@ -1,27 +1,10 @@
-@using Elastic.Documentation.Configuration.Assembler
-@using Elastic.Documentation.Configuration.Builder
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
-	public GlobalLayoutViewModel LayoutModel => new()
-	{
-		DocSetName = "Api Explorer",
-		Description = "",
-		CurrentNavigationItem = Model.CurrentNavigationItem,
-		Previous = null,
-		Next = null,
-		NavigationHtml = Model.NavigationHtml,
-		UrlPathPrefix = null,
-		VersionDropdown = null,
-		AllowIndexing = false,
-		CanonicalBaseUrl = null,
-		GoogleTagManager = new GoogleTagManagerConfiguration(),
-		Features = new FeatureFlags([]),
-		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
-	};
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
 <section id="elastic-docs-v3">
 	<h1>@Model.ApiInfo.Title</h1>
 	<p>@Model.ApiInfo.Description</p>
-	<p>License: @Model.ApiInfo.License.Identifier</p>
+	<p>License: @Model.ApiInfo.License?.Identifier</p>
 </section>
