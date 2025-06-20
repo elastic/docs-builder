@@ -13,6 +13,7 @@
 @import './markdown/table.css';
 @import './markdown/definition-list.css';
 @import './markdown/images.css';
+@import './markdown/image-carousel.css';
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';

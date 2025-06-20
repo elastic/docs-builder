@@ -1,0 +1,139 @@
+.carousel-container {
+	position: relative;
+	width: 100%;
+	margin: 2rem 0;
+	overflow: hidden;
+}
+
+.carousel-track {
+	width: 100%;
+	position: relative;
+	min-height: 200px;
+}
+
+.carousel-slide {
+	width: 100%;
+	position: absolute;
+	display: none;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.carousel-slide[data-active='true'] {
+	position: relative;
+	display: block;
+	opacity: 1;
+	z-index: 2;
+}
+
+.carousel-image-reference {
+	display: block;
+}
+
+.carousel-image-reference img {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+.carousel-control {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	background-color: rgba(0, 0, 0, 0.5);
+	border: none;
+	color: white;
+	font-size: 1.5rem;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.3s;
+	z-index: 5;
+}
+
+.carousel-control:hover {
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+.carousel-prev {
+	left: 10px;
+}
+
+.carousel-next {
+	right: 10px;
+}
+
+.carousel-indicators {
+	position: absolute;
+	bottom: 10px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	gap: 8px;
+	z-index: 5;
+}
+
+.carousel-indicator {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background-color: rgba(0, 0, 0, 0.3);
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	transition: background-color 0.3s;
+}
+
+.carousel-indicator[data-active='true'] {
+	background-color: black;
+}
+
+/* Fixed height carousel styles */
+.carousel-container[data-fixed-height] .carousel-track {
+	min-height: auto;
+	overflow: hidden;
+}
+
+.carousel-container[data-fixed-height] .carousel-slide {
+	height: 100%;
+	top: 0;
+	left: 0;
+}
+
+.carousel-container[data-fixed-height] .carousel-slide[data-active='true'] {
+	position: relative;
+	height: 100%;
+	top: auto;
+	left: auto;
+}
+
+.carousel-container[data-fixed-height] .carousel-image-reference {
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.carousel-container[data-fixed-height] .carousel-image-reference img {
+	width: auto;
+	height: 100%;
+	max-width: 100%;
+	object-fit: contain;
+	object-position: center;
+}
+@media (max-width: 768px) {
+	.carousel-control {
+		width: 30px;
+		height: 30px;
+		font-size: 1.2rem;
+	}
+
+	.carousel-indicator {
+		width: 10px;
+		height: 10px;
+	}
+}

@@ -38,6 +38,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case ImageBlock imageBlock:
 				WriteImage(renderer, imageBlock);
 				return;
+			case ImageCarouselBlock carouselBlock:
+				WriteImageCarousel(renderer, carouselBlock);
+				return;
 			case DropdownBlock dropdownBlock:
 				WriteDropdown(renderer, dropdownBlock);
 				return;
@@ -94,11 +97,35 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Alt = block.Alt ?? string.Empty,
 			Title = block.Title,
 			Height = block.Height,
-			Scale = block.Scale,
+			Scale = block.Scale ?? string.Empty,
 			Target = block.Target,
 			Width = block.Width,
 			Screenshot = block.Screenshot,
 			ImageUrl = imageUrl,
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteImageCarousel(HtmlRenderer renderer, ImageCarouselBlock block)
+	{
+		var slice = ImageCarousel.Create(new ImageCarouselViewModel
+		{
+			DirectiveBlock = block,
+			Images = block.Images.Select(img => new ImageViewModel
+			{
+				DirectiveBlock = img,
+				Label = img.Label,
+				Align = img.Align ?? string.Empty,
+				Alt = img.Alt ?? string.Empty,
+				Title = img.Title,
+				Height = img.Height,
+				Width = img.Width,
+				Scale = img.Scale ?? string.Empty,
+				Screenshot = img.Screenshot,
+				Target = img.Target,
+				ImageUrl = img.ImageUrl
+			}).ToList(),
+			FixedHeight = block.FixedHeight
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -130,11 +157,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Label = block.Label,
-			Align = block.Align,
+			Align = block.Align ?? string.Empty,
 			Alt = block.Alt ?? string.Empty,
 			Title = block.Title,
 			Height = block.Height,
-			Scale = block.Scale,
+			Scale = block.Scale ?? string.Empty,
 			Target = block.Target,
 			Width = block.Width,
 			Screenshot = block.Screenshot,
