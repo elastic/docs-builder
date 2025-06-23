@@ -25,4 +25,7 @@ public record PublishEnvironment
 
 	[YamlMember(Alias = "google_tag_manager")]
 	public GoogleTagManager GoogleTagManager { get; set; } = new();
+
+	[YamlMember(Alias = "feature_flags")]
+	public Dictionary<string, bool> FeatureFlags { get; set; } = [];
 }

@@ -2,7 +2,7 @@
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
-	protected override Task ExecuteSectionAsync(string name)
+	protected override async Task ExecuteSectionAsync(string name)
 	{
 		if (name == GlobalSections.Footer && Model.Layout is not LayoutName.Archive)
 		{
@@ -19,42 +19,51 @@
 					</button>
 				</div>
 			</aside>
+			//this ensures we forward footer sections declared in this project into to GlobalLayout view's section
+			await RenderSectionAsync(GlobalSections.Footer);
 		}
-		return Task.CompletedTask;
+
+		if (name == GlobalSections.Head)
+		{
+			//this ensures we forward head sections declared in this project into to GlobalLayout view's section
+			await RenderSectionAsync(GlobalSections.Head);
+		}
 	}
 	private async Task RenderDefault()
 	{
 		<div class="max-w-(--max-layout-width) w-full h-full grid
 					grid-cols-1
 					md:grid-cols-[var(--max-sidebar-width)_1fr]
-					lg:grid-cols-[var(--max-sidebar-width)_1fr_var(--max-sidebar-width)]
 				">
 			@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
-			<div class="justify-center grid
-					grid-cols-1
-					px-6 lg:px-0
-					lg:grid-cols-[1fr_var(--max-text-width)_1fr]
-					">
-				<div class="spacer"></div>
-				<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
-					<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
-						<div class="h-[2px] w-full overflow-hidden">
-							<div class="progress w-full h-full bg-pink-70 left-right"></div>
+			<div class="lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)]">
+				@await RenderPartialAsync(_TableOfContents.Create(Model))
+				<div class="justify-center grid
+						grid-cols-1
+						px-6 lg:px-0
+						lg:grid-cols-[1fr_var(--max-text-width)_1fr]
+						lg:order-1
+						">
+					<div class="spacer"></div>
+					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
+						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+							<div class="h-[2px] w-full overflow-hidden">
+								<div class="progress w-full h-full bg-pink-70 left-right"></div>
+							</div>
+							<div class="sr-only">Loading</div>
 						</div>
-						<div class="sr-only">Loading</div>
-					</div>
-					<div class="content-container md:px-4">
-						@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-					</div>
-					<article id="markdown-content" class="content-container markdown-content md:px-4">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderBodyAsync()
-					</article>
-					@await RenderPartialAsync(_PrevNextNav.Create(Model))
-				</main>
-				<div class="spacer"></div>
+						<div class="content-container md:px-4">
+							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content md:px-4">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+						@await RenderPartialAsync(_PrevNextNav.Create(Model))
+					</main>
+					<div class="spacer"></div>
+				</div>
 			</div>
-			@await RenderPartialAsync(_TableOfContents.Create(Model))
 		</div>
 	}
 }

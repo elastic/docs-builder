@@ -161,7 +161,8 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		var generator = new DocumentationGenerator(set, logger, null, null, null, exporter);
 		_ = await generator.GenerateAll(ctx);
 
-		var openApiGenerator = new OpenApiGenerator(context, logger);
+
+		var openApiGenerator = new OpenApiGenerator(context, generator.MarkdownStringRenderer, logger);
 		await openApiGenerator.Generate(ctx);
 
 		if (runningOnCi)

@@ -24,6 +24,7 @@
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> folder)
 	{
 		var g = folder;
+		var allHidden = folder.NavigationItems.All(n => n.Hidden);
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
@@ -32,24 +33,27 @@
 					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "")">
 					@(g.NavigationTitle)
 				</a>
-				<label for="@folder.Id" class="group/label flex mr-2 items-start">
-					<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.5"
-							stroke="currentColor"
-							class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
-							<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-						</svg>
-					</div>
-					<input
-						id="@folder.Id"
-						type="checkbox"
-						class="hidden"
-						aria-hidden="true">
-				</label>
+				@if (!allHidden)
+				{
+					<label for="@folder.Id" class="group/label flex mr-2 items-start">
+						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</div>
+						<input
+							id="@folder.Id"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+				}
 			</div>
 			@if (g.NavigationItems.Count > 0)
 			{
@@ -66,7 +70,7 @@
 			}
 		</li>
 	}
-	else if (item is ILeafNavigationItem<INavigationModel> leaf && Model.SubTree.Url != leaf.Url)
+	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a

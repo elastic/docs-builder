@@ -4,10 +4,22 @@
 
 namespace Elastic.Documentation.Configuration.Builder;
 
-public class FeatureFlags(Dictionary<string, bool> featureFlags)
+public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 {
-	public bool IsPrimaryNavEnabled => IsEnabled("primary-nav");
-	public bool IsVersionDropdownEnabled => IsEnabled("version-dropdown");
+	private readonly Dictionary<string, bool> _featureFlags = new(initFeatureFlags);
+
+	public void Set(string key, bool value)
+	{
+		var normalizedKey = key.ToLowerInvariant().Replace('_', '-');
+		_featureFlags[normalizedKey] = value;
+	}
+
+	public bool PrimaryNavEnabled
+	{
+		get => IsEnabled("primary-nav");
+		set => _featureFlags["primary-nav"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
@@ -18,6 +30,7 @@ public class FeatureFlags(Dictionary<string, bool> featureFlags)
 			// if the env var is set but not a bool, we treat it as enabled
 			return true;
 		}
-		return featureFlags.TryGetValue(key, out var value) && value;
+
+		return _featureFlags.TryGetValue(key, out var value) && value;
 	}
 }

@@ -16,6 +16,7 @@
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';
+@import './api-docs.css';
 
 :root {
 	--outline-size: max(2px, 0.08em);
@@ -33,6 +34,9 @@
 		var(--max-text-width) + (var(--max-sidebar-width) * 2) +
 			calc(var(--content-spacing) * 2)
 	);
+
+	--max-api-sidebar-width: calc(var(--spacing) * 70);
+	--max-examples-width: calc(var(--max-api-sidebar-width) * 2);
 }
 
 @media screen and (min-width: 767px) {

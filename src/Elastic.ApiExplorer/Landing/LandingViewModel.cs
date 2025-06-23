@@ -6,7 +6,7 @@ using Microsoft.OpenApi.Models;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public class LandingViewModel : ApiViewModel
+public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiLanding Landing { get; init; }
 	public required OpenApiInfo ApiInfo { get; init; }
