@@ -117,7 +117,6 @@ jobs:
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
-          safe_output: false # set to false because we are using an environment variable to store the output and avoid command injection.
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
           
       - name: Checkout
