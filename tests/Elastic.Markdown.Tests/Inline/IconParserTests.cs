@@ -18,7 +18,7 @@ public class IconParserTests(ITestOutputHelper output) : InlineTest(output,
 )
 {
 	[Fact]
-	public void ReplacesKnownIconsAndIgnoresInvalid() =>
+	public void Render() =>
 		Html.Should().Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
 			.And.Contain("<span aria-label=\"Icon for cross\" class=\"icon icon-cross\">")
 			.And.Contain("<span aria-label=\"Icon for warning\" class=\"icon icon-warning\">")
@@ -39,9 +39,21 @@ public class IconInListItemTest(ITestOutputHelper output) : InlineTest(output,
 )
 {
 	[Fact]
-	public void ReplacesKnownIconsAndIgnoresInvalid() =>
+	public void Render() =>
 		Html.Should()
 			.Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
 			.And.NotContain(":check:")
 			.And.NotContain("<li></li>");
+}
+
+public class IconInHeadingShouldBeRemovedFromAnchor(ITestOutputHelper output) : InlineTest(output,
+	"""
+	## Users :user:
+	"""
+)
+{
+	[Fact]
+	public void Render() =>
+		Html.Should()
+			.Contain("<a class=\"headerlink\" href=\"#users\">");
 }
