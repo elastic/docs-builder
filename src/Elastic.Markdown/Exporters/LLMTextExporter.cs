@@ -15,20 +15,20 @@ namespace Elastic.Markdown.Exporters;
 
 public class LLMTextExporter : IMarkdownExporter
 {
-	public ValueTask StartAsync(CancellationToken ctx = default) => ValueTask.CompletedTask;
+	public ValueTask StartAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
-	public ValueTask StopAsync(CancellationToken ctx = default) => ValueTask.CompletedTask;
+	public ValueTask StopAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
-	public ValueTask<bool> ExportAsync(MarkdownExportContext context, CancellationToken ctx)
+	public async ValueTask<bool> ExportAsync(MarkdownExportContext context, Cancel ctx)
 	{
 		var source = context.File.SourceFile;
-		var llmText = ToLLMText(context.BuildContext, context.File.YamlFrontMatter, context.Resolvers, source);
 		var fs = source.FileSystem;
+		var llmText = context.LLMText ??= ToLLMText(context.BuildContext, context.File.YamlFrontMatter, context.Resolvers, source);
 
-		//var llmText = context.LLMText ??= LLMRoundtripRenderer.ToLLMText(context.Document);
-		return ValueTask.FromResult(true);
+		var newFile = fs.FileInfo.New(Path.ChangeExtension(source.FullName, ".md"));
+		await fs.File.WriteAllTextAsync(newFile.FullName, llmText, ctx);
+		return true;
 	}
-
 
 	public static string ToLLMText(BuildContext buildContext, YamlFrontMatter? frontMatter, IParserResolvers resolvers, IFileInfo source)
 	{
