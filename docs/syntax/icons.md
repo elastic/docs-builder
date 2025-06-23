@@ -499,7 +499,7 @@ Icons can be used in both ordered and unordered lists.
 :::{tab-item} Output
 
 **Unordered List:**
-* test :check: Task one completed
+* :check: Task one completed
 * :check: Task two completed
 * :cross: Task three pending
 
