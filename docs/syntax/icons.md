@@ -465,7 +465,7 @@ Here is a list of all available icons:
 
 ## Usage Examples
 
-Icons can be used in various markdown elements.
+You can use icons in various Markdown elements.
 
 ### Headings
 
