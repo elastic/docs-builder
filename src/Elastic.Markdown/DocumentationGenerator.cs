@@ -250,7 +250,8 @@ public class DocumentationGenerator
 						BuildContext = Context,
 						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
 						Document = document,
-						File = markdown
+						SourceFile = markdown,
+						DefaultOutputFile = outputFile
 					}, ctx);
 				}
 			}

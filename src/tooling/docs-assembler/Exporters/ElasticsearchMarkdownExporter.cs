@@ -110,7 +110,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportContext context, Cancel ctx)
 	{
-		var file = context.File;
+		var file = context.SourceFile;
 		var document = context.Document;
 		if (file.FileName.EndsWith(".toml", StringComparison.OrdinalIgnoreCase))
 			return true;

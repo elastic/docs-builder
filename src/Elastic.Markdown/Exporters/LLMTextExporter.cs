@@ -21,12 +21,21 @@ public class LLMTextExporter : IMarkdownExporter
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportContext context, Cancel ctx)
 	{
-		var source = context.File.SourceFile;
+		var source = context.SourceFile.SourceFile;
 		var fs = source.FileSystem;
-		var llmText = context.LLMText ??= ToLLMText(context.BuildContext, context.File.YamlFrontMatter, context.Resolvers, source);
+		var llmText = context.LLMText ??= ToLLMText(context.BuildContext, context.SourceFile.YamlFrontMatter, context.Resolvers, source);
 
-		var newFile = fs.FileInfo.New(Path.ChangeExtension(source.FullName, ".md"));
-		await fs.File.WriteAllTextAsync(newFile.FullName, llmText, ctx);
+		// write to the output version of the Markdown file directly
+		var outputFile = context.DefaultOutputFile;
+		if (outputFile.Name == "index.md")
+		{
+			// Write to a file named after the parent folder
+			outputFile = fs.FileInfo.New(outputFile.Directory!.FullName + ".md");
+		}
+		if (outputFile.Directory is { Exists: false })
+			outputFile.Directory.Create();
+
+		await fs.File.WriteAllTextAsync(outputFile.FullName, llmText, ctx);
 		return true;
 	}
 
@@ -35,7 +44,7 @@ public class LLMTextExporter : IMarkdownExporter
 		var fs = source.FileSystem;
 		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 
-		Read(source, fs, sb);
+		Read(source, fs, sb, buildContext.DocumentationSourceDirectory);
 		var full = sb.ToString();
 		var state = new ParserState(buildContext)
 		{
@@ -50,7 +59,7 @@ public class LLMTextExporter : IMarkdownExporter
 
 	}
 
-	private static void Read(IFileInfo source, IFileSystem fs, StringBuilder sb, int depth = 0)
+	private static void Read(IFileInfo source, IFileSystem fs, StringBuilder sb, IDirectoryInfo setDirectory)
 	{
 		var text = fs.File.ReadAllText(source.FullName).AsSpan();
 		var spanStart = ":::{include}".AsSpan();
@@ -69,7 +78,13 @@ public class LLMTextExporter : IMarkdownExporter
 				var relativeFile = marker[relativeFileStart..relativeFileEnd].Trim();
 				var includePath = Path.GetFullPath(Path.Combine(source.Directory!.FullName, relativeFile.ToString()));
 				var includeSource = fs.FileInfo.New(includePath);
-				Read(includeSource, fs, sb, depth + 1);
+				if (relativeFile.StartsWith('/'))
+				{
+					includePath = Path.Combine(setDirectory.FullName, relativeFile.TrimStart('/').ToString());
+					includeSource = fs.FileInfo.New(includePath);
+				}
+				if (includeSource.Extension == "md" && includePath.Contains("_snippets"))
+					Read(includeSource, fs, sb, setDirectory);
 				startIndex = cursor + relativeFileEnd;
 				startIndex = Math.Min(text.Length, startIndex);
 			}
