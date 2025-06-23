@@ -34,7 +34,7 @@ public class IconRenderer : HtmlObjectRenderer<IconLeaf>
 	{
 		if (IconMap.TryGetValue(obj.IconName, out var svg))
 		{
-			_ = renderer.Write($"<span class=\"icon icon-{obj.IconName}\">");
+			_ = renderer.Write($"<span aria-label=\"Icon for {obj.IconName}\" class=\"icon icon-{obj.IconName}\">");
 			_ = renderer.Write(svg);
 			_ = renderer.Write("</span>");
 		}

@@ -19,9 +19,9 @@ public class IconParserTests(ITestOutputHelper output) : InlineTest(output,
 {
 	[Fact]
 	public void ReplacesKnownIconsAndIgnoresInvalid() =>
-		Html.Should().Contain("<span class=\"icon icon-check\">")
-			.And.Contain("<span class=\"icon icon-cross\">")
-			.And.Contain("<span class=\"icon icon-warning\">")
+		Html.Should().Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
+			.And.Contain("<span aria-label=\"Icon for cross\" class=\"icon icon-cross\">")
+			.And.Contain("<span aria-label=\"Icon for warning\" class=\"icon icon-warning\">")
 			.And.NotContain("i:check:")
 			.And.NotContain("i:cross:")
 			.And.NotContain("i:warning:")
