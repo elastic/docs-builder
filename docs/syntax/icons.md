@@ -463,7 +463,7 @@ Here is a list of all available icons:
 | `i:wordWrapDisabled:` | i:wordWrapDisabled: |
 | `i:wrench:` | i:wrench: |
 
-## Usage Examples
+## Usage examples
 
 You can use icons in various Markdown elements.
 
