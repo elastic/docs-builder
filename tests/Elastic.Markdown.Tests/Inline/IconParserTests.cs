@@ -8,12 +8,12 @@ namespace Elastic.Markdown.Tests.Inline;
 
 public class IconParserTests(ITestOutputHelper output) : InlineTest(output,
 	"""
-	A check mark i:check:. A cross i:cross:. A warning i:warning:.
+	A check mark :check:. A cross :cross:. A warning :warning:.
 
-	An unknown icon i:not_a_real_icon: should not be replaced.
-	This should not be an icon either/this:i:apm_trace:is:not:an:icon.
-	Nor should this be an icon i:invalid-icon:.
-	An empty one is not an icon either i::.
+	An unknown icon :not_a_real_icon: should not be replaced.
+	This should not be an icon either/this::apm_trace:is:not:an:icon.
+	Nor should this be an icon :invalid-icon:.
+	An empty one is not an icon either ::.
 	"""
 )
 {
@@ -22,12 +22,26 @@ public class IconParserTests(ITestOutputHelper output) : InlineTest(output,
 		Html.Should().Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
 			.And.Contain("<span aria-label=\"Icon for cross\" class=\"icon icon-cross\">")
 			.And.Contain("<span aria-label=\"Icon for warning\" class=\"icon icon-warning\">")
-			.And.NotContain("i:check:")
-			.And.NotContain("i:cross:")
-			.And.NotContain("i:warning:")
-			.And.Contain("i:apm_trace:")
-			.And.Contain("i:not_a_real_icon:")
-			.And.Contain("/this:i:apm_trace:is:not:an:icon")
-			.And.Contain("i:invalid-icon:")
-			.And.Contain("i::");
+			.And.NotContain(":check:")
+			.And.NotContain(":cross:")
+			.And.NotContain(":warning:")
+			.And.Contain(":apm_trace:")
+			.And.Contain(":not_a_real_icon:")
+			.And.Contain("/this::apm_trace:is:not:an:icon")
+			.And.Contain(":invalid-icon:")
+			.And.Contain("::");
+}
+
+public class IconInListItemTest(ITestOutputHelper output) : InlineTest(output,
+	"""
+	- :check: A check mark.
+	"""
+)
+{
+	[Fact]
+	public void ReplacesKnownIconsAndIgnoresInvalid() =>
+		Html.Should()
+			.Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
+			.And.NotContain(":check:")
+			.And.NotContain("<li></li>");
 }

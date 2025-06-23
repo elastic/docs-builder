@@ -12,7 +12,7 @@ using Markdig.Syntax.Inlines;
 namespace Elastic.Markdown.Myst.InlineParsers.Icon;
 
 [DebuggerDisplay("Icon: {IconName}")]
-public class IconLeaf(string iconName) : CodeInline($"i:{iconName}:")
+public class IconLeaf(string iconName) : CodeInline($":{iconName}:")
 {
 	public string IconName { get; } = iconName;
 }
@@ -20,26 +20,21 @@ public class IconLeaf(string iconName) : CodeInline($"i:{iconName}:")
 public partial class IconParser : InlineParser
 {
 
-	[GeneratedRegex(@"i:[a-zA-Z0-9_]+:", RegexOptions.Compiled)]
+	[GeneratedRegex(@":[a-zA-Z0-9_]+:", RegexOptions.Compiled)]
 	public static partial Regex IconRegex();
 
-	public IconParser() => OpeningCharacters = ['i', ':', 'l'];
+	public IconParser() => OpeningCharacters = [':'];
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
-		// We are at 'i', check if we have the "i:" prefix.
-		if (!slice.Match("i:"))
-			return false;
 
 		var startPosition = slice.Start;
 
 		if (!slice.PeekCharExtra(-1).IsWhitespace())
-		{
 			return false;
-		}
 
-		// Advance the slice past "i:"
-		slice.Start += 2;
+		// Advance the slice past ":"
+		slice.Start += 1;
 
 		var end = slice.AsSpan().IndexOf(':');
 		if (end <= 0) // no closing ':' or empty name `::`

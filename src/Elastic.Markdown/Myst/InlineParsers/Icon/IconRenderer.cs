@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Myst.InlineParsers.Icon;
 
 public class IconRenderer : HtmlObjectRenderer<IconLeaf>
 {
-	private static readonly IReadOnlyDictionary<string, string> IconMap;
+	public static readonly IReadOnlyDictionary<string, string> IconMap;
 
 	static IconRenderer()
 	{
