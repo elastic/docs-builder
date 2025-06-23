@@ -120,7 +120,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		if (url.Contains("/reference/integrations"))
 			return true;
 
-		var body = context.LLMText ??= MarkdownFile.ToLLMText(document);
+		// TODO!
+		var body = context.LLMText ??= "string.Empty";
 		var doc = new DocumentationDocument
 		{
 			Title = file.Title,

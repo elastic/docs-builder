@@ -4,7 +4,7 @@
 
 using Markdig.Syntax.Inlines;
 
-namespace Elastic.Markdown.Myst.Directives;
+namespace Elastic.Markdown.Myst.Roles;
 
 
 //TODO evaluate if we need this

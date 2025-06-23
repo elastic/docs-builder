@@ -2,13 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
 
 public class MarkdownExportContext
 {
+	public required BuildContext BuildContext { get; init; }
+	public required IParserResolvers Resolvers { get; init; }
 	public required MarkdownDocument Document { get; init; }
 	public required MarkdownFile File { get; init; }
 	public string? LLMText { get; set; }

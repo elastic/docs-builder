@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
+using Elastic.Markdown.Myst.Roles;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;

@@ -245,7 +245,13 @@ public class DocumentationGenerator
 				foreach (var exporter in _markdownExporters)
 				{
 					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
-					_ = await exporter.ExportAsync(new MarkdownExportContext { Document = document, File = markdown }, ctx);
+					_ = await exporter.ExportAsync(new MarkdownExportContext
+					{
+						BuildContext = Context,
+						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
+						Document = document,
+						File = markdown
+					}, ctx);
 				}
 			}
 		}

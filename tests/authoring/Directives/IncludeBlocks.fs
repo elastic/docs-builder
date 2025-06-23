@@ -40,6 +40,15 @@ type ``include hoists anchors and table of contents`` () =
         """
 
     [<Fact>]
+    let ``converts to LLM`` () =
+        generator |> convertsToLLM """
+# A Document that lives at the root
+
+## header from snippet [aa]
+
+ """
+
+    [<Fact>]
     let ``validate test-links.md HTML includes snippet`` () =
         generator |> converts "test-links.md" |> toHtml """
             <h1>parent.md</h1>
@@ -70,6 +79,8 @@ type ``include can contain links to parent page's includes`` () =
 
 :::{include} _snippets/my-other-snippet.md
 :::
+
+Some more content after includes
 """
         Snippet "_snippets/my-snippet.md" """
 ## header from snippet [aa]
@@ -82,3 +93,15 @@ type ``include can contain links to parent page's includes`` () =
 
     [<Fact>]
     let ``has no errors`` () = generator |> hasNoErrors
+
+    [<Fact>]
+    let ``converts to LLM`` () =
+        generator |> convertsToLLM """
+# A Document that lives at the root
+
+## header from snippet [aa]
+
+[link to root with included anchor](../index.md#aa)
+
+Some more content after includes
+ """

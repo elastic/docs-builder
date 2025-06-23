@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Myst.Renderers;
+using Elastic.Markdown.Myst.Roles;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Parsers;

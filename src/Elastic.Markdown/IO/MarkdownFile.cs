@@ -185,17 +185,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		return document;
 	}
 
-	public static string ToLLMText(MarkdownDocument document)
-	{
-		using var sw = new StringWriter();
-		var rr = new RoundtripRenderer(sw);
-		rr.Write(document);
-		var outputMarkdown = sw.ToString();
-
-		return outputMarkdown;
-
-	}
-
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
 		var globalSubstitutions = _globalSubstitutions;
