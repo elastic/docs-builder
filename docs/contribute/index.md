@@ -45,7 +45,7 @@ This [tagging system](#applies-to) is mandatory for all of the public-facing doc
 
 Use the [`applies_to`](../syntax/applies.md) tag to indicate which versions, deployment types, or release stages each part of the content is relevant to.
 
-You must always use the `applies_to` tag at the [page](../syntax/applies.md#page-annotations) level. Optionally, you can also use it at the [section](../syntax/applies.md#sections) or [inline](../syntax/applies.md#inline-applies-to) level if certain parts of the content apply only to specific versions, deployment types, or release stages.
+You must always use the `applies_to` tag at the [page](../syntax/applies.md#page-annotations) level. Optionally, you can also use it at the [section](../syntax/applies.md#section-annotations) or [inline](../syntax/applies.md#inline-annotations) level if certain parts of the content apply only to specific versions, deployment types, or release stages.
 
 ## Report a bug
 

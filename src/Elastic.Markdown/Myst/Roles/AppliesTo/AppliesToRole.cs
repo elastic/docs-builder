@@ -27,11 +27,11 @@ public class AppliesToRole : RoleLeaf, IApplicableToElement
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
-			if (applicableTo.Warnings is null)
+			if (applicableTo.Diagnostics is null)
 				return applicableTo;
-			foreach (var warning in applicableTo.Warnings)
-				processor.EmitWarning(this, Role.Length + yaml.Length, warning);
-			applicableTo.Warnings = null;
+			foreach (var (severity, message) in applicableTo.Diagnostics)
+				processor.Emit(severity, this, Role.Length + yaml.Length, message);
+			applicableTo.Diagnostics = null;
 			return applicableTo;
 		}
 		catch (Exception e)

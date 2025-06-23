@@ -23,8 +23,6 @@ environments:
     content_source: next
     google_tag_manager:
       enabled: false
-    feature_flags:
-      VERSION_DROPDOWN: true
   dev:
     uri: http://localhost:4000
     content_source: next
