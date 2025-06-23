@@ -28,7 +28,7 @@
   "private": true,
   "devDependencies": {
     "@elastic/datemath": "^5.0.3",
-    "@elastic/eui": "^103.0.0",
+    "@elastic/eui": "^104.0.0",
     "@elastic/eui-theme-borealis": "^2.0.0",
     "@emotion/css": "^11.13.5",
     "@emotion/react": "^11.14.0",
