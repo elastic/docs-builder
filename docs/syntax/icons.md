@@ -471,39 +471,110 @@ You can use icons in various Markdown elements.
 
 You can include icons in headings:
 
-## i:gear: Settings
+::::{tab-set}
+
+:::{tab-item} Output
+
+#### Test the i:gear: Settings
 #### User Profile i:user:
+
+:::
+
+:::{tab-item} Markdown
+```markdown
+#### Test the i:gear: Settings
+#### User Profile i:user:
+```
+:::
+
+::::
 
 ### Lists
 
 Icons can be used in both ordered and unordered lists.
 
+
+::::{tab-set}
+
+:::{tab-item} Output
+
 **Unordered List:**
-* test i:check: Task one completed 
-* i:check: Task two completed 
-* i:cross: Task three pending 
+* test i:check: Task one completed
+* i:check: Task two completed
+* i:cross: Task three pending
 
 **Ordered List:**
 1. i:check: First item
 2. i:check: Second item
 3. i:cross: Third item
 
+:::
+
+:::{tab-item} Markdown
+```markdown
+**Unordered List:**
+* test i:check: Task one completed
+* i:check: Task two completed
+* i:cross: Task three pending
+
+**Ordered List:**
+1. i:check: First item
+2. i:check: Second item
+3. i:cross: Third item
+```
+:::
+
+::::
+
 ### Tables
 
 Icons can be used within table cells.
 
-| Status | Description |
-| :--- | :--- |
-| i:checkCircle: | Success |
-| i:warning: | Warning |
-| i:error: | Error |
+::::{tab-set}
 
-### Blockquotes
+:::{tab-item} Output
 
-> i:info: This is an informational note with an icon.
+|     Status     | Description |
+|:--------------:|:------------|
+| i:checkCircle: | Success     |
+|   i:warning:   | Warning     |
+|    i:error:    | Error       |
+
+:::
+
+:::{tab-item} Markdown
+```markdown
+|     Status     | Description |
+|:--------------:|:------------|
+| i:checkCircle: | Success     |
+|   i:warning:   | Warning     |
+|    i:error:    | Error       |
+```
+:::
+
+::::
 
 ### Paragraphs
+
+::::{tab-set}
+
+:::{tab-item} Output
 
 i:sparkles: Icons can be placed at the beginning of a paragraph.
 
 You can also use icons directly in your text for emphasis, like this i:sparkles: magic i:sparkles: moment.
+
+
+:::
+
+:::{tab-item} Markdown
+
+```markdown
+i:sparkles: Icons can be placed at the beginning of a paragraph.
+
+You can also use icons directly in your text for emphasis, like this i:sparkles: magic i:sparkles: moment.
+
+```
+:::
+
+::::
