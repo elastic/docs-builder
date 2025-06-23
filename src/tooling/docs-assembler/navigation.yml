@@ -129,7 +129,7 @@ toc:
           # https://github.com/elastic/apm-agent-android/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-android://release-notes
             path_prefix: release-notes/edot/sdks/android
-          # EDOT iOS
+          # EDOT iOS / Swift
           # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-ios://release-notes
             path_prefix: release-notes/edot/sdks/ios         
