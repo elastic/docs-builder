@@ -4,12 +4,12 @@
 
 using System.Buffers;
 using System.IO.Abstractions;
+using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.FrontMatter;
-using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
 
@@ -19,24 +19,51 @@ public class LLMTextExporter : IMarkdownExporter
 
 	public ValueTask StopAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
-	public async ValueTask<bool> ExportAsync(MarkdownExportContext context, Cancel ctx)
+	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
-		var source = context.SourceFile.SourceFile;
+		var source = fileContext.SourceFile.SourceFile;
 		var fs = source.FileSystem;
-		var llmText = context.LLMText ??= ToLLMText(context.BuildContext, context.SourceFile.YamlFrontMatter, context.Resolvers, source);
+		var llmText = fileContext.LLMText ??= ToLLMText(fileContext.BuildContext, fileContext.SourceFile.YamlFrontMatter, fileContext.Resolvers, source);
 
 		// write to the output version of the Markdown file directly
-		var outputFile = context.DefaultOutputFile;
+		var outputFile = fileContext.DefaultOutputFile;
 		if (outputFile.Name == "index.md")
 		{
+			var root = fileContext.BuildContext.DocumentationOutputDirectory;
 			// Write to a file named after the parent folder
-			outputFile = fs.FileInfo.New(outputFile.Directory!.FullName + ".md");
+			if (outputFile.Directory!.FullName == root.FullName)
+			{
+				// TODO in FinishExportAsync find a way to generate llms.txt
+				// e.g should it embedd all the links?
+				outputFile = fs.FileInfo.New(Path.Combine(root.FullName, "llms.md"));
+			}
+			else
+				outputFile = fs.FileInfo.New(outputFile.Directory!.FullName + ".md");
 		}
+
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
 		await fs.File.WriteAllTextAsync(outputFile.FullName, llmText, ctx);
 		return true;
+	}
+
+	/// <inheritdoc />
+	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
+	{
+		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
+		var zipPath = Path.Combine(outputDirectory, "llm.zip");
+		using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+		{
+			var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
+
+			foreach (var file in markdownFiles)
+			{
+				var relativePath = Path.GetRelativePath(outputDirectory, file);
+				_ = zip.CreateEntryFromFile(file, relativePath);
+			}
+		}
+		return ValueTask.FromResult(true);
 	}
 
 	public static string ToLLMText(BuildContext buildContext, YamlFrontMatter? frontMatter, IParserResolvers resolvers, IFileInfo source)
@@ -56,7 +83,6 @@ public class LLMTextExporter : IMarkdownExporter
 		DocumentationObjectPoolProvider.StringBuilderPool.Return(sb);
 		var replaced = full.ReplaceSubstitutions(new ParserContext(state));
 		return replaced;
-
 	}
 
 	private static void Read(IFileInfo source, IFileSystem fs, StringBuilder sb, IDirectoryInfo setDirectory)
@@ -83,6 +109,7 @@ public class LLMTextExporter : IMarkdownExporter
 					includePath = Path.Combine(setDirectory.FullName, relativeFile.TrimStart('/').ToString());
 					includeSource = fs.FileInfo.New(includePath);
 				}
+
 				if (includeSource.Extension == "md" && includePath.Contains("_snippets"))
 					Read(includeSource, fs, sb, setDirectory);
 				startIndex = cursor + relativeFileEnd;
@@ -94,7 +121,7 @@ public class LLMTextExporter : IMarkdownExporter
 				startIndex = Math.Min(text.Length, startIndex);
 			}
 		}
+
 		_ = sb.Append(text[startIndex..]);
 	}
 }
-

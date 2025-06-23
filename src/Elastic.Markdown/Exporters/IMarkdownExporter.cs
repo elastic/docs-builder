@@ -10,7 +10,11 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
 
-public class MarkdownExportContext
+
+public record MarkdownExportContext
+{
+}
+public record MarkdownExportFileContext
 {
 	public required BuildContext BuildContext { get; init; }
 	public required IParserResolvers Resolvers { get; init; }
@@ -24,5 +28,6 @@ public interface IMarkdownExporter
 {
 	ValueTask StartAsync(Cancel ctx = default);
 	ValueTask StopAsync(Cancel ctx = default);
-	ValueTask<bool> ExportAsync(MarkdownExportContext context, Cancel ctx);
+	ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx);
+	ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx);
 }

@@ -173,6 +173,7 @@ public class DocumentationGenerator
 				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
 		});
 		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
+
 	}
 
 	private void HintUnusedSubstitutionKeys()
@@ -245,7 +246,7 @@ public class DocumentationGenerator
 				foreach (var exporter in _markdownExporters)
 				{
 					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
-					_ = await exporter.ExportAsync(new MarkdownExportContext
+					_ = await exporter.ExportAsync(new MarkdownExportFileContext
 					{
 						BuildContext = Context,
 						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
