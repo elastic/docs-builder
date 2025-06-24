@@ -79,6 +79,11 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 		);
 
 	[Fact]
+	public void HxGetContainsVersionAnchor() =>
+		// language=html
+		Html.Should().MatchRegex("""hx-get="/docs/testing/req\?v=(.+?)#sub-requirements""");
+
+	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
