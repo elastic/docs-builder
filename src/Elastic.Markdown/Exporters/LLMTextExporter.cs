@@ -89,7 +89,7 @@ public class LLMTextExporter : IMarkdownExporter
 	{
 		var text = fs.File.ReadAllText(source.FullName).AsSpan();
 		var spanStart = ":::{include}".AsSpan();
-		var include = SearchValues.Create([spanStart.ToString(), ":::\n"], StringComparison.OrdinalIgnoreCase);
+		var include = SearchValues.Create([spanStart.ToString(), $":::{Environment.NewLine}"], StringComparison.OrdinalIgnoreCase);
 		int i;
 		var startIndex = 0;
 		while ((i = text[startIndex..].IndexOfAny(include)) >= 0)
@@ -117,7 +117,7 @@ public class LLMTextExporter : IMarkdownExporter
 			}
 			else
 			{
-				startIndex += i + 4;
+				startIndex += i + 3 + Environment.NewLine.Length;
 				startIndex = Math.Min(text.Length, startIndex);
 			}
 		}
