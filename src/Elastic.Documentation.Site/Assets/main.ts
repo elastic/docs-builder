@@ -93,7 +93,8 @@ document.body.addEventListener('htmx:responseError', function (event) {
 // If there is a new version, we want to refresh the page to prevent broken layouts.
 const currentDocsBuilderVersion = $('body').dataset.docsBuilderVersion
 document.body.addEventListener('htmx:afterRequest', function (event) {
-    const targetDocsBuilderVersion = event.detail.target.dataset.docsBuilderVersion
+    const targetDocsBuilderVersion =
+        event.detail.target.dataset.docsBuilderVersion
     if (currentDocsBuilderVersion !== targetDocsBuilderVersion) {
         window.location = event.detail.pathInfo.finalRequestPath
     }
