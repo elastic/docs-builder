@@ -31,6 +31,12 @@ toc:
       - file: on-the-web.md
       - file: move.md
       - file: redirects.md
+      - folder: versioning
+        children:
+          - file: index.md
+          - file: deployment-models.md
+          - file: cumulative-docs.md
+      - file: releasing.md
   - folder: migration
     children:
       - file: index.md
@@ -68,6 +74,7 @@ toc:
           - file: navigation.md
           - file: extensions.md
       - file: page.md
+      - file: deployment-models.md
   - folder: syntax
     children:
       - file: index.md
