@@ -20,7 +20,7 @@ environments:
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
-    content_source: next
+    content_source: current
     google_tag_manager:
       enabled: false
   dev:

@@ -74,9 +74,14 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 	[Fact]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
 		);
+
+	[Fact]
+	public void HxGetContainsVersionAnchor() =>
+		// language=html
+		Html.Should().MatchRegex("""hx-get="/docs/testing/req\?v=(.+?)#sub-requirements""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -92,7 +97,7 @@ public class ExternalPageCustomAnchorTests(ITestOutputHelper output) : AnchorLin
 	[Fact]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req#new-reqs" hx-get="/docs/testing/req#new-reqs" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
 		);
 
@@ -108,8 +113,7 @@ public class ExternalPageAnchorAutoTitleTests(ITestOutputHelper output) : Anchor
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements &gt; Sub Requirements</a></p>"""
 		);
 
@@ -126,8 +130,7 @@ public class InPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="#hello-world2">Hello</a></p>"""
 		);
 
@@ -144,8 +147,7 @@ public class ExternalPageBadAnchorTests(ITestOutputHelper output) : AnchorLinkTe
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req#sub-requirements2" hx-get="/docs/testing/req#sub-requirements2" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
 		);
 
@@ -163,8 +165,7 @@ public class NestedHeadingTest(ITestOutputHelper output) : AnchorLinkTestBase(ou
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<a href="/docs/testing/req#heading-inside-dropdown" hx-get="/docs/testing/req#heading-inside-dropdown" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Heading inside dropdown</a>"""
 		);
 	[Fact]
