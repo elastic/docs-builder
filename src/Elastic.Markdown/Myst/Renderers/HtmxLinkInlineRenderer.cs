@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -14,6 +16,11 @@ namespace Elastic.Markdown.Myst.Renderers;
 
 public class HtmxLinkInlineRenderer : LinkInlineRenderer
 {
+	private static readonly string Version =
+		Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+			.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
+	private static readonly string VersionHash = ShortId.Create(Version);
+
 	protected override void Write(HtmlRenderer renderer, LinkInline link)
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage)
@@ -25,7 +32,8 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				return;
 			}
 
-			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
+			var url = link.GetDynamicUrl?.Invoke() ?? link.Url;
+			url = $"{url}?v={VersionHash}";
 
 			var isCrossLink = (link.GetData("isCrossLink") as bool?) == true;
 			var isHttpLink = url?.StartsWith("http") ?? false;
