@@ -18,7 +18,7 @@ public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }
@@ -35,7 +35,7 @@ public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<Link
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }
