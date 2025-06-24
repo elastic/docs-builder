@@ -29,6 +29,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public GlobalLayoutViewModel CreateGlobalLayoutModel() =>
 		new()
 		{
+			DocsBuilderVersion = "0.0.0", // TODO: Use a version from the docs-builder
 			DocSetName = "Api Explorer",
 			Description = "",
 			CurrentNavigationItem = CurrentNavigationItem,

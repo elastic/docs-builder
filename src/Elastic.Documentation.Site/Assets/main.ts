@@ -87,3 +87,14 @@ document.body.addEventListener('htmx:responseError', function (event) {
         window.location.assign(event.detail.pathInfo.requestPath)
     }
 })
+
+// The body now has a data-docs-builder-version attribute, which is the version of the docs-builder
+// used to generate this page.
+// If there is a new version, we want to refresh the page to prevent broken layouts.
+const currentDocsBuilderVersion = $('body').dataset.docsBuilderVersion
+document.body.addEventListener('htmx:afterRequest', function (event) {
+    const targetDocsBuilderVersion = event.detail.target.dataset.docsBuilderVersion
+    if (currentDocsBuilderVersion !== targetDocsBuilderVersion) {
+        window.location = event.detail.pathInfo.finalRequestPath
+    }
+})

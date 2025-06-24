@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Reflection;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
@@ -129,7 +130,9 @@ public class HtmlWriter(
 			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
-			Products = allProducts
+			Products = allProducts,
+			DocsBuilderVersion = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+				.FirstOrDefault()?.InformationalVersion ?? "0.0.0"
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

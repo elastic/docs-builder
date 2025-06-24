@@ -25,15 +25,12 @@ public class IndexViewModel
 	public required DocumentationGroup Tree { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
-
 	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? PreviousDocument { get; init; }
 	public required INavigationItem? NextDocument { get; init; }
 	public required INavigationItem[] Parents { get; init; }
-
 	public required string NavigationHtml { get; init; }
 	public required string CurrentVersion { get; init; }
-
 	public required string? AllVersionsUrl { get; init; }
 	public required LegacyPageMapping[]? LegacyPages { get; init; }
 	public required VersionDrownDownItemViewModel[]? VersionDropdownItems { get; init; }
@@ -43,13 +40,11 @@ public class IndexViewModel
 	public required ApplicableTo? AppliesTo { get; init; }
 	public required bool AllowIndexing { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
-
 	public required GoogleTagManagerConfiguration GoogleTagManager { get; init; }
-
 	public required FeatureFlags Features { get; init; }
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
-
 	public required HashSet<Product> Products { get; init; }
+	public required string DocsBuilderVersion { get; init; }
 }
 
 public class VersionDrownDownItemViewModel
