@@ -30,7 +30,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			var url = link.GetDynamicUrl?.Invoke() ?? link.Url;
 			var hxGetUrl = url;
 			if (hxGetUrl is not null)
-				hxGetUrl = hxGetUrl.Contains('?') ? $"{hxGetUrl}&v={Htmx.VersionHash}" : $"{hxGetUrl}?v={Htmx.VersionHash}";
+				hxGetUrl = UrlHelper.AddVersionParameters(hxGetUrl);
 
 			var isCrossLink = (link.GetData("isCrossLink") as bool?) == true;
 			var isHttpLink = url?.StartsWith("http") ?? false;
