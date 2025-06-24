@@ -31,9 +31,9 @@ public static class Htmx
 		string? hxIndicator = HxIndicator
 	)
 	{
-		targetUrl = targetUrl.Contains('?') ? $"{targetUrl}&v={VersionHash}" : $"{targetUrl}?v={VersionHash}";
+		var hxGetUrl = targetUrl.Contains('?') ? $"{targetUrl}&v={VersionHash}" : $"{targetUrl}?v={VersionHash}";
 		var attributes = new StringBuilder();
-		_ = attributes.Append($" hx-get={targetUrl}");
+		_ = attributes.Append($" hx-get={hxGetUrl}");
 		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
 		_ = attributes.Append($" hx-swap={hxSwap}");
 		_ = attributes.Append($" hx-push-url={hxPushUrl}");
