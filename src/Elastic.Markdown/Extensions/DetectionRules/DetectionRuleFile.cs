@@ -50,7 +50,11 @@ public record DetectionRuleOverviewFile : MarkdownFile
 		// language=markdown
 		var markdown =
 """
-# Detection Rules Overview
+# Prebuilt detection rules reference
+
+:::{important}
+All prebuilt machine learning rules are tagged with `ML`, and their rule type is `machine_learning`. Before using prebuilt machine learning rules, ensure you have all of the appropriate requirements.
+:::
 
 """;
 

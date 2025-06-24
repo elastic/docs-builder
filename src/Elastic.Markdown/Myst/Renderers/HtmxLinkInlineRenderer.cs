@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -25,7 +27,10 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				return;
 			}
 
-			var url = link.GetDynamicUrl != null ? link.GetDynamicUrl() : link.Url;
+			var url = link.GetDynamicUrl?.Invoke() ?? link.Url;
+			var hxGetUrl = url;
+			if (hxGetUrl is not null)
+				hxGetUrl = UrlHelper.AddVersionParameters(hxGetUrl);
 
 			var isCrossLink = (link.GetData("isCrossLink") as bool?) == true;
 			var isHttpLink = url?.StartsWith("http") ?? false;
@@ -41,7 +46,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
 				_ = renderer.Write(" hx-get=\"");
-				_ = renderer.WriteEscapeUrl(url);
+				_ = renderer.WriteEscapeUrl(hxGetUrl);
 				_ = renderer.Write('"');
 				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
 				_ = renderer.Write($" hx-swap=\"{Htmx.HxSwap}\"");
