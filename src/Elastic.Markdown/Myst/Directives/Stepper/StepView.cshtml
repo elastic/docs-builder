@@ -1,0 +1,12 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Stepper.StepViewModel>
+<li class="step">
+	@if (!string.IsNullOrEmpty(Model.Title))
+	{
+		<p id="@Model.Anchor">
+			<a class="title" href="#@Model.Anchor">
+				@Model.Title
+			</a>
+		</p>
+	}
+	@Model.RenderBlock()
+</li>

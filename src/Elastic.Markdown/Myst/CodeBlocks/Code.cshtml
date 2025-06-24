@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.CodeBlocks.CodeViewModel>
+<div class="highlight-@Model.Language notranslate">
+	<div class="highlight">
+		@if (!string.IsNullOrEmpty(Model.Caption))
+		{
+			<div class="code-block-caption">
+				<span class="caption-text">@Model.Caption</span>
+				<a class="headerlink" href="@Model.CrossReferenceName" title="Link to this code">¶</a>
+			</div>
+		}
+		<pre>@if (!string.IsNullOrEmpty(Model.ApiCallHeader)) { <code class="language-apiheader">@Model.ApiCallHeader</code> }@(Model.RenderBlock())</pre>
+	</div>
+</div>

@@ -1,0 +1,28 @@
+@using Elastic.Markdown.Myst.Directives.Settings
+@inherits RazorSlice<SettingsViewModel>
+
+@foreach (var group in Model.SettingsCollection.Groups)
+{
+	@RenderGroup(group)
+}
+@functions {
+
+	private IHtmlContent RenderGroup(SettingsGrouping group)
+	{
+		<h2>@group.Name</h2>
+		foreach (var setting in group.Settings)
+		{
+			@RenderSetting(setting)
+		}
+		return HtmlString.Empty;
+	}
+	private IHtmlContent RenderSetting(Setting setting)
+	{
+		<h4>@setting.Name</h4>
+		if (setting.Description is not null)
+		{
+			@(new HtmlString(Model.RenderMarkdown(setting.Description)))
+		}
+		return HtmlString.Empty;
+	}
+}
