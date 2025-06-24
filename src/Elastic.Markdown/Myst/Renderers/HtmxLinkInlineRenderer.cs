@@ -16,11 +16,6 @@ namespace Elastic.Markdown.Myst.Renderers;
 
 public class HtmxLinkInlineRenderer : LinkInlineRenderer
 {
-	private static readonly string Version =
-		Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
-			.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
-	private static readonly string VersionHash = ShortId.Create(Version);
-
 	protected override void Write(HtmlRenderer renderer, LinkInline link)
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage)
@@ -33,7 +28,8 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			}
 
 			var url = link.GetDynamicUrl?.Invoke() ?? link.Url;
-			url = $"{url}?v={VersionHash}";
+			if (url is not null)
+				url = url.Contains('?') ? $"{url}&v={Htmx.VersionHash}" : $"{url}?v={Htmx.VersionHash}";
 
 			var isCrossLink = (link.GetData("isCrossLink") as bool?) == true;
 			var isHttpLink = url?.StartsWith("http") ?? false;
