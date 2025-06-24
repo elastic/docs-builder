@@ -37,7 +37,7 @@ public class TableOfContentsTreeCollector
 }
 
 
-[DebuggerDisplay("Toc >{Depth} {FolderName} ({NavigationItems.Count} items)")]
+[DebuggerDisplay("Toc >{Depth} {FolderName} {Source} ({NavigationItems.Count} items)")]
 public class TableOfContentsTree : DocumentationGroup, IRootNavigationItem<MarkdownFile, INavigationItem>
 {
 	public Uri Source { get; }
