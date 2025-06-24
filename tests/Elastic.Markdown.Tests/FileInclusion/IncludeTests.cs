@@ -31,10 +31,7 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 
 	[Fact]
 	public void IncludesInclusionHtml() =>
-		Html.Should()
-			.Contain("Hello world")
-			.And.Be("<p><em>Hello world</em></p>")
-		;
+		Html.ShouldBeHtml("<p><em>Hello world</em></p>");
 }
 
 

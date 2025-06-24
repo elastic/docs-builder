@@ -50,7 +50,7 @@ public static class PrettyHtmlExtensions
 		return sw.ToString().TrimStart('\n');
 	}
 
-	public static void ShouldMatchHtml(
+	public static void ShouldBeHtml(
 		[LanguageInjection("html")] this string actual,
 		[LanguageInjection("html")] string expected,
 		bool sanitize = true
@@ -79,7 +79,13 @@ public static class PrettyHtmlExtensions
 		expected = expected.Trim('\n').PrettyHtml(sanitize);
 		actual = actual.Trim('\n').PrettyHtml(sanitize);
 
-		actual.Should().Contain(expected);
+		var actualCompare = actual.Replace("\t", string.Empty);
+		var expectedCompare = actual.Replace("\t", string.Empty);
+
+		// we compare over unindented HTML, but if that fails, we rely on the pretty HTML Contain().
+		// to throw for improved error messages
+		if (!actualCompare.Contains(expectedCompare))
+			actual.Should().Contain(expected);
 	}
 
 	public static string CreateDiff(this string actual, string expected, bool sanitize = true)

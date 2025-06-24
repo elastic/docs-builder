@@ -124,8 +124,7 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
 		);
 
@@ -188,8 +187,7 @@ public class ExternalLinksWithInterpolationSuccess(ITestOutputHelper output) : L
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a></p>"""
 		);
 
@@ -262,7 +260,7 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		Html.ShouldMatchHtml(
+		Html.ShouldBeHtml(
 			"""
 			<p>Links:</p>
 			<ul>
