@@ -1,4 +1,8 @@
-# Choose the docs deployment model for a repository {#choose-the-docs-deployment-model-for-a-repository}
+---
+navigation_title: Choose a deployment model
+---
+
+# Choose the docs deployment model for a repository
 
 With docs V3, a single branch is published per repository. This branch is set to `main` (or `master`) by default, but it is possible to instead publish a different branch. 
 

@@ -1,4 +1,4 @@
-
+# Write cumulative documentation 
 
 Documentation is cumulative: As functionality changes, both the old and new functionality should be clear to the reader. Don’t delete or destructively edit content to remove context about previous versions.
 
@@ -6,7 +6,7 @@ Documentation is cumulative: As functionality changes, both the old and new func
 Lifecycle statuses are additive: If a feature is beta in 9.1 and GA in 9.2, both statuses should be specified so users on any version can understand what applies to them. 
 
 
-# Write cumulative documentation {#write-cumulative-documentation}
+=======
 
 In our markdown-based documentation system, we write docs cumulatively regardless of the publication model selected.
 
@@ -15,7 +15,9 @@ With our markdown-based docs, there is no longer a new documentation set publish
 
 This new behavior starts with the following **versions** of our products: Elastic Stack 9.0, ECE 4.0, ECK 3.0, and even more like EDOT docs. It also includes our unversioned products: Serverless and Elastic Cloud.
 
-**Note:** Nothing changes for our asciidoc-based documentation system, that remains published and maintained for the following versions: Elastic Stack until 8.19, ECE until 3.8, ECK until 2.x, etc.
+:::{note} 
+Nothing changes for our asciidoc-based documentation system, that remains published and maintained for the following versions: Elastic Stack until 8.19, ECE until 3.8, ECK until 2.x, etc.
+:::
 
 **How does it change the way we write docs?**  
 As new minor versions are released, we want users to be able to distinguish which content applies to their own ecosystem and product versions without having to switch between different versions of a page.
@@ -31,7 +33,7 @@ This tagging system is mandatory for all of the public-facing documentation. We 
 
 ## Tagging products and deployment models
 
-**Page-level frontmatter   mandatory**  
+### Page-level frontmatter (mandatory)
 First and foremost, each documentation page **must** specify which contexts it applies to in its [frontmatter](https://elastic.github.io/docs-builder/syntax/frontmatter).
 
 * The `applies_to` attribute is used to display contextual badges on each page.  
@@ -110,7 +112,8 @@ products:
 ---
 ```
 
-**Section or inline contexts   situational**  
+### Section or inline contexts (situational)
+
 When the context differs from what was specified at the page level in a specific section or part of the page, it is appropriate to re-establish it. For example: 
 
 * The whole page is generally applicable to Elastic Stack 9.0 and to Serverless, but one specific section isn’t applicable to Serverless (and there is no alternative for it in serverless):
@@ -153,7 +156,8 @@ deployment:
 - {applies_to}`stack: ga` {applies_to}`serverless: unavailable` Each space has its own navigation, called solution view.
 ```
 
-**When should I indicate that something is NOT applicable to a specific context?**  
+### When should I indicate that something is NOT applicable to a specific context?
+
 By default, we communicate that content does not apply to a certain context by simply **not specifying it**.  
 For example, a page describing how to create an Elastic Cloud Hosted deployment just requires identifying “Elastic Cloud Hosted” as context. No need to overload the context with additional `serverless: unavailable` indicators.
 
@@ -192,7 +196,7 @@ stack: ga
 serverless: unavailable
 ```
 ````
-##  Tagging version-related changes (mandatory)
+## Tagging version-related changes (mandatory)
 
 In the previous section, we’ve considered product and deployment availability. Feature lifecycle and version-related changes are communicated as part of the same [applies\_to](https://elastic.github.io/docs-builder/syntax/applies/) tagging logic, by specifying different values to each supported key. 
 
@@ -207,9 +211,8 @@ However, in this scenario, it is important to consider carefully [when the chang
 
 We do not do date-based tagging for unversioned products.
 
-**Feature lifecycle**
+### For unversioned products (typically Serverless and Elastic Cloud Hosted)
 
-* For unversioned products (typically Serverless and Elastic Cloud Hosted):  
   Unversioned products aren’t following a fixed versioning scheme and are released a lot more often than versioned products. All users are using the same version of this product.  
   * When a change is released in GA, it doesn’t need any specific tagging.  
   * When a change is introduced as preview or beta, use preview or beta as value for the corresponding key within the `applies_to`:
@@ -240,7 +243,7 @@ applies_to:
   serverless: removed
 ```  
 
-* For versioned products:
+### For versioned products
 
   * When a change is released in GA, users need to know which version the feature became available in:
 
@@ -275,7 +278,7 @@ applies_to:
 
     
 
-**Identify multiple states for the same content**  
+### Identify multiple states for the same content  
 `applies_to` keys accept comma-separated values. For example:
 
 * A feature is added in 9.1 as tech preview and becomes GA in 9.4: 
@@ -295,7 +298,7 @@ applies_to:
     ess: removed
 ```
   
-**How do these tags behave in the output?**  
+## How do these tags behave in the output?
 Applies\_to tags are rendered as badges in the documentation output. They reproduce the “key \+ lifecycle status \+ version” indicated in the sources.
 
 Specifically for versioned products, badges will show “Planned” (if the lifecycle is preview, beta, or ga), “Deprecation planned” (if the lifecycle is deprecated), or “Removal planned” (if the lifecycle is removed) when the `applies_to` key specifies a product version that has not been released to our customers yet.
@@ -304,4 +307,6 @@ This is computed at build time (there is a docs build every 30 minutes). The doc
 
 When multiple lifecycle statuses and versions are specified in the sources, several badges are shown.
 
-**Note**: Visuals and wording in the output documentation are subject to changes and optimizations.
+:::{note}
+Visuals and wording in the output documentation are subject to changes and optimizations.
+:::
