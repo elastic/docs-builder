@@ -28,23 +28,23 @@ public class SitemapBuilder(
 
 		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz");
 		var root = new XElement(
-				"urlset",
-				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-				flattenedNavigationItems
-					.Select(n => n switch
-					{
-						DocumentationGroup group => (group.Index.Url, NavigationItem: group),
-						FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
-						_ => throw new Exception($"Unhandled navigation item type: {n.GetType()}")
-					})
-					.Select(n => n.Url)
-					.Distinct()
-					.Select(u => new Uri(BaseUri, u))
-					.Select(u => new XElement("url", [
-						new XElement("loc", u),
-						new XElement("lastmod", currentDate)
-					]))
-			);
+			"urlset",
+			new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
+			flattenedNavigationItems
+				.Select(n => n switch
+				{
+					DocumentationGroup group => (group.Index.Url, NavigationItem: group),
+					FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
+					_ => throw new Exception($"Unhandled navigation item type: {n.GetType()}")
+				})
+				.Select(n => n.Url)
+				.Distinct()
+				.Select(u => new Uri(BaseUri, u))
+				.Select(u => new XElement("url", [
+					new XElement("loc", u),
+					new XElement("lastmod", currentDate)
+				]))
+		);
 
 		doc.Add(root);
 
@@ -57,6 +57,9 @@ public class SitemapBuilder(
 		var result = new List<INavigationItem>();
 		foreach (var item in items)
 		{
+			if (item.Hidden)
+				continue;
+
 			switch (item)
 			{
 				case FileNavigationItem file:
@@ -70,6 +73,7 @@ public class SitemapBuilder(
 					throw new Exception($"Unhandled navigation item type: {item.GetType()}");
 			}
 		}
+
 		return result;
 	}
 }
