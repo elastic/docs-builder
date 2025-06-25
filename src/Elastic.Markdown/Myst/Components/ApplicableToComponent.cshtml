@@ -56,6 +56,26 @@
 {
 	@RenderProduct("", appliesTo.Product)
 }
+@if (appliesTo.ProductApplicability is not null)
+{
+	var pa = appliesTo.ProductApplicability;
+	if (pa.Ecctl is not null) { @RenderProduct("ecctl", pa.Ecctl); }
+	if (pa.Curator is not null) { @RenderProduct("Curator", pa.Curator); }
+	if (pa.ApmAgentDotnet is not null) { @RenderProduct("APM Agent .NET", pa.ApmAgentDotnet); }
+	if (pa.ApmAgentGo is not null) { @RenderProduct("APM Agent Go", pa.ApmAgentGo); }
+	if (pa.ApmAgentJava is not null) { @RenderProduct("APM Agent Java", pa.ApmAgentJava); }
+	if (pa.ApmAgentNode is not null) { @RenderProduct("APM Agent Node.js", pa.ApmAgentNode); }
+	if (pa.ApmAgentPython is not null) { @RenderProduct("APM Agent Python", pa.ApmAgentPython); }
+	if (pa.ApmAgentRuby is not null) { @RenderProduct("APM Agent Ruby", pa.ApmAgentRuby); }
+	if (pa.ApmAgentRum is not null) { @RenderProduct("APM Agent RUM", pa.ApmAgentRum); }
+	if (pa.EdotIos is not null) { @RenderProduct("OpenTelemetry iOS", pa.EdotIos); }
+	if (pa.EdotAndroid is not null) { @RenderProduct("OpenTelemetry Android", pa.EdotAndroid); }
+	if (pa.EdotDotnet is not null) { @RenderProduct("OpenTelemetry .NET", pa.EdotDotnet); }
+	if (pa.EdotJava is not null) { @RenderProduct("OpenTelemetry Java", pa.EdotJava); }
+	if (pa.EdotNode is not null) { @RenderProduct("OpenTelemetry Node.js", pa.EdotNode); }
+	if (pa.EdotPhp is not null) { @RenderProduct("OpenTelemetry PHP", pa.EdotPhp); }
+	if (pa.EdotPython is not null) { @RenderProduct("OpenTelemetry Python", pa.EdotPython); }
+}
 
 @functions {
 
