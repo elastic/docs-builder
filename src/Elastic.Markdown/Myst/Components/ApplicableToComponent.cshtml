@@ -59,7 +59,7 @@
 @if (appliesTo.ProductApplicability is not null)
 {
 	var pa = appliesTo.ProductApplicability;
-	if (pa.Ecctl is not null) { @RenderProduct("ecctl", pa.Ecctl); }
+	if (pa.Ecctl is not null) { @RenderProduct("ECCTL", pa.Ecctl); }
 	if (pa.Curator is not null) { @RenderProduct("Curator", pa.Curator); }
 	if (pa.ApmAgentDotnet is not null) { @RenderProduct("APM Agent .NET", pa.ApmAgentDotnet); }
 	if (pa.ApmAgentGo is not null) { @RenderProduct("APM Agent Go", pa.ApmAgentGo); }
