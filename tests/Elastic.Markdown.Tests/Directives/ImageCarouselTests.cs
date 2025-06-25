@@ -13,7 +13,6 @@ namespace Elastic.Markdown.Tests.Directives;
 public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:id: my-carousel
 :fixed-height: medium
 
 ```{image} img/image1.png
@@ -39,7 +38,6 @@ public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<I
 	[Fact]
 	public void ParsesCarouselProperties()
 	{
-		Block!.Id.Should().Be("my-carousel");
 		Block!.FixedHeight.Should().Be("medium");
 	}
 
@@ -139,7 +137,6 @@ public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : Dir
 public class ImageCarouselWithoutImagesTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:id: empty-carousel
 :::
 """
 )
@@ -174,7 +171,6 @@ public class ImageCarouselMinimalTests(ITestOutputHelper output) : DirectiveTest
 	[Fact]
 	public void ParsesMinimalCarousel()
 	{
-		Block!.Id.Should().BeNull();
 		Block!.FixedHeight.Should().BeNull();
 		Block!.Images.Should().HaveCount(1);
 		Block!.Images[0].Alt.Should().Be("Minimal carousel");
