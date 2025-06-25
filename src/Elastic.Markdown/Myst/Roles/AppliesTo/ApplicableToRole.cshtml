@@ -1,0 +1,11 @@
+@using Elastic.Markdown.Myst.Components
+@using Elastic.Markdown.Myst.FrontMatter
+@inherits RazorSlice<ApplicableTo>
+
+<span class="applies-inline">
+@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+{
+	AppliesTo = Model,
+	Inline = true
+}))
+</span>

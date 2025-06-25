@@ -3,6 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Image;
+using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Mermaid;
+using Elastic.Markdown.Myst.Directives.Settings;
+using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using static System.StringSplitOptions;

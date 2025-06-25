@@ -23,4 +23,5 @@ public static class OpenApiReader
 		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
 		return openApiDocument.Document;
 	}
+
 }

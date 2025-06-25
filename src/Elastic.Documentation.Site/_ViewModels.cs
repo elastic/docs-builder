@@ -15,7 +15,7 @@ public static class GlobalSections
 	public const string Footer = "footer";
 }
 
-public class GlobalLayoutViewModel
+public record GlobalLayoutViewModel
 {
 	public required string DocSetName { get; init; }
 	public string Title { get; set; } = "Elastic Documentation";
@@ -25,13 +25,11 @@ public class GlobalLayoutViewModel
 	public required INavigationItem? Previous { get; init; }
 	public required INavigationItem? Next { get; init; }
 
-	public required string? VersionDropdown { get; init; }
-
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
-		new Uri(CanonicalBaseUrl, CurrentNavigationItem?.Url).ToString().TrimEnd('/') : null;
+		new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
 
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject

@@ -1,25 +1,90 @@
-@using Elastic.Documentation.Configuration.Assembler
-@using Elastic.Documentation.Configuration.Builder
+@using Elastic.ApiExplorer.Landing
+@using Elastic.ApiExplorer.Operations
+@using Microsoft.OpenApi.Models
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
-	public GlobalLayoutViewModel LayoutModel => new()
-	{
-		DocSetName = "Api Explorer",
-		Description = "",
-		CurrentNavigationItem = Model.CurrentNavigationItem,
-		Previous = null,
-		Next = null,
-		NavigationHtml = Model.NavigationHtml,
-		UrlPathPrefix = null,
-		VersionDropdown = null,
-		AllowIndexing = false,
-		CanonicalBaseUrl = null,
-		GoogleTagManager = new GoogleTagManagerConfiguration(),
-		Features = new FeatureFlags([]),
-		StaticFileContentHashProvider = Model.StaticFileContentHashProvider
-	};
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-<section id="elastic-docs-v3">
-	<h1>@Model.Operation.Operation.OperationId</h1>
+@{
+	var parent = Model.CurrentNavigationItem.Parent as EndpointNavigationItem;
+	var self = Model.CurrentNavigationItem as OperationNavigationItem;
+	var allOperations =
+		parent is not null && parent.NavigationItems.Count > 0 && parent.NavigationItems.All(n => n.Hidden)
+			? parent.NavigationItems
+			: self is not null
+				? [self]
+				: [];
+
+	var operation = Model.Operation.Operation;
+}
+
+<div class="w-full h-full grid
+					grid-cols-1
+					md:grid-cols-[1fr_var(--max-examples-width)]
+					lg:grid-cols-[1fr_var(--max-examples-width)]
+				">
+<section id="elastic-api-v3">
+	<h1>@operation.Summary</h1>
+	<p>
+		@(Model.RenderMarkdown(operation.Description))
+	</p>
+	<ul class="api-url-listing">
+		@foreach (var overload in allOperations)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
+			<li class="api-url-list-item">
+				<a href="@overload.Url" class="@current">
+					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					 <span class="api-url">@overload.Model.Route</span>
+				</a>
+			</li>
+		}
+	</ul>
+	@{
+		var pathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [];
+	}
+	@if (pathParameters.Length > 0)
+	{
+		<h4>Path Parameters</h4>
+		<dl>
+		@foreach (var path in pathParameters)
+		{
+			<dt id="@path.Name"><a href="#@path.Name"><code>@path.Name</code></a></dt>
+			<dd>@Model.RenderMarkdown(path.Description)</dd>
+		}
+		</dl>
+	}
+	@{
+		var queryStringParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Query).ToArray() ?? [];
+	}
+	@if (queryStringParameters.Length > 0)
+	{
+		<h4>Query String Parameters</h4>
+		<dl>
+			@foreach (var path in queryStringParameters)
+			{
+				<dt id="@path.Name"><a href="#@path.Name"><code>@path.Name</code></a></dt>
+				<dd>@Model.RenderMarkdown(path.Description)</dd>
+			}
+		</dl>
+	}
+	@if (operation.RequestBody is not null)
+	{
+		<h3>Request Body</h3>
+		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
+		{
+			<p>@operation.RequestBody.Description</p>
+		}
+		<dl>
+			@foreach (var path in operation.RequestBody.Content)
+			{
+			}
+		</dl>
+	}
 </section>
+<aside>
+
+</aside>
+</div>

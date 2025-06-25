@@ -4,23 +4,25 @@
 
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public class WarningCollection : IEquatable<WarningCollection>, IReadOnlyCollection<string>
+/// Use to collect diagnostics during yaml parsing where we do not have access to the current diagnostics collector
+public class YamlDiagnosticsCollection : IEquatable<YamlDiagnosticsCollection>, IReadOnlyCollection<(Severity, string)>
 {
-	private readonly List<string> _list = [];
+	private readonly List<(Severity, string)> _list = [];
 
-	public WarningCollection(IEnumerable<string> warnings) => _list.AddRange(warnings);
+	public YamlDiagnosticsCollection(IEnumerable<(Severity, string)> warnings) => _list.AddRange(warnings);
 
-	public bool Equals(WarningCollection? other) => other != null && _list.SequenceEqual(other._list);
+	public bool Equals(YamlDiagnosticsCollection? other) => other != null && _list.SequenceEqual(other._list);
 
-	public IEnumerator<string> GetEnumerator() => _list.GetEnumerator();
+	public IEnumerator<(Severity, string)> GetEnumerator() => _list.GetEnumerator();
 
-	public override bool Equals(object? obj) => Equals(obj as WarningCollection);
+	public override bool Equals(object? obj) => Equals(obj as YamlDiagnosticsCollection);
 
 	public override int GetHashCode() => _list.GetHashCode();
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -48,7 +50,7 @@ public record ApplicableTo
 	[YamlMember(Alias = "product")]
 	public AppliesCollection? Product { get; set; }
 
-	internal WarningCollection? Warnings { get; set; }
+	internal YamlDiagnosticsCollection? Diagnostics { get; set; }
 
 	public static ApplicableTo All { get; } = new()
 	{
@@ -122,14 +124,14 @@ public class ApplicableToConverter : IYamlTypeConverter
 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
-		var warnings = new List<string>();
+		var diagnostics = new List<(Severity, string)>();
 		var applicableTo = new ApplicableTo();
 
 		if (parser.TryConsume<Scalar>(out var value))
 		{
 			if (string.IsNullOrWhiteSpace(value.Value))
 			{
-				warnings.Add("The 'applies_to' field is present but empty. No applicability will be assumed.");
+				diagnostics.Add((Severity.Warning, "The 'applies_to' field is present but empty. No applicability will be assumed."));
 				return null;
 			}
 
@@ -144,32 +146,32 @@ public class ApplicableToConverter : IYamlTypeConverter
 		var keys = dictionary.Keys.OfType<string>().ToArray();
 		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
 		if (oldStyleKeys.Count > 0)
-			warnings.Add($"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}");
+			diagnostics.Add((Severity.Warning, $"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}"));
 		var unknownKeys = keys.Except(KnownKeys).Except(oldStyleKeys).ToList();
 		if (unknownKeys.Count > 0)
-			warnings.Add($"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}");
+			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
 
-		if (TryGetApplicabilityOverTime(dictionary, "stack", out var stackAvailability))
+		if (TryGetApplicabilityOverTime(dictionary, "stack", diagnostics, out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
 
-		if (TryGetApplicabilityOverTime(dictionary, "product", out var productAvailability))
+		if (TryGetApplicabilityOverTime(dictionary, "product", diagnostics, out var productAvailability))
 			applicableTo.Product = productAvailability;
 
-		AssignServerless(dictionary, applicableTo);
-		AssignDeploymentType(dictionary, applicableTo);
+		AssignServerless(dictionary, applicableTo, diagnostics);
+		AssignDeploymentType(dictionary, applicableTo, diagnostics);
 
-		if (TryGetDeployment(dictionary, out var deployment))
+		if (TryGetDeployment(dictionary, diagnostics, out var deployment))
 			applicableTo.Deployment = deployment;
 
-		if (TryGetProjectApplicability(dictionary, out var serverless))
+		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
 			applicableTo.Serverless = serverless;
 
-		if (warnings.Count > 0)
-			applicableTo.Warnings = new WarningCollection(warnings);
+		if (diagnostics.Count > 0)
+			applicableTo.Diagnostics = new YamlDiagnosticsCollection(diagnostics);
 		return applicableTo;
 	}
 
-	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo)
+	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
 	{
 		if (!dictionary.TryGetValue("deployment", out var deploymentType))
 			return;
@@ -178,7 +180,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			applicableTo.Deployment = DeploymentApplicability.All;
 		else if (deploymentType is string deploymentTypeString)
 		{
-			var av = AppliesCollection.TryParse(deploymentTypeString, out var a) ? a : null;
+			var av = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
 			applicableTo.Deployment = new DeploymentApplicability
 			{
 				Ece = av,
@@ -189,34 +191,35 @@ public class ApplicableToConverter : IYamlTypeConverter
 		}
 		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
 		{
-			if (TryGetDeployment(deploymentDictionary, out var applicability))
+			if (TryGetDeployment(deploymentDictionary, diagnostics, out var applicability))
 				applicableTo.Deployment = applicability;
 		}
 	}
 
-	private static bool TryGetDeployment(Dictionary<object, object?> dictionary, [NotNullWhen(true)] out DeploymentApplicability? applicability)
+	private static bool TryGetDeployment(Dictionary<object, object?> dictionary, List<(Severity, string)> diagnostics,
+		[NotNullWhen(true)] out DeploymentApplicability? applicability)
 	{
 		applicability = null;
 		var d = new DeploymentApplicability();
 		var assigned = false;
-		if (TryGetApplicabilityOverTime(dictionary, "ece", out var ece))
+		if (TryGetApplicabilityOverTime(dictionary, "ece", diagnostics, out var ece))
 		{
 			d.Ece = ece;
 			assigned = true;
 		}
-		if (TryGetApplicabilityOverTime(dictionary, "eck", out var eck))
+		if (TryGetApplicabilityOverTime(dictionary, "eck", diagnostics, out var eck))
 		{
 			d.Eck = eck;
 			assigned = true;
 		}
 
-		if (TryGetApplicabilityOverTime(dictionary, "ess", out var ess))
+		if (TryGetApplicabilityOverTime(dictionary, "ess", diagnostics, out var ess))
 		{
 			d.Ess = ess;
 			assigned = true;
 		}
 
-		if (TryGetApplicabilityOverTime(dictionary, "self", out var self))
+		if (TryGetApplicabilityOverTime(dictionary, "self", diagnostics, out var self))
 		{
 			d.Self = self;
 			assigned = true;
@@ -231,7 +234,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		return false;
 	}
 
-	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo)
+	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
 	{
 		if (!dictionary.TryGetValue("serverless", out var serverless))
 			return;
@@ -240,7 +243,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			applicableTo.Serverless = ServerlessProjectApplicability.All;
 		else if (serverless is string serverlessString)
 		{
-			var av = AppliesCollection.TryParse(serverlessString, out var a) ? a : null;
+			var av = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
 			applicableTo.Serverless = new ServerlessProjectApplicability
 			{
 				Elasticsearch = av,
@@ -250,31 +253,30 @@ public class ApplicableToConverter : IYamlTypeConverter
 		}
 		else if (serverless is Dictionary<object, object?> serverlessDictionary)
 		{
-			if (TryGetProjectApplicability(serverlessDictionary, out var applicability))
+			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
 				applicableTo.Serverless = applicability;
 		}
 	}
 
-	private static bool TryGetProjectApplicability(
-		Dictionary<object, object?> dictionary,
-		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability
-	)
+	private static bool TryGetProjectApplicability(Dictionary<object, object?> dictionary,
+		List<(Severity, string)> diagnostics,
+		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability)
 	{
 		applicability = null;
 		var serverlessAvailability = new ServerlessProjectApplicability();
 		var assigned = false;
-		if (TryGetApplicabilityOverTime(dictionary, "elasticsearch", out var elasticsearch))
+		if (TryGetApplicabilityOverTime(dictionary, "elasticsearch", diagnostics, out var elasticsearch))
 		{
 			serverlessAvailability.Elasticsearch = elasticsearch;
 			assigned = true;
 		}
-		if (TryGetApplicabilityOverTime(dictionary, "observability", out var observability))
+		if (TryGetApplicabilityOverTime(dictionary, "observability", diagnostics, out var observability))
 		{
 			serverlessAvailability.Observability = observability;
 			assigned = true;
 		}
 
-		if (TryGetApplicabilityOverTime(dictionary, "security", out var security))
+		if (TryGetApplicabilityOverTime(dictionary, "security", diagnostics, out var security))
 		{
 			serverlessAvailability.Security = security;
 			assigned = true;
@@ -286,7 +288,8 @@ public class ApplicableToConverter : IYamlTypeConverter
 		return true;
 	}
 
-	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, out AppliesCollection? availability)
+	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, List<(Severity, string)> diagnostics,
+		out AppliesCollection? availability)
 	{
 		availability = null;
 		if (!dictionary.TryGetValue(key, out var target))
@@ -295,7 +298,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (target is null || (target is string s && string.IsNullOrWhiteSpace(s)))
 			availability = AppliesCollection.GenerallyAvailable;
 		else if (target is string stackString)
-			availability = AppliesCollection.TryParse(stackString, out var a) ? a : null;
+			availability = AppliesCollection.TryParse(stackString, diagnostics, out var a) ? a : null;
 		return availability is not null;
 	}
 

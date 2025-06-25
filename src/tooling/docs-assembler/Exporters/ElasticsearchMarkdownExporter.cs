@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
@@ -108,10 +109,10 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		return false;
 	}
 
-	public async ValueTask<bool> ExportAsync(MarkdownExportContext context, Cancel ctx)
+	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
-		var file = context.File;
-		var document = context.Document;
+		var file = fileContext.SourceFile;
+		var document = fileContext.Document;
 		if (file.FileName.EndsWith(".toml", StringComparison.OrdinalIgnoreCase))
 			return true;
 
@@ -120,7 +121,8 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		if (url.Contains("/reference/integrations"))
 			return true;
 
-		var body = context.LLMText ??= MarkdownFile.ToLLMText(document);
+		// TODO!
+		var body = fileContext.LLMText ??= "string.Empty";
 		var doc = new DocumentationDocument
 		{
 			Title = file.Title,
@@ -132,4 +134,7 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		};
 		return await TryWrite(doc, ctx);
 	}
+
+	/// <inheritdoc />
+	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx) => await _channel.RefreshAsync(ctx);
 }

@@ -2,9 +2,9 @@
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
 <div class="pb-20 font-body" hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator">
 	@{
-		var current = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id);
+		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
-	@if (Model.IsPrimaryNavEnabled && current is { Index: not null })
+	@if (Model.IsUsingNavigationDropdown && currentTopLevelItem is { Index: not null })
 	{
 		<div class="sticky top-0 py-6 bg-white z-10 border-b-1 border-grey-20 pr-4">
 			<div tabindex="0" id="pages-dropdown" class="block group border-1 border-grey-20 rounded-sm font-sans relative">
@@ -12,9 +12,9 @@
 					<div>
 						<a
 							class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
-							href="@current.Url"
+							href="@currentTopLevelItem.Url"
 							@Htmx.GetNavHxAttributes(true)>
-							@current.NavigationTitle
+							@currentTopLevelItem.NavigationTitle
 						</a>
 					</div>
 					<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
@@ -33,7 +33,6 @@
 					<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
 						@foreach (var item in Model.TopLevelItems)
 						{
-							if (item.Id == current?.Id) continue;
 							<li class="block">
 								<a
 									class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
@@ -52,7 +51,7 @@
 	{
 		<a
 			href="@Model.TitleUrl"
-			@Htmx.GetNavHxAttributes(current is null || Model.Tree.Id == current.Id)
+			@Htmx.GetNavHxAttributes(Model.Tree.Id == currentTopLevelItem.Id)
 			class="inline-block mx-4 mt-6 font-semibold text-ink hover:text-black">
 			@Model.Title
 		</a>

@@ -168,6 +168,7 @@ public class DocumentationWebHost
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{
+			//TODO STREAM
 			var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
 			return Results.Content(contents, "text/html");
 		}

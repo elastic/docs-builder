@@ -5,7 +5,6 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Site;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.FrontMatter;
-using Elastic.Markdown.Slices;
 
 namespace Elastic.Markdown.IO;
 

@@ -8,7 +8,7 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default);
+	Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{

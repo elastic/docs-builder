@@ -44,7 +44,7 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(INodeNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
 	{
 		if (Phantoms.Contains(navigationSource))
 			return string.Empty;
@@ -82,6 +82,7 @@ public class GlobalNavigationHtmlWriter(
 			TitleUrl = group.Index.Url,
 			Tree = group,
 			IsPrimaryNavEnabled = true,
+			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems
 		};

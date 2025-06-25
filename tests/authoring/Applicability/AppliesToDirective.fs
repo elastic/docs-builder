@@ -4,13 +4,12 @@
 
 module ``product availability``.``yaml directive``
 
-open Elastic.Markdown.Myst.Directives
+open Elastic.Markdown.Myst.Directives.AppliesTo
 open Elastic.Markdown.Myst.FrontMatter
 open authoring
 open authoring.MarkdownDocumentAssertions
 open Swensen.Unquote
 open Xunit
-open Elastic.Markdown.Myst.CodeBlocks
 
 type ``piggy back off yaml formatting`` () =
     static let markdown = Setup.Markdown """

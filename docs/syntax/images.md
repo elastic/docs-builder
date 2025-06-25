@@ -1,29 +1,35 @@
 # Images
 
-Images include screenshots, inline images, icons, and more. Syntax for images is like the syntax for links, with two differences:
+Images include screenshots, inline images, icons, and more. Syntax for images is like the syntax for links, with the following differences:
+
 1. instead of link text, you provide an image description
 2. an image description starts with `![` not just `[`
+3. there are restrictions on the scope of image paths
 
-Images can be referenced from the top-level `_static` dir or a local image dir.
+:::{note}
+
+If a page uses an image that exists outside the folder that contains the `toc.yml` file or `docset.yml` file that contains that page, the image will fail to render and will generate warnings. Likewise, if a snippet in a [file inclusion](/syntax/file_inclusion.md) includes an image and is used in pages that exist in different `toc.yml`, the images will break.
+:::
 
 ## Block-level images
 
 ```markdown
-![APM](images/apm.png)
+![APM](/syntax/images/apm.png)
 ```
 
-![APM](images/apm.png)
+![APM](/syntax/images/apm.png)
+
 
 Or, use the `image` directive.
 
 ```markdown
-:::{image} images/observability.png
+:::{image} /syntax/images/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
 ```
 
-:::{image} images/observability.png
+:::{image} /syntax/images/observability.png
 :alt: Elasticsearch
 :width: 250px
 :::
@@ -33,22 +39,23 @@ Or, use the `image` directive.
 Screenshots are images displayed with a box-shadow. Define a screenshot by adding the `:screenshot:` attribute to a block-level image directive.
 
 ```markdown
-:::{image} images/apm.png
+
+:::{image} /syntax/images/apm.png
 :screenshot:
 :::
 ```
 
-:::{image} images/apm.png
+:::{image} /syntax/images/apm.png
 :screenshot:
 :::
 
 ## Inline images
 
 ```markdown
-Here is the same image used inline ![Elasticsearch](images/observability.png "elasticsearch =50%x50%")
+Here is the same image used inline ![Elasticsearch](/syntax/images/observability.png "elasticsearch =50%x50%")
 ```
 
-Here is the same image used inline ![Elasticsearch](images/observability.png "elasticsearch =50%x50%")
+Here is the same image used inline ![Elasticsearch](/syntax/images/observability.png "elasticsearch =50%x50%")
 
 
 ### Inline image titles
@@ -56,13 +63,13 @@ Here is the same image used inline ![Elasticsearch](images/observability.png "el
 Titles are optional making this the minimal syntax required
 
 ```markdown
-![Elasticsearch](images/observability.png)
+![Elasticsearch](/syntax/images/observability.png)
 ```
 
 Including a title can be done by supplying it as an optional argument.
 
 ```markdown
-![Elasticsearch](images/observability.png "elasticsearch")
+![Elasticsearch](/syntax/images/observability.png "elasticsearch")
 ```
 
 ### Inline image sizing
@@ -92,17 +99,16 @@ If `H` is omitted `W` is used as the height as well.
 ### SVG 
 
 ```markdown
-![Elasticsearch](images/alerts.svg)
+![Elasticsearch](/syntax/images/alerts.svg)
 ```
-![Elasticsearch](images/alerts.svg)
+![Elasticsearch](/syntax/images/alerts.svg)
 
 ### GIF
 
 ```markdown
-![Elasticsearch](images/timeslider.gif)
+![Elasticsearch](/syntax/images/timeslider.gif)
 ```
-![Elasticsearch](images/timeslider.gif)
-
+![Elasticsearch](/syntax/images/timeslider.gif)
 
 ## Asciidoc syntax
 
