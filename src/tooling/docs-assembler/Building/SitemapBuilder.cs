@@ -64,6 +64,7 @@ public class SitemapBuilder(
 					break;
 				case DocumentationGroup group:
 					result.AddRange(GetNavigationItems(group.NavigationItems));
+					result.Add(group);
 					break;
 				default:
 					throw new Exception($"Unhandled navigation item type: {item.GetType()}");
