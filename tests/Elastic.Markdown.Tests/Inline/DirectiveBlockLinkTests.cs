@@ -48,7 +48,7 @@ public class InPageDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlock
 	[Fact]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="#caution_ref">Hello</a></p>"""
 		);
 

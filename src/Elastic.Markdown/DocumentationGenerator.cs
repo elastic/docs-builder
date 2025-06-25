@@ -15,7 +15,6 @@ using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Slices;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -174,6 +173,7 @@ public class DocumentationGenerator
 				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
 		});
 		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
+
 	}
 
 	private void HintUnusedSubstitutionKeys()
@@ -246,7 +246,14 @@ public class DocumentationGenerator
 				foreach (var exporter in _markdownExporters)
 				{
 					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
-					_ = await exporter.ExportAsync(new MarkdownExportContext { Document = document, File = markdown }, ctx);
+					_ = await exporter.ExportAsync(new MarkdownExportFileContext
+					{
+						BuildContext = Context,
+						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
+						Document = document,
+						SourceFile = markdown,
+						DefaultOutputFile = outputFile
+					}, ctx);
 				}
 			}
 		}

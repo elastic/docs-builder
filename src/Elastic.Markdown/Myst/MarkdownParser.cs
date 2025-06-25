@@ -25,7 +25,7 @@ namespace Elastic.Markdown.Myst;
 public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 {
 	private BuildContext Build { get; } = build;
-	private IParserResolvers Resolvers { get; } = resolvers;
+	public IParserResolvers Resolvers { get; } = resolvers;
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) =>
 		ParseFromFile(path, matter, Pipeline, false, ctx);

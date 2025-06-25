@@ -26,8 +26,7 @@ public class InlineAnchorTests(ITestOutputHelper output) : LeafTest<InlineAnchor
 
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p>this is regular text and this <a id="is-an-inline-anchor"></a> and this continues to be regular text</p>"""
 		);
 }
@@ -69,7 +68,7 @@ public class InlineAnchorAtEndTests(ITestOutputHelper output) : LeafTest<InlineA
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>"""
 		);
 }
@@ -97,7 +96,7 @@ public class BadEndInlineAnchorTests(ITestOutputHelper output) : BlockTest<Parag
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p>this is regular text and this $$$is-an-inline-anchor$$</p>"""
 		);
 }
@@ -111,11 +110,11 @@ public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<Heading
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ReplaceLineEndings().TrimEnd().Should().Be(
+		Html.ShouldBeHtml(
 			"""
 			<div class="heading-wrapper" id="hello-world"><h2><a class="headerlink" href="#hello-world">Hello world <a id="my-anchor"></a></a></h2>
 			</div>
-			""".ReplaceLineEndings().TrimEnd()
+			"""
 		);
 }
 
@@ -128,11 +127,12 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ReplaceLineEndings().TrimEnd().Should().Be(
+		Html.ShouldBeHtml(
 			"""
-			<div class="heading-wrapper" id="my-anchor"><h2><a class="headerlink" href="#my-anchor">Hello world</a></h2>
+			<div class="heading-wrapper" id="my-anchor">
+				<h2><a class="headerlink" href="#my-anchor">Hello world</a></h2>
 			</div>
-			""".ReplaceLineEndings().TrimEnd()
+			"""
 		);
 }
 
@@ -182,7 +182,7 @@ public class InlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchor
 	[Fact]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="#same-page-anchor">Hello</a></p>"""
 		);
 
