@@ -34,9 +34,12 @@ Once it’s been established that a repository should publish from a version bra
    * Specify which is the `current` branch for the repository. This branch is the branch from which docs are deployed to production at [elastic.co/docs](http://elastic.co/docs).  
    * Specify which is the `next` branch for the repository. The branch defined as `next` publishes docs internally to [staging-website.elastic.co/docs](http://staging-website.elastic.co/docs)  
      * Setting this branch to the next version branch in line is a good practice to preview docs change for an upcoming version.  
-     * Otherwise, keeping it set to `main` is also an option since this is where the content is initially developed and merged. This is the default.  
-2. Add an action as part of that repo’s release process for the release manager to update this same assembler file and bump the `current` branch with each release, as appropriate.  
-3. When these releases happen, create a PR against this file that defines the new `current` branch, to merge on release day.
+     * Otherwise, keeping it set to `main` is also an option since this is where the content is initially developed and merged. This is the default.
+2. [Add new triggers to the `docs-build` CI integration](/configure/deployment-models.md#ci-configuration).  
+3. Add an action as part of that repo’s release process for the release manager to update this same assembler file and bump the `current` branch with each release, as appropriate.  
+4. When these releases happen, create a PR against this file that defines the new `current` branch, to merge on release day.
+
+For more information, refer to [](/configure/deployment-models.md).
 
 ## Workflow 1 (default): Make docs updates when the repo is publishing docs from `main`
 
@@ -56,7 +59,7 @@ When a repo publishes docs from its `main` branch, any merged changes are publis
 | --- | --- | --- |
 | 1 | You are documenting changes for an unversioned product (typically Serverless or Elastic Cloud), and the changes should only go live when the corresponding code or feature is available to users | The PR should be merged on or after the release date of the feature. |
 | 2 | You are documenting changes for a versioned product (any Stack components, ECE, ECK, etc.).<br><br>We have an automatic mechanism in place as part of the [cumulative docs strategy](#write-cumulative-documentation) that will show any changes published before its associated code or feature is available as `Planned`. | You have the choice between merging the PR as soon as it is approved, or merging it only on release day. |
-| You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release), you are in the same situation as Case 1. | The PR should only be merged on or after the release date of the feature in Serverless. Note that for versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](#write-cumulative-documentation) that will show any changes published before its associated code or feature is available as `Planned`. |
+| 3 | You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release), you are in the same situation as Case 1. | The PR should only be merged on or after the release date of the feature in Serverless. Note that for versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](#write-cumulative-documentation) that will show any changes published before its associated code or feature is available as `Planned`. |
 
 When a repo is publishing docs from its `main` branch, no backporting is needed.
 
@@ -88,7 +91,7 @@ The changes must then be backported to their relevant version branches, and no f
 | --- | --- | --- |
 | 1 | You are documenting changes for an unversioned product (typically Serverless or Elastic Cloud), the changes should go live when the corresponding code or feature is available to users. | The PR should be backported to the docs `current` branch, and any intermediate version branches that already exist between `current` and `main`. Merge the backport PR for `current` only when you’re sure the corresponding feature is released. |
 | 2 | You are documenting changes for a versioned product (any Stack components, ECE, ECK, etc.).<br><br>We have an automatic mechanism in place as part of the [cumulative docs strategy](#write-cumulative-documentation) that will show any changes published before its associated code or feature is available as “Planned”. | Backport the PR to the relevant version branch and to any intermediate version branch that already exists. The changes will go live whenever these branches become the `current` docs branch. |
-| 3 | you are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release), you are in the same situation as Case 1. | The PR should be backported to the docs `current` branch, and any intermediate version branches that already exist between `current` and `main`. Merge the backport PR for `current` only when you’re sure the corresponding feature is released. <br><br>Note that for versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](#write-cumulative-documentation) that will show any changes published before its associated code or feature is available as `Planned`. |
+| 3 | You are documenting changes that apply to both versioned and unversioned products (typically a change that is being released for both Serverless and an upcoming Stack release), you are in the same situation as Case 1. | The PR should be backported to the docs `current` branch, and any intermediate version branches that already exist between `current` and `main`. Merge the backport PR for `current` only when you’re sure the corresponding feature is released. <br><br>Note that for versioned products, we have an automatic mechanism in place as part of the [cumulative docs strategy](#write-cumulative-documentation) that will show any changes published before its associated code or feature is available as `Planned`. |
 
 #### Example 
 
