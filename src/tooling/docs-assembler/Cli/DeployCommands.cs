@@ -174,7 +174,7 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 			.Select(k => new DeleteKeyRequestListItem { Key = k });
 
 		ConsoleApp.Log("Updating redirects in KVS");
-		const int batchSize = 500;
+		const int batchSize = 50;
 
 		eTag = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toPut, batchSize, KvsOperation.Puts, ctx);
 		_ = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toDelete, batchSize, KvsOperation.Deletes, ctx);
