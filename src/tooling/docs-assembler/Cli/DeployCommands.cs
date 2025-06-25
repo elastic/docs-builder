@@ -17,9 +17,14 @@ using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
-using DescribeKeyValueStoreRequest = Amazon.CloudFront.Model.DescribeKeyValueStoreRequest;
 
 namespace Documentation.Assembler.Cli;
+
+internal enum KvsOperation
+{
+	Puts,
+	Deletes
+}
 
 internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
@@ -129,7 +134,7 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 
 		ConsoleApp.Log("Parsing redirects mapping");
 		var jsonContent = await File.ReadAllTextAsync(redirectsFile, ctx);
-		var sourcedRedirects = JsonSerializer.Deserialize(jsonContent, SourceGenerationContext.Default.FrozenDictionaryStringString);
+		var sourcedRedirects = JsonSerializer.Deserialize(jsonContent, SourceGenerationContext.Default.DictionaryStringString);
 
 		if (sourcedRedirects is null)
 		{
@@ -144,7 +149,7 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 		var kvsClient = new AmazonCloudFrontKeyValueStoreClient();
 
 		ConsoleApp.Log("Describing KVS");
-		var describeResponse = await cfClient.DescribeKeyValueStoreAsync(new DescribeKeyValueStoreRequest { Name = kvsName }, ctx);
+		var describeResponse = await cfClient.DescribeKeyValueStoreAsync(new Amazon.CloudFront.Model.DescribeKeyValueStoreRequest { Name = kvsName }, ctx);
 
 		var kvsArn = describeResponse.KeyValueStore.ARN;
 		var eTag = describeResponse.ETag;
@@ -171,8 +176,8 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 		ConsoleApp.Log("Updating redirects in KVS");
 		const int batchSize = 500;
 
-		eTag = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toPut, batchSize, "Puts", ctx);
-		_ = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toDelete, batchSize, "Deletes", ctx);
+		eTag = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toPut, batchSize, KvsOperation.Puts, ctx);
+		_ = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toDelete, batchSize, KvsOperation.Deletes, ctx);
 
 		await collector.StopAsync(ctx);
 		return collector.Errors;
@@ -184,7 +189,7 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 		string eTag,
 		IEnumerable<object> items,
 		int batchSize,
-		string operation,
+		KvsOperation operation,
 		Cancel ctx)
 	{
 		var enumerable = items.ToList();
@@ -197,9 +202,9 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 				IfMatch = eTag
 			};
 
-			if (operation.Equals("Puts", StringComparison.InvariantCulture))
+			if (operation is KvsOperation.Puts)
 				updateRequest.Puts = batch.Cast<PutKeyRequestListItem>().ToList();
-			else if (operation.Equals("Deletes", StringComparison.InvariantCulture))
+			else if (operation is KvsOperation.Deletes)
 				updateRequest.Deletes = batch.Cast<DeleteKeyRequestListItem>().ToList();
 
 			var update = await kvsClient.UpdateKeysAsync(updateRequest, ctx);

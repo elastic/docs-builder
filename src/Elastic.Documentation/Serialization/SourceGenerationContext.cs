@@ -19,5 +19,5 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
 [JsonSerializable(typeof(DocumentationDocument))]
-[JsonSerializable(typeof(FrozenDictionary<string, string>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;
