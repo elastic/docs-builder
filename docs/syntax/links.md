@@ -15,9 +15,11 @@ It has two components:
 
 ### Internal links
 
-Link to other documentation pages using the file’s relative or absolute path. Optionally append an anchor to send readers to a specific section on a page. Never use a full URL for links between documentation pages.
+Link to other documentation pages in the same repository using the file’s relative or absolute path. Optionally append an anchor to send readers to a specific section on a page. Never use a full URL for links between documentation pages.
 
 #### Relative paths
+
+Use relative paths to link to other pages inside the same repository.
 
 ```markdown
 [Security docs](../security/index.md)
@@ -26,6 +28,8 @@ Link to other documentation pages using the file’s relative or absolute path. 
 ```
 
 #### Absolute paths
+
+Use absolute paths to link to other pages inside the same repository.
 
 ```markdown
 [API keys](/deploy-manage/api-keys.md)
@@ -87,6 +91,8 @@ The syntax follows the format `<scheme>://<path>`, where:
 :::{important}
 The `path` in cross-repo links must be relative to the `docset.yml` file and not the full path within the repo
 :::
+
+Never use a full URL for links across documentation repositories.
 
 ### External links
 
