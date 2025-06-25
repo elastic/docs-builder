@@ -92,8 +92,9 @@ public class AssemblerBuilder(
 			_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
 		}
 
-
-		await OutputRedirectsAsync(redirects, ctx);
+		await OutputRedirectsAsync(redirects
+			.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+			.ToDictionary(r => r.Key, r => r.Value), ctx);
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -120,6 +121,7 @@ public class AssemblerBuilder(
 					allRedirects[Resolve(k)] = Resolve(t);
 			}
 		}
+		allRedirects = allRedirects.
 		string Resolve(string relativeMarkdownPath)
 		{
 			var uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{relativeMarkdownPath}"),
