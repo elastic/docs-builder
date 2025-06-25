@@ -7,9 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
-using Elastic.Markdown.Myst.Directives.Image;
 
-namespace Elastic.Markdown.Myst.Directives;
+namespace Elastic.Markdown.Myst.Directives.Image;
 
 public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
