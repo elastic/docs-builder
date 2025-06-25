@@ -15,24 +15,22 @@ It has two components:
 
 ### Internal links
 
-Link between documentation files using either relative or absolute paths.
+Use internal links for doc to doc links. Internal links can reference a relative or absolute path, and you can optionally append an anchor to send readers to a specific section on a page.
 
 #### Relative paths
-Navigate relative to the current file's location:
 
 ```markdown
-[Security documentation](../security/index.md)
+[Security docs](../security/index.md)
 
-[Monitoring guide](monitor/index.md)
-```
+[Install](monitor/index.md#installation)
+````
 
 #### Absolute paths
 
-You can also use absolute paths to link to pages within the same repository.
-Say you're working on a random page somewhere in the `docs-content` repo. You can link to a page in the `deploy-manage` section like this:
-
 ```markdown
-[API Keys](/deploy-manage/api-keys.md)
+[API keys](/deploy-manage/api-keys.md)
+
+[Authentication](/deploy-manage/api-keys.md#authentication)
 ```
 
 Note the leading `/` before the path.
