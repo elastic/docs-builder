@@ -15,7 +15,7 @@ It has two components:
 
 ### Internal links
 
-Link between documentation pages in the same repository using the file’s relative or absolute path. Optionally append an anchor to send readers to a specific section on a page. Never use a full URL for links between documentation pages.
+Link between documentation pages in the same repository using the file’s relative or absolute path. The path must include the `.md` file extension. Optionally append an anchor to send readers to a specific section on a page. Never use a full URL for links between documentation pages.
 
 #### Relative paths
 
