@@ -15,7 +15,7 @@ It has two components:
 
 ### Internal links
 
-Use internal links for doc to doc links. Internal links can reference a relative or absolute path, and you can optionally append an anchor to send readers to a specific section on a page.
+Link to other documentation pages using the file’s relative or absolute path. Optionally append an anchor to send readers to a specific section on a page. Never use a full URL for links between documentation pages.
 
 #### Relative paths
 
@@ -23,7 +23,7 @@ Use internal links for doc to doc links. Internal links can reference a relative
 [Security docs](../security/index.md)
 
 [Install](monitor/index.md#installation)
-````
+```
 
 #### Absolute paths
 
