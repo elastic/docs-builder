@@ -39,12 +39,12 @@ In Docs V3, a single branch is published per repository. This branch is set to `
 
 ## Report a bug
 
-* It's a **documentation** problem: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md)
+* It's a **documentation** problem: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md). You can open sensitive issues in our [internal repo](https://github.com/elastic/docs-content-internal/issues/new/choose).
 * It's a **build tool (docs-builder)** problem: [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
 
-## Request an enhancement
+## Request an enhancement or documentation for a new feature
 
-* Make the **documentation** better: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
+* Make the **documentation** better: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml). You can open sensitive issues in our [internal repo](https://github.com/elastic/docs-content-internal/issues/new/choose).
 * Make our **build tool (docs-builder)** better: [Start a docs-builder discussion](https://github.com/elastic/docs-builder/discussions)
 
 ## Work on docs-builder

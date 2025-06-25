@@ -1,4 +1,4 @@
-The way that you contribute to the docs depends on the product version.
+Because the new documentation site only hosts documentation for newer releases, the way that you contribute depends on the version that you want to document.
 
 For a list of versions covered on [elastic.co/docs](https://www.elastic.co/docs), refer to [Find docs for your product version](/get-started/versioning-availability.md#find-docs-for-your-product-version). Versions prior to the versions listed on that page are documented on our legacy system, [elastic.co/guide](https://www.elastic.co/guide). 
 

@@ -1,6 +1,6 @@
 # Applies to
 
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/index.md#cumulative-docs): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/cumulative-docs.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
 * Which Elastic products and deployment models the content applies to.
@@ -16,7 +16,7 @@ The `applies_to` metadata can be added at different levels in the documentation:
 * [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.
 * [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
 
-### Do’s and don’ts
+### Dos and don’ts
 
 ✅ Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when availability differs across deployments and environments.
 
@@ -38,18 +38,18 @@ When you write or edit documentation, only specify the keys that apply to that c
 Each key accepts values with the following syntax:
 
 ```
-<key>: <life-cycle> [version]
+<key>: <lifecycle> [version]
 ```
 
 Where:
 
-- The [life-cycle](#life-cycle) is mandatory
+- The [lifecycle](#lifecycle) is mandatory
 - The [version](#version) is optional
 - You can specify multiple states by separating them with a comma. For example: `stack: preview 9.1, ga 9.4`
 
 Note that a key without any value doesn't show any badge in the output.
 
-### Life cycle
+### Lifecycle
 
 `applies_to` accepts the following lifecycle states:
 
@@ -86,75 +86,14 @@ applies_to:
 ### Lifecycle examples
 
 #### Unversioned products
-Unversioned products don't follow a fixed versioning scheme and are released a lot more often than versioned products. All users are using the same version of this product.
-* When a change is released in `ga`, it **doesn’t need any specific tagging**.
-* When a change is introduced as preview or beta, use `preview` or `beta` as value for the corresponding key within the `applies_to`:
 
-    ```
-    ---
-    applies_to:
-      serverless: preview
-    ---
-    ```
-* When a change introduces a deprecation, use deprecated as value for the corresponding key within the `applies_to`:
-
-    ```
-    ---
-    applies_to:
-      deployment:
-        ess: deprecated
-    ---
-    ```
-
-* When a change removes a feature, remove the content. 
-**Exception:** If the content also applies to another context (for example a feature is removed in both Kibana 9.x and Serverless), then it must be kept for any user reading the page that may be using a version of Kibana prior to the removal. For example:
-
-    ```
-    ---
-    applies_to:
-      stack: deprecated 9.1, removed 9.4
-      serverless: removed
-    ---
-    ```
+:::{include} _snippets/unversioned-lifecycle.md
+:::
 
 #### Versioned products
 
-* When a change is released in `ga`, users need to know which version the feature became available in:
-
-    ```
-    ---
-    applies_to:
-      stack: ga 9.3
-    ---
-    ```
-
-* When a change is introduced as preview or beta, use `preview` or `beta` as value for the corresponding key within the `applies_to`:
-
-    ```
-    ---
-    applies_to:
-      stack: beta 9.1
-    ---
-    ```
-
-* When a change introduces a deprecation, use `deprecated` as value for the corresponding key within the `applies_to`:
-
-    ```
-    ---
-    applies_to:
-      deployment:
-        ece: deprecated 4.2
-    ---
-    ```
-
-* When a change removes a feature, any user reading the page that may be using a version of Kibana prior to the removal must be aware that the feature is still available to them. For that reason, we do not remove the content, and instead mark the feature as removed:
-
-    ```
-    ---
-    applies_to:
-      stack: deprecated 9.1, removed 9.4
-    ---
-    ```
+:::{include} _snippets/versioned-lifecycle.md
+:::
 
 #### Identify multiple states for the same content
 

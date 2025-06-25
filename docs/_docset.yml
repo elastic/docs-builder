@@ -15,6 +15,7 @@ subs:
   eck:   "Elastic Cloud on Kubernetes"
   ech:  "Elastic Cloud Hosted"
   serverless-full: "Elastic Cloud Serverless"
+  ecloud: "Elastic Cloud"
 
 features:
   primary-nav: false

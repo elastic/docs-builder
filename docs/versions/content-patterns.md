@@ -4,6 +4,10 @@ navigation_title: "Content patterns"
 
 # Version content patterns
 
+:::{warning}
+This documentation may be out of date. For updated guidance, refer to [](/contribute/cumulative-docs.md).
+:::
+
 Depending on what you're trying to communicate, you can use the following patterns to represent version and deployment type differences in your docs.
 
 Choose from:

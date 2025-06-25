@@ -1,4 +1,4 @@
-# Content Sources
+# Content sources
 
 To support multiple deployment models for different repositories, we support the concept of a content source.
 
