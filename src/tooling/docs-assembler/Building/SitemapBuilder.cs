@@ -21,9 +21,9 @@ public class SitemapBuilder(
 	{
 		var flattenedNavigationItems = GetNavigationItems(navigationItems);
 
-		var doc = new XDocument()
+		var doc = new XDocument
 		{
-			Declaration = new XDeclaration("1.0", "utf-8", "yes"),
+			Declaration = new XDeclaration("1.0", "utf-8", "yes")
 		};
 
 		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz");
@@ -31,8 +31,13 @@ public class SitemapBuilder(
 				"urlset",
 				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
 				flattenedNavigationItems
-					.OfType<FileNavigationItem>()
-					.Select(n => n.Model.Url)
+					.Select(n => n switch
+					{
+						DocumentationGroup group => (group.Index.Url, NavigationItem: group),
+						FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
+						_ => throw new Exception($"Unhandled navigation item type: {n.GetType()}")
+					})
+					.Select(n => n.Url)
 					.Distinct()
 					.Select(u => new Uri(BaseUri, u))
 					.Select(u => new XElement("url", [
@@ -60,6 +65,8 @@ public class SitemapBuilder(
 				case DocumentationGroup group:
 					result.AddRange(GetNavigationItems(group.NavigationItems));
 					break;
+				default:
+					throw new Exception($"Unhandled navigation item type: {item.GetType()}");
 			}
 		}
 		return result;
