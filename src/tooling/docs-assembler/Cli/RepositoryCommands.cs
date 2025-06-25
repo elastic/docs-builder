@@ -138,7 +138,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
 		if (File.Exists(redirectsPath))
-			await githubActionsService.SetOutputAsync("redirects_artifact_path", redirectsPath);
+			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 		sitemapBuilder.Generate();
