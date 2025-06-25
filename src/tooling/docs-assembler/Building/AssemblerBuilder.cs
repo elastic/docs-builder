@@ -121,7 +121,6 @@ public class AssemblerBuilder(
 					allRedirects[Resolve(k)] = Resolve(t);
 			}
 		}
-		allRedirects = allRedirects.
 		string Resolve(string relativeMarkdownPath)
 		{
 			var uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{relativeMarkdownPath}"),
