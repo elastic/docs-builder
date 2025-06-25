@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Xml.Linq;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Building;
@@ -59,15 +60,19 @@ public class SitemapBuilder(
 		var result = new List<INavigationItem>();
 		foreach (var item in items)
 		{
-			if (item.Hidden)
-				continue;
-
 			switch (item)
 			{
 				case FileNavigationItem file:
+					// these are hidden from the navigation programatically.
+					// TODO find a cleaner way to model this.
+					if (item.Hidden && file.Model is not DetectionRuleFile)
+						continue;
 					result.Add(file);
 					break;
 				case DocumentationGroup group:
+					if (item.Hidden)
+						continue;
+
 					result.AddRange(GetNavigationItems(group.NavigationItems));
 					result.Add(group);
 					break;
