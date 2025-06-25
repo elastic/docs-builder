@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Xml.Linq;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Building;
@@ -21,25 +22,32 @@ public class SitemapBuilder(
 	{
 		var flattenedNavigationItems = GetNavigationItems(navigationItems);
 
-		var doc = new XDocument()
+		var doc = new XDocument
 		{
-			Declaration = new XDeclaration("1.0", "utf-8", "yes"),
+			Declaration = new XDeclaration("1.0", "utf-8", "yes")
 		};
+
+		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
 		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz");
 		var root = new XElement(
-				"urlset",
-				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-				flattenedNavigationItems
-					.OfType<FileNavigationItem>()
-					.Select(n => n.Model.Url)
-					.Distinct()
-					.Select(u => new Uri(BaseUri, u))
-					.Select(u => new XElement("url", [
-						new XElement("loc", u),
-						new XElement("lastmod", currentDate)
-					]))
-			);
+			ns + "urlset",
+			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
+			flattenedNavigationItems
+				.Select(n => n switch
+				{
+					DocumentationGroup group => (group.Index.Url, NavigationItem: group),
+					FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
+					_ => throw new Exception($"Unhandled navigation item type: {n.GetType()}")
+				})
+				.Select(n => n.Url)
+				.Distinct()
+				.Select(u => new Uri(BaseUri, u))
+				.Select(u => new XElement(ns + "url", [
+					new XElement(ns + "loc", u),
+					new XElement(ns + "lastmod", currentDate)
+				]))
+		);
 
 		doc.Add(root);
 
@@ -55,13 +63,24 @@ public class SitemapBuilder(
 			switch (item)
 			{
 				case FileNavigationItem file:
+					// these are hidden from the navigation programatically.
+					// TODO find a cleaner way to model this.
+					if (item.Hidden && file.Model is not DetectionRuleFile)
+						continue;
 					result.Add(file);
 					break;
 				case DocumentationGroup group:
+					if (item.Hidden)
+						continue;
+
 					result.AddRange(GetNavigationItems(group.NavigationItems));
+					result.Add(group);
 					break;
+				default:
+					throw new Exception($"Unhandled navigation item type: {item.GetType()}");
 			}
 		}
+
 		return result;
 	}
 }

@@ -13,9 +13,9 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
-using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers.Roundtrip;
@@ -185,17 +185,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		return document;
 	}
 
-	public static string ToLLMText(MarkdownDocument document)
-	{
-		using var sw = new StringWriter();
-		var rr = new RoundtripRenderer(sw);
-		rr.Write(document);
-		var outputMarkdown = sw.ToString();
-
-		return outputMarkdown;
-
-	}
-
 	private IReadOnlyDictionary<string, string> GetSubstitutions()
 	{
 		var globalSubstitutions = _globalSubstitutions;
@@ -319,6 +308,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw);
+
+		if (fm.AppliesTo?.Diagnostics is not null)
+		{
+			foreach (var (severity, message) in fm.AppliesTo.Diagnostics)
+				Collector.Emit(severity, FilePath, message);
+		}
 
 		// TODO remove when migration tool and our demo content sets are updated
 		var deprecatedTitle = fm.Title;

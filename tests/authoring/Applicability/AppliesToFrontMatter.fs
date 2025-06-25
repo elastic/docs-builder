@@ -125,33 +125,45 @@ type ``parses product coming DEPRECATED`` () =
 applies_to:
    product: coming 9.5
 """
+
     [<Fact>]
-    let ``apply matches expected`` () =
-        markdown |> appliesTo (ApplicableTo(
-            Product=AppliesCollection.op_Explicit "planned 9.5.0"
-        ))
+    let ``should warn of deprecated lifecycle state`` () =
+        markdown |> hasHint "The 'coming' lifecycle is deprecated and will be removed"
 
 type ``parses product planned`` () =
     static let markdown = frontMatter """
 applies_to:
    product: planned 9.5
 """
+
+    [<Fact>]
+    let ``should warn of deprecated lifecycle state`` () =
+        markdown |> hasHint "The 'planned' lifecycle is deprecated and will be removed"
+
+type ``parses product removed`` () =
+    static let markdown = frontMatter """
+applies_to:
+   product: removed 9.5
+"""
+
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
-            Product=AppliesCollection.op_Explicit "planned 9.5.0"
+            Product=AppliesCollection([
+                Applicability.op_Explicit "removed 9.5";
+            ] |> Array.ofList)
         ))
 
 type ``parses product multiple`` () =
     static let markdown = frontMatter """
 applies_to:
-   product: coming 9.5, discontinued 9.7
+   product: preview 9.5, discontinued 9.7
 """
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Product=AppliesCollection([
-                Applicability.op_Explicit "coming 9.5";
+                Applicability.op_Explicit "preview 9.5";
                 Applicability.op_Explicit "discontinued 9.7"
             ] |> Array.ofList)
         ))
@@ -166,7 +178,7 @@ applies_to:
   security: ga 9.0.0
   elasticsearch: beta 9.1.0
   observability: discontinued 9.2.0
-  product: coming 9.5, discontinued 9.7
+  product: preview 9.5, discontinued 9.7
   stack: ga 9.1
 """
     [<Fact>]
@@ -184,7 +196,7 @@ applies_to:
                 Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
-            Product=AppliesCollection.op_Explicit "coming 9.5, discontinued 9.7"
+            Product=AppliesCollection.op_Explicit "preview 9.5, discontinued 9.7"
         ))
 
 type ``parses empty applies_to as null`` () =

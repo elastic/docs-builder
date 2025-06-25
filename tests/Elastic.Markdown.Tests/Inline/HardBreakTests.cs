@@ -12,7 +12,7 @@ public class AllowBrTagTest(ITestOutputHelper output)
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"<p>Hello,<br>World!</p>"
 		);
 }
@@ -23,7 +23,7 @@ public class BrTagNeedsToBeExact(ITestOutputHelper output)
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"<p>Hello,&lt;br &gt;World&lt;br /&gt;!</p>"
 		);
 }
@@ -35,7 +35,7 @@ public class DisallowSpanTag(ITestOutputHelper output)
 	[Fact]
 	// span tag is rendered as text
 	public void GeneratesHtml() =>
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"<p>Hello,&lt;span&gt;World!&lt;/span&gt;</p>"
 		);
 }

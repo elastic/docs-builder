@@ -86,6 +86,12 @@ public class AssemblerBuilder(
 				throw;
 			}
 		}
+		foreach (var exporter in markdownExporters)
+		{
+			_logger.LogInformation("Calling FinishExportAsync on {ExporterName}", exporter.GetType().Name);
+			_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
+		}
+
 
 		await OutputRedirectsAsync(redirects, ctx);
 

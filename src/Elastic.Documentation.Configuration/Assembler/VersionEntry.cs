@@ -13,7 +13,4 @@ public record VersionEntry
 
 	[YamlMember(Alias = "current")]
 	public string? Current { get; set; }
-
-	[YamlMember(Alias = "legacy_versions")]
-	public IReadOnlyList<string> LegacyVersions { get; set; } = [];
 }

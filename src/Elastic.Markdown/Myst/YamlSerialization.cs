@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.FrontMatter;
-using Elastic.Markdown.Myst.Settings;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -20,10 +20,7 @@ public static class YamlSerialization
 			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
 			.WithTypeConverter(new ProductConverter())
-#pragma warning disable CS0618 // Type or member is obsolete
-			.WithTypeConverter(new DeploymentConverter())
 			.WithTypeConverter(new ApplicableToConverter())
-#pragma warning restore CS0618 // Type or member is obsolete
 			.Build();
 
 		var frontMatter = deserializer.Deserialize<T>(input);

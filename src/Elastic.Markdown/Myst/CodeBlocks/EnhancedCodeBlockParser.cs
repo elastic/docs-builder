@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -126,11 +127,11 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
 			appliesToDirective.AppliesTo = applicableTo;
-			if (appliesToDirective.AppliesTo.Warnings is null)
+			if (appliesToDirective.AppliesTo.Diagnostics is null)
 				return;
-			foreach (var warning in appliesToDirective.AppliesTo.Warnings)
-				appliesToDirective.EmitWarning(warning);
-			applicableTo.Warnings = null;
+			foreach (var (severity, message) in appliesToDirective.AppliesTo.Diagnostics)
+				appliesToDirective.Emit(severity, message);
+			applicableTo.Diagnostics = null;
 		}
 		catch (Exception e)
 		{
