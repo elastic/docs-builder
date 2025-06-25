@@ -172,8 +172,8 @@ const VersionDropdown = ({
                               renderItem: () => (
                                   <EuiPanel paddingSize="s" hasShadow={false}>
                                       <EuiText size="xs" color="subdued">
-                                          This page was fully migrated to the
-                                          current version.
+                                          There are no other versions available
+                                          for this page.
                                       </EuiText>
                                   </EuiPanel>
                               ),
