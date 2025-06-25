@@ -26,9 +26,11 @@ public class SitemapBuilder(
 			Declaration = new XDeclaration("1.0", "utf-8", "yes")
 		};
 
+		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+
 		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz");
 		var root = new XElement(
-			"urlset",
+			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
 			flattenedNavigationItems
 				.Select(n => n switch
@@ -40,9 +42,9 @@ public class SitemapBuilder(
 				.Select(n => n.Url)
 				.Distinct()
 				.Select(u => new Uri(BaseUri, u))
-				.Select(u => new XElement("url", [
-					new XElement("loc", u),
-					new XElement("lastmod", currentDate)
+				.Select(u => new XElement(ns + "url", [
+					new XElement(ns + "loc", u),
+					new XElement(ns + "lastmod", currentDate)
 				]))
 		);
 
