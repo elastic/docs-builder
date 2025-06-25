@@ -29,7 +29,7 @@ public class SitemapBuilder(
 		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz");
 		var root = new XElement(
 				"urlset",
-				new XAttribute("xlmns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
+				new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
 				flattenedNavigationItems
 					.OfType<FileNavigationItem>()
 					.Select(n => n.Model.Url)
