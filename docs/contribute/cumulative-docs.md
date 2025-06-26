@@ -53,7 +53,7 @@ When the context differs from what was specified at the page level in a specific
 
 * Likewise, when the difference is specific to just one paragraph or list item, the same rules apply. Just the syntax slightly differs so that it stays inline:
 
-  :::{include} _snippets/line-level-applies-example.md
+  :::{include} /syntax/_snippets/line-level-applies-example.md
   :::
 
 ### When should I indicate that something is NOT applicable to a specific context?
@@ -109,7 +109,7 @@ For this case, no specific version tagging is necessary.
 **A new feature is added to {{serverless-short}} or {{ecloud}}. How do I tag it?**  
 Cumulative documentation is not meant to replace release notes. If a feature becomes available in {{serverless-short}} and doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…), it does not need specific tagging.
 
-However, in this scenario, it is important to consider carefully [when the change is going to be published](#choose-the-docs-deployment-model-for-a-repository).
+However, in this scenario, it is important to consider carefully [when the change is going to be published](deployment-models.md).
 
 We do not do date-based tagging for unversioned products.
 

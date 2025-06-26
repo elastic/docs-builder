@@ -33,7 +33,7 @@ Tagged deployment
 
 ### Continuous deployment
 
-This is the default. To get started, follow our [guide](guide/index.md) to set up the new docs folder structure and CI configuration
+This is the default. To get started, follow our [guide](/migration/guide/index.md) to set up the new docs folder structure and CI configuration.
 
 Once setup ensure the repository is added to our `assembler.yml`  under `references`. 
 
@@ -69,7 +69,7 @@ references:
 ```
 
 :::{note}
-In order for `9.0` to be onboarded it needs to first follow our [migration guide](guide/index.md) and have our documentation CI integration setup.
+In order for `9.0` to be onboarded it needs to first follow our [migration guide](/migration/guide/index.md) and have our documentation CI integration setup.
 Our CI integration checks will block until `current` is successfully configured
 :::
 
