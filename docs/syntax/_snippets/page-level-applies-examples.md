@@ -25,10 +25,10 @@ There are 3 typical scenarios to start from:
       ece: ga
       eck: ga
   products:
-    -id: cloud-serverless
-    -id: cloud-hosted
-    -id: cloud-enterprise
-    -id: cloud-kubernetes
+    - id: cloud-serverless
+    - id: cloud-hosted
+    - id: cloud-enterprise
+    - id: cloud-kubernetes
   ---
 
   ```
@@ -40,7 +40,7 @@ There are 3 typical scenarios to start from:
   applies_to:
     product: ga
   products:
-    -id: edot-collector
+    - id: edot-collector
   ---
   ```
   % changing soon
@@ -57,13 +57,13 @@ applies_to:
     ece: ga
     eck: ga
 products:
-  -id: kibana
-  -id: elasticsearch
-  -id: elastic-stack
-  -id: cloud-serverless
-  -id: cloud-hosted
-  -id: cloud-enterprise
-  -id: cloud-kubernetes
+  - id: kibana
+  - id: elasticsearch
+  - id: elastic-stack
+  - id: cloud-serverless
+  - id: cloud-hosted
+  - id: cloud-enterprise
+  - id: cloud-kubernetes
 ---
 ```
 % I don't know what this example is supposed to show
