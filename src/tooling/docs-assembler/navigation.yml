@@ -236,6 +236,15 @@ toc:
         # REST APIs, Mapping, Elasticsearch audit events, Command line tools
         children:
 
+          # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/aggregations/toc.yml
+          - toc: elasticsearch://reference/aggregations
+            path_prefix: reference/aggregations
+
+          # Processor reference
+          # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/enrich-processor/toc.yml
+          - toc: elasticsearch://reference/enrich-processor
+            path_prefix: reference/enrich-processor
+
           # Curator
           # ✅ https://github.com/elastic/curator/blob/master/docs/reference/toc.yml
           - toc: curator://reference
@@ -416,11 +425,6 @@ toc:
             # Filebeat, Heartbeat, Metricbeat, Packetbeat, Winlogbeat,
             # Elastic logging plugin for Docker
 
-          # Processor reference
-          # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/enrich-processor/toc.yml
-          - toc: elasticsearch://reference/enrich-processor
-            path_prefix: reference/enrich-processor
-
           # Logstash
           # ✅ https://github.com/elastic/logstash/blob/main/docs/reference/toc.yml
           - toc: logstash://reference
@@ -551,16 +555,10 @@ toc:
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/data-analysis/toc.yml
       - toc: docs-content://reference/data-analysis
         path_prefix: reference/data-analysis
-        # Children include: Supplied configurations, Function reference,
-        # Metrics reference, Canvas function reference
         children:
-
           # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/text-analysis/toc.yml
           - toc: elasticsearch://reference/text-analysis
             path_prefix: reference/text-analysis
-          # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/aggregations/toc.yml
-          - toc: elasticsearch://reference/aggregations
-            path_prefix: reference/aggregations
 
       # Search UI
       # ✅ https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
