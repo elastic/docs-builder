@@ -154,7 +154,7 @@
 				@if (applicability.Version is not null and not AllVersions)
 				{
 					<span class="applicable-version applicable-version-@lifecycleClass">
-						@if (applicability.Version <= currentStackVersion)
+						@if (name != "Elastic Stack" || applicability.Version <= currentStackVersion)
 						{
 							@applicability.Version
 						}
