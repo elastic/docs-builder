@@ -38,7 +38,7 @@ For content hosted on elastic.co/docs, most conceptual and narrative content is 
 4. Make the necessary updates.  
 5. Commit your changes and create a pull request.
 
-:::{include} tagged-warning.md
+:::{include} _snippets/tagged-warning.md
 :::
 
 ## What if I need to update docs in both systems?

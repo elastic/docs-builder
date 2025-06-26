@@ -8,7 +8,7 @@ To ensure a seamless experience for users and contributors, the new versioning a
 * **Version awareness**: The documentation team tracks and maintains released versions for all products in a central configuration file.
 * **Simplified contributor workflow**: For pages that apply to multiple versions or deployment types, we’ve optimized the contributor experience by reducing complexity. Contributors can now manage multi-context content with ease, without duplicating information or navigating confusing workflows.
   
-In this new system, documentation is written **cumulatively**. This means that a new set of docs is not published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content. [Learn how to write cumulative documentation](cumulative-docs.md).
+In this new system, documentation is written **cumulatively**. This means that a new set of docs is not published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content. [Learn how to write cumulative documentation](/contribute/cumulative-docs.md).
 
 ## Tag processing
 
