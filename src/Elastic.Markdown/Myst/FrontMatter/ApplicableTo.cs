@@ -78,11 +78,15 @@ public record DeploymentApplicability
 	[YamlMember(Alias = "ess")]
 	public AppliesCollection? Ess { get; set; }
 
+	[YamlMember(Alias = "ech")]
+	public AppliesCollection? Ech { get; set; }
+
 	public static DeploymentApplicability All { get; } = new()
 	{
 		Ece = AppliesCollection.GenerallyAvailable,
 		Eck = AppliesCollection.GenerallyAvailable,
 		Ess = AppliesCollection.GenerallyAvailable,
+		Ech = AppliesCollection.GenerallyAvailable,
 		Self = AppliesCollection.GenerallyAvailable
 	};
 }
@@ -210,6 +214,14 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (unknownKeys.Count > 0)
 			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
 
+
+		if (keys.Contains("ess"))
+		{
+			diagnostics.Add(keys.Contains("ech")
+				? (Severity.Warning, "Cannot use both 'ech' and 'ess'. 'ess' is deprecated, please use 'ech' instead.")
+				: (Severity.Hint, "The 'ess' key is deprecated, please use 'ech' instead."));
+		}
+
 		if (TryGetApplicabilityOverTime(dictionary, "stack", diagnostics, out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
 
@@ -246,6 +258,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 				Ece = av,
 				Eck = av,
 				Ess = av,
+				Ech = av,
 				Self = av
 			};
 		}

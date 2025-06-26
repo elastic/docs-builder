@@ -20,9 +20,13 @@
 	{
 		@RenderProduct("ECK", appliesTo.Deployment.Eck)
 	}
-	if (appliesTo.Deployment.Ess is not null)
+	if (appliesTo.Deployment.Ess is not null && appliesTo.Deployment.Ech is null)
 	{
-		@RenderProduct("Elastic Cloud Hosted", appliesTo.Deployment.Ess)
+		@RenderProduct("ECH", appliesTo.Deployment.Ess)
+	}
+	if (appliesTo.Deployment.Ech is not null)
+	{
+		@RenderProduct("ECH", appliesTo.Deployment.Ech)
 	}
 	if (appliesTo.Deployment.Self is not null)
 	{

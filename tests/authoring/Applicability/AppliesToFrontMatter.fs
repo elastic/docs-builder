@@ -95,6 +95,7 @@ applies_to:
             Deployment=DeploymentApplicability(
                 Eck=expectedAvailability,
                 Ess=expectedAvailability,
+                Ech=expectedAvailability,
                 Ece=expectedAvailability,
                 Self=expectedAvailability
             )
@@ -212,3 +213,18 @@ applies_to:
     [<Fact>]
     let ``does not render label`` () =
         markdown |> appliesTo (Unchecked.defaultof<ApplicableTo>)
+
+type ``ech alias`` () =
+    static let markdown = frontMatter """
+applies_to:
+   ech: preview 9.5
+   ess: preview 9.5
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Product=AppliesCollection([
+                Applicability.op_Explicit "preview 9.5";
+                Applicability.op_Explicit "discontinued 9.7"
+            ] |> Array.ofList)
+        ))
