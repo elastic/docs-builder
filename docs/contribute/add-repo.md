@@ -39,7 +39,7 @@ Add the following actions to the `.github/workflows` directory of your repo:
 - https://github.com/elastic/docs-builder/blob/main/.github%2Fworkflows%2Fpreview-build.yml
 - https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-cleanup.yml
 
-Then, successfully run a docs build on the `main` branch. This is a requirement.
+Then, successfully run a docs build on the `main` branch. This is a requirement. For example, you can merge a docs pull request to `main` after adding the workflow actions.
 
 ::::
 
