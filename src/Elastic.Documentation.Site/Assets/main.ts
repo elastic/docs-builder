@@ -94,7 +94,7 @@ document.body.addEventListener('htmx:responseError', function (event) {
 
 const docsBuilderVersion = $('body').dataset.docsBuilderVersion
 document.body.addEventListener('htmx:configRequest', function(evt) {
-    evt.detail.parameters['v'] = docsBuilderVersion; // add a new parameter into the mix
+    evt.detail.parameters['v'] = docsBuilderVersion;
 });
 
 document.body.addEventListener('htmx:beforeHistoryUpdate', function (event) {
