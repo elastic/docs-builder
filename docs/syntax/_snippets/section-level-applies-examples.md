@@ -1,6 +1,6 @@
 * The whole page is generally applicable to {{stack}} 9.0 and to {{serverless-short}}, but one specific section isn’t applicable to {{serverless-short}} (and there is no alternative for it):
 
-    ````markdown
+    ````md
     --- 
     applies_to:
       stack: ga

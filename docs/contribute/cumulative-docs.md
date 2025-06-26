@@ -1,5 +1,9 @@
 # Write cumulative documentation 
 
+<!--
+This page explains our cumulative documentation philosophy, paired with examples. Component guidance for reference purposes goes in syntax/applies.md. 
+-->
+
 In our markdown-based documentation system, we write docs cumulatively regardless of the [deployment model](deployment-models.md) selected.
 
 **What does this mean?** 

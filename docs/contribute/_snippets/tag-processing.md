@@ -1,6 +1,6 @@
 `applies_to` tags are rendered as badges in the documentation output. They reproduce the "key + lifecycle status + version" indicated in the content sources.
 
-Specifically for versioned products, badges will display differently when the applies_to key specifies a product version that has not been released to our customers yet.
+Specifically for versioned products, badges will display differently when the `applies_to` key specifies a product version that has not been released to our customers yet.
 
 * `Planned` (if the lifecycle is preview, beta, or ga)
 * `Deprecation planned` (if the lifecycle is deprecated)
@@ -14,4 +14,4 @@ When multiple lifecycle statuses and versions are specified in the sources, seve
 Visuals and wording in the output documentation are subject to changes and optimizations.
 :::
 
-% todo: link
+% todo: link to central config

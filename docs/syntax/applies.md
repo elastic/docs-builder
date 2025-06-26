@@ -1,5 +1,10 @@
 # Applies to
 
+<!--
+This page explains concrete usage of the applies_to tag. Cumulative authoring philosophy and guidance goes in contribute/cumulative-docs.md. 
+-->
+
+
 Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/cumulative-docs.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
@@ -7,6 +12,11 @@ To support this, source files use a tagging system to indicate:
 * When a feature changes state relative to the base version.
 
 This is what the `applies_to` metadata is for. It can be used at the page, section, or inline level to specify applicability with precision.
+
+## `applies_to` tags in the output
+
+:::{include} /contribute/_snippets/tag-processing.md
+:::
 
 ## When and where to use `applies_to`
 
@@ -29,6 +39,8 @@ The `applies_to` metadata can be added at different levels in the documentation:
 ❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has been established earlier.
 
 ❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you do not need to tag a new GA feature.
+
+For detailed guidance, refer to [](/contribute/cumulative-docs.md).
 
 ## Syntax
 
