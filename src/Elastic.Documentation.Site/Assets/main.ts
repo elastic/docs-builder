@@ -11,6 +11,7 @@ import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
 import { $, $$ } from 'select-dom'
+import tippy from 'tippy.js'
 import { UAParser } from 'ua-parser-js'
 
 const { getOS } = new UAParser()
@@ -24,6 +25,9 @@ document.addEventListener('htmx:load', function () {
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()
+    tippy('[data-tippy-content]:not([data-tippy-content=""])', {
+        delay: [400, 100],
+    })
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
