@@ -8,6 +8,7 @@
 @functions {
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
+		DocsBuilderVersion = Model.DocsBuilderVersion,
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
 		DocSetName = Model.DocSetName,
