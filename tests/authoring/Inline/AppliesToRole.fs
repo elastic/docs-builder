@@ -31,8 +31,11 @@ This is an inline {applies_to}`stack: preview 9.1` element.
         <p>This is an inline
             <span class="applies-inline">
                 <span class="applicable-info" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
-                    Planned
+                    Elastic Stack
                     <span class="applicable-meta applicable-meta-technical-preview">
+                        <span class="applicable-version applicable-version-technical-preview">
+ 					        Planned
+ 				        </span>
                     </span>
                 </span>
             </span>
