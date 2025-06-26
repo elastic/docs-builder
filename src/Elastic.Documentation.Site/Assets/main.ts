@@ -92,11 +92,23 @@ document.body.addEventListener('htmx:responseError', function (event) {
     }
 })
 
+// We add a query string to the get request to make sure the requested page is up to date
 const docsBuilderVersion = $('body').dataset.docsBuilderVersion
-document.body.addEventListener('htmx:configRequest', function(evt) {
-    evt.detail.parameters['v'] = docsBuilderVersion;
+document.body.addEventListener('htmx:configRequest', function(event) {
+    if (event.detail.verb === 'get') {
+        event.detail.parameters['v'] = docsBuilderVersion;
+    }
 });
 
+// Here we need to strip the v parameter from the URL so
+// that the browser doesn't show the v parameter in the address bar
 document.body.addEventListener('htmx:beforeHistoryUpdate', function (event) {
-    event.detail.history.path = event.detail.history.path.split('?')[0]
+    const params = new URLSearchParams(event.detail.history.path.split('?')[1] ?? '')
+    params.delete('v')
+    const pathWithoutQueryString = event.detail.history.path.split('?')[0]
+    if (params.size === 0) {
+        event.detail.history.path = pathWithoutQueryString
+    } else {
+        event.detail.history.path = pathWithoutQueryString + '?' + params.toString()
+    }
 });
