@@ -175,7 +175,7 @@
 			background-color: var(--color-white);
 			border: 1px solid var(--color-grey-20);
 			font-weight: normal;
-			&[data-tippy-content]:not([data-tippy-content=""]) {
+			&[data-tippy-content]:not([data-tippy-content='']) {
 				cursor: help;
 			}
 		}
