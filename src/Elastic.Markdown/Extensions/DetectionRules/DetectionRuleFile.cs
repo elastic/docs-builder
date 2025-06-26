@@ -27,7 +27,7 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = "Detection Rules Overview";
+		Title = "Prebuilt detection rules reference";
 		var markdown = GetMarkdown();
 		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);

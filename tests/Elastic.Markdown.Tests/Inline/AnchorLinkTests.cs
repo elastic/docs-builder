@@ -56,8 +56,7 @@ public class InPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestBase(ou
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="#hello-world">Hello</a></p>"""
 		);
 

@@ -184,9 +184,9 @@ There are 3 typical scenarios to start from:
       stack: ga
       serverless: ga
     products:
-      -id: kibana
-      -id: elasticsearch
-      -id: elastic-stack
+      - id: kibana
+      - id: elasticsearch
+      - id: elastic-stack
     ---
     ```
 
@@ -201,10 +201,10 @@ There are 3 typical scenarios to start from:
         ece: ga
         eck: ga
     products:
-      -id: cloud-serverless
-      -id: cloud-hosted
-      -id: cloud-enterprise
-      -id: cloud-kubernetes
+      - id: cloud-serverless
+      - id: cloud-hosted
+      - id: cloud-enterprise
+      - id: cloud-kubernetes
     ---
     ```
 
@@ -215,7 +215,7 @@ There are 3 typical scenarios to start from:
     applies_to:
       product: ga
     products:
-      -id: edot-collector
+      - id: edot-collector
     ---
     ```
 
