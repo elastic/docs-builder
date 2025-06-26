@@ -185,8 +185,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
 				uri, out var resolvedUri)
-			 )
-			link.Url = resolvedUri.ToString();
+		   )
+			link.Url = resolvedUri.AbsolutePath;
 	}
 
 	private static void ProcessInternalLink(LinkInline link, InlineProcessor processor, ParserContext context)

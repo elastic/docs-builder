@@ -12,7 +12,7 @@ public class WrappedTableRenderer : HtmlTableRenderer
 	protected override void Write(HtmlRenderer renderer, Table table)
 	{
 		// Wrap the table in a div to allow for overflow scrolling
-		_ = renderer.Write("<div class=\"table-wrapper\" hx-disable=\"true\">");
+		_ = renderer.Write("<div class=\"table-wrapper\">");
 		base.Write(renderer, table);
 		_ = renderer.Write("</div>");
 	}

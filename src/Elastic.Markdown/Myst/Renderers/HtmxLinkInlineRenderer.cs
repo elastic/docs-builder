@@ -41,11 +41,11 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			{
 				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
+				var hasSameTopLevelGroup = !isCrossLink && currentRootNavigation?.Id == targetRootNavigation?.Id;
 				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
 				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			}
-			if (isHttpLink && !isCrossLink)
+			if (isHttpLink)
 			{
 				_ = renderer.Write(" target=\"_blank\"");
 				_ = renderer.Write(" rel=\"noopener noreferrer\"");
