@@ -41,6 +41,8 @@ serverless:
   security: ga 9.0.0
   elasticsearch: beta 9.1.0
   observability: discontinued 9.2.0
+apm_agent_dotnet: ga 9.0
+apm_agent_node: ga 10.0
 ```
 """
 
@@ -54,6 +56,10 @@ serverless:
                 Security=AppliesCollection.op_Explicit "ga 9.0.0",
                 Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
                 Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
+            ),
+            ProductApplicability=ProductApplicability(
+                ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0",
+                ApmAgentNode=AppliesCollection.op_Explicit "ga 10.0"
             )
         ))
 

@@ -31,6 +31,7 @@ toc:
       - file: on-the-web.md
       - file: move.md
       - file: redirects.md
+      - file: add-repo.md
   - folder: migration
     children:
       - file: index.md
