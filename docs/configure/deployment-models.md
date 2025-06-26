@@ -98,7 +98,7 @@ jobs:
       deployments: write
       id-token: write
       contents: read
-      pull-requests: read
+      pull-requests: write
 ```
 
 1. Ensure version branches are built and publish their links ahead of time.
