@@ -37,7 +37,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
-			if (link.Url?.StartsWith('/') == true)
+			if (link.Url?.StartsWith('/') == true || isCrossLink)
 			{
 				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem<INavigationModel, INavigationItem>;
