@@ -1,7 +1,4 @@
-FIX ME!!!
-
-
-`applies_to` keys accept comma-separated values. For example:
+`applies_to` keys accept comma-separated values to specify lifecycle states for multiple product versions. For example:
 
 * A feature is added in 9.1 as tech preview and becomes GA in 9.4: 
 

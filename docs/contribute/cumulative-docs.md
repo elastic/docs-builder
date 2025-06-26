@@ -28,127 +28,29 @@ This tagging system is mandatory for all of the public-facing documentation. We 
 ## Tagging products and deployment models
 
 ### Page-level frontmatter (mandatory)
-First and foremost, each documentation page **must** specify which contexts it applies to in its [frontmatter](https://elastic.github.io/docs-builder/syntax/frontmatter).
+
+All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment target's availability and lifecycle status. 
 
 * The `applies_to` attribute is used to display contextual badges on each page.  
 * The `products` attribute is used by the search to let users filter their results when searching the docs.
 
   For the full list of supported keys and values, refer to [frontmatter](https://elastic.github.io/docs-builder/syntax/frontmatter).  
 
-There are 3 typical scenarios to start from:
 
-* The documentation set or page is primarily about using or interacting with Elastic Stack components or the serverless UI:
-
-    ```yml
-    --- 
-    applies_to:
-      stack: ga
-      serverless: ga
-    products:
-      - id: kibana
-      - id: elasticsearch
-      - id: elastic-stack
-    ---
-    ```
-
-* The documentation set or page is primarily about orchestrating, deploying or configuring an installation (only include relevant keys):
-
-  ```yml
-  --- 
-  applies_to:
-    serverless: ga
-    deployment: 
-      ess: ga
-      ece: ga
-      eck: ga
-  products:
-    -id: cloud-serverless
-    -id: cloud-hosted
-    -id: cloud-enterprise
-    -id: cloud-kubernetes
-  ---
-
-  ```
-
-* The documentation set or page is primarily about a product following its own versioning schema:
-
-  ```yml
-  --- 
-  applies_to:
-    product: ga
-  products:
-    -id: edot-collector
-  ---
-  ```
-  % changing soon
-
-It can happen that it’s relevant to identify several or all of these dimensions for a page. Use your own judgement and check existing pages in similar contexts.
-
-```yml
---- 
-applies_to:
-  stack: ga
-  serverless: ga
-  deployment: 
-    ess: ga
-    ece: ga
-    eck: ga
-products:
-  -id: kibana
-  -id: elasticsearch
-  -id: elastic-stack
-  -id: cloud-serverless
-  -id: cloud-hosted
-  -id: cloud-enterprise
-  -id: cloud-kubernetes
----
-```
-% I don't know what this example is supposed to show
+:::{include} /syntax/_snippets/page-level-applies-examples.md
+:::
 
 ### Section or inline contexts (situational)
 
 When the context differs from what was specified at the page level in a specific section or part of the page, it is appropriate to re-establish it. For example: 
 
-* The whole page is generally applicable to {{stack}} 9.0 and to {{serverless-short}}, but one specific section isn’t applicable to {{serverless-short}} (and there is no alternative for it in {{serverless-short}}):
-
-  ````md
-  ## Configure a space-level landing page [space-landing-page]
-  ```{applies_to}
-  stack: ga
-  serverless: unavailable
-  ```
-  ````
-
-* The whole page is generally applicable to all deployment types, but one specific paragraph only applies to {{ech}} and {{serverless-short}}, and another paragraph only applies to {{ece}}:
-
-  ````md
-  ## Cloud organization level security [cloud-organization-level]
-  ```{applies_to}
-  deployment:
-    ess: ga
-  serverless: ga
-  ```
-
-  [...]
-
-  ## Orchestrator level security [orchestrator-level]
-  ```{applies_to}
-  deployment:
-    ece: ga
-  ```
-
-  [...]
-  ````
+:::{include} /syntax/_snippets/section-level-applies-examples.md
+:::
 
 * Likewise, when the difference is specific to just one paragraph or list item, the same rules apply. Just the syntax slightly differs so that it stays inline:
 
-  ```md
-  **Spaces** let you organize your content and users according to your needs.
-
-  - Each space has its own saved objects.
-  - Users can only access the spaces that they have been granted access to. This access is based on user roles, and a given role can have different permissions per space.
-  - {applies_to}`stack: ga` {applies_to}`serverless: unavailable` Each space has its own navigation, called solution view.
-  ```
+  :::{include} _snippets/line-level-applies-example.md
+  :::
 
 ### When should I indicate that something is NOT applicable to a specific context?
 
@@ -173,12 +75,12 @@ This is true for most situations. However, it can still be useful to call it out
 
 * When a specific section, paragraph or list item has specific applicability that differs from the context set at the page or section level, and the action is not possible at all for that context (meaning that there is no alternative). For example: 
 
-  ````yml
+  ````md
   --- 
   applies_to:
     stack: ga
     serverless: ga
-  —
+  —--
 
   # Spaces
 
