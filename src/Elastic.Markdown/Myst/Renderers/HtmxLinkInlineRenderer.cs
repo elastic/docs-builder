@@ -28,9 +28,6 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			}
 
 			var url = link.GetDynamicUrl?.Invoke() ?? link.Url;
-			var hxGetUrl = url;
-			if (hxGetUrl is not null)
-				hxGetUrl = UrlHelper.AddVersionParameters(hxGetUrl);
 
 			var isCrossLink = (link.GetData("isCrossLink") as bool?) == true;
 			var isHttpLink = url?.StartsWith("http") ?? false;
@@ -45,13 +42,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
-				_ = renderer.Write(" hx-get=\"");
-				_ = renderer.WriteEscapeUrl(hxGetUrl);
-				_ = renderer.Write('"');
 				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
-				_ = renderer.Write($" hx-swap=\"{Htmx.HxSwap}\"");
-				_ = renderer.Write($" hx-push-url=\"{Htmx.HxPushUrl}\"");
-				_ = renderer.Write($" hx-indicator=\"{Htmx.HxIndicator}\"");
 				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			}
 			if (isHttpLink && !isCrossLink)
