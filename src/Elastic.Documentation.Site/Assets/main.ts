@@ -11,8 +11,8 @@ import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
 import { $, $$ } from 'select-dom'
+import tippy from 'tippy.js'
 import { UAParser } from 'ua-parser-js'
-import tippy from 'tippy.js';
 
 const { getOS } = new UAParser()
 

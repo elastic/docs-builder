@@ -19,7 +19,6 @@
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 
-
 :root {
 	--outline-size: max(2px, 0.08em);
 	--outline-style: auto;
