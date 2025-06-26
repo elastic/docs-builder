@@ -163,6 +163,7 @@
 		}
 
 		.applicable-info {
+			cursor: default;
 			padding: calc(var(--spacing) * 0.5);
 			padding-left: calc(var(--spacing) * 2);
 			padding-right: calc(var(--spacing) * 2);
@@ -174,6 +175,9 @@
 			background-color: var(--color-white);
 			border: 1px solid var(--color-grey-20);
 			font-weight: normal;
+			&[data-tippy-content]:not([data-tippy-content=""]) {
+				cursor: help;
+			}
 		}
 		.applicable-version {
 			font-weight: bold;
