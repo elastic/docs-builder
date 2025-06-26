@@ -30,6 +30,7 @@ Current version: **9.0.0**
 | `` {applies_to}`stack: removed 9.0` ``     | {applies_to}`stack: removed 9.0`     |
 | `` {applies_to}`stack: removed 9.1` ``     | {applies_to}`stack: removed 9.1`     |
 | `` {applies_to}`stack: ` ``                | {applies_to}`stack: `                |
+
 {applies_to}`stack: deprecated 9.1, removed 9.4`
 
 
