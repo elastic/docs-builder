@@ -1,3 +1,4 @@
+@using System.Diagnostics.CodeAnalysis
 @using Elastic.Documentation
 @using Elastic.Markdown.Myst.FrontMatter
 @inherits RazorSlice<Elastic.Markdown.Myst.Components.ApplicableToViewModel>
@@ -94,7 +95,7 @@
 				switch (applicability.Lifecycle)
 				{
 					case ProductLifecycle.TechnicalPreview:
-						if (applicability.Version is not null && applicability.Version > currentStackVersion)
+						if (TryGetRealVersion(applicability, out var previewVersion) && previewVersion > currentStackVersion)
 						{
 							badgeText = "Planned";
 							tooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
@@ -105,7 +106,7 @@
 						}
 						break;
 					case ProductLifecycle.Beta:
-						if (applicability.Version is not null && applicability.Version > currentStackVersion)
+						if (TryGetRealVersion(applicability, out var betaVersion) && betaVersion > currentStackVersion)
 						{
 							badgeText = "Planned";
 							tooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
@@ -117,7 +118,7 @@
 
 						break;
 					case ProductLifecycle.GenerallyAvailable:
-						if (applicability.Version is not null && applicability.Version > currentStackVersion)
+						if (TryGetRealVersion(applicability, out var version) && version > currentStackVersion)
 						{
 							badgeText = "Planned";
 							tooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
@@ -125,7 +126,7 @@
 
 						break;
 					case ProductLifecycle.Deprecated:
-						if (applicability.Version is not null && applicability.Version > currentStackVersion)
+						if (TryGetRealVersion(applicability, out var deprecatedVersion) && deprecatedVersion > currentStackVersion)
 						{
 							badgeText = "Deprecation planned";
 							tooltip = "We plan to deprecate this functionality in a future update. Plans may change without notice.";
@@ -133,7 +134,7 @@
 
 						break;
 					case ProductLifecycle.Removed:
-						if (applicability.Version is not null && applicability.Version > currentStackVersion)
+						if (TryGetRealVersion(applicability, out var removedVersion) && removedVersion > currentStackVersion)
 						{
 							badgeText = "Removal planned";
 							tooltip = "We plan to remove this functionality in a future update. Plans may change without notice.";
@@ -175,5 +176,18 @@
 			</span>
 		}
 		return HtmlString.Empty;
+	}
+}
+@functions {
+	private static bool TryGetRealVersion(Applicability applicability, [NotNullWhen(true)] out SemVersion? version)
+	{
+		version = null;
+		if (applicability.Version is not null && applicability.Version != AllVersions.Instance)
+		{
+			version = applicability.Version;
+			return true;
+		}
+
+		return false;
 	}
 }
