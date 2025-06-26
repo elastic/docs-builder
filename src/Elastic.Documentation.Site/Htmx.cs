@@ -11,12 +11,6 @@ namespace Elastic.Documentation.Site;
 
 public static class Htmx
 {
-	private static readonly string Version =
-		Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
-			.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
-
-	public static readonly string VersionHash = ShortId.Create(Version);
-
 	public static string GetHxSelectOob(bool hasSameTopLevelGroup) => hasSameTopLevelGroup ? "#content-container,#toc-nav" : "#main-container";
 	public const string Preload = "mousedown";
 
