@@ -27,7 +27,7 @@ public record DetectionRuleOverviewFile : MarkdownFile
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = "Detection Rules Overview";
+		Title = "Prebuilt detection rules reference";
 		var markdown = GetMarkdown();
 		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
 		return Task.FromResult(document);
@@ -53,7 +53,7 @@ public record DetectionRuleOverviewFile : MarkdownFile
 # Prebuilt detection rules reference
 
 :::{important}
-All prebuilt {{ml}} rules are tagged with `ML`, and their rule type is `machine_learning`. Before using prebuilt {{ml}} rules, ensure you have all of the appropriate requirements.
+All prebuilt machine learning rules are tagged with `ML`, and their rule type is `machine_learning`. Before using prebuilt machine learning rules, ensure you have all of the appropriate requirements.
 :::
 
 """;

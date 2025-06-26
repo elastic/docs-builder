@@ -30,11 +30,9 @@ This is an inline {applies_to}`stack: preview 9.1` element.
         markdown |> convertsToHtml """
         <p>This is an inline
             <span class="applies-inline">
-                <span class="applicable-info">
-                    Elastic Stack
+                <span class="applicable-info" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
+                    Planned
                     <span class="applicable-meta applicable-meta-technical-preview">
-                        <span class="applicable-lifecycle applicable-lifecycle-technical-preview">Technical Preview</span>
-                        <span class="applicable-version applicable-version-technical-preview">9.1.0</span>
                     </span>
                 </span>
             </span>
@@ -72,4 +70,3 @@ This is an inline {preview}`9.1` element.
         directives |> appliesToDirective (ApplicableTo(
             Product=AppliesCollection.op_Explicit "preview 9.1.0"
         ))
-

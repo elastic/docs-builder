@@ -50,6 +50,8 @@ public record ApplicableTo
 	[YamlMember(Alias = "product")]
 	public AppliesCollection? Product { get; set; }
 
+	public ProductApplicability? ProductApplicability { get; set; }
+
 	internal YamlDiagnosticsCollection? Diagnostics { get; set; }
 
 	public static ApplicableTo All { get; } = new()
@@ -113,12 +115,69 @@ public record ServerlessProjectApplicability
 	};
 }
 
+[YamlSerializable]
+public record ProductApplicability
+{
+	[YamlMember(Alias = "ecctl")]
+	public AppliesCollection? Ecctl { get; set; }
+
+	[YamlMember(Alias = "curator")]
+	public AppliesCollection? Curator { get; set; }
+
+	[YamlMember(Alias = "apm_agent_dotnet")]
+	public AppliesCollection? ApmAgentDotnet { get; set; }
+
+	[YamlMember(Alias = "apm_agent_go")]
+	public AppliesCollection? ApmAgentGo { get; set; }
+
+	[YamlMember(Alias = "apm_agent_java")]
+	public AppliesCollection? ApmAgentJava { get; set; }
+
+	[YamlMember(Alias = "apm_agent_node")]
+	public AppliesCollection? ApmAgentNode { get; set; }
+
+	[YamlMember(Alias = "apm_agent_python")]
+	public AppliesCollection? ApmAgentPython { get; set; }
+
+	[YamlMember(Alias = "apm_agent_ruby")]
+	public AppliesCollection? ApmAgentRuby { get; set; }
+
+	[YamlMember(Alias = "apm_agent_rum")]
+	public AppliesCollection? ApmAgentRum { get; set; }
+
+	[YamlMember(Alias = "edot_ios")]
+	public AppliesCollection? EdotIos { get; set; }
+
+	[YamlMember(Alias = "edot_android")]
+	public AppliesCollection? EdotAndroid { get; set; }
+
+	[YamlMember(Alias = "edot_dotnet")]
+	public AppliesCollection? EdotDotnet { get; set; }
+
+	[YamlMember(Alias = "edot_java")]
+	public AppliesCollection? EdotJava { get; set; }
+
+	[YamlMember(Alias = "edot_node")]
+	public AppliesCollection? EdotNode { get; set; }
+
+	[YamlMember(Alias = "edot_php")]
+	public AppliesCollection? EdotPhp { get; set; }
+
+	[YamlMember(Alias = "edot_python")]
+	public AppliesCollection? EdotPython { get; set; }
+}
+
 public class ApplicableToConverter : IYamlTypeConverter
 {
 	private static readonly string[] KnownKeys =
-		["stack", "deployment", "serverless", "product", "ece",
-			"eck", "ess", "self", "elasticsearch", "observability","security"
-		];
+	[
+		"stack", "deployment", "serverless", "product",
+		"ece", "eck", "ess", "self",
+		"elasticsearch", "observability", "security",
+		"ecctl", "curator",
+		"apm_agent_dotnet", "apm_agent_go", "apm_agent_java", "apm_agent_node", "apm_agent_python", "apm_agent_ruby", "apm_agent_rum",
+		"edot_ios", "edot_android", "edot_dotnet", "edot_java", "edot_node", "edot_php", "edot_python"
+	];
 
 	public bool Accepts(Type type) => type == typeof(ApplicableTo);
 
@@ -154,9 +213,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (TryGetApplicabilityOverTime(dictionary, "stack", diagnostics, out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
 
-		if (TryGetApplicabilityOverTime(dictionary, "product", diagnostics, out var productAvailability))
-			applicableTo.Product = productAvailability;
-
+		AssignProduct(dictionary, applicableTo, diagnostics);
 		AssignServerless(dictionary, applicableTo, diagnostics);
 		AssignDeploymentType(dictionary, applicableTo, diagnostics);
 
@@ -165,6 +222,9 @@ public class ApplicableToConverter : IYamlTypeConverter
 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
 			applicableTo.Serverless = serverless;
+
+		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
+			applicableTo.ProductApplicability = product;
 
 		if (diagnostics.Count > 0)
 			applicableTo.Diagnostics = new YamlDiagnosticsCollection(diagnostics);
@@ -196,6 +256,48 @@ public class ApplicableToConverter : IYamlTypeConverter
 		}
 	}
 
+	private static void AssignProduct(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
+	{
+		if (!dictionary.TryGetValue("product", out var productValue))
+			return;
+
+		// This handles string, null, and empty string cases.
+		if (productValue is not Dictionary<object, object?> productDictionary)
+		{
+			if (TryGetApplicabilityOverTime(dictionary, "product", diagnostics, out var productAvailability))
+				applicableTo.Product = productAvailability;
+			return;
+		}
+
+		// Handle dictionary case
+		if (TryGetProductApplicability(productDictionary, diagnostics, out var applicability))
+			applicableTo.ProductApplicability = applicability;
+	}
+
+	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
+	{
+		if (!dictionary.TryGetValue("serverless", out var serverless))
+			return;
+
+		if (serverless is null || (serverless is string s && string.IsNullOrWhiteSpace(s)))
+			applicableTo.Serverless = ServerlessProjectApplicability.All;
+		else if (serverless is string serverlessString)
+		{
+			var av = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
+			applicableTo.Serverless = new ServerlessProjectApplicability
+			{
+				Elasticsearch = av,
+				Observability = av,
+				Security = av
+			};
+		}
+		else if (serverless is Dictionary<object, object?> serverlessDictionary)
+		{
+			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
+				applicableTo.Serverless = applicability;
+		}
+	}
+
 	private static bool TryGetDeployment(Dictionary<object, object?> dictionary, List<(Severity, string)> diagnostics,
 		[NotNullWhen(true)] out DeploymentApplicability? applicability)
 	{
@@ -207,6 +309,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			d.Ece = ece;
 			assigned = true;
 		}
+
 		if (TryGetApplicabilityOverTime(dictionary, "eck", diagnostics, out var eck))
 		{
 			d.Eck = eck;
@@ -234,30 +337,6 @@ public class ApplicableToConverter : IYamlTypeConverter
 		return false;
 	}
 
-	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
-	{
-		if (!dictionary.TryGetValue("serverless", out var serverless))
-			return;
-
-		if (serverless is null || (serverless is string s && string.IsNullOrWhiteSpace(s)))
-			applicableTo.Serverless = ServerlessProjectApplicability.All;
-		else if (serverless is string serverlessString)
-		{
-			var av = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
-			applicableTo.Serverless = new ServerlessProjectApplicability
-			{
-				Elasticsearch = av,
-				Observability = av,
-				Security = av
-			};
-		}
-		else if (serverless is Dictionary<object, object?> serverlessDictionary)
-		{
-			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
-				applicableTo.Serverless = applicability;
-		}
-	}
-
 	private static bool TryGetProjectApplicability(Dictionary<object, object?> dictionary,
 		List<(Severity, string)> diagnostics,
 		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability)
@@ -270,6 +349,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 			serverlessAvailability.Elasticsearch = elasticsearch;
 			assigned = true;
 		}
+
 		if (TryGetApplicabilityOverTime(dictionary, "observability", diagnostics, out var observability))
 		{
 			serverlessAvailability.Observability = observability;
@@ -285,6 +365,115 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (!assigned)
 			return false;
 		applicability = serverlessAvailability;
+		return true;
+	}
+
+	private static bool TryGetProductApplicability(Dictionary<object, object?> dictionary,
+		List<(Severity, string)> diagnostics,
+		[NotNullWhen(true)] out ProductApplicability? applicability)
+	{
+		applicability = null;
+		var productAvailability = new ProductApplicability();
+		var assigned = false;
+		if (TryGetApplicabilityOverTime(dictionary, "ecctl", diagnostics, out var ecctl))
+		{
+			productAvailability.Ecctl = ecctl;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "curator", diagnostics, out var curator))
+		{
+			productAvailability.Curator = curator;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_dotnet", diagnostics, out var apmAgentDotnet))
+		{
+			productAvailability.ApmAgentDotnet = apmAgentDotnet;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_go", diagnostics, out var apmAgentGo))
+		{
+			productAvailability.ApmAgentGo = apmAgentGo;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_java", diagnostics, out var apmAgentJava))
+		{
+			productAvailability.ApmAgentJava = apmAgentJava;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_node", diagnostics, out var apmAgentNode))
+		{
+			productAvailability.ApmAgentNode = apmAgentNode;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_python", diagnostics, out var apmAgentPython))
+		{
+			productAvailability.ApmAgentPython = apmAgentPython;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_ruby", diagnostics, out var apmAgentRuby))
+		{
+			productAvailability.ApmAgentRuby = apmAgentRuby;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "apm_agent_rum", diagnostics, out var apmAgentRum))
+		{
+			productAvailability.ApmAgentRum = apmAgentRum;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_ios", diagnostics, out var edotIos))
+		{
+			productAvailability.EdotIos = edotIos;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_android", diagnostics, out var edotAndroid))
+		{
+			productAvailability.EdotAndroid = edotAndroid;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_dotnet", diagnostics, out var edotDotnet))
+		{
+			productAvailability.EdotDotnet = edotDotnet;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_java", diagnostics, out var edotJava))
+		{
+			productAvailability.EdotJava = edotJava;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_node", diagnostics, out var edotNode))
+		{
+			productAvailability.EdotNode = edotNode;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_php", diagnostics, out var edotPhp))
+		{
+			productAvailability.EdotPhp = edotPhp;
+			assigned = true;
+		}
+
+		if (TryGetApplicabilityOverTime(dictionary, "edot_python", diagnostics, out var edotPython))
+		{
+			productAvailability.EdotPython = edotPython;
+			assigned = true;
+		}
+
+		if (!assigned)
+			return false;
+		applicability = productAvailability;
 		return true;
 	}
 

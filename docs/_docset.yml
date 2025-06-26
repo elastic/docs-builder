@@ -36,6 +36,7 @@ toc:
       - file: redirects.md
       - file: cumulative-docs.md
       - file: deployment-models.md
+      - file: add-repo.md
   - folder: migration
     children:
       - file: index.md

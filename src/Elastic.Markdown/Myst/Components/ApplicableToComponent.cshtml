@@ -1,0 +1,193 @@
+@using System.Diagnostics.CodeAnalysis
+@using Elastic.Documentation
+@using Elastic.Markdown.Myst.FrontMatter
+@inherits RazorSlice<Elastic.Markdown.Myst.Components.ApplicableToViewModel>
+
+@{
+	var appliesTo = Model.AppliesTo;
+}
+
+@if (appliesTo.Stack is not null)
+{
+	@RenderProduct("Elastic Stack", appliesTo.Stack)
+}
+@if (appliesTo.Deployment is not null)
+{
+	if (appliesTo.Deployment.Ece is not null)
+	{
+		@RenderProduct("ECE", appliesTo.Deployment.Ece)
+	}
+	if (appliesTo.Deployment.Eck is not null)
+	{
+		@RenderProduct("ECK", appliesTo.Deployment.Eck)
+	}
+	if (appliesTo.Deployment.Ess is not null)
+	{
+		@RenderProduct("Elastic Cloud Hosted", appliesTo.Deployment.Ess)
+	}
+	if (appliesTo.Deployment.Self is not null)
+	{
+		@RenderProduct("Self Managed", appliesTo.Deployment.Self)
+	}
+}
+@if (appliesTo.Serverless is not null)
+{
+	if (appliesTo.Serverless.AllProjects is not null)
+	{
+		@RenderProduct("Serverless", appliesTo.Serverless.AllProjects)
+	}
+	else
+	{
+		if (appliesTo.Serverless.Elasticsearch is not null)
+		{
+			@RenderProduct("Serverless Elasticsearch", appliesTo.Serverless.Elasticsearch)
+		}
+		if (appliesTo.Serverless.Observability is not null)
+		{
+			@RenderProduct("Serverless Observability", appliesTo.Serverless.Observability)
+		}
+		if (appliesTo.Serverless.Security is not null)
+		{
+			@RenderProduct("Serverless Security", appliesTo.Serverless.Security)
+		}
+
+	}
+
+}
+@if (appliesTo.Product is not null)
+{
+	@RenderProduct("", appliesTo.Product)
+}
+@if (appliesTo.ProductApplicability is not null)
+{
+	var pa = appliesTo.ProductApplicability;
+	if (pa.Ecctl is not null) { @RenderProduct("ECCTL", pa.Ecctl); }
+	if (pa.Curator is not null) { @RenderProduct("Curator", pa.Curator); }
+	if (pa.ApmAgentDotnet is not null) { @RenderProduct("APM Agent .NET", pa.ApmAgentDotnet); }
+	if (pa.ApmAgentGo is not null) { @RenderProduct("APM Agent Go", pa.ApmAgentGo); }
+	if (pa.ApmAgentJava is not null) { @RenderProduct("APM Agent Java", pa.ApmAgentJava); }
+	if (pa.ApmAgentNode is not null) { @RenderProduct("APM Agent Node.js", pa.ApmAgentNode); }
+	if (pa.ApmAgentPython is not null) { @RenderProduct("APM Agent Python", pa.ApmAgentPython); }
+	if (pa.ApmAgentRuby is not null) { @RenderProduct("APM Agent Ruby", pa.ApmAgentRuby); }
+	if (pa.ApmAgentRum is not null) { @RenderProduct("APM Agent RUM", pa.ApmAgentRum); }
+	if (pa.EdotIos is not null) { @RenderProduct("EDOT iOS", pa.EdotIos); }
+	if (pa.EdotAndroid is not null) { @RenderProduct("EDOT Android", pa.EdotAndroid); }
+	if (pa.EdotDotnet is not null) { @RenderProduct("EDOT .NET", pa.EdotDotnet); }
+	if (pa.EdotJava is not null) { @RenderProduct("EDOT Java", pa.EdotJava); }
+	if (pa.EdotNode is not null) { @RenderProduct("EDOT Node.js", pa.EdotNode); }
+	if (pa.EdotPhp is not null) { @RenderProduct("EDOT PHP", pa.EdotPhp); }
+	if (pa.EdotPython is not null) { @RenderProduct("EDOT Python", pa.EdotPython); }
+}
+
+@functions {
+
+	private IHtmlContent RenderProduct(string name, AppliesCollection applications)
+	{
+		var currentStackVersion = new SemVersion(9, 0, 0);
+		foreach (var applicability in applications)
+		{
+			
+			var tooltip = "";
+			var badgeText = name;
+
+			if (name == "Elastic Stack")
+			{
+				switch (applicability.Lifecycle)
+				{
+					case ProductLifecycle.TechnicalPreview:
+						if (TryGetRealVersion(applicability, out var previewVersion) && previewVersion > currentStackVersion)
+						{
+							badgeText = "Planned";
+							tooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
+						}
+						else
+						{
+							tooltip = "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.";
+						}
+						break;
+					case ProductLifecycle.Beta:
+						if (TryGetRealVersion(applicability, out var betaVersion) && betaVersion > currentStackVersion)
+						{
+							badgeText = "Planned";
+							tooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
+						}
+						else
+						{
+							tooltip = "This functionality is in beta and is subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.";
+						}
+
+						break;
+					case ProductLifecycle.GenerallyAvailable:
+						if (TryGetRealVersion(applicability, out var version) && version > currentStackVersion)
+						{
+							badgeText = "Planned";
+							tooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
+						}
+
+						break;
+					case ProductLifecycle.Deprecated:
+						if (TryGetRealVersion(applicability, out var deprecatedVersion) && deprecatedVersion > currentStackVersion)
+						{
+							badgeText = "Deprecation planned";
+							tooltip = "We plan to deprecate this functionality in a future update. Plans may change without notice.";
+						}
+
+						break;
+					case ProductLifecycle.Removed:
+						if (TryGetRealVersion(applicability, out var removedVersion) && removedVersion > currentStackVersion)
+						{
+							badgeText = "Removal planned";
+							tooltip = "We plan to remove this functionality in a future update. Plans may change without notice.";
+						}
+						break;
+				}
+			}
+			
+			var lifecycleClass = applicability.GetLifeCycleName().ToLowerInvariant().Replace(" ", "-");
+			<span class="applicable-info" data-tippy-content="@tooltip">
+				@if (name == "Elastic Stack")
+				{
+					@badgeText
+				}
+				else
+				{
+					@name
+				}
+				<span class="applicable-meta applicable-meta-@lifecycleClass">
+				@if (applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && badgeText == name)
+				{
+					<span class="applicable-lifecycle applicable-lifecycle-@lifecycleClass">@applicability.GetLifeCycleName()</span>
+				}
+				@if (applicability.Version is not null and not AllVersions)
+				{
+					if (name == "Elastic Stack")
+					{
+						if (applicability.Version <= currentStackVersion)
+						{
+							<span class="applicable-version applicable-version-@lifecycleClass">@applicability.Version</span>
+						}
+					}
+					else
+					{
+						<span class="applicable-version applicable-version-@lifecycleClass">@applicability.Version</span>
+					}
+				}
+				</span>
+			</span>
+		}
+		return HtmlString.Empty;
+	}
+}
+@functions {
+	private static bool TryGetRealVersion(Applicability applicability, [NotNullWhen(true)] out SemVersion? version)
+	{
+		version = null;
+		if (applicability.Version is not null && applicability.Version != AllVersions.Instance)
+		{
+			version = applicability.Version;
+			return true;
+		}
+
+		return false;
+	}
+}

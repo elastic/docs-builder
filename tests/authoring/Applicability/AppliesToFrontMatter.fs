@@ -179,6 +179,8 @@ applies_to:
   elasticsearch: beta 9.1.0
   observability: discontinued 9.2.0
   product: preview 9.5, discontinued 9.7
+  apm_agent_dotnet: ga 9.0
+  ecctl: ga 10.0
   stack: ga 9.1
 """
     [<Fact>]
@@ -196,7 +198,11 @@ applies_to:
                 Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
-            Product=AppliesCollection.op_Explicit "preview 9.5, discontinued 9.7"
+            Product=AppliesCollection.op_Explicit "preview 9.5, discontinued 9.7",
+            ProductApplicability=ProductApplicability(
+                ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0",
+                Ecctl=AppliesCollection.op_Explicit "ga 10.0"
+            )
         ))
 
 type ``parses empty applies_to as null`` () =

@@ -5,8 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Comments;
-using Elastic.Markdown.Myst.Directives;
-using Elastic.Markdown.Slices.Directives;
+using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -232,7 +231,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
 	{
 		var appliesTo = appliesToDirective.AppliesTo;
-		var slice = ApplicableToDirective.Create(appliesTo);
+		var slice = AppliesToView.Create(appliesTo);
 		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
 			return;
 		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Myst.Renderers;
+using Elastic.Markdown.Myst.Roles;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Parsers;
