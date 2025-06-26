@@ -37,15 +37,15 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
-			if (link.Url?.StartsWith('/') == true)
+			if (link.Url?.StartsWith('/') == true || isCrossLink)
 			{
 				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var hasSameTopLevelGroup = !isCrossLink && currentRootNavigation?.Id == targetRootNavigation?.Id;
+				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
 				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
 				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			}
-			if (isHttpLink)
+			if (isHttpLink && !isCrossLink)
 			{
 				_ = renderer.Write(" target=\"_blank\"");
 				_ = renderer.Write(" rel=\"noopener noreferrer\"");
