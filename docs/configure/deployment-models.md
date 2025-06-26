@@ -19,7 +19,7 @@ Our publish environments are connected to a single content source.
 
 This allows you as an owner of a repository to choose two different deployment models.
 
-## Deployment models.
+## Deployment models
 
 The new documentation system supports 2 deployment models.
 
