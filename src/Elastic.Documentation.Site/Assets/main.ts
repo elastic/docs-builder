@@ -91,3 +91,12 @@ document.body.addEventListener('htmx:responseError', function (event) {
         window.location.assign(event.detail.pathInfo.requestPath)
     }
 })
+
+const docsBuilderVersion = $('body').dataset.docsBuilderVersion
+document.body.addEventListener('htmx:configRequest', function(evt) {
+    evt.detail.parameters['v'] = docsBuilderVersion; // add a new parameter into the mix
+});
+
+document.body.addEventListener('htmx:beforeHistoryUpdate', function (event) {
+    event.detail.history.path = event.detail.history.path.split('?')[0]
+});
