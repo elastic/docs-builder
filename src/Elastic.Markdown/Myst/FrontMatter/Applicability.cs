@@ -190,7 +190,7 @@ public record Applicability
 		};
 
 		// TODO emit as error when all docs have been updated
-		if (lifecycle is ProductLifecycle.Planned or ProductLifecycle.Deprecated or ProductLifecycle.Development)
+		if (lifecycle is ProductLifecycle.Planned or ProductLifecycle.Development)
 			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
 		var version = tokens.Length < 2
