@@ -120,3 +120,42 @@ image::images/metrics-alert-filters-and-group.png[Metric threshold filter and gr
 ```asciidoc
 image::images/synthetics-get-started-projects.png[]
 ```
+
+## Image carousel
+
+The image carousel directive builds upon the image directive.
+
+```markdown
+::::{carousel}
+
+:id: nested-carousel-example
+:fixed-height: small ## small, medium, auto (auto is default if fixed-height is not specified)
+
+:::{image} images/apm.png
+:alt: First image description
+:title: First image title
+:::
+
+:::{image} images/applies.png
+:alt: Second image description
+:title: Second image title
+:::
+
+::::
+```
+::::{carousel}
+
+:id: nested-carousel-example
+:fixed-height: small
+
+:::{image} images/apm.png
+:alt: First image description
+:title: First image title
+:::
+
+:::{image} images/applies.png
+:alt: Second image description
+:title: Second image title
+:::
+
+::::

@@ -1,6 +1,7 @@
 import { initCopyButton } from './copybutton'
 import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
+import { initImageCarousel } from './image-carousel'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -25,6 +26,8 @@ document.addEventListener('htmx:load', function () {
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()
+    initImageCarousel()
+
     tippy('[data-tippy-content]:not([data-tippy-content=""])', {
         delay: [400, 100],
     })
