@@ -31,7 +31,6 @@ document.addEventListener('htmx:load', function () {
     tippy('[data-tippy-content]:not([data-tippy-content=""])', {
         delay: [400, 100],
     })
-
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
