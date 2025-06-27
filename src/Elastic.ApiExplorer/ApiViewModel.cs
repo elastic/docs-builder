@@ -6,6 +6,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -29,6 +30,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	public GlobalLayoutViewModel CreateGlobalLayoutModel() =>
 		new()
 		{
+			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
 			Description = "",
 			CurrentNavigationItem = CurrentNavigationItem,

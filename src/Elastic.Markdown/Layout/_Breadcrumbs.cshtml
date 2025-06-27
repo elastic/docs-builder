@@ -16,9 +16,10 @@
 	{
 		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
 			<a
+				hx-disable="true"
 				itemprop="item"
 				href="@firstCrumb.Url"
-				@Htmx.GetHxAttributes(firstCrumb.Url, Model.CurrentNavigationItem?.NavigationRoot.Id == firstCrumb.NavigationRoot.Id)
+				@Htmx.GetHxAttributes( Model.CurrentNavigationItem?.NavigationRoot.Id == firstCrumb.NavigationRoot.Id)
 			>
 				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
 			</a>
@@ -41,7 +42,7 @@
 			<a
 				itemprop="item" 
 				href="@item.Url"
-				@Htmx.GetHxAttributes(item.Url, Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)
+				@Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)
 			>
 				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
 			</a>

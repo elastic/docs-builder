@@ -74,13 +74,8 @@ public class ExternalPageAnchorTests(ITestOutputHelper output) : AnchorLinkTestB
 	public void GeneratesHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req#sub-requirements" hx-select-oob="#content-container,#toc-nav" preload="mousedown">Sub Requirements</a></p>"""
 		);
-
-	[Fact]
-	public void HxGetContainsVersionAnchor() =>
-		// language=html
-		Html.Should().MatchRegex("""hx-get="/docs/testing/req\?v=(.+?)#sub-requirements""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
