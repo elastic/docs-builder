@@ -26,7 +26,6 @@ document.addEventListener('htmx:load', function () {
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()
-    carousel-support
     initImageCarousel()
 
     tippy('[data-tippy-content]:not([data-tippy-content=""])', {
