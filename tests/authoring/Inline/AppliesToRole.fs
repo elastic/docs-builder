@@ -29,18 +29,17 @@ This is an inline {applies_to}`stack: preview 9.1` element.
     let ``validate HTML: generates link and alt attr`` () =
         markdown |> convertsToHtml """
         <p>This is an inline
-            <span class="applies-inline">
-                <span class="applicable-info" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
-                    Elastic Stack
-                    <span class="applicable-meta applicable-meta-technical-preview">
-                        <span class="applicable-version applicable-version-technical-preview">
- 					        Planned
- 				        </span>
-                    </span>
-                </span>
-            </span>
-            element.
-        </p>
+	        <span class="applies-inline">
+		        <span class="applicable-info" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
+			        Elastic Stack
+			        <span class="applicable-meta applicable-meta-technical-preview">
+				        <span class="applicable-lifecycle applicable-lifecycle-technical-preview">
+					        Planned
+				        </span>
+			        </span>
+		        </span>
+	        </span>
+	        element.</p>
         """
 
 
