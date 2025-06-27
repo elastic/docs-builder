@@ -94,7 +94,7 @@ public class AssemblerBuilder(
 
 		await OutputRedirectsAsync(redirects
 			.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-			.ToDictionary(r => r.Key, r => r.Value), ctx);
+			.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
