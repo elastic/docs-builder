@@ -150,7 +150,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#main-container" preload="mousedown">test</a></p>"""
 		);
 
 	[Fact]
