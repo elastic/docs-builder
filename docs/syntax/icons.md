@@ -6,8 +6,6 @@ You can include icons in your documentation using the `` {icon}`icon-name` `` sy
 
 Here is a list of all available icons:
 
-{icon}`accessibility` {icon}`lol`
-
 | Name                                        | Icon                                  |
 |:--------------------------------------------|:--------------------------------------|
 | `` {icon}`accessibility` ``                 | {icon}`accessibility`                 |
