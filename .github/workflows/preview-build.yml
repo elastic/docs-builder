@@ -267,12 +267,21 @@ jobs:
             
             const body = [
               title,
-              ...links.slice(0, 20).map(i => `- ${i}`),
+              ...links.slice(0, 10).map(i => `- ${i}`),
             ]
             
-            if (links.length > 20) {
+            body.push('<details>');
+            body.push('<summary>Full list of changed files</summary>');
+            body.push('');
+            for (const link of links.slice(10, 100)) {
+              body.push(`- ${link}`);
+            }
+            body.push('');
+            body.push('</details>');
+            
+            if (links.length > 100) {
               body.push('');
-              body.push(`<sub>There are ${links.length - 20} more links...</sub>`);
+              body.push(`<sub>In total, ${links.length} files changed.</sub>`);
             }
             
             const owner = context.repo.owner;
