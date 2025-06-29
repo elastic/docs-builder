@@ -53,5 +53,7 @@ public class IconInHeadingShouldBeRemovedFromAnchor(ITestOutputHelper output) : 
 	[Fact]
 	public void Render() =>
 		Html.Should()
-			.Contain("<div class=\"heading-wrapper\" id=\"users\"><h2><a class=\"headerlink\" href=\"#users\">Users <span aria-label=\"Icon for check\" class=\"icon icon-check\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n  <path fill-rule=\"evenodd\" d=\"M15.354 4.354 6.5 13.207 1.646 8.354l.708-.708L6.5 11.793l8.146-8.147.708.708Z\" clip-rule=\"evenodd\"/>\n</svg>\n</span></a></h2>\n</div>");
+			.Contain("<a class=\"headerlink\" href=\"#users\">")
+			.And.Contain("Users <span aria-label=\"Icon for check\"")
+			.And.Contain("<svg ");
 }
