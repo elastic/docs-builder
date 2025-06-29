@@ -272,7 +272,7 @@ jobs:
             
             if (links.length > 10) {
               body.push('<details>');
-              body.push('<summary>Full list of changed files</summary>');
+              body.push('<summary>More links …</summary>');
               body.push('');
               for (const link of links.slice(10, 100)) {
                 body.push(`- ${link}`);
