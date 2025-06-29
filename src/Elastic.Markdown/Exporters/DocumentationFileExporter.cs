@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Slices;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;

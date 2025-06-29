@@ -17,6 +17,9 @@ updates:
       day: 'monday'
       time: '08:00'
     groups:
+      eui:
+        patterns:
+          - '@elastic/eui*'
       tailwindcss:
         patterns:
           - 'tailwindcss'

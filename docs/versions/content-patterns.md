@@ -35,7 +35,7 @@ See [Versions and lifecycle states](/versions/index.md#versions-and-lifecycle-st
 stack: ga 9.1
 deployment:
   eck: ga 9.0
-  ece: discontinued 9.2.0
+  ece: removed 9.2.0
   self: unavailable 9.3.0
 ```
 

@@ -14,18 +14,21 @@ not a comment
 {
 
 	[Fact]
-	public void GeneratesAttributesInHtml() =>
+	public void GeneratesAttributesInHtml()
+	{
 		// language=html
 		Html.Should().NotContain(
-			"""<p>% comment"""
-		)
-		.And.Contain(
-			"""<p>not a comment</p>"""
-		).And.Be(
+				"""<p>% comment"""
+			)
+			.And.Contain(
+				"""<p>not a comment</p>"""
+			);
+		Html.ShouldBeHtml(
 			"""
 			<p>not a comment</p>
 			"""
 		);
+	}
 }
 
 public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(output,
@@ -43,23 +46,27 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 {
 
 	[Fact]
-	public void GeneratesAttributesInHtml() =>
+	public void GeneratesAttributesInHtml()
+	{
 		// language=html
-		Html.ReplaceLineEndings().Should().NotContainAny(
+		Html.Should().NotContainAny(
 				"<p><!--",
 				"<p>Multi line comment, first line",
 				"<p>Another line inside the commented area",
 				"<p>end of comments",
-				"<p>-->")
+				"<p>-->"
+			)
 			.And.ContainAll(
 				"<p>not a comment, and multi line comment below</p>",
 				"<p>also not a comment</p>"
-			).And.Be(
-				"""
-				<p>not a comment, and multi line comment below</p>
-				<p>also not a comment</p>
-				""".ReplaceLineEndings()
-				);
+			);
+		Html.ShouldBeHtml(
+			"""
+			<p>not a comment, and multi line comment below</p>
+			<p>also not a comment</p>
+			"""
+		);
+	}
 }
 
 public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineTest(output,
@@ -80,7 +87,8 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
 	[Fact]
-	public void GeneratesAttributesInHtml() =>
+	public void GeneratesAttributesInHtml()
+	{
 		// language=html
 		Html.ReplaceLineEndings().Should().NotContainAny(
 				"<p><!--",
@@ -92,10 +100,12 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 			.And.ContainAll(
 				"<p>not a comment, and multi line comment below</p>",
 				"<p>also not a comment</p>"
-			).And.Be(
-				"""
-					<p>not a comment, and multi line comment below</p>
-					<p>also not a comment</p>
-					""".ReplaceLineEndings()
 			);
+		Html.ShouldBeHtml(
+			"""
+			<p>not a comment, and multi line comment below</p>
+			<p>also not a comment</p>
+			"""
+		);
+	}
 }

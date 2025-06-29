@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Markdown.Slices.Roles;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using RazorSlices;

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Reflection;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
@@ -11,6 +12,8 @@ namespace Elastic.Documentation.Configuration;
 
 public record BuildContext : IDocumentationContext
 {
+	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+	.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
 
