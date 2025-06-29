@@ -270,14 +270,16 @@ jobs:
               ...links.slice(0, 10).map(i => `- ${i}`),
             ]
             
-            body.push('<details>');
-            body.push('<summary>Full list of changed files</summary>');
-            body.push('');
-            for (const link of links.slice(10, 100)) {
-              body.push(`- ${link}`);
+            if (links.length > 10) {
+              body.push('<details>');
+              body.push('<summary>Full list of changed files</summary>');
+              body.push('');
+              for (const link of links.slice(10, 100)) {
+                body.push(`- ${link}`);
+              }
+              body.push('');
+              body.push('</details>');
             }
-            body.push('');
-            body.push('</details>');
             
             if (links.length > 100) {
               body.push('');
