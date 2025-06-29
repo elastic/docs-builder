@@ -170,7 +170,7 @@ Here is a list of all available icons:
 | `` {icon}`esqlVis` ``                       | {icon}`esqlVis`                       |
 | `` {icon}`exit` ``                          | {icon}`exit`                          |
 | `` {icon}`expand` ``                        | {icon}`expand`                        |
-| `` {icon}`expandMin` ``                     | {icon}`expandMin`                     |
+| `` {icon}`expandMini` ``                    | {icon}`expandMini`                    |
 | `` {icon}`export` ``                        | {icon}`export`                        |
 | `` {icon}`eye` ``                           | {icon}`eye`                           |
 | `` {icon}`eye_closed` ``                    | {icon}`eye_closed`                    |

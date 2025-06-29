@@ -3,14 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Markdown.Myst.Roles.AppliesTo;
-using Elastic.Markdown.Slices.Roles;
 using Markdig;
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Renderers.Html.Inlines;
-using RazorSlices;
 
 namespace Elastic.Markdown.Myst.Roles.Icons;
 
