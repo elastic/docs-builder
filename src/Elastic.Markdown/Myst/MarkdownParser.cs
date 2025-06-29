@@ -10,12 +10,11 @@ using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
-using Elastic.Markdown.Myst.InlineParsers.Icon;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Linters;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
-
+using Elastic.Markdown.Myst.Roles.Icons;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
 using Markdig.Parsers;
@@ -147,13 +146,13 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
 				.UseInlineAppliesTo()
+				.UseInlineIcons()
 				.UseSubstitution()
 				.UseComments()
 				.UseYamlFrontMatter()
 				.UseGridTables()
 				.UsePipeTables()
 				.UseDirectives()
-				.UseIcons()
 				.UseDefinitionLists()
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()

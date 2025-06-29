@@ -1,467 +1,469 @@
 # Icons
 
-You can include icons in your documentation using the `:icon-name:` syntax. For example, writing `:check:` will render a checkmark icon.
+You can include icons in your documentation using the `` {icon}`icon-name` `` syntax. For example, writing `` {icon}`check` `` will render a checkmark icon.
 
 ## Available Icons
 
 Here is a list of all available icons:
 
-| Name | Icon |
-| :--- | :--- |
-| `:accessibility:` | :accessibility: |
-| `:aggregate:` | :aggregate: |
-| `:analyzeEvent:` | :analyzeEvent: |
-| `:annotation:` | :annotation: |
-| `:anomaly_chart:` | :anomaly_chart: |
-| `:anomaly_swim_lane:` | :anomaly_swim_lane: |
-| `:apm_trace:` | :apm_trace: |
-| `:app_add_data:` | :app_add_data: |
-| `:app_advanced_settings:` | :app_advanced_settings: |
-| `:app_agent:` | :app_agent: |
-| `:app_apm:` | :app_apm: |
-| `:app_app_search:` | :app_app_search: |
-| `:app_auditbeat:` | :app_auditbeat: |
-| `:app_canvas:` | :app_canvas: |
-| `:app_cases:` | :app_cases: |
-| `:app_code:` | :app_code: |
-| `:app_console:` | :app_console: |
-| `:app_cross_cluster_replication:` | :app_cross_cluster_replication: |
-| `:app_dashboard:` | :app_dashboard: |
-| `:app_devtools:` | :app_devtools: |
-| `:app_discover:` | :app_discover: |
-| `:app_ems:` | :app_ems: |
-| `:app_filebeat:` | :app_filebeat: |
-| `:app_fleet:` | :app_fleet: |
-| `:app_gis:` | :app_gis: |
-| `:app_graph:` | :app_graph: |
-| `:app_grok:` | :app_grok: |
-| `:app_heartbeat:` | :app_heartbeat: |
-| `:app_index_management:` | :app_index_management: |
-| `:app_index_pattern:` | :app_index_pattern: |
-| `:app_index_rollup:` | :app_index_rollup: |
-| `:app_lens:` | :app_lens: |
-| `:app_logs:` | :app_logs: |
-| `:app_management:` | :app_management: |
-| `:app_metricbeat:` | :app_metricbeat: |
-| `:app_metrics:` | :app_metrics: |
-| `:app_ml:` | :app_ml: |
-| `:app_monitoring:` | :app_monitoring: |
-| `:app_notebook:` | :app_notebook: |
-| `:app_packetbeat:` | :app_packetbeat: |
-| `:app_pipeline:` | :app_pipeline: |
-| `:app_recently_viewed:` | :app_recently_viewed: |
-| `:app_reporting:` | :app_reporting: |
-| `:app_saved_objects:` | :app_saved_objects: |
-| `:app_search_profiler:` | :app_search_profiler: |
-| `:app_security:` | :app_security: |
-| `:app_security_analytics:` | :app_security_analytics: |
-| `:app_spaces:` | :app_spaces: |
-| `:app_sql:` | :app_sql: |
-| `:app_timelion:` | :app_timelion: |
-| `:app_upgrade_assistant:` | :app_upgrade_assistant: |
-| `:app_uptime:` | :app_uptime: |
-| `:app_users_roles:` | :app_users_roles: |
-| `:app_visualize:` | :app_visualize: |
-| `:app_vulnerability_management:` | :app_vulnerability_management: |
-| `:app_watches:` | :app_watches: |
-| `:app_workplace_search:` | :app_workplace_search: |
-| `:apps:` | :apps: |
-| `:arrowEnd:` | :arrowEnd: |
-| `:arrowStart:` | :arrowStart: |
-| `:arrow_down:` | :arrow_down: |
-| `:arrow_left:` | :arrow_left: |
-| `:arrow_right:` | :arrow_right: |
-| `:arrow_up:` | :arrow_up: |
-| `:article:` | :article: |
-| `:asterisk:` | :asterisk: |
-| `:at:` | :at: |
-| `:bell:` | :bell: |
-| `:bellSlash:` | :bellSlash: |
-| `:beta:` | :beta: |
-| `:bolt:` | :bolt: |
-| `:boxes_horizontal:` | :boxes_horizontal: |
-| `:boxes_vertical:` | :boxes_vertical: |
-| `:branch:` | :branch: |
-| `:branchUser:` | :branchUser: |
-| `:broom:` | :broom: |
-| `:brush:` | :brush: |
-| `:bug:` | :bug: |
-| `:bullseye:` | :bullseye: |
-| `:calendar:` | :calendar: |
-| `:change_point_detection:` | :change_point_detection: |
-| `:check:` | :check: |
-| `:checkCircle:` | :checkCircle: |
-| `:checkInCircleFilled:` | :checkInCircleFilled: |
-| `:cheer:` | :cheer: |
-| `:clickLeft:` | :clickLeft: |
-| `:clickRight:` | :clickRight: |
-| `:clock:` | :clock: |
-| `:clockCounter:` | :clockCounter: |
-| `:cloudDrizzle:` | :cloudDrizzle: |
-| `:cloudStormy:` | :cloudStormy: |
-| `:cloudSunny:` | :cloudSunny: |
-| `:cluster:` | :cluster: |
-| `:code:` | :code: |
-| `:color:` | :color: |
-| `:comment:` | :comment: |
-| `:compute:` | :compute: |
-| `:console:` | :console: |
-| `:container:` | :container: |
-| `:continuityAbove:` | :continuityAbove: |
-| `:continuityAboveBelow:` | :continuityAboveBelow: |
-| `:continuityBelow:` | :continuityBelow: |
-| `:continuityWithin:` | :continuityWithin: |
-| `:contrast:` | :contrast: |
-| `:contrastHigh:` | :contrastHigh: |
-| `:controls:` | :controls: |
-| `:copy:` | :copy: |
-| `:copy_clipboard:` | :copy_clipboard: |
-| `:cross:` | :cross: |
-| `:cross_in_circle:` | :cross_in_circle: |
-| `:crosshairs:` | :crosshairs: |
-| `:currency:` | :currency: |
-| `:cut:` | :cut: |
-| `:database:` | :database: |
-| `:desktop:` | :desktop: |
-| `:diff:` | :diff: |
-| `:document:` | :document: |
-| `:documentEdit:` | :documentEdit: |
-| `:documentation:` | :documentation: |
-| `:documents:` | :documents: |
-| `:dot:` | :dot: |
-| `:dotInCircle:` | :dotInCircle: |
-| `:doubleArrowLeft:` | :doubleArrowLeft: |
-| `:doubleArrowRight:` | :doubleArrowRight: |
-| `:download:` | :download: |
-| `:editorDistributeHorizontal:` | :editorDistributeHorizontal: |
-| `:editorDistributeVertical:` | :editorDistributeVertical: |
-| `:editorItemAlignBottom:` | :editorItemAlignBottom: |
-| `:editorItemAlignCenter:` | :editorItemAlignCenter: |
-| `:editorItemAlignLeft:` | :editorItemAlignLeft: |
-| `:editorItemAlignMiddle:` | :editorItemAlignMiddle: |
-| `:editorItemAlignRight:` | :editorItemAlignRight: |
-| `:editorItemAlignTop:` | :editorItemAlignTop: |
-| `:editorPositionBottomLeft:` | :editorPositionBottomLeft: |
-| `:editorPositionBottomRight:` | :editorPositionBottomRight: |
-| `:editorPositionTopLeft:` | :editorPositionTopLeft: |
-| `:editorPositionTopRight:` | :editorPositionTopRight: |
-| `:editor_align_center:` | :editor_align_center: |
-| `:editor_align_left:` | :editor_align_left: |
-| `:editor_align_right:` | :editor_align_right: |
-| `:editor_bold:` | :editor_bold: |
-| `:editor_checklist:` | :editor_checklist: |
-| `:editor_heading:` | :editor_heading: |
-| `:editor_italic:` | :editor_italic: |
-| `:editor_link:` | :editor_link: |
-| `:editor_ordered_list:` | :editor_ordered_list: |
-| `:editor_redo:` | :editor_redo: |
-| `:editor_strike:` | :editor_strike: |
-| `:editor_table:` | :editor_table: |
-| `:editor_underline:` | :editor_underline: |
-| `:editor_undo:` | :editor_undo: |
-| `:editor_unordered_list:` | :editor_unordered_list: |
-| `:email:` | :email: |
-| `:empty:` | :empty: |
-| `:endpoint:` | :endpoint: |
-| `:eql:` | :eql: |
-| `:eraser:` | :eraser: |
-| `:error:` | :error: |
-| `:errorFilled:` | :errorFilled: |
-| `:esqlVis:` | :esqlVis: |
-| `:exit:` | :exit: |
-| `:expand:` | :expand: |
-| `:expandMin:` | :expandMin: |
-| `:export:` | :export: |
-| `:eye:` | :eye: |
-| `:eye_closed:` | :eye_closed: |
-| `:face_happy:` | :face_happy: |
-| `:face_neutral:` | :face_neutral: |
-| `:face_sad:` | :face_sad: |
-| `:field_statistics:` | :field_statistics: |
-| `:filter:` | :filter: |
-| `:filterExclude:` | :filterExclude: |
-| `:filterIgnore:` | :filterIgnore: |
-| `:filterInCircle:` | :filterInCircle: |
-| `:filterInclude:` | :filterInclude: |
-| `:flag:` | :flag: |
-| `:flask:` | :flask: |
-| `:fold:` | :fold: |
-| `:folder_check:` | :folder_check: |
-| `:folder_closed:` | :folder_closed: |
-| `:folder_exclamation:` | :folder_exclamation: |
-| `:folder_open:` | :folder_open: |
-| `:frameNext:` | :frameNext: |
-| `:framePrevious:` | :framePrevious: |
-| `:fullScreenExit:` | :fullScreenExit: |
-| `:full_screen:` | :full_screen: |
-| `:function:` | :function: |
-| `:gear:` | :gear: |
-| `:globe:` | :globe: |
-| `:grab:` | :grab: |
-| `:grabOmnidirectional:` | :grabOmnidirectional: |
-| `:grab_horizontal:` | :grab_horizontal: |
-| `:gradient:` | :gradient: |
-| `:grid:` | :grid: |
-| `:heart:` | :heart: |
-| `:heatmap:` | :heatmap: |
-| `:help:` | :help: |
-| `:home:` | :home: |
-| `:image:` | :image: |
-| `:import:` | :import: |
-| `:index:` | :index: |
-| `:indexTemporary:` | :indexTemporary: |
-| `:index_close:` | :index_close: |
-| `:index_edit:` | :index_edit: |
-| `:index_flush:` | :index_flush: |
-| `:index_mapping:` | :index_mapping: |
-| `:index_open:` | :index_open: |
-| `:index_runtime:` | :index_runtime: |
-| `:index_settings:` | :index_settings: |
-| `:infinity:` | :infinity: |
-| `:info:` | :info: |
-| `:inputOutput:` | :inputOutput: |
-| `:inspect:` | :inspect: |
-| `:invert:` | :invert: |
-| `:ip:` | :ip: |
-| `:key:` | :key: |
-| `:keyboard:` | :keyboard: |
-| `:kql_field:` | :kql_field: |
-| `:kql_function:` | :kql_function: |
-| `:kql_operand:` | :kql_operand: |
-| `:kql_selector:` | :kql_selector: |
-| `:kql_value:` | :kql_value: |
-| `:kubernetesNode:` | :kubernetesNode: |
-| `:kubernetesPod:` | :kubernetesPod: |
-| `:launch:` | :launch: |
-| `:layers:` | :layers: |
-| `:lettering:` | :lettering: |
-| `:lineDashed:` | :lineDashed: |
-| `:lineDotted:` | :lineDotted: |
-| `:lineSolid:` | :lineSolid: |
-| `:link:` | :link: |
-| `:list:` | :list: |
-| `:list_add:` | :list_add: |
-| `:lock:` | :lock: |
-| `:lockOpen:` | :lockOpen: |
-| `:log_pattern_analysis:` | :log_pattern_analysis: |
-| `:log_rate_analysis:` | :log_rate_analysis: |
-| `:logo_aerospike:` | :logo_aerospike: |
-| `:logo_apache:` | :logo_apache: |
-| `:logo_app_search:` | :logo_app_search: |
-| `:logo_aws:` | :logo_aws: |
-| `:logo_aws_mono:` | :logo_aws_mono: |
-| `:logo_azure:` | :logo_azure: |
-| `:logo_azure_mono:` | :logo_azure_mono: |
-| `:logo_beats:` | :logo_beats: |
-| `:logo_business_analytics:` | :logo_business_analytics: |
-| `:logo_ceph:` | :logo_ceph: |
-| `:logo_cloud:` | :logo_cloud: |
-| `:logo_cloud_ece:` | :logo_cloud_ece: |
-| `:logo_code:` | :logo_code: |
-| `:logo_codesandbox:` | :logo_codesandbox: |
-| `:logo_couchbase:` | :logo_couchbase: |
-| `:logo_docker:` | :logo_docker: |
-| `:logo_dropwizard:` | :logo_dropwizard: |
-| `:logo_elastic:` | :logo_elastic: |
-| `:logo_elastic_stack:` | :logo_elastic_stack: |
-| `:logo_elasticsearch:` | :logo_elasticsearch: |
-| `:logo_enterprise_search:` | :logo_enterprise_search: |
-| `:logo_etcd:` | :logo_etcd: |
-| `:logo_gcp:` | :logo_gcp: |
-| `:logo_gcp_mono:` | :logo_gcp_mono: |
-| `:logo_github:` | :logo_github: |
-| `:logo_gmail:` | :logo_gmail: |
-| `:logo_golang:` | :logo_golang: |
-| `:logo_google_g:` | :logo_google_g: |
-| `:logo_haproxy:` | :logo_haproxy: |
-| `:logo_ibm:` | :logo_ibm: |
-| `:logo_ibm_mono:` | :logo_ibm_mono: |
-| `:logo_kafka:` | :logo_kafka: |
-| `:logo_kibana:` | :logo_kibana: |
-| `:logo_kubernetes:` | :logo_kubernetes: |
-| `:logo_logging:` | :logo_logging: |
-| `:logo_logstash:` | :logo_logstash: |
-| `:logo_maps:` | :logo_maps: |
-| `:logo_memcached:` | :logo_memcached: |
-| `:logo_metrics:` | :logo_metrics: |
-| `:logo_mongodb:` | :logo_mongodb: |
-| `:logo_mysql:` | :logo_mysql: |
-| `:logo_nginx:` | :logo_nginx: |
-| `:logo_observability:` | :logo_observability: |
-| `:logo_osquery:` | :logo_osquery: |
-| `:logo_php:` | :logo_php: |
-| `:logo_postgres:` | :logo_postgres: |
-| `:logo_prometheus:` | :logo_prometheus: |
-| `:logo_rabbitmq:` | :logo_rabbitmq: |
-| `:logo_redis:` | :logo_redis: |
-| `:logo_security:` | :logo_security: |
-| `:logo_site_search:` | :logo_site_search: |
-| `:logo_sketch:` | :logo_sketch: |
-| `:logo_slack:` | :logo_slack: |
-| `:logo_uptime:` | :logo_uptime: |
-| `:logo_vulnerability_management:` | :logo_vulnerability_management: |
-| `:logo_webhook:` | :logo_webhook: |
-| `:logo_windows:` | :logo_windows: |
-| `:logo_workplace_search:` | :logo_workplace_search: |
-| `:logstash_filter:` | :logstash_filter: |
-| `:logstash_if:` | :logstash_if: |
-| `:logstash_input:` | :logstash_input: |
-| `:logstash_output:` | :logstash_output: |
-| `:logstash_queue:` | :logstash_queue: |
-| `:magnet:` | :magnet: |
-| `:magnifyWithExclamation:` | :magnifyWithExclamation: |
-| `:magnifyWithMinus:` | :magnifyWithMinus: |
-| `:magnifyWithPlus:` | :magnifyWithPlus: |
-| `:map_marker:` | :map_marker: |
-| `:memory:` | :memory: |
-| `:menu:` | :menu: |
-| `:menuDown:` | :menuDown: |
-| `:menuLeft:` | :menuLeft: |
-| `:menuRight:` | :menuRight: |
-| `:menuUp:` | :menuUp: |
-| `:merge:` | :merge: |
-| `:minimize:` | :minimize: |
-| `:minus:` | :minus: |
-| `:minus_in_circle:` | :minus_in_circle: |
-| `:minus_in_circle_filled:` | :minus_in_circle_filled: |
-| `:minus_in_square:` | :minus_in_square: |
-| `:ml_classification_job:` | :ml_classification_job: |
-| `:ml_create_advanced_job:` | :ml_create_advanced_job: |
-| `:ml_create_generic_job:` | :ml_create_generic_job: |
-| `:ml_create_geo_job:` | :ml_create_geo_job: |
-| `:ml_create_multi_metric_job:` | :ml_create_multi_metric_job: |
-| `:ml_create_population_job:` | :ml_create_population_job: |
-| `:ml_create_single_metric_job:` | :ml_create_single_metric_job: |
-| `:ml_data_visualizer:` | :ml_data_visualizer: |
-| `:ml_outlier_detection_job:` | :ml_outlier_detection_job: |
-| `:ml_regression_job:` | :ml_regression_job: |
-| `:mobile:` | :mobile: |
-| `:moon:` | :moon: |
-| `:move:` | :move: |
-| `:namespace:` | :namespace: |
-| `:nested:` | :nested: |
-| `:new_chat:` | :new_chat: |
-| `:node:` | :node: |
-| `:number:` | :number: |
-| `:offline:` | :offline: |
-| `:online:` | :online: |
-| `:package:` | :package: |
-| `:pageSelect:` | :pageSelect: |
-| `:pagesSelect:` | :pagesSelect: |
-| `:paint:` | :paint: |
-| `:palette:` | :palette: |
-| `:paper_clip:` | :paper_clip: |
-| `:partial:` | :partial: |
-| `:pause:` | :pause: |
-| `:payment:` | :payment: |
-| `:pencil:` | :pencil: |
-| `:percent:` | :percent: |
-| `:pin:` | :pin: |
-| `:pin_filled:` | :pin_filled: |
-| `:pipeBreaks:` | :pipeBreaks: |
-| `:pipeNoBreaks:` | :pipeNoBreaks: |
-| `:pivot:` | :pivot: |
-| `:play:` | :play: |
-| `:playFilled:` | :playFilled: |
-| `:plugs:` | :plugs: |
-| `:plus:` | :plus: |
-| `:plus_in_circle:` | :plus_in_circle: |
-| `:plus_in_circle_filled:` | :plus_in_circle_filled: |
-| `:plus_in_square:` | :plus_in_square: |
-| `:popout:` | :popout: |
-| `:push:` | :push: |
-| `:question:` | :question: |
-| `:quote:` | :quote: |
-| `:readOnly:` | :readOnly: |
-| `:refresh:` | :refresh: |
-| `:reporter:` | :reporter: |
-| `:return_key:` | :return_key: |
-| `:save:` | :save: |
-| `:scale:` | :scale: |
-| `:search:` | :search: |
-| `:section:` | :section: |
-| `:securitySignal:` | :securitySignal: |
-| `:securitySignalDetected:` | :securitySignalDetected: |
-| `:securitySignalResolved:` | :securitySignalResolved: |
-| `:sessionViewer:` | :sessionViewer: |
-| `:shard:` | :shard: |
-| `:share:` | :share: |
-| `:single_metric_viewer:` | :single_metric_viewer: |
-| `:snowflake:` | :snowflake: |
-| `:sortAscending:` | :sortAscending: |
-| `:sortDescending:` | :sortDescending: |
-| `:sortLeft:` | :sortLeft: |
-| `:sortRight:` | :sortRight: |
-| `:sort_down:` | :sort_down: |
-| `:sort_up:` | :sort_up: |
-| `:sortable:` | :sortable: |
-| `:spaces:` | :spaces: |
-| `:sparkles:` | :sparkles: |
-| `:starPlusEmpty:` | :starPlusEmpty: |
-| `:starPlusFilled:` | :starPlusFilled: |
-| `:star_empty:` | :star_empty: |
-| `:star_empty_space:` | :star_empty_space: |
-| `:star_filled:` | :star_filled: |
-| `:star_filled_space:` | :star_filled_space: |
-| `:star_minus_empty:` | :star_minus_empty: |
-| `:star_minus_filled:` | :star_minus_filled: |
-| `:stats:` | :stats: |
-| `:stop:` | :stop: |
-| `:stop_filled:` | :stop_filled: |
-| `:stop_slash:` | :stop_slash: |
-| `:storage:` | :storage: |
-| `:string:` | :string: |
-| `:submodule:` | :submodule: |
-| `:sun:` | :sun: |
-| `:swatch_input:` | :swatch_input: |
-| `:symlink:` | :symlink: |
-| `:tableOfContents:` | :tableOfContents: |
-| `:table_density_compact:` | :table_density_compact: |
-| `:table_density_expanded:` | :table_density_expanded: |
-| `:table_density_normal:` | :table_density_normal: |
-| `:tag:` | :tag: |
-| `:tear:` | :tear: |
-| `:temperature:` | :temperature: |
-| `:timeRefresh:` | :timeRefresh: |
-| `:timeline:` | :timeline: |
-| `:timelineWithArrow:` | :timelineWithArrow: |
-| `:timeslider:` | :timeslider: |
-| `:training:` | :training: |
-| `:transitionLeftIn:` | :transitionLeftIn: |
-| `:transitionLeftOut:` | :transitionLeftOut: |
-| `:transitionTopIn:` | :transitionTopIn: |
-| `:transitionTopOut:` | :transitionTopOut: |
-| `:trash:` | :trash: |
-| `:unfold:` | :unfold: |
-| `:unlink:` | :unlink: |
-| `:user:` | :user: |
-| `:users:` | :users: |
-| `:vector:` | :vector: |
-| `:videoPlayer:` | :videoPlayer: |
-| `:vis_area:` | :vis_area: |
-| `:vis_area_stacked:` | :vis_area_stacked: |
-| `:vis_bar_horizontal:` | :vis_bar_horizontal: |
-| `:vis_bar_horizontal_stacked:` | :vis_bar_horizontal_stacked: |
-| `:vis_bar_vertical:` | :vis_bar_vertical: |
-| `:vis_bar_vertical_stacked:` | :vis_bar_vertical_stacked: |
-| `:vis_gauge:` | :vis_gauge: |
-| `:vis_goal:` | :vis_goal: |
-| `:vis_line:` | :vis_line: |
-| `:vis_map_coordinate:` | :vis_map_coordinate: |
-| `:vis_map_region:` | :vis_map_region: |
-| `:vis_metric:` | :vis_metric: |
-| `:vis_pie:` | :vis_pie: |
-| `:vis_table:` | :vis_table: |
-| `:vis_tag_cloud:` | :vis_tag_cloud: |
-| `:vis_text:` | :vis_text: |
-| `:vis_timelion:` | :vis_timelion: |
-| `:vis_visual_builder:` | :vis_visual_builder: |
-| `:warning:` | :warning: |
-| `:warningFilled:` | :warningFilled: |
-| `:web:` | :web: |
-| `:wordWrap:` | :wordWrap: |
-| `:wordWrapDisabled:` | :wordWrapDisabled: |
-| `:wrench:` | :wrench: |
+{icon}`accessibility` {icon}`lol`
+
+| Name                                        | Icon                                  |
+|:--------------------------------------------|:--------------------------------------|
+| `` {icon}`accessibility` ``                 | {icon}`accessibility`                 |
+| `` {icon}`aggregate` ``                     | {icon}`aggregate`                     |
+| `` {icon}`analyzeEvent` ``                  | {icon}`analyzeEvent`                  |
+| `` {icon}`annotation` ``                    | {icon}`annotation`                    |
+| `` {icon}`anomaly_chart` ``                 | {icon}`anomaly_chart`                 |
+| `` {icon}`anomaly_swim_lane` ``             | {icon}`anomaly_swim_lane`             |
+| `` {icon}`apm_trace` ``                     | {icon}`apm_trace`                     |
+| `` {icon}`app_add_data` ``                  | {icon}`app_add_data`                  |
+| `` {icon}`app_advanced_settings` ``         | {icon}`app_advanced_settings`         |
+| `` {icon}`app_agent` ``                     | {icon}`app_agent`                     |
+| `` {icon}`app_apm` ``                       | {icon}`app_apm`                       |
+| `` {icon}`app_app_search` ``                | {icon}`app_app_search`                |
+| `` {icon}`app_auditbeat` ``                 | {icon}`app_auditbeat`                 |
+| `` {icon}`app_canvas` ``                    | {icon}`app_canvas`                    |
+| `` {icon}`app_cases` ``                     | {icon}`app_cases`                     |
+| `` {icon}`app_code` ``                      | {icon}`app_code`                      |
+| `` {icon}`app_console` ``                   | {icon}`app_console`                   |
+| `` {icon}`app_cross_cluster_replication` `` | {icon}`app_cross_cluster_replication` |
+| `` {icon}`app_dashboard` ``                 | {icon}`app_dashboard`                 |
+| `` {icon}`app_devtools` ``                  | {icon}`app_devtools`                  |
+| `` {icon}`app_discover` ``                  | {icon}`app_discover`                  |
+| `` {icon}`app_ems` ``                       | {icon}`app_ems`                       |
+| `` {icon}`app_filebeat` ``                  | {icon}`app_filebeat`                  |
+| `` {icon}`app_fleet` ``                     | {icon}`app_fleet`                     |
+| `` {icon}`app_gis` ``                       | {icon}`app_gis`                       |
+| `` {icon}`app_graph` ``                     | {icon}`app_graph`                     |
+| `` {icon}`app_grok` ``                      | {icon}`app_grok`                      |
+| `` {icon}`app_heartbeat` ``                 | {icon}`app_heartbeat`                 |
+| `` {icon}`app_index_management` ``          | {icon}`app_index_management`          |
+| `` {icon}`app_index_pattern` ``             | {icon}`app_index_pattern`             |
+| `` {icon}`app_index_rollup` ``              | {icon}`app_index_rollup`              |
+| `` {icon}`app_lens` ``                      | {icon}`app_lens`                      |
+| `` {icon}`app_logs` ``                      | {icon}`app_logs`                      |
+| `` {icon}`app_management` ``                | {icon}`app_management`                |
+| `` {icon}`app_metricbeat` ``                | {icon}`app_metricbeat`                |
+| `` {icon}`app_metrics` ``                   | {icon}`app_metrics`                   |
+| `` {icon}`app_ml` ``                        | {icon}`app_ml`                        |
+| `` {icon}`app_monitoring` ``                | {icon}`app_monitoring`                |
+| `` {icon}`app_notebook` ``                  | {icon}`app_notebook`                  |
+| `` {icon}`app_packetbeat` ``                | {icon}`app_packetbeat`                |
+| `` {icon}`app_pipeline` ``                  | {icon}`app_pipeline`                  |
+| `` {icon}`app_recently_viewed` ``           | {icon}`app_recently_viewed`           |
+| `` {icon}`app_reporting` ``                 | {icon}`app_reporting`                 |
+| `` {icon}`app_saved_objects` ``             | {icon}`app_saved_objects`             |
+| `` {icon}`app_search_profiler` ``           | {icon}`app_search_profiler`           |
+| `` {icon}`app_security` ``                  | {icon}`app_security`                  |
+| `` {icon}`app_security_analytics` ``        | {icon}`app_security_analytics`        |
+| `` {icon}`app_spaces` ``                    | {icon}`app_spaces`                    |
+| `` {icon}`app_sql` ``                       | {icon}`app_sql`                       |
+| `` {icon}`app_timelion` ``                  | {icon}`app_timelion`                  |
+| `` {icon}`app_upgrade_assistant` ``         | {icon}`app_upgrade_assistant`         |
+| `` {icon}`app_uptime` ``                    | {icon}`app_uptime`                    |
+| `` {icon}`app_users_roles` ``               | {icon}`app_users_roles`               |
+| `` {icon}`app_visualize` ``                 | {icon}`app_visualize`                 |
+| `` {icon}`app_vulnerability_management` ``  | {icon}`app_vulnerability_management`  |
+| `` {icon}`app_watches` ``                   | {icon}`app_watches`                   |
+| `` {icon}`app_workplace_search` ``          | {icon}`app_workplace_search`          |
+| `` {icon}`apps` ``                          | {icon}`apps`                          |
+| `` {icon}`arrowEnd` ``                      | {icon}`arrowEnd`                      |
+| `` {icon}`arrowStart` ``                    | {icon}`arrowStart`                    |
+| `` {icon}`arrow_down` ``                    | {icon}`arrow_down`                    |
+| `` {icon}`arrow_left` ``                    | {icon}`arrow_left`                    |
+| `` {icon}`arrow_right` ``                   | {icon}`arrow_right`                   |
+| `` {icon}`arrow_up` ``                      | {icon}`arrow_up`                      |
+| `` {icon}`article` ``                       | {icon}`article`                       |
+| `` {icon}`asterisk` ``                      | {icon}`asterisk`                      |
+| `` {icon}`at` ``                            | {icon}`at`                            |
+| `` {icon}`bell` ``                          | {icon}`bell`                          |
+| `` {icon}`bellSlash` ``                     | {icon}`bellSlash`                     |
+| `` {icon}`beta` ``                          | {icon}`beta`                          |
+| `` {icon}`bolt` ``                          | {icon}`bolt`                          |
+| `` {icon}`boxes_horizontal` ``              | {icon}`boxes_horizontal`              |
+| `` {icon}`boxes_vertical` ``                | {icon}`boxes_vertical`                |
+| `` {icon}`branch` ``                        | {icon}`branch`                        |
+| `` {icon}`branchUser` ``                    | {icon}`branchUser`                    |
+| `` {icon}`broom` ``                         | {icon}`broom`                         |
+| `` {icon}`brush` ``                         | {icon}`brush`                         |
+| `` {icon}`bug` ``                           | {icon}`bug`                           |
+| `` {icon}`bullseye` ``                      | {icon}`bullseye`                      |
+| `` {icon}`calendar` ``                      | {icon}`calendar`                      |
+| `` {icon}`change_point_detection` ``        | {icon}`change_point_detection`        |
+| `` {icon}`check` ``                         | {icon}`check`                         |
+| `` {icon}`checkCircle` ``                   | {icon}`checkCircle`                   |
+| `` {icon}`checkInCircleFilled` ``           | {icon}`checkInCircleFilled`           |
+| `` {icon}`cheer` ``                         | {icon}`cheer`                         |
+| `` {icon}`clickLeft` ``                     | {icon}`clickLeft`                     |
+| `` {icon}`clickRight` ``                    | {icon}`clickRight`                    |
+| `` {icon}`clock` ``                         | {icon}`clock`                         |
+| `` {icon}`clockCounter` ``                  | {icon}`clockCounter`                  |
+| `` {icon}`cloudDrizzle` ``                  | {icon}`cloudDrizzle`                  |
+| `` {icon}`cloudStormy` ``                   | {icon}`cloudStormy`                   |
+| `` {icon}`cloudSunny` ``                    | {icon}`cloudSunny`                    |
+| `` {icon}`cluster` ``                       | {icon}`cluster`                       |
+| `` {icon}`code` ``                          | {icon}`code`                          |
+| `` {icon}`color` ``                         | {icon}`color`                         |
+| `` {icon}`comment` ``                       | {icon}`comment`                       |
+| `` {icon}`compute` ``                       | {icon}`compute`                       |
+| `` {icon}`console` ``                       | {icon}`console`                       |
+| `` {icon}`container` ``                     | {icon}`container`                     |
+| `` {icon}`continuityAbove` ``               | {icon}`continuityAbove`               |
+| `` {icon}`continuityAboveBelow` ``          | {icon}`continuityAboveBelow`          |
+| `` {icon}`continuityBelow` ``               | {icon}`continuityBelow`               |
+| `` {icon}`continuityWithin` ``              | {icon}`continuityWithin`              |
+| `` {icon}`contrast` ``                      | {icon}`contrast`                      |
+| `` {icon}`contrastHigh` ``                  | {icon}`contrastHigh`                  |
+| `` {icon}`controls` ``                      | {icon}`controls`                      |
+| `` {icon}`copy` ``                          | {icon}`copy`                          |
+| `` {icon}`copy_clipboard` ``                | {icon}`copy_clipboard`                |
+| `` {icon}`cross` ``                         | {icon}`cross`                         |
+| `` {icon}`cross_in_circle` ``               | {icon}`cross_in_circle`               |
+| `` {icon}`crosshairs` ``                    | {icon}`crosshairs`                    |
+| `` {icon}`currency` ``                      | {icon}`currency`                      |
+| `` {icon}`cut` ``                           | {icon}`cut`                           |
+| `` {icon}`database` ``                      | {icon}`database`                      |
+| `` {icon}`desktop` ``                       | {icon}`desktop`                       |
+| `` {icon}`diff` ``                          | {icon}`diff`                          |
+| `` {icon}`document` ``                      | {icon}`document`                      |
+| `` {icon}`documentEdit` ``                  | {icon}`documentEdit`                  |
+| `` {icon}`documentation` ``                 | {icon}`documentation`                 |
+| `` {icon}`documents` ``                     | {icon}`documents`                     |
+| `` {icon}`dot` ``                           | {icon}`dot`                           |
+| `` {icon}`dotInCircle` ``                   | {icon}`dotInCircle`                   |
+| `` {icon}`doubleArrowLeft` ``               | {icon}`doubleArrowLeft`               |
+| `` {icon}`doubleArrowRight` ``              | {icon}`doubleArrowRight`              |
+| `` {icon}`download` ``                      | {icon}`download`                      |
+| `` {icon}`editorDistributeHorizontal` ``    | {icon}`editorDistributeHorizontal`    |
+| `` {icon}`editorDistributeVertical` ``      | {icon}`editorDistributeVertical`      |
+| `` {icon}`editorItemAlignBottom` ``         | {icon}`editorItemAlignBottom`         |
+| `` {icon}`editorItemAlignCenter` ``         | {icon}`editorItemAlignCenter`         |
+| `` {icon}`editorItemAlignLeft` ``           | {icon}`editorItemAlignLeft`           |
+| `` {icon}`editorItemAlignMiddle` ``         | {icon}`editorItemAlignMiddle`         |
+| `` {icon}`editorItemAlignRight` ``          | {icon}`editorItemAlignRight`          |
+| `` {icon}`editorItemAlignTop` ``            | {icon}`editorItemAlignTop`            |
+| `` {icon}`editorPositionBottomLeft` ``      | {icon}`editorPositionBottomLeft`      |
+| `` {icon}`editorPositionBottomRight` ``     | {icon}`editorPositionBottomRight`     |
+| `` {icon}`editorPositionTopLeft` ``         | {icon}`editorPositionTopLeft`         |
+| `` {icon}`editorPositionTopRight` ``        | {icon}`editorPositionTopRight`        |
+| `` {icon}`editor_align_center` ``           | {icon}`editor_align_center`           |
+| `` {icon}`editor_align_left` ``             | {icon}`editor_align_left`             |
+| `` {icon}`editor_align_right` ``            | {icon}`editor_align_right`            |
+| `` {icon}`editor_bold` ``                   | {icon}`editor_bold`                   |
+| `` {icon}`editor_checklist` ``              | {icon}`editor_checklist`              |
+| `` {icon}`editor_heading` ``                | {icon}`editor_heading`                |
+| `` {icon}`editor_italic` ``                 | {icon}`editor_italic`                 |
+| `` {icon}`editor_link` ``                   | {icon}`editor_link`                   |
+| `` {icon}`editor_ordered_list` ``           | {icon}`editor_ordered_list`           |
+| `` {icon}`editor_redo` ``                   | {icon}`editor_redo`                   |
+| `` {icon}`editor_strike` ``                 | {icon}`editor_strike`                 |
+| `` {icon}`editor_table` ``                  | {icon}`editor_table`                  |
+| `` {icon}`editor_underline` ``              | {icon}`editor_underline`              |
+| `` {icon}`editor_undo` ``                   | {icon}`editor_undo`                   |
+| `` {icon}`editor_unordered_list` ``         | {icon}`editor_unordered_list`         |
+| `` {icon}`email` ``                         | {icon}`email`                         |
+| `` {icon}`empty` ``                         | {icon}`empty`                         |
+| `` {icon}`endpoint` ``                      | {icon}`endpoint`                      |
+| `` {icon}`eql` ``                           | {icon}`eql`                           |
+| `` {icon}`eraser` ``                        | {icon}`eraser`                        |
+| `` {icon}`error` ``                         | {icon}`error`                         |
+| `` {icon}`errorFilled` ``                   | {icon}`errorFilled`                   |
+| `` {icon}`esqlVis` ``                       | {icon}`esqlVis`                       |
+| `` {icon}`exit` ``                          | {icon}`exit`                          |
+| `` {icon}`expand` ``                        | {icon}`expand`                        |
+| `` {icon}`expandMin` ``                     | {icon}`expandMin`                     |
+| `` {icon}`export` ``                        | {icon}`export`                        |
+| `` {icon}`eye` ``                           | {icon}`eye`                           |
+| `` {icon}`eye_closed` ``                    | {icon}`eye_closed`                    |
+| `` {icon}`face_happy` ``                    | {icon}`face_happy`                    |
+| `` {icon}`face_neutral` ``                  | {icon}`face_neutral`                  |
+| `` {icon}`face_sad` ``                      | {icon}`face_sad`                      |
+| `` {icon}`field_statistics` ``              | {icon}`field_statistics`              |
+| `` {icon}`filter` ``                        | {icon}`filter`                        |
+| `` {icon}`filterExclude` ``                 | {icon}`filterExclude`                 |
+| `` {icon}`filterIgnore` ``                  | {icon}`filterIgnore`                  |
+| `` {icon}`filterInCircle` ``                | {icon}`filterInCircle`                |
+| `` {icon}`filterInclude` ``                 | {icon}`filterInclude`                 |
+| `` {icon}`flag` ``                          | {icon}`flag`                          |
+| `` {icon}`flask` ``                         | {icon}`flask`                         |
+| `` {icon}`fold` ``                          | {icon}`fold`                          |
+| `` {icon}`folder_check` ``                  | {icon}`folder_check`                  |
+| `` {icon}`folder_closed` ``                 | {icon}`folder_closed`                 |
+| `` {icon}`folder_exclamation` ``            | {icon}`folder_exclamation`            |
+| `` {icon}`folder_open` ``                   | {icon}`folder_open`                   |
+| `` {icon}`frameNext` ``                     | {icon}`frameNext`                     |
+| `` {icon}`framePrevious` ``                 | {icon}`framePrevious`                 |
+| `` {icon}`fullScreenExit` ``                | {icon}`fullScreenExit`                |
+| `` {icon}`full_screen` ``                   | {icon}`full_screen`                   |
+| `` {icon}`function` ``                      | {icon}`function`                      |
+| `` {icon}`gear` ``                          | {icon}`gear`                          |
+| `` {icon}`globe` ``                         | {icon}`globe`                         |
+| `` {icon}`grab` ``                          | {icon}`grab`                          |
+| `` {icon}`grabOmnidirectional` ``           | {icon}`grabOmnidirectional`           |
+| `` {icon}`grab_horizontal` ``               | {icon}`grab_horizontal`               |
+| `` {icon}`gradient` ``                      | {icon}`gradient`                      |
+| `` {icon}`grid` ``                          | {icon}`grid`                          |
+| `` {icon}`heart` ``                         | {icon}`heart`                         |
+| `` {icon}`heatmap` ``                       | {icon}`heatmap`                       |
+| `` {icon}`help` ``                          | {icon}`help`                          |
+| `` {icon}`home` ``                          | {icon}`home`                          |
+| `` {icon}`image` ``                         | {icon}`image`                         |
+| `` {icon}`import` ``                        | {icon}`import`                        |
+| `` {icon}`index` ``                         | {icon}`index`                         |
+| `` {icon}`indexTemporary` ``                | {icon}`indexTemporary`                |
+| `` {icon}`index_close` ``                   | {icon}`index_close`                   |
+| `` {icon}`index_edit` ``                    | {icon}`index_edit`                    |
+| `` {icon}`index_flush` ``                   | {icon}`index_flush`                   |
+| `` {icon}`index_mapping` ``                 | {icon}`index_mapping`                 |
+| `` {icon}`index_open` ``                    | {icon}`index_open`                    |
+| `` {icon}`index_runtime` ``                 | {icon}`index_runtime`                 |
+| `` {icon}`index_settings` ``                | {icon}`index_settings`                |
+| `` {icon}`infinity` ``                      | {icon}`infinity`                      |
+| `` {icon}`info` ``                          | {icon}`info`                          |
+| `` {icon}`inputOutput` ``                   | {icon}`inputOutput`                   |
+| `` {icon}`inspect` ``                       | {icon}`inspect`                       |
+| `` {icon}`invert` ``                        | {icon}`invert`                        |
+| `` {icon}`ip` ``                            | {icon}`ip`                            |
+| `` {icon}`key` ``                           | {icon}`key`                           |
+| `` {icon}`keyboard` ``                      | {icon}`keyboard`                      |
+| `` {icon}`kql_field` ``                     | {icon}`kql_field`                     |
+| `` {icon}`kql_function` ``                  | {icon}`kql_function`                  |
+| `` {icon}`kql_operand` ``                   | {icon}`kql_operand`                   |
+| `` {icon}`kql_selector` ``                  | {icon}`kql_selector`                  |
+| `` {icon}`kql_value` ``                     | {icon}`kql_value`                     |
+| `` {icon}`kubernetesNode` ``                | {icon}`kubernetesNode`                |
+| `` {icon}`kubernetesPod` ``                 | {icon}`kubernetesPod`                 |
+| `` {icon}`launch` ``                        | {icon}`launch`                        |
+| `` {icon}`layers` ``                        | {icon}`layers`                        |
+| `` {icon}`lettering` ``                     | {icon}`lettering`                     |
+| `` {icon}`lineDashed` ``                    | {icon}`lineDashed`                    |
+| `` {icon}`lineDotted` ``                    | {icon}`lineDotted`                    |
+| `` {icon}`lineSolid` ``                     | {icon}`lineSolid`                     |
+| `` {icon}`link` ``                          | {icon}`link`                          |
+| `` {icon}`list` ``                          | {icon}`list`                          |
+| `` {icon}`list_add` ``                      | {icon}`list_add`                      |
+| `` {icon}`lock` ``                          | {icon}`lock`                          |
+| `` {icon}`lockOpen` ``                      | {icon}`lockOpen`                      |
+| `` {icon}`log_pattern_analysis` ``          | {icon}`log_pattern_analysis`          |
+| `` {icon}`log_rate_analysis` ``             | {icon}`log_rate_analysis`             |
+| `` {icon}`logo_aerospike` ``                | {icon}`logo_aerospike`                |
+| `` {icon}`logo_apache` ``                   | {icon}`logo_apache`                   |
+| `` {icon}`logo_app_search` ``               | {icon}`logo_app_search`               |
+| `` {icon}`logo_aws` ``                      | {icon}`logo_aws`                      |
+| `` {icon}`logo_aws_mono` ``                 | {icon}`logo_aws_mono`                 |
+| `` {icon}`logo_azure` ``                    | {icon}`logo_azure`                    |
+| `` {icon}`logo_azure_mono` ``               | {icon}`logo_azure_mono`               |
+| `` {icon}`logo_beats` ``                    | {icon}`logo_beats`                    |
+| `` {icon}`logo_business_analytics` ``       | {icon}`logo_business_analytics`       |
+| `` {icon}`logo_ceph` ``                     | {icon}`logo_ceph`                     |
+| `` {icon}`logo_cloud` ``                    | {icon}`logo_cloud`                    |
+| `` {icon}`logo_cloud_ece` ``                | {icon}`logo_cloud_ece`                |
+| `` {icon}`logo_code` ``                     | {icon}`logo_code`                     |
+| `` {icon}`logo_codesandbox` ``              | {icon}`logo_codesandbox`              |
+| `` {icon}`logo_couchbase` ``                | {icon}`logo_couchbase`                |
+| `` {icon}`logo_docker` ``                   | {icon}`logo_docker`                   |
+| `` {icon}`logo_dropwizard` ``               | {icon}`logo_dropwizard`               |
+| `` {icon}`logo_elastic` ``                  | {icon}`logo_elastic`                  |
+| `` {icon}`logo_elastic_stack` ``            | {icon}`logo_elastic_stack`            |
+| `` {icon}`logo_elasticsearch` ``            | {icon}`logo_elasticsearch`            |
+| `` {icon}`logo_enterprise_search` ``        | {icon}`logo_enterprise_search`        |
+| `` {icon}`logo_etcd` ``                     | {icon}`logo_etcd`                     |
+| `` {icon}`logo_gcp` ``                      | {icon}`logo_gcp`                      |
+| `` {icon}`logo_gcp_mono` ``                 | {icon}`logo_gcp_mono`                 |
+| `` {icon}`logo_github` ``                   | {icon}`logo_github`                   |
+| `` {icon}`logo_gmail` ``                    | {icon}`logo_gmail`                    |
+| `` {icon}`logo_golang` ``                   | {icon}`logo_golang`                   |
+| `` {icon}`logo_google_g` ``                 | {icon}`logo_google_g`                 |
+| `` {icon}`logo_haproxy` ``                  | {icon}`logo_haproxy`                  |
+| `` {icon}`logo_ibm` ``                      | {icon}`logo_ibm`                      |
+| `` {icon}`logo_ibm_mono` ``                 | {icon}`logo_ibm_mono`                 |
+| `` {icon}`logo_kafka` ``                    | {icon}`logo_kafka`                    |
+| `` {icon}`logo_kibana` ``                   | {icon}`logo_kibana`                   |
+| `` {icon}`logo_kubernetes` ``               | {icon}`logo_kubernetes`               |
+| `` {icon}`logo_logging` ``                  | {icon}`logo_logging`                  |
+| `` {icon}`logo_logstash` ``                 | {icon}`logo_logstash`                 |
+| `` {icon}`logo_maps` ``                     | {icon}`logo_maps`                     |
+| `` {icon}`logo_memcached` ``                | {icon}`logo_memcached`                |
+| `` {icon}`logo_metrics` ``                  | {icon}`logo_metrics`                  |
+| `` {icon}`logo_mongodb` ``                  | {icon}`logo_mongodb`                  |
+| `` {icon}`logo_mysql` ``                    | {icon}`logo_mysql`                    |
+| `` {icon}`logo_nginx` ``                    | {icon}`logo_nginx`                    |
+| `` {icon}`logo_observability` ``            | {icon}`logo_observability`            |
+| `` {icon}`logo_osquery` ``                  | {icon}`logo_osquery`                  |
+| `` {icon}`logo_php` ``                      | {icon}`logo_php`                      |
+| `` {icon}`logo_postgres` ``                 | {icon}`logo_postgres`                 |
+| `` {icon}`logo_prometheus` ``               | {icon}`logo_prometheus`               |
+| `` {icon}`logo_rabbitmq` ``                 | {icon}`logo_rabbitmq`                 |
+| `` {icon}`logo_redis` ``                    | {icon}`logo_redis`                    |
+| `` {icon}`logo_security` ``                 | {icon}`logo_security`                 |
+| `` {icon}`logo_site_search` ``              | {icon}`logo_site_search`              |
+| `` {icon}`logo_sketch` ``                   | {icon}`logo_sketch`                   |
+| `` {icon}`logo_slack` ``                    | {icon}`logo_slack`                    |
+| `` {icon}`logo_uptime` ``                   | {icon}`logo_uptime`                   |
+| `` {icon}`logo_vulnerability_management` `` | {icon}`logo_vulnerability_management` |
+| `` {icon}`logo_webhook` ``                  | {icon}`logo_webhook`                  |
+| `` {icon}`logo_windows` ``                  | {icon}`logo_windows`                  |
+| `` {icon}`logo_workplace_search` ``         | {icon}`logo_workplace_search`         |
+| `` {icon}`logstash_filter` ``               | {icon}`logstash_filter`               |
+| `` {icon}`logstash_if` ``                   | {icon}`logstash_if`                   |
+| `` {icon}`logstash_input` ``                | {icon}`logstash_input`                |
+| `` {icon}`logstash_output` ``               | {icon}`logstash_output`               |
+| `` {icon}`logstash_queue` ``                | {icon}`logstash_queue`                |
+| `` {icon}`magnet` ``                        | {icon}`magnet`                        |
+| `` {icon}`magnifyWithExclamation` ``        | {icon}`magnifyWithExclamation`        |
+| `` {icon}`magnifyWithMinus` ``              | {icon}`magnifyWithMinus`              |
+| `` {icon}`magnifyWithPlus` ``               | {icon}`magnifyWithPlus`               |
+| `` {icon}`map_marker` ``                    | {icon}`map_marker`                    |
+| `` {icon}`memory` ``                        | {icon}`memory`                        |
+| `` {icon}`menu` ``                          | {icon}`menu`                          |
+| `` {icon}`menuDown` ``                      | {icon}`menuDown`                      |
+| `` {icon}`menuLeft` ``                      | {icon}`menuLeft`                      |
+| `` {icon}`menuRight` ``                     | {icon}`menuRight`                     |
+| `` {icon}`menuUp` ``                        | {icon}`menuUp`                        |
+| `` {icon}`merge` ``                         | {icon}`merge`                         |
+| `` {icon}`minimize` ``                      | {icon}`minimize`                      |
+| `` {icon}`minus` ``                         | {icon}`minus`                         |
+| `` {icon}`minus_in_circle` ``               | {icon}`minus_in_circle`               |
+| `` {icon}`minus_in_circle_filled` ``        | {icon}`minus_in_circle_filled`        |
+| `` {icon}`minus_in_square` ``               | {icon}`minus_in_square`               |
+| `` {icon}`ml_classification_job` ``         | {icon}`ml_classification_job`         |
+| `` {icon}`ml_create_advanced_job` ``        | {icon}`ml_create_advanced_job`        |
+| `` {icon}`ml_create_generic_job` ``         | {icon}`ml_create_generic_job`         |
+| `` {icon}`ml_create_geo_job` ``             | {icon}`ml_create_geo_job`             |
+| `` {icon}`ml_create_multi_metric_job` ``    | {icon}`ml_create_multi_metric_job`    |
+| `` {icon}`ml_create_population_job` ``      | {icon}`ml_create_population_job`      |
+| `` {icon}`ml_create_single_metric_job` ``   | {icon}`ml_create_single_metric_job`   |
+| `` {icon}`ml_data_visualizer` ``            | {icon}`ml_data_visualizer`            |
+| `` {icon}`ml_outlier_detection_job` ``      | {icon}`ml_outlier_detection_job`      |
+| `` {icon}`ml_regression_job` ``             | {icon}`ml_regression_job`             |
+| `` {icon}`mobile` ``                        | {icon}`mobile`                        |
+| `` {icon}`moon` ``                          | {icon}`moon`                          |
+| `` {icon}`move` ``                          | {icon}`move`                          |
+| `` {icon}`namespace` ``                     | {icon}`namespace`                     |
+| `` {icon}`nested` ``                        | {icon}`nested`                        |
+| `` {icon}`new_chat` ``                      | {icon}`new_chat`                      |
+| `` {icon}`node` ``                          | {icon}`node`                          |
+| `` {icon}`number` ``                        | {icon}`number`                        |
+| `` {icon}`offline` ``                       | {icon}`offline`                       |
+| `` {icon}`online` ``                        | {icon}`online`                        |
+| `` {icon}`package` ``                       | {icon}`package`                       |
+| `` {icon}`pageSelect` ``                    | {icon}`pageSelect`                    |
+| `` {icon}`pagesSelect` ``                   | {icon}`pagesSelect`                   |
+| `` {icon}`paint` ``                         | {icon}`paint`                         |
+| `` {icon}`palette` ``                       | {icon}`palette`                       |
+| `` {icon}`paper_clip` ``                    | {icon}`paper_clip`                    |
+| `` {icon}`partial` ``                       | {icon}`partial`                       |
+| `` {icon}`pause` ``                         | {icon}`pause`                         |
+| `` {icon}`payment` ``                       | {icon}`payment`                       |
+| `` {icon}`pencil` ``                        | {icon}`pencil`                        |
+| `` {icon}`percent` ``                       | {icon}`percent`                       |
+| `` {icon}`pin` ``                           | {icon}`pin`                           |
+| `` {icon}`pin_filled` ``                    | {icon}`pin_filled`                    |
+| `` {icon}`pipeBreaks` ``                    | {icon}`pipeBreaks`                    |
+| `` {icon}`pipeNoBreaks` ``                  | {icon}`pipeNoBreaks`                  |
+| `` {icon}`pivot` ``                         | {icon}`pivot`                         |
+| `` {icon}`play` ``                          | {icon}`play`                          |
+| `` {icon}`playFilled` ``                    | {icon}`playFilled`                    |
+| `` {icon}`plugs` ``                         | {icon}`plugs`                         |
+| `` {icon}`plus` ``                          | {icon}`plus`                          |
+| `` {icon}`plus_in_circle` ``                | {icon}`plus_in_circle`                |
+| `` {icon}`plus_in_circle_filled` ``         | {icon}`plus_in_circle_filled`         |
+| `` {icon}`plus_in_square` ``                | {icon}`plus_in_square`                |
+| `` {icon}`popout` ``                        | {icon}`popout`                        |
+| `` {icon}`push` ``                          | {icon}`push`                          |
+| `` {icon}`question` ``                      | {icon}`question`                      |
+| `` {icon}`quote` ``                         | {icon}`quote`                         |
+| `` {icon}`readOnly` ``                      | {icon}`readOnly`                      |
+| `` {icon}`refresh` ``                       | {icon}`refresh`                       |
+| `` {icon}`reporter` ``                      | {icon}`reporter`                      |
+| `` {icon}`return_key` ``                    | {icon}`return_key`                    |
+| `` {icon}`save` ``                          | {icon}`save`                          |
+| `` {icon}`scale` ``                         | {icon}`scale`                         |
+| `` {icon}`search` ``                        | {icon}`search`                        |
+| `` {icon}`section` ``                       | {icon}`section`                       |
+| `` {icon}`securitySignal` ``                | {icon}`securitySignal`                |
+| `` {icon}`securitySignalDetected` ``        | {icon}`securitySignalDetected`        |
+| `` {icon}`securitySignalResolved` ``        | {icon}`securitySignalResolved`        |
+| `` {icon}`sessionViewer` ``                 | {icon}`sessionViewer`                 |
+| `` {icon}`shard` ``                         | {icon}`shard`                         |
+| `` {icon}`share` ``                         | {icon}`share`                         |
+| `` {icon}`single_metric_viewer` ``          | {icon}`single_metric_viewer`          |
+| `` {icon}`snowflake` ``                     | {icon}`snowflake`                     |
+| `` {icon}`sortAscending` ``                 | {icon}`sortAscending`                 |
+| `` {icon}`sortDescending` ``                | {icon}`sortDescending`                |
+| `` {icon}`sortLeft` ``                      | {icon}`sortLeft`                      |
+| `` {icon}`sortRight` ``                     | {icon}`sortRight`                     |
+| `` {icon}`sort_down` ``                     | {icon}`sort_down`                     |
+| `` {icon}`sort_up` ``                       | {icon}`sort_up`                       |
+| `` {icon}`sortable` ``                      | {icon}`sortable`                      |
+| `` {icon}`spaces` ``                        | {icon}`spaces`                        |
+| `` {icon}`sparkles` ``                      | {icon}`sparkles`                      |
+| `` {icon}`starPlusEmpty` ``                 | {icon}`starPlusEmpty`                 |
+| `` {icon}`starPlusFilled` ``                | {icon}`starPlusFilled`                |
+| `` {icon}`star_empty` ``                    | {icon}`star_empty`                    |
+| `` {icon}`star_empty_space` ``              | {icon}`star_empty_space`              |
+| `` {icon}`star_filled` ``                   | {icon}`star_filled`                   |
+| `` {icon}`star_filled_space` ``             | {icon}`star_filled_space`             |
+| `` {icon}`star_minus_empty` ``              | {icon}`star_minus_empty`              |
+| `` {icon}`star_minus_filled` ``             | {icon}`star_minus_filled`             |
+| `` {icon}`stats` ``                         | {icon}`stats`                         |
+| `` {icon}`stop` ``                          | {icon}`stop`                          |
+| `` {icon}`stop_filled` ``                   | {icon}`stop_filled`                   |
+| `` {icon}`stop_slash` ``                    | {icon}`stop_slash`                    |
+| `` {icon}`storage` ``                       | {icon}`storage`                       |
+| `` {icon}`string` ``                        | {icon}`string`                        |
+| `` {icon}`submodule` ``                     | {icon}`submodule`                     |
+| `` {icon}`sun` ``                           | {icon}`sun`                           |
+| `` {icon}`swatch_input` ``                  | {icon}`swatch_input`                  |
+| `` {icon}`symlink` ``                       | {icon}`symlink`                       |
+| `` {icon}`tableOfContents` ``               | {icon}`tableOfContents`               |
+| `` {icon}`table_density_compact` ``         | {icon}`table_density_compact`         |
+| `` {icon}`table_density_expanded` ``        | {icon}`table_density_expanded`        |
+| `` {icon}`table_density_normal` ``          | {icon}`table_density_normal`          |
+| `` {icon}`tag` ``                           | {icon}`tag`                           |
+| `` {icon}`tear` ``                          | {icon}`tear`                          |
+| `` {icon}`temperature` ``                   | {icon}`temperature`                   |
+| `` {icon}`timeRefresh` ``                   | {icon}`timeRefresh`                   |
+| `` {icon}`timeline` ``                      | {icon}`timeline`                      |
+| `` {icon}`timelineWithArrow` ``             | {icon}`timelineWithArrow`             |
+| `` {icon}`timeslider` ``                    | {icon}`timeslider`                    |
+| `` {icon}`training` ``                      | {icon}`training`                      |
+| `` {icon}`transitionLeftIn` ``              | {icon}`transitionLeftIn`              |
+| `` {icon}`transitionLeftOut` ``             | {icon}`transitionLeftOut`             |
+| `` {icon}`transitionTopIn` ``               | {icon}`transitionTopIn`               |
+| `` {icon}`transitionTopOut` ``              | {icon}`transitionTopOut`              |
+| `` {icon}`trash` ``                         | {icon}`trash`                         |
+| `` {icon}`unfold` ``                        | {icon}`unfold`                        |
+| `` {icon}`unlink` ``                        | {icon}`unlink`                        |
+| `` {icon}`user` ``                          | {icon}`user`                          |
+| `` {icon}`users` ``                         | {icon}`users`                         |
+| `` {icon}`vector` ``                        | {icon}`vector`                        |
+| `` {icon}`videoPlayer` ``                   | {icon}`videoPlayer`                   |
+| `` {icon}`vis_area` ``                      | {icon}`vis_area`                      |
+| `` {icon}`vis_area_stacked` ``              | {icon}`vis_area_stacked`              |
+| `` {icon}`vis_bar_horizontal` ``            | {icon}`vis_bar_horizontal`            |
+| `` {icon}`vis_bar_horizontal_stacked` ``    | {icon}`vis_bar_horizontal_stacked`    |
+| `` {icon}`vis_bar_vertical` ``              | {icon}`vis_bar_vertical`              |
+| `` {icon}`vis_bar_vertical_stacked` ``      | {icon}`vis_bar_vertical_stacked`      |
+| `` {icon}`vis_gauge` ``                     | {icon}`vis_gauge`                     |
+| `` {icon}`vis_goal` ``                      | {icon}`vis_goal`                      |
+| `` {icon}`vis_line` ``                      | {icon}`vis_line`                      |
+| `` {icon}`vis_map_coordinate` ``            | {icon}`vis_map_coordinate`            |
+| `` {icon}`vis_map_region` ``                | {icon}`vis_map_region`                |
+| `` {icon}`vis_metric` ``                    | {icon}`vis_metric`                    |
+| `` {icon}`vis_pie` ``                       | {icon}`vis_pie`                       |
+| `` {icon}`vis_table` ``                     | {icon}`vis_table`                     |
+| `` {icon}`vis_tag_cloud` ``                 | {icon}`vis_tag_cloud`                 |
+| `` {icon}`vis_text` ``                      | {icon}`vis_text`                      |
+| `` {icon}`vis_timelion` ``                  | {icon}`vis_timelion`                  |
+| `` {icon}`vis_visual_builder` ``            | {icon}`vis_visual_builder`            |
+| `` {icon}`warning` ``                       | {icon}`warning`                       |
+| `` {icon}`warningFilled` ``                 | {icon}`warningFilled`                 |
+| `` {icon}`web` ``                           | {icon}`web`                           |
+| `` {icon}`wordWrap` ``                      | {icon}`wordWrap`                      |
+| `` {icon}`wordWrapDisabled` ``              | {icon}`wordWrapDisabled`              |
+| `` {icon}`wrench` ``                        | {icon}`wrench`                        |
 
 ## Usage examples
 
@@ -475,15 +477,15 @@ You can include icons in headings:
 
 :::{tab-item} Output
 
-#### Test the :gear: Settings
-#### User Profile :user:
+#### Test the {icon}`gear` Settings
+#### User Profile {icon}`user`
 
 :::
 
 :::{tab-item} Markdown
 ```markdown
-#### Test the :gear: Settings
-#### User Profile :user:
+#### Test the {icon}`gear` Settings
+#### User Profile {icon}`user`
 ```
 :::
 
@@ -499,28 +501,28 @@ Icons can be used in both ordered and unordered lists.
 :::{tab-item} Output
 
 **Unordered List:**
-* :check: Task one completed
-* :check: Task two completed
-* :cross: Task three pending
+* {icon}`check` Task one completed
+* {icon}`check` Task two completed
+* {icon}`cross` Task three pending
 
 **Ordered List:**
-1. :check: First item
-2. :check: Second item
-3. :cross: Third item
+1. {icon}`check` First item
+2. {icon}`check` Second item
+3. {icon}`cross` Third item
 
 :::
 
 :::{tab-item} Markdown
 ```markdown
 **Unordered List:**
-* :check: Task one completed
-* :check: Task two completed
-* :cross: Task three pending
+* {icon}`check` Task one completed
+* {icon}`check` Task two completed
+* {icon}`cross` Task three pending
 
 **Ordered List:**
-1. :check: First item
-2. :check: Second item
-3. :cross: Third item
+1. {icon}`check` First item
+2. {icon}`check` Second item
+3. {icon}`cross` Third item
 ```
 :::
 
@@ -536,9 +538,9 @@ Icons can be used within table cells.
 
 |     Status     | Description |
 |:--------------:|:------------|
-| :checkCircle: | Success     |
-|   :warning:   | Warning     |
-|    :error:    | Error       |
+| {icon}`checkCircle` | Success     |
+|   {icon}`warning`   | Warning     |
+|    {icon}`error`    | Error       |
 
 :::
 
@@ -546,9 +548,9 @@ Icons can be used within table cells.
 ```markdown
 |     Status     | Description |
 |:--------------:|:------------|
-| :checkCircle: | Success     |
-|   :warning:   | Warning     |
-|    :error:    | Error       |
+| {icon}`checkCircle` | Success     |
+|   {icon}`warning`   | Warning     |
+|    {icon}`error`    | Error       |
 ```
 :::
 
@@ -560,9 +562,9 @@ Icons can be used within table cells.
 
 :::{tab-item} Output
 
-:sparkles: Icons can be placed at the beginning of a paragraph.
+{icon}`sparkles` Icons can be placed at the beginning of a paragraph.
 
-You can also use icons directly in your text for emphasis, like this :sparkles: magic :sparkles: moment.
+You can also use icons directly in your text for emphasis, like this {icon}`sparkles` magic {icon}`sparkles` moment.
 
 
 :::
@@ -570,9 +572,9 @@ You can also use icons directly in your text for emphasis, like this :sparkles: 
 :::{tab-item} Markdown
 
 ```markdown
-:sparkles: Icons can be placed at the beginning of a paragraph.
+{icon}`sparkles` Icons can be placed at the beginning of a paragraph.
 
-You can also use icons directly in your text for emphasis, like this :sparkles: magic :sparkles: moment.
+You can also use icons directly in your text for emphasis, like this {icon}`sparkles` magic {icon}`sparkles` moment.
 
 ```
 :::

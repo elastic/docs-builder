@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
-using Elastic.Markdown.Myst.InlineParsers.Icon;
+using Elastic.Markdown.Myst.Roles.Icons;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -40,8 +40,8 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 
 		var text = headingBlock.Lines.Lines[0].Slice.AsSpan();
 		// Remove icon syntax from the heading text
-		text = IconSyntax.Replace(text.ToString(), "").Trim();
-		headingBlock.SetData("header", text.ToString());
+		var cleanText = IconSyntax.Replace(text.ToString(), "").Trim();
+		headingBlock.SetData("header", cleanText);
 
 		if (!HeadingAnchorParser.MatchAnchorLine().IsMatch(text))
 			return base.Close(processor, block);
@@ -59,7 +59,8 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 			if (header.IndexOf('$') >= 0)
 				anchor = HeadingAnchorParser.MatchAnchor().Replace(anchor.ToString(), "");
 			headingBlock.SetData("anchor", anchor.ToString());
-			headingBlock.SetData("header", header.ToString());
+			// Remove icon syntax from the header text when setting it as data
+			headingBlock.SetData("header", IconSyntax.Replace(header.ToString(), "").Trim());
 			return base.Close(processor, block);
 		}
 

@@ -37,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Myst\InlineParsers\Icon\svgs\*.svg" />
+    <EmbeddedResource Include="Myst\Roles\Icons\svgs\*.svg" />
   </ItemGroup>
 
 </Project>
