@@ -20,7 +20,7 @@ environments:
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
-    content_source: next
+    content_source: current
     google_tag_manager:
       enabled: false
   dev:
@@ -180,6 +180,11 @@ references:
   ecs:
     current: "9.0"
     next: main
+  elastic-otel-dotnet:
+  elastic-otel-java:
+  elastic-otel-node:
+  elastic-otel-php:
+  elastic-otel-python:
   eland:
   elastic-serverless-forwarder:
   elasticsearch-hadoop:

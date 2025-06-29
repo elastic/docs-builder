@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Text.Json;
 using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
@@ -84,6 +86,15 @@ public class AssemblerBuilder(
 				throw;
 			}
 		}
+		foreach (var exporter in markdownExporters)
+		{
+			_logger.LogInformation("Calling FinishExportAsync on {ExporterName}", exporter.GetType().Name);
+			_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
+		}
+
+		await OutputRedirectsAsync(redirects
+			.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+			.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -142,5 +153,17 @@ public class AssemblerBuilder(
 			_logger.LogInformation("Setting feature flag: {ConfigurationFeatureFlagKey}={ConfigurationFeatureFlagValue}", configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 		}
+	}
+
+	private async Task OutputRedirectsAsync(Dictionary<string, string> redirects, Cancel ctx)
+	{
+		var uniqueRedirects = redirects
+			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/')))
+			.ToDictionary();
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(Path.Combine(context.OutputDirectory.FullName, "redirects.json"));
+		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
+
+		var redirectsJson = JsonSerializer.Serialize(uniqueRedirects, SourceGenerationContext.Default.DictionaryStringString);
+		await context.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, redirectsJson, ctx);
 	}
 }

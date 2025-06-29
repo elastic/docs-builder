@@ -13,9 +13,9 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
-using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers.Roundtrip;
@@ -183,17 +183,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 
 		var document = await GetParseDocumentAsync(ctx);
 		return document;
-	}
-
-	public static string ToLLMText(MarkdownDocument document)
-	{
-		using var sw = new StringWriter();
-		var rr = new RoundtripRenderer(sw);
-		rr.Write(document);
-		var outputMarkdown = sw.ToString();
-
-		return outputMarkdown;
-
 	}
 
 	private IReadOnlyDictionary<string, string> GetSubstitutions()

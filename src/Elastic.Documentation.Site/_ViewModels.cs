@@ -17,6 +17,7 @@ public static class GlobalSections
 
 public record GlobalLayoutViewModel
 {
+	public required string DocsBuilderVersion { get; init; }
 	public required string DocSetName { get; init; }
 	public string Title { get; set; } = "Elastic Documentation";
 	public required string Description { get; init; }

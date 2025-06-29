@@ -9,7 +9,10 @@
 <body
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
 	hx-ext="preload, head-support"
-	data-root-path="@Model.Link("/")">
+	data-docs-builder-version="@Model.DocsBuilderVersion"
+	data-root-path="@Model.Link("/")"
+	hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator"
+	>
 @if (Model.GoogleTagManager.Enabled)
 {
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"

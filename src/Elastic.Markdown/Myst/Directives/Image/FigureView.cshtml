@@ -1,0 +1,8 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Image.ImageViewModel>
+<figure class="align-default" id="@Model.Label">
+	<a class="reference internal image-reference" href="@Model.ImageUrl"><img alt="@Model.Alt" class="align-center" src="@Model.ImageUrl" style="@Model.Style">
+	</a>
+	<figcaption>
+		<p>@Model.RenderBlock()<a class="headerlink" href="@Model.Label" title="Link to this image">¶</a></p>
+	</figcaption>
+</figure>
