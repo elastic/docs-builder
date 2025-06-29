@@ -129,7 +129,8 @@ public class HtmlWriter(
 			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
-			Products = allProducts
+			Products = allProducts,
+			VersionsConfig = DocumentationSet.Context.VersionsConfig
 		});
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}

@@ -14,14 +14,16 @@ But you can override the default anchor by adding the `:anchor:` option to the s
 
 :::::{stepper}
 
-::::{step} Install
+::::{step}
+### Install
 First install the dependencies.
 ```shell
 npm install
 ```
 ::::
 
-::::{step} Build
+::::{step}Build
+### Build
 Then build the project.
 ```shell
 npm run build

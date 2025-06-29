@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -112,7 +114,21 @@ $"""
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(Collector, FileSystem)
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+		var context = new BuildContext(Collector, FileSystem, versionsConfig)
 		{
 			UrlPathPrefix = "/docs"
 		};
