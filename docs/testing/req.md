@@ -5,6 +5,8 @@ applies_to:
 
 # Requirements
 
+test
+
 Current version: **9.0.0**
 
 | `applies_to`                               | result                               |
