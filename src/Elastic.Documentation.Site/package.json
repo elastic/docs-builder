@@ -60,6 +60,6 @@
     "select-dom": "9.3.1",
     "tailwindcss": "4.1.10",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.3"
+    "ua-parser-js": "2.0.4"
   }
 }
