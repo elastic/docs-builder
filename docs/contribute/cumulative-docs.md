@@ -13,19 +13,19 @@ With our markdown-based docs, there is no longer a new documentation set publish
 This new behavior starts with the following **versions** of our products: Elastic Stack 9.0, ECE 4.0, ECK 3.0, and even more like EDOT docs. It also includes our unversioned products: Serverless and Elastic Cloud.
 
 :::{note} 
-Nothing changes for our ASCIIDoc-based documentation system, that remains published and maintained for the following versions: Elastic Stack until 8.19, ECE until 3.8, ECK until 2.x, etc.
+Nothing changes for our ASCIIDoc-based documentation system, that remains published and maintained for the following versions: Elastic Stack until 8.x, ECE until 3.x, ECK until 2.x, etc.
 :::
 
 **How does it change the way we write docs?** 
 
 As new minor versions are released, we want users to be able to distinguish which content applies to their own ecosystem and product versions without having to switch between different versions of a page.
 
-This extends to deprecations and deletions: No information should be removed for supported product versions, unless it was never accurate. It can be refactored to improve clarity and flow, or to accommodate information for additional products, deployment types, and versions as needed.
+This extends to deprecations and removals: No information should be removed for supported product versions, unless it was never accurate. It can be refactored to improve clarity and flow, or to accommodate information for additional products, deployment types, and versions as needed.
 
 In order to achieve this, the markdown source files integrate a tagging system meant to identify:
 
-* [Which Elastic products and deployment models the content applies to](#tagging-products-and-deployment-models).  
-* [When a feature goes into a new state as compared to the established base version](#tagging-version-related-changes-mandatory).
+* [Which Elastic products and deployment models the content applies to](#tagging-products-and-deployment-models) (for example, Elastic Cloud Serverless or Elastic Cloud Hosted).  
+* [When a feature goes into a new state as compared to the established base version](#tagging-version-related-changes-mandatory) (for example, being added or going from Beta to GA).
 
 This tagging system is mandatory for all of the public-facing documentation. We refer to it as “[applies_to](https://elastic.github.io/docs-builder/syntax/applies/)” tags or badges.
 

@@ -17,7 +17,7 @@ In this new system, documentation is written **cumulatively**. This means that a
 
 ## Deployment models
 
-In Docs V3, a single branch is published per repository. This branch is set to `main` (or `master`) by default, but it is possible to instead publish a different branch by changing your repository's deployment model. You might want to change your deployment model so you can have more control over when content added for a specific release is published. 
+In Docs V3, a single branch is published per repository. This branch is set to `main` by default, but it is possible to instead publish a different branch by changing your repository's deployment model. You might want to change your deployment model so you can have more control over when content added for a specific release is published. 
 
 * [Learn how to choose the right deployment model for your repository](/contribute/deployment-models.md)
 * [Learn how to set up your selected deployment model](/configure/deployment-models.md)

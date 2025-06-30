@@ -4,7 +4,7 @@ navigation_title: Choose a deployment model
 
 # Choose the docs deployment model for a repository
 
-With Docs V3 (elastic.co/docs), a single branch is published per repository. This branch is set to `main` (or `master`) by default. This is known as the continuous deployment model. However, it is possible to instead publish a different branch, also known as the tagged deployment model. 
+With Docs V3 (elastic.co/docs), a single branch is published per repository. This branch is set to `main` by default. This is known as the continuous deployment model. However, it is possible to instead publish a different branch, also known as the tagged deployment model. 
 
 On this page, you'll learn how to choose the right deployment model for your repository, and how to change the deployment model. You'll also learn about the workflows for working in each deployment model.
 

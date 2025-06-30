@@ -33,7 +33,7 @@ In April 2025, we released our new documentation site. This site includes docume
 
 #### Branches in V3
 
-In Docs V3, a single branch is published per repository. This branch is set to `main` (or `master`) by default, but it is possible to instead publish a different branch by changing your repository's deployment model. You might want to change your deployment model so you can have more control over when content added for a specific release is published.
+In Docs V3, a single branch is published per repository. This branch is set to `main` by default, but it is possible to instead publish a different branch by changing your repository's deployment model. You might want to change your deployment model so you can have more control over when content added for a specific release is published.
 
 [Learn more about deployment models](deployment-models.md).
 
