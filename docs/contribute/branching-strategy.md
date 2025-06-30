@@ -62,6 +62,10 @@ Add an action as part of that repo’s release process for the release manager t
 
 When these releases happen, create a PR against the [assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml) that defines the new `current` branch, to merge on release day.
 
+:::{tip}
+Regardless of the branching strategy, you also need to update the current version in [versions.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml) as part of your release process. This version number is used in documentation variables and drives our [dynamic version badge logic](/contribute/cumulative-docs.md#how-do-these-tags-behave-in-the-output).
+:::
+
 
 ## Workflow 1 (default): Continuous deployment
 
