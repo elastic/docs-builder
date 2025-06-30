@@ -35,7 +35,7 @@ toc:
       - file: move.md
       - file: redirects.md
       - file: cumulative-docs.md
-      - file: deployment-models.md
+      - file: branching-strategy.md
       - file: add-repo.md
   - folder: migration
     children:
@@ -74,7 +74,7 @@ toc:
           - file: navigation.md
           - file: extensions.md
       - file: page.md
-      - file: deployment-models.md
+      - file: content-sources.md
   - folder: syntax
     children:
       - file: index.md

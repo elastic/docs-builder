@@ -7,25 +7,7 @@ This section will help you understand how to update and contribute to our docume
 :::{include} _snippets/two-systems.md
 :::
 
-### Update elastic.co/guide [guide]
-
-:::{include} _snippets/guide-intro.md
-:::
-
-These changes should be made in the original source folders in their respective repositories. Here’s how you can do it:
-
-1. Navigate to the page that is impacted.  
-2. Click the **Edit** button.  
-3. Ensure the targeted branch is \<insert proper branch\>.  
-4. Make the necessary updates.  
-5. Commit your changes and create a pull request.  
-6. Add the appropriate labels per repo as found at [Page: Working across docs repos](https://elasticco.atlassian.net/wiki/spaces/DOC/pages/61604182/Working+across+docs+repos)
-
-:::{note}
-If you are working in a repo like Kibana or the cloud repo, backports can be complicated. You can use the [backport tool](https://github.com/sorenlouv/backport) to manage your backport.
-:::
-
-### Update elastic.co/docs [docs]
+### Update elastic.co/docs (Docs V3) [docs]
 
 :::{include} _snippets/docs-intro.md
 :::
@@ -39,6 +21,24 @@ For content hosted on elastic.co/docs, most conceptual and narrative content is 
 5. Commit your changes and create a pull request.
 
 :::{include} _snippets/tagged-warning.md
+:::
+
+### Update elastic.co/guide [guide]
+
+:::{include} _snippets/guide-intro.md
+:::
+
+These changes should be made in the original source folders in their respective repositories. Here’s how you can do it:
+
+1. Navigate to the page that is impacted.  
+2. Click the **Edit** button.  
+3. Ensure the targeted branch is \<insert proper branch\>.  
+4. Make the necessary updates.  
+5. Commit your changes and create a pull request.  
+6. Add the appropriate labels as required by the repo. To learn which labels to add, refer to the contribution documentation for that repo or reach out to the file codeowners.
+
+:::{note}
+If you are working in a repo like Kibana or the cloud repo, backports can be complicated. You can use the [backport tool](https://github.com/sorenlouv/backport) to manage your backport.
 :::
 
 ## What if I need to update docs in both systems?

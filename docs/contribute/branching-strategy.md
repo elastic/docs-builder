@@ -1,12 +1,12 @@
 ---
-navigation_title: Choose a deployment model
+navigation_title: Choose a branching strategy
 ---
 
-# Choose the docs deployment model for a repository
+# Choose the docs branching strategy for a repository
 
-With Docs V3 (elastic.co/docs), a single branch is published per repository. This branch is set to `main` by default. This is known as the continuous deployment model. However, it is possible to instead publish a different branch, also known as the tagged deployment model. 
+With Docs V3 (elastic.co/docs), a single branch is published per repository. This branch is set to `main` by default. This is known as the continuous deployment branching strategy. However, it is possible to instead publish a different branch, also known as the tagged branching strategy. 
 
-On this page, you'll learn how to choose the right deployment model for your repository, and how to change the deployment model. You'll also learn about the workflows for working in each deployment model.
+On this page, you'll learn how to choose the right branching strategy for your repository, and how to change the branching strategy. You'll also learn about the workflows for working with each branching strategy.
 
 ## Why is `main` the default publication branch?
 
@@ -25,7 +25,7 @@ Publishing from the main branch isn’t the best option for all repositories.
 
 If you choose this publication model for your repository AND that repository includes {{serverless-short}} or {{ecloud}} documentation, you will need to make sure that {{serverless-short}}- and {{ecloud}}-related changes are also backported to the `current` branch in order to be published on time.
 
-You **don't** need to change your deployment model to enable writing docs about future versions. Review the [continuous deployment workflow](#workflow-1-default-continuous-deployment) and [](cumulative-docs.md) to learn more.
+You **don't** need to change your branching strategy to enable writing docs about future versions. Review the [continuous deployment workflow](#workflow-1-default-continuous-deployment) and [](cumulative-docs.md) to learn more.
 
 Note that regardless of the publication branch that is set, the documentation must still flag all changes introduced so far since the last major release. This is NOT an alternative to [writing docs cumulatively](cumulative-docs.md).
 
@@ -33,22 +33,39 @@ Note that regardless of the publication branch that is set, the documentation mu
 
 Choosing to switch between publishing docs from `main` and publishing docs from a version branch is a long-term decision. This decision impacts all docs for an entire repository. Reach out to the docs team to discuss the change.
 
+For more information, refer to [](/configure/content-sources.md).
+
 After it has been established that a repository should publish from a version branch rather than `main`:
 
-1. In the [docs assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml):  
+1. [Add new triggers to the `docs-build` CI integration](/configure/content-sources.md#ci-configuration). Merge these changes to `main` or `master` and the intended version branches.
+2. Open a PR to trigger the CI integration and confirm that the docs build.
+3. Open a PR updating the [docs assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml):  
    * Specify which is the `current` branch for the repository. This branch is the branch from which docs are deployed to production at [elastic.co/docs](http://elastic.co/docs).  
    * Specify which is the `next` branch for the repository. The branch defined as `next` publishes docs internally to [staging-website.elastic.co/docs](http://staging-website.elastic.co/docs)  
      * Setting this branch to the next version branch in line is a good practice to preview docs change for an upcoming version.  
      * Otherwise, keeping it set to `main` is also an option since this is where the content is initially developed and merged. This is the default.
-2. [Add new triggers to the `docs-build` CI integration](/configure/deployment-models.md#ci-configuration).  
-3. Add an action as part of that repo’s release process for the release manager to update this same assembler file and bump the `current` branch with each release, as appropriate. The `next` branch also needs to be bumped if it is not set to `main`. 
-4. When these releases happen, create a PR against the [assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml) that defines the new `current` branch, to merge on release day.
+4. In the assembler PR, add the `ci` label. After CI runs, confirm that the intended version branches are publishing to the link service. When links are being published as intended, they can be found at the following URL, where `repo` is your repo name and `branch` is your newly configured branch:
 
-For more information, refer to [](/configure/deployment-models.md).
+  ```text
+  elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/<repo>/<branch>/links.json
+  ```
+5. Rerun the `validate-assembler` check on the PR.
+6. After checks pass and the docs engineering team approves, you can merge the PR.
+
+After these steps are completed, the docs engineering team needs to release a new version of our build tool to complete the process. This process will be decoupled in a future release. After a new version is released, the switch is complete and the production documentation reflects the specified current branch.
+
+### Update the release process
+
+When you publish from specific version branches, you need to bump the version branch as part of the release process.
+
+Add an action as part of that repo’s release process for the release manager to update this same assembler file and bump the `current` branch with each release, as appropriate. The `next` branch also needs to be bumped if it is not set to `main`. 
+
+When these releases happen, create a PR against the [assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml) that defines the new `current` branch, to merge on release day.
+
 
 ## Workflow 1 (default): Continuous deployment
 
-Learn how to make updates in the continuous deployment model, where the repo is publishing docs from `main`.
+Learn how to make updates in the continuous deployment branching strategy, where the repo is publishing docs from `main`.
 
 ### Where to make docs changes [make-changes-cd]
 
@@ -56,7 +73,7 @@ Initiate the changes by opening a PR against the `main` branch of the repo.
 
 ### How to write those changes [write-changes-cd]
 
-In our markdown-based documentation system, we [write docs cumulatively](cumulative-docs.md) regardless of the publication model selected.
+In elastic.co/docs (Docs V3), we [write docs cumulatively](cumulative-docs.md) regardless of the branching strategy selected.
 
 ### Merging and backporting [merge-backport-cd]
 
@@ -74,13 +91,9 @@ When a repo is publishing docs from its `main` branch, no backporting is needed.
 If you don’t want to hold on too many PRs to publish on release day, merge them to a feature branch, so you only have to merge this feature branch to `main` on release day.
 :::
 
-### More examples [more-examples-cd]
+## Workflow 2: Tagged
 
-We’ve prepared a few end-to-end examples to help in [Figma](https://www.figma.com/design/CZDl0szuGsQfJhFpnwJVWS/Applies_to-Docs-V3?node-id=0-1&p=f&t=lBPrvde0k5zg9U0E-0).  
-
-## Workflow 2: Tagged deployment
-
-Learn how to make updates in the continuous deployment model, where the repo is publishing docs from a specific `version` branch. 
+Learn how to make updates in the continuous deployment branching strategy, where the repo is publishing docs from a specific `version` branch. 
 
 ### Where to make docs changes [make-changes-td]
 
@@ -88,7 +101,7 @@ Initiate the changes by opening a PR against the `main` branch of the repo. The 
 
 ### How to write those changes [write-changes-td]
 
-In our markdown-based documentation system, we [write docs cumulatively](cumulative-docs.md) regardless of the publication model selected.
+In elastic.co/docs (Docs V3), we [write docs cumulatively](cumulative-docs.md) regardless of the branching strategy selected.
 
 ### Merging and backporting [merge-backport-td]
 
@@ -117,7 +130,3 @@ For example, in a situation where 9.0, 9.1, and 9.2 are already released, and th
 :::{note}
 While you *can* backport to versions prior to the `current` version when applicable to maintain parity between the code and the docs on a given branch, that content will not be used in the current state of the docs.
 :::
-
-### More examples [more-examples-td]
-
-We’ve prepared a few end-to-end examples to help in [Figma](https://www.figma.com/design/CZDl0szuGsQfJhFpnwJVWS/Applies_to-Docs-V3?node-id=0-1&p=f&t=lBPrvde0k5zg9U0E-0).

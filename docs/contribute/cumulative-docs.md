@@ -4,7 +4,7 @@
 This page explains our cumulative documentation philosophy, paired with examples. Component guidance for reference purposes goes in syntax/applies.md. 
 -->
 
-In our markdown-based documentation system, we write docs cumulatively regardless of the [deployment model](deployment-models.md) selected.
+In elastic.co/docs (Docs V3), we write docs cumulatively regardless of the [branching strategy](branching-strategy.md) selected.
 
 **What does this mean?** 
 
@@ -109,7 +109,7 @@ For this case, no specific version tagging is necessary.
 **A new feature is added to {{serverless-short}} or {{ecloud}}. How do I tag it?**  
 Cumulative documentation is not meant to replace release notes. If a feature becomes available in {{serverless-short}} and doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…), it does not need specific tagging.
 
-However, in this scenario, it is important to consider carefully [when the change is going to be published](deployment-models.md).
+However, in this scenario, it is important to consider carefully [when the change is going to be published](branching-strategy.md).
 
 We do not do date-based tagging for unversioned products.
 

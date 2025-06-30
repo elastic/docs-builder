@@ -1,6 +1,6 @@
 # Content sources
 
-To support multiple deployment models for different repositories, we support the concept of a content source.
+To support multiple branching strategies for different repositories, we support the concept of a content source.
 
 Next
 :   The source for the upcoming documentation.
@@ -17,16 +17,16 @@ Our publish environments are connected to a single content source.
 | Staging             | `Current`      |
 | Edge                | `Next`         |
 
-This allows you as an owner of a repository to choose two different deployment models.
+This allows you as an owner of a repository to choose two different branching strategies.
 
-## Deployment models
+## Branching strategies
 
-The new documentation system supports 2 deployment models.
+The new documentation system supports 2 branching strategies.
 
-Continuous deployment. 
+Continuous deployment 
 :   This is the default where a repositories `main` or `master` branch is continuously deployed to production.
 
-Tagged deployment
+Tagged
 :   Allows you to 'tag' a single git reference (typically a branch) as `current` which will be used to deploy to production.
     Allowing you to control the timing of when new documentation should go live.
 
@@ -56,7 +56,7 @@ references:
 % TODO we need navigation.yml docs
 Once the repository is added, its navigation still needs to be injected into to global site navigation.
 
-### Tagged deployment
+### Tagged
 
 If you want to have more control over the timing of when your docs go live to production. Configure the repository
 in our `assembler.yml` to have a fixed git reference (typically a branch) deploy the `current` content source to production.
@@ -75,7 +75,7 @@ Our CI integration checks will block until `current` is successfully configured
 
 #### CI configuration
 
-To ensure [tagged deployments](#tagged-deployment) can be onboarded correctly, our CI integration needs to have appropriate `push`
+To ensure repositories that use the [tagged branching strategy](#tagged) can be onboarded correctly, our CI integration needs to have appropriate `push`
  branch triggers.
 
 ```yml

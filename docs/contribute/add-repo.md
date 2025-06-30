@@ -55,7 +55,7 @@ references:
 ```
 
 :::{tip}
-In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [deployment model](deployment-models.md). You might want to change your deployment model so you can have more control over when content added for a specific release is published.
+In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 :::
 
 Then, edit the [navigation.yml](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/navigation.yml) file to add the repository to the navigation.
