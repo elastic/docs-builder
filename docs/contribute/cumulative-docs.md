@@ -27,7 +27,7 @@ In order to achieve this, the markdown source files integrate a tagging system m
 * [Which Elastic products and deployment models the content applies to](#tagging-products-and-deployment-models) (for example, Elastic Cloud Serverless or Elastic Cloud Hosted).  
 * [When a feature goes into a new state as compared to the established base version](#tagging-version-related-changes-mandatory) (for example, being added or going from Beta to GA).
 
-This tagging system is mandatory for all of the public-facing documentation. We refer to it as “[applies_to](https://elastic.github.io/docs-builder/syntax/applies/)” tags or badges.
+This tagging system is mandatory for all of the public-facing documentation. We refer to it as “[applies_to](/syntax/applies.md)” tags or badges.
 
 ## How version awareness works in Docs V3
 
@@ -41,7 +41,7 @@ This central version config is used in certain inline version variables, and dri
 
 All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment target's availability and lifecycle status. 
 
-The `applies_to` attribute is used to display contextual badges on each page. For the full list of supported keys and values, refer to [frontmatter](https://elastic.github.io/docs-builder/syntax/frontmatter). 
+The `applies_to` attribute is used to display contextual badges on each page. For the full list of supported keys and values, refer to [frontmatter](/syntax/frontmatter.md). 
 
 
 :::{tip}
@@ -107,7 +107,7 @@ This is true for most situations. However, it can still be useful to call it out
 
 ## Tagging version-related changes (mandatory)
 
-In the previous section, we’ve considered product and deployment availability. Feature lifecycle and version-related changes are communicated as part of the same [applies\_to](https://elastic.github.io/docs-builder/syntax/applies/) tagging logic, by specifying different values to each supported key. 
+In the previous section, we’ve considered product and deployment availability. Feature lifecycle and version-related changes are communicated as part of the same [applies_to](/syntax/applies.md) tagging logic, by specifying different values to each supported key. 
 
 **Are you sure your change is related to a specific version? Maybe not…**  
 This is a frequent case. For example: fixing typos, improving styling, adding a long-forgotten setting, etc.  
