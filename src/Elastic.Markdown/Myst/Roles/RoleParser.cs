@@ -89,8 +89,6 @@ public abstract class RoleParser<TRole> : InlineParser
 		var endIndex = Math.Min(startContent + i + 2, span.Length);
 		var contentSpan = span[startContent..endIndex];
 
-		// var contentSpan = span[startContent..(startContent + i + 2)];
-
 		var startPosition = slice.Start;
 		slice.Start = startPosition + roleContent.Length + contentSpan.Length;
 

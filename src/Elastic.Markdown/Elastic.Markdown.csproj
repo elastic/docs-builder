@@ -36,4 +36,8 @@
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Myst\Roles\Icons\svgs\*.svg" />
+  </ItemGroup>
+
 </Project>

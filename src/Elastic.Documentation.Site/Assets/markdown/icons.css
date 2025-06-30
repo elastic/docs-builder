@@ -1,0 +1,13 @@
+@layer components {
+	.markdown-content {
+		.icon {
+			@apply inline-block align-middle;
+			transform: translateY(-0.05em);
+			svg {
+				width: 1em;
+				height: 1em;
+				fill: currentColor;
+			}
+		}
+	}
+}
