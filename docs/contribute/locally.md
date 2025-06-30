@@ -3,11 +3,11 @@
 Follow these steps to contribute to Elastic docs.
 
 * [Prerequisites](#prerequisites)
-* [Step 1: Install `docs-builder`](#step-one)
-* [Step 2: Clone a content repository](#step-two)
-* [Step 3: Serve the documentation](#step-three)
-* [Step 4: Write the docs](#step-four)
-* [Step 5: Push your changes](#step-five)
+* [Install `docs-builder`](#install-docs-builder)
+* [Clone a content repository](#clone-content-repository)
+* [Build the docs](#build-the-docs)
+* [Write the docs](#write-docs)
+* [Push your changes](#push-changes)
 
 ## Prerequisites [#prerequisites]
 
@@ -54,7 +54,12 @@ This guide uses the first option. If you'd like to clone the repository and buil
    ```sh
    docs-builder serve
    ```
+
    The path to the `docset.yml` file that you want to build can be specified with `-p`.
+
+   :::{important}
+   Run `docs-builder` without `serve` to run a full build and detect errors.
+   :::
 
 To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
 
