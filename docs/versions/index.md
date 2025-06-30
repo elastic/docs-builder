@@ -4,6 +4,10 @@ navigation_title: "Versions and types"
 
 # Documenting versions and deployment types
 
+:::{warning}
+This documentation may be out of date. For updated guidance, refer to [](/contribute/cumulative-docs.md).
+:::
+
 In Elastic Docs v3, we document features in a centralized place, regardless of the software version or deployment type it applies to. 
 For example, we might document the Serverless and Elastic Stack 9.0.0 implementations of a feature on a single page, and then use content patterns to highlight where prerequisites, options, or behaviors differ between these implementations.
 
