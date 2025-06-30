@@ -17,7 +17,7 @@ To write and push updates to Elastic documentation, you need the following:
 1. **Git installed on your machine**: learn how [here](https://github.com/git-guides/install-git)
 1. **A GitHub account**: sign up [here](https://github.com/)
 
-## Step 1: Install `docs-builder` [#step-one]
+## Install `docs-builder` [#step-one]
 
 There are two different ways to install and run `docs-builder`:
 
@@ -149,18 +149,18 @@ Now you should be able to view the documentation locally by navigating to http:/
 :::::
 ::::::
 
-## Step 4: Write the docs [#step-four]
+## Write the docs [#step-four]
 
 We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown that we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
 
-## Step 5: Push your changes [#step-five]
+## Push your changes [#step-five]
 
 After you've made your changes locally:
 
 * [Push your commits](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
 * [Open a Pull Request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
 
-## Step 5: View the preview
+## View the preview
 
 You can open a docs preview from the Deployments page of the repository. For example, [https://github.com/elastic/docs-content/deployments](https://github.com/elastic/docs-content/deployments).
 
