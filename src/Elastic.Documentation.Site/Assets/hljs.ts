@@ -1,4 +1,5 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
+import esql from '@elastic/highlightjs-esql'
 import { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
 import asciidoc from 'highlight.js/lib/languages/asciidoc'
@@ -35,7 +36,6 @@ import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
-import esql from '@elastic/highlightjs-esql'
 import { $$ } from 'select-dom'
 
 const languages: Array<{
