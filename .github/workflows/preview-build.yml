@@ -298,7 +298,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}
         with:
-          # language=jinja
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
