@@ -2,11 +2,12 @@
 <li class="step">
 	@if (!string.IsNullOrEmpty(Model.Title))
 	{
-		<h3 id="@Model.Anchor">
-			<a class="title" href="#@Model.Anchor">
+		var headingTag = $"h{Model.HeadingLevel}";
+		<@headingTag id="@Model.Anchor">
+			<a href="#@Model.Anchor">
 				@Model.Title
 			</a>
-		</h3>
+		</@headingTag>
 	}
 	@Model.RenderBlock()
 </li>

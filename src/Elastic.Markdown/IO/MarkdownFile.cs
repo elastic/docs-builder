@@ -298,7 +298,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				{
 					Heading = step.Title,
 					Slug = step.Anchor,
-					Level = 3 // Same level as h3 elements they render as
+					Level = step.HeadingLevel // Use dynamic heading level
 				},
 				step.Line
 			});
