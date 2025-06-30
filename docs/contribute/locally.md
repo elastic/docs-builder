@@ -139,7 +139,9 @@ To serve the local copy of the documentation in your browser, follow these steps
 
 ::::::{stepper}
 
-:::::{step} Go to the docs-builder clone location
+:::::{step} Change directory to a docs repository
+
+For example, `docs-content`:
 
 ```sh
 cd docs-content
