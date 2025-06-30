@@ -35,6 +35,7 @@ import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
+import esql from '@elastic/highlightjs-esql'
 import { $$ } from 'select-dom'
 
 const languages: Array<{
@@ -50,6 +51,7 @@ const languages: Array<{
     { name: 'dockerfile', module: dockerfile },
     { name: 'dos', module: dos },
     { name: 'ebnf', module: ebnf },
+    { name: 'esql', module: esql },
     { name: 'go', module: go },
     { name: 'gradle', module: gradle },
     { name: 'groovy', module: groovy },
@@ -153,175 +155,6 @@ hljs.registerLanguage('painless', function () {
             {
                 scope: 'operator', // (pathname: path1/path2/dothis) color #ab5656
                 match: /(?:<|<=|==|:|!=|>=|>|like~?|regex~?)/,
-            },
-            {
-                scope: 'punctuation', // (pathname: path1/path2/dothis) color #ab5656
-                match: /(?:!?\[|\]|\|)/,
-            },
-            NUMBER,
-        ],
-    }
-})
-
-hljs.registerLanguage('esql', function () {
-    return {
-        case_insensitive: true, // language is case-insensitive
-        keywords: {
-            keyword:
-                'FROM ROW SHOW DISSECT DROP ENRICH EVAL GROK KEEP LIMIT LOOKUP JOIN MV_EXPAND RENAME SORT STATS WHERE METADATA CHANGE_POINT',
-            literal: ['false', 'true', 'null'],
-            function: [
-                // aggregate
-                'AVG',
-                'COUNT',
-                'COUNT_DISTINCT',
-                'MAX',
-                'MEDIAN',
-                'MEDIAN_ABSOLUTE_DEVIATION',
-                'MIN',
-                'PERCENTILE',
-                'ST_CENTROID_AGG',
-                'ST_EXTENT_AGG',
-                'STD_DEV',
-                'SUM',
-                'TOP',
-                'VALUES',
-                'WEIGHTED_AVG',
-                // grouping
-                'BUCKET',
-                'CATEGORIZE',
-                // conditional
-                'CASE',
-                'COALESCE',
-                'GREATEST',
-                'LEAST',
-                //Date
-                'DATE_DIFF',
-                'DATE_EXTRACT',
-                'DATE_FORMAT',
-                'DATE_PARSE',
-                'DATE_TRUNC',
-                'NOW',
-                //ip
-                'CIDR_MATCH',
-                'IP_PREFIX',
-                //math
-                'ABS',
-                'ACOS',
-                'ASIN',
-                'ATAN',
-                'ATAN2',
-                'CBRT',
-                'CEIL',
-                'COS',
-                'COSH',
-                'E',
-                'EXP',
-                'FLOOR',
-                'HYPOT',
-                'LOG',
-                'LOG10',
-                'PI',
-                'POW',
-                'ROUND',
-                'ROUND_TO',
-                'SCALB',
-                'SIGNUM',
-                'SIN',
-                'SINH',
-                'SQRT',
-                'TAN',
-                'TANH',
-                'TAU',
-                //search
-                'KQL',
-                'MATCH',
-                'QSTR',
-                //spatial
-                'ST_DISTANCE',
-                'ST_INTERSECTS',
-                'ST_DISJOINT',
-                'ST_CONTAINS',
-                'ST_WITHIN',
-                'ST_X',
-                'ST_Y',
-                'ST_ENVELOPE',
-                'ST_XMAX',
-                'ST_XMIN',
-                'ST_YMAX',
-                'ST_YMIN',
-                //string
-                'BIT_LENGTH',
-                'BYTE_LENGTH',
-                'CONCAT',
-                'ENDS_WITH',
-                'FROM_BASE64',
-                'HASH',
-                'LEFT',
-                'LENGTH',
-                'LOCATE',
-                'LTRIM',
-                'MD5',
-                'REPEAT',
-                'REPLACE',
-                'REVERSE',
-                'RIGHT',
-                'RTRIM',
-                'SHA1',
-                'SHA256',
-                'SPACE',
-                'SPLIT',
-                'STARTS_WITH',
-                'SUBSTRING',
-                'TO_BASE64',
-                'TO_LOWER',
-                'TO_UPPER',
-                'TRIM',
-                //type conversion
-                'TO_BOOLEAN',
-                'TO_CARTESIANPOINT',
-                'TO_CARTESIANSHAPE',
-                'TO_DATEPERIOD',
-                'TO_DATETIME',
-                'TO_DATE_NANOS',
-                'TO_DEGREES',
-                'TO_DOUBLE',
-                'TO_GEOPOINT',
-                'TO_GEOSHAPE',
-                'TO_INTEGER',
-                'TO_IP',
-                'TO_LONG',
-                'TO_RADIANS',
-                'TO_STRING',
-                'TO_TIMEDURATION',
-                'TO_UNSIGNED_LONG',
-                'TO_VERSION',
-                //multivalued
-                'MV_APPEND',
-                'MV_AVG',
-                'MV_CONCAT',
-                'MV_COUNT',
-                'MV_DEDUPE',
-                'MV_FIRST',
-                'MV_LAST',
-                'MV_MAX',
-                'MV_MEDIAN',
-                'MV_MEDIAN_ABSOLUTE_DEVIATION',
-                'MV_MIN',
-                'MV_PERCENTILE',
-                'MV_PSERIES_WEIGHTED_SUM',
-                'MV_SORT',
-                'MV_SLICE',
-                'MV_SUM',
-                'MV_ZIP',
-            ],
-        },
-        contains: [
-            hljs.QUOTE_STRING_MODE,
-            hljs.C_LINE_COMMENT_MODE,
-            {
-                scope: 'operator', // (pathname: path1/path2/dothis) color #ab5656
-                match: /(?:<|<=|==|::|\w+:|!=|>=|>|LIKE|RLIKE|IS NULL|IS NOT NULL)/,
             },
             {
                 scope: 'punctuation', // (pathname: path1/path2/dothis) color #ab5656
