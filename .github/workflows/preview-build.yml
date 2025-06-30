@@ -80,6 +80,7 @@ jobs:
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
       - name: Check PR author association
+        if: steps.check-files.outputs.any_modified == 'true'
         env:
           ANY_MODIFIED: $ {{ steps.check-files.outputs.any_modified }}
         # language=bash 
@@ -88,7 +89,7 @@ jobs:
             "pull_request" | "pull_request_target")
               # If no documentation files changed, we can just continue.
               # The build job is handling the logic to skip the build.
-              if [[ "${ANY_MODIFIED}" == "false" || "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
+              if [[ "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
                 exit 0;
               else
                 echo "::error::You must be a member of the elastic organization to trigger a preview build. Please ask a member of the elastic organization to review your PR and re-trigger the build.";
