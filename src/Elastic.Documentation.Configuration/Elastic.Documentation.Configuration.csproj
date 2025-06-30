@@ -16,4 +16,8 @@
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
     <PackageReference Include="YamlDotNet"/>
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="versions.yml" />
+  </ItemGroup>
 </Project>

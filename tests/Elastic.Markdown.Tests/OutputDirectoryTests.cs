@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using FluentAssertions;
@@ -30,7 +32,21 @@ toc:
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
-		var context = new BuildContext(collector, fileSystem);
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+		var context = new BuildContext(collector, fileSystem, versionsConfig);
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);

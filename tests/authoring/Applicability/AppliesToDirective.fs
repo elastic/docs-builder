@@ -17,7 +17,7 @@ type ``piggy back off yaml formatting`` () =
 serverless:
   security: ga 9.0.0
   elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
+  observability: removed 9.2.0
 ```
 """
 
@@ -30,7 +30,7 @@ serverless:
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga 9.0.0",
                 Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
-                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
+                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
             )
         ))
 
@@ -40,7 +40,7 @@ type ``plain block`` () =
 serverless:
   security: ga 9.0.0
   elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
+  observability: removed 9.2.0
 apm_agent_dotnet: ga 9.0
 apm_agent_node: ga 10.0
 ```
@@ -55,7 +55,7 @@ apm_agent_node: ga 10.0
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga 9.0.0",
                 Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
-                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
+                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
             ),
             ProductApplicability=ProductApplicability(
                 ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0",

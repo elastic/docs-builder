@@ -1,6 +1,7 @@
 import { initCopyButton } from './copybutton'
 import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
+import './markdown/applies-to'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
@@ -11,12 +12,13 @@ import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
 import { $, $$ } from 'select-dom'
-import tippy from 'tippy.js'
 import { UAParser } from 'ua-parser-js'
 
 const { getOS } = new UAParser()
 
-document.addEventListener('htmx:load', function () {
+document.addEventListener('htmx:load', function (event) {
+    console.log('htmx:load')
+    console.log(event.detail)
     initTocNav()
     initHighlight()
     initCopyButton()
@@ -25,9 +27,6 @@ document.addEventListener('htmx:load', function () {
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()
-    tippy('[data-tippy-content]:not([data-tippy-content=""])', {
-        delay: [400, 100],
-    })
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

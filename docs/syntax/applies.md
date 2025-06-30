@@ -8,10 +8,12 @@ This page explains concrete usage of the applies_to tag. Cumulative authoring ph
 Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/cumulative-docs.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
+
 * Which Elastic products and deployment models the content applies to.
 * When a feature changes state relative to the base version.
 
-This is what the `applies_to` metadata is for. It can be used at the page, section, or inline level to specify applicability with precision.
+This is what the `applies_to` metadata is for. It can be used at the page, section, or inline level to specify
+applicability with precision.
 
 ## `applies_to` tags in the output
 
@@ -22,23 +24,32 @@ This is what the `applies_to` metadata is for. It can be used at the page, secti
 
 The `applies_to` metadata can be added at different levels in the documentation:
 
-* [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the overall applicability of the page across products, deployments, and environments.
-* [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections when only part of a page varies between products or versions.
-* [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the surrounding content.
+* [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the
+  overall applicability of the page across products, deployments, and environments.
+* [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections
+  when only part of a page varies between products or versions.
+* [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This
+  is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the
+  surrounding content.
 
 ### Dos and don’ts
 
-✅ Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when availability differs across deployments and environments.
+✅ Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when
+availability differs across deployments and environments.
 
-✅ Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every page.
+✅ Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every
+page.
 
 ✅ Use `applies_to` tags when features change state in a specific update or release.
 
-❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle changes.
+❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle
+changes.
 
-❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has been established earlier.
+❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has
+been established earlier.
 
-❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you do not need to tag a new GA feature.
+❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you
+do not need to tag a new GA feature.
 
 For detailed guidance, refer to [](/contribute/cumulative-docs.md).
 
@@ -65,12 +76,12 @@ Note that a key without any value doesn't show any badge in the output.
 
 `applies_to` accepts the following lifecycle states:
 
-  * `preview`
-  * `beta`
-  * `deprecated`
-  * `removed`
-  * `unavailable`
-  * `ga`
+* `preview`
+* `beta`
+* `deprecated`
+* `removed`
+* `unavailable`
+* `ga`
 
 ### Version
 
@@ -84,6 +95,7 @@ applies_to:
   deployment:
     ece: deprecated 9.2, removed 9.8
 ```
+
 Unversioned products use `lifecycle` tags without a version:
 
 ```
@@ -144,8 +156,8 @@ of the section further.
 the `{applies_to}` directive **MUST** be preceded by a heading directly.
 :::
 
-
-Note that this directive requires triple backticks since its content is literal. See also [](index.md#literal-directives)
+Note that this directive requires triple backticks since its content is literal. See
+also [](index.md#literal-directives)
 
 ````markdown
 ```{applies_to}
@@ -176,7 +188,8 @@ Inline applies to can be placed anywhere using the following syntax
 This can live inline {applies_to}`section: <life-cycle> [version]`
 ```
 
-An inline version example would be {applies_to}`stack: beta 9.1` this allows you to target elements more concretely visually.
+An inline version example would be {applies_to}`stack: beta 9.1` this allows you to target elements more concretely
+visually.
 
 #### Inline annotation examples
 
@@ -213,5 +226,68 @@ applies_to:
     elasticsearch:
     observability:
   product:
+    ecctl:
+    curator:
+    apm_agent_android:
+    apm_agent_dotnet:
+    apm_agent_go:
+    apm_agent_ios:
+    apm_agent_java:
+    apm_agent_node:
+    apm_agent_php:
+    apm_agent_python:
+    apm_agent_ruby:
+    apm_agent_rum:
+    edot_ios:
+    edot_android:
+    edot_dotnet:
+    edot_java:
+    edot_node:
+    edot_php:
+    edot_python:
 ---
 ```
+
+## Inline Examples
+
+### Stack
+
+| `applies_to`                               | result                               |
+|--------------------------------------------|--------------------------------------|
+| `` {applies_to}`stack: ` ``                | {applies_to}`stack: `                |
+| `` {applies_to}`stack: preview` ``         | {applies_to}`stack: preview`         |
+| `` {applies_to}`stack: preview 8.18` ``    | {applies_to}`stack: preview 8.18`    |
+| `` {applies_to}`stack: preview 9.0` ``     | {applies_to}`stack: preview 9.0`     |
+| `` {applies_to}`stack: preview 9.1` ``     | {applies_to}`stack: preview 9.1`     |
+| `` {applies_to}`stack: preview 99.0` ``    | {applies_to}`stack: preview 99.0`    |
+| `` {applies_to}`stack: ga` ``              | {applies_to}`stack: ga`              |
+| `` {applies_to}`stack: ga 8.18` ``         | {applies_to}`stack: ga 8.18`         |
+| `` {applies_to}`stack: ga 9.0` ``          | {applies_to}`stack: ga 9.0`          |
+| `` {applies_to}`stack: ga 9.1` ``          | {applies_to}`stack: ga 9.1`          |
+| `` {applies_to}`stack: ga 99.0` ``         | {applies_to}`stack: ga 99.0`         |
+| `` {applies_to}`stack: beta` ``            | {applies_to}`stack: beta`            |
+| `` {applies_to}`stack: beta 8.18` ``       | {applies_to}`stack: beta 8.18`       |
+| `` {applies_to}`stack: beta 9.0` ``        | {applies_to}`stack: beta 9.0`        |
+| `` {applies_to}`stack: beta 9.1` ``        | {applies_to}`stack: beta 9.1`        |
+| `` {applies_to}`stack: beta 99.0` ``       | {applies_to}`stack: beta 99.0`       |
+| `` {applies_to}`stack: deprecated` ``      | {applies_to}`stack: deprecated`      |
+| `` {applies_to}`stack: deprecated 8.18` `` | {applies_to}`stack: deprecated 8.18` |
+| `` {applies_to}`stack: deprecated 9.0` ``  | {applies_to}`stack: deprecated 9.0`  |
+| `` {applies_to}`stack: deprecated 9.1` ``  | {applies_to}`stack: deprecated 9.1`  |
+| `` {applies_to}`stack: deprecated 99.0` `` | {applies_to}`stack: deprecated 99.0` |
+| `` {applies_to}`stack: removed` ``         | {applies_to}`stack: removed`         |
+| `` {applies_to}`stack: removed 8.18` ``    | {applies_to}`stack: removed 8.18`    |
+| `` {applies_to}`stack: removed 9.0` ``     | {applies_to}`stack: removed 9.0`     |
+| `` {applies_to}`stack: removed 9.1` ``     | {applies_to}`stack: removed 9.1`     |
+| `` {applies_to}`stack: removed 99.0` ``    | {applies_to}`stack: removed 99.0`    |
+
+### Serverless
+
+| `applies_to`                                    | result                                    |
+|-------------------------------------------------|-------------------------------------------|
+| `` {applies_to}`serverless: ` ``                | {applies_to}`serverless: `                |
+| `` {applies_to}`serverless: preview` ``         | {applies_to}`serverless: preview`         |
+| `` {applies_to}`serverless: ga` ``              | {applies_to}`serverless: ga`              |
+| `` {applies_to}`serverless: beta` ``            | {applies_to}`serverless: beta`            |
+| `` {applies_to}`serverless: deprecated` ``      | {applies_to}`serverless: deprecated`      |
+| `` {applies_to}`serverless: removed` ``         | {applies_to}`serverless: removed`         |

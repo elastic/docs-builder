@@ -8,4 +8,5 @@ public class StepViewModel : DirectiveViewModel
 {
 	public required string Title { get; init; }
 	public required string Anchor { get; init; }
+	public required int HeadingLevel { get; init; }
 }

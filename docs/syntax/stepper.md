@@ -6,12 +6,10 @@ to break down processes into manageable stages.
 By default every step title is a link with a generated anchor.
 But you can override the default anchor by adding the `:anchor:` option to the step.
 
-## Basic Stepper
+## Basic stepper
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::::{stepper}
-
 :::::{stepper}
 
 ::::{step} Install
@@ -22,6 +20,7 @@ npm install
 ::::
 
 ::::{step} Build
+### Build
 Then build the project.
 ```shell
 npm run build
@@ -77,7 +76,7 @@ npm run test
 
 :::::::
 
-## Advanced Example
+## Advanced example
 
 :::::::{tab-set}
 
@@ -203,3 +202,27 @@ To see how dynamic mapping works, add a new document to the `books` index with a
 ::::::
 
 :::::::
+
+## Table of contents integration
+
+Stepper step titles automatically appear in the page's "On this page" table of contents (ToC) sidebar, making it easier for users to navigate directly to specific steps.
+
+### Nested steppers
+
+When steppers are nested inside other directive components (like `{tab-set}`, `{dropdown}`, or other containers), their step titles are **not** included in the ToC to avoid duplicate or competing headings across multiple tabs or links to content that might be collapsed or hidden.
+
+**Example of excluded stepper:**
+```markdown
+::::{tab-set}
+:::{tab-item} Tab 1
+::{stepper}
+:{step} This step won't appear in ToC
+Content here...
+:
+::
+:::
+::::
+```
+## Dynamic heading levels
+
+Stepper step titles automatically adjust their heading level based on the preceding heading in the document, ensuring proper document hierarchy and semantic structure.

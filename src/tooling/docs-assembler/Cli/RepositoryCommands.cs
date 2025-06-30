@@ -13,8 +13,10 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
@@ -164,6 +166,20 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		{
 			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
 		};
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
 		await Parallel.ForEachAsync(repositories,
 			new ParallelOptions
 			{
@@ -179,6 +195,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 						collector,
 						new FileSystem(),
 						new FileSystem(),
+						versionsConfig,
 						checkout.Directory.FullName,
 						outputPath
 					);
