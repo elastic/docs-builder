@@ -71,6 +71,7 @@ jobs:
               else
                 echo "::error::You must be a member of the elastic organization to trigger a preview build. Please ask a member of the elastic organization to re-trigger the build.";
                 exit 1;
+              fi
               ;;
             "push" | "workflow_dispatch")
               exit 0;
