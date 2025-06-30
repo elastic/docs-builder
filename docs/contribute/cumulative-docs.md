@@ -35,11 +35,12 @@ This tagging system is mandatory for all of the public-facing documentation. We 
 
 All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment target's availability and lifecycle status. 
 
-* The `applies_to` attribute is used to display contextual badges on each page.  
-* The `products` attribute is used by the search to let users filter their results when searching the docs.
+The `applies_to` attribute is used to display contextual badges on each page. For the full list of supported keys and values, refer to [frontmatter](https://elastic.github.io/docs-builder/syntax/frontmatter). 
 
-  For the full list of supported keys and values, refer to [frontmatter](https://elastic.github.io/docs-builder/syntax/frontmatter).  
 
+:::{tip}
+Docs V3 frontmatter also supports a `products` attribute. This attribute is not surfaced to users on docs pages. Instead, it's used by the elastic.co search to let users filter their docs search results.
+:::
 
 :::{include} /syntax/_snippets/page-level-applies-examples.md
 :::

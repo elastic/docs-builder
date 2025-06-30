@@ -7,10 +7,6 @@ There are 3 typical scenarios to start from:
     applies_to:
       stack: ga
       serverless: ga
-    products:
-      - id: kibana
-      - id: elasticsearch
-      - id: elastic-stack
     ---
     ```
 
@@ -24,11 +20,6 @@ There are 3 typical scenarios to start from:
       ess: ga
       ece: ga
       eck: ga
-  products:
-    - id: cloud-serverless
-    - id: cloud-hosted
-    - id: cloud-enterprise
-    - id: cloud-kubernetes
   ---
 
   ```
@@ -38,12 +29,9 @@ There are 3 typical scenarios to start from:
   ```yml
   --- 
   applies_to:
-    product: ga
-  products:
-    - id: edot-collector
+    edot_ios: ga
   ---
   ```
-  % changing soon
 
 It can happen that it’s relevant to identify several or all of these dimensions for a page. Use your own judgement and check existing pages in similar contexts.
 
@@ -56,14 +44,6 @@ applies_to:
     ess: ga
     ece: ga
     eck: ga
-products:
-  - id: kibana
-  - id: elasticsearch
-  - id: elastic-stack
-  - id: cloud-serverless
-  - id: cloud-hosted
-  - id: cloud-enterprise
-  - id: cloud-kubernetes
 ---
 ```
 % I don't know what this example is supposed to show
