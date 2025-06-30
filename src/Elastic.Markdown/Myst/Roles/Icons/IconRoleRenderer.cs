@@ -14,7 +14,6 @@ namespace Elastic.Markdown.Myst.Roles.Icons;
 public class IconRoleHtmlRenderer : HtmlObjectRenderer<IconsRole>
 {
 
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	protected override void Write(HtmlRenderer renderer, IconsRole role)
 	{
 		_ = renderer.Write($"<span aria-label=\"Icon for {role.Name}\" class=\"icon icon-{role.Name}\">");
