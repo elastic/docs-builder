@@ -63,7 +63,8 @@ jobs:
     env:
       AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
     steps:
-      - run: |
+      - name: Check PR author association
+        run: |
           case "${GITHUB_EVENT_NAME}" in
             "pull_request" | "pull_request_target")
               if [[ "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
