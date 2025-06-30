@@ -14,6 +14,7 @@ using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Markdig;
@@ -263,22 +264,50 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			.ToArray();
 
 		var includedTocs = includes.SelectMany(i => i!.TableOfContentItems).ToArray();
-		var toc = document
+
+		// Collect headings from standard markdown
+		var headingTocs = document
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
-			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
+			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
 			.Where(h => h.Item1 is not null)
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
-				return new PageTocItem
+				return new
 				{
-					Heading = header,
-					Slug = (h.Item2 ?? h.Item1).Slugify(),
-					Level = h.Level
+					TocItem = new PageTocItem
+					{
+						Heading = header,
+						Slug = (h.Item2 ?? h.Item1).Slugify(),
+						Level = h.Level
+					},
+					h.Line
 				};
-			})
-			.Concat(includedTocs)
+			});
+
+		// Collect headings from Stepper steps
+		var stepperTocs = document
+			.Descendants<DirectiveBlock>()
+			.OfType<StepBlock>()
+			.Where(step => !string.IsNullOrEmpty(step.Title))
+			.Where(step => !IsNestedInOtherDirective(step))
+			.Select(step => new
+			{
+				TocItem = new PageTocItem
+				{
+					Heading = step.Title,
+					Slug = step.Anchor,
+					Level = 3 // Same level as h3 elements they render as
+				},
+				step.Line
+			});
+
+		var toc = headingTocs
+			.Concat(stepperTocs)
+			.Concat(includedTocs.Select(item => new { TocItem = item, Line = 0 }))
+			.OrderBy(item => item.Line)
+			.Select(item => item.TocItem)
 			.Select(toc => subs.Count == 0
 				? toc
 				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
@@ -299,6 +328,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				.Concat(includedAnchors)
 		];
 		return toc;
+	}
+
+	private static bool IsNestedInOtherDirective(DirectiveBlock block)
+	{
+		var parent = block.Parent;
+		while (parent is not null)
+		{
+			if (parent is DirectiveBlock { } otherDirective && otherDirective != block && otherDirective is not StepperBlock)
+				return true;
+			parent = parent.Parent;
+		}
+		return false;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)

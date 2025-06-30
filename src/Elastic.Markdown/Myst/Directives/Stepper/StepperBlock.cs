@@ -25,5 +25,11 @@ public class StepBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 	{
 		Title = Arguments ?? string.Empty;
 		Anchor = Prop("anchor") ?? Title.Slugify();
+
+		// Set CrossReferenceName so this step can be found by ToC generation
+		if (!string.IsNullOrEmpty(Title))
+		{
+			CrossReferenceName = Anchor;
+		}
 	}
 }
