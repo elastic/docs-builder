@@ -1,4 +1,5 @@
 Unversioned products don't follow a fixed versioning scheme and are released a lot more often than versioned products. All users are using the same version of this product.
+
 * When a change is released in `ga`, it **doesn’t need any specific tagging**.
 * When a change is introduced as preview or beta, use `preview` or `beta` as value for the corresponding key within the `applies_to`:
 
