@@ -249,3 +249,40 @@ Run the installer...
 ```
 
 In the second example, both "Download" and "Install" steps will appear in the ToC as sub-items under "Installation Guide".
+
+## Dynamic heading levels
+
+Stepper step titles automatically adjust their heading level based on the preceding heading in the document, ensuring proper document hierarchy and semantic structure.
+
+### Examples
+
+**Stepper after H2 heading:**
+```markdown
+## Installation Guide
+
+::::{stepper}
+:::{step} Download
+Step titles render as H3 (visible in ToC)
+:::
+::::
+```
+
+**Stepper after H3 heading:**
+```markdown
+### Setup Process
+
+::::{stepper}
+:::{step} Configure
+Step titles render as H4 (not in ToC, but proper hierarchy)
+:::
+::::
+```
+
+**Stepper with no preceding heading:**
+```markdown
+::::{stepper}
+:::{step} First Step
+Step titles default to H2 level
+:::
+::::
+```
