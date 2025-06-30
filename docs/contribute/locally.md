@@ -9,7 +9,7 @@ Follow these steps to contribute to Elastic docs.
 * [Step 4: Write the docs](#step-four)
 * [Step 5: Push your changes](#step-five)
 
-## Prerequisites
+## Prerequisites [#prerequisites]
 
 To write and push updates to Elastic documentation, you need the following:
 
@@ -17,7 +17,7 @@ To write and push updates to Elastic documentation, you need the following:
 1. **Git installed on your machine**: learn how [here](https://github.com/git-guides/install-git)
 1. **A GitHub account**: sign up [here](https://github.com/)
 
-## Install `docs-builder` [#step-one]
+## Install `docs-builder` [#install-docs-builder]
 
 There are two different ways to install and run `docs-builder`:
 
@@ -93,7 +93,7 @@ If you get a `Permission denied` error, make sure that you aren't trying to run 
 ::::
 
 
-## Clone a content repository [#step-two]
+## Clone a content repository [#clone-content]
 
 :::{tip}
 Documentation lives in many repositories across Elastic. If you're unsure which repository to clone, you can use the "Edit this page" link on any documentation page to determine where the source file lives.
@@ -105,7 +105,28 @@ In this guide, we'll clone the [`docs-content`](https://github.com/elastic/docs-
 git clone https://github.com/elastic/docs-content.git
 ```
 
-## Serve the documentation [#step-three]
+## Write the docs [#write-docs]
+
+We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown that we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
+
+## Build the docs
+
+Before pushing your changes, check that your changes build successfully.
+
+```
+docs-builder
+```
+
+The build process informs you of any critical errors or warnings. It also shows less critical issues as Hints. Make sure not to introduce any new build errors, warnings, or hints.
+
+## Push your changes [#push-changes]
+
+After you've made your changes locally:
+
+* [Push your commits](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
+* [Open a Pull Request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
+
+## Local preview [#local-docs-preview]
 
 Static-site generators like docs-builder can serve docs locally. This means you can edit the source and see the result in the browser in real time.
 
@@ -148,23 +169,3 @@ docs-builder serve -p .\migration-test
 Now you should be able to view the documentation locally by navigating to http://localhost:3000.
 :::::
 ::::::
-
-## Write the docs [#step-four]
-
-We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown that we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
-
-## Push your changes [#step-five]
-
-After you've made your changes locally:
-
-* [Push your commits](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
-* [Open a Pull Request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)
-
-## View the preview
-
-You can open a docs preview from the Deployments page of the repository. For example, [https://github.com/elastic/docs-content/deployments](https://github.com/elastic/docs-content/deployments).
-
-1. Select the pull request or branch.
-2. Select the ↗ icon next to the timestamp.
-
-The preview URL is in the form `https://docs-v3-preview.elastic.dev/elastic/<repository>/tree/branch`.
