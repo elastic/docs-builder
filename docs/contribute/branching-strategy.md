@@ -23,7 +23,7 @@ Publishing from the main branch isn’t the best option for all repositories.
 * `main` can contain code and docs for unreleased versions that we don’t want to publish yet.  
 * The versioning scheme and release cadence of the product associated with a repository can vary, and it can be inconsistent to have the docs associated with a certain version live in a different branch than the code.
 
-If you choose this publication model for your repository AND that repository includes {{serverless-short}} or {{ecloud}} documentation, you will need to make sure that {{serverless-short}}- and {{ecloud}}-related changes are also backported to the `current` branch in order to be published on time.
+If you choose this publication model for your repository AND that repository includes {{serverless-short}} or {{ecloud}} documentation, you will need to make sure that {{serverless-short}}- and {{ecloud}}-related changes are also backported to the branch that is publishing to the public docs site.
 
 You **don't** need to change your branching strategy to enable writing docs about future versions. Review the [continuous deployment workflow](#workflow-1-default-continuous-deployment) and [](cumulative-docs.md) to learn more.
 
@@ -93,11 +93,11 @@ If you don’t want to hold on too many PRs to publish on release day, merge the
 
 ## Workflow 2: Tagged
 
-Learn how to make updates in the continuous deployment branching strategy, where the repo is publishing docs from a specific `version` branch. 
+Learn how to make updates in the continuous deployment branching strategy, where the repo is publishing docs from a specific version branch. 
 
 ### Where to make docs changes [make-changes-td]
 
-Initiate the changes by opening a PR against the `main` branch of the repo. The changes will be backported to the relevant version branches as detailed below.
+Initiate the changes by opening a PR against the `main` branch of the repo, and backport the changes to the relevant version branches as detailed below.
 
 ### How to write those changes [write-changes-td]
 
