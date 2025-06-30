@@ -105,7 +105,7 @@ In this guide, we'll clone the [`docs-content`](https://github.com/elastic/docs-
 git clone https://github.com/elastic/docs-content.git
 ```
 
-### Serve the documentation [#step-three]
+## Serve the documentation [#step-three]
 
 Static-site generators like docs-builder can serve docs locally. This means you can edit the source and see the result in the browser in real time.
 
