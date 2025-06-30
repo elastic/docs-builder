@@ -46,7 +46,7 @@ All documentation pages **must** include an `applies_to` tag in the YAML frontma
 
 ### Section or inline contexts (situational)
 
-When the context differs from what was specified at the page level in a specific section or part of the page, it is appropriate to re-establish it. For example: 
+When a portion of a page is applicable to a different context than what was specified at the page level, clarify in what context it applies using section or inline `applies_to` badges. For example:
 
 :::{include} /syntax/_snippets/section-level-applies-examples.md
 :::
