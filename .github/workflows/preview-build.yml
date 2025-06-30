@@ -87,8 +87,6 @@ jobs:
         run: |
           case "${GITHUB_EVENT_NAME}" in
             "pull_request" | "pull_request_target")
-              # If no documentation files changed, we can just continue.
-              # The build job is handling the logic to skip the build.
               if [[ "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
                 exit 0;
               else
