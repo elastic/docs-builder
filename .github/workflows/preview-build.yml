@@ -100,6 +100,8 @@ jobs:
       MATCH: ${{ needs.match.outputs.content-source-match }}
     needs: [ match ]
     steps:
+      - name: Start Tracee
+        uses: aquasecurity/tracee-action@9dd4f95736ab133fdf698321913b5498ed656420 # v0.4.0-start
 
       - name: Checkout
         if:  env.MATCH == 'true' && (contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name))
@@ -260,3 +262,5 @@ jobs:
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
+      - name: Stop Tracee
+        uses: aquasecurity/tracee-action@1c04135eb3d95a927e75721ac49c9ae6038bf0ee #v0.4.0-stop
