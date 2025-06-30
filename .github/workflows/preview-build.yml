@@ -120,9 +120,6 @@ jobs:
 
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
-      cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
     runs-on: ubuntu-latest
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
