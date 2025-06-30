@@ -26,9 +26,9 @@ There are two different ways to install and run `docs-builder`:
 
 This guide uses the first option. If you'd like to clone the repository and build from source, learn how in the [project readme](https://github.com/elastic/docs-builder?tab=readme-ov-file#docs-builder).
 
-::::{tab-set}
+:::::{tab-set}
 
-:::{tab-item} macOS & Linux
+::::{tab-item} macOS & Linux
 
 1. **Download and run the install script**   
 
@@ -57,17 +57,17 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
    The path to the `docset.yml` file that you want to build can be specified with `-p`.
 
-   ::{important}
+   :::{important}
    Run `docs-builder` without `serve` to run a full build and detect errors.
-   ::
+   :::
 
 To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
 
 If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
 
-:::
+::::
 
-:::{tab-item} Windows
+::::{tab-item} Windows
 
 1. **Download and run the install script**   
 
@@ -94,8 +94,8 @@ If you get a `Permission denied` error, make sure that you aren't trying to run 
    docs-builder serve
    ```
    The path to the `docset.yml` file that you want to build can be specified with `-p`.
-:::
 ::::
+:::::
 
 
 ## Clone a content repository [#clone-content]
