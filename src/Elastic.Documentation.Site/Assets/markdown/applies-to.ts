@@ -8,6 +8,7 @@ document.addEventListener('htmx:load', function () {
         ].join(', '),
         {
             delay: [400, 100],
+            hideOnClick: false,
         }
     )
 })
