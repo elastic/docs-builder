@@ -50,12 +50,40 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
+
 jobs:
+  
+  
+  check:
+    if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
+    runs-on: ubuntu-latest
+    env:
+      AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+    steps:
+      - run: |
+          case "${GITHUB_EVENT_NAME}" in
+            "pull_request" | "pull_request_target")
+              if [[ "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
+                exit 0;
+              else
+                echo "::error::You must be a member of the elastic organization to trigger a preview build. Please ask a member of the elastic organization to re-trigger the build.";
+                exit 1;
+              ;;
+            "push" | "workflow_dispatch")
+              exit 0;
+              ;;
+            *)
+              echo "Unsupported event: '${GITHUB_EVENT_NAME}'";
+              exit 1;
+              ;;
+          esac
+    
   match:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
-      cancel-in-progress: ${{ startsWith(github.event_name, 'pull_request') }}
+    needs: check
     runs-on: ubuntu-latest
     outputs:
       content-source-match: ${{ steps.event-check.outputs.content-source-match != '' && steps.event-check.outputs.content-source-match || steps.match.outputs.content-source-match }}
