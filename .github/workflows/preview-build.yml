@@ -60,21 +60,39 @@ jobs:
   check:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
     runs-on: ubuntu-latest
+    outputs: 
+      any_modified: ${{ steps.check-files.outputs.any_modified }}
     env:
       AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
     steps:
+      - name: Checkout
+        if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+      - name: Get changed files
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        id: check-files
+        uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
+        with:
+          files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
       - name: Check PR author association
+        env:
+          ANY_MODIFIED: $ {{ steps.check-files.outputs.any_modified }}
+        # language=bash 
         run: |
           case "${GITHUB_EVENT_NAME}" in
             "pull_request" | "pull_request_target")
-              if [[ "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
+              # If no documentation files changed, we can just continue.
+              # The build job is handling the logic to skip the build.
+              if [[ "${ANY_MODIFIED}" == "false" || "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
                 exit 0;
               else
                 echo "::error::You must be a member of the elastic organization to trigger a preview build. Please ask a member of the elastic organization to review your PR and re-trigger the build.";
                 exit 1;
               fi
               ;;
-            "push" | "workflow_dispatch")
+            "push" | "workflow_dispatch" | "merge_group")
               exit 0;
               ;;
             *)
@@ -82,7 +100,7 @@ jobs:
               exit 1;
               ;;
           esac
-    
+          
   match:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
     needs: check
@@ -125,24 +143,13 @@ jobs:
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
       MATCH: ${{ needs.match.outputs.content-source-match }}
-    needs: [ match ]
+    needs: 
+      - check
+      - match
     steps:
 
       - name: Checkout
-        if:  env.MATCH == 'true' && (contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name))
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-
-      - name: Get changed files
-        if: env.MATCH == 'true' && (contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name))
-        id: check-files
-        uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
-        with:
-          files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
-          
-      - name: Checkout
-        if: env.MATCH == 'true' && (startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true')
+        if: env.MATCH == 'true' && (startsWith(github.event_name, 'pull_request') && needs.check.outputs.any_modified == 'true')
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
@@ -152,7 +159,7 @@ jobs:
         if: |
           env.MATCH == 'true' && 
             (contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-                || (steps.check-files.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
+                || (needs.check.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
             )
         uses: actions/github-script@v7
         id: deployment
@@ -161,6 +168,7 @@ jobs:
           REF: ${{ startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha || github.ref_name }}
         with:
           result-encoding: string
+          # language=javascript
           script: |
             const { owner, repo } = context.repo;
             const prNumber = process.env.PR_NUMBER;
@@ -219,7 +227,7 @@ jobs:
         if: | 
           env.MATCH == 'true' && 
             (github.repository != 'elastic/docs-builder' && 
-                (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+                (steps.deployment.outputs.result || (needs.check.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
             )
         uses: elastic/docs-builder@main
         id: docs-build
@@ -233,7 +241,7 @@ jobs:
         if: |
           env.MATCH == 'true' && 
           (!cancelled() && steps.docs-build.outputs.skip != 'true' 
-            && (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+            && (steps.deployment.outputs.result || (needs.check.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
           )
         uses: elastic/docs-builder/actions/validate-inbound-local@main
 
@@ -241,7 +249,7 @@ jobs:
         if: |
           env.MATCH == 'true' && 
           (!cancelled() && steps.docs-build.outputs.skip != 'true' && 
-            (steps.deployment.outputs.result || (steps.check-files.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
+            (steps.deployment.outputs.result || (needs.check.outputs.any_modified == 'true' && github.event_name == 'merge_group'))
           )
         uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
 
@@ -278,6 +286,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}
         with:
+          # language=jinja
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
