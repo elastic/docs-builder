@@ -231,9 +231,18 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
 	{
 		var appliesTo = appliesToDirective.AppliesTo;
-		var slice = AppliesToView.Create(appliesTo);
+
 		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
 			return;
+
+		var viewModel = new Components.ApplicableToViewModel
+		{
+			AppliesTo = appliesTo,
+			Inline = false,
+			VersionsConfig = appliesToDirective.Build.VersionsConfig
+		};
+
+		var slice = AppliesToView.Create(viewModel);
 		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
 	}
 }

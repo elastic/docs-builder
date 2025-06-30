@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
@@ -17,10 +18,15 @@ namespace Elastic.Markdown.Myst.Roles.AppliesTo;
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Role: {Role}, Content: {Content}")]
 public class AppliesToRole : RoleLeaf, IApplicableToElement
 {
-	public AppliesToRole(string role, string content, InlineProcessor parserContext) : base(role, content) =>
+	public AppliesToRole(string role, string content, InlineProcessor parserContext) : base(role, content)
+	{
 		AppliesTo = ParseApplicableTo(content, parserContext);
+		BuildContext = parserContext.GetContext().Build;
+	}
 
 	public ApplicableTo? AppliesTo { get; }
+
+	public BuildContext BuildContext { get; }
 
 	private ApplicableTo? ParseApplicableTo(string yaml, InlineProcessor processor)
 	{
@@ -85,6 +91,3 @@ public class InlineAppliesToExtension : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) =>
 		renderer.ObjectRenderers.InsertBefore<CodeInlineRenderer>(new AppliesToRoleHtmlRenderer());
 }
-
-
-

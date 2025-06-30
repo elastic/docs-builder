@@ -60,7 +60,7 @@ applies_to:
    serverless:
       security: ga 9.0.0
       elasticsearch: beta 9.1.0
-      observability: discontinued 9.2.0
+      observability: removed 9.2.0
 """
     [<Fact>]
     let ``apply matches expected`` () =
@@ -68,7 +68,7 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga 9.0.0",
                 Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
-                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
+                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
             )
         ))
 
@@ -106,7 +106,7 @@ applies_to:
    deployment:
       eck: ga 9.0
       ess: beta 9.1
-      ece: discontinued 9.2.0
+      ece: removed 9.2.0
       self: unavailable 9.3.0
 """
     [<Fact>]
@@ -115,7 +115,7 @@ applies_to:
             Deployment=DeploymentApplicability(
                 Eck=AppliesCollection.op_Explicit "ga 9.0",
                 Ess=AppliesCollection.op_Explicit "beta 9.1",
-                Ece=AppliesCollection.op_Explicit "discontinued 9.2.0",
+                Ece=AppliesCollection.op_Explicit "removed 9.2.0",
                 Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
             )
         ))
@@ -157,14 +157,14 @@ applies_to:
 type ``parses product multiple`` () =
     static let markdown = frontMatter """
 applies_to:
-   product: preview 9.5, discontinued 9.7
+   product: preview 9.5, removed 9.7
 """
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Product=AppliesCollection([
                 Applicability.op_Explicit "preview 9.5";
-                Applicability.op_Explicit "discontinued 9.7"
+                Applicability.op_Explicit "removed 9.7"
             ] |> Array.ofList)
         ))
 
@@ -173,12 +173,12 @@ type ``lenient to defining types at top level`` () =
 applies_to:
   eck: ga 9.0
   ess: beta 9.1
-  ece: discontinued 9.2.0
+  ece: removed 9.2.0
   self: unavailable 9.3.0
   security: ga 9.0.0
   elasticsearch: beta 9.1.0
-  observability: discontinued 9.2.0
-  product: preview 9.5, discontinued 9.7
+  observability: removed 9.2.0
+  product: preview 9.5, removed 9.7
   apm_agent_dotnet: ga 9.0
   ecctl: ga 10.0
   stack: ga 9.1
@@ -189,16 +189,16 @@ applies_to:
             Deployment=DeploymentApplicability(
                 Eck=AppliesCollection.op_Explicit "ga 9.0",
                 Ess=AppliesCollection.op_Explicit "beta 9.1",
-                Ece=AppliesCollection.op_Explicit "discontinued 9.2.0",
+                Ece=AppliesCollection.op_Explicit "removed 9.2.0",
                 Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
             ),
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga 9.0.0",
                 Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
-                Observability=AppliesCollection.op_Explicit "discontinued 9.2.0"
+                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
-            Product=AppliesCollection.op_Explicit "preview 9.5, discontinued 9.7",
+            Product=AppliesCollection.op_Explicit "preview 9.5, removed 9.7",
             ProductApplicability=ProductApplicability(
                 ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0",
                 Ecctl=AppliesCollection.op_Explicit "ga 10.0"

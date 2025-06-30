@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Actions.Core.Extensions;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Tooling.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -27,7 +28,8 @@ public static class DocumentationTooling
 	public static void CreateServiceCollection(IServiceCollection services, LogLevel defaultLogLevel)
 	{
 		_ = services
-			.AddGitHubActionsCore();
+			.AddGitHubActionsCore()
+			.AddVersions();
 		services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
 		_ = services.AddLogging(x => x
 			.ClearProviders()

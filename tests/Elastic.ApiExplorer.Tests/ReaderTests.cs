@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,7 +19,21 @@ public class ReaderTests
 	public async Task Reads()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var context = new BuildContext(collector, new FileSystem());
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
 
 		context.Configuration.OpenApiSpecification.Should().NotBeNull();
 
@@ -31,8 +46,22 @@ public class ReaderTests
 	[Fact]
 	public async Task Navigation()
 	{
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
 		var collector = new DiagnosticsCollector([]);
-		var context = new BuildContext(collector, new FileSystem());
+		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
 		var generator = new OpenApiGenerator(context, NoopMarkdownStringRenderer.Instance, NullLoggerFactory.Instance);
 		context.Configuration.OpenApiSpecification.Should().NotBeNull();
 

@@ -65,7 +65,8 @@
 		@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
 		{
 			AppliesTo = Model.AppliesTo,
-			Inline = false
+			Inline = false,
+			VersionsConfig = Model.VersionsConfig
 		}))
 		</p>
 	}
