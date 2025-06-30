@@ -69,7 +69,7 @@ jobs:
               if [[ "${AUTHOR_ASSOCIATION}" == "MEMBER" ]]; then
                 exit 0;
               else
-                echo "::error::You must be a member of the elastic organization to trigger a preview build. Please ask a member of the elastic organization to re-trigger the build.";
+                echo "::error::You must be a member of the elastic organization to trigger a preview build. Please ask a member of the elastic organization to review your PR and re-trigger the build.";
                 exit 1;
               fi
               ;;
