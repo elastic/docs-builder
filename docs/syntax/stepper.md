@@ -20,6 +20,7 @@ npm install
 ::::
 
 ::::{step} Build
+### Build
 Then build the project.
 ```shell
 npm run build

@@ -7,6 +7,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown.IO;
@@ -27,7 +28,7 @@ public class DocumentationWebHost
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
 
-	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem readFs, IFileSystem writeFs)
+	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem readFs, IFileSystem writeFs, VersionsConfiguration versionsConfig)
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
@@ -43,7 +44,7 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, path, null)
+		Context = new BuildContext(collector, readFs, writeFs, versionsConfig, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};

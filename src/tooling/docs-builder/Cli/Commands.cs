@@ -10,6 +10,7 @@ using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
@@ -17,12 +18,14 @@ using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
 {
 	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
+
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
@@ -44,7 +47,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		var host = new DocumentationWebHost(path, port, logger, new FileSystem(), new MockFileSystem());
+		var host = new DocumentationWebHost(path, port, logger, new FileSystem(), new MockFileSystem(), versionsConfigOption.Value);
 		_log.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
 		);
@@ -120,7 +123,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, fileSystem, path, output)
+			context = new BuildContext(collector, fileSystem, fileSystem, versionsConfigOption.Value, path, output)
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
@@ -229,7 +232,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		AssignOutputLogger();
 		var fileSystem = new FileSystem();
 		await using var collector = new ConsoleDiagnosticsCollector(logger, null).StartAsync(ctx);
-		var context = new BuildContext(collector, fileSystem, fileSystem, path, null);
+		var context = new BuildContext(collector, fileSystem, fileSystem, versionsConfigOption.Value, path, null);
 		var set = new DocumentationSet(context, logger);
 
 		var moveCommand = new Move(fileSystem, fileSystem, set, logger);

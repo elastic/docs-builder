@@ -6,6 +6,7 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
@@ -48,10 +49,26 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GitReferenceCurrent
 		};
 
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+
 		var buildContext = new BuildContext(
 			context.Collector,
 			context.ReadFileSystem,
 			context.WriteFileSystem,
+			versionsConfig,
 			path,
 			output,
 			gitConfiguration

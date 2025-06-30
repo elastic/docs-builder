@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Documentation.Configuration;
@@ -13,7 +14,8 @@ namespace Elastic.Documentation.Configuration;
 public record BuildContext : IDocumentationContext
 {
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
-	.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
+		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
+
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
 
@@ -22,6 +24,8 @@ public record BuildContext : IDocumentationContext
 	public IDirectoryInfo DocumentationOutputDirectory { get; }
 
 	public ConfigurationFile Configuration { get; }
+
+	public VersionsConfiguration VersionsConfig { get; init; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -60,13 +64,16 @@ public record BuildContext : IDocumentationContext
 		init => _urlPathPrefix = value;
 	}
 
-	public BuildContext(IDiagnosticsCollector collector, IFileSystem fileSystem)
-		: this(collector, fileSystem, fileSystem, null, null) { }
+	public BuildContext(IDiagnosticsCollector collector, IFileSystem fileSystem, VersionsConfiguration versionsConfig)
+		: this(collector, fileSystem, fileSystem, versionsConfig, null, null)
+	{
+	}
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
 		IFileSystem readFileSystem,
 		IFileSystem writeFileSystem,
+		VersionsConfiguration versionsConfig,
 		string? source = null,
 		string? output = null,
 		GitCheckoutInformation? gitCheckoutInformation = null
@@ -75,6 +82,7 @@ public record BuildContext : IDocumentationContext
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
+		VersionsConfig = versionsConfig;
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
@@ -98,5 +106,4 @@ public record BuildContext : IDocumentationContext
 			Enabled = false
 		};
 	}
-
 }
