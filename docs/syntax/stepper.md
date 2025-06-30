@@ -6,7 +6,7 @@ to break down processes into manageable stages.
 By default every step title is a link with a generated anchor.
 But you can override the default anchor by adding the `:anchor:` option to the step.
 
-## Basic Stepper
+## Basic stepper
 
 :::::::{tab-set}
 ::::::{tab-item} Output
@@ -75,7 +75,7 @@ npm run test
 
 :::::::
 
-## Advanced Example
+## Advanced example
 
 :::::::{tab-set}
 
@@ -202,23 +202,13 @@ To see how dynamic mapping works, add a new document to the `books` index with a
 
 :::::::
 
-## Table of Contents Integration
+## Table of contents integration
 
 Stepper step titles automatically appear in the page's "On this page" table of contents (ToC) sidebar, making it easier for users to navigate directly to specific steps.
 
-### How it works
-
-- **Automatic inclusion**: Step titles are automatically detected and added to the ToC during document parsing.
-- **Proper nesting**: Steps appear as sub-items under their parent section heading with appropriate indentation.
-- **Clickable navigation**: Users can click on step titles in the ToC to jump directly to that step.
-
 ### Nested steppers
 
-When steppers are nested inside other directive components (like `{tab-set}`, `{dropdown}`, or other containers), their step titles are **not** included in the ToC to avoid:
-
-- Duplicate or competing headings across multiple tabs
-- Links to content that might be collapsed or hidden
-- General confusion about content hierarchy
+When steppers are nested inside other directive components (like `{tab-set}`, `{dropdown}`, or other containers), their step titles are **not** included in the ToC to avoid duplicate or competing headings across multiple tabs or links to content that might be collapsed or hidden.
 
 **Example of excluded stepper:**
 ```markdown
@@ -232,57 +222,6 @@ Content here...
 :::
 ::::
 ```
-
-**Example of included stepper:**
-```markdown
-## Installation Guide
-
-::::{stepper}
-:::{step} Download
-Download the software...
-:::
-
-:::{step} Install  
-Run the installer...
-:::
-::::
-```
-
-In the second example, both "Download" and "Install" steps will appear in the ToC as sub-items under "Installation Guide".
-
 ## Dynamic heading levels
 
 Stepper step titles automatically adjust their heading level based on the preceding heading in the document, ensuring proper document hierarchy and semantic structure.
-
-### Examples
-
-**Stepper after H2 heading:**
-```markdown
-## Installation Guide
-
-::::{stepper}
-:::{step} Download
-Step titles render as H3 (visible in ToC)
-:::
-::::
-```
-
-**Stepper after H3 heading:**
-```markdown
-### Setup Process
-
-::::{stepper}
-:::{step} Configure
-Step titles render as H4 (not in ToC, but proper hierarchy)
-:::
-::::
-```
-
-**Stepper with no preceding heading:**
-```markdown
-::::{stepper}
-:::{step} First Step
-Step titles default to H2 level
-:::
-::::
-```
