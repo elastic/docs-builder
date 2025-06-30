@@ -57,9 +57,9 @@ This guide uses the first option. If you'd like to clone the repository and buil
 
    The path to the `docset.yml` file that you want to build can be specified with `-p`.
 
-   :::{important}
+   ::{important}
    Run `docs-builder` without `serve` to run a full build and detect errors.
-   :::
+   ::
 
 To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
 
