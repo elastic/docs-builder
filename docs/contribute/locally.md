@@ -4,7 +4,7 @@ Follow these steps to contribute to Elastic docs.
 
 * [Prerequisites](#prerequisites)
 * [Install `docs-builder`](#install-docs-builder)
-* [Clone a content repository](#clone-content-repository)
+* [Clone a content repository](#clone-content)
 * [Build the docs](#build-the-docs)
 * [Write the docs](#write-docs)
 * [Push your changes](#push-changes)
