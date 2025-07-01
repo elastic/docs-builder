@@ -11,7 +11,7 @@
 @if (appliesTo.Stack is not null)
 {
 	@RenderProduct(
-		"Elastic Stack", 
+		"Stack", 
 		"Part of the versioned Elastic Stack\n\nAvailable in ECH, ECE, ECK, and self-managed deployments, unless otherwise stated",
 		VersioningSystemId.Stack,
 		appliesTo.Stack
@@ -206,15 +206,25 @@
 			
 			var badgeTextChanged = badgeText != name;
 			<span class="applicable-info">
-					<span class="applicable-name" data-tippy-content="@description">@name</span>
-				<span class="applicable-meta applicable-meta-@lifecycleClass" data-tippy-content="@lifecycleTooltip">
-				@if (applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && !badgeTextChanged)
-				{
-					<span class="applicable-lifecycle applicable-lifecycle-@lifecycleClass">@applicability.GetLifeCycleName()</span>
+				<span class="applicable-name" data-tippy-content="@description">@name</span>
+				
+				@{
+					var showLifeCycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && !badgeTextChanged;
+					var showVersion = applicability.Version is not null and not AllVersions;
 				}
-				@if (applicability.Version is not null and not AllVersions)
+				
+				@if (showLifeCycle || showVersion)
 				{
-						@if (versioningSystem.Current >= applicability.Version)
+					<span class="applicable-separator"></span>
+				}
+				<span class="applicable-meta applicable-meta-@lifecycleClass" data-tippy-content="@lifecycleTooltip">
+					@if (showLifeCycle)
+					{
+						<span class="applicable-lifecycle applicable-lifecycle-@lifecycleClass">@applicability.GetLifeCycleName()</span>
+					}
+					@if (showVersion)
+					{
+						@if (versioningSystem.Current >= applicability.Version!)
 						{
 							<span class="applicable-version applicable-version-@lifecycleClass">
 								@applicability.Version
@@ -222,11 +232,9 @@
 						}
 						else
 						{
-							<span class="applicable-lifecycle applicable-lifecycle-@lifecycleClass">
-								@badgeText
-							</span>
+							@badgeText
 						}
-				}
+					}
 				</span>
 			</span>
 		}
