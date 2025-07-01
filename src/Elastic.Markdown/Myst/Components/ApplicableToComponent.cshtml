@@ -44,6 +44,15 @@
 			VersioningSystemId.Ess,
 			appliesTo.Deployment.Ess
 		)
+	} 
+	else if (appliesTo.Deployment.Ech is not null)
+	{
+		@RenderProduct(
+			"ECH", 
+			"Elastic Cloud Hosted", 
+			VersioningSystemId.Ech,
+			appliesTo.Deployment.Ech
+		)
 	}
 	if (appliesTo.Deployment.Self is not null)
 	{
