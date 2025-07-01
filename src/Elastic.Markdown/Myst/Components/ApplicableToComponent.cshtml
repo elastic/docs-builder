@@ -309,7 +309,7 @@
 					var showVersion = applicability.Version is not null and not AllVersions;
 				}
 
-				@if (showLifeCycle || showVersion)
+				@if (!string.IsNullOrEmpty(name) && (showLifeCycle || showVersion))
 				{
 					<span class="applicable-separator"></span>
 				}

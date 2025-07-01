@@ -43,6 +43,10 @@
 	.applies.applies-inline {
 		display: inline-block;
 		vertical-align: bottom;
+		.applicable-separator {
+			margin-left: calc(var(--spacing) * 1.5);
+			margin-right: calc(var(--spacing) * 1.5)
+		}
 		.applicable-info {
 			@apply pt-1 pb-1 pl-1.5 pr-1.5 rounded-sm;
 		}
