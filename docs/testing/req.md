@@ -1,8 +1,11 @@
 ---
 applies_to:
-  stack: preview 9.0, ga 9.1
+  stack: ga
+  serverless:
+    elasticsearch: ga
+mapped_pages:
+  - https://www.elastic.co/guide/en/elasticsearch/reference/current/es-connectors-usage.html
 ---
-
 # Requirements
 
 ```{applies_to}
