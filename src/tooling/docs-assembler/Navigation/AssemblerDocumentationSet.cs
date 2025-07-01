@@ -29,7 +29,8 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
-		TableOfContentsTreeCollector treeCollector)
+		TableOfContentsTreeCollector treeCollector,
+		VersionsConfiguration versionsConfiguration)
 	{
 		AssembleContext = context;
 		Checkout = checkout;
@@ -49,26 +50,11 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GitReferenceCurrent
 		};
 
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-
 		var buildContext = new BuildContext(
 			context.Collector,
 			context.ReadFileSystem,
 			context.WriteFileSystem,
-			versionsConfig,
+			versionsConfiguration,
 			path,
 			output,
 			gitConfiguration
