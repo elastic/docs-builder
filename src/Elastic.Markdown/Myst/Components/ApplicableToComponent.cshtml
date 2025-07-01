@@ -12,7 +12,7 @@
 {
 	@RenderProduct(
 		"Stack",
-		"Part of the versioned Elastic Stack\n\nAvailable in ECH, ECE, ECK, and self-managed deployments, unless otherwise stated",
+		"Elastic Stack",
 		VersioningSystemId.Stack,
 		appliesTo.Stack
 	)
@@ -64,7 +64,7 @@
 	{
 		@RenderProduct(
 			"Serverless",
-			"Elastic Cloud Serverless: Fully-managed Elastic, available in Elastic Cloud",
+			"Elastic Cloud Serverless",
 			VersioningSystemId.Serverless,
 			appliesTo.Serverless.AllProjects
 		)
@@ -226,94 +226,97 @@
 
 @functions {
 
-	private IHtmlContent RenderProduct(string name, string description, VersioningSystemId versioningSystemName, AppliesCollection applications)
+	private IHtmlContent RenderProduct(string key, string keyFull, VersioningSystemId versioningSystemName, AppliesCollection applications)
 	{
 		var versioningSystem = Model.VersionsConfig.GetVersioningSystem(versioningSystemName);
 
 		foreach (var applicability in applications)
 		{
-			var lifecycleTooltip = "";
-			var badgeText = name;
+			var badgeText = key;
+			var tooltipText = "";
 			var lifecycleClass = applicability.GetLifeCycleName().ToLowerInvariant().Replace(" ", "-");
-			switch (applicability.Lifecycle)
+			
+			var lifecycleFull = applicability.Lifecycle switch 
 			{
-				case ProductLifecycle.TechnicalPreview:
-					if (TryGetRealVersion(applicability, out var previewVersion) && previewVersion > versioningSystem.Current)
-					{
-						badgeText = "Planned";
-						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
-						lifecycleClass = "planned";
-					}
-					else
-					{
-						lifecycleTooltip = "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.";
-					}
+				ProductLifecycle.GenerallyAvailable => "Available",
+				ProductLifecycle.Beta => "Available in beta",
+				ProductLifecycle.TechnicalPreview => "Available in technical preview",
+				ProductLifecycle.Deprecated => "Deprecated",
+				ProductLifecycle.Removed => "Removed",
+				_ => ""
+			};
+			
+			var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
 
-					break;
-				case ProductLifecycle.Beta:
-					if (TryGetRealVersion(applicability, out var betaVersion) && betaVersion > versioningSystem.Current)
-					{
-						badgeText = "Planned";
-						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
-						lifecycleClass = "planned";
-					}
-					else
-					{
-						lifecycleTooltip = "This functionality is in beta and is subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.";
-					}
+			if (realVersion is not null)
+			{
 
-					break;
-				case ProductLifecycle.GenerallyAvailable:
-					if (TryGetRealVersion(applicability, out var version) && version > versioningSystem.Current)
+				if (realVersion <= versioningSystem.Current)
+				{
+					tooltipText = $"{lifecycleFull} in {keyFull} in version {realVersion} and later unless otherwise specified.";
+				}
+				else
+				{
+					if (applicability.Lifecycle is ProductLifecycle.GenerallyAvailable or ProductLifecycle.Beta or ProductLifecycle.TechnicalPreview)
 					{
-						badgeText = "Planned";
-						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
-						lifecycleClass = "planned";
+						tooltipText = $"We plan to add this in a future {keyFull} update. Plans may change without notice.";
 					}
-
-					break;
-				case ProductLifecycle.Deprecated:
-					if (TryGetRealVersion(applicability, out var deprecatedVersion) && deprecatedVersion > versioningSystem.Current)
+					else if (applicability.Lifecycle is ProductLifecycle.Deprecated)
 					{
-						badgeText = "Deprecation planned";
-						lifecycleTooltip = "We plan to deprecate this functionality in a future update. Plans may change without notice.";
+						tooltipText = $"We plan to deprecate this in a future {keyFull} update. Plans may change without notice.";
 					}
-
-					break;
-				case ProductLifecycle.Removed:
-					if (TryGetRealVersion(applicability, out var removedVersion) && removedVersion > versioningSystem.Current)
+					else if (applicability.Lifecycle is ProductLifecycle.Removed)
 					{
-						badgeText = "Removal planned";
-						lifecycleTooltip = "We plan to remove this functionality in a future update. Plans may change without notice.";
+						tooltipText = $"We plan to remove this in a future {keyFull} update. Plans may change without notice.";
 					}
-
-					break;
+				}
+				
+			}
+			else
+			{
+				tooltipText = $"{lifecycleFull} in {keyFull} unless otherwise specified.";
 			}
 
-			if (
-				applicability.Version is null
-				&& applicability.Lifecycle != ProductLifecycle.Deprecated
-				&& applicability.Lifecycle != ProductLifecycle.Removed
-				&& versioningSystem.Id is VersioningSystemId.Stack or VersioningSystemId.Self or VersioningSystemId.Ece or VersioningSystemId.Eck
-			)
+			var disclaimer = applicability.Lifecycle switch
 			{
-				lifecycleTooltip += $"\n\nApplies to version {versioningSystem.Base} and later - may have been introduced in a previous version";
+				ProductLifecycle.Beta => "Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.",
+				ProductLifecycle.TechnicalPreview => "This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+				ProductLifecycle.GenerallyAvailable  =>  versioningSystem.Id is VersioningSystemId.Stack ? "Available in ECH, ECE, ECK, and self-managed deployments, unless otherwise specified." : null,
+				_ => null
+			};
+
+			if (disclaimer is not null)
+			{
+				tooltipText = $"{tooltipText}\n\n{disclaimer}";
 			}
 
-			var badgeTextChanged = badgeText != name;
-			<span class="applicable-info">
-				<span class="applicable-name" data-tippy-content="@description">@name</span>
+			if (realVersion is not null && realVersion > versioningSystem.Current)
+			{
+				badgeText = applicability.Lifecycle switch
+				{
+					ProductLifecycle.TechnicalPreview => "Planned",
+					ProductLifecycle.Beta => "Planned",
+					ProductLifecycle.GenerallyAvailable => "Planned",
+					ProductLifecycle.Deprecated => "Deprecation planned",
+					ProductLifecycle.Removed => "Removal planned",
+					_ => badgeText
+				};
+			}
+
+			var badgeTextChanged = badgeText != key;
+			<span class="applicable-info" data-tippy-content="@tooltipText">
+				<span class="applicable-name">@key</span>
 
 				@{
 					var showLifeCycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && !badgeTextChanged;
 					var showVersion = applicability.Version is not null and not AllVersions;
 				}
 
-				@if (!string.IsNullOrEmpty(name) && (showLifeCycle || showVersion))
+				@if (!string.IsNullOrEmpty(key) && (showLifeCycle || showVersion))
 				{
 					<span class="applicable-separator"></span>
 				}
-				<span class="applicable-meta applicable-meta-@lifecycleClass" data-tippy-content="@lifecycleTooltip">
+				<span class="applicable-meta applicable-meta-@lifecycleClass">
 					@if (showLifeCycle)
 					{
 						<span
