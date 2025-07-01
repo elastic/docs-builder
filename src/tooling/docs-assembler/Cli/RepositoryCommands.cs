@@ -23,10 +23,11 @@ using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger)
+internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger, IOptions<VersionsConfiguration> versionsConfigOption)
 {
 	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
 
@@ -166,20 +167,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		{
 			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
 		};
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
 		await Parallel.ForEachAsync(repositories,
 			new ParallelOptions
 			{
@@ -195,7 +182,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 						collector,
 						new FileSystem(),
 						new FileSystem(),
-						versionsConfig,
+						versionsConfigOption.Value,
 						checkout.Directory.FullName,
 						outputPath
 					);
