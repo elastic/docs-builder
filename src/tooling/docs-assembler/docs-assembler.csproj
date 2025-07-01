@@ -19,11 +19,14 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.CloudFront" />
     <PackageReference Include="AWSSDK.CloudFrontKeyValueStore" />
+    <PackageReference Include="AWSSDK.Extensions.CrtIntegration" />
     <PackageReference Include="AWSSDK.S3"/>
     <PackageReference Include="ConsoleAppFramework.Abstractions"/>
     <PackageReference Include="ConsoleAppFramework" />
     <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Proc"  />
+    <!-- System.Private.Uri is added explicitly due to vulnerabilities on 4.3.0 which AWSSDK.Extensions.CrtIntegration requires -->
+    <PackageReference Include="System.Private.Uri" />
     <PackageReference Include="YamlDotNet"  />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />

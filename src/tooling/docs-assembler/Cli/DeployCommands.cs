@@ -9,6 +9,8 @@ using Actions.Core.Services;
 using Amazon.CloudFront;
 using Amazon.CloudFrontKeyValueStore;
 using Amazon.CloudFrontKeyValueStore.Model;
+using Amazon.Extensions.CrtIntegration;
+using Amazon.RuntimeDependencies;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using ConsoleAppFramework;
@@ -131,6 +133,9 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
+
+		GlobalRuntimeDependencyRegistry.Instance.RegisterSigV4aProvider((context)
+			=> new CrtAWS4aSigner(context.SigV4aCrtSignerContextData.SignPayload));
 
 		ConsoleApp.Log("Parsing redirects mapping");
 		var jsonContent = await File.ReadAllTextAsync(redirectsFile, ctx);

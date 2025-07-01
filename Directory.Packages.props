@@ -16,11 +16,13 @@
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.0.10" />
     <PackageVersion Include="AWSSDK.CloudFrontKeyValueStore" Version="4.0.0.9" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
+    <PackageVersion Include="AWSSDK.Extensions.CrtIntegration" Version="4.0.0" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.11.3" />
     <PackageVersion Include="Microsoft.OpenApi" Version="2.0.0-preview9" />
+    <PackageVersion Include="System.Private.Uri" Version="4.3.2" />
     <PackageVersion Include="System.Text.Json" Version="9.0.5" />
   </ItemGroup>
   <!-- Build -->
