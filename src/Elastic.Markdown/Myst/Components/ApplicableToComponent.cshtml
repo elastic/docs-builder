@@ -266,7 +266,8 @@
 				case ProductLifecycle.GenerallyAvailable:
 					if (TryGetRealVersion(applicability, out var version) && version > versioningSystem.Current)
 					{
-						badgeText = "Planned";
+						var technicalPreviewApplicability = applications.FirstOrDefault(a => a.Lifecycle == ProductLifecycle.TechnicalPreview);
+						badgeText = technicalPreviewApplicability is not null ? "GA planned" : "Planned";
 						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
 						lifecycleClass = "planned";
 					}
