@@ -108,7 +108,7 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 						AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem),
 					_ => string.Empty
 				};
-				var responseJson = Capture("aws", "cloudfront-key-value-store", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
+				var responseJson = Capture(false, 1, "aws", "cloudfront-key-value-store", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
 					$"--{operation.ToString().ToLowerInvariant()}", "--payload", payload);
 				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(responseJson, AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
 
