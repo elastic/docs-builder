@@ -61,7 +61,7 @@
 	@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
 	@if (Model.AppliesTo is not null)
 	{
-		<p class="applies">
+		<p class="applies applies-block">
 		@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
 		{
 			AppliesTo = Model.AppliesTo,

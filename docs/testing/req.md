@@ -1,6 +1,25 @@
+---
+applies_to:
+  stack: preview 9.0, ga 9.1
+---
+
 # Requirements
 
+```{applies_to}
+stack: preview 9.0, ga 9.1
+```
+
+
+{applies_to}`stack: preview 9.0` This tutorial is based on Elasticsearch 9.0.
+This tutorial is based on Elasticsearch 9.0. This tutorial is based on Elasticsearch 9.0.
+This tutorial is based on Elasticsearch 9.0.
+
+what
+
+
 To follow this tutorial you will need to install the following components:
+
+
 
 - An installation of Elasticsearch, based on our hosted [Elastic Cloud](https://www.elastic.co/cloud) service (which includes a free trial period), or a self-hosted service that you run on your own computer. See the Install Elasticsearch section above for installation instructions.
 - A [Python](https://python.org) interpreter. Make sure it is a recent version, such as Python 3.8 or newer.
