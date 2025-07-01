@@ -123,7 +123,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			throw new Exception("No checkouts found");
 
 		_log.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, versionsConfigOption.Value, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		_log.LogInformation("Create global navigation");

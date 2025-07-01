@@ -11,6 +11,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
@@ -49,15 +50,15 @@ public class AssembleSources
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
-	public static async Task<AssembleSources> AssembleAsync(ILoggerFactory logger, AssembleContext context, Checkout[] checkouts, Cancel ctx)
+	public static async Task<AssembleSources> AssembleAsync(ILoggerFactory logger, AssembleContext context, Checkout[] checkouts, VersionsConfiguration versionsConfiguration, Cancel ctx)
 	{
-		var sources = new AssembleSources(logger, context, checkouts);
+		var sources = new AssembleSources(logger, context, checkouts, versionsConfiguration);
 		foreach (var (_, set) in sources.AssembleSets)
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
 		return sources;
 	}
 
-	private AssembleSources(ILoggerFactory logger, AssembleContext assembleContext, Checkout[] checkouts)
+	private AssembleSources(ILoggerFactory logger, AssembleContext assembleContext, Checkout[] checkouts, VersionsConfiguration versionsConfiguration)
 	{
 		AssembleContext = assembleContext;
 		TocTopLevelMappings = GetConfiguredSources(assembleContext);
@@ -68,7 +69,7 @@ public class AssembleSources
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logger, assembleContext, c, crossLinkResolver, TreeCollector))
+			.Select(c => new AssemblerDocumentationSet(logger, assembleContext, c, crossLinkResolver, TreeCollector, versionsConfiguration))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 
