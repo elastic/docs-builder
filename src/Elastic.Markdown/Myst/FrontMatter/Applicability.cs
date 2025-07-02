@@ -108,7 +108,7 @@ public record Applicability
 	public string GetLifeCycleName() =>
 		Lifecycle switch
 		{
-			ProductLifecycle.TechnicalPreview => "Technical Preview",
+			ProductLifecycle.TechnicalPreview => "Preview",
 			ProductLifecycle.Beta => "Beta",
 			ProductLifecycle.Development => "Development",
 			ProductLifecycle.Deprecated => "Deprecated",

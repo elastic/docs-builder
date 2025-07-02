@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
 namespace Documentation.Assembler;

@@ -17,8 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.CloudFront" />
-    <PackageReference Include="AWSSDK.CloudFrontKeyValueStore" />
     <PackageReference Include="AWSSDK.S3"/>
     <PackageReference Include="ConsoleAppFramework.Abstractions"/>
     <PackageReference Include="ConsoleAppFramework" />

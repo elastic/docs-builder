@@ -248,9 +248,38 @@ applies_to:
 ---
 ```
 
-## Inline Examples
 
-### Stack
+## Look and feel
+
+### Block
+
+```{applies_to}
+stack: preview 9.1
+serverless: planned
+
+apm_agent_dotnet: ga 1.0.0
+apm_agent_java: beta 1.0.0
+edot_dotnet: preview 1.0.0
+edot_python:
+edot_node: ga 1.0.0
+elasticsearch: preview 9.0.0
+security: removed 9.0.0
+observability: deprecated 9.0.0
+```
+
+### Inline
+
+#### In text
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat,
+sit amet auctor odio. Donec ac placerat nunc. {applies_to}`stack: preview` Aenean scelerisque viverra lectus
+nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictum.
+
+- {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. 
+- {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam.
+- {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim. 
+
+#### Stack
 
 | `applies_to`                               | result                               |
 |--------------------------------------------|--------------------------------------|
@@ -281,7 +310,7 @@ applies_to:
 | `` {applies_to}`stack: removed 9.1` ``     | {applies_to}`stack: removed 9.1`     |
 | `` {applies_to}`stack: removed 99.0` ``    | {applies_to}`stack: removed 99.0`    |
 
-### Serverless
+#### Serverless
 
 | `applies_to`                                    | result                                    |
 |-------------------------------------------------|-------------------------------------------|

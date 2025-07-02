@@ -5,8 +5,10 @@
 using System.IO.Abstractions;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -61,8 +63,21 @@ public class GlobalNavigationPathProviderTests
 			)
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
-
-		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, Context, checkouts, TestContext.Current.CancellationToken);
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, Context, checkouts, versionsConfig, TestContext.Current.CancellationToken);
 		return assembleSources;
 	}
 
@@ -267,8 +282,21 @@ public class GlobalNavigationPathProviderTests
 			.Concat([NarrativeRepository.RepositoryName])
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
-
-		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, assembleContext, checkouts, TestContext.Current.CancellationToken);
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, assembleContext, checkouts, versionsConfig, TestContext.Current.CancellationToken);
 		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
