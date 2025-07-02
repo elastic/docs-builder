@@ -42,8 +42,8 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 		ConsoleApp.Log("Describing KeyValueStore");
 		try
 		{
-			var json = Capture("aws", "cloudfront", "describe-key-value-store", "--name", kvsName, "|", "jq", "-c");
-			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(json, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			var json = CaptureMultiple("/opt/homebrew/bin/aws-vault", "exec", "elastic-web", "--", "/opt/homebrew/bin/aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
 			if (describeResponse?.ETag is not null && describeResponse.KeyValueStore is { ARN.Length: > 0 })
 				return (describeResponse.KeyValueStore.ARN, describeResponse.ETag);
 
@@ -67,8 +67,8 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 		{
 			do
 			{
-				var json = Capture("aws", [.. baseArgs, .. nextToken is not null ? (string[])["--starting-token", nextToken] : [], "|", "jq", "-c"]);
-				var response = JsonSerializer.Deserialize<ListKeysResponse>(json, AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
+				var json = CaptureMultiple("aws", [.. baseArgs, .. nextToken is not null ? (string[])["--starting-token", nextToken] : []]);
+				var response = JsonSerializer.Deserialize<ListKeysResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
 
 				if (response?.Items != null)
 				{
@@ -108,9 +108,9 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 						AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem),
 					_ => string.Empty
 				};
-				var responseJson = Capture(false, 1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
-					$"--{operation.ToString().ToLowerInvariant()}", "--payload", payload, "|", "jq", "-c");
-				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(responseJson, AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
+				var responseJson = CaptureMultiple(false, 1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
+					$"--{operation.ToString().ToLowerInvariant()}", "--payload", payload);
+				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(string.Concat(responseJson), AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
 
 				if (string.IsNullOrEmpty(updateResponse?.ETag))
 					throw new Exception("Failed to get new ETag after update operation.");
