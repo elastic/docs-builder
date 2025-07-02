@@ -22,8 +22,8 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public bool LazyLoadNavigation
 	{
-		get => IsEnabled("LAZY_LOAD_NAVIGATION");
-		set => _featureFlags["LAZY_LOAD_NAVIGATION"] = value;
+		get => IsEnabled("lazy-load-navigation");
+		set => _featureFlags["lazy-load-navigation"] = value;
 	}
 
 	private bool IsEnabled(string key)
