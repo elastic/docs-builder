@@ -42,7 +42,7 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 		ConsoleApp.Log("Describing KeyValueStore");
 		try
 		{
-			var json = CaptureMultiple("/opt/homebrew/bin/aws-vault", "exec", "elastic-web", "--", "/opt/homebrew/bin/aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
+			var json = CaptureMultiple("aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
 			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
 			if (describeResponse?.ETag is not null && describeResponse.KeyValueStore is { ARN.Length: > 0 })
 				return (describeResponse.KeyValueStore.ARN, describeResponse.ETag);
