@@ -109,7 +109,7 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 					_ => string.Empty
 				};
 				var responseJson = CaptureMultiple(false, 1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
-					$"--{operation.ToString().ToLowerInvariant()}", "--payload", payload);
+					$"--{operation.ToString().ToLowerInvariant()}", payload);
 				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(string.Concat(responseJson), AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
 
 				if (string.IsNullOrEmpty(updateResponse?.ETag))
