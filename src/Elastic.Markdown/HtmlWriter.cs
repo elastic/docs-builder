@@ -44,18 +44,19 @@ public class HtmlWriter(
 		return MarkdownFile.CreateHtml(parsed);
 	}
 
-	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
+	public async Task<(string, string)> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
 		return await RenderLayout(markdown, document, ctx);
 	}
 
-	private async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
+	private async Task<(string, string)> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
+		var fullNavigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, -1, ctx);
+		var miniNavigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, 1, ctx);
 
 		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);
@@ -115,7 +116,7 @@ public class HtmlWriter(
 			PreviousDocument = previous,
 			NextDocument = next,
 			Parents = parents,
-			NavigationHtml = navigationHtml,
+			NavigationHtml = miniNavigationHtml,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
@@ -132,7 +133,7 @@ public class HtmlWriter(
 			Products = allProducts,
 			VersionsConfig = DocumentationSet.Context.VersionsConfig
 		});
-		return await slice.RenderAsync(cancellationToken: ctx);
+		return (fullNavigationHtml, await slice.RenderAsync(cancellationToken: ctx));
 	}
 
 	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
@@ -160,8 +161,9 @@ public class HtmlWriter(
 		var document = await markdown.ParseFullAsync(ctx);
 
 		var rendered = await RenderLayout(markdown, document, ctx);
-		collector?.Collect(markdown, document, rendered);
-		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+		collector?.Collect(markdown, document, rendered.Item2);
+		await writeFileSystem.File.WriteAllTextAsync(path, rendered.Item2, ctx);
+		await writeFileSystem.File.WriteAllTextAsync(path.Replace(".html", ".nav.html"), rendered.Item1, ctx);
 		return document;
 	}
 

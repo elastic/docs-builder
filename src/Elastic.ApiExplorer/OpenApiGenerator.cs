@@ -288,7 +288,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationHtml = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), ctx);
+		var navigationHtml = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), -1, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,

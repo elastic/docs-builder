@@ -57,15 +57,22 @@
 			</div>
 			@if (g.NavigationItems.Count > 0)
 			{
+				// Only render children if we're within the allowed level depth
+				// MaxLevel of -1 means render all levels
+				bool shouldRenderChildren = Model.MaxLevel == -1 || Model.Level < (Model.MaxLevel);
 				<ul class="w-full hidden peer-has-checked:block ml-4">
-					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+					@if (shouldRenderChildren)
 					{
-						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-						Level = Model.Level + 1,
-						SubTree = g,
-						RootNavigationId = Model.RootNavigationId
-					}))
+						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+						{
+							IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+							IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+							Level = Model.Level + 1,
+							SubTree = g,
+							RootNavigationId = Model.RootNavigationId,
+							MaxLevel = Model.MaxLevel
+						}))
+					}
 				</ul>
 			}
 		</li>
