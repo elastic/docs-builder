@@ -123,7 +123,7 @@ jobs:
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
-          files_ignore: ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
+          files_ignore: ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || 'docs/testing/req.md' }}
           
       - name: Checkout
         if: env.MATCH == 'true' && (startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true')
