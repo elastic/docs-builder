@@ -141,7 +141,6 @@ deployment:
   eck: ga 9.0
   ess: beta 9.1
   ece: deprecated 9.2.0
-  self: unavailable
 serverless:
   security: unavailable
   elasticsearch: beta

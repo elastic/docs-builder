@@ -99,7 +99,6 @@ This is true for most situations. However, it can still be useful to call it out
 
   ## Configure a space-level landing page [space-landing-page]
   ```{applies_to}
-  stack: ga
   serverless: unavailable
   ```
   ````

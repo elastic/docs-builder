@@ -13,7 +13,6 @@
 
     ## Configure a space-level landing page [space-landing-page]
     ```{applies_to}
-    stack: ga
     serverless: unavailable
     ```
     ````
