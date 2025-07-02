@@ -28,7 +28,7 @@ public record DeleteKeyRequestListItem
 	public required string Key { get; init; }
 }
 
-[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
+[JsonSourceGenerationOptions(WriteIndented = false, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(DescribeKeyValueStoreResponse))]
 [JsonSerializable(typeof(ListKeysResponse))]
 [JsonSerializable(typeof(UpdateKeysResponse))]
