@@ -55,7 +55,7 @@ public class HtmlWriter(
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var fullNavigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, -1, ctx);
+		var fullNavigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, INavigationHtmlWriter.AllLevels, ctx);
 		var miniNavigationHtml = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
 			? await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, 1, ctx)
 			: "lazy navigation feature disabled";
