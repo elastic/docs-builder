@@ -82,7 +82,9 @@ public enum VersioningSystemId
 	[Display(Name = "edot_php")]
 	EdotPhp,
 	[Display(Name = "edot_python")]
-	EdotPython
+	EdotPython,
+	[Display(Name = "edot_cf_aws")]
+	EdotCfAws
 }
 
 [YamlSerializable]
