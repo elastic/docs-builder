@@ -42,7 +42,7 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 		ConsoleApp.Log("Describing KeyValueStore");
 		try
 		{
-			var json = Capture("aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
+			var json = Capture("aws", "cloudfront", "describe-key-value-store", "--name", kvsName, "|", "jq", "-c");
 			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(json, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
 			if (describeResponse?.ETag is not null && describeResponse.KeyValueStore is { ARN.Length: > 0 })
 				return (describeResponse.KeyValueStore.ARN, describeResponse.ETag);
@@ -61,13 +61,13 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 	{
 		ConsoleApp.Log("Acquiring existing redirects");
 		var allKeys = new HashSet<string>();
-		string[] baseArgs = ["cloudfront-key-value-store", "list-keys", "--kvs-arn", kvsArn];
+		string[] baseArgs = ["cloudfront-keyvaluestore", "list-keys", "--kvs-arn", kvsArn];
 		string? nextToken = null;
 		try
 		{
 			do
 			{
-				var json = Capture("aws", [.. baseArgs, .. nextToken is not null ? (string[])["--next-token", nextToken] : []]);
+				var json = Capture("aws", [.. baseArgs, .. nextToken is not null ? (string[])["--starting-token", nextToken] : [], "|", "jq", "-c"]);
 				var response = JsonSerializer.Deserialize<ListKeysResponse>(json, AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
 
 				if (response?.Items != null)
@@ -108,8 +108,8 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 						AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem),
 					_ => string.Empty
 				};
-				var responseJson = Capture(false, 1, "aws", "cloudfront-key-value-store", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
-					$"--{operation.ToString().ToLowerInvariant()}", "--payload", payload);
+				var responseJson = Capture(false, 1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
+					$"--{operation.ToString().ToLowerInvariant()}", "--payload", payload, "|", "jq", "-c");
 				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(responseJson, AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
 
 				if (string.IsNullOrEmpty(updateResponse?.ETag))
