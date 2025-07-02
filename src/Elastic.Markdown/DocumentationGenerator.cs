@@ -334,7 +334,7 @@ public class DocumentationGenerator
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
 	}
 
-	public async Task<(string, string)> RenderLayout(MarkdownFile markdown, Cancel ctx)
+	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)
 	{
 		await DocumentationSet.Tree.Resolve(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);

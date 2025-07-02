@@ -207,7 +207,7 @@ public class DocumentationWebHost
 		{
 			case MarkdownFile markdown:
 				var rendered = await generator.RenderLayout(markdown, ctx);
-				return Results.Content(isNavPartial ? rendered.Item1 : rendered.Item2, "text/html");
+				return Results.Content(isNavPartial ? rendered.FullNavigationPartialHtml : rendered.Html, "text/html");
 
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
@@ -222,7 +222,7 @@ public class DocumentationWebHost
 					return Results.NotFound();
 
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
-				return Results.Content(renderedNotFound.Item2, "text/html", null, (int)HttpStatusCode.NotFound);
+				return Results.Content(renderedNotFound.Html, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
 	}
 }

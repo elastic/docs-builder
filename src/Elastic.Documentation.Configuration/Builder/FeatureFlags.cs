@@ -20,6 +20,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["primary-nav"] = value;
 	}
 
+	public bool LazyLoadNavigation
+	{
+		get => IsEnabled("LAZY_LOAD_NAVIGATION");
+		set => _featureFlags["LAZY_LOAD_NAVIGATION"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
