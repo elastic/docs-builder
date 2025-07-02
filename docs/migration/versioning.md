@@ -47,7 +47,7 @@ Tagged deployment
 
 This is the default. To get started, follow our [guide](guide/index.md) to set up the new docs folder structure and CI configuration
 
-Once setup ensure the repository is added to our `assembler.yml`  under `references`. 
+Once setup ensure the repository is added to our [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml)  under `references`. 
 
 For example say you want to onboard `elastic/my-repository` into the production build:
 
