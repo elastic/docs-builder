@@ -174,6 +174,9 @@ public record ProductApplicability
 
 	[YamlMember(Alias = "edot_python")]
 	public AppliesCollection? EdotPython { get; set; }
+
+	[YamlMember(Alias = "edot_cf_aws")]
+	public AppliesCollection? EdotCfAws { get; set; }
 }
 
 public class ApplicableToConverter : IYamlTypeConverter
@@ -185,7 +188,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		"elasticsearch", "observability", "security",
 		"ecctl", "curator",
 		"apm_agent_android","apm_agent_dotnet", "apm_agent_go", "apm_agent_ios", "apm_agent_java", "apm_agent_node", "apm_agent_php", "apm_agent_python", "apm_agent_ruby", "apm_agent_rum",
-		"edot_ios", "edot_android", "edot_dotnet", "edot_java", "edot_node", "edot_php", "edot_python"
+		"edot_ios", "edot_android", "edot_dotnet", "edot_java", "edot_node", "edot_php", "edot_python", "edot_cf_aws"
 	];
 
 	public bool Accepts(Type type) => type == typeof(ApplicableTo);
@@ -393,7 +396,8 @@ public class ApplicableToConverter : IYamlTypeConverter
 			{ "edot_java", a => productAvailability.EdotJava = a },
 			{ "edot_node", a => productAvailability.EdotNode = a },
 			{ "edot_php", a => productAvailability.EdotPhp = a },
-			{ "edot_python", a => productAvailability.EdotPython = a }
+			{ "edot_python", a => productAvailability.EdotPython = a },
+			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a }
 		};
 
 		foreach (var (key, action) in mapping)
