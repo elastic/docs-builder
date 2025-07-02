@@ -21,8 +21,12 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 {
 	public void UpdateRedirects(string kvsName, IReadOnlyDictionary<string, string> sourcedRedirects)
 	{
-		var (kvsArn, eTag) = DescribeKeyValueStore(kvsName);
-		if (string.IsNullOrEmpty(kvsArn) || string.IsNullOrEmpty(eTag))
+		var kvsArn = DescribeKeyValueStore(kvsName);
+		if (string.IsNullOrEmpty(kvsArn))
+			return;
+
+		var eTag = AcquireETag(kvsArn);
+		if (string.IsNullOrEmpty(eTag))
 			return;
 
 		var existingRedirects = ListAllKeys(kvsArn);
@@ -37,23 +41,43 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 		_ = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
 	}
 
-	private (string? Arn, string? ETag) DescribeKeyValueStore(string kvsName)
+	private string DescribeKeyValueStore(string kvsName)
 	{
 		ConsoleApp.Log("Describing KeyValueStore");
 		try
 		{
 			var json = CaptureMultiple("aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
 			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
-			if (describeResponse?.ETag is not null && describeResponse.KeyValueStore is { ARN.Length: > 0 })
-				return (describeResponse.KeyValueStore.ARN, describeResponse.ETag);
+			if (describeResponse?.KeyValueStore is { ARN.Length: > 0 })
+				return describeResponse.KeyValueStore.ARN;
 
 			Collector.EmitError("", "Could not deserialize the DescribeKeyValueStoreResponse");
-			return (null, null);
+			return string.Empty;
 		}
 		catch (Exception e)
 		{
 			Collector.EmitError("", "An error occurred while describing the KeyValueStore", e);
-			return (null, null);
+			return string.Empty;
+		}
+	}
+
+	private string AcquireETag(string kvsArn)
+	{
+		ConsoleApp.Log("Acquiring ETag for updates");
+		try
+		{
+			var json = CaptureMultiple("aws", "cloudfront-keyvaluestore", "describe-key-value-store", "--kvs-arn", kvsArn);
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			if (describeResponse?.ETag is not null)
+				return describeResponse.ETag;
+
+			Collector.EmitError("", "Could not deserialize Cloudfront-KeyValueStore:DescribeKeyValueStoreResponse");
+			return string.Empty;
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError("", "An error occurred while calling Cloudfront-KeyValueStore:DescribeKeyValueStore", e);
+			return string.Empty;
 		}
 	}
 
