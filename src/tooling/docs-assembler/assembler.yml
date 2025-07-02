@@ -94,7 +94,7 @@ narrative:
 #  cloud:
 #    current: 'current'
 #  ecctl:
-#    current: '1.14.3' # https://github.com/elastic/ecctl/releases
+#    current: '1.15.0' # https://github.com/elastic/ecctl/releases
 #  ecs_logging:
 #    current: 'current'
 #  ecs_logging_dotnet:
