@@ -85,7 +85,7 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 	{
 		ConsoleApp.Log("Acquiring existing redirects");
 		var allKeys = new HashSet<string>();
-		string[] baseArgs = ["cloudfront-keyvaluestore", "list-keys", "--kvs-arn", kvsArn];
+		string[] baseArgs = ["cloudfront-keyvaluestore", "list-keys", "--kvs-arn", kvsArn, "--page-size", "50", "--max-items", "50"];
 		string? nextToken = null;
 		try
 		{
