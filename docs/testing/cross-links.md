@@ -5,5 +5,3 @@
 [Kibana][1]
 
 [1]: docs-content://index.md
-
-test
