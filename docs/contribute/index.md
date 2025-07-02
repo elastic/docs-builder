@@ -10,52 +10,42 @@ Whether you're a technical writer or you've only edited Elastic docs once or twi
 
 ## Contribute to the docs [#contribute]
 
-The version of the docs you want to contribute to determines the tool and syntax you must use to update the docs.
+In April 2025, we released our new documentation site. This site includes documentation for our latest product versions, including {{stack}} 9.0+ and {{serverless-full}}.
 
-### Contribute to Elastic Stack version 8.x docs and earlier
+:::{include} _snippets/two-systems.md
+:::
 
-To contribute to earlier versions of the Elastic Stack, you must work with our [legacy documentation build system](https://github.com/elastic/docs). This system uses AsciiDoc as it's authoring format.
+### Contribute elastic.co/docs
 
-* For **simple bugfixes and enhancements** --> [Contribute on the web](on-the-web.md)
-* For **complex or multi-page updates** --> See the [legacy documentation build guide](https://github.com/elastic/docs?tab=readme-ov-file#building-documentation)
+:::{include} _snippets/docs-intro.md
+:::
 
-### Contribute to Elastic Stack version 9.0 docs and later
+* For **simple bug fixes and enhancements**: [Contribute on the web](on-the-web.md)
+* For **complex or multi-page updates**: [Contribute locally](locally.md)
 
-* For **simple bugfixes and enhancements** --> [contribute on the web](on-the-web.md)
-* For **complex or multi-page updates** --> [Contribute locally](locally.md)
+#### Branches in V3
 
-Starting with Elastic Stack version 9.0, ECE 4.0, and ECK 3.0, a new set of docs is no longer published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content using a [cumulative approach](#cumulative-docs).
+In Docs V3, a single branch is published per repository. This branch is set to `main` by default, but it is possible to instead publish a different branch by changing your repository's deployment model. You might want to change your deployment model so you can have more control over when content added for a specific release is published.
 
-#### Write cumulative documentation [#cumulative-docs]
+[Learn more about branching strategies](branching-strategy.md).
 
-Cumulative documentation means that one page can cover multiple product versions, deployment types, and release stages. Instead of creating separate pages for each release, we update the same page with version-specific details. 
+### Contribute to elastic.co/guide
 
-This helps readers understand which parts of the content apply to their own ecosystem and product versions, without needing to switch between different versions of a page.
+:::{include} _snippets/guide-intro.md
+:::
 
-Following this approach, information for supported versions must not be removed unless it was never accurate. Instead, refactor the content to improve clarity or to include details for other products, deployment types, or versions.
-
-In order to achieve this, the markdown source files integrate a **tagging system** meant to identify:
-
-* Which Elastic products and deployment models the content applies to.
-* When a feature goes into a new state as compared to the established base version.
-
-This [tagging system](#applies-to) is mandatory for all of the public-facing documentation. 
-
-##### The `applies_to` tag [#applies-to]
-
-Use the [`applies_to`](../syntax/applies.md) tag to indicate which versions, deployment types, or release stages each part of the content is relevant to.
-
-You must always use the `applies_to` tag at the [page](../syntax/applies.md#page-annotations) level. Optionally, you can also use it at the [section](../syntax/applies.md#section-annotations) or [inline](../syntax/applies.md#inline-annotations) level if certain parts of the content apply only to specific versions, deployment types, or release stages.
+* For **simple bug fixes and enhancements**: [Contribute on the web](on-the-web.md)
+* For **complex or multi-page updates**: See the [legacy documentation build guide](https://github.com/elastic/docs?tab=readme-ov-file#building-documentation)
 
 ## Report a bug
 
-* It's a **documentation** problem --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md)
-* It's a **build tool (docs-builder)** problem --> [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
+* For **documentation** problems: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md). You can open sensitive issues in our [internal repo](https://github.com/elastic/docs-content-internal/issues/new/choose).
+* For **build tool (docs-builder)** problems: [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
 
-## Request an enhancement
+## Request an enhancement or documentation for a new feature
 
-* Make the **documentation** better --> [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml)
-* Make our **build tool (docs-builder)** better --> [Start a docs-builder discussion](https://github.com/elastic/docs-builder/discussions)
+* Make the **documentation** better: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml). Elastic employees can open sensitive issues in our [internal repo](https://github.com/elastic/docs-content-internal/issues/new/choose).
+* Make our **build tool (docs-builder)** better: [Start a docs-builder discussion](https://github.com/elastic/docs-builder/discussions)
 
 ## Work on docs-builder
 

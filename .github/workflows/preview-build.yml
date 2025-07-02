@@ -38,6 +38,11 @@ on:
         type: string
         default: '**'
         required: false
+      path-pattern-ignore:
+        description: 'Path pattern to ignore files.'
+        type: string
+        default: ''
+        required: false
       free-disk-space:
         description: 'Free disk space before running the build'
         type: string
@@ -118,6 +123,7 @@ jobs:
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
+          files_ignore: ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
           
       - name: Checkout
         if: env.MATCH == 'true' && (startsWith(github.event_name, 'pull_request') && steps.check-files.outputs.any_modified == 'true')

@@ -180,11 +180,16 @@ public class DocumentationWebHost
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
 		var generator = holder.Generator;
-
+		const string navPartialSuffix = "index.nav.html";
+		var isNavPartial = slug.EndsWith(navPartialSuffix);
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
+		if (isNavPartial)
+			slug = slug.Replace(navPartialSuffix, "index.md");
+
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
 			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
@@ -202,7 +207,8 @@ public class DocumentationWebHost
 		{
 			case MarkdownFile markdown:
 				var rendered = await generator.RenderLayout(markdown, ctx);
-				return Results.Content(rendered, "text/html");
+				return Results.Content(isNavPartial ? rendered.FullNavigationPartialHtml : rendered.Html, "text/html");
+
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
@@ -216,7 +222,7 @@ public class DocumentationWebHost
 					return Results.NotFound();
 
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
-				return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);
+				return Results.Content(renderedNotFound.Html, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
 	}
 }
