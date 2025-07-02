@@ -12,4 +12,6 @@ public class NavigationTreeItem
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }
 	public required string RootNavigationId { get; set; }
+	// How many levels to render. Default is -1 (all levels)
+	public required int MaxLevel { get; init; }
 }
