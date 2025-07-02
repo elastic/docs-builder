@@ -12,6 +12,7 @@ namespace Elastic.Documentation.Tooling.ExternalCommands;
 public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, IDirectoryInfo workingDirectory)
 {
 	protected IDirectoryInfo WorkingDirectory => workingDirectory;
+	protected DiagnosticsCollector Collector => collector;
 	protected void ExecIn(Dictionary<string, string> environmentVars, string binary, params string[] args)
 	{
 		var arguments = new ExecArguments(binary, args)
@@ -77,13 +78,13 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 	}
 
 
-	protected string Capture(string binary, params string[] args) => Capture(false, binary, args);
-
-	protected string Capture(bool muteExceptions, string binary, params string[] args)
+	protected string Capture(string binary, params string[] args) => Capture(false, 10, binary, args);
+	protected string Capture(bool muteExceptions, string binary, params string[] args) => Capture(muteExceptions, 10, binary, args);
+	protected string Capture(bool muteExceptions, int attempts, string binary, params string[] args)
 	{
 		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
 		Exception? e = null;
-		for (var i = 0; i <= 9; i++)
+		for (var i = 1; i <= attempts; i++)
 		{
 			try
 			{

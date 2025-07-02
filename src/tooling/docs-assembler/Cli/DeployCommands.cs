@@ -6,9 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Text.Json;
 using Actions.Core.Services;
-using Amazon.CloudFront;
-using Amazon.CloudFrontKeyValueStore;
-using Amazon.CloudFrontKeyValueStore.Model;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using ConsoleAppFramework;
@@ -19,12 +16,6 @@ using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
-
-internal enum KvsOperation
-{
-	Puts,
-	Deletes
-}
 
 internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubActionsService)
 {
@@ -144,74 +135,11 @@ internal sealed class DeployCommands(ILoggerFactory logger, ICoreService githubA
 		}
 
 		var kvsName = $"elastic-docs-v3-{environment}-redirects-kvs";
+		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, new FileSystem().DirectoryInfo.New(Directory.GetCurrentDirectory()));
 
-		var cfClient = new AmazonCloudFrontClient();
-		var kvsClient = new AmazonCloudFrontKeyValueStoreClient();
-
-		ConsoleApp.Log("Describing KVS");
-		var describeResponse = await cfClient.DescribeKeyValueStoreAsync(new Amazon.CloudFront.Model.DescribeKeyValueStoreRequest { Name = kvsName }, ctx);
-
-		var kvsArn = describeResponse.KeyValueStore.ARN;
-		var eTag = describeResponse.ETag;
-		var existingRedirects = new HashSet<string>();
-
-		var listKeysRequest = new ListKeysRequest { KvsARN = kvsArn };
-		ListKeysResponse listKeysResponse;
-
-		do
-		{
-			listKeysResponse = await kvsClient.ListKeysAsync(listKeysRequest, ctx);
-			foreach (var item in listKeysResponse.Items)
-				_ = existingRedirects.Add(item.Key);
-			listKeysRequest.NextToken = listKeysResponse.NextToken;
-		}
-		while (!string.IsNullOrEmpty(listKeysResponse.NextToken));
-
-		var toPut = sourcedRedirects
-			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value });
-		var toDelete = existingRedirects
-			.Except(sourcedRedirects.Keys)
-			.Select(k => new DeleteKeyRequestListItem { Key = k });
-
-		ConsoleApp.Log("Updating redirects in KVS");
-		const int batchSize = 50;
-
-		eTag = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toPut, batchSize, KvsOperation.Puts, ctx);
-		_ = await ProcessBatchUpdatesAsync(kvsClient, kvsArn, eTag, toDelete, batchSize, KvsOperation.Deletes, ctx);
+		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects);
 
 		await collector.StopAsync(ctx);
 		return collector.Errors;
 	}
-
-	private static async Task<string> ProcessBatchUpdatesAsync(
-		IAmazonCloudFrontKeyValueStore kvsClient,
-		string kvsArn,
-		string eTag,
-		IEnumerable<object> items,
-		int batchSize,
-		KvsOperation operation,
-		Cancel ctx)
-	{
-		var enumerable = items.ToList();
-		for (var i = 0; i < enumerable.Count; i += batchSize)
-		{
-			var batch = enumerable.Skip(i).Take(batchSize);
-			var updateRequest = new UpdateKeysRequest
-			{
-				KvsARN = kvsArn,
-				IfMatch = eTag
-			};
-
-			if (operation is KvsOperation.Puts)
-				updateRequest.Puts = batch.Cast<PutKeyRequestListItem>().ToList();
-			else if (operation is KvsOperation.Deletes)
-				updateRequest.Deletes = batch.Cast<DeleteKeyRequestListItem>().ToList();
-
-			var update = await kvsClient.UpdateKeysAsync(updateRequest, ctx);
-			eTag = update.ETag;
-		}
-
-		return eTag;
-	}
-
 }
