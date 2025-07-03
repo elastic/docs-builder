@@ -13,7 +13,11 @@ The source and target URLs must both be within Elastic Docs V3.
 You cannot use this process to redirect to [API docs](https://www.elastic.co/docs/api/), for example.
 :::
 
-## File location.
+:::{note}
+A redirect definition should always be made in the repository that originally contained that page.
+:::
+
+## File location
 
 The file should be located next to your `docset.yml` file
 
