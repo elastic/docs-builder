@@ -30,7 +30,7 @@ This is an inline {applies_to}`stack: preview 9.1` element.
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-		<span class="applicable-info" data-tippy-content="We plan to add this in a future Elastic&nbsp;Stack update. Plans may change without notice.
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
 			<span class="applicable-name">Stack</span>
