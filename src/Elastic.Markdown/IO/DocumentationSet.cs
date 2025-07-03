@@ -129,6 +129,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 
+	public Dictionary<string, INavigationRenderResult> NavigationRenderResults { get; } = [];
+
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logger,

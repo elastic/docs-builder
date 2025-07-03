@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 
@@ -44,24 +45,29 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, int maxLevel = -1, Cancel ctx = default)
+	public async Task<INavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+		Uri navigationSource, int maxLevel, Cancel ctx = default)
 	{
-		if (Phantoms.Contains(navigationSource))
-			return string.Empty;
 
-		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
-			return string.Empty;
+		if (Phantoms.Contains(navigationSource)
+			|| !TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource)
+			|| Phantoms.Contains(navigationRootSource)
+		)
+			return new EmptyNavigationRenderResult();
 
-		if (Phantoms.Contains(navigationRootSource))
-			return string.Empty;
+		var navigationId = ShortId.Create($"{(navigationRootSource, maxLevel).GetHashCode()}");
 
 		if (_renderedNavigationCache.TryGetValue((navigationRootSource, maxLevel), out var value))
-			return value;
+			return new OkNavigationRenderResult
+			{
+				Html = value,
+				Id = navigationId
+			};
 
 		if (navigationRootSource == new Uri("docs-content:///"))
 		{
 			_renderedNavigationCache[(navigationRootSource, maxLevel)] = string.Empty;
-			return string.Empty;
+			return new EmptyNavigationRenderResult();
 		}
 
 		Console.WriteLine($"Rendering navigation for {navigationRootSource}");
@@ -70,7 +76,11 @@ public class GlobalNavigationHtmlWriter(
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
 		_renderedNavigationCache[(navigationRootSource, maxLevel)] = value;
 
-		return value;
+		return new OkNavigationRenderResult
+		{
+			Html = value,
+			Id = navigationId
+		};
 	}
 
 	private NavigationViewModel CreateNavigationModel(DocumentationGroup group, int maxLevel)

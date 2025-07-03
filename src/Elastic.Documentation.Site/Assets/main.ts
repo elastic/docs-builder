@@ -15,15 +15,24 @@ import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 const { getOS } = new UAParser()
+const isLazyLoadNavigationEnabled = $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true';
 
 document.addEventListener('htmx:load', function (event) {
-    console.log('htmx:load')
-    console.log(event.detail)
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
-    initNav()
+    
+    // We this so that the navigation is not initialized twice
+    if (isLazyLoadNavigationEnabled) {
+        if (event.detail.elt.id === 'nav-tree')
+        {
+            initNav()
+        }
+    } else
+    {
+        initNav()
+    }
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()

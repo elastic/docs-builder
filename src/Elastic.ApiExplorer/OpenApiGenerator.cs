@@ -292,7 +292,12 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,
-			NavigationHtml = navigationHtml
+			NavigationHtml = navigationHtml switch
+			{
+				EmptyNavigationRenderResult => string.Empty,
+				OkNavigationRenderResult result => result.Html,
+				_ => throw new Exception("Unexpected navigation render result")
+			}
 		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);

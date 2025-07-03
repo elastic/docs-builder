@@ -21,10 +21,10 @@ public class RuleDocumentationFileExporter(IFileSystem readFileSystem, IFileSyst
 		switch (context.File)
 		{
 			case DetectionRuleFile df:
-				context.MarkdownDocument = await htmlWriter.WriteAsync(DetectionRuleFile.OutputPath(outputFile, context.BuildContext), df, conversionCollector, ctx);
+				context.MarkdownDocument = await htmlWriter.WriteAsync(context.BuildContext.DocumentationOutputDirectory, DetectionRuleFile.OutputPath(outputFile, context.BuildContext), df, conversionCollector, ctx);
 				break;
 			case MarkdownFile markdown:
-				context.MarkdownDocument = await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, ctx);
+				context.MarkdownDocument = await htmlWriter.WriteAsync(context.BuildContext.DocumentationOutputDirectory, outputFile, markdown, conversionCollector, ctx);
 				break;
 			default:
 				if (outputFile.Directory is { Exists: false })
