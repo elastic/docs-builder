@@ -364,11 +364,6 @@ toc:
               - toc: docs-content://reference/apm-agents
                 path_prefix: reference/apm-agents
                 children:
-                  # APM Android agent
-                  # ✅ https://github.com/elastic/apm-agent-android/blob/main/docs/reference/toc.yml
-                  - toc: apm-agent-android://reference
-                    path_prefix: reference/apm/agents/android
-                    # Children include the entire AsciiDoc book
 
                   # APM .NET agent
                   # ✅ https://github.com/elastic/apm-agent-dotnet/blob/main/docs/reference/toc.yml
@@ -380,12 +375,6 @@ toc:
                   # ✅ https://github.com/elastic/apm-agent-go/blob/main/docs/reference/toc.yml
                   - toc: apm-agent-go://reference
                     path_prefix: reference/apm/agents/go
-                    # Children include the entire AsciiDoc book
-
-                  # APM iOS agent
-                  # ✅ https://github.com/elastic/apm-agent-ios/blob/main/docs/reference/toc.yml
-                  - toc: apm-agent-ios://reference
-                    path_prefix: reference/apm/agents/ios
                     # Children include the entire AsciiDoc book
 
                   # APM Java agent
