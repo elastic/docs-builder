@@ -287,7 +287,7 @@
 			{
 				ProductLifecycle.Beta => "Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.",
 				ProductLifecycle.TechnicalPreview => "This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
-				ProductLifecycle.GenerallyAvailable  =>  versioningSystem.Id is VersioningSystemId.Stack ? "Available in ECH, ECE, ECK, and self-managed deployments, unless otherwise specified." : null,
+				ProductLifecycle.GenerallyAvailable  =>  versioningSystem.Id is VersioningSystemId.Stack ? "If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page." : null,
 				_ => null
 			};
 
