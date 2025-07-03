@@ -23,7 +23,7 @@ document.addEventListener('htmx:load', function (event) {
     initCopyButton()
     initTabs()
     
-    // We this so that the navigation is not initialized twice
+    // We do this so that the navigation is not initialized twice
     if (isLazyLoadNavigationEnabled) {
         if (event.detail.elt.id === 'nav-tree')
         {
