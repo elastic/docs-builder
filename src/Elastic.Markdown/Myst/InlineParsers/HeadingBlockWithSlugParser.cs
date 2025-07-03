@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Markdown.Myst.Roles.Icons;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -30,13 +31,17 @@ public class HeadingBlockWithSlugBuilderExtension : IMarkdownExtension
 
 public class HeadingBlockWithSlugParser : HeadingBlockParser
 {
+	private static readonly Regex IconSyntax = IconParser.IconRegex();
+
 	public override bool Close(BlockProcessor processor, Block block)
 	{
-		if (block is not HeadingBlock headerBlock)
+		if (block is not HeadingBlock headingBlock)
 			return base.Close(processor, block);
 
-		var text = headerBlock.Lines.Lines[0].Slice.AsSpan();
-		headerBlock.SetData("header", text.ToString());
+		var text = headingBlock.Lines.Lines[0].Slice.AsSpan();
+		// Remove icon syntax from the heading text
+		var cleanText = IconSyntax.Replace(text.ToString(), "").Trim();
+		headingBlock.SetData("header", cleanText);
 
 		if (!HeadingAnchorParser.MatchAnchorLine().IsMatch(text))
 			return base.Close(processor, block);
@@ -49,13 +54,13 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 			var anchor = text.Slice(match.Index, match.Length);
 
 			var newSlice = new StringSlice(header.ToString());
-			headerBlock.Lines.Lines[0] = new StringLine(ref newSlice);
+			headingBlock.Lines.Lines[0] = new StringLine(ref newSlice);
 
 			if (header.IndexOf('$') >= 0)
 				anchor = HeadingAnchorParser.MatchAnchor().Replace(anchor.ToString(), "");
-
-			headerBlock.SetData("anchor", anchor.ToString());
-			headerBlock.SetData("header", header.ToString());
+			headingBlock.SetData("anchor", anchor.ToString());
+			// Remove icon syntax from the header text when setting it as data
+			headingBlock.SetData("header", IconSyntax.Replace(header.ToString(), "").Trim());
 			return base.Close(processor, block);
 		}
 

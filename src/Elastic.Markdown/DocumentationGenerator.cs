@@ -3,21 +3,24 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Reflection;
 using System.Text.Json;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Slices;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown;
 
+/// Used primarily for testing, do not use in production paths since it might keep references alive to long
 public interface IConversionCollector
 {
 	void Collect(MarkdownFile file, MarkdownDocument document, string html);
@@ -40,23 +43,27 @@ public class DocumentationGenerator
 	private readonly ILogger _logger;
 	private readonly IFileSystem _writeFileSystem;
 	private readonly IDocumentationFileExporter _documentationFileExporter;
+	private readonly IMarkdownExporter[] _markdownExporters;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
 	public ICrossLinkResolver Resolver { get; }
+	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
 		ILoggerFactory logger,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
+		IMarkdownExporter[]? markdownExporters = null,
 		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null,
 		ILegacyUrlMapper? legacyUrlMapper = null,
 		IPositionalNavigation? positionalNavigation = null
 	)
 	{
+		_markdownExporters = markdownExporters ?? [];
 		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_conversionCollector = conversionCollector;
 		_writeFileSystem = docSet.Context.WriteFileSystem;
@@ -100,7 +107,7 @@ public class DocumentationGenerator
 
 		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
 
-		// clear output directory if force is true but never for assembler builds since these build multiple times to the output.
+		// clear the output directory if force is true but never for assembler builds since these build multiple times to the output.
 		if (Context is { AssemblerBuild: false, Force: true }
 			// clear the output directory if force is false but generation state is null, except for assembler builds.
 			|| (Context is { AssemblerBuild: false, Force: false } && generationState == null))
@@ -166,6 +173,7 @@ public class DocumentationGenerator
 				_logger.LogInformation("-> Processed {ProcessedFiles}/{TotalFileCount} files", processedFiles, totalFileCount);
 		});
 		_logger.LogInformation("-> Processed {ProcessedFileCount}/{TotalFileCount} files", processedFileCount, totalFileCount);
+
 	}
 
 	private void HintUnusedSubstitutionKeys()
@@ -173,7 +181,7 @@ public class DocumentationGenerator
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
 		var keysNotInUse = definedKeys.Except(inUse).ToArray();
-		// If we have less than 20 unused keys emit them separately
+		// If we have less than 20 unused keys, emit them separately,
 		// Otherwise emit one hint with all of them for brevity
 		if (keysNotInUse.Length >= 20)
 		{
@@ -190,16 +198,17 @@ public class DocumentationGenerator
 	private async Task ExtractEmbeddedStaticResources(Cancel ctx)
 	{
 		_logger.LogInformation($"Copying static files to output directory");
-		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
+		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
+		var embeddedStaticFiles = assembly
 			.GetManifestResourceNames()
 			.ToList();
 		foreach (var a in embeddedStaticFiles)
 		{
-			await using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(a);
+			await using var resourceStream = assembly.GetManifestResourceStream(a);
 			if (resourceStream == null)
 				continue;
 
-			var path = a.Replace("Elastic.Markdown.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
+			var path = a.Replace("Elastic.Documentation.Site.", "").Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			var outputFile = OutputFile(path);
 			if (outputFile is null)
@@ -209,7 +218,7 @@ public class DocumentationGenerator
 		}
 	}
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel token)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel ctx)
 	{
 		if (!Context.Force)
 		{
@@ -220,10 +229,34 @@ public class DocumentationGenerator
 		}
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
-		//TODO send file to OutputFile() so we can validate its scope is defined in navigation.yml
 		var outputFile = OutputFile(file.RelativePath);
 		if (outputFile is not null)
-			await _documentationFileExporter.ProcessFile(Context, file, outputFile, HtmlWriter, _conversionCollector, token);
+		{
+			var context = new ProcessingFileContext
+			{
+				BuildContext = Context,
+				OutputFile = outputFile,
+				ConversionCollector = _conversionCollector,
+				File = file,
+				HtmlWriter = HtmlWriter
+			};
+			await _documentationFileExporter.ProcessFile(context, ctx);
+			if (file is MarkdownFile markdown)
+			{
+				foreach (var exporter in _markdownExporters)
+				{
+					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
+					_ = await exporter.ExportAsync(new MarkdownExportFileContext
+					{
+						BuildContext = Context,
+						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
+						Document = document,
+						SourceFile = markdown,
+						DefaultOutputFile = outputFile
+					}, ctx);
+				}
+			}
+		}
 	}
 
 	private IFileInfo? OutputFile(string relativePath)
@@ -276,11 +309,11 @@ public class DocumentationGenerator
 		return false;
 	}
 
-	private async Task<LinkReference> GenerateLinkReference(Cancel ctx)
+	private async Task<RepositoryLinks> GenerateLinkReference(Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
-		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.LinkReference);
+		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
 		return state;
 	}
@@ -301,7 +334,7 @@ public class DocumentationGenerator
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
 	}
 
-	public async Task<string?> RenderLayout(MarkdownFile markdown, Cancel ctx)
+	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)
 	{
 		await DocumentationSet.Tree.Resolve(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);

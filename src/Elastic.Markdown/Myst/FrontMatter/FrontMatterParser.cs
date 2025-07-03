@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Site;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
@@ -24,7 +25,7 @@ public class YamlFrontMatter
 	public Dictionary<string, string>? Properties { get; set; }
 
 	[YamlMember(Alias = "layout")]
-	public LayoutName? Layout { get; set; }
+	public MarkdownPageLayout? Layout { get; set; }
 
 	[YamlMember(Alias = "applies_to")]
 	public ApplicableTo? AppliesTo { get; set; }

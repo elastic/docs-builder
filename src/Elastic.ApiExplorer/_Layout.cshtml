@@ -1,0 +1,26 @@
+@inherits RazorLayoutSlice<GlobalLayoutViewModel>
+@implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model;
+}
+			<div class="w-full h-full grid
+					grid-cols-1
+					md:grid-cols-[var(--max-api-sidebar-width)_1fr]
+					lg:grid-cols-[var(--max-api-sidebar-width)_1fr]
+				">
+				@await RenderPartialAsync(_PagesNav.Create(Model))
+				<div class="justify-center px-6 lg:px-0">
+					<main id="content-container" class="w-full flex flex-col relative pb-30 overflow-x-hidden">
+						<div class="w-full absolute top-0 left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+							<div class="h-[2px] w-full overflow-hidden">
+								<div class="progress w-full h-full bg-pink-70 left-right"></div>
+							</div>
+							<div class="sr-only">Loading</div>
+						</div>
+						<article id="markdown-content" class="content-container markdown-content md:px-4">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+					</main>
+				</div>
+			</div>

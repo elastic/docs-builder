@@ -31,6 +31,7 @@ public abstract class RoleParser<TRole> : InlineParser
 
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
+
 		var match = slice.CurrentChar;
 
 		if (processor.Context is not ParserContext)
@@ -84,7 +85,9 @@ public abstract class RoleParser<TRole> : InlineParser
 		if (closeBackTicks > 1)
 			return false;
 
-		var contentSpan = span[startContent..(startContent + i + 2)];
+		// Fix: Ensure we don't exceed the span length when calculating the end index
+		var endIndex = Math.Min(startContent + i + 2, span.Length);
+		var contentSpan = span[startContent..endIndex];
 
 		var startPosition = slice.Start;
 		slice.Start = startPosition + roleContent.Length + contentSpan.Length;
@@ -97,7 +100,7 @@ public abstract class RoleParser<TRole> : InlineParser
 		var end = processor.GetSourcePosition(slice.Start);
 		var sourceSpan = new SourceSpan(start, end);
 
-		var leaf = CreateRole(roleContent.ToString(), contentSpan.Trim('`').ToString(), processor);
+		var leaf = CreateRole(roleContent.ToString(), contentSpan.Trim().Trim('`').ToString(), processor);
 		leaf.Delimiter = '{';
 		leaf.Span = sourceSpan;
 		leaf.Line = line;

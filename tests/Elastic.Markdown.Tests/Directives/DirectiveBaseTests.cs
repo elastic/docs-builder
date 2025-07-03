@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
@@ -67,7 +70,21 @@ $"""
 		FileSystem.GenerateDocSetYaml(root);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var context = new BuildContext(Collector, FileSystem);
+		var versionsConfig = new VersionsConfiguration
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				}
+			}
+		};
+		var context = new BuildContext(Collector, FileSystem, versionsConfig);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
@@ -83,7 +100,7 @@ $"""
 
 		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
 		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
-		var html = File.CreateHtml(Document).AsSpan();
+		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
 		Html = start >= 0

@@ -1,0 +1,20 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Image.ImageViewModel>
+<a class="reference internal image-reference" href="javascript:void(0)" onclick="document.getElementById('modal-@Model.UniqueImageId').style.display='flex'">
+	<img loading="lazy" title="@Model.Title" alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" style="@Model.Style" class="@Model.Screenshot" />
+	@Model.RenderBlock()
+</a>
+
+<div id="modal-@Model.UniqueImageId" class="modal"
+	onclick="document.querySelector('#modal-@Model.UniqueImageId .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-@Model.UniqueImageId').style.display='none'">
+	<div class="modal-content">
+		<span class="modal-close">
+			<a href="javascript:void(0);" class="close-button"
+				onclick="document.getElementById('modal-@Model.UniqueImageId').style.display='none'">
+				&times;
+			</a>
+		</span>
+		<a class="reference internal image-reference" href="@Model.ImageUrl" target="_blank">
+			<img loading="lazy" title="@Model.Title"  alt="@(Model.Alt == string.Empty ? HtmlString.Empty : new HtmlString(Model.Alt))" src="@Model.ImageUrl" />
+		</a>
+	</div>
+</div>

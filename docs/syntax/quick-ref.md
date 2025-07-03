@@ -146,7 +146,7 @@ The `applies_to` tags are scope signals for readers, not comprehensive metadata.
 
 **DOs**<br>
 ✅ **Do:** Define a set of [page-level tags](applies.md#page-annotations) in a front matter block<br>
-✅ **Do:** Add section-level tags in an `{applies_to}` [directive](applies.md#sections) after a heading<br>
+✅ **Do:** Add section-level tags in an `{applies_to}` [directive](applies.md#section-annotations) after a heading<br>
 ✅ **Do:** Indicate versions (`major.minor` with an optional `[.patch]`) and release phases like `beta`
 
 **DON'Ts**<br>
@@ -590,7 +590,7 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 ## Tabs
 
-Block element that displays content in switchable tabs to help users zero in on the right context (such as a deployment or language). [Synced tab groups](https://elastic.github.io/docs-builder/syntax/tabs/#tab-groups) are supported.
+Block element that displays content in switchable tabs to help users zero in on the right context (such as a deployment or language). [Synced tab groups](/syntax/tabs.md#tab-groups) are supported.
 
 :::::{dropdown} Syntax
 ```markdown

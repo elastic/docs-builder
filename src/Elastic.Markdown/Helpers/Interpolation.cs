@@ -5,7 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Helpers;

@@ -63,38 +63,41 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		ValidateAndProcessLink(link, processor, context);
 
-		ParseStylingInstructions(link);
+		ParseStylingInstructions(link, context);
 
 		return match;
 	}
 
 
-	private static void ParseStylingInstructions(LinkInline link)
+	private static void ParseStylingInstructions(LinkInline link, ParserContext context)
 	{
 		if (!link.IsImage)
 			return;
 
-		if (string.IsNullOrWhiteSpace(link.Title) || link.Title.IndexOf('=') < 0)
-			return;
-
-		var matches = LinkRegexExtensions.MatchTitleStylingInstructions().Match(link.Title);
-		if (!matches.Success)
-			return;
-
-		var width = matches.Groups["width"].Value;
-		if (!width.EndsWith('%'))
-			width += "px";
-		var height = matches.Groups["height"].Value;
-		if (string.IsNullOrEmpty(height))
-			height = width;
-		else if (!height.EndsWith('%'))
-			height += "px";
-		var title = link.Title[..matches.Index];
-
-		link.Title = title;
 		var attributes = link.GetAttributes();
-		attributes.AddProperty("width", width);
-		attributes.AddProperty("height", height);
+		var title = link.Title;
+
+		if (string.IsNullOrEmpty(title))
+			return;
+
+		var matches = LinkRegexExtensions.MatchTitleStylingInstructions().Match(title);
+		if (matches.Success)
+		{
+			var width = matches.Groups["width"].Value;
+			if (!width.EndsWith('%'))
+				width += "px";
+			var height = matches.Groups["height"].Value;
+			if (string.IsNullOrEmpty(height))
+				height = width;
+			else if (!height.EndsWith('%'))
+				height += "px";
+
+			attributes.AddProperty("width", width);
+			attributes.AddProperty("height", height);
+
+			title = title[..matches.Index];
+		}
+		link.Title = title.ReplaceSubstitutions(context);
 	}
 
 	private static bool IsInCommentBlock(LinkInline link) =>
@@ -181,9 +184,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
-				s => processor.EmitWarning(link, s),
 				uri, out var resolvedUri)
-		   )
+			 )
 			link.Url = resolvedUri.ToString();
 	}
 

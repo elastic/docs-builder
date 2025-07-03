@@ -79,3 +79,17 @@ type ``image ref out of scope`` () =
     [<Fact>]
     let ``emits an error image reference is outside of documentation scope`` () =
         docs |> hasError "./img/observability.png` does not exist. resolved to"
+
+type ``empty alt attribute`` () =
+    static let markdown = Setup.Markdown """
+:::{image} img/some-image.png
+:alt:
+:width: 250px
+:::
+"""
+
+    [<Fact>]
+    let ``validate empty alt attribute`` () =
+        markdown |> convertsToContainingHtml """
+            <img loading="lazy" alt src="/img/some-image.png" style="width: 250px;">
+       """

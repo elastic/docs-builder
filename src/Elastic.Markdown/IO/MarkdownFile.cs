@@ -4,24 +4,27 @@
 
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.Diagnostics;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
-using Elastic.Markdown.Slices;
 using Markdig;
 using Markdig.Extensions.Yaml;
+using Markdig.Renderers.Roundtrip;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfContentsScope
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
 {
 	private string? _navigationTitle;
 
@@ -42,7 +45,6 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
-		IsIndex = FileName == "index.md";
 
 		UrlPathPrefix = build.UrlPathPrefix;
 		MarkdownParser = parser;
@@ -58,23 +60,20 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		NavigationSource = set.Source;
 	}
 
+	public bool PartOfNavigation { get; set; }
+
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	public INavigationGroup NavigationRoot { get; set; }
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	public Uri NavigationSource { get; set; }
 
-	public string Id { get; } = Guid.NewGuid().ToString("N")[..8];
-
 	private IDiagnosticsCollector Collector { get; }
 
-	public bool Hidden { get; internal set; }
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
 	public string? TitleRaw { get; protected set; }
-
-	public bool IsIndex { get; internal set; }
 
 	public string? Title
 	{
@@ -86,11 +85,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string? NavigationTitle
+	public string NavigationTitle
 	{
-		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title;
-		private set => _navigationTitle = value?.StripMarkdown();
+		get => !string.IsNullOrEmpty(_navigationTitle) ? _navigationTitle : Title ?? string.Empty;
+		private set => _navigationTitle = value.StripMarkdown();
 	}
+
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
@@ -139,7 +139,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public int NavigationIndex { get; set; } = -1;
+	//public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;
 	private string? _title;
@@ -205,8 +205,10 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string;
 
-		YamlFrontMatter = ProcessYamlFrontMatter(document);
-		NavigationTitle = YamlFrontMatter.NavigationTitle;
+		var yamlFrontMatter = ProcessYamlFrontMatter(document);
+		YamlFrontMatter = yamlFrontMatter;
+		if (yamlFrontMatter.NavigationTitle is not null)
+			NavigationTitle = yamlFrontMatter.NavigationTitle;
 
 		var subs = GetSubstitutions();
 
@@ -262,22 +264,50 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 			.ToArray();
 
 		var includedTocs = includes.SelectMany(i => i!.TableOfContentItems).ToArray();
-		var toc = document
+
+		// Collect headings from standard markdown
+		var headingTocs = document
 			.Descendants<HeadingBlock>()
 			.Where(block => block is { Level: >= 2 })
-			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level))
+			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
 			.Where(h => h.Item1 is not null)
 			.Select(h =>
 			{
 				var header = h.Item1!.StripMarkdown();
-				return new PageTocItem
+				return new
 				{
-					Heading = header,
-					Slug = (h.Item2 ?? h.Item1).Slugify(),
-					Level = h.Level
+					TocItem = new PageTocItem
+					{
+						Heading = header,
+						Slug = (h.Item2 ?? h.Item1).Slugify(),
+						Level = h.Level
+					},
+					h.Line
 				};
-			})
-			.Concat(includedTocs)
+			});
+
+		// Collect headings from Stepper steps
+		var stepperTocs = document
+			.Descendants<DirectiveBlock>()
+			.OfType<StepBlock>()
+			.Where(step => !string.IsNullOrEmpty(step.Title))
+			.Where(step => !IsNestedInOtherDirective(step))
+			.Select(step => new
+			{
+				TocItem = new PageTocItem
+				{
+					Heading = step.Title,
+					Slug = step.Anchor,
+					Level = step.HeadingLevel // Use dynamic heading level
+				},
+				step.Line
+			});
+
+		var toc = headingTocs
+			.Concat(stepperTocs)
+			.Concat(includedTocs.Select(item => new { TocItem = item, Line = 0 }))
+			.OrderBy(item => item.Line)
+			.Select(item => item.TocItem)
 			.Select(toc => subs.Count == 0
 				? toc
 				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
@@ -300,6 +330,18 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		return toc;
 	}
 
+	private static bool IsNestedInOtherDirective(DirectiveBlock block)
+	{
+		var parent = block.Parent;
+		while (parent is not null)
+		{
+			if (parent is DirectiveBlock { } otherDirective && otherDirective != block && otherDirective is not StepperBlock)
+				return true;
+			parent = parent.Parent;
+		}
+		return false;
+	}
+
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
 	{
 		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
@@ -307,6 +349,12 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw);
+
+		if (fm.AppliesTo?.Diagnostics is not null)
+		{
+			foreach (var (severity, message) in fm.AppliesTo.Diagnostics)
+				Collector.Emit(severity, FilePath, message);
+		}
 
 		// TODO remove when migration tool and our demo content sets are updated
 		var deprecatedTitle = fm.Title;
@@ -342,7 +390,7 @@ public record MarkdownFile : DocumentationFile, INavigationScope, ITableOfConten
 		}
 	}
 
-	public string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document)
 	{
 		//we manually render title and optionally append an applies block embedded in yaml front matter.
 		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);

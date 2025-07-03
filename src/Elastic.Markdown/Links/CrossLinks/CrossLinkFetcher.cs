@@ -2,19 +2,20 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Text.Json;
-using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
-using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.CrossLinks;
 
 public record FetchedCrossLinks
 {
-	public required FrozenDictionary<string, LinkReference> LinkReferences { get; init; }
+	public required FrozenDictionary<string, RepositoryLinks> LinkReferences { get; init; }
 
 	public required HashSet<string> DeclaredRepositories { get; init; }
 
@@ -25,34 +26,33 @@ public record FetchedCrossLinks
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
-		LinkReferences = new Dictionary<string, LinkReference>().ToFrozenDictionary(),
+		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
 		FromConfiguration = false,
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 	};
 }
 
-public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
+public abstract class CrossLinkFetcher(ILinkIndexReader linkIndexProvider, ILoggerFactory logger) : IDisposable
 {
 	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly HttpClient _client = new();
-	private LinkReferenceRegistry? _linkIndex;
+	private LinkRegistry? _linkIndex;
 
-	public static LinkReference Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkReference)!;
+	public static RepositoryLinks Deserialize(string json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositoryLinks)!;
 
 	public abstract Task<FetchedCrossLinks> Fetch(Cancel ctx);
 
-	protected async Task<LinkReferenceRegistry> FetchLinkIndex(Cancel ctx)
+	public async Task<LinkRegistry> FetchLinkIndex(Cancel ctx)
 	{
 		if (_linkIndex is not null)
 		{
 			_logger.LogTrace("Using cached link index");
 			return _linkIndex;
 		}
-		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json";
-		_logger.LogInformation("Fetching {Url}", url);
-		var json = await _client.GetStringAsync(url, ctx);
-		_linkIndex = LinkReferenceRegistry.Deserialize(json);
+
+		_logger.LogInformation("Getting link index");
+		_linkIndex = await linkIndexProvider.GetRegistry(ctx);
 		return _linkIndex;
 	}
 
@@ -74,7 +74,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		return linkIndexEntry;
 	}
 
-	protected async Task<LinkReference> Fetch(string repository, string[] keys, Cancel ctx)
+	protected async Task<RepositoryLinks> Fetch(string repository, string[] keys, Cancel ctx)
 	{
 		var linkIndex = await FetchLinkIndex(ctx);
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
@@ -89,7 +89,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		throw new Exception($"Repository found in link index however none of: '{string.Join(", ", keys)}' branches found");
 	}
 
-	protected async Task<LinkReference> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx)
+	protected async Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx)
 	{
 		var linkReference = await TryGetCachedLinkReference(repository, linkRegistryEntry);
 		if (linkReference is not null)
@@ -120,16 +120,22 @@ public abstract class CrossLinkFetcher(ILoggerFactory logger) : IDisposable
 		}
 	}
 
-	private async Task<LinkReference?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
+	private readonly ConcurrentDictionary<string, RepositoryLinks> _cachedLinkReferences = new();
+
+	private async Task<RepositoryLinks?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
 	{
-		var cachedFileName = $"links-elastic-{repository}-main-{linkRegistryEntry.ETag}.json";
+		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
 		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
+		if (_cachedLinkReferences.TryGetValue(cachedFileName, out var cachedLinkReference))
+			return cachedLinkReference;
+
 		if (File.Exists(cachedPath))
 		{
 			try
 			{
 				var json = await File.ReadAllTextAsync(cachedPath);
 				var linkReference = Deserialize(json);
+				_ = _cachedLinkReferences.TryAdd(cachedFileName, linkReference);
 				return linkReference;
 			}
 			catch (Exception e)

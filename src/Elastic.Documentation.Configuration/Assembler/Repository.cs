@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Runtime.Serialization;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
@@ -10,6 +11,14 @@ public record NarrativeRepository : Repository
 {
 	public static string RepositoryName { get; } = "docs-content";
 	public override string Name { get; set; } = RepositoryName;
+}
+
+public enum CheckoutStrategy
+{
+	[EnumMember(Value = "partial")]
+	Partial,
+	[EnumMember(Value = "full")]
+	Full
 }
 
 public record Repository
@@ -27,7 +36,7 @@ public record Repository
 	public string GitReferenceNext { get; set; } = "main";
 
 	[YamlMember(Alias = "checkout_strategy")]
-	public string CheckoutStrategy { get; set; } = "partial";
+	public CheckoutStrategy CheckoutStrategy { get; set; } = CheckoutStrategy.Partial;
 
 	[YamlMember(Alias = "skip")]
 	public bool Skip { get; set; }

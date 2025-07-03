@@ -1,0 +1,28 @@
+@inherits RazorLayoutSlice<GlobalLayoutViewModel>
+<!DOCTYPE html>
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
+<head hx-head="merge">
+	@await RenderPartialAsync(_Head.Create(Model))
+	@await RenderSectionAsync(GlobalSections.Head)
+</head>
+
+<body
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden"
+	hx-ext="preload, head-support"
+	data-docs-builder-version="@Model.DocsBuilderVersion"
+	data-root-path="@Model.Link("/")"
+	hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator"
+	>
+@if (Model.GoogleTagManager.Enabled)
+{
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
+	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+}
+@(await RenderPartialAsync(_Header.Create(Model)))
+<div id="main-container" class="flex flex-col items-center border-t-1 border-grey-20">
+	@(await RenderBodyAsync())
+</div>
+@await RenderPartialAsync(_Footer.Create(Model))
+@await RenderSectionAsync(GlobalSections.Footer)
+</body>
+</html>

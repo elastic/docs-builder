@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Myst.Renderers;
+using Elastic.Markdown.Myst.Roles;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Parsers;
@@ -13,9 +15,9 @@ namespace Elastic.Markdown.Myst.Directives;
 
 public static class DirectiveMarkdownBuilderExtensions
 {
-	public static MarkdownPipelineBuilder UseDirectives(this MarkdownPipelineBuilder pipeline, MarkdownParser markdownParser)
+	public static MarkdownPipelineBuilder UseDirectives(this MarkdownPipelineBuilder pipeline)
 	{
-		pipeline.Extensions.AddIfNotAlready(new DirectiveMarkdownExtension(markdownParser));
+		pipeline.Extensions.AddIfNotAlready(new DirectiveMarkdownExtension());
 		return pipeline;
 	}
 }
@@ -24,7 +26,7 @@ public static class DirectiveMarkdownBuilderExtensions
 /// Extension to allow custom containers.
 /// </summary>
 /// <seealso cref="IMarkdownExtension" />
-public class DirectiveMarkdownExtension(MarkdownParser markdownParser) : IMarkdownExtension
+public class DirectiveMarkdownExtension : IMarkdownExtension
 {
 	public void Setup(MarkdownPipelineBuilder pipeline)
 	{
@@ -53,7 +55,7 @@ public class DirectiveMarkdownExtension(MarkdownParser markdownParser) : IMarkdo
 		if (!renderer.ObjectRenderers.Contains<DirectiveHtmlRenderer>())
 		{
 			// Must be inserted before CodeBlockRenderer
-			_ = renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer(markdownParser));
+			_ = renderer.ObjectRenderers.InsertBefore<CodeBlockRenderer>(new DirectiveHtmlRenderer());
 		}
 
 		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());

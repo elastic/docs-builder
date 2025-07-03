@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
@@ -48,8 +47,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Be(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#main-container" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
 		);
 
@@ -65,8 +63,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Requirements</a></p>"""
 		);
 
@@ -85,8 +82,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></p>"""
 		);
 
@@ -97,7 +93,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	public void EmitsCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 }
 
-public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
+public class RepositoryLinksTest(ITestOutputHelper output) : LinkTestBase(output,
 	"""
 	[test][test]
 
@@ -107,8 +103,7 @@ public class LinkReferenceTest(ITestOutputHelper output) : LinkTestBase(output,
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">test</a></p>"""
 		);
 
@@ -129,8 +124,7 @@ public class CrossLinkReferenceTest(ITestOutputHelper output) : LinkTestBase(out
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
 		);
 
@@ -156,7 +150,7 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	public void GeneratesHtml() =>
 		// language=html
 		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/">test</a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#main-container" preload="mousedown">test</a></p>"""
 		);
 
 	[Fact]
@@ -193,8 +187,7 @@ public class ExternalLinksWithInterpolationSuccess(ITestOutputHelper output) : L
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.Should().Contain(
+		Html.ShouldContainHtml(
 			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a></p>"""
 		);
 
@@ -267,16 +260,16 @@ public class CommentedNonExistingLinks2(ITestOutputHelper output) : LinkTestBase
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
-		Html.ReplaceLineEndings().TrimEnd().Should().Be("""
-		<p>Links:</p>
-		<ul>
-		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></li>
-		</ul>
-		<ul>
-		<li><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></li>
-		</ul>
-		""".ReplaceLineEndings());
+		Html.ShouldBeHtml(
+			"""
+			<p>Links:</p>
+			<ul>
+			<li><a href="/docs/testing/req">Special Requirements</a></li>
+			</ul>
+			<ul>
+			<li><a href="/docs/testing/req">Special Requirements</a></li>
+			</ul>
+			""");
 
 	[Fact]
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(0);

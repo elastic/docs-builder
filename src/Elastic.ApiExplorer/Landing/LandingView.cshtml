@@ -1,0 +1,10 @@
+@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-docs-v3">
+	<h1>@Model.ApiInfo.Title</h1>
+	<p>@Model.ApiInfo.Description</p>
+	<p>License: @Model.ApiInfo.License?.Identifier</p>
+</section>

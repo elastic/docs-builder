@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;
 
@@ -31,10 +31,7 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 
 	[Fact]
 	public void IncludesInclusionHtml() =>
-		Html.Should()
-			.Contain("Hello world")
-			.And.Be("<p><em>Hello world</em></p>")
-		;
+		Html.ShouldBeHtml("<p><em>Hello world</em></p>");
 }
 
 

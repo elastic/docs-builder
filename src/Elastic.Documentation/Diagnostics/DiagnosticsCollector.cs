@@ -102,7 +102,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		Channel.Write(diagnostic);
 	}
 
-	private void Emit(Severity severity, string file, string message) =>
+	public void Emit(Severity severity, string file, string message) =>
 		Write(new Diagnostic
 		{
 			Severity = severity,

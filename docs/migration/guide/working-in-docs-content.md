@@ -52,7 +52,7 @@ Images are in [one directory](https://github.com/elastic/docs-content/tree/main/
 * More details on the `mv` command are in [https://github.com/elastic/docs-builder/pull/376](https://github.com/elastic/docs-builder/pull/376).
 * Change the `h1` title.
 * Change the `navigation_title` in the frontmatter.
-* Add the [product availability](https://elastic.github.io/docs-builder/syntax/applies.html) to frontmatter of each page.
+* Add the [product availability](/syntax/applies.md) to frontmatter of each page.
 * Make edits to the migrated content.
 * Copy content from `raw-migrated-files` into the stub page files. Be sure to update links and image references when moving content.
   * Check if any other pages rely on the content in the `raw-migrated-files` file. You can either:

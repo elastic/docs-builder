@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -80,13 +78,13 @@ public static class ProcessorDiagnosticExtensions
 		context.Build.Collector.Write(d);
 	}
 
-	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => EmitDiagnostic(block, Severity.Error, message, e);
+	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => Emit(block, Severity.Error, message, e);
 
-	public static void EmitWarning(this IBlockExtension block, string message) => EmitDiagnostic(block, Severity.Warning, message);
+	public static void EmitWarning(this IBlockExtension block, string message) => Emit(block, Severity.Warning, message);
 
-	public static void EmitHint(this IBlockExtension block, string message) => EmitDiagnostic(block, Severity.Hint, message);
+	public static void EmitHint(this IBlockExtension block, string message) => Emit(block, Severity.Hint, message);
 
-	private static void EmitDiagnostic(IBlockExtension block, Severity severity, string message, Exception? e = null)
+	public static void Emit(this IBlockExtension block, Severity severity, string message, Exception? e = null)
 	{
 		if (block.SkipValidation)
 			return;
@@ -104,7 +102,7 @@ public static class ProcessorDiagnosticExtensions
 	}
 
 
-	private static void LinkDiagnostic(InlineProcessor processor, Severity severity, Inline inline, int length, string message, Exception? e = null)
+	public static void Emit(this InlineProcessor processor, Severity severity, Inline inline, int length, string message, Exception? e = null)
 	{
 		var line = inline.Line + 1;
 		var column = inline.Column;
@@ -125,20 +123,20 @@ public static class ProcessorDiagnosticExtensions
 	}
 
 	public static void EmitError(this InlineProcessor processor, LinkInline inline, string message) =>
-		LinkDiagnostic(processor, Severity.Error, inline, inline.Url?.Length ?? 1, message);
+		Emit(processor, Severity.Error, inline, inline.Url?.Length ?? 1, message);
 
 	public static void EmitWarning(this InlineProcessor processor, LinkInline inline, string message) =>
-		LinkDiagnostic(processor, Severity.Warning, inline, inline.Url?.Length ?? 1, message);
+		Emit(processor, Severity.Warning, inline, inline.Url?.Length ?? 1, message);
 
 	public static void EmitHint(this InlineProcessor processor, LinkInline inline, string message) =>
-		LinkDiagnostic(processor, Severity.Hint, inline, inline.Url?.Length ?? 1, message);
+		Emit(processor, Severity.Hint, inline, inline.Url?.Length ?? 1, message);
 
 	public static void EmitError(this InlineProcessor processor, Inline inline, int length, string message, Exception? e = null) =>
-		LinkDiagnostic(processor, Severity.Error, inline, length, message, e);
+		Emit(processor, Severity.Error, inline, length, message, e);
 
 	public static void EmitWarning(this InlineProcessor processor, Inline inline, int length, string message) =>
-		LinkDiagnostic(processor, Severity.Warning, inline, length, message);
+		Emit(processor, Severity.Warning, inline, length, message);
 
 	public static void EmitHint(this InlineProcessor processor, Inline inline, int length, string message) =>
-		LinkDiagnostic(processor, Severity.Hint, inline, length, message);
+		Emit(processor, Severity.Hint, inline, length, message);
 }

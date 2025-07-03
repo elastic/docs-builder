@@ -1,0 +1,8 @@
+@inherits RazorSliceHttpResult<IndexViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-docs-v3">
+	<h1>@Model.CurrentNavigationItem.Url</h1>
+</section>

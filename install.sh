@@ -7,10 +7,12 @@ ARCH=$(uname -m)
 
 # Map architecture naming
 if [ "$ARCH" = "x86_64" ]; then
-  ARCH="amd64"
+  ARCH="x64"
 elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
   ARCH="arm64"
 fi
+
+VERSION="${DOCS_BUILDER_VERSION:-latest}"
 
 # Determine binary to download based on OS
 if [ "$OS" = "darwin" ]; then
@@ -55,8 +57,14 @@ fi
 
 echo "Downloading docs-builder for $OS/$ARCH..."
 
+if [ "$VERSION" = "latest" ]; then
+  DOWNLOAD_URL="https://github.com/elastic/docs-builder/releases/latest/download/$BINARY"
+else
+  DOWNLOAD_URL="https://github.com/elastic/docs-builder/releases/download/$VERSION/$BINARY"
+fi
+
 # Download the appropriate binary
-if ! curl -LO "https://github.com/elastic/docs-builder/releases/latest/download/$BINARY"; then
+if ! curl -LO "$DOWNLOAD_URL"; then
   echo "Error: Failed to download $BINARY. Please check your internet connection."
   exit 1
 fi
@@ -87,5 +95,5 @@ fi
 # Clean up the downloaded zip file
 rm -f "$BINARY"
 
-echo "docs-builder has been installed successfully and is available in your PATH."
+echo "docs-builder ($VERSION) has been installed successfully and is available in your PATH."
 echo "You can run 'docs-builder --help' to see available commands."

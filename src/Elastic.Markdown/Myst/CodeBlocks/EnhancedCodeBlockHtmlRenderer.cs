@@ -5,8 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Comments;
-using Elastic.Markdown.Myst.Directives;
-using Elastic.Markdown.Slices.Directives;
+using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -20,20 +19,14 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private const int TabWidth = 4;
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer, EnhancedCodeBlock block)
-	{
-		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
-		_ = renderer.Write(blocks[0]);
-		RenderCodeBlockLines(renderer, block);
-		_ = renderer.Write(blocks[1]);
-	}
+	private static void RenderRazorSlice<T>(RazorSlice<T> slice, HtmlRenderer renderer) =>
+		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
 
 	/// <summary>
 	/// Renders the code block lines while also removing the common indentation level.
 	/// Required because EnableTrackTrivia preserves extra indentation.
 	/// </summary>
-	private static void RenderCodeBlockLines(HtmlRenderer renderer, EnhancedCodeBlock block)
+	public static void RenderCodeBlockLines(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var commonIndent = GetCommonIndent(block);
 		var hasCode = false;
@@ -134,10 +127,11 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			CrossReferenceName = string.Empty,// block.CrossReferenceName,
 			Language = block.Language,
 			Caption = block.Caption,
-			ApiCallHeader = block.ApiCallHeader
+			ApiCallHeader = block.ApiCallHeader,
+			EnhancedCodeBlock = block
 		});
 
-		RenderRazorSlice(slice, renderer, block);
+		RenderRazorSlice(slice, renderer);
 		if (!block.InlineAnnotations && callOuts.Count > 0)
 		{
 			var index = block.Parent!.IndexOf(block);
@@ -237,10 +231,18 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	private static void RenderAppliesToHtml(HtmlRenderer renderer, AppliesToDirective appliesToDirective)
 	{
 		var appliesTo = appliesToDirective.AppliesTo;
-		var slice = ApplicableToDirective.Create(appliesTo);
+
 		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
 			return;
-		var html = slice.RenderAsync().GetAwaiter().GetResult();
-		_ = renderer.Write(html);
+
+		var viewModel = new Components.ApplicableToViewModel
+		{
+			AppliesTo = appliesTo,
+			Inline = false,
+			VersionsConfig = appliesToDirective.Build.VersionsConfig
+		};
+
+		var slice = AppliesToView.Create(viewModel);
+		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
 	}
 }

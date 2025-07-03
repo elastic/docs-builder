@@ -1,0 +1,40 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Stepper.StepViewModel>
+<li class="step">
+	@if (!string.IsNullOrEmpty(Model.Title))
+	{
+		@switch (Model.HeadingLevel)
+		{
+			case 1:
+				<h1 id="@Model.Anchor">
+					<a href="#@Model.Anchor">@Model.Title</a>
+				</h1>
+				break;
+			case 2:
+				<h2 id="@Model.Anchor">
+					<a href="#@Model.Anchor">@Model.Title</a>
+				</h2>
+				break;
+			case 3:
+				<h3 id="@Model.Anchor">
+					<a href="#@Model.Anchor">@Model.Title</a>
+				</h3>
+				break;
+			case 4:
+				<h4 id="@Model.Anchor">
+					<a href="#@Model.Anchor">@Model.Title</a>
+				</h4>
+				break;
+			case 5:
+				<h5 id="@Model.Anchor">
+					<a href="#@Model.Anchor">@Model.Title</a>
+				</h5>
+				break;
+			default:
+				<h6 id="@Model.Anchor">
+					<a href="#@Model.Anchor">@Model.Title</a>
+				</h6>
+				break;
+		}
+	}
+	@Model.RenderBlock()
+</li>

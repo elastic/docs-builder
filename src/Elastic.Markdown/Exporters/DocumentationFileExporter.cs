@@ -3,18 +3,29 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Slices;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
 
+public class ProcessingFileContext
+{
+	public required BuildContext BuildContext { get; init; }
+	public required DocumentationFile File { get; init; }
+	public required IFileInfo OutputFile { get; init; }
+	public required HtmlWriter HtmlWriter { get; init; }
+	public required IConversionCollector? ConversionCollector { get; init; }
+
+	public MarkdownDocument? MarkdownDocument { get; set; }
+}
+
 public interface IDocumentationFileExporter
 {
-	/// Used in documentation state to ensure we break the build cache if a different exporter is chosen
+	/// Used in the documentation state to ensure we break the build cache if a different exporter is chosen
 	string Name { get; }
 
-	Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter, IConversionCollector? conversionCollector,
-		Cancel token);
+	ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx);
 
 	Task CopyEmbeddedResource(IFileInfo outputFile, Stream resourceStream, Cancel ctx);
 }
@@ -23,16 +34,14 @@ public abstract class DocumentationFileExporterBase(IFileSystem readFileSystem, 
 {
 	public abstract string Name { get; }
 
-	public abstract Task ProcessFile(BuildContext context, DocumentationFile file, IFileInfo outputFile, HtmlWriter htmlWriter,
-		IConversionCollector? conversionCollector,
-		Cancel token);
+	public abstract ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx);
 
 	protected async Task CopyFileFsAware(DocumentationFile file, IFileInfo outputFile, Cancel ctx)
 	{
 		// fast path, normal case.
 		if (readFileSystem == writeFileSystem)
 			readFileSystem.File.Copy(file.SourceFile.FullName, outputFile.FullName, true);
-		//slower when we are mocking the write filesystem
+		//slower when we are mocking the write-filesystem
 		else
 		{
 			var bytes = await file.SourceFile.FileSystem.File.ReadAllBytesAsync(file.SourceFile.FullName, ctx);
@@ -49,26 +58,20 @@ public abstract class DocumentationFileExporterBase(IFileSystem readFileSystem, 
 	}
 }
 
-public class DocumentationFileExporter(
-	IFileSystem readFileSystem,
-	IFileSystem writeFileSystem
-) : DocumentationFileExporterBase(readFileSystem, writeFileSystem)
+public class DocumentationFileExporter(IFileSystem readFileSystem, IFileSystem writeFileSystem)
+	: DocumentationFileExporterBase(readFileSystem, writeFileSystem)
 {
-	public override string Name { get; } = nameof(DocumentationFileExporter);
+	public override string Name => nameof(DocumentationFileExporter);
 
-	public override async Task ProcessFile(BuildContext context, DocumentationFile file,
-		IFileInfo outputFile,
-		HtmlWriter htmlWriter,
-		IConversionCollector? conversionCollector,
-		Cancel token)
+	public override async ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx)
 	{
-		if (file is MarkdownFile markdown)
-			await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, token);
+		if (context.File is MarkdownFile markdown)
+			context.MarkdownDocument = await context.HtmlWriter.WriteAsync(context.OutputFile, markdown, context.ConversionCollector, ctx);
 		else
 		{
-			if (outputFile.Directory is { Exists: false })
-				outputFile.Directory.Create();
-			await CopyFileFsAware(file, outputFile, token);
+			if (context.OutputFile.Directory is { Exists: false })
+				context.OutputFile.Directory.Create();
+			await CopyFileFsAware(context.File, context.OutputFile, ctx);
 		}
 	}
 }

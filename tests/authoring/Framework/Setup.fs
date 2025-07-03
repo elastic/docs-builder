@@ -10,6 +10,9 @@ open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
+open Elastic.Documentation
+open Elastic.Documentation.Configuration
+open Elastic.Documentation.Configuration.Versions
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
@@ -52,11 +55,11 @@ type Setup =
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let yaml = new StringWriter();
-        yaml.WriteLine("cross_links:");
-        yaml.WriteLine("  - docs-content");
-        yaml.WriteLine("  - elasticsearch");
+        yaml.WriteLine("cross_links:")
+        yaml.WriteLine("  - docs-content")
+        yaml.WriteLine("  - elasticsearch")
         yaml.WriteLine("  - kibana")
-        yaml.WriteLine("toc:");
+        yaml.WriteLine("toc:")
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
         |> Seq.iter(fun markdownFile ->
@@ -107,12 +110,112 @@ type Setup =
         GenerateDocSetYaml (fileSystem, None)
 
         let collector = TestDiagnosticsCollector()
-        let context = BuildContext(collector, fileSystem, UrlPathPrefix=(options.UrlPathPrefix |> Option.defaultValue ""))
+        let versioningSystems = Dictionary<VersioningSystemId, VersioningSystem>()
+        versioningSystems.Add(VersioningSystemId.Stack, 
+            VersioningSystem(
+                Id = VersioningSystemId.Stack,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Self, 
+            VersioningSystem(
+                Id = VersioningSystemId.Self,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Ece, 
+            VersioningSystem(
+                Id = VersioningSystemId.Ece,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Eck, 
+            VersioningSystem(
+                Id = VersioningSystemId.Eck,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Ech, 
+            VersioningSystem(
+                Id = VersioningSystemId.Ech,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.ApmAgentDotnet, 
+            VersioningSystem(
+                Id = VersioningSystemId.ApmAgentDotnet,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.ApmAgentNode, 
+            VersioningSystem(
+                Id = VersioningSystemId.ApmAgentNode,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Ecctl, 
+            VersioningSystem(
+                Id = VersioningSystemId.Ecctl,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Elasticsearch, 
+            VersioningSystem(
+                Id = VersioningSystemId.Elasticsearch,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Ess, 
+            VersioningSystem(
+                Id = VersioningSystemId.Ess,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.All, 
+            VersioningSystem(
+                Id = VersioningSystemId.All,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Observability, 
+            VersioningSystem(
+                Id = VersioningSystemId.Observability,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Security, 
+            VersioningSystem(
+                Id = VersioningSystemId.Security,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Serverless, 
+            VersioningSystem(
+                Id = VersioningSystemId.Serverless,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
+        let context = BuildContext(collector, fileSystem, UrlPathPrefix=(options.UrlPathPrefix |> Option.defaultValue ""), versionsConfig = versionConfig)
         let logger = new TestLoggerFactory()
         let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)
         let set = DocumentationSet(context, logger, linkResolver);
-        let generator = DocumentationGenerator(set, logger, null, null, null, conversionCollector)
+        let generator = DocumentationGenerator(set, logger, null, null, null, null, conversionCollector)
 
         let context = {
             Collector = collector
@@ -135,7 +238,7 @@ type Setup =
     static member Document ([<LanguageInjection("markdown")>]m: string) =
         lazy (task { return! Setup.Generator [Index m] None } |> Async.AwaitTask |> Async.RunSynchronously)
 
-    /// Pass a markdown fragment to the test setup
+    /// Pass a Markdown fragment to the test setup
     static member Markdown ([<LanguageInjection("markdown")>]m: string) =
         // language=markdown
         let m = $"""# Test Document

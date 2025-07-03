@@ -13,10 +13,16 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+  ech:  "Elastic Cloud Hosted"
+  serverless-full: "Elastic Cloud Serverless"
+  ecloud: "Elastic Cloud"
 
 features:
   primary-nav: false
-  
+
+#api: kibana-openapi.json
+api: elasticsearch-openapi.json
+
 toc:
   - file: index.md
   - hidden: 404.md
@@ -28,6 +34,9 @@ toc:
       - file: on-the-web.md
       - file: move.md
       - file: redirects.md
+      - file: cumulative-docs.md
+      - file: branching-strategy.md
+      - file: add-repo.md
   - folder: migration
     children:
       - file: index.md
@@ -65,6 +74,7 @@ toc:
           - file: navigation.md
           - file: extensions.md
       - file: page.md
+      - file: content-sources.md
   - folder: syntax
     children:
       - file: index.md
@@ -81,6 +91,7 @@ toc:
       - file: example_blocks.md
       - file: file_inclusion.md
       - file: frontmatter.md
+      - file: icons.md
       - file: images.md
       - file: lists.md
       - file: line_breaks.md

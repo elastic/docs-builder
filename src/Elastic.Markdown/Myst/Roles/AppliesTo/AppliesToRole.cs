@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;
@@ -17,21 +18,26 @@ namespace Elastic.Markdown.Myst.Roles.AppliesTo;
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Role: {Role}, Content: {Content}")]
 public class AppliesToRole : RoleLeaf, IApplicableToElement
 {
-	public AppliesToRole(string role, string content, InlineProcessor parserContext) : base(role, content) =>
+	public AppliesToRole(string role, string content, InlineProcessor parserContext) : base(role, content)
+	{
 		AppliesTo = ParseApplicableTo(content, parserContext);
+		BuildContext = parserContext.GetContext().Build;
+	}
 
 	public ApplicableTo? AppliesTo { get; }
+
+	public BuildContext BuildContext { get; }
 
 	private ApplicableTo? ParseApplicableTo(string yaml, InlineProcessor processor)
 	{
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
-			if (applicableTo.Warnings is null)
+			if (applicableTo.Diagnostics is null)
 				return applicableTo;
-			foreach (var warning in applicableTo.Warnings)
-				processor.EmitWarning(this, Role.Length + yaml.Length, warning);
-			applicableTo.Warnings = null;
+			foreach (var (severity, message) in applicableTo.Diagnostics)
+				processor.Emit(severity, this, Role.Length + yaml.Length, message);
+			applicableTo.Diagnostics = null;
 			return applicableTo;
 		}
 		catch (Exception e)
@@ -85,6 +91,3 @@ public class InlineAppliesToExtension : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) =>
 		renderer.ObjectRenderers.InsertBefore<CodeInlineRenderer>(new AppliesToRoleHtmlRenderer());
 }
-
-
-

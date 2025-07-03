@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Net.Mime;
@@ -15,35 +13,41 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger)
+internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger, IOptions<VersionsConfiguration> versionsConfigOption)
 {
+	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
+
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
+		ConsoleApp.Log = msg => _log.LogInformation(msg);
+		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
 
-	// would love to use libgit2 so there is no git dependency but
-	// libgit2 is magnitudes slower to clone repositories https://github.com/libgit2/libgit2/issues/4674
 	/// <summary> Clones all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
+	/// <param name="fetchLatest"> If true, fetch the latest commit of the branch instead of the link registry entry ref</param>
 	/// <param name="ctx"></param>
 	[Command("clone-all")]
 	public async Task<int> CloneAll(
 		bool? strict = null,
 		string? environment = null,
+		bool? fetchLatest = null,
 		Cancel ctx = default
 	)
 	{
@@ -55,7 +59,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
-		_ = await cloner.AcquireAllLatest(ctx);
+
+		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
 
 		await collector.StopAsync(ctx);
 
@@ -69,6 +74,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
 	/// <param name="environment"> The environment to build</param>
+	/// <param name="exporters"> configure exporters explicitly available (html,llmtext,es), defaults to html</param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
@@ -76,16 +82,23 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		bool? strict = null,
 		bool? allowIndexing = null,
 		string? environment = null,
+		[ExporterParser] IReadOnlySet<ExportOption>? exporters = null,
 		Cancel ctx = default)
 	{
+		exporters ??= new HashSet<ExportOption>([ExportOption.Html]);
+
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
+
+		_log.LogInformation("Building all repositories for environment {Environment}", environment);
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);
+
+		_log.LogInformation("Creating assemble context");
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
 		{
@@ -93,6 +106,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			AllowIndexing = allowIndexing ?? false
 		};
 
+		_log.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
 		{
@@ -100,23 +114,34 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			return 1;
 		}
 
+		_log.LogInformation("Get all clone directory information");
 		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
-		var checkouts = cloner.GetAll().ToArray();
+		var checkoutResult = cloner.GetAll();
+		var checkouts = checkoutResult.Checkouts.ToArray();
+
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
-		var assembleSources = await AssembleSources.AssembleAsync(assembleContext, checkouts, ctx);
+		_log.LogInformation("Preparing all assemble sources for build");
+		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, versionsConfigOption.Value, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
+		_log.LogInformation("Create global navigation");
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
-
-		var historyMapper = new PageLegacyUrlMapper(assembleSources.HistoryMappings);
+		var legacyPageChecker = new LegacyPageChecker();
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
-		await builder.BuildAllAsync(assembleSources.AssembleSets, ctx);
+		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
+
+		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
+
+		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
+		if (File.Exists(redirectsPath))
+			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 		sitemapBuilder.Generate();
@@ -138,7 +163,6 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		// It's only used to get the list of repositories.
 		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
 		var cloner = new RepositorySourcer(logger, assembleContext.CheckoutDirectory, new FileSystem(), collector);
-		var dict = new ConcurrentDictionary<string, Stopwatch>();
 		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
 		{
 			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
@@ -152,18 +176,18 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			{
 				try
 				{
-					var name = kv.Key.Trim();
-					var checkout = cloner.CloneOrUpdateRepository(kv.Value, name, kv.Value.GetBranch(contentSource), dict);
+					var checkout = cloner.CloneRef(kv.Value, kv.Value.GetBranch(contentSource), true);
 					var outputPath = Directory.CreateTempSubdirectory(checkout.Repository.Name).FullName;
 					var context = new BuildContext(
 						collector,
 						new FileSystem(),
 						new FileSystem(),
+						versionsConfigOption.Value,
 						checkout.Directory.FullName,
 						outputPath
 					);
 					var set = new DocumentationSet(context, logger);
-					var generator = new DocumentationGenerator(set, logger, null, null, new NoopDocumentationFileExporter());
+					var generator = new DocumentationGenerator(set, logger, null, null, null, new NoopDocumentationFileExporter());
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();
@@ -191,5 +215,32 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		await collector.StopAsync(ctx);
 
 		return collector.Errors > 0 ? 1 : 0;
+	}
+}
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<ExportOption>>
+{
+	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<ExportOption> result)
+	{
+		result = new HashSet<ExportOption>([ExportOption.Html]);
+		var set = new HashSet<ExportOption>();
+		var ranges = s.Split(',');
+		foreach (var range in ranges)
+		{
+			ExportOption? export = s[range].Trim().ToString().ToLowerInvariant() switch
+			{
+				"llm" => ExportOption.LLMText,
+				"llmtext" => ExportOption.LLMText,
+				"es" => ExportOption.Elasticsearch,
+				"elasticsearch" => ExportOption.Elasticsearch,
+				"html" => ExportOption.Html,
+				_ => null
+			};
+			if (export.HasValue)
+				_ = set.Add(export.Value);
+		}
+		result = set;
+		return true;
 	}
 }

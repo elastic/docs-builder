@@ -115,6 +115,7 @@ on:
   push:
     branches:
       - main
+      - '\d+.\d+' <1>
   pull_request_target: ~
   merge_group: ~
 
@@ -129,6 +130,8 @@ jobs:
       contents: read
       pull-requests: read
 ```
+
+1. Optional match for version branches if you do not wish to publish to production from `main`.
 
 Learn more about this file: [`docs-build.yml`](./how-to-set-up-docs-previews.md#build).
 

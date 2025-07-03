@@ -9,9 +9,9 @@ using ConsoleAppFramework;
 using Documentation.Assembler.Links;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
-using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;

@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Image;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;

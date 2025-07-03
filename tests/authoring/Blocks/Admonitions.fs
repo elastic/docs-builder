@@ -27,7 +27,7 @@ type ``admonition in list`` () =
 				        <span>Note</span>
 			        </div>
 			        <div class="admonition-content">
-				        Hello, World!
+				        <p>Hello, World!</p>
 			        </div>
 		        </div>
 	        </li>
@@ -35,6 +35,11 @@ type ``admonition in list`` () =
         """
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``converts to LLM`` () =
+        markdown |> convertsToLLM """
+ """
 
 type ``nested admonition in list`` () =
     static let markdown = Setup.Markdown """
@@ -71,7 +76,7 @@ type ``nested admonition in list`` () =
  						            <span>Note</span>
  					            </div>
  					            <div class="admonition-content">
- 						            Hello, World!
+ 						            <p>Hello, World!</p>
  					            </div>
  				            </div>
  			            </li>
@@ -130,7 +135,7 @@ type ``nested admonition in list 2`` () =
  					                <span>Note</span>
  				                </div>
  				                <div class="admonition-content">
- 					                Hello, World!
+ 					                <p>Hello, World!</p>
  				                </div>
  			                </div>
  		                </li>
@@ -188,7 +193,7 @@ type ``nested admonition in list 3`` () =
  						            <span>Note</span>
  					            </div>
  					            <div class="admonition-content">
- 						            Hello, World!
+ 						            <p>Hello, World!</p>
  					            </div>
  				            </div>
  			            </li>
