@@ -103,14 +103,12 @@ toc:
       # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-cloud-serverless/toc.yml
       - toc: docs-content://release-notes/elastic-cloud-serverless
         path_prefix: release-notes/cloud-serverless
-
       # Cloud Hosted
       # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-hosted/toc.yml
       # We probably need to add `max_toc_depth: 2` to
       # https://github.com/elastic/cloud/blob/master/docs/docset.yml
       - toc: cloud://release-notes/cloud-hosted
         path_prefix: release-notes/cloud-hosted
-        
       # Cloud Enterprise
       # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-enterprise/toc.yml
       - toc: cloud://release-notes/cloud-enterprise
@@ -205,11 +203,6 @@ toc:
       # https://github.com/elastic/ecs/blob/main/docs/release-notes/toc.yml
       - toc: ecs://release-notes
         path_prefix: release-notes/ecs
-
-      # ECCTL
-      # https://github.com/elastic/ecctl/blob/master/docs/release-notes/toc.yml
-      - toc: ecctl://release-notes
-        path_prefix: release-notes/ecctl
 
   #############
   # REFERENCE #
