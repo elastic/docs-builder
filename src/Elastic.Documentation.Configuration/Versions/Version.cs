@@ -84,7 +84,9 @@ public enum VersioningSystemId
 	[Display(Name = "edot_python")]
 	EdotPython,
 	[Display(Name = "edot_cf_aws")]
-	EdotCfAws
+	EdotCfAws,
+	[Display(Name = "edot_collector")]
+	EdotCollector
 }
 
 [YamlSerializable]

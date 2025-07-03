@@ -228,6 +228,12 @@
 		@RenderProduct("EDOT CF AWS", "Elastic Distribution of OpenTelemetry Cloud Forwarder for AWS", VersioningSystemId.EdotCfAws, pa.EdotCfAws)
 		;
 	}
+
+	if (pa.EdotCollector is not null)
+	{
+		@RenderProduct("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector, pa.EdotCollector)
+		;
+	}
 }
 
 @functions {
