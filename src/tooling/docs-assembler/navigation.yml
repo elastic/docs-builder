@@ -590,3 +590,15 @@ toc:
       # ✅ https://github.com/elastic/docs-content/blob/main/reference/glossary/toc.yml
       - toc: docs-content://reference/glossary
         path_prefix: reference/glossary
+
+  ###################
+  # TROUBLESHOOTING #
+  ###################
+
+  - toc: troubleshooting
+    path_prefix: troubleshooting
+    children:
+      # EDOT Troubleshooting
+      # ✅ https://github.com/elastic/opentelemetry/docs/troubleshooting/toc.yml
+      - toc: opentelemetry://troubleshooting
+        path_prefix: troubleshooting/opentelemetry
