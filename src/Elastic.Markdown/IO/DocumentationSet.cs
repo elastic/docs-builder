@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
@@ -129,7 +130,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 
-	public Dictionary<string, INavigationRenderResult> NavigationRenderResults { get; } = [];
+	public ConcurrentDictionary<string, INavigationRenderResult> NavigationRenderResults { get; } = [];
 
 	public DocumentationSet(
 		BuildContext context,

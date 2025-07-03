@@ -186,14 +186,12 @@ public class HtmlWriter(
 		collector?.Collect(markdown, document, rendered.Html);
 		await writeFileSystem.File.WriteAllTextAsync(path, rendered.Html, ctx);
 
-		if (DocumentationSet.Configuration.Features.LazyLoadNavigation)
-		{
-			var navFilePath = Path.Combine(outBaseDir.FullName, rendered.NavigationFileName);
-			if (!writeFileSystem.File.Exists(navFilePath))
-			{
-				await writeFileSystem.File.WriteAllTextAsync(navFilePath, rendered.FullNavigationPartialHtml, ctx);
-			}
-		}
+		if (!DocumentationSet.Configuration.Features.LazyLoadNavigation)
+			return document;
+
+		var navFilePath = Path.Combine(outBaseDir.FullName, rendered.NavigationFileName);
+		if (!writeFileSystem.File.Exists(navFilePath))
+			await writeFileSystem.File.WriteAllTextAsync(navFilePath, rendered.FullNavigationPartialHtml, ctx);
 		return document;
 	}
 
