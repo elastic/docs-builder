@@ -177,6 +177,9 @@ public record ProductApplicability
 
 	[YamlMember(Alias = "edot_cf_aws")]
 	public AppliesCollection? EdotCfAws { get; set; }
+
+	[YamlMember(Alias = "edot_collector")]
+	public AppliesCollection? EdotCollector { get; set; }
 }
 
 public class ApplicableToConverter : IYamlTypeConverter

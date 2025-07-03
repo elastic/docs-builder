@@ -64,6 +64,9 @@ versioning_systems:
     current: 5.17.0
 
   # EDOTs
+  edot_collector:
+    base: 9.0
+    current: 9.0.3
   edot_ios:
     base: 1.0
     current: 1.2.1
