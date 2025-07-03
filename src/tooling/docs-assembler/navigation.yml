@@ -595,8 +595,8 @@ toc:
   # TROUBLESHOOTING #
   ###################
 
-  - toc: troubleshooting
-    path_prefix: troubleshooting
+  - toc: troubleshoot
+    path_prefix: troubleshoot
     children:
       # EDOT Troubleshooting
       # ✅ https://github.com/elastic/opentelemetry/docs/troubleshooting/toc.yml
