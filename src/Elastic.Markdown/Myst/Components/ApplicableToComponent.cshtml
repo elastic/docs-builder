@@ -269,18 +269,17 @@
 				}
 				else
 				{
-					if (applicability.Lifecycle is ProductLifecycle.GenerallyAvailable or ProductLifecycle.Beta or ProductLifecycle.TechnicalPreview)
+					tooltipText = applicability.Lifecycle switch
 					{
-						tooltipText = $"We plan to add this functionality in a future {keyFull} update. Subject to change.";
-					}
-					else if (applicability.Lifecycle is ProductLifecycle.Deprecated)
-					{
-						tooltipText = $"We plan to deprecate this functionality in a future {keyFull} update. Subject to change.";
-					}
-					else if (applicability.Lifecycle is ProductLifecycle.Removed)
-					{
-						tooltipText = $"We plan to remove this functionality in a future {keyFull} update. Subject to change.";
-					}
+						ProductLifecycle.GenerallyAvailable 
+							or ProductLifecycle.Beta
+							or ProductLifecycle.TechnicalPreview
+							or ProductLifecycle.Planned =>
+							$"We plan to add this functionality in a future {keyFull} update. Subject to change.",
+						ProductLifecycle.Deprecated => $"We plan to deprecate this functionality in a future {keyFull} update. Subject to change.",
+						ProductLifecycle.Removed => $"We plan to remove this functionality in a future {keyFull} update. Subject to change.",
+						_ => tooltipText
+					};
 				}
 				
 			}
@@ -314,6 +313,7 @@
 							: "Planned",
 					ProductLifecycle.Deprecated => "Deprecation planned",
 					ProductLifecycle.Removed => "Removal planned",
+					ProductLifecycle.Planned => "Planned",
 					_ => badgeText
 				};
 			}
