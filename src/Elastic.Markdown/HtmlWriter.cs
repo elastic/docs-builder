@@ -61,7 +61,9 @@ public class HtmlWriter(
 			? await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, 1, ctx)
 			: new EmptyNavigationRenderResult();
 
-		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation ? fullNavigationRenderResult : miniNavigationRenderResult;
+		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
+			? miniNavigationRenderResult
+			: fullNavigationRenderResult;
 
 		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);

@@ -3,7 +3,7 @@
 	
 	@if (Model.Features.LazyLoadNavigation && !string.IsNullOrEmpty(Model.NavigationFileName))
 	{
-		<div hx-get="@(Model.UrlPathPrefix?.TrimEnd('/') + "/" + Model.NavigationFileName)" hx-trigger="load" hx-params="nav" hx-push-url="false" hx-swap="innerHTML" hx-target="#pages-nav"></div>
+		<div class="hidden" hx-get="@(Model.Link(Model.NavigationFileName))" hx-trigger="load" hx-params="nav" hx-push-url="false" hx-swap="innerHTML" hx-target="#pages-nav"></div>
 	}
 	<nav
 		id="pages-nav"
