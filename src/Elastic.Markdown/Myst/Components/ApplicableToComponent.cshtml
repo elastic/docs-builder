@@ -228,6 +228,12 @@
 		@RenderProduct("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws, pa.EdotCfAws)
 		;
 	}
+
+	if (pa.EdotCollector is not null)
+	{
+		@RenderProduct("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector, pa.EdotCollector)
+		;
+	}
 }
 
 @functions {
@@ -302,7 +308,10 @@
 				{
 					ProductLifecycle.TechnicalPreview => "Planned",
 					ProductLifecycle.Beta => "Planned",
-					ProductLifecycle.GenerallyAvailable => "Planned",
+					ProductLifecycle.GenerallyAvailable =>
+						applications.Any(a => a.Lifecycle is ProductLifecycle.TechnicalPreview or ProductLifecycle.Beta) 
+							? "GA planned" 
+							: "Planned",
 					ProductLifecycle.Deprecated => "Deprecation planned",
 					ProductLifecycle.Removed => "Removal planned",
 					_ => badgeText

@@ -54,6 +54,10 @@ references:
   yadda-docs:
 ```
 
+:::{tip}
+In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
+:::
+
 Then, edit the [navigation.yml](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/navigation.yml) file to add the repository to the navigation.
 
 For example, to add the `elastic/yadda-docs` repository under **Reference**:

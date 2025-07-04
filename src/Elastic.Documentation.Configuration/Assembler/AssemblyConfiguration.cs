@@ -67,9 +67,6 @@ public record AssemblyConfiguration
 		return repository;
 	}
 
-	[YamlMember(Alias = "versions")]
-	public Dictionary<string, VersionEntry> Versions { get; set; } = [];
-
 	[YamlMember(Alias = "narrative")]
 	public NarrativeRepository Narrative { get; set; } = new();
 

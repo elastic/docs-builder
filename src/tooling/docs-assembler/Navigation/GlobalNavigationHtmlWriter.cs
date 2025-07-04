@@ -17,7 +17,7 @@ public class GlobalNavigationHtmlWriter(
 	AssembleSources assembleSources
 ) : INavigationHtmlWriter
 {
-	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
+	private readonly ConcurrentDictionary<(Uri, int), string> _renderedNavigationCache = [];
 
 	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
 
@@ -44,7 +44,7 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, int maxLevel = -1, Cancel ctx = default)
 	{
 		if (Phantoms.Contains(navigationSource))
 			return string.Empty;
@@ -55,25 +55,25 @@ public class GlobalNavigationHtmlWriter(
 		if (Phantoms.Contains(navigationRootSource))
 			return string.Empty;
 
-		if (_renderedNavigationCache.TryGetValue(navigationRootSource, out var value))
+		if (_renderedNavigationCache.TryGetValue((navigationRootSource, maxLevel), out var value))
 			return value;
 
 		if (navigationRootSource == new Uri("docs-content:///"))
 		{
-			_renderedNavigationCache[navigationRootSource] = string.Empty;
+			_renderedNavigationCache[(navigationRootSource, maxLevel)] = string.Empty;
 			return string.Empty;
 		}
 
 		Console.WriteLine($"Rendering navigation for {navigationRootSource}");
 
-		var model = CreateNavigationModel(navigationRoot);
+		var model = CreateNavigationModel(navigationRoot, maxLevel);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[navigationRootSource] = value;
+		_renderedNavigationCache[(navigationRootSource, maxLevel)] = value;
 
 		return value;
 	}
 
-	private NavigationViewModel CreateNavigationModel(DocumentationGroup group)
+	private NavigationViewModel CreateNavigationModel(DocumentationGroup group, int maxLevel)
 	{
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
@@ -84,7 +84,8 @@ public class GlobalNavigationHtmlWriter(
 			IsPrimaryNavEnabled = true,
 			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
-			TopLevelItems = topLevelItems
+			TopLevelItems = topLevelItems,
+			MaxLevel = maxLevel
 		};
 	}
 }

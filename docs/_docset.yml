@@ -13,6 +13,9 @@ subs:
   serverless-short: Serverless
   ece:   "Elastic Cloud Enterprise"
   eck:   "Elastic Cloud on Kubernetes"
+  ech:  "Elastic Cloud Hosted"
+  serverless-full: "Elastic Cloud Serverless"
+  ecloud: "Elastic Cloud"
 
 features:
   primary-nav: false
@@ -31,6 +34,8 @@ toc:
       - file: on-the-web.md
       - file: move.md
       - file: redirects.md
+      - file: cumulative-docs.md
+      - file: branching-strategy.md
       - file: add-repo.md
   - folder: migration
     children:
@@ -69,6 +74,7 @@ toc:
           - file: navigation.md
           - file: extensions.md
       - file: page.md
+      - file: content-sources.md
   - folder: syntax
     children:
       - file: index.md
