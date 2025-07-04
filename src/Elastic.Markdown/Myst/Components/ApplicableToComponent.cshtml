@@ -12,7 +12,7 @@
 {
 	@RenderProduct(
 		"Stack",
-		"Part of the versioned Elastic Stack\n\nAvailable in ECH, ECE, ECK, and self-managed deployments, unless otherwise stated",
+		"Elastic&nbsp;Stack",
 		VersioningSystemId.Stack,
 		appliesTo.Stack
 	)
@@ -22,7 +22,7 @@
 	if (appliesTo.Deployment.Ece is not null)
 	{
 		@RenderProduct("ECE",
-			"Elastic Cloud Enterprise",
+			"Elastic&nbsp;Cloud&nbsp;Enterprise",
 			VersioningSystemId.Ece,
 			appliesTo.Deployment.Ece
 		)
@@ -32,7 +32,7 @@
 	{
 		@RenderProduct(
 			"ECK",
-			"Elastic Cloud on Kubernetes",
+			"Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes",
 			VersioningSystemId.Eck,
 			appliesTo.Deployment.Eck
 		)
@@ -42,7 +42,7 @@
 	{
 		@RenderProduct(
 			"ECH",
-			"Elastic Cloud Hosted",
+			"Elastic&nbsp;Cloud&nbsp;Hosted",
 			VersioningSystemId.Ess,
 			appliesTo.Deployment.Ess
 		)
@@ -52,7 +52,7 @@
 	{
 		@RenderProduct(
 			"Self-Managed",
-			"Self-managed Elastic deployments",
+			"Self-managed Elastic&nbsp;deployments",
 			VersioningSystemId.Self,
 			appliesTo.Deployment.Self
 		)
@@ -64,7 +64,7 @@
 	{
 		@RenderProduct(
 			"Serverless",
-			"Elastic Cloud Serverless: Fully-managed Elastic, available in Elastic Cloud",
+			"Elastic&nbsp;Cloud&nbsp;Serverless",
 			VersioningSystemId.Serverless,
 			appliesTo.Serverless.AllProjects
 		)
@@ -75,7 +75,7 @@
 		{
 			@RenderProduct(
 				"Serverless Elasticsearch",
-				"Serverless Elasticsearch projects",
+				"Serverless&nbsp;Elasticsearch projects",
 				VersioningSystemId.Elasticsearch,
 				appliesTo.Serverless.Elasticsearch
 			)
@@ -85,7 +85,7 @@
 		{
 			@RenderProduct(
 				"Serverless Observability",
-				"Serverless Observability projects",
+				"Serverless&nbsp;Observability projects",
 				VersioningSystemId.Observability,
 				appliesTo.Serverless.Observability
 			)
@@ -95,7 +95,7 @@
 		{
 			@RenderProduct(
 				"Serverless Security",
-				"Serverless Security projects",
+				"Serverless&nbsp;Security projects",
 				VersioningSystemId.Security,
 				appliesTo.Serverless.Security
 			)
@@ -111,121 +111,121 @@
 	var pa = appliesTo.ProductApplicability;
 	if (pa.Ecctl is not null)
 	{
-		@RenderProduct("ECCTL", "Elastic Cloud Control", VersioningSystemId.Ecctl, pa.Ecctl)
+		@RenderProduct("ECCTL", "Elastic&nbsp;Cloud&nbsp;Control", VersioningSystemId.Ecctl, pa.Ecctl)
 		;
 	}
 
 	if (pa.Curator is not null)
 	{
-		@RenderProduct("Curator", "", VersioningSystemId.Curator, pa.Curator)
+		@RenderProduct("Curator", "Curator", VersioningSystemId.Curator, pa.Curator)
 		;
 	}
 
 	if (pa.ApmAgentAndroid is not null)
 	{
-		@RenderProduct("APM Agent Android", "Application Performance Monitoring Agent for Android", VersioningSystemId.ApmAgentAndroid, pa.ApmAgentAndroid)
+		@RenderProduct("APM Agent Android", "Application&nbsp;Performance&nbsp;Monitoring Agent for Android", VersioningSystemId.ApmAgentAndroid, pa.ApmAgentAndroid)
 		;
 	}
 
 	if (pa.ApmAgentDotnet is not null)
 	{
-		@RenderProduct("APM Agent .NET", "Application Performance Monitoring Agent for .NET", VersioningSystemId.ApmAgentDotnet, pa.ApmAgentDotnet)
+		@RenderProduct("APM Agent .NET", "Application&nbsp;Performance&nbsp;Monitoring Agent for .NET", VersioningSystemId.ApmAgentDotnet, pa.ApmAgentDotnet)
 		;
 	}
 
 	if (pa.ApmAgentGo is not null)
 	{
-		@RenderProduct("APM Agent Go", "Application Performance Monitoring Agent for Go", VersioningSystemId.ApmAgentGo, pa.ApmAgentGo)
+		@RenderProduct("APM Agent Go", "Application&nbsp;Performance&nbsp;Monitoring Agent for Go", VersioningSystemId.ApmAgentGo, pa.ApmAgentGo)
 		;
 	}
 
 	if (pa.ApmAgentIos is not null)
 	{
-		@RenderProduct("APM Agent iOS", "Application Performance Monitoring Agent for iOS", VersioningSystemId.ApmAgentIos, pa.ApmAgentIos)
+		@RenderProduct("APM Agent iOS", "Application&nbsp;Performance&nbsp;Monitoring Agent for iOS", VersioningSystemId.ApmAgentIos, pa.ApmAgentIos)
 		;
 	}
 
 	if (pa.ApmAgentJava is not null)
 	{
-		@RenderProduct("APM Agent Java", "Application Performance Monitoring Agent for Java", VersioningSystemId.ApmAgentJava, pa.ApmAgentJava)
+		@RenderProduct("APM Agent Java", "Application&nbsp;Performance&nbsp;Monitoring Agent for Java", VersioningSystemId.ApmAgentJava, pa.ApmAgentJava)
 		;
 	}
 
 	if (pa.ApmAgentNode is not null)
 	{
-		@RenderProduct("APM Agent Node.js", "Application Performance Monitoring Agent for Node.js", VersioningSystemId.ApmAgentNode, pa.ApmAgentNode)
+		@RenderProduct("APM Agent Node.js", "Application&nbsp;Performance&nbsp;Monitoring Agent for Node.js", VersioningSystemId.ApmAgentNode, pa.ApmAgentNode)
 		;
 	}
 
 	if (pa.ApmAgentPhp is not null)
 	{
-		@RenderProduct("APM Agent PHP", "Application Performance Monitoring Agent for PHP", VersioningSystemId.ApmAgentPhp, pa.ApmAgentPhp)
+		@RenderProduct("APM Agent PHP", "Application&nbsp;Performance&nbsp;Monitoring Agent for PHP", VersioningSystemId.ApmAgentPhp, pa.ApmAgentPhp)
 		;
 	}
 
 	if (pa.ApmAgentPython is not null)
 	{
-		@RenderProduct("APM Agent Python", "Application Performance Monitoring Agent for Python", VersioningSystemId.ApmAgentPython, pa.ApmAgentPython)
+		@RenderProduct("APM Agent Python", "Application&nbsp;Performance&nbsp;Monitoring Agent for Python", VersioningSystemId.ApmAgentPython, pa.ApmAgentPython)
 		;
 	}
 
 	if (pa.ApmAgentRuby is not null)
 	{
-		@RenderProduct("APM Agent Ruby", "Application Performance Monitoring Agent for Ruby", VersioningSystemId.ApmAgentRuby, pa.ApmAgentRuby)
+		@RenderProduct("APM Agent Ruby", "Application&nbsp;Performance&nbsp;Monitoring Agent for Ruby", VersioningSystemId.ApmAgentRuby, pa.ApmAgentRuby)
 		;
 	}
 
 	if (pa.ApmAgentRum is not null)
 	{
-		@RenderProduct("APM Agent RUM", "Application Performance Monitoring Agent for Real User Monitoring", VersioningSystemId.ApmAgentRum, pa.ApmAgentRum)
+		@RenderProduct("APM Agent RUM", "Application&nbsp;Performance&nbsp;Monitoring Agent for Real&nbsp;User&nbsp;Monitoring", VersioningSystemId.ApmAgentRum, pa.ApmAgentRum)
 		;
 	}
 
 	if (pa.EdotIos is not null)
 	{
-		@RenderProduct("EDOT iOS", "Elastic Distribution of OpenTelemetry iOS", VersioningSystemId.EdotIos, pa.EdotIos)
+		@RenderProduct("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos, pa.EdotIos)
 		;
 	}
 
 	if (pa.EdotAndroid is not null)
 	{
-		@RenderProduct("EDOT Android", "Elastic Distribution of OpenTelemetry Android", VersioningSystemId.EdotAndroid, pa.EdotAndroid)
+		@RenderProduct("EDOT Android", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android", VersioningSystemId.EdotAndroid, pa.EdotAndroid)
 		;
 	}
 
 	if (pa.EdotDotnet is not null)
 	{
-		@RenderProduct("EDOT .NET", "Elastic Distribution of OpenTelemetry .NET", VersioningSystemId.EdotDotnet, pa.EdotDotnet)
+		@RenderProduct("EDOT .NET", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET", VersioningSystemId.EdotDotnet, pa.EdotDotnet)
 		;
 	}
 
 	if (pa.EdotJava is not null)
 	{
-		@RenderProduct("EDOT Java", "Elastic Distribution of OpenTelemetry Java", VersioningSystemId.EdotJava, pa.EdotJava)
+		@RenderProduct("EDOT Java", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java", VersioningSystemId.EdotJava, pa.EdotJava)
 		;
 	}
 
 	if (pa.EdotNode is not null)
 	{
-		@RenderProduct("EDOT Node.js", "Elastic Distribution of OpenTelemetry Node.js", VersioningSystemId.EdotNode, pa.EdotNode)
+		@RenderProduct("EDOT Node.js", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js", VersioningSystemId.EdotNode, pa.EdotNode)
 		;
 	}
 
 	if (pa.EdotPhp is not null)
 	{
-		@RenderProduct("EDOT PHP", "Elastic Distribution of OpenTelemetry PHP", VersioningSystemId.ApmAgentPhp, pa.EdotPhp)
+		@RenderProduct("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.ApmAgentPhp, pa.EdotPhp)
 		;
 	}
 
 	if (pa.EdotPython is not null)
 	{
-		@RenderProduct("EDOT Python", "Elastic Distribution of OpenTelemetry Python", VersioningSystemId.EdotPython, pa.EdotPython)
+		@RenderProduct("EDOT Python", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python", VersioningSystemId.EdotPython, pa.EdotPython)
 		;
 	}
 
 	if (pa.EdotCfAws is not null)
 	{
-		@RenderProduct("EDOT CF AWS", "Elastic Distribution of OpenTelemetry Cloud Forwarder for AWS", VersioningSystemId.EdotCfAws, pa.EdotCfAws)
+		@RenderProduct("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws, pa.EdotCfAws)
 		;
 	}
 
@@ -238,94 +238,100 @@
 
 @functions {
 
-	private IHtmlContent RenderProduct(string name, string description, VersioningSystemId versioningSystemName, AppliesCollection applications)
+	private IHtmlContent RenderProduct(string key, string keyFull, VersioningSystemId versioningSystemName, AppliesCollection applications)
 	{
 		var versioningSystem = Model.VersionsConfig.GetVersioningSystem(versioningSystemName);
 
 		foreach (var applicability in applications)
 		{
-			var lifecycleTooltip = "";
-			var badgeText = name;
+			var badgeText = key;
+			var tooltipText = "";
 			var lifecycleClass = applicability.GetLifeCycleName().ToLowerInvariant().Replace(" ", "-");
-			switch (applicability.Lifecycle)
+			
+			var lifecycleFull = applicability.Lifecycle switch 
 			{
-				case ProductLifecycle.TechnicalPreview:
-					if (TryGetRealVersion(applicability, out var previewVersion) && previewVersion > versioningSystem.Current)
-					{
-						badgeText = "Planned";
-						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
-						lifecycleClass = "planned";
-					}
-					else
-					{
-						lifecycleTooltip = "This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.";
-					}
+				ProductLifecycle.GenerallyAvailable => "Available",
+				ProductLifecycle.Beta => "Available in beta",
+				ProductLifecycle.TechnicalPreview => "Available in technical preview",
+				ProductLifecycle.Deprecated => "Deprecated",
+				ProductLifecycle.Removed => "Removed",
+				_ => ""
+			};
+			
+			var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
 
-					break;
-				case ProductLifecycle.Beta:
-					if (TryGetRealVersion(applicability, out var betaVersion) && betaVersion > versioningSystem.Current)
-					{
-						badgeText = "Planned";
-						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
-						lifecycleClass = "planned";
-					}
-					else
-					{
-						lifecycleTooltip = "This functionality is in beta and is subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.";
-					}
+			if (realVersion is not null)
+			{
 
-					break;
-				case ProductLifecycle.GenerallyAvailable:
-					if (TryGetRealVersion(applicability, out var version) && version > versioningSystem.Current)
+				if (realVersion <= versioningSystem.Current)
+				{
+					tooltipText = $"{lifecycleFull} on {keyFull} version {realVersion} and later unless otherwise specified.";
+				}
+				else
+				{
+					tooltipText = applicability.Lifecycle switch
 					{
-						badgeText = applications.Any(a => a.Lifecycle is ProductLifecycle.TechnicalPreview or ProductLifecycle.Beta) ? "GA planned" : "Planned";
-						lifecycleTooltip = "We plan to add this functionality in a future update. Plans may change without notice.";
-						lifecycleClass = "planned";
-					}
-
-					break;
-				case ProductLifecycle.Deprecated:
-					if (TryGetRealVersion(applicability, out var deprecatedVersion) && deprecatedVersion > versioningSystem.Current)
-					{
-						badgeText = "Deprecation planned";
-						lifecycleTooltip = "We plan to deprecate this functionality in a future update. Plans may change without notice.";
-					}
-
-					break;
-				case ProductLifecycle.Removed:
-					if (TryGetRealVersion(applicability, out var removedVersion) && removedVersion > versioningSystem.Current)
-					{
-						badgeText = "Removal planned";
-						lifecycleTooltip = "We plan to remove this functionality in a future update. Plans may change without notice.";
-					}
-
-					break;
+						ProductLifecycle.GenerallyAvailable 
+							or ProductLifecycle.Beta
+							or ProductLifecycle.TechnicalPreview
+							or ProductLifecycle.Planned =>
+							$"We plan to add this functionality in a future {keyFull} update. Subject to change.",
+						ProductLifecycle.Deprecated => $"We plan to deprecate this functionality in a future {keyFull} update. Subject to change.",
+						ProductLifecycle.Removed => $"We plan to remove this functionality in a future {keyFull} update. Subject to change.",
+						_ => tooltipText
+					};
+				}
+				
+			}
+			else
+			{
+				tooltipText = $"{lifecycleFull} on {keyFull} unless otherwise specified.";
 			}
 
-			if (
-				applicability.Version is null
-				&& applicability.Lifecycle != ProductLifecycle.Deprecated
-				&& applicability.Lifecycle != ProductLifecycle.Removed
-				&& versioningSystem.Id is VersioningSystemId.Stack or VersioningSystemId.Self or VersioningSystemId.Ece or VersioningSystemId.Eck
-			)
+			var disclaimer = applicability.Lifecycle switch
 			{
-				lifecycleTooltip += $"\n\nApplies to version {versioningSystem.Base} and later - may have been introduced in a previous version";
+				ProductLifecycle.Beta => "Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.",
+				ProductLifecycle.TechnicalPreview => "This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+				ProductLifecycle.GenerallyAvailable  =>  versioningSystem.Id is VersioningSystemId.Stack ? "If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page." : null,
+				_ => null
+			};
+
+			if (disclaimer is not null)
+			{
+				tooltipText = $"{tooltipText}\n\n{disclaimer}";
 			}
 
-			var badgeTextChanged = badgeText != name;
-			<span class="applicable-info">
-				<span class="applicable-name" data-tippy-content="@description">@name</span>
+			if (realVersion is not null && realVersion > versioningSystem.Current)
+			{
+				badgeText = applicability.Lifecycle switch
+				{
+					ProductLifecycle.TechnicalPreview => "Planned",
+					ProductLifecycle.Beta => "Planned",
+					ProductLifecycle.GenerallyAvailable =>
+						applications.Any(a => a.Lifecycle is ProductLifecycle.TechnicalPreview or ProductLifecycle.Beta) 
+							? "GA planned" 
+							: "Planned",
+					ProductLifecycle.Deprecated => "Deprecation planned",
+					ProductLifecycle.Removed => "Removal planned",
+					ProductLifecycle.Planned => "Planned",
+					_ => badgeText
+				};
+			}
+
+			var badgeTextChanged = badgeText != key;
+			<span class="applicable-info" data-tippy-content="@(new HtmlString(tooltipText))">
+				<span class="applicable-name">@key</span>
 
 				@{
 					var showLifeCycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && !badgeTextChanged;
 					var showVersion = applicability.Version is not null and not AllVersions;
 				}
 
-				@if (!string.IsNullOrEmpty(name) && (showLifeCycle || showVersion))
+				@if (!string.IsNullOrEmpty(key) && (showLifeCycle || showVersion))
 				{
 					<span class="applicable-separator"></span>
 				}
-				<span class="applicable-meta applicable-meta-@lifecycleClass" data-tippy-content="@lifecycleTooltip">
+				<span class="applicable-meta applicable-meta-@lifecycleClass">
 					@if (showLifeCycle)
 					{
 						<span
