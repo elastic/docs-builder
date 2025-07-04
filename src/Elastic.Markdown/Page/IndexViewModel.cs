@@ -33,6 +33,8 @@ public class IndexViewModel
 	public required INavigationItem[] Parents { get; init; }
 
 	public required string NavigationHtml { get; init; }
+
+	public required string NavigationFileName { get; init; }
 	public required string CurrentVersion { get; init; }
 
 	public required string? AllVersionsUrl { get; init; }

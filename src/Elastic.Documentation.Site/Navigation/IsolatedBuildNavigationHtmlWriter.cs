@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -12,19 +13,30 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 {
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
-	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, int maxLevel, Cancel ctx = default)
+	public async Task<INavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+		Uri navigationSource, int maxLevel, Cancel ctx = default)
 	{
 		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
 			? currentRootNavigation
 			: siteRoot;
 
+		var id = ShortId.Create($"{(navigation.Id, maxLevel).GetHashCode()}");
+
 		if (_renderedNavigationCache.TryGetValue((navigation.Id, maxLevel), out var value))
-			return value;
+			return new OkNavigationRenderResult
+			{
+				Html = value,
+				Id = id
+			};
 
 		var model = CreateNavigationModel(navigation, maxLevel);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
 		_renderedNavigationCache[(navigation.Id, maxLevel)] = value;
-		return value;
+		return new OkNavigationRenderResult
+		{
+			Html = value,
+			Id = id
+		};
 	}
 
 	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation, int maxLevel) =>
