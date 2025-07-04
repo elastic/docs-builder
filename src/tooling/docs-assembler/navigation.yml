@@ -596,4 +596,4 @@ toc:
       # EDOT Troubleshooting
       # ✅ https://github.com/elastic/opentelemetry/docs/troubleshooting/toc.yml
       - toc: opentelemetry://troubleshooting
-        path_prefix: troubleshooting/opentelemetry
+        path_prefix: troubleshoot/opentelemetry
