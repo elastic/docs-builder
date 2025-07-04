@@ -15,7 +15,7 @@ jobs:
             landing-page-path-output: /docs/
           - repository: elastic/elasticsearch
             landing-page-path-output: /docs/reference/
-          - repository: elastic/apm-agent-android
+          - repository: elastic/opentelemetry
             landing-page-path-output: /docs/reference/
             
             # This is a random repository that should not have a docset.yml
