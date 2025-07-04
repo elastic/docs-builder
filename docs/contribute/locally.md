@@ -1,21 +1,14 @@
 # Contribute locally
 
-Follow these steps to contribute to Elastic docs.
-
-* [Prerequisites](#prerequisites)
-* [Install `docs-builder`](#install-docs-builder)
-* [Clone a content repository](#clone-content)
-* [Build the docs](#build-the-docs)
-* [Write the docs](#write-docs)
-* [Push your changes](#push-changes)
+This document describes the process to set up Elastic documentation repositories locally, enabling you to contribute effectively.
 
 ## Prerequisites [#prerequisites]
 
 To write and push updates to Elastic documentation, you need the following:
 
-1. **A code editor**: we recommend [Visual Studio Code](https://code.visualstudio.com/download)
-1. **Git installed on your machine**: learn how [here](https://github.com/git-guides/install-git)
-1. **A GitHub account**: sign up [here](https://github.com/)
+* **A code editor**: We recommend [Visual Studio Code](https://code.visualstudio.com/download)
+* **Git installed on your machine**: To install Git, see [How to install Git](https://github.com/git-guides/install-git)
+* **A GitHub account**: Sign up for an account on [Github](https://github.com/)
 
 ## Install `docs-builder` [#install-docs-builder]
 
@@ -24,7 +17,7 @@ There are two different ways to install and run `docs-builder`:
 1. Download, extract, and run the binary (recommended).
 1. Clone the repository and build the binary from source.
 
-This guide uses the first option. If you'd like to clone the repository and build from source, learn how in the [project readme](https://github.com/elastic/docs-builder?tab=readme-ov-file#docs-builder).
+This guide follows the first option. If you'd like to clone the repository and build from source, learn how in the [project readme](https://github.com/elastic/docs-builder?tab=readme-ov-file#docs-builder).
 
 :::::{tab-set}
 
@@ -38,18 +31,17 @@ This guide uses the first option. If you'd like to clone the repository and buil
    curl -sL https://ela.st/docs-builder-install | sh
    ```
    
-   This downloads the latest binary, makes it executable, and installs it to your user PATH.
+   This downloads the latest binary to `/usr/local/bin`, makes it an executable, and installs it to your user PATH. This means you can use the `docs-builder` command from any location of your machine to deploy and run documentation repositories like `docs-builder`,  `docs-content` and so on.
+
    You can optionally specify a specific version to install:
 
    ```sh
    DOCS_BUILDER_VERSION=0.40.0 curl -sL https://ela.st/docs-builder-install | sh
    ```
 
-   To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
-
 2. **Run docs-builder from a docs folder**
 
-   Use the `serve` command from any docs folder to start serving the documentation at [http://localhost:3000](http://localhost:3000):
+   Use the `serve` command from any `docs` folder to start serving the documentation at [http://localhost:3000](http://localhost:3000):
 
    ```sh
    docs-builder serve
@@ -101,10 +93,10 @@ If you get a `Permission denied` error, make sure that you aren't trying to run 
 ## Clone a content repository [#clone-content]
 
 :::{tip}
-Documentation is hosted in many repositories across Elastic. If you're unsure which repository to clone, you can use the **Edit this page** link on any documentation page to determine where the source file is hosted.
+Documentation is hosted in many repositories across Elastic. If you're unsure which repository to clone, you can use the **Edit this page** link on any documentation page to determine the location of the source file.
 :::
 
-In this guide, we'll clone the [`docs-content`](https://github.com/elastic/docs-content) repository. The `docs-content` repository is the home for most narrative documentation at Elastic. Clone this repo to a directory of your choice:
+Clone the [`docs-content`](https://github.com/elastic/docs-content) repository to a directory of your choice. The `docs-content` repository is the home for most narrative documentation at Elastic.
 
 ```sh
 git clone https://github.com/elastic/docs-content.git
@@ -112,7 +104,7 @@ git clone https://github.com/elastic/docs-content.git
 
 ## Write the docs [#write-docs]
 
-We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown that we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
+We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
 
 This documentation is **cumulative**. This means that a new set of docs is not published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content. [Learn how to write cumulative documentation](cumulative-docs.md).
 
@@ -121,13 +113,13 @@ This documentation is **cumulative**. This means that a new set of docs is not p
 
 ## Build the docs
 
-Before pushing your changes, check that your changes build successfully.
+Before pushing your changes, verify all of them locally .
 
 ```
 docs-builder
 ```
 
-The build process informs you of any critical errors or warnings. It also shows less critical issues as Hints. Make sure not to introduce any new build errors, warnings, or hints.
+The build process informs you of any critical errors or warnings. It also shows less critical issues as Hints. Make sure you don't introduce any new build errors, warnings, or hints.
 
 ## Push your changes [#push-changes]
 
@@ -164,14 +156,14 @@ For example:
 :::{tab-item} macOS & Linux
 
 ```sh
-docs-builder serve -p ./migration-test
+docs-builder serve
 ```
 :::
 
 :::{tab-item} Windows
 
 ```powershell
-docs-builder serve -p .\migration-test
+docs-builder serve -p .\docs-content
 ```
 :::
 ::::
