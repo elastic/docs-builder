@@ -2,6 +2,8 @@
 node_modules/
 _static/main.js
 _static/main.js.map
+_static/custom-elements.js
+_static/custom-elements.js.map
 _static/pages-nav.js
 _static/pages-nav.js.map
 _static/styles.css
