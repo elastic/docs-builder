@@ -9,6 +9,7 @@
 @import './markdown/tabs.css';
 @import './markdown/code.css';
 @import './markdown/icons.css';
+@import './markdown/kbd.css';
 @import './copybutton.css';
 @import './markdown/admonition.css';
 @import './markdown/dropdown.css';
