@@ -157,7 +157,7 @@ jobs:
           env.MATCH == 'true'
           && (
             needs.check.outputs.any_modified == 'true'
-            || contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
+            || contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
           )
         uses: actions/checkout@v4
         with:
