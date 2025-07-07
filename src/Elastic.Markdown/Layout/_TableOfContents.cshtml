@@ -2,7 +2,9 @@
 <aside class="sidebar md:block w-full lg:max-w-65 md:order-2 px-6 md:px-10 lg:px-0">
 	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse lg:block items-center gap-4">
 		<div class="mt-6">
-			<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))' />
+			<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+				<div class="h-8">@*height of dropdown button*@</div>
+			</version-dropdown>
 		</div>
 		<ul class="mt-6 hidden md:flex items-center lg:block gap-4">
 			@if (Model.GithubEditUrl is not null)
