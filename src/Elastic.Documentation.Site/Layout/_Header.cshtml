@@ -2,7 +2,7 @@
 @if (Model.Features.PrimaryNavEnabled)
 {
 	<div id="elastic-nav" hx-disable="true"></div>
-	<script src="https://www.elastic.co/elastic-nav.js"></script>
+	<script src="https://www.elastic.co/elastic-nav.js" async></script>
  	@await RenderPartialAsync(_SecondaryNav.Create(Model))
 }
 else
