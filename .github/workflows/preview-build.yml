@@ -145,6 +145,7 @@ jobs:
       pull-requests: none
     outputs: 
       deployment_result: ${{ steps.deployment.outputs.result }}
+      path_prefix: ${{ steps.generate-path-prefix.outputs.result }}
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
       MATCH: ${{ needs.match.outputs.content-source-match }}
@@ -203,6 +204,7 @@ jobs:
             return deployment.data.id
 
       - name: Generate env.PATH_PREFIX
+        id: generate-path-prefix
         if: >
           env.MATCH == 'true'
           && steps.deployment.outputs.result
@@ -212,16 +214,18 @@ jobs:
         run: |
           case "${GITHUB_EVENT_NAME}" in
             "merge_group" | "pull_request" | "pull_request_target")
-              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> $GITHUB_ENV
+              path_prefix="/${GITHUB_REPOSITORY}/pull/${PR_NUMBER"
               ;;
             "push" | "workflow_dispatch")
-              echo "PATH_PREFIX=/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}" >> $GITHUB_ENV
+              path_prefix="/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}"
               ;;
             *)
               echo "Unsupported event: '${GITHUB_EVENT_NAME}'";
               exit 1;
               ;;
           esac
+          echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
+          echo "result=${path_prefix}" >> $GITHUB_OUTPUT
 
       - name: Bootstrap Action Workspace
         if: >
@@ -365,6 +369,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           ALL_CHANGED_FILES: ${{ needs.check.outputs.all_changed_files }}
+          PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
         with:
           script: |
             const title = '## 🔍 Preview links for changed docs'
