@@ -21,7 +21,7 @@ public interface INavigationHtmlWriter
 }
 public record NavigationRenderResult
 {
-	public static NavigationRenderResult Empty => new()
+	public static NavigationRenderResult Empty { get; } = new()
 	{
 		Html = string.Empty,
 		Id = "empty-navigation" // random id
