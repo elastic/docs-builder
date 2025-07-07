@@ -30,12 +30,12 @@ This is an inline {applies_to}`stack: preview 9.1` element.
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-		<span class="applicable-info">
-			<span class="applicable-name" data-tippy-content="Part of the versioned Elastic Stack
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
-Available in ECH, ECE, ECK, and self-managed deployments, unless otherwise stated">Stack</span>
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
+			<span class="applicable-name">Stack</span>
 			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-planned" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
+			<span class="applicable-meta applicable-meta-preview">
 				Planned
 			</span>
 		</span>
@@ -141,21 +141,21 @@ This is an inline {applies_to}`stack: preview 9.0, ga 9.1` element.
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-		<span class="applicable-info">
-			<span class="applicable-name" data-tippy-content="Part of the versioned Elastic Stack
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
-Available in ECH, ECE, ECK, and self-managed deployments, unless otherwise stated">Stack</span>
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
+			<span class="applicable-name">Stack</span>
 			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-planned" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
+			<span class="applicable-meta applicable-meta-preview">
 				Planned
 			</span>
 		</span>
-		<span class="applicable-info">
-			<span class="applicable-name" data-tippy-content="Part of the versioned Elastic Stack
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
-Available in ECH, ECE, ECK, and self-managed deployments, unless otherwise stated">Stack</span>
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
+			<span class="applicable-name">Stack</span>
 			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-planned" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
+			<span class="applicable-meta applicable-meta-ga">
 				GA planned
 			</span>
 		</span>
