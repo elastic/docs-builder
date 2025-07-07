@@ -57,7 +57,13 @@ public class GlobalNavigationHtmlWriter(
 		var navigationId = ShortId.Create($"{(navigationRootSource, maxLevel).GetHashCode()}");
 
 		if (_renderedNavigationCache.TryGetValue((navigationRootSource, maxLevel), out var value))
-			return NavigationRenderResult.Empty;
+		{
+			return new NavigationRenderResult
+			{
+				Html = value,
+				Id = navigationId
+			};
+		}
 
 		if (navigationRootSource == new Uri("docs-content:///"))
 		{
