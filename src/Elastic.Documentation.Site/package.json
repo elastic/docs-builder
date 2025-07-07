@@ -12,6 +12,10 @@
     "fmt:write": "prettier --write ."
   },
   "targets": {
+    "customElements": {
+      "distDir": "_static",
+      "source": "Assets/custom-elements.ts"
+    },
     "js": {
       "distDir": "_static",
       "source": "Assets/main.ts"
