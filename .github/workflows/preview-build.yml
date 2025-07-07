@@ -214,7 +214,7 @@ jobs:
         run: |
           case "${GITHUB_EVENT_NAME}" in
             "merge_group" | "pull_request" | "pull_request_target")
-              path_prefix="/${GITHUB_REPOSITORY}/pull/${PR_NUMBER"
+              path_prefix="/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
               ;;
             "push" | "workflow_dispatch")
               path_prefix="/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}"
