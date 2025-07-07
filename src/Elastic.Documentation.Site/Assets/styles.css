@@ -179,7 +179,6 @@
 
 #elastic-nav-wrapper {
 	min-height: var(--offset-top);
-	height: var(--offset-top);
 }
 
 #elastic-nav {
