@@ -65,10 +65,6 @@ public abstract class RoleParser<TRole> : InlineParser
 		if (!Matches(roleContent))
 			return false;
 
-		// {role} has to be followed by `content`
-		if ((uint)i >= (uint)span.Length || span[i] != '`')
-			return false;
-
 		var openingBacktickPos = i;
 		var contentStartPos = i + 1; // Skip the opening backtick
 

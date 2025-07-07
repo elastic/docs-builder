@@ -12,6 +12,9 @@ mapped_pages:
 stack: preview 9.0, ga 9.1
 ```
 
+1. Select **Create** to create a new policy, or select **Edit** {icon}`pencil` to open an existing policy.
+1. Select **Create** to create a new policy, or select **Edit** {icon}`logo_vulnerability_management` to open an existing policy.
+
 
 {applies_to}`stack: preview 9.0` This tutorial is based on Elasticsearch 9.0.
 This tutorial is based on Elasticsearch 9.0. This tutorial is based on Elasticsearch 9.0.
