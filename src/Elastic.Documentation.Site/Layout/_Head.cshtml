@@ -8,6 +8,8 @@
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
 	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
+	<script src="@Model.Static("custom-elements.js")" defer></script>
+	<script src="@Model.Static("main.js")" defer></script>
 	@if (Model.CanonicalBaseUrl is not null)
 	{
 		<link rel="canonical" href="@Model.CanonicalUrl" />
