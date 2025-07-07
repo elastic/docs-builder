@@ -100,7 +100,7 @@ public class AssemblerBuilder(
 		await Task.WhenAll(tasks);
 	}
 
-	private static void CollectRedirects(
+	private void CollectRedirects(
 		Dictionary<string, string> allRedirects,
 		IReadOnlyDictionary<string, LinkRedirect> redirects,
 		string repository,
@@ -121,11 +121,23 @@ public class AssemblerBuilder(
 					allRedirects[Resolve(k)] = Resolve(t);
 			}
 		}
-		string Resolve(string relativeMarkdownPath)
+		string Resolve(string path)
 		{
-			var uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{relativeMarkdownPath}"),
-				PublishEnvironmentUriResolver.MarkdownPathToUrlPath(relativeMarkdownPath));
-			return uri.AbsolutePath;
+			Uri? uri;
+			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
+			{
+				_ = linkResolver.TryResolve(
+					(e) => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
+					new Uri(path),
+					out uri);
+			}
+			else // Relative links
+			{
+				uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{path}"),
+					PublishEnvironmentUriResolver.MarkdownPathToUrlPath(path));
+			}
+
+			return uri?.AbsolutePath ?? string.Empty;
 		}
 	}
 
