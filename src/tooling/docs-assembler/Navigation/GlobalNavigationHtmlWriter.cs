@@ -45,29 +45,24 @@ public class GlobalNavigationHtmlWriter(
 		return true;
 	}
 
-	public async Task<INavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		Uri navigationSource, int maxLevel, Cancel ctx = default)
 	{
-
 		if (Phantoms.Contains(navigationSource)
 			|| !TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource)
 			|| Phantoms.Contains(navigationRootSource)
-		)
-			return new EmptyNavigationRenderResult();
+		   )
+			return NavigationRenderResult.Empty;
 
 		var navigationId = ShortId.Create($"{(navigationRootSource, maxLevel).GetHashCode()}");
 
 		if (_renderedNavigationCache.TryGetValue((navigationRootSource, maxLevel), out var value))
-			return new OkNavigationRenderResult
-			{
-				Html = value,
-				Id = navigationId
-			};
+			return NavigationRenderResult.Empty;
 
 		if (navigationRootSource == new Uri("docs-content:///"))
 		{
 			_renderedNavigationCache[(navigationRootSource, maxLevel)] = string.Empty;
-			return new EmptyNavigationRenderResult();
+			return NavigationRenderResult.Empty;
 		}
 
 		Console.WriteLine($"Rendering navigation for {navigationRootSource}");
@@ -75,8 +70,7 @@ public class GlobalNavigationHtmlWriter(
 		var model = CreateNavigationModel(navigationRoot, maxLevel);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
 		_renderedNavigationCache[(navigationRootSource, maxLevel)] = value;
-
-		return new OkNavigationRenderResult
+		return new NavigationRenderResult
 		{
 			Html = value,
 			Id = navigationId

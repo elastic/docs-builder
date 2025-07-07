@@ -10,7 +10,7 @@ public interface INavigationHtmlWriter
 {
 	const int AllLevels = -1;
 
-	Task<INavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource,
+	Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource,
 		int maxLevel, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
@@ -19,21 +19,14 @@ public interface INavigationHtmlWriter
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
 }
-
-public interface INavigationRenderResult
+public record NavigationRenderResult
 {
-	string Html { get; init; }
-	string Id { get; init; }
-}
+	public static NavigationRenderResult Empty => new()
+	{
+		Html = string.Empty,
+		Id = "empty-navigation" // random id
+	};
 
-public record OkNavigationRenderResult : INavigationRenderResult
-{
 	public required string Html { get; init; }
 	public required string Id { get; init; }
-}
-
-public record EmptyNavigationRenderResult : INavigationRenderResult
-{
-	public string Html { get; init; } = string.Empty;
-	public string Id { get; init; } = string.Empty;
 }

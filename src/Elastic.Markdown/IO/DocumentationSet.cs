@@ -130,7 +130,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 
-	public ConcurrentDictionary<string, INavigationRenderResult> NavigationRenderResults { get; } = [];
+	public ConcurrentDictionary<string, NavigationRenderResult> NavigationRenderResults { get; } = [];
 
 	public DocumentationSet(
 		BuildContext context,

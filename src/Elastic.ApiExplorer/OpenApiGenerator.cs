@@ -288,16 +288,11 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationHtml = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), INavigationHtmlWriter.AllLevels, ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), INavigationHtmlWriter.AllLevels, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,
-			NavigationHtml = navigationHtml switch
-			{
-				EmptyNavigationRenderResult => string.Empty,
-				OkNavigationRenderResult result => result.Html,
-				_ => throw new Exception("Unexpected navigation render result")
-			}
+			NavigationHtml = navigationRenderResult.Html
 		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);

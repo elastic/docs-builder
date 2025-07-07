@@ -13,26 +13,25 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 {
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
-	public async Task<INavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		Uri navigationSource, int maxLevel, Cancel ctx = default)
 	{
 		var navigation = context.Configuration.Features.PrimaryNavEnabled || currentRootNavigation.IsUsingNavigationDropdown
 			? currentRootNavigation
 			: siteRoot;
-
 		var id = ShortId.Create($"{(navigation.Id, maxLevel).GetHashCode()}");
-
 		if (_renderedNavigationCache.TryGetValue((navigation.Id, maxLevel), out var value))
-			return new OkNavigationRenderResult
+		{
+			return new NavigationRenderResult
 			{
 				Html = value,
 				Id = id
 			};
-
+		}
 		var model = CreateNavigationModel(navigation, maxLevel);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
 		_renderedNavigationCache[(navigation.Id, maxLevel)] = value;
-		return new OkNavigationRenderResult
+		return new NavigationRenderResult
 		{
 			Html = value,
 			Id = id
