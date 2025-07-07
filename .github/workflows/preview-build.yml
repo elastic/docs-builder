@@ -155,7 +155,10 @@ jobs:
       - name: Checkout
         if: >
           env.MATCH == 'true'
-          && needs.check.outputs.any_modified == 'true'
+          && (
+            needs.check.outputs.any_modified == 'true'
+            || contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
+          )
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
