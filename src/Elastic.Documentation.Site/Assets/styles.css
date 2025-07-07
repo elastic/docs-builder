@@ -177,9 +177,12 @@
 	}
 }
 
-#elastic-nav {
+#elastic-nav-wrapper {
 	min-height: var(--offset-top);
+	height: var(--offset-top);
+}
 
+#elastic-nav {
 	@media screen and (min-width: 1200px) {
 		.oldNav {
 			& > div {
