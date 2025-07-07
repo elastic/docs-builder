@@ -88,7 +88,10 @@ jobs:
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
-          files_ignore: ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
+          files_ignore: |
+            ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
+            .github/**
+            README.md
 
   match:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
@@ -341,7 +344,7 @@ jobs:
       startsWith(github.event_name, 'pull_request')
       && inputs.disable-comments != 'true'
       && needs.build.outputs.deployment_result
-      && needs.check.outputs.all_changed_files
+      && needs.check.outputs.any_modified
     runs-on: ubuntu-latest
     needs:
       - check
