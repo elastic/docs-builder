@@ -27,6 +27,7 @@ public record GlobalLayoutViewModel
 	public required INavigationItem? Next { get; init; }
 
 	public required string NavigationHtml { get; init; }
+	public required string NavigationFileName { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 	public string? CanonicalUrl => CanonicalBaseUrl is not null ?

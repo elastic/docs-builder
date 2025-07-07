@@ -180,13 +180,19 @@ public class DocumentationWebHost
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
 		var generator = holder.Generator;
-		const string navPartialSuffix = "index.nav.html";
-		var isNavPartial = slug.EndsWith(navPartialSuffix);
+		const string navPartialSuffix = ".nav.html";
+		if (slug.EndsWith(navPartialSuffix))
+		{
+			var segments = slug.Split("/");
+			var lastSegment = segments.Last();
+			var navigationId = lastSegment.Replace(navPartialSuffix, "");
+			return generator.DocumentationSet.NavigationRenderResults.TryGetValue(navigationId, out var rendered)
+				? Results.Content(rendered.Html, "text/html")
+				: Results.NotFound();
+		}
+
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
-
-		if (isNavPartial)
-			slug = slug.Replace(navPartialSuffix, "index.md");
 
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
 
@@ -207,7 +213,7 @@ public class DocumentationWebHost
 		{
 			case MarkdownFile markdown:
 				var rendered = await generator.RenderLayout(markdown, ctx);
-				return Results.Content(isNavPartial ? rendered.FullNavigationPartialHtml : rendered.Html, "text/html");
+				return Results.Content(rendered.Html, "text/html");
 
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
