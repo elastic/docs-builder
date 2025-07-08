@@ -228,3 +228,9 @@ body {
 .tippy-content {
 	white-space: pre-line;
 }
+
+.icon,
+.icon > * {
+	user-select: none;
+	pointer-events: none;
+}

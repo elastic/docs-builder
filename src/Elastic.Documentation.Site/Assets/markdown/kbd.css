@@ -1,5 +1,5 @@
 @layer components {
 	kbd {
-		@apply bg-grey-20 text-grey-100 border-grey-60 shadow-grey-60 relative top-[-2px] cursor-default rounded-sm border px-1 py-0.5 text-center font-mono text-xs leading-none capitalize shadow-[0_2px_0_1px];
+		@apply bg-grey-20 text-grey-100 border-grey-50 shadow-grey-50 relative top-[-2px] inline-block min-w-[18px] cursor-default rounded-sm border px-1 pt-[3px] pb-[2px] text-center align-middle font-mono text-sm leading-none capitalize shadow-[0_2px_0_1px];
 	}
 }
