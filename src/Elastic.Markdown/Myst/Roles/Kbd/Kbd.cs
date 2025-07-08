@@ -4,9 +4,9 @@
 
 using System.Collections.Frozen;
 using System.ComponentModel.DataAnnotations;
-using NetEscapades.EnumGenerators;
 using System.Text;
 using System.Web;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Markdown.Myst.Roles.Kbd;
 
