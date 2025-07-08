@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using Elastic.Markdown.Diagnostics;
 using Markdig.Parsers;
 
 namespace Elastic.Markdown.Myst.Roles.Kbd;
@@ -10,8 +11,8 @@ namespace Elastic.Markdown.Myst.Roles.Kbd;
 public class KbdParser : RoleParser<KbdRole>
 {
 
-	protected override KbdRole CreateRole(string role, string content, InlineProcessor parserContext) =>
-		new(role, content);
+	protected override KbdRole CreateRole(string role, string content, InlineProcessor parserContext)
+		=> new(role, content, parserContext);
 
 	protected override bool Matches(ReadOnlySpan<char> role) => role is "{kbd}";
 }

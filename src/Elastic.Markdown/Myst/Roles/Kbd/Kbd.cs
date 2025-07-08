@@ -14,6 +14,8 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 {
 	private IReadOnlyList<IKeyNode> Keys { get; } = keys;
 
+	public static KeyboardShortcut Empty { get; } = new([]);
+
 	public static KeyboardShortcut Parse(string input)
 	{
 		if (string.IsNullOrWhiteSpace(input))
