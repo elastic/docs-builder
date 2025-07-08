@@ -33,12 +33,12 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 
 		var toPut = sourcedRedirects
 			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value });
-		var toDelete = existingRedirects
-			.Except(sourcedRedirects.Keys)
+		var toDelete = sourcedRedirects.Keys
+			.Except(existingRedirects)
 			.Select(k => new DeleteKeyRequestListItem { Key = k });
 
-		eTag = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);
-		_ = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
+		eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
+		_ = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);
 	}
 
 	private string DescribeKeyValueStore(string kvsName)
