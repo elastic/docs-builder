@@ -31,7 +31,7 @@ environments:
     path_prefix: docs
 
 named_git_references:
-  stack: &stack_current 9.0
+  stack: &stack 9.0
   stack_next: &stack_next 9.1
   cloud-hosted: ms-120
 
@@ -67,7 +67,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   beats:
-    current: *stack_current
+    current: *stack
     next: *stack_next
   cloud-on-k8s:
   cloud:
@@ -115,7 +115,7 @@ references:
   kibana:
   logstash-docs-md:
   logstash:
-    current: *stack_current
+    current: *stack
     next: *stack_next
   opentelemetry:
   search-ui:
