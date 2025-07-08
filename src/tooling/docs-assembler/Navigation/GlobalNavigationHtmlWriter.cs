@@ -32,13 +32,25 @@ public class GlobalNavigationHtmlWriter(
 		navigationRootSource = null;
 		if (!assembleSources.TocTopLevelMappings.TryGetValue(navigationSource, out var topLevelMapping))
 		{
-			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {navigationSource}");
+			if (assembleSources.TreeCollector.TryGetTableOfContentsTree(navigationSource, out navigationRoot))
+			{
+				if (navigationRoot.Parent is DocumentationGroup parent &&
+					assembleSources.TocTopLevelMappings.TryGetValue(parent.NavigationSource, out var topLevelMapping2))
+				{
+					navigationRootSource = topLevelMapping2.TopLevelSource;
+					return true;
+				}
+
+				assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"The following toc: {navigationSource} is not declared in navigation.yml and it's parent failed to yield a navigation root.");
+				return false;
+			}
+			assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"The following toc: {navigationSource} is not declared in navigation.yml");
 			return false;
 		}
 
 		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelMapping.TopLevelSource, out navigationRoot))
 		{
-			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelMapping.TopLevelSource}");
+			assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"None of the assemble sources define a toc for: {topLevelMapping.TopLevelSource}");
 			return false;
 		}
 		navigationRootSource = topLevelMapping.TopLevelSource;
