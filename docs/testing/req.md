@@ -15,12 +15,10 @@ stack: preview 9.0, ga 9.1
 
 {applies_to}`stack: preview 9.0` This tutorial is based on Elasticsearch 9.0.
 This tutorial is based on Elasticsearch 9.0. This tutorial is based on Elasticsearch 9.0.
-This tutorial is {kbd}`⌘` + {kbd}`/`  based on Elasticsearch 9.0.
+This tutorial is based on Elasticsearch 9.0.
 
-| Mac                     | Windows/Linux              | Description                 |
-|-------------------------|----------------------------|-----------------------------|
-| {kbd}`⌘` + {kbd}`Enter` | {kbd}`Ctrl` + {kbd}`Enter` | Run a query                 |
-| {kbd}`⌘` + {kbd}`/`     | {kbd}`Ctrl` + {kbd}`/`     | Comment or uncomment a line |
+what
+
 
 To follow this tutorial you will need to install the following components:
 
