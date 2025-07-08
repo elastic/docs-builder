@@ -9,5 +9,5 @@ namespace Elastic.Markdown.Myst.Roles.Kbd;
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Role: {Role}, Content: {Content}")]
 public class KbdRole(string role, string content) : RoleLeaf(role, content)
 {
-	public string KeyboardText { get; } = content;
+	public KeyboardShortcut KeyboardShortcut { get; } = KeyboardShortcut.Parse(content);
 }

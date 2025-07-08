@@ -4,39 +4,66 @@ You can represent keyboard keys and shortcuts in your documentation using the `{
 
 ## Basic usage
 
-To display a keyboard key, use the syntax `` {kbd}`key-name` ``. For example, writing `` {kbd}`Enter` `` will render as a styled keyboard key.
+To display a keyboard key, use the syntax `` {kbd}`key-name` ``. For example, writing `` {kbd}`enter` `` will render as a styled keyboard key.
 
 ::::{tab-set}
 
 :::{tab-item} Output
-Press {kbd}`Enter` to submit.
+Press {kbd}`enter` to submit.
 :::
 
 :::{tab-item} Markdown
 ```markdown
-Press {kbd}`Enter` to submit.
+Press {kbd}`enter` to submit.
 ```
 :::
 
 ::::
 
-## Keyboard combinations
+## Combining keys
 
-You can represent keyboard combinations by joining multiple `{kbd}` roles with a plus sign (+).
+For keyboard shortcuts involving multiple keys, you can combine them within a single `{kbd}` role by separating the key names with a `+`.
 
 ::::{tab-set}
 
 :::{tab-item} Output
-{kbd}`ctrl` + {kbd}`C` to copy text.
-
-{kbd}`Shift` + {kbd}`Alt` + {kbd}`F` to format the document.
+Use {kbd}`cmd+shift+enter` to execute the command.
 :::
 
 :::{tab-item} Markdown
 ```markdown
-{kbd}`Ctrl` + {kbd}`C` to copy text.
+Use {kbd}`cmd+shift+enter` to execute the command.
+```
+:::
 
-{kbd}`Shift` + {kbd}`Alt` + {kbd}`F` to format the document.
+::::
+
+Alternatively, you can use multiple `{kbd}` roles to describe a shortcut. This approach is useful when you want to visually separate keys. Use a `+` to represent a combination and a `/` to represent alternative keys.
+
+::::{tab-set}
+
+:::{tab-item} Output
+{kbd}`ctrl` + {kbd}`c` to copy text, or {kbd}`cmd` + {kbd}`c` on Mac.
+:::
+
+:::{tab-item} Markdown
+```markdown
+{kbd}`ctrl` + {kbd}`c` to copy text, or {kbd}`cmd` + {kbd}`c` on Mac.
+```
+:::
+
+::::
+
+::::{tab-set}
+
+:::{tab-item} Output
+{kbd}`ctrl` / {kbd}`cmd` + {kbd}`c` to copy text.
+:::
+
+
+:::{tab-item} Markdown
+```markdown
+{kbd}`ctrl` / {kbd}`cmd` + {kbd}`c` to copy text.
 ```
 :::
 
@@ -44,74 +71,76 @@ You can represent keyboard combinations by joining multiple `{kbd}` roles with a
 
 ## Common shortcuts by platform
 
-Here are some common keyboard shortcuts across different platforms:
+The platform-specific examples below demonstrate how to combine special keys and regular characters.
 
 ::::{tab-set}
 
 :::{tab-item} Output
-| Mac                     | Windows/Linux              | Description                 |
-|-------------------------|----------------------------|-----------------------------|
-| {kbd}`⌘` + {kbd}`C`     | {kbd}`Ctrl` + {kbd}`C`     | Copy                        |
-| {kbd}`⌘` + {kbd}`V`     | {kbd}`Ctrl` + {kbd}`V`     | Paste                       |
-| {kbd}`⌘` + {kbd}`Z`     | {kbd}`Ctrl` + {kbd}`Z`     | Undo                        |
-| {kbd}`⌘` + {kbd}`Enter` | {kbd}`Ctrl` + {kbd}`Enter` | Run a query                 |
-| {kbd}`⌘` + {kbd}`/`     | {kbd}`Ctrl` + {kbd}`/`     | Comment or uncomment a line |
+
+| Mac              | Windows/Linux     | Description                 |
+|------------------|-------------------|-----------------------------|
+| {kbd}`cmd+c`     | {kbd}`ctrl+c`     | Copy                        |
+| {kbd}`cmd+v`     | {kbd}`ctrl+v`     | Paste                       |
+| {kbd}`cmd+z`     | {kbd}`ctrl+z`     | Undo                        |
+| {kbd}`cmd+enter` | {kbd}`ctrl+enter` | Run a query                 |
+| {kbd}`cmd+/`     | {kbd}`ctrl+/`     | Comment or uncomment a line |
+
 :::
 
 :::{tab-item} Markdown
 ```markdown
-| Mac                     | Windows/Linux              | Description                 |
-|-------------------------|----------------------------|-----------------------------|
-| {kbd}`⌘` + {kbd}`C`     | {kbd}`Ctrl` + {kbd}`C`     | Copy                        |
-| {kbd}`⌘` + {kbd}`V`     | {kbd}`Ctrl` + {kbd}`V`     | Paste                       |
-| {kbd}`⌘` + {kbd}`Z`     | {kbd}`Ctrl` + {kbd}`Z`     | Undo                        |
-| {kbd}`⌘` + {kbd}`Enter` | {kbd}`Ctrl` + {kbd}`Enter` | Run a query                 |
-| {kbd}`⌘` + {kbd}`/`     | {kbd}`Ctrl` + {kbd}`/`     | Comment or uncomment a line |
+| Mac              | Windows/Linux     | Description                 |
+|------------------|-------------------|-----------------------------|
+| {kbd}`cmd+c`     | {kbd}`ctrl+c`     | Copy                        |
+| {kbd}`cmd+v`     | {kbd}`ctrl+v`     | Paste                       |
+| {kbd}`cmd+z`     | {kbd}`ctrl+z`     | Undo                        |
+| {kbd}`cmd+enter` | {kbd}`ctrl+enter` | Run a query                 |
+| {kbd}`cmd+/`     | {kbd}`ctrl+/`     | Comment or uncomment a line |
 ```
 :::
 
 ::::
 
-## Special keys
+## Available Keys
 
-Some commonly used special keys:
+The `{kbd}` role recognizes a set of special keywords for modifier, navigation, and function keys. Any other text will be rendered as a literal key.
 
-::::{tab-set}
+Here is the full list of available keywords:
 
-:::{tab-item} Output
-| Symbol    | Key Description  |
-|-----------|------------------|
-| {kbd}`⌘`  | Command (Mac)    |
-| {kbd}`⌥`  | Option/Alt (Mac) |
-| {kbd}`⇧`  | Shift            |
-| {kbd}`⌃`  | Control          |
-| {kbd}`↩`  | Return/Enter     |
-| {kbd}`⌫`  | Delete/Backspace |
-| {kbd}`⇥`  | Tab              |
-| {kbd}`↑`  | Up Arrow         |
-| {kbd}`↓`  | Down Arrow       |
-| {kbd}`←`  | Left Arrow       |
-| {kbd}`→`  | Right Arrow      |
-| {kbd}`⎋`  | Escape           |
-:::
-
-:::{tab-item} Markdown
-```markdown
-| Symbol    | Key Description  |
-|-----------|------------------|
-| {kbd}`⌘`  | Command (Mac)    |
-| {kbd}`⌥`  | Option/Alt (Mac) |
-| {kbd}`⇧`  | Shift            |
-| {kbd}`⌃`  | Control          |
-| {kbd}`↩`  | Return/Enter     |
-| {kbd}`⌫`  | Delete/Backspace |
-| {kbd}`⇥`  | Tab              |
-| {kbd}`↑`  | Up Arrow         |
-| {kbd}`↓`  | Down Arrow       |
-| {kbd}`←`  | Left Arrow       |
-| {kbd}`→`  | Right Arrow      |
-| {kbd}`⎋`  | Escape           |
-```
-:::
-
-::::
+| Keyword     | Rendered Output  |
+|-------------|------------------|
+| `shift`     | {kbd}`shift`     |
+| `ctrl`      | {kbd}`ctrl`      |
+| `alt`       | {kbd}`alt`       |
+| `option`    | {kbd}`option`    |
+| `cmd`       | {kbd}`cmd`       |
+| `win`       | {kbd}`win`       |
+| `up`        | {kbd}`up`        |
+| `down`      | {kbd}`down`      |
+| `left`      | {kbd}`left`      |
+| `right`     | {kbd}`right`     |
+| `space`     | {kbd}`space`     |
+| `tab`       | {kbd}`tab`       |
+| `enter`     | {kbd}`enter`     |
+| `esc`       | {kbd}`esc`       |
+| `backspace` | {kbd}`backspace` |
+| `del`       | {kbd}`delete`    |
+| `ins`       | {kbd}`insert`    |
+| `pageup`    | {kbd}`pageup`    |
+| `pagedown`  | {kbd}`pagedown`  |
+| `home`      | {kbd}`home`      |
+| `end`       | {kbd}`end`       |
+| `f1`        | {kbd}`f1`        |
+| `f2`        | {kbd}`f2`        |
+| `f3`        | {kbd}`f3`        |
+| `f4`        | {kbd}`f4`        |
+| `f5`        | {kbd}`f5`        |
+| `f6`        | {kbd}`f6`        |
+| `f7`        | {kbd}`f7`        |
+| `f8`        | {kbd}`f8`        |
+| `f9`        | {kbd}`f9`        |
+| `f10`       | {kbd}`f10`       |
+| `f11`       | {kbd}`f11`       |
+| `f12`       | {kbd}`f12`       |
+| `plus`      | {kbd}`plus`      |
+| `fn`        | {kbd}`fn`        |

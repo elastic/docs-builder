@@ -14,9 +14,8 @@ public class KbdRoleHtmlRenderer : HtmlObjectRenderer<KbdRole>
 {
 	protected override void Write(HtmlRenderer renderer, KbdRole role)
 	{
-		_ = renderer.Write("<kbd>");
-		_ = renderer.Write(role.KeyboardText);
-		_ = renderer.Write("</kbd>");
+		var output = KeyboardShortcut.Render(role.KeyboardShortcut);
+		_ = renderer.Write(output);
 	}
 }
 
