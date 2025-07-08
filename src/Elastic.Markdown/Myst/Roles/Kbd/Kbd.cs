@@ -59,7 +59,10 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		var kbdElements = viewModels.Select(viewModel =>
 		{
 			var sb = new StringBuilder();
-			_ = sb.Append("<kbd class=\"kbd\">");
+			_ = sb.Append("<kbd class=\"kbd\"");
+			if (viewModel.AriaLabel is not null)
+				_ = sb.Append(" aria-label=\"" + viewModel.AriaLabel + "\"");
+			_ = sb.Append('>');
 			if (viewModel.UnicodeIcon is not null)
 				_ = sb.Append($"<span class=\"kbd-icon\">{viewModel.UnicodeIcon}</span>");
 			_ = sb.Append(viewModel.DisplayText);
@@ -77,31 +80,31 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		key switch
 		{
 			// Modifier keys with special symbols
-			NamedKeyboardKey.Command => new KeyboardKeyViewModel { DisplayText = "Cmd", UnicodeIcon = "⌘" },
+			NamedKeyboardKey.Command => new KeyboardKeyViewModel { DisplayText = "Cmd", UnicodeIcon = "⌘", AriaLabel = "Command" },
 			NamedKeyboardKey.Shift => new KeyboardKeyViewModel { DisplayText = "Shift", UnicodeIcon = "⇧" },
-			NamedKeyboardKey.Ctrl => new KeyboardKeyViewModel { DisplayText = "Ctrl", UnicodeIcon = "⌃" },
+			NamedKeyboardKey.Ctrl => new KeyboardKeyViewModel { DisplayText = "Ctrl", UnicodeIcon = "⌃", AriaLabel = "Control" },
 			NamedKeyboardKey.Alt => new KeyboardKeyViewModel { DisplayText = "Alt", UnicodeIcon = "⌥" },
-			NamedKeyboardKey.Option => new KeyboardKeyViewModel { DisplayText = "Option", UnicodeIcon = "⌥" },
-			NamedKeyboardKey.Win => new KeyboardKeyViewModel { DisplayText = "Win", UnicodeIcon = "⊞" },
+			NamedKeyboardKey.Option => new KeyboardKeyViewModel { DisplayText = "Opt", UnicodeIcon = "⌥", AriaLabel = "Option" },
+			NamedKeyboardKey.Win => new KeyboardKeyViewModel { DisplayText = "Win", UnicodeIcon = "⊞", AriaLabel = "Windows" },
 			// Directional keys
-			NamedKeyboardKey.Up => new KeyboardKeyViewModel { DisplayText = "Up", UnicodeIcon = "↑" },
-			NamedKeyboardKey.Down => new KeyboardKeyViewModel { DisplayText = "Down", UnicodeIcon = "↓" },
-			NamedKeyboardKey.Left => new KeyboardKeyViewModel { DisplayText = "Left", UnicodeIcon = "←" },
-			NamedKeyboardKey.Right => new KeyboardKeyViewModel { DisplayText = "Right", UnicodeIcon = "→" },
+			NamedKeyboardKey.Up => new KeyboardKeyViewModel { DisplayText = "Up", UnicodeIcon = "↑", AriaLabel = "Up Arrow" },
+			NamedKeyboardKey.Down => new KeyboardKeyViewModel { DisplayText = "Down", UnicodeIcon = "↓", AriaLabel = "Down Arrow" },
+			NamedKeyboardKey.Left => new KeyboardKeyViewModel { DisplayText = "Left", UnicodeIcon = "←", AriaLabel = "Left Arrow" },
+			NamedKeyboardKey.Right => new KeyboardKeyViewModel { DisplayText = "Right", UnicodeIcon = "→", AriaLabel = "Right Arrow" },
 			// Other special keys with symbols
 			NamedKeyboardKey.Enter => new KeyboardKeyViewModel { DisplayText = "Enter", UnicodeIcon = "↵" },
-			NamedKeyboardKey.Escape => new KeyboardKeyViewModel { DisplayText = "Esc", UnicodeIcon = "⎋" },
-			NamedKeyboardKey.Tab => new KeyboardKeyViewModel { DisplayText = "Tab", UnicodeIcon = "↹" },
+			NamedKeyboardKey.Escape => new KeyboardKeyViewModel { DisplayText = "Esc", UnicodeIcon = "⎋", AriaLabel = "Escape" },
+			NamedKeyboardKey.Tab => new KeyboardKeyViewModel { DisplayText = "Tab", UnicodeIcon = "↹", AriaLabel = "Tab" },
 			NamedKeyboardKey.Backspace => new KeyboardKeyViewModel { DisplayText = "Backspace", UnicodeIcon = "⌫" },
-			NamedKeyboardKey.Delete => new KeyboardKeyViewModel { DisplayText = "Del", UnicodeIcon = null },
+			NamedKeyboardKey.Delete => new KeyboardKeyViewModel { DisplayText = "Del", UnicodeIcon = null, AriaLabel = "Delete" },
 			NamedKeyboardKey.Home => new KeyboardKeyViewModel { DisplayText = "Home", UnicodeIcon = "⇱" },
 			NamedKeyboardKey.End => new KeyboardKeyViewModel { DisplayText = "End", UnicodeIcon = "⇲" },
-			NamedKeyboardKey.PageUp => new KeyboardKeyViewModel { DisplayText = "PageUp", UnicodeIcon = "⇞" },
-			NamedKeyboardKey.PageDown => new KeyboardKeyViewModel { DisplayText = "PageDown", UnicodeIcon = "⇟" },
+			NamedKeyboardKey.PageUp => new KeyboardKeyViewModel { DisplayText = "PageUp", UnicodeIcon = "⇞", AriaLabel = "Page Up" },
+			NamedKeyboardKey.PageDown => new KeyboardKeyViewModel { DisplayText = "PageDown", UnicodeIcon = "⇟", AriaLabel = "Page Down" },
 			NamedKeyboardKey.Space => new KeyboardKeyViewModel { DisplayText = "Space", UnicodeIcon = "␣" },
-			NamedKeyboardKey.Insert => new KeyboardKeyViewModel { DisplayText = "Ins", UnicodeIcon = null },
+			NamedKeyboardKey.Insert => new KeyboardKeyViewModel { DisplayText = "Ins", UnicodeIcon = null, AriaLabel = "Insert" },
 			NamedKeyboardKey.Plus => new KeyboardKeyViewModel { DisplayText = "+", UnicodeIcon = null },
-			NamedKeyboardKey.Fn => new KeyboardKeyViewModel { DisplayText = "Fn", UnicodeIcon = null },
+			NamedKeyboardKey.Fn => new KeyboardKeyViewModel { DisplayText = "Fn", UnicodeIcon = null, AriaLabel = "Fn" },
 			NamedKeyboardKey.F1 => new KeyboardKeyViewModel { DisplayText = "F1", UnicodeIcon = null },
 			NamedKeyboardKey.F2 => new KeyboardKeyViewModel { DisplayText = "F2", UnicodeIcon = null },
 			NamedKeyboardKey.F3 => new KeyboardKeyViewModel { DisplayText = "F3", UnicodeIcon = null },
@@ -186,4 +189,5 @@ public record KeyboardKeyViewModel
 {
 	public required string? UnicodeIcon { get; init; }
 	public required string DisplayText { get; init; }
+	public string? AriaLabel { get; init; }
 }

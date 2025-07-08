@@ -14,7 +14,7 @@ type ``renders single kbd role`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<p><kbd class="kbd"><span class="kbd-icon">⌘</span>Cmd</kbd></p>
+<p><kbd class="kbd" aria-label="Command"><span class="kbd-icon">⌘</span>Cmd</kbd></p>
 """
 
 type ``renders single character kbd role`` () =
@@ -34,7 +34,7 @@ type ``renders combined kbd role`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<p><kbd class="kbd"><span class="kbd-icon">⌘</span>Cmd</kbd> + <kbd class="kbd"><span class="kbd-icon">⇧</span>Shift</kbd> + <kbd class="kbd">c</kbd></p>
+<p><kbd class="kbd" aria-label="Command"><span class="kbd-icon">⌘</span>Cmd</kbd> + <kbd class="kbd"><span class="kbd-icon">⇧</span>Shift</kbd> + <kbd class="kbd">c</kbd></p>
 """
 
 type ``renders combined kbd role with special characters`` () =
@@ -44,5 +44,5 @@ type ``renders combined kbd role with special characters`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<p><kbd class="kbd"><span class="kbd-icon">⌃</span>Ctrl</kbd> + <kbd class="kbd"><span class="kbd-icon">⌥</span>Alt</kbd> + <kbd class="kbd">Del</kbd></p>
+<p><kbd class="kbd" aria-label="Control"><span class="kbd-icon">⌃</span>Ctrl</kbd> + <kbd class="kbd"><span class="kbd-icon">⌥</span>Alt</kbd> + <kbd class="kbd" aria-label="Delete">Del</kbd></p>
 """
