@@ -17,7 +17,7 @@ environments:
       auth: nPocPUG0wiH68jsVeyRSxA
       preview: env-507
       cookies_win: x
-  edge: 
+  edge:
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
     content_source: current
@@ -31,7 +31,8 @@ environments:
     path_prefix: docs
 
 named_git_references:
-  stack: &stack 9.0
+  stack: &stack_current 9.0
+  stack_next: &stack_next 9.1
   cloud-hosted: ms-120
 
 ###
@@ -66,8 +67,8 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   beats:
-    current: "9.0"
-    next: main
+    current: *stack_current
+    next: *stack_next
   cloud-on-k8s:
   cloud:
     current: master
@@ -114,8 +115,8 @@ references:
   kibana:
   logstash-docs-md:
   logstash:
-    current: "9.0"
-    next: main
+    current: *stack_current
+    next: *stack_next
   opentelemetry:
   search-ui:
   integration-docs:
