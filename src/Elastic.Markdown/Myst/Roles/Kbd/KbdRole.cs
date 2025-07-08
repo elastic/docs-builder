@@ -20,7 +20,7 @@ public class KbdRole : RoleLeaf
 		catch (Exception ex)
 		{
 			parserContext.EmitError(this, Role.Length + content.Length, $"Failed to parse keyboard shortcut: \"{content}\"", ex);
-			KeyboardShortcut = KeyboardShortcut.Empty;
+			KeyboardShortcut = KeyboardShortcut.Unknown;
 		}
 	}
 	public KeyboardShortcut KeyboardShortcut { get; }

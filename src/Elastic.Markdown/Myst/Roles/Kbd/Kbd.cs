@@ -14,7 +14,7 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 {
 	private IReadOnlyList<IKeyNode> Keys { get; } = keys;
 
-	public static KeyboardShortcut Empty { get; } = new([]);
+	public static KeyboardShortcut Unknown { get; } = new([new CharacterKeyNode { Key = '?' }]);
 
 	public static KeyboardShortcut Parse(string input)
 	{
