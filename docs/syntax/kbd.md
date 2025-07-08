@@ -101,7 +101,7 @@ The platform-specific examples below demonstrate how to combine special keys and
 
 ::::
 
-## Available Keys
+## Available keys
 
 The `{kbd}` role recognizes a set of special keywords for modifier, navigation, and function keys. Any other text will be rendered as a literal key.
 
