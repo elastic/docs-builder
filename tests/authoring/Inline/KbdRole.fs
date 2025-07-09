@@ -54,7 +54,15 @@ type ``renders alternative kbd role`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<p><kbd class="kbd" aria-label="Control or Command"><span class="kbd-icon">⌃</span>Ctrl / <span class="kbd-icon">⌘</span>Cmd</kbd> + <kbd class="kbd">c</kbd></p>
+<p>
+  <kbd class="kbd" aria-label="Control or Command">
+    <span class="kbd-icon">⌃</span>Ctrl
+    <span class="kbd-separator"></span>
+    <span class="kbd-icon">⌘</span>Cmd
+  </kbd>
+   +
+  <kbd class="kbd">c</kbd>
+</p>
 """
 
 type ``renders plus kbd role`` () =
@@ -74,5 +82,5 @@ type ``renders pipe kbd role`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<p><kbd class="kbd">|</kbd></p>
+<p><kbd class="kbd" aria-label="Pipe">|</kbd></p>
 """
