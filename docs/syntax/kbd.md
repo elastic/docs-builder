@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-You can represent keyboard keys and shortcuts in your documentation using the `{kbd}` role. This is useful for showing keyboard commands and shortcuts in a visually consistent way.
+You can represent keyboard keys and shortcuts in your documentation using the `{kbd}` role. This is useful for showing keyboard commands and shortcuts in a visually consistent way. See the full list of [available keys](#available-keys).
 
 ## Basic usage
 
@@ -22,7 +22,7 @@ Press {kbd}`enter` to submit.
 
 ## Combining keys
 
-For keyboard shortcuts involving multiple keys, you can combine them within a single `{kbd}` role by separating the key names with a `+`.
+For keyboard shortcuts involving multiple keys, you can combine them within a single `{kbd}` role by separating the key names with a `+`. Keys are always visually separated, even when using the combined syntax.
 
 ::::{tab-set}
 
@@ -38,36 +38,30 @@ Use {kbd}`cmd+shift+enter` to execute the command.
 
 ::::
 
-Alternatively, you can use multiple `{kbd}` roles to describe a shortcut. This approach is useful when you want to visually separate keys. Use a `+` to represent a combination and a `/` to represent alternative keys.
+## Alternative keys
+
+To display alternative keys for a shortcut, use `|` to separate the alternate keys within the same `{kbd}` role. This is useful for showing platform-specific shortcuts, such as `ctrl` on Windows and `cmd` on macOS.
 
 ::::{tab-set}
 
 :::{tab-item} Output
-{kbd}`ctrl` + {kbd}`c` to copy text, or {kbd}`cmd` + {kbd}`c` on Mac.
+Use {kbd}`ctrl|cmd + c` to copy text.
 :::
 
 :::{tab-item} Markdown
 ```markdown
-{kbd}`ctrl` + {kbd}`c` to copy text, or {kbd}`cmd` + {kbd}`c` on Mac.
+Use {kbd}`ctrl|cmd + c` to copy text.
 ```
 :::
 
 ::::
 
-::::{tab-set}
+## Reserved characters
 
-:::{tab-item} Output
-{kbd}`ctrl` / {kbd}`cmd` + {kbd}`c` to copy text.
-:::
+The `+` and `|` characters have special meaning for combining keys and specifying alternatives. To render them as literal keys, you must use their keyword equivalents.
 
-
-:::{tab-item} Markdown
-```markdown
-{kbd}`ctrl` / {kbd}`cmd` + {kbd}`c` to copy text.
-```
-:::
-
-::::
+- To display the {kbd}`plus` key, use `` `{kbd}`plus` ``.
+- To display the {kbd}`pipe` key, use `` `{kbd}`pipe` ``.
 
 ## Common shortcuts by platform
 
@@ -107,40 +101,41 @@ The `{kbd}` role recognizes a set of special keywords for modifier, navigation, 
 
 Here is the full list of available keywords:
 
-| Keyword     | Rendered Output  |
-|-------------|------------------|
-| `shift`     | {kbd}`shift`     |
-| `ctrl`      | {kbd}`ctrl`      |
-| `alt`       | {kbd}`alt`       |
-| `option`    | {kbd}`option`    |
-| `cmd`       | {kbd}`cmd`       |
-| `win`       | {kbd}`win`       |
-| `up`        | {kbd}`up`        |
-| `down`      | {kbd}`down`      |
-| `left`      | {kbd}`left`      |
-| `right`     | {kbd}`right`     |
-| `space`     | {kbd}`space`     |
-| `tab`       | {kbd}`tab`       |
-| `enter`     | {kbd}`enter`     |
-| `esc`       | {kbd}`esc`       |
-| `backspace` | {kbd}`backspace` |
-| `del`       | {kbd}`delete`    |
-| `ins`       | {kbd}`insert`    |
-| `pageup`    | {kbd}`pageup`    |
-| `pagedown`  | {kbd}`pagedown`  |
-| `home`      | {kbd}`home`      |
-| `end`       | {kbd}`end`       |
-| `f1`        | {kbd}`f1`        |
-| `f2`        | {kbd}`f2`        |
-| `f3`        | {kbd}`f3`        |
-| `f4`        | {kbd}`f4`        |
-| `f5`        | {kbd}`f5`        |
-| `f6`        | {kbd}`f6`        |
-| `f7`        | {kbd}`f7`        |
-| `f8`        | {kbd}`f8`        |
-| `f9`        | {kbd}`f9`        |
-| `f10`       | {kbd}`f10`       |
-| `f11`       | {kbd}`f11`       |
-| `f12`       | {kbd}`f12`       |
-| `plus`      | {kbd}`plus`      |
-| `fn`        | {kbd}`fn`        |
+| Syntax                  | Rendered Output  |
+|-------------------------|------------------|
+| `` {kbd}`shift` ``      | {kbd}`shift`     |
+| `` {kbd}`ctrl` ``       | {kbd}`ctrl`      |
+| `` {kbd}`alt` ``        | {kbd}`alt`       |
+| `` {kbd}`option` ``     | {kbd}`option`    |
+| `` {kbd}`cmd` ``        | {kbd}`cmd`       |
+| `` {kbd}`win` ``        | {kbd}`win`       |
+| `` {kbd}`up` ``         | {kbd}`up`        |
+| `` {kbd}`down` ``       | {kbd}`down`      |
+| `` {kbd}`left` ``       | {kbd}`left`      |
+| `` {kbd}`right` ``      | {kbd}`right`     |
+| `` {kbd}`space` ``      | {kbd}`space`     |
+| `` {kbd}`tab` ``        | {kbd}`tab`       |
+| `` {kbd}`enter` ``      | {kbd}`enter`     |
+| `` {kbd}`esc` ``        | {kbd}`esc`       |
+| `` {kbd}`backspace` ``  | {kbd}`backspace` |
+| `` {kbd}`del` ``        | {kbd}`delete`    |
+| `` {kbd}`ins` ``        | {kbd}`insert`    |
+| `` {kbd}`pageup` ``     | {kbd}`pageup`    |
+| `` {kbd}`pagedown` ``   | {kbd}`pagedown`  |
+| `` {kbd}`home` ``       | {kbd}`home`      |
+| `` {kbd}`end` ``        | {kbd}`end`       |
+| `` {kbd}`f1` ``         | {kbd}`f1`        |
+| `` {kbd}`f2` ``         | {kbd}`f2`        |
+| `` {kbd}`f3` ``         | {kbd}`f3`        |
+| `` {kbd}`f4` ``         | {kbd}`f4`        |
+| `` {kbd}`f5` ``         | {kbd}`f5`        |
+| `` {kbd}`f6` ``         | {kbd}`f6`        |
+| `` {kbd}`f7` ``         | {kbd}`f7`        |
+| `` {kbd}`f8` ``         | {kbd}`f8`        |
+| `` {kbd}`f9` ``         | {kbd}`f9`        |
+| `` {kbd}`f10` ``        | {kbd}`f10`       |
+| `` {kbd}`f11` ``        | {kbd}`f11`       |
+| `` {kbd}`f12` ``        | {kbd}`f12`       |
+| `` {kbd}`plus` ``       | {kbd}`plus`      |
+| `` {kbd}`fn` ``         | {kbd}`fn`        |
+| `` {kbd}`pipe` ``       | {kbd}`pipe`      |

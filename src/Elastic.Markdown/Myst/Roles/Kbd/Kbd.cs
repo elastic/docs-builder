@@ -14,109 +14,318 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 {
 	private IReadOnlyList<IKeyNode> Keys { get; } = keys;
 
-	public static KeyboardShortcut Unknown { get; } = new([new CharacterKeyNode { Key = '?' }]);
+	public static KeyboardShortcut Unknown { get; } = new([
+		new CharacterKeyNode
+		{
+			Key = '?'
+		}
+	]);
 
 	public static KeyboardShortcut Parse(string input)
 	{
 		if (string.IsNullOrWhiteSpace(input))
 			return new KeyboardShortcut([]);
 
-		var parts = input.Split('+', StringSplitOptions.RemoveEmptyEntries);
-		var keys = new List<IKeyNode>();
-
-		foreach (var part in parts)
-		{
-			var trimmedPart = part.Trim().ToLowerInvariant();
-			if (NamedKeyboardKeyExtensions.TryParse(trimmedPart, out var specialKey, true, true))
-				keys.Add(new NamedKeyNode { Key = specialKey });
-			else
-			{
-				switch (trimmedPart.Length)
-				{
-					case 1:
-						keys.Add(new CharacterKeyNode { Key = trimmedPart[0] });
-						break;
-					default:
-						throw new ArgumentException($"Invalid keyboard shortcut: {input}", nameof(input));
-				}
-			}
-		}
+		var keySegments = input.Split('+', StringSplitOptions.RemoveEmptyEntries);
+		var keys = keySegments.Select(ParseKey).ToList();
 		return new KeyboardShortcut(keys);
+	}
+
+	private static IKeyNode ParseKey(string keySegment)
+	{
+		var trimmedSegment = keySegment.Trim();
+		var alternateParts = trimmedSegment.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+		if (alternateParts.Length > 2)
+			throw new ArgumentException($"You can only use two alternate keyboard keys: {keySegment}", nameof(keySegment));
+
+		return alternateParts.Length == 2
+			? new AlternateKeyNode { Primary = ParseSingleKey(alternateParts[0]), Alternate = ParseSingleKey(alternateParts[1]) }
+			: ParseSingleKey(trimmedSegment);
+	}
+
+	private static IKeyNode ParseSingleKey(string key)
+	{
+		var trimmedKey = key.Trim().ToLowerInvariant();
+		if (NamedKeyboardKeyExtensions.TryParse(trimmedKey, out var namedKey, true, true))
+			return new NamedKeyNode { Key = namedKey };
+
+		if (trimmedKey.Length == 1)
+			return new CharacterKeyNode { Key = trimmedKey[0] };
+
+		throw new ArgumentException($"Unknown keyboard key: {key}", nameof(key));
 	}
 
 	public static string Render(KeyboardShortcut shortcut)
 	{
-		var viewModels = shortcut.Keys.Select(keyNode =>
+		var viewModels = shortcut.Keys.Select(ToViewModel);
+		var kbdElements = viewModels.Select(viewModel => viewModel switch
 		{
-			return keyNode switch
-			{
-				NamedKeyNode s => ViewModelMapping[s.Key],
-				CharacterKeyNode c => new KeyboardKeyViewModel { DisplayText = c.Key.ToString(), UnicodeIcon = null },
-				_ => throw new ArgumentException($"Unknown key: {keyNode}")
-			};
+			SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => Render(singleKeyboardKeyViewModel),
+			AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel => Render(alternateKeyboardKeyViewModel),
+			_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
 		});
-
-		var kbdElements = viewModels.Select(viewModel =>
-		{
-			var sb = new StringBuilder();
-			_ = sb.Append("<kbd class=\"kbd\"");
-			if (viewModel.AriaLabel is not null)
-				_ = sb.Append(" aria-label=\"" + viewModel.AriaLabel + "\"");
-			_ = sb.Append('>');
-			if (viewModel.UnicodeIcon is not null)
-				_ = sb.Append($"<span class=\"kbd-icon\">{viewModel.UnicodeIcon}</span>");
-			_ = sb.Append(viewModel.DisplayText);
-			_ = sb.Append("</kbd>");
-			return sb.ToString();
-		});
-
 		return string.Join(" + ", kbdElements);
 	}
 
-	private static FrozenDictionary<NamedKeyboardKey, KeyboardKeyViewModel> ViewModelMapping { get; } =
+	private static string Render(AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel)
+	{
+		var sb = new StringBuilder();
+		_ = sb.Append("<kbd class=\"kbd\"");
+		if (alternateKeyboardKeyViewModel.Primary.AriaLabel is not null)
+			_ = sb.Append(" aria-label=\"" + alternateKeyboardKeyViewModel.Primary.AriaLabel + " or " + alternateKeyboardKeyViewModel.Alternate.AriaLabel + "\"");
+		_ = sb.Append('>');
+
+		if (alternateKeyboardKeyViewModel.Primary.UnicodeIcon is not null)
+			_ = sb.Append($"<span class=\"kbd-icon\">{alternateKeyboardKeyViewModel.Primary.UnicodeIcon}</span>");
+		_ = sb.Append(alternateKeyboardKeyViewModel.Primary.DisplayText);
+
+		_ = sb.Append("<span class=\"kbd-separator\"></span>");
+
+		if (alternateKeyboardKeyViewModel.Alternate.UnicodeIcon is not null)
+			_ = sb.Append($"<span class=\"kbd-icon\">{alternateKeyboardKeyViewModel.Alternate.UnicodeIcon}</span>");
+		_ = sb.Append(alternateKeyboardKeyViewModel.Alternate.DisplayText);
+		_ = sb.Append("</kbd>");
+		return sb.ToString();
+	}
+
+	private static string Render(SingleKeyboardKeyViewModel singleKeyboardKeyViewModel)
+	{
+		var sb = new StringBuilder();
+		_ = sb.Append("<kbd class=\"kbd\"");
+		if (singleKeyboardKeyViewModel.AriaLabel is not null)
+			_ = sb.Append(" aria-label=\"" + singleKeyboardKeyViewModel.AriaLabel + "\"");
+		_ = sb.Append('>');
+		if (singleKeyboardKeyViewModel.UnicodeIcon is not null)
+			_ = sb.Append($"<span class=\"kbd-icon\">{singleKeyboardKeyViewModel.UnicodeIcon}</span>");
+		_ = sb.Append(singleKeyboardKeyViewModel.DisplayText);
+		_ = sb.Append("</kbd>");
+		return sb.ToString();
+	}
+
+	private static IKeyboardViewModel ToViewModel(IKeyNode keyNode) =>
+		keyNode switch
+		{
+			AlternateKeyNode alternateKeyNode => ToViewModel(alternateKeyNode),
+			CharacterKeyNode characterKeyNode => ToViewModel(characterKeyNode),
+			NamedKeyNode namedKeyNode => ToViewModel(namedKeyNode),
+			_ => throw new ArgumentException($"Unknown key: {keyNode}")
+		};
+
+	private static AlternateKeyboardKeyViewModel ToViewModel(AlternateKeyNode keyNode) =>
+		new()
+		{
+			Primary = keyNode.Primary switch
+			{
+				NamedKeyNode namedKeyNode => ToViewModel(namedKeyNode),
+				CharacterKeyNode characterKeyNode => ToViewModel(characterKeyNode),
+				_ => throw new ArgumentException($"Unsupported key: {keyNode.Primary}")
+			},
+			Alternate = keyNode.Alternate switch
+			{
+				NamedKeyNode namedKeyNode => ToViewModel(namedKeyNode),
+				CharacterKeyNode characterKeyNode => ToViewModel(characterKeyNode),
+				_ => throw new ArgumentException($"Unsupported key: {keyNode.Primary}")
+			},
+		};
+
+	private static SingleKeyboardKeyViewModel ToViewModel(CharacterKeyNode keyNode) => new()
+	{
+		DisplayText = HttpUtility.HtmlEncode(keyNode.Key.ToString()),
+		UnicodeIcon = null
+	};
+
+	private static SingleKeyboardKeyViewModel ToViewModel(NamedKeyNode keyNode) => ViewModelMapping[keyNode.Key];
+
+	private static FrozenDictionary<NamedKeyboardKey, SingleKeyboardKeyViewModel> ViewModelMapping { get; } =
 		Enum.GetValues<NamedKeyboardKey>().ToFrozenDictionary(k => k, GetDisplayModel);
 
-	private static KeyboardKeyViewModel GetDisplayModel(NamedKeyboardKey key) =>
+	private static SingleKeyboardKeyViewModel GetDisplayModel(NamedKeyboardKey key) =>
 		key switch
 		{
 			// Modifier keys with special symbols
-			NamedKeyboardKey.Command => new KeyboardKeyViewModel { DisplayText = "Cmd", UnicodeIcon = "⌘", AriaLabel = "Command" },
-			NamedKeyboardKey.Shift => new KeyboardKeyViewModel { DisplayText = "Shift", UnicodeIcon = "⇧" },
-			NamedKeyboardKey.Ctrl => new KeyboardKeyViewModel { DisplayText = "Ctrl", UnicodeIcon = "⌃", AriaLabel = "Control" },
-			NamedKeyboardKey.Alt => new KeyboardKeyViewModel { DisplayText = "Alt", UnicodeIcon = "⌥" },
-			NamedKeyboardKey.Option => new KeyboardKeyViewModel { DisplayText = "Opt", UnicodeIcon = "⌥", AriaLabel = "Option" },
-			NamedKeyboardKey.Win => new KeyboardKeyViewModel { DisplayText = "Win", UnicodeIcon = "⊞", AriaLabel = "Windows" },
+			NamedKeyboardKey.Command => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Cmd",
+				UnicodeIcon = "⌘",
+				AriaLabel = "Command"
+			},
+			NamedKeyboardKey.Shift => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Shift",
+				UnicodeIcon = "⇧"
+			},
+			NamedKeyboardKey.Ctrl => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Ctrl",
+				UnicodeIcon = "⌃",
+				AriaLabel = "Control"
+			},
+			NamedKeyboardKey.Alt => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Alt",
+				UnicodeIcon = "⌥"
+			},
+			NamedKeyboardKey.Option => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Opt",
+				UnicodeIcon = "⌥",
+				AriaLabel = "Option"
+			},
+			NamedKeyboardKey.Win => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Win",
+				UnicodeIcon = "⊞",
+				AriaLabel = "Windows"
+			},
 			// Directional keys
-			NamedKeyboardKey.Up => new KeyboardKeyViewModel { DisplayText = "Up", UnicodeIcon = "↑", AriaLabel = "Up Arrow" },
-			NamedKeyboardKey.Down => new KeyboardKeyViewModel { DisplayText = "Down", UnicodeIcon = "↓", AriaLabel = "Down Arrow" },
-			NamedKeyboardKey.Left => new KeyboardKeyViewModel { DisplayText = "Left", UnicodeIcon = "←", AriaLabel = "Left Arrow" },
-			NamedKeyboardKey.Right => new KeyboardKeyViewModel { DisplayText = "Right", UnicodeIcon = "→", AriaLabel = "Right Arrow" },
+			NamedKeyboardKey.Up => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Up",
+				UnicodeIcon = "↑",
+				AriaLabel = "Up Arrow"
+			},
+			NamedKeyboardKey.Down => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Down",
+				UnicodeIcon = "↓",
+				AriaLabel = "Down Arrow"
+			},
+			NamedKeyboardKey.Left => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Left",
+				UnicodeIcon = "←",
+				AriaLabel = "Left Arrow"
+			},
+			NamedKeyboardKey.Right => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Right",
+				UnicodeIcon = "→",
+				AriaLabel = "Right Arrow"
+			},
 			// Other special keys with symbols
-			NamedKeyboardKey.Enter => new KeyboardKeyViewModel { DisplayText = "Enter", UnicodeIcon = "↵" },
-			NamedKeyboardKey.Escape => new KeyboardKeyViewModel { DisplayText = "Esc", UnicodeIcon = "⎋", AriaLabel = "Escape" },
-			NamedKeyboardKey.Tab => new KeyboardKeyViewModel { DisplayText = "Tab", UnicodeIcon = "↹", AriaLabel = "Tab" },
-			NamedKeyboardKey.Backspace => new KeyboardKeyViewModel { DisplayText = "Backspace", UnicodeIcon = "⌫" },
-			NamedKeyboardKey.Delete => new KeyboardKeyViewModel { DisplayText = "Del", UnicodeIcon = null, AriaLabel = "Delete" },
-			NamedKeyboardKey.Home => new KeyboardKeyViewModel { DisplayText = "Home", UnicodeIcon = "⇱" },
-			NamedKeyboardKey.End => new KeyboardKeyViewModel { DisplayText = "End", UnicodeIcon = "⇲" },
-			NamedKeyboardKey.PageUp => new KeyboardKeyViewModel { DisplayText = "PageUp", UnicodeIcon = "⇞", AriaLabel = "Page Up" },
-			NamedKeyboardKey.PageDown => new KeyboardKeyViewModel { DisplayText = "PageDown", UnicodeIcon = "⇟", AriaLabel = "Page Down" },
-			NamedKeyboardKey.Space => new KeyboardKeyViewModel { DisplayText = "Space", UnicodeIcon = "␣" },
-			NamedKeyboardKey.Insert => new KeyboardKeyViewModel { DisplayText = "Ins", UnicodeIcon = null, AriaLabel = "Insert" },
-			NamedKeyboardKey.Plus => new KeyboardKeyViewModel { DisplayText = "+", UnicodeIcon = null },
-			NamedKeyboardKey.Fn => new KeyboardKeyViewModel { DisplayText = "Fn", UnicodeIcon = null, AriaLabel = "Fn" },
-			NamedKeyboardKey.F1 => new KeyboardKeyViewModel { DisplayText = "F1", UnicodeIcon = null },
-			NamedKeyboardKey.F2 => new KeyboardKeyViewModel { DisplayText = "F2", UnicodeIcon = null },
-			NamedKeyboardKey.F3 => new KeyboardKeyViewModel { DisplayText = "F3", UnicodeIcon = null },
-			NamedKeyboardKey.F4 => new KeyboardKeyViewModel { DisplayText = "F4", UnicodeIcon = null },
-			NamedKeyboardKey.F5 => new KeyboardKeyViewModel { DisplayText = "F5", UnicodeIcon = null },
-			NamedKeyboardKey.F6 => new KeyboardKeyViewModel { DisplayText = "F6", UnicodeIcon = null },
-			NamedKeyboardKey.F7 => new KeyboardKeyViewModel { DisplayText = "F7", UnicodeIcon = null },
-			NamedKeyboardKey.F8 => new KeyboardKeyViewModel { DisplayText = "F8", UnicodeIcon = null },
-			NamedKeyboardKey.F9 => new KeyboardKeyViewModel { DisplayText = "F9", UnicodeIcon = null },
-			NamedKeyboardKey.F10 => new KeyboardKeyViewModel { DisplayText = "F10", UnicodeIcon = null },
-			NamedKeyboardKey.F11 => new KeyboardKeyViewModel { DisplayText = "F11", UnicodeIcon = null },
-			NamedKeyboardKey.F12 => new KeyboardKeyViewModel { DisplayText = "F12", UnicodeIcon = null },
+			NamedKeyboardKey.Enter => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Enter",
+				UnicodeIcon = "↵"
+			},
+			NamedKeyboardKey.Escape => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Esc",
+				UnicodeIcon = "⎋",
+				AriaLabel = "Escape"
+			},
+			NamedKeyboardKey.Tab => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Tab",
+				UnicodeIcon = "↹",
+				AriaLabel = "Tab"
+			},
+			NamedKeyboardKey.Backspace => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Backspace",
+				UnicodeIcon = "⌫"
+			},
+			NamedKeyboardKey.Delete => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Del",
+				AriaLabel = "Delete"
+			},
+			NamedKeyboardKey.Home => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Home",
+				UnicodeIcon = "⇱"
+			},
+			NamedKeyboardKey.End => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "End",
+				UnicodeIcon = "⇲"
+			},
+			NamedKeyboardKey.PageUp => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "PageUp",
+				UnicodeIcon = "⇞",
+				AriaLabel = "Page Up"
+			},
+			NamedKeyboardKey.PageDown => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "PageDown",
+				UnicodeIcon = "⇟",
+				AriaLabel = "Page Down"
+			},
+			NamedKeyboardKey.Space => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Space",
+				UnicodeIcon = "␣"
+			},
+			NamedKeyboardKey.Insert => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Ins",
+				AriaLabel = "Insert"
+			},
+			NamedKeyboardKey.Plus => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "+",
+			},
+			NamedKeyboardKey.Pipe => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "|",
+				AriaLabel = "Pipe"
+			},
+			NamedKeyboardKey.Fn => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "Fn",
+				AriaLabel = "Function key"
+			},
+			NamedKeyboardKey.F1 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F1",
+			},
+			NamedKeyboardKey.F2 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F2",
+			},
+			NamedKeyboardKey.F3 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F3",
+			},
+			NamedKeyboardKey.F4 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F4",
+			},
+			NamedKeyboardKey.F5 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F5",
+				UnicodeIcon = null
+			},
+			NamedKeyboardKey.F6 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F6",
+			},
+			NamedKeyboardKey.F7 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F7",
+			},
+			NamedKeyboardKey.F8 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F8",
+			},
+			NamedKeyboardKey.F9 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F9",
+			},
+			NamedKeyboardKey.F10 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F10",
+			},
+			NamedKeyboardKey.F11 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F11",
+			},
+			NamedKeyboardKey.F12 => new SingleKeyboardKeyViewModel
+			{
+				DisplayText = "F12",
+			},
 			// Function keys
 			_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)
 		};
@@ -170,7 +379,8 @@ public enum NamedKeyboardKey
 
 	// Other Keys
 	[Display(Name = "plus")] Plus,
-	[Display(Name = "fn")] Fn
+	[Display(Name = "fn")] Fn,
+	[Display(Name = "pipe")] Pipe
 }
 
 public class IKeyNode;
@@ -185,9 +395,23 @@ public class CharacterKeyNode : IKeyNode
 	public required char Key { get; init; }
 }
 
-public record KeyboardKeyViewModel
+public interface IKeyboardViewModel;
+
+public record SingleKeyboardKeyViewModel : IKeyboardViewModel
 {
-	public required string? UnicodeIcon { get; init; }
+	public string? UnicodeIcon { get; init; }
 	public required string DisplayText { get; init; }
 	public string? AriaLabel { get; init; }
+}
+
+public record AlternateKeyboardKeyViewModel : IKeyboardViewModel
+{
+	public required SingleKeyboardKeyViewModel Primary { get; init; }
+	public required SingleKeyboardKeyViewModel Alternate { get; init; }
+}
+
+public class AlternateKeyNode : IKeyNode
+{
+	public required IKeyNode Primary { get; init; }
+	public required IKeyNode Alternate { get; init; }
 }

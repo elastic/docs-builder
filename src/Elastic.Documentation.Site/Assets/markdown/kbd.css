@@ -1,7 +1,18 @@
 @layer components {
 	.markdown-content {
 		kbd.kbd {
-			@apply bg-grey-20 text-grey-100 border-grey-50 shadow-grey-50 relative top-[-2px] inline-flex min-w-[18px] cursor-default gap-1.5 rounded-sm border px-1.5 pt-[3px] pb-[2px] text-center align-middle font-mono text-sm leading-none capitalize shadow-[0_2px_0_1px];
+			@apply  relative bg-grey-20 text-grey-100 border-grey-50 shadow-grey-50 top-[-2px] inline-flex items-center min-w-[18px] cursor-default gap-1.5 rounded-sm border px-1.5 pt-[3px] pb-[2px] text-center align-middle font-mono text-sm leading-none capitalize shadow-[0_2px_0_1px];
+		}
+		
+		kbd.kbd .kbd-separator {
+			@apply bg-grey-100 inline-block mx-1 self-stretch;
+			width: 1px;
+			/*height: .8em;*/
+			transform: translateY(-1px) rotate(30deg);
+		}
+		
+		kbd.kbd .kbd-space {
+			@apply w-0;
 		}
 	}
 }
