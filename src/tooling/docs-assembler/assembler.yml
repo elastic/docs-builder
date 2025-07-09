@@ -70,6 +70,19 @@ references:
   beats:
     current: "9.0"
     next: main
+  ecs-dotnet:
+  ecs-logging-go-logrus:
+  ecs-logging-go-zap:
+  ecs-logging-go-zerolog:
+  ecs-logging-java:
+  ecs-logging-nodejs:
+  ecs-logging-php:
+  ecs-logging-python:
+  ecs-logging-ruby:
+  ecs-logging:
+  ecs:
+    current: "9.0"
+    next: main
   elastic-otel-dotnet:
   elastic-otel-java:
   elastic-otel-node:
@@ -97,6 +110,9 @@ references:
   # @elastic/admin-docs and @elastic/developer-docs
   elasticsearch:
 
+  # @elastic/admin-docs and @elastic/experience-docs
+  kibana:
+
   # @elastic/developer-docs
   eland:
   elasticsearch-hadoop:
@@ -115,24 +131,6 @@ references:
   # @elastic/experience-docs
   detection-rules:
     checkout_strategy: full
-
-  # @elastic/experience-docs and @elastic/admin-docs
-  kibana:
-
-  # owner tbd
-  ecs-dotnet:
-  ecs-logging-go-logrus:
-  ecs-logging-go-zap:
-  ecs-logging-go-zerolog:
-  ecs-logging-java:
-  ecs-logging-nodejs:
-  ecs-logging-php:
-  ecs-logging-python:
-  ecs-logging-ruby:
-  ecs-logging:
-  ecs:
-    current: "9.0"
-    next: main
 
   # @elastic/docs-engineering
   docs-builder:
