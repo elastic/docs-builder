@@ -95,6 +95,10 @@ references:
     next: main
   opentelemetry:
 
+  # @elastic/ingest-docs and @elastic/experience-docs
+  integration-docs:
+  integrations:
+
   # @elastic/admin-docs
   cloud-on-k8s:
   cloud:
@@ -124,9 +128,7 @@ references:
   elasticsearch-rs:
   elasticsearch-ruby:
   go-elasticsearch:
-  integrations:
   search-ui:
-  integration-docs:
 
   # @elastic/experience-docs
   detection-rules:
