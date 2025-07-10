@@ -11,7 +11,7 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 
-[DebuggerDisplay("Group >{Depth} {FolderName} ({NavigationItems.Count} items)")]
+[DebuggerDisplay("Toc: {Depth} {NavigationSource} > ({NavigationItems.Count} items)")]
 public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationItem>
 {
 	private readonly TableOfContentsTreeCollector _treeCollector;
@@ -138,7 +138,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				// TODO these have to be refactor to be pure navigational properties
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
 				md.NavigationRoot = rootNavigationItem;
-				md.NavigationSource = NavigationSource;
 
 				foreach (var extension in lookups.EnabledExtensions)
 					extension.Visit(d, tocItem);

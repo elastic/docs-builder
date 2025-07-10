@@ -20,7 +20,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler;
-public record TocTopLevelMapping
+
+public record NavigationTocMapping
 {
 	public required Uri Source { get; init; }
 	public required string SourcePathPrefix { get; init; }
@@ -30,7 +31,7 @@ public record TocTopLevelMapping
 
 public record TocConfigurationMapping
 {
-	public required TocTopLevelMapping TopLevel { get; init; }
+	public required NavigationTocMapping TopLevel { get; init; }
 	public required ConfigurationFile RepositoryConfigurationFile { get; init; }
 	public required TableOfContentsConfiguration TableOfContentsConfiguration { get; init; }
 }
@@ -40,7 +41,7 @@ public class AssembleSources
 	public AssembleContext AssembleContext { get; }
 	public FrozenDictionary<string, AssemblerDocumentationSet> AssembleSets { get; }
 
-	public FrozenDictionary<Uri, TocTopLevelMapping> TocTopLevelMappings { get; }
+	public FrozenDictionary<Uri, NavigationTocMapping> NavigationTocMappings { get; }
 
 	public FrozenDictionary<string, IReadOnlyCollection<string>> HistoryMappings { get; }
 
@@ -61,11 +62,11 @@ public class AssembleSources
 	private AssembleSources(ILoggerFactory logger, AssembleContext assembleContext, Checkout[] checkouts, VersionsConfiguration versionsConfiguration)
 	{
 		AssembleContext = assembleContext;
-		TocTopLevelMappings = GetConfiguredSources(assembleContext);
+		NavigationTocMappings = GetTocMappings(assembleContext);
 		HistoryMappings = GetHistoryMapping(assembleContext);
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
-		UriResolver = new PublishEnvironmentUriResolver(TocTopLevelMappings, assembleContext.Environment);
+		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, assembleContext.Environment);
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
@@ -73,7 +74,7 @@ public class AssembleSources
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 
-		TocConfigurationMapping = TocTopLevelMappings
+		TocConfigurationMapping = NavigationTocMappings
 			.Select(kv =>
 			{
 				var repo = kv.Value.Source.Scheme;
@@ -148,11 +149,11 @@ public class AssembleSources
 	}
 
 
-	public static FrozenDictionary<Uri, TocTopLevelMapping> GetConfiguredSources(AssembleContext context)
+	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
 	{
-		var dictionary = new Dictionary<Uri, TocTopLevelMapping>();
+		var dictionary = new Dictionary<Uri, NavigationTocMapping>();
 		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
-		var entries = new List<KeyValuePair<Uri, TocTopLevelMapping>>();
+		var entries = new List<KeyValuePair<Uri, NavigationTocMapping>>();
 		foreach (var entry in reader.Read())
 		{
 			switch (entry.Key)
@@ -167,7 +168,7 @@ public class AssembleSources
 		return dictionary.ToFrozenDictionary();
 
 		static void ReadTocBlocks(
-			List<KeyValuePair<Uri, TocTopLevelMapping>> entries,
+			List<KeyValuePair<Uri, NavigationTocMapping>> entries,
 			YamlStreamReader reader,
 			KeyValuePair<YamlNode, YamlNode> entry,
 			string? parent,
@@ -196,7 +197,7 @@ public class AssembleSources
 			}
 		}
 		static void ReadBlock(
-			List<KeyValuePair<Uri, TocTopLevelMapping>> entries,
+			List<KeyValuePair<Uri, NavigationTocMapping>> entries,
 			YamlStreamReader reader,
 			YamlMappingNode tocEntry,
 			string? parent,
@@ -259,14 +260,14 @@ public class AssembleSources
 			topLevelSource ??= sourceUri;
 			parentSource ??= sourceUri;
 
-			var tocTopLevelMapping = new TocTopLevelMapping
+			var tocTopLevelMapping = new NavigationTocMapping
 			{
 				Source = sourceUri,
 				SourcePathPrefix = pathPrefix,
 				TopLevelSource = topLevelSource,
 				ParentSource = parentSource
 			};
-			entries.Add(new KeyValuePair<Uri, TocTopLevelMapping>(sourceUri, tocTopLevelMapping));
+			entries.Add(new KeyValuePair<Uri, NavigationTocMapping>(sourceUri, tocTopLevelMapping));
 
 			foreach (var entry in tocEntry.Children)
 			{

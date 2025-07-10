@@ -11,14 +11,14 @@ namespace Documentation.Assembler.Building;
 
 public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 {
-	private readonly FrozenDictionary<Uri, TocTopLevelMapping> _topLevelMappings;
+	private readonly FrozenDictionary<Uri, NavigationTocMapping> _topLevelMappings;
 	private Uri BaseUri { get; }
 
 	private PublishEnvironment PublishEnvironment { get; }
 
 	private IReadOnlyList<string> TableOfContentsPrefixes { get; }
 
-	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, TocTopLevelMapping> topLevelMappings, PublishEnvironment environment)
+	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, NavigationTocMapping> topLevelMappings, PublishEnvironment environment)
 	{
 		_topLevelMappings = topLevelMappings;
 		PublishEnvironment = environment;
