@@ -11,87 +11,53 @@ using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
 
+#pragma warning disable CS9113 // Parameter is unread.
 public class GlobalNavigationHtmlWriter(
 	GlobalNavigationFile navigationFile,
 	AssembleContext assembleContext,
 	GlobalNavigation globalNavigation,
 	AssembleSources assembleSources
 ) : INavigationHtmlWriter
+#pragma warning restore CS9113 // Parameter is unread.
 {
-	private readonly ConcurrentDictionary<(Uri, int), string> _renderedNavigationCache = [];
+	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
 	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
 
-	private bool TryGetNavigationRoot(
-		Uri navigationSource,
-		[NotNullWhen(true)] out TableOfContentsTree? navigationRoot,
-		[NotNullWhen(true)] out Uri? navigationRootSource
-	)
+	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default)
 	{
-		navigationRoot = null;
-		navigationRootSource = null;
-		if (!assembleSources.TocTopLevelMappings.TryGetValue(navigationSource, out var topLevelMapping))
+		await Task.CompletedTask;
+		INodeNavigationItem<INavigationModel, INavigationItem> lastParentBeforeRoot = currentRootNavigation;
+		INodeNavigationItem<INavigationModel, INavigationItem> parent = currentRootNavigation;
+		while (parent.Parent is not null)
 		{
-			if (assembleSources.TreeCollector.TryGetTableOfContentsTree(navigationSource, out navigationRoot))
-			{
-				if (navigationRoot.Parent is DocumentationGroup parent &&
-					assembleSources.TocTopLevelMappings.TryGetValue(parent.NavigationSource, out var topLevelMapping2))
-				{
-					navigationRootSource = topLevelMapping2.TopLevelSource;
-					return true;
-				}
-
-				assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"The following toc: {navigationSource} is not declared in navigation.yml and it's parent failed to yield a navigation root.");
-				return false;
-			}
-			assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"The following toc: {navigationSource} is not declared in navigation.yml");
-			return false;
+			lastParentBeforeRoot = parent;
+			parent = parent.Parent;
 		}
-
-		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelMapping.TopLevelSource, out navigationRoot))
-		{
-			assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"None of the assemble sources define a toc for: {topLevelMapping.TopLevelSource}");
-			return false;
-		}
-		navigationRootSource = topLevelMapping.TopLevelSource;
-		return true;
-	}
-
-	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
-		Uri navigationSource, int maxLevel, Cancel ctx = default)
-	{
-		if (Phantoms.Contains(navigationSource)
-			|| !TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource)
-			|| Phantoms.Contains(navigationRootSource)
-		   )
-			return NavigationRenderResult.Empty;
-
-		var navigationId = ShortId.Create($"{(navigationRootSource, maxLevel).GetHashCode()}");
-
-		if (_renderedNavigationCache.TryGetValue((navigationRootSource, maxLevel), out var value))
+		if (_renderedNavigationCache.TryGetValue((lastParentBeforeRoot.Id, maxLevel), out var html))
 		{
 			return new NavigationRenderResult
 			{
-				Html = value,
-				Id = navigationId
+				Html = html,
+				Id = lastParentBeforeRoot.Id
 			};
 		}
 
-		if (navigationRootSource == new Uri("docs-content:///"))
+		Console.WriteLine($"Rendering navigation for {lastParentBeforeRoot.NavigationTitle} ({lastParentBeforeRoot.Id})");
+		if (lastParentBeforeRoot.NavigationTitle == "Cloud release notes")
 		{
-			_renderedNavigationCache[(navigationRootSource, maxLevel)] = string.Empty;
-			return NavigationRenderResult.Empty;
 		}
 
-		Console.WriteLine($"Rendering navigation for {navigationRootSource}");
+		if (lastParentBeforeRoot is not DocumentationGroup group)
+			return NavigationRenderResult.Empty;
 
-		var model = CreateNavigationModel(navigationRoot, maxLevel);
-		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[(navigationRootSource, maxLevel)] = value;
+		var model = CreateNavigationModel(group, maxLevel);
+		html = await ((INavigationHtmlWriter)this).Render(model, ctx);
+		_renderedNavigationCache[(lastParentBeforeRoot.Id, maxLevel)] = html;
 		return new NavigationRenderResult
 		{
-			Html = value,
-			Id = navigationId
+			Html = html,
+			Id = lastParentBeforeRoot.Id
 		};
 	}
 

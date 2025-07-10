@@ -106,7 +106,7 @@ public class GlobalNavigationPathProviderTests
 		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, Context);
 
-		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
+		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
 		pathProvider.TableOfContentsPrefixes.Should().Contain("detection-rules://");
 	}
 
@@ -122,12 +122,12 @@ public class GlobalNavigationPathProviderTests
 		var clients = new Uri("docs-content://reference/elasticsearch-clients/");
 		var assembleSources = await Setup();
 
-		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(sut);
-		assembleSources.TocTopLevelMappings[sut].TopLevelSource.Should().Be(expectedRoot);
-		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(expectedRoot);
-		assembleSources.TocTopLevelMappings[sut].ParentSource.Should().Be(expectedParent);
+		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(sut);
+		assembleSources.NavigationTocMappings[sut].TopLevelSource.Should().Be(expectedRoot);
+		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(expectedRoot);
+		assembleSources.NavigationTocMappings[sut].ParentSource.Should().Be(expectedParent);
 
-		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
+		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
 
 		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
@@ -193,9 +193,9 @@ public class GlobalNavigationPathProviderTests
 		var kibanaExtendMoniker = new Uri("kibana://extend/");
 
 		var assembleSources = await Setup();
-		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(kibanaExtendMoniker);
-		assembleSources.TocTopLevelMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
-		assembleSources.TocTopLevelMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
+		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(kibanaExtendMoniker);
+		assembleSources.NavigationTocMappings[kibanaExtendMoniker].TopLevelSource.Should().Be(expectedRoot);
+		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("docs-content://reference/apm/"));
 
 		var uri = new Uri("integration-docs://reference/");
 		assembleSources.TreeCollector.Should().NotBeNull();

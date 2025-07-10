@@ -56,8 +56,8 @@ public class HtmlWriter(
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, INavigationHtmlWriter.AllLevels, ctx);
-		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, 1, ctx);
+		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, INavigationHtmlWriter.AllLevels, ctx);
+		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, 1, ctx);
 
 		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
 			? miniNavigationRenderResult
