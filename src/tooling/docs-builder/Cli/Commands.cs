@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
@@ -13,7 +12,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Documentation.Tooling.Filters;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
@@ -22,16 +20,9 @@ using Microsoft.Extensions.Options;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class Commands(ILoggerFactory logger, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
+internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
 {
-	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
-
-	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
-	private void AssignOutputLogger()
-	{
-		ConsoleApp.Log = msg => _log.LogInformation(msg);
-		ConsoleApp.LogError = msg => _log.LogError(msg);
-	}
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
 	/// <summary>
 	///	Continuously serve a documentation folder at http://localhost:3000.
@@ -43,11 +34,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="port">Port to serve the documentation.</param>
 	/// <param name="ctx"></param>
 	[Command("serve")]
-	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
-		AssignOutputLogger();
-		var host = new DocumentationWebHost(path, port, logger, new FileSystem(), new MockFileSystem(), versionsConfigOption.Value);
+		var host = new DocumentationWebHost(path, port, logFactory, new FileSystem(), new MockFileSystem(), versionsConfigOption.Value);
 		_log.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
 		);
@@ -56,22 +45,20 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	}
 
 	/// <summary>
-	/// Serve html files directly
+	/// Serve HTML files directly
 	/// </summary>
 	/// <param name="port">Port to serve the documentation.</param>
 	/// <param name="ctx"></param>
 	[Command("serve-static")]
-	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task ServeStatic(int port = 4000, Cancel ctx = default)
 	{
-		AssignOutputLogger();
 		var host = new StaticWebHost(port);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 	}
 
 	/// <summary>
-	/// Converts a source markdown folder or file to an output folder
+	/// Converts a source Markdown folder or file to an output folder
 	/// <para>global options:</para>
 	/// --log-level level
 	/// </summary>
@@ -80,14 +67,11 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
-	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> Generate(
 		string? path = null,
 		string? output = null,
@@ -100,10 +84,9 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		Cancel ctx = default
 	)
 	{
-		AssignOutputLogger();
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		BuildContext context;
@@ -139,7 +122,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			var outputDirectory = !string.IsNullOrWhiteSpace(output)
 				? fileSystem.DirectoryInfo.New(output)
 				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts/docs/html"));
-			// we temporarily do not error when pointed to a non documentation folder.
+			// we temporarily do not error when pointed to a non-documentation folder.
 			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
 
 			ConsoleApp.Log($"Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {e.Message}");
@@ -152,7 +135,7 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			await githubActionsService.SetOutputAsync("skip", "false");
 
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logger);
+		var set = new DocumentationSet(context, logFactory);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
@@ -161,11 +144,11 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 			metadataOnly ??= metaValue;
 		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
 
-		var generator = new DocumentationGenerator(set, logger, null, null, null, exporter);
+		var generator = new DocumentationGenerator(set, logFactory, null, null, null, exporter);
 		_ = await generator.GenerateAll(ctx);
 
 
-		var openApiGenerator = new OpenApiGenerator(context, generator.MarkdownStringRenderer, logger);
+		var openApiGenerator = new OpenApiGenerator(context, generator.MarkdownStringRenderer, logFactory);
 		await openApiGenerator.Generate(ctx);
 
 		if (runningOnCi)
@@ -180,21 +163,18 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	}
 
 	/// <summary>
-	/// Converts a source markdown folder or file to an output folder
+	/// Converts a source Markdown folder or file to an output folder
 	/// </summary>
 	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
 	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
 	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
-	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> GenerateDefault(
 		string? path = null,
 		string? output = null,
@@ -218,9 +198,6 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 	/// <param name="dryRun">Dry run the move operation</param>
 	/// <param name="ctx"></param>
 	[Command("mv")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
-	[ConsoleAppFilter<CheckForUpdatesFilter>]
 	public async Task<int> Move(
 		[Argument] string source,
 		[Argument] string target,
@@ -229,13 +206,12 @@ internal sealed class Commands(ILoggerFactory logger, ICoreService githubActions
 		Cancel ctx = default
 	)
 	{
-		AssignOutputLogger();
 		var fileSystem = new FileSystem();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, null).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, null).StartAsync(ctx);
 		var context = new BuildContext(collector, fileSystem, fileSystem, versionsConfigOption.Value, path, null);
-		var set = new DocumentationSet(context, logger);
+		var set = new DocumentationSet(context, logFactory);
 
-		var moveCommand = new Move(fileSystem, fileSystem, set, logger);
+		var moveCommand = new Move(fileSystem, fileSystem, set, logFactory);
 		var result = await moveCommand.Execute(source, target, dryRun ?? false, ctx);
 		await collector.StopAsync(ctx);
 		return result;

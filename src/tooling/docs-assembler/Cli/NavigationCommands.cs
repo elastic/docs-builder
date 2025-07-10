@@ -29,8 +29,6 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 	/// <summary> Validates navigation.yml does not contain colliding path prefixes </summary>
 	/// <param name="ctx"></param>
 	[Command("validate")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> Validate(Cancel ctx = default)
 	{
 		AssignOutputLogger();
@@ -56,8 +54,6 @@ internal sealed class NavigationCommands(ILoggerFactory logger, ICoreService git
 	/// <param name="file">Path to `links.json` defaults to '.artifacts/docs/html/links.json'</param>
 	/// <param name="ctx"></param>
 	[Command("validate-link-reference")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateLocalLinkReference([Argument] string? file = null, Cancel ctx = default)
 	{
 		AssignOutputLogger();

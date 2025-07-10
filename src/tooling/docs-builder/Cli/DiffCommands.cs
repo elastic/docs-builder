@@ -26,14 +26,8 @@ internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubAct
 	/// <param name="ctx"></param>
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	[Command("validate")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
-
 		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);

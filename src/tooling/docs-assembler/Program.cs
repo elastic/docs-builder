@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
@@ -9,6 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, services => services
 	.AddSingleton<DiagnosticsChannel>()
@@ -19,6 +21,7 @@ await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref
 ConsoleApp.ServiceProvider = serviceProvider;
 
 var app = ConsoleApp.Create();
+app.UseFilter<ReplaceLogFilter>();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 
@@ -35,3 +38,16 @@ if (!string.IsNullOrEmpty(command))
 	args = command.Split(' ');
 
 await app.RunAsync(args);
+
+internal sealed class ReplaceLogFilter(ConsoleAppFilter next, ILogger<Program> logger)
+	: ConsoleAppFilter(next)
+{
+	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
+	public override Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
+	{
+		ConsoleApp.Log = msg => logger.LogInformation(msg);
+		ConsoleApp.LogError = msg => logger.LogError(msg);
+
+		return Next.InvokeAsync(context, cancellationToken);
+	}
+}
