@@ -53,7 +53,7 @@ narrative:
 ###
 references:
 
-  # elastic/ingest-docs
+  # @elastic/ingest-docs
   apm-server:
   apm-agent-android:
   apm-agent-dotnet:
