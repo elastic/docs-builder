@@ -94,6 +94,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{image}") > 0)
 			return new ImageBlock(this, context);
 
+		if (info.IndexOf("{carousel}") > 0)
+			return new ImageCarouselBlock(this, context);
+
 		if (info.IndexOf("{figure}") > 0)
 			return new FigureBlock(this, context);
 
