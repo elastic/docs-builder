@@ -12,6 +12,10 @@
     "fmt:write": "prettier --write ."
   },
   "targets": {
+    "customElements": {
+      "distDir": "_static",
+      "source": "Assets/custom-elements.ts"
+    },
     "js": {
       "distDir": "_static",
       "source": "Assets/main.ts"
@@ -28,38 +32,40 @@
   "private": true,
   "devDependencies": {
     "@elastic/datemath": "5.0.3",
-    "@elastic/eui": "104.0.2",
-    "@elastic/eui-theme-borealis": "3.0.0",
+    "@elastic/eui": "104.1.0",
+    "@elastic/eui-theme-borealis": "3.1.0",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
-    "@eslint/js": "9.29.0",
+    "@eslint/js": "9.30.1",
+    "@parcel/reporter-bundle-analyzer": "2.15.4",
     "@r2wc/react-to-web-component": "2.0.4",
-    "@tailwindcss/postcss": "4.1.10",
+    "@tailwindcss/postcss": "4.1.11",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
-    "eslint": "9.29.0",
-    "globals": "16.2.0",
+    "eslint": "9.30.1",
+    "globals": "16.3.0",
     "moment": "2.30.1",
     "parcel": "2.15.4",
     "postcss": "8.5.6",
     "postcss-import": "16.1.1",
-    "prettier": "3.5.3",
+    "prettier": "3.6.2",
     "prettier-plugin-tailwindcss": "0.6.13",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "typescript-eslint": "8.34.0"
+    "typescript-eslint": "8.35.1"
   },
   "browserslist": [
     "defaults"
   ],
   "dependencies": {
+    "@elastic/highlightjs-esql": "1.1.0",
     "clipboard": "2.0.11",
     "highlight.js": "11.11.1",
     "htmx-ext-head-support": "2.0.4",
     "htmx-ext-preload": "2.1.1",
-    "htmx.org": "2.0.5",
+    "htmx.org": "2.0.6",
     "select-dom": "9.3.1",
-    "tailwindcss": "4.1.10",
+    "tailwindcss": "4.1.11",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.3"
+    "ua-parser-js": "2.0.4"
   }
 }

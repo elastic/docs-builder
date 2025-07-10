@@ -13,18 +13,21 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger)
+internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger, IOptions<VersionsConfiguration> versionsConfigOption)
 {
 	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
 
@@ -120,7 +123,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			throw new Exception("No checkouts found");
 
 		_log.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, versionsConfigOption.Value, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		_log.LogInformation("Create global navigation");
@@ -135,6 +138,10 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
 		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
+
+		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
+		if (File.Exists(redirectsPath))
+			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
 		sitemapBuilder.Generate();
@@ -175,6 +182,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 						collector,
 						new FileSystem(),
 						new FileSystem(),
+						versionsConfigOption.Value,
 						checkout.Directory.FullName,
 						outputPath
 					);

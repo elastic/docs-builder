@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Serialization;
@@ -14,5 +15,6 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(PublishEnvironment))]
 [YamlSerializable(typeof(GoogleTagManager))]
 [YamlSerializable(typeof(ContentSource))]
-[YamlSerializable(typeof(VersionEntry))]
+[YamlSerializable(typeof(VersionsConfigDto))]
+[YamlSerializable(typeof(VersioningSystemDto))]
 public partial class YamlStaticContext;

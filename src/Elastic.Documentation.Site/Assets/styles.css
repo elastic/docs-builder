@@ -3,10 +3,12 @@
 
 @import './fonts.css';
 @import './theme.css';
+@import './markdown/applies-to.css';
 @import './markdown/typography.css';
 @import './markdown/list.css';
 @import './markdown/tabs.css';
 @import './markdown/code.css';
+@import './markdown/icons.css';
 @import './copybutton.css';
 @import './markdown/admonition.css';
 @import './markdown/dropdown.css';
@@ -111,85 +113,6 @@
 			word-break: break-word;
 		}
 	}
-
-	.applies {
-		@apply font-sans;
-		border-bottom: 1px solid var(--color-grey-20);
-		padding-bottom: calc(var(--spacing) * 3);
-		font-variant: all-petite-caps;
-
-		.applicable-meta-discontinued {
-			color: var(--color-red-90);
-		}
-		.applicable-meta-coming {
-			color: var(--color-blue-elastic-80);
-		}
-		.applicable-meta-technical-preview {
-			color: var(--color-yellow-80);
-		}
-
-		.applicable-info {
-			padding: calc(var(--spacing) * 0.5);
-			padding-left: calc(var(--spacing) * 2);
-			padding-right: calc(var(--spacing) * 2);
-			margin: calc(var(--spacing) * 0.5);
-			display: inline-block;
-			font-size: 0.8em;
-			border-radius: 0.4em;
-			background-color: var(--color-white);
-			border: 1px solid var(--color-grey-20);
-		}
-		.applicable-version {
-			font-weight: bold;
-			margin-left: calc(var(--spacing) * 0.5);
-			font-variant: none;
-			font-size: 0.87em;
-		}
-		.applicable-lifecycle {
-			font-weight: bold;
-		}
-	}
-	.applies-inline {
-		@apply font-sans;
-		font-variant: all-petite-caps;
-
-		.applicable-meta-discontinued {
-			color: var(--color-red-90);
-		}
-		.applicable-meta-coming {
-			color: var(--color-blue-elastic-80);
-		}
-		.applicable-meta-technical-preview {
-			color: var(--color-blue-elastic-80);
-		}
-
-		.applicable-info {
-			cursor: default;
-			padding: calc(var(--spacing) * 0.5);
-			padding-left: calc(var(--spacing) * 2);
-			padding-right: calc(var(--spacing) * 2);
-			margin-left: calc(var(--spacing) * 0.5);
-			margin-right: calc(var(--spacing) * 0.5);
-			display: inline-block;
-			font-size: 0.8em;
-			border-radius: 0.4em;
-			background-color: var(--color-white);
-			border: 1px solid var(--color-grey-20);
-			font-weight: normal;
-			&[data-tippy-content]:not([data-tippy-content='']) {
-				cursor: help;
-			}
-		}
-		.applicable-version {
-			font-weight: bold;
-			margin-left: calc(var(--spacing) * 0.5);
-			font-variant: none;
-			font-size: 0.87em;
-		}
-		.applicable-lifecycle {
-			font-weight: bold;
-		}
-	}
 }
 
 * {
@@ -255,9 +178,11 @@
 	}
 }
 
-#elastic-nav {
+#elastic-nav-wrapper {
 	min-height: var(--offset-top);
+}
 
+#elastic-nav {
 	@media screen and (min-width: 1200px) {
 		.oldNav {
 			& > div {
@@ -298,4 +223,8 @@ body {
 	&:hover {
 		@apply bg-grey-20 rounded-2xl;
 	}
+}
+
+.tippy-content {
+	white-space: pre-line;
 }

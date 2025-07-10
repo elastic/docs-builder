@@ -28,19 +28,20 @@ This is an inline {applies_to}`stack: preview 9.1` element.
     [<Fact>]
     let ``validate HTML: generates link and alt attr`` () =
         markdown |> convertsToHtml """
-        <p>This is an inline
-	        <span class="applies-inline">
-		        <span class="applicable-info" data-tippy-content="We plan to add this functionality in a future update. Plans may change without notice.">
-			        Elastic Stack
-			        <span class="applicable-meta applicable-meta-technical-preview">
-				        <span class="applicable-lifecycle applicable-lifecycle-technical-preview">
-					        Planned
-				        </span>
-			        </span>
-		        </span>
-	        </span>
-	        element.</p>
-        """
+<p>This is an inline
+	<span class="applies applies-inline">
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
+			<span class="applicable-name">Stack</span>
+			<span class="applicable-separator"></span>
+			<span class="applicable-meta applicable-meta-preview">
+				Planned
+			</span>
+		</span>
+	</span>
+	element.</p>
+"""
 
 
 type ``parses nested ess moniker`` () =
@@ -72,3 +73,92 @@ This is an inline {preview}`9.1` element.
         directives |> appliesToDirective (ApplicableTo(
             Product=AppliesCollection.op_Explicit "preview 9.1.0"
         ))
+
+
+type ``parses applies to without version in table`` () =
+    static let markdown = Setup.Markdown """
+| col1 | col2                         |
+|------|------------------------------|
+| test | {applies_to}`ece: removed`   |
+"""
+
+    [<Fact>]
+    let ``parses to AppliesDirective`` () =
+        let directives = markdown |> converts "index.md" |> parses<AppliesToRole>
+        test <@ directives.Length = 1 @>
+        directives |>  appliesToDirective (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ece=AppliesCollection.op_Explicit "removed"
+            )
+        ))
+
+type ``parses applies to with text afterwards`` () =
+    static let markdown = Setup.Markdown """
+{applies_to}`ece: removed` hello world
+"""
+
+    [<Fact>]
+    let ``parses to AppliesDirective`` () =
+        let directives = markdown |> converts "index.md" |> parses<AppliesToRole>
+        test <@ directives.Length = 1 @>
+        directives |>  appliesToDirective (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ece=AppliesCollection.op_Explicit "removed"
+            )
+        ))
+
+type ``parses multiple applies_to in one line`` () =
+    static let markdown = Setup.Markdown """
+{applies_to}`ece: removed` {applies_to}`ece: removed`
+"""
+
+    [<Fact>]
+    let ``parses to AppliesDirective`` () =
+        let directives = markdown |> converts "index.md" |> parses<AppliesToRole>
+        test <@ directives.Length = 2 @>
+        directives |>  appliesToDirective (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ece=AppliesCollection.op_Explicit "removed"
+            )
+        ))
+
+type ``render 'GA Planned' if preview exists alongside ga`` () =
+    static let markdown = Setup.Markdown """
+
+This is an inline {applies_to}`stack: preview 9.0, ga 9.1` element.
+"""
+
+    [<Fact>]
+    let ``parses to AppliesDirective`` () =
+        let directives = markdown |> converts "index.md" |> parses<AppliesToRole>
+        test <@ directives.Length = 1 @>
+        directives |> appliesToDirective (ApplicableTo(
+            Stack=AppliesCollection.op_Explicit "preview 9.0, ga 9.1"
+        ))
+
+    [<Fact>]
+    let ``validate HTML: generates link and alt attr`` () =
+        markdown |> convertsToHtml """
+<p>This is an inline
+	<span class="applies applies-inline">
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
+			<span class="applicable-name">Stack</span>
+			<span class="applicable-separator"></span>
+			<span class="applicable-meta applicable-meta-preview">
+				Planned
+			</span>
+		</span>
+		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
+			<span class="applicable-name">Stack</span>
+			<span class="applicable-separator"></span>
+			<span class="applicable-meta applicable-meta-ga">
+				GA planned
+			</span>
+		</span>
+	</span>
+	element.</p>
+"""

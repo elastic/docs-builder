@@ -7,6 +7,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown.IO;
@@ -27,7 +28,7 @@ public class DocumentationWebHost
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
 
-	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem readFs, IFileSystem writeFs)
+	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem readFs, IFileSystem writeFs, VersionsConfiguration versionsConfig)
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
@@ -43,7 +44,7 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, path, null)
+		Context = new BuildContext(collector, readFs, writeFs, versionsConfig, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
@@ -179,11 +180,22 @@ public class DocumentationWebHost
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
 		var generator = holder.Generator;
+		const string navPartialSuffix = ".nav.html";
+		if (slug.EndsWith(navPartialSuffix))
+		{
+			var segments = slug.Split("/");
+			var lastSegment = segments.Last();
+			var navigationId = lastSegment.Replace(navPartialSuffix, "");
+			return generator.DocumentationSet.NavigationRenderResults.TryGetValue(navigationId, out var rendered)
+				? Results.Content(rendered.Html, "text/html")
+				: Results.NotFound();
+		}
 
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+
 		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
 		{
 			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
@@ -201,7 +213,8 @@ public class DocumentationWebHost
 		{
 			case MarkdownFile markdown:
 				var rendered = await generator.RenderLayout(markdown, ctx);
-				return Results.Content(rendered, "text/html");
+				return Results.Content(rendered.Html, "text/html");
+
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
 			default:
@@ -215,7 +228,7 @@ public class DocumentationWebHost
 					return Results.NotFound();
 
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
-				return Results.Content(renderedNotFound, "text/html", null, (int)HttpStatusCode.NotFound);
+				return Results.Content(renderedNotFound.Html, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
 	}
 }

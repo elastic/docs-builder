@@ -57,6 +57,7 @@ public abstract class RoleParser<TRole> : InlineParser
 			closeSticks++;
 			i++;
 		}
+
 		if (closeSticks > 1)
 			return false;
 
@@ -64,27 +65,22 @@ public abstract class RoleParser<TRole> : InlineParser
 		if (!Matches(roleContent))
 			return false;
 
-		// {role} has to be followed by `content`
-		if (span[i] != '`')
-			return false;
-		if (span.Length == i - 1)
-			return false;
+		var openingBacktickPos = i;
+		var contentStartPos = i + 1; // Skip the opening backtick
 
-		var startContent = i;
-		i = span[(i + 1)..].IndexOfAny(['`']);
-		if ((uint)i >= (uint)span.Length)
-			return false;
-
-		var closeBackTicks = 0;
-		while ((uint)i < (uint)span.Length && span[i] == '`')
+		var closingBacktickIndex = -1;
+		for (var j = contentStartPos; j < span.Length; j++)
 		{
-			closeBackTicks++;
-			i++;
+			if (span[j] != '`')
+				continue;
+			closingBacktickIndex = j;
+			break;
 		}
-		if (closeBackTicks > 1)
+
+		if (closingBacktickIndex == -1)
 			return false;
 
-		var contentSpan = span[startContent..(startContent + i + 2)];
+		var contentSpan = span[openingBacktickPos..(closingBacktickIndex + 1)];
 
 		var startPosition = slice.Start;
 		slice.Start = startPosition + roleContent.Length + contentSpan.Length;

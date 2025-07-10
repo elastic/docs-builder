@@ -8,11 +8,25 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public interface INavigationHtmlWriter
 {
-	Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default);
+	const int AllLevels = -1;
+
+	Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource,
+		int maxLevel, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
 		var slice = _TocTree.Create(model);
 		return await slice.RenderAsync(cancellationToken: ctx);
 	}
+}
+public record NavigationRenderResult
+{
+	public static NavigationRenderResult Empty { get; } = new()
+	{
+		Html = string.Empty,
+		Id = "empty-navigation" // random id
+	};
+
+	public required string Html { get; init; }
+	public required string Id { get; init; }
 }

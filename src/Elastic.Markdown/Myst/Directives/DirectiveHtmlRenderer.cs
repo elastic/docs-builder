@@ -151,7 +151,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Title = block.Title,
-			Anchor = block.Anchor
+			Anchor = block.Anchor,
+			HeadingLevel = block.HeadingLevel
 		});
 		RenderRazorSlice(slice, renderer);
 	}

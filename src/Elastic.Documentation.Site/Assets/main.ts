@@ -2,27 +2,36 @@ import { initCopyButton } from './copybutton'
 import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import './markdown/applies-to'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
-import './web-components/VersionDropdown'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import 'htmx.org'
 import { $, $$ } from 'select-dom'
-import tippy from 'tippy.js'
 import { UAParser } from 'ua-parser-js'
 
 const { getOS } = new UAParser()
+const isLazyLoadNavigationEnabled =
+    $('meta[property="docs:feature:lazy-load-navigation"]')?.content === 'true'
 
-document.addEventListener('htmx:load', function () {
+document.addEventListener('htmx:load', function (event) {
     initTocNav()
     initHighlight()
     initCopyButton()
     initTabs()
-    initNav()
+
+    // We do this so that the navigation is not initialized twice
+    if (isLazyLoadNavigationEnabled) {
+        if (event.detail.elt.id === 'nav-tree') {
+            initNav()
+        }
+    } else {
+        initNav()
+    }
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()

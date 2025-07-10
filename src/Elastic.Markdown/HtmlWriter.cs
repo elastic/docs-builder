@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -44,18 +45,23 @@ public class HtmlWriter(
 		return MarkdownFile.CreateHtml(parsed);
 	}
 
-	public async Task<string> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
+	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
 		var document = await markdown.ParseFullAsync(ctx);
 		return await RenderLayout(markdown, document, ctx);
 	}
 
-	private async Task<string> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
+	private async Task<RenderResult> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.Tree.Resolve(ctx);
 
-		var navigationHtml = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, ctx);
+		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, INavigationHtmlWriter.AllLevels, ctx);
+		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, markdown.NavigationSource, 1, ctx);
+
+		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
+			? miniNavigationRenderResult
+			: fullNavigationRenderResult;
 
 		var current = PositionalNavigation.GetCurrent(markdown);
 		var previous = PositionalNavigation.GetPrevious(markdown);
@@ -100,6 +106,15 @@ public class HtmlWriter(
 		if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
 			allVersionsUrl = item.Url;
 
+
+		var navigationFileName = $"{fullNavigationRenderResult.Id}.nav.html";
+
+		_ = DocumentationSet.NavigationRenderResults.TryAdd(
+			fullNavigationRenderResult.Id,
+			fullNavigationRenderResult
+		);
+
+
 		var slice = Page.Index.Create(new IndexViewModel
 		{
 			SiteName = siteName,
@@ -115,7 +130,8 @@ public class HtmlWriter(
 			PreviousDocument = previous,
 			NextDocument = next,
 			Parents = parents,
-			NavigationHtml = navigationHtml,
+			NavigationHtml = navigationHtmlRenderResult.Html,
+			NavigationFileName = navigationFileName,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
@@ -129,12 +145,20 @@ public class HtmlWriter(
 			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
-			Products = allProducts
+			Products = allProducts,
+			VersionsConfig = DocumentationSet.Context.VersionsConfig
 		});
-		return await slice.RenderAsync(cancellationToken: ctx);
+
+		return new RenderResult
+		{
+			Html = await slice.RenderAsync(cancellationToken: ctx),
+			FullNavigationPartialHtml = fullNavigationRenderResult.Html,
+			NavigationFileName = navigationFileName
+		};
+
 	}
 
-	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
+	public async Task<MarkdownDocument> WriteAsync(IDirectoryInfo outBaseDir, IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -159,9 +183,24 @@ public class HtmlWriter(
 		var document = await markdown.ParseFullAsync(ctx);
 
 		var rendered = await RenderLayout(markdown, document, ctx);
-		collector?.Collect(markdown, document, rendered);
-		await writeFileSystem.File.WriteAllTextAsync(path, rendered, ctx);
+		collector?.Collect(markdown, document, rendered.Html);
+		await writeFileSystem.File.WriteAllTextAsync(path, rendered.Html, ctx);
+
+		if (!DocumentationSet.Configuration.Features.LazyLoadNavigation)
+			return document;
+
+		var navFilePath = Path.Combine(outBaseDir.FullName, rendered.NavigationFileName);
+		if (!writeFileSystem.File.Exists(navFilePath))
+			await writeFileSystem.File.WriteAllTextAsync(navFilePath, rendered.FullNavigationPartialHtml, ctx);
 		return document;
 	}
+
+}
+
+public record RenderResult
+{
+	public required string Html { get; init; }
+	public required string FullNavigationPartialHtml { get; init; }
+	public required string NavigationFileName { get; init; }
 
 }

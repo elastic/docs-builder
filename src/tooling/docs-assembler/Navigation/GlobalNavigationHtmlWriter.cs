@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 
@@ -17,7 +18,7 @@ public class GlobalNavigationHtmlWriter(
 	AssembleSources assembleSources
 ) : INavigationHtmlWriter
 {
-	private readonly ConcurrentDictionary<Uri, string> _renderedNavigationCache = [];
+	private readonly ConcurrentDictionary<(Uri, int), string> _renderedNavigationCache = [];
 
 	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
 
@@ -31,49 +32,70 @@ public class GlobalNavigationHtmlWriter(
 		navigationRootSource = null;
 		if (!assembleSources.TocTopLevelMappings.TryGetValue(navigationSource, out var topLevelMapping))
 		{
-			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a top level mapping for {navigationSource}");
+			if (assembleSources.TreeCollector.TryGetTableOfContentsTree(navigationSource, out navigationRoot))
+			{
+				if (navigationRoot.Parent is DocumentationGroup parent &&
+					assembleSources.TocTopLevelMappings.TryGetValue(parent.NavigationSource, out var topLevelMapping2))
+				{
+					navigationRootSource = topLevelMapping2.TopLevelSource;
+					return true;
+				}
+
+				assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"The following toc: {navigationSource} is not declared in navigation.yml and it's parent failed to yield a navigation root.");
+				return false;
+			}
+			assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"The following toc: {navigationSource} is not declared in navigation.yml");
 			return false;
 		}
 
 		if (!assembleSources.TreeCollector.TryGetTableOfContentsTree(topLevelMapping.TopLevelSource, out navigationRoot))
 		{
-			assembleContext.Collector.EmitWarning(assembleContext.NavigationPath.FullName, $"Could not find a toc tree for {topLevelMapping.TopLevelSource}");
+			assembleContext.Collector.EmitError(assembleContext.NavigationPath.FullName, $"None of the assemble sources define a toc for: {topLevelMapping.TopLevelSource}");
 			return false;
 		}
 		navigationRootSource = topLevelMapping.TopLevelSource;
 		return true;
 	}
 
-	public async Task<string> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource, Cancel ctx = default)
+	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+		Uri navigationSource, int maxLevel, Cancel ctx = default)
 	{
-		if (Phantoms.Contains(navigationSource))
-			return string.Empty;
+		if (Phantoms.Contains(navigationSource)
+			|| !TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource)
+			|| Phantoms.Contains(navigationRootSource)
+		   )
+			return NavigationRenderResult.Empty;
 
-		if (!TryGetNavigationRoot(navigationSource, out var navigationRoot, out var navigationRootSource))
-			return string.Empty;
+		var navigationId = ShortId.Create($"{(navigationRootSource, maxLevel).GetHashCode()}");
 
-		if (Phantoms.Contains(navigationRootSource))
-			return string.Empty;
-
-		if (_renderedNavigationCache.TryGetValue(navigationRootSource, out var value))
-			return value;
+		if (_renderedNavigationCache.TryGetValue((navigationRootSource, maxLevel), out var value))
+		{
+			return new NavigationRenderResult
+			{
+				Html = value,
+				Id = navigationId
+			};
+		}
 
 		if (navigationRootSource == new Uri("docs-content:///"))
 		{
-			_renderedNavigationCache[navigationRootSource] = string.Empty;
-			return string.Empty;
+			_renderedNavigationCache[(navigationRootSource, maxLevel)] = string.Empty;
+			return NavigationRenderResult.Empty;
 		}
 
 		Console.WriteLine($"Rendering navigation for {navigationRootSource}");
 
-		var model = CreateNavigationModel(navigationRoot);
+		var model = CreateNavigationModel(navigationRoot, maxLevel);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[navigationRootSource] = value;
-
-		return value;
+		_renderedNavigationCache[(navigationRootSource, maxLevel)] = value;
+		return new NavigationRenderResult
+		{
+			Html = value,
+			Id = navigationId
+		};
 	}
 
-	private NavigationViewModel CreateNavigationModel(DocumentationGroup group)
+	private NavigationViewModel CreateNavigationModel(DocumentationGroup group, int maxLevel)
 	{
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
@@ -84,7 +106,8 @@ public class GlobalNavigationHtmlWriter(
 			IsPrimaryNavEnabled = true,
 			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
-			TopLevelItems = topLevelItems
+			TopLevelItems = topLevelItems,
+			MaxLevel = maxLevel
 		};
 	}
 }

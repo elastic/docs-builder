@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -32,6 +33,8 @@ public class IndexViewModel
 	public required INavigationItem[] Parents { get; init; }
 
 	public required string NavigationHtml { get; init; }
+
+	public required string NavigationFileName { get; init; }
 	public required string CurrentVersion { get; init; }
 
 	public required string? AllVersionsUrl { get; init; }
@@ -50,6 +53,8 @@ public class IndexViewModel
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
 	public required HashSet<Product> Products { get; init; }
+
+	public required VersionsConfiguration VersionsConfig { get; init; }
 }
 
 public class VersionDrownDownItemViewModel

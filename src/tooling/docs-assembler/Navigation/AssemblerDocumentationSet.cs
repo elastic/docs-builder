@@ -6,6 +6,7 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
@@ -28,7 +29,8 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
-		TableOfContentsTreeCollector treeCollector)
+		TableOfContentsTreeCollector treeCollector,
+		VersionsConfiguration versionsConfiguration)
 	{
 		AssembleContext = context;
 		Checkout = checkout;
@@ -52,6 +54,7 @@ public record AssemblerDocumentationSet
 			context.Collector,
 			context.ReadFileSystem,
 			context.WriteFileSystem,
+			versionsConfiguration,
 			path,
 			output,
 			gitConfiguration

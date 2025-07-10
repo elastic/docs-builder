@@ -26,6 +26,7 @@
 		Next = Model.NextDocument,
 		Parents = Model.Parents,
 		NavigationHtml = Model.NavigationHtml,
+		NavigationFileName = Model.NavigationFileName,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
 		AllowIndexing = Model.AllowIndexing,
@@ -44,8 +45,8 @@
 	{
 		if (name == GlobalSections.Head)
 		{
-			<meta class="elastic" name="product_version" content="@Model.CurrentVersion"/>
-			<meta name="DC.identifier" content="@Model.CurrentVersion"/>
+			<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
+			<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
 		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{
@@ -61,11 +62,12 @@
 	@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
 	@if (Model.AppliesTo is not null)
 	{
-		<p class="applies">
+		<p class="applies applies-block">
 		@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
 		{
 			AppliesTo = Model.AppliesTo,
-			Inline = false
+			Inline = false,
+			VersionsConfig = Model.VersionsConfig
 		}))
 		</p>
 	}

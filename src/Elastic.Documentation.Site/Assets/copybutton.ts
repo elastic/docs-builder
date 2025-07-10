@@ -147,7 +147,7 @@ const addCopyButtonToCodeCells = () => {
         codeCell.setAttribute('id', id)
 
         const clipboardButton = (id) =>
-            `<button class="copybtn o-tooltip--left" data-tooltip="${messages[locale]['copy']}" data-clipboard-target="#${id}">
+            `<button aria-label="Copy code to clipboard" class="copybtn o-tooltip--left" data-tooltip="${messages[locale]['copy']}" data-clipboard-target="#${id}">
       ${iconCopy}
     </button>`
         codeCell.insertAdjacentHTML('afterend', clipboardButton(id))

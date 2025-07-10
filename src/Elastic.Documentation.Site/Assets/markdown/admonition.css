@@ -19,14 +19,14 @@
 		&.note {
 			@apply border-blue-elastic-40 bg-blue-elastic-10;
 			.admonition-title {
-				@apply text-blue-elastic-90 bg-blue-elastic-20;
+				@apply text-blue-elastic-110 bg-blue-elastic-20;
 			}
 		}
 
 		&.tip {
 			@apply border-teal-40 bg-teal-10;
 			.admonition-title {
-				@apply text-teal-90 bg-teal-20;
+				@apply text-teal-110 bg-teal-20;
 			}
 		}
 
@@ -34,7 +34,7 @@
 			@apply border-yellow-40 bg-yellow-10;
 
 			.admonition-title {
-				@apply text-yellow-90 bg-yellow-20;
+				@apply text-yellow-110 bg-yellow-20;
 			}
 		}
 
@@ -42,7 +42,7 @@
 			@apply border-purple-40 bg-purple-10;
 
 			.admonition-title {
-				@apply text-purple-90 bg-purple-20;
+				@apply text-purple-110 bg-purple-20;
 			}
 		}
 
@@ -50,7 +50,7 @@
 			@apply border-grey-40 bg-grey-10;
 
 			.admonition-title {
-				@apply text-grey-90 bg-grey-20;
+				@apply text-grey-110 bg-grey-20;
 			}
 		}
 	}

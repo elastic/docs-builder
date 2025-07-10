@@ -590,7 +590,7 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 
 ## Tabs
 
-Block element that displays content in switchable tabs to help users zero in on the right context (such as a deployment or language). [Synced tab groups](https://elastic.github.io/docs-builder/syntax/tabs/#tab-groups) are supported.
+Block element that displays content in switchable tabs to help users zero in on the right context (such as a deployment or language). [Synced tab groups](/syntax/tabs.md#tab-groups) are supported.
 
 :::::{dropdown} Syntax
 ```markdown

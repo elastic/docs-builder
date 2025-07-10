@@ -15,4 +15,7 @@ public class NavigationViewModel
 
 	/// controls whether to split the navigation tree automatically
 	public required bool IsUsingNavigationDropdown { get; init; }
+
+	// How many levels to render. -1 means all
+	public required int MaxLevel { get; init; }
 }

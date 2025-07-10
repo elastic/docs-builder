@@ -103,12 +103,14 @@ toc:
       # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-cloud-serverless/toc.yml
       - toc: docs-content://release-notes/elastic-cloud-serverless
         path_prefix: release-notes/cloud-serverless
+
       # Cloud Hosted
       # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-hosted/toc.yml
       # We probably need to add `max_toc_depth: 2` to
       # https://github.com/elastic/cloud/blob/master/docs/docset.yml
       - toc: cloud://release-notes/cloud-hosted
         path_prefix: release-notes/cloud-hosted
+        
       # Cloud Enterprise
       # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-enterprise/toc.yml
       - toc: cloud://release-notes/cloud-enterprise
@@ -203,6 +205,11 @@ toc:
       # https://github.com/elastic/ecs/blob/main/docs/release-notes/toc.yml
       - toc: ecs://release-notes
         path_prefix: release-notes/ecs
+
+      # ECCTL
+      # https://github.com/elastic/ecctl/blob/master/docs/release-notes/toc.yml
+      - toc: ecctl://release-notes
+        path_prefix: release-notes/ecctl
 
   #############
   # REFERENCE #
@@ -357,11 +364,6 @@ toc:
               - toc: docs-content://reference/apm-agents
                 path_prefix: reference/apm-agents
                 children:
-                  # APM Android agent
-                  # ✅ https://github.com/elastic/apm-agent-android/blob/main/docs/reference/toc.yml
-                  - toc: apm-agent-android://reference
-                    path_prefix: reference/apm/agents/android
-                    # Children include the entire AsciiDoc book
 
                   # APM .NET agent
                   # ✅ https://github.com/elastic/apm-agent-dotnet/blob/main/docs/reference/toc.yml
@@ -373,12 +375,6 @@ toc:
                   # ✅ https://github.com/elastic/apm-agent-go/blob/main/docs/reference/toc.yml
                   - toc: apm-agent-go://reference
                     path_prefix: reference/apm/agents/go
-                    # Children include the entire AsciiDoc book
-
-                  # APM iOS agent
-                  # ✅ https://github.com/elastic/apm-agent-ios/blob/main/docs/reference/toc.yml
-                  - toc: apm-agent-ios://reference
-                    path_prefix: reference/apm/agents/ios
                     # Children include the entire AsciiDoc book
 
                   # APM Java agent

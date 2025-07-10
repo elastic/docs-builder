@@ -108,7 +108,7 @@ public record Applicability
 	public string GetLifeCycleName() =>
 		Lifecycle switch
 		{
-			ProductLifecycle.TechnicalPreview => "Technical Preview",
+			ProductLifecycle.TechnicalPreview => "Preview",
 			ProductLifecycle.Beta => "Beta",
 			ProductLifecycle.Development => "Development",
 			ProductLifecycle.Deprecated => "Deprecated",
@@ -178,9 +178,9 @@ public record Applicability
 			"ga" => ProductLifecycle.GenerallyAvailable,
 			"deprecated" => ProductLifecycle.Deprecated,
 			"removed" => ProductLifecycle.Removed,
-			"unavailable" => ProductLifecycle.Unavailable,
 
 			// OBSOLETE should be removed once docs are cleaned up
+			"unavailable" => ProductLifecycle.Unavailable,
 			"dev" => ProductLifecycle.Development,
 			"development" => ProductLifecycle.Development,
 			"coming" => ProductLifecycle.Planned,
@@ -188,9 +188,15 @@ public record Applicability
 			"discontinued" => ProductLifecycle.Discontinued,
 			_ => throw new Exception($"Unknown product lifecycle: {tokens[0]}")
 		};
+		var deprecatedLifecycles = new[]
+		{
+			ProductLifecycle.Development,
+			ProductLifecycle.Planned,
+			ProductLifecycle.Discontinued
+		};
 
 		// TODO emit as error when all docs have been updated
-		if (lifecycle is ProductLifecycle.Planned or ProductLifecycle.Development)
+		if (deprecatedLifecycles.Contains(lifecycle))
 			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
 
 		var version = tokens.Length < 2

@@ -1,0 +1,48 @@
+@layer components {
+	.applies {
+		cursor: default;
+
+		@apply text-subdued;
+
+		[data-tippy-content]:not([data-tippy-content='']) {
+			@apply cursor-help;
+		}
+
+		.applicable-info {
+			@apply border-grey-20 inline-grid cursor-default grid-cols-[auto_1fr_auto] rounded-full border-[1px] bg-white pt-1.5 pr-3 pb-1.5 pl-3;
+		}
+
+		.applicable-name,
+		.applicable-meta {
+			@apply text-xs text-nowrap;
+		}
+
+		.applicable-separator {
+			width: 1px;
+			height: 100%;
+			background-color: var(--color-grey-20);
+			margin-left: calc(var(--spacing) * 2);
+			margin-right: calc(var(--spacing) * 2);
+		}
+	}
+
+	.applies.applies-block {
+		@apply border-b-grey-20 flex flex-wrap gap-2 border-b-1 pb-4;
+	}
+
+	.applies.applies-inline {
+		display: inline-block;
+		vertical-align: bottom;
+		.applicable-separator {
+			margin-left: calc(var(--spacing) * 1.5);
+			margin-right: calc(var(--spacing) * 1.5);
+		}
+		.applicable-info {
+			@apply rounded-sm pt-1 pr-1.5 pb-1 pl-1.5;
+		}
+		.applicable-name,
+		.applicable-meta {
+			font-size: 0.65em;
+		}
+	}
+}

@@ -37,6 +37,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Previous = null,
 			Next = null,
 			NavigationHtml = NavigationHtml,
+			NavigationFileName = string.Empty,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
