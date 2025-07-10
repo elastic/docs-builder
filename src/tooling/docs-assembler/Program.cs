@@ -17,7 +17,6 @@ await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref
 	.AddSingleton<DiagnosticsCollector>()
 );
 
-
 ConsoleApp.ServiceProvider = serviceProvider;
 
 var app = ConsoleApp.Create();

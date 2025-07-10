@@ -11,9 +11,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.InboundLinks;
 
-public class LinkIndexLinkChecker(ILoggerFactory logger)
+public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 {
-	private readonly ILogger _logger = logger.CreateLogger<LinkIndexLinkChecker>();
+	private readonly ILogger _logger = logFactory.CreateLogger<LinkIndexLinkChecker>();
 	private readonly ILinkIndexReader _linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 	private sealed record RepositoryFilter
 	{
@@ -25,7 +25,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	public async Task CheckAll(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(_linkIndexProvider, logger);
+		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 
@@ -34,7 +34,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	public async Task CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(_linkIndexProvider, logger);
+		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var filter = new RepositoryFilter
@@ -48,7 +48,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logger)
 
 	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(_linkIndexProvider, logger);
+		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var resolver = new CrossLinkResolver(fetcher);
 		// ReSharper disable once RedundantAssignment
 		var crossLinks = await resolver.FetchLinks(ctx);

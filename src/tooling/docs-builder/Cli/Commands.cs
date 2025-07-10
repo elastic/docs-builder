@@ -36,7 +36,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	[Command("serve")]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
-		var host = new DocumentationWebHost(path, port, logFactory, new FileSystem(), new MockFileSystem(), versionsConfigOption.Value);
+		var host = new DocumentationWebHost(logFactory, path, port, new FileSystem(), new MockFileSystem(), versionsConfigOption.Value);
 		_log.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
 		);
@@ -148,7 +148,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 		_ = await generator.GenerateAll(ctx);
 
 
-		var openApiGenerator = new OpenApiGenerator(context, generator.MarkdownStringRenderer, logFactory);
+		var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
 		await openApiGenerator.Generate(ctx);
 
 		if (runningOnCi)
@@ -211,7 +211,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 		var context = new BuildContext(collector, fileSystem, fileSystem, versionsConfigOption.Value, path, null);
 		var set = new DocumentationSet(context, logFactory);
 
-		var moveCommand = new Move(fileSystem, fileSystem, set, logFactory);
+		var moveCommand = new Move(logFactory, fileSystem, fileSystem, set);
 		var result = await moveCommand.Execute(source, target, dryRun ?? false, ctx);
 		await collector.StopAsync(ctx);
 		return result;

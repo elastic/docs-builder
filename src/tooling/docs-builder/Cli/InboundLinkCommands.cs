@@ -15,17 +15,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class InboundLinkCommands(ILoggerFactory logFactory, ICoreService githubActionsService)
 {
-	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logger);
-	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
+	private readonly LinkIndexLinkChecker _linkIndexLinkChecker = new(logFactory);
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
 	/// <param name="ctx"></param>
 	[Command("validate-all")]
 	public async Task<int> ValidateAllInboundLinks(Cancel ctx = default)
 	{
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 		await _linkIndexLinkChecker.CheckAll(collector, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
@@ -42,11 +42,11 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		if (from == null && to == null)
 		{
-			from ??= GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
+			from ??= GitCheckoutInformation.Create(root, new FileSystem(), logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
 			if (from == null)
 				throw new Exception("Unable to determine repository name");
 		}
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 		await _linkIndexLinkChecker.CheckRepository(collector, to, from, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
@@ -64,7 +64,7 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 		file ??= ".artifacts/docs/html/links.json";
 		var fs = new FileSystem();
 		var root = !string.IsNullOrEmpty(path) ? fs.DirectoryInfo.New(path) : fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logger.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
+		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
 		var resolvedFile = fs.FileInfo.New(Path.Combine(root.FullName, file));
@@ -83,7 +83,7 @@ internal sealed class InboundLinkCommands(ILoggerFactory logger, ICoreService gi
 
 		_log.LogInformation("Validating {File} in {Directory}", file, root.FullName);
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 		await _linkIndexLinkChecker.CheckWithLocalLinksJson(collector, repository, resolvedFile.FullName, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;

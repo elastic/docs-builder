@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.CrossLinks;
 
-public class ConfigurationCrossLinkFetcher(ConfigurationFile configuration, ILinkIndexReader linkIndexProvider, ILoggerFactory logger) : CrossLinkFetcher(linkIndexProvider, logger)
+public class ConfigurationCrossLinkFetcher(ILoggerFactory logFactory, ConfigurationFile configuration, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(logFactory, linkIndexProvider)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
