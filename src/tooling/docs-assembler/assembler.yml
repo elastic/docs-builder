@@ -89,16 +89,14 @@ references:
   elastic-otel-php:
   elastic-otel-python:
   elastic-serverless-forwarder:
+  integration-docs:
+  integrations:
   logstash-docs-md:
   logstash:
     current: "9.0"
     next: main
   opentelemetry:
-
-  # @elastic/ingest-docs and @elastic/experience-docs
-  integration-docs:
-  integrations:
-
+  
   # @elastic/admin-docs
   cloud-on-k8s:
   cloud:
