@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Linters;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
 using Elastic.Markdown.Myst.Roles.Icons;
+using Elastic.Markdown.Myst.Roles.Kbd;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
 using Markdig.Parsers;
@@ -147,6 +148,7 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
 				.UseInlineAppliesTo()
 				.UseInlineIcons()
+				.UseInlineKbd()
 				.UseSubstitution()
 				.UseComments()
 				.UseYamlFrontMatter()
