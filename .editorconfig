@@ -213,6 +213,9 @@ csharp_style_namespace_declarations = file_scoped
 dotnet_analyzer_diagnostic.severity = warning
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 
+# can be made static
+dotnet_diagnostic.CA1822.severity = suggestion
+
 # https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1848
 dotnet_diagnostic.CA1848.severity = suggestion
 # https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2201

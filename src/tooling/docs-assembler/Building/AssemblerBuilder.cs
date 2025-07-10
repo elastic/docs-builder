@@ -24,7 +24,7 @@ public enum ExportOption
 }
 
 public class AssemblerBuilder(
-	ILoggerFactory logger,
+	ILoggerFactory logFactory,
 	AssembleContext context,
 	GlobalNavigation navigation,
 	GlobalNavigationHtmlWriter writer,
@@ -32,7 +32,7 @@ public class AssemblerBuilder(
 	ILegacyUrlMapper? legacyUrlMapper
 )
 {
-	private readonly ILogger<AssemblerBuilder> _logger = logger.CreateLogger<AssemblerBuilder>();
+	private readonly ILogger<AssemblerBuilder> _logger = logFactory.CreateLogger<AssemblerBuilder>();
 
 	private GlobalNavigationHtmlWriter HtmlWriter { get; } = writer;
 
@@ -49,7 +49,7 @@ public class AssemblerBuilder(
 		var esExporter =
 			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
 			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
-				? new ElasticsearchMarkdownExporter(logger, context.Collector, url, apiKey)
+				? new ElasticsearchMarkdownExporter(logFactory, context.Collector, url, apiKey)
 				: null;
 
 		var markdownExporters = new List<IMarkdownExporter>(3);
@@ -146,7 +146,7 @@ public class AssemblerBuilder(
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
-			logger, HtmlWriter,
+			logFactory, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
 			positionalNavigation: navigation,

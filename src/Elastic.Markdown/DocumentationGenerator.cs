@@ -53,7 +53,7 @@ public class DocumentationGenerator
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
-		ILoggerFactory logger,
+		ILoggerFactory logFactory,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
@@ -67,7 +67,7 @@ public class DocumentationGenerator
 		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_conversionCollector = conversionCollector;
 		_writeFileSystem = docSet.Context.WriteFileSystem;
-		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
+		_logger = logFactory.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;

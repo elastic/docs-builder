@@ -134,7 +134,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public DocumentationSet(
 		BuildContext context,
-		ILoggerFactory logger,
+		ILoggerFactory logFactory,
 		ICrossLinkResolver? linkResolver = null,
 		TableOfContentsTreeCollector? treeCollector = null
 	)
@@ -144,7 +144,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.DocumentationOutputDirectory;
 		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(context.Configuration, Aws3LinkIndexReader.CreateAnonymous(), logger));
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(logFactory, context.Configuration, Aws3LinkIndexReader.CreateAnonymous()));
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();

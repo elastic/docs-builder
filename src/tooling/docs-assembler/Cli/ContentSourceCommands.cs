@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
@@ -16,18 +15,9 @@ namespace Documentation.Assembler.Cli;
 
 internal sealed class ContentSourceCommands(ICoreService githubActionsService, ILoggerFactory logFactory)
 {
-	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
-	private void AssignOutputLogger()
-	{
-		var log = logFactory.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
-	}
-
 	[Command("validate")]
 	public async Task<int> Validate(Cancel ctx = default)
 	{
-		AssignOutputLogger();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
@@ -80,7 +70,6 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 	[Command("match")]
 	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, Cancel ctx = default)
 	{
-		AssignOutputLogger();
 		var logger = logFactory.CreateLogger<ContentSourceCommands>();
 
 		var repo = repository ?? githubActionsService.GetInput("repository");

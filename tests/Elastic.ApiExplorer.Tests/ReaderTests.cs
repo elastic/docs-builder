@@ -62,7 +62,7 @@ public class ReaderTests
 		};
 		var collector = new DiagnosticsCollector([]);
 		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
-		var generator = new OpenApiGenerator(context, NoopMarkdownStringRenderer.Instance, NullLoggerFactory.Instance);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		context.Configuration.OpenApiSpecification.Should().NotBeNull();
 
 		var openApiDocument = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);

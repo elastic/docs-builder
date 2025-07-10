@@ -11,10 +11,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Deploying;
 
-public class AwsS3SyncPlanStrategy(IAmazonS3 s3Client, string bucketName, AssembleContext context, ILoggerFactory loggerFactory) : IDocsSyncPlanStrategy
+public class AwsS3SyncPlanStrategy(ILoggerFactory logFactory, IAmazonS3 s3Client, string bucketName, AssembleContext context) : IDocsSyncPlanStrategy
 {
 	internal const long PartSize = 5 * 1024 * 1024; // 5MB
-	private readonly ILogger<AwsS3SyncPlanStrategy> _logger = loggerFactory.CreateLogger<AwsS3SyncPlanStrategy>();
+	private readonly ILogger<AwsS3SyncPlanStrategy> _logger = logFactory.CreateLogger<AwsS3SyncPlanStrategy>();
 	private static readonly ConcurrentDictionary<string, string> EtagCache = new();
 
 	private bool IsSymlink(string path)

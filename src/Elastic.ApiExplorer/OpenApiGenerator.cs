@@ -38,9 +38,9 @@ public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGro
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer markdownStringRenderer, ILoggerFactory logger)
+public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, IMarkdownStringRenderer markdownStringRenderer)
 {
-	private readonly ILogger _logger = logger.CreateLogger<OpenApiGenerator>();
+	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 
