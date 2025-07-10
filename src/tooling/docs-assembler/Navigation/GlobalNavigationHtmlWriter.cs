@@ -5,11 +5,14 @@
 using System.Collections.Concurrent;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
+using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Navigation;
 
-public class GlobalNavigationHtmlWriter(GlobalNavigation globalNavigation) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, GlobalNavigation globalNavigation) : INavigationHtmlWriter
 {
+	private readonly ILogger<Program> _logger = logFactory.CreateLogger<Program>();
+
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
 	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default)
@@ -30,10 +33,7 @@ public class GlobalNavigationHtmlWriter(GlobalNavigation globalNavigation) : INa
 			};
 		}
 
-		Console.WriteLine($"Rendering navigation for {lastParentBeforeRoot.NavigationTitle} ({lastParentBeforeRoot.Id})");
-		if (lastParentBeforeRoot.NavigationTitle == "Cloud release notes")
-		{
-		}
+		_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", lastParentBeforeRoot.NavigationTitle, lastParentBeforeRoot.Id);
 
 		if (lastParentBeforeRoot is not DocumentationGroup group)
 			return NavigationRenderResult.Empty;
