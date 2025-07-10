@@ -3,30 +3,17 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 
 namespace Documentation.Assembler.Navigation;
 
-#pragma warning disable CS9113 // Parameter is unread.
-public class GlobalNavigationHtmlWriter(
-	GlobalNavigationFile navigationFile,
-	AssembleContext assembleContext,
-	GlobalNavigation globalNavigation,
-	AssembleSources assembleSources
-) : INavigationHtmlWriter
-#pragma warning restore CS9113 // Parameter is unread.
+public class GlobalNavigationHtmlWriter(GlobalNavigation globalNavigation) : INavigationHtmlWriter
 {
 	private readonly ConcurrentDictionary<(string, int), string> _renderedNavigationCache = [];
 
-	private ImmutableHashSet<Uri> Phantoms { get; } = [.. navigationFile.Phantoms.Select(p => p.Source)];
-
 	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default)
 	{
-		await Task.CompletedTask;
 		INodeNavigationItem<INavigationModel, INavigationItem> lastParentBeforeRoot = currentRootNavigation;
 		INodeNavigationItem<INavigationModel, INavigationItem> parent = currentRootNavigation;
 		while (parent.Parent is not null)

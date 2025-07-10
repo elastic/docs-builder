@@ -27,9 +27,7 @@ public record GlobalNavigation : IPositionalNavigation
 
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
-#pragma warning disable IDE0052
 	private ImmutableHashSet<Uri> Phantoms { get; }
-#pragma warning restore IDE0052
 
 	private TableOfContentsTree RootContentTree { get; }
 
