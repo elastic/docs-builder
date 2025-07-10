@@ -89,7 +89,8 @@ The syntax follows the format `<scheme>://<path>`, where:
 - `path`: The file path within that repository
 
 :::{important}
-The `path` in cross-repo links must be relative to the `docset.yml` file and not the full path within the repo
+- The `path` in cross-repo links must be relative to the `docset.yml` file and not the full path within the repo.
+- The link text is mandatory; if you omit it, the link will fail to be displayed. 
 :::
 
 Never use a full URL for links across documentation repositories.
