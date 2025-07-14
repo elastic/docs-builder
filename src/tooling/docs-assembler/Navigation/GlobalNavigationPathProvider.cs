@@ -25,7 +25,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		_assembleSources = assembleSources;
 		_context = context;
 
-		TableOfContentsPrefixes = [..assembleSources.TocTopLevelMappings
+		TableOfContentsPrefixes = [..assembleSources.NavigationTocMappings
 			.Values
 			.Select(p =>
 			{
@@ -91,7 +91,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			break;
 		}
 
-		if (match is null || !_assembleSources.TocTopLevelMappings.TryGetValue(match, out var toc))
+		if (match is null || !_assembleSources.NavigationTocMappings.TryGetValue(match, out var toc))
 		{
 			if (relativePath.StartsWith("raw-migrated-files/", StringComparison.Ordinal))
 				return null;

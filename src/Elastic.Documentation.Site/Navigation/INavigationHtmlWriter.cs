@@ -10,8 +10,7 @@ public interface INavigationHtmlWriter
 {
 	const int AllLevels = -1;
 
-	Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, Uri navigationSource,
-		int maxLevel, Cancel ctx = default);
+	Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default);
 
 	async Task<string> Render(NavigationViewModel model, Cancel ctx)
 	{
