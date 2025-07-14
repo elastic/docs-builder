@@ -28,7 +28,8 @@ public class DocumentationWebHost
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
 
-	public DocumentationWebHost(string? path, int port, ILoggerFactory logger, IFileSystem readFs, IFileSystem writeFs, VersionsConfiguration versionsConfig)
+	public DocumentationWebHost(ILoggerFactory logFactory, string? path, int port, IFileSystem readFs, IFileSystem writeFs,
+		VersionsConfiguration versionsConfig)
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
@@ -39,7 +40,7 @@ public class DocumentationWebHost
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
-		var collector = new LiveModeDiagnosticsCollector(logger);
+		var collector = new LiveModeDiagnosticsCollector(logFactory);
 
 		var hostUrl = $"http://localhost:{port}";
 
@@ -48,7 +49,7 @@ public class DocumentationWebHost
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
-		GeneratorState = new ReloadableGeneratorState(Context.DocumentationSourceDirectory, Context.DocumentationOutputDirectory, Context, logger);
+		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.DocumentationOutputDirectory, Context);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{

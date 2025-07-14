@@ -11,14 +11,14 @@ using Microsoft.Extensions.Logging;
 namespace Documentation.Assembler.Deploying;
 
 public class AwsS3SyncApplyStrategy(
+	ILoggerFactory logFactory,
 	IAmazonS3 s3Client,
 	ITransferUtility transferUtility,
 	string bucketName,
 	AssembleContext context,
-	ILoggerFactory loggerFactory,
 	DiagnosticsCollector collector) : IDocsSyncApplyStrategy
 {
-	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = loggerFactory.CreateLogger<AwsS3SyncApplyStrategy>();
+	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = logFactory.CreateLogger<AwsS3SyncApplyStrategy>();
 
 	private void DisplayProgress(object? sender, UploadDirectoryProgressArgs args) => LogProgress(_logger, args, null);
 

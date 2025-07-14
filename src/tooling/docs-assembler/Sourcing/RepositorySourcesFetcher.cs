@@ -13,14 +13,14 @@ using ProcNet.Std;
 
 namespace Documentation.Assembler.Sourcing;
 
-public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext context)
+public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleContext context)
 {
-	private readonly ILogger<AssemblerRepositorySourcer> _logger = logger.CreateLogger<AssemblerRepositorySourcer>();
+	private readonly ILogger<AssemblerRepositorySourcer> _logger = logFactory.CreateLogger<AssemblerRepositorySourcer>();
 
 	private AssemblyConfiguration Configuration => context.Configuration;
 	private PublishEnvironment PublishEnvironment => context.Environment;
 
-	private RepositorySourcer RepositorySourcer => new(logger, context.CheckoutDirectory, context.ReadFileSystem, context.Collector);
+	private RepositorySourcer RepositorySourcer => new(logFactory, context.CheckoutDirectory, context.ReadFileSystem, context.Collector);
 
 	public CheckoutResult GetAll()
 	{
@@ -121,9 +121,9 @@ public class AssemblerRepositorySourcer(ILoggerFactory logger, AssembleContext c
 }
 
 
-public class RepositorySourcer(ILoggerFactory logger, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
+public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
 {
-	private readonly ILogger<RepositorySourcer> _logger = logger.CreateLogger<RepositorySourcer>();
+	private readonly ILogger<RepositorySourcer> _logger = logFactory.CreateLogger<RepositorySourcer>();
 
 	// <summary>
 	// Clones the repository to the checkout directory and checks out the specified git reference.

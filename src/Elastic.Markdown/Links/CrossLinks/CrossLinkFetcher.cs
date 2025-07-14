@@ -32,9 +32,9 @@ public record FetchedCrossLinks
 	};
 }
 
-public abstract class CrossLinkFetcher(ILinkIndexReader linkIndexProvider, ILoggerFactory logger) : IDisposable
+public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : IDisposable
 {
-	private readonly ILogger _logger = logger.CreateLogger(nameof(CrossLinkFetcher));
+	private readonly ILogger _logger = logFactory.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly HttpClient _client = new();
 	private LinkRegistry? _linkIndex;
 
@@ -151,7 +151,7 @@ public abstract class CrossLinkFetcher(ILinkIndexReader linkIndexProvider, ILogg
 	public void Dispose()
 	{
 		_client.Dispose();
-		logger.Dispose();
+		logFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }
