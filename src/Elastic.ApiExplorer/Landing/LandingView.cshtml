@@ -1,10 +1,92 @@
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
+@using Elastic.ApiExplorer.Landing
+@using Elastic.ApiExplorer.Operations
+@using Elastic.Documentation.Site.Navigation
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	private IHtmlContent RenderOp(IReadOnlyCollection<OperationNavigationItem> endpointOperations)
+	{
+		<ul class="api-url-listing">
+		@foreach (var overload in endpointOperations)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			<li class="api-url-list-item">
+				<a href="@overload.Url" class="current api-url-list-item-landing" hx-disable="true">
+					<span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					<span class="api-url">@overload.Model.Route</span>
+				</a>
+			</li>
+		}
+		</ul>
+
+		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderProduct(INavigationItem item)
+	{
+		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+		{
+			foreach (var navigationItem in node.NavigationItems)
+			{
+				if (navigationItem is ClassificationNavigationItem classification)
+				{
+					<tr>
+						<td colspan="2"><h2>@(classification.NavigationTitle)</h2></td>
+					</tr>
+					@RenderProduct(classification)
+				}
+				else if (navigationItem is TagNavigationItem tag)
+				{
+					<tr>
+						<td colspan="2"><h3>@(tag.NavigationTitle)</h3><td>
+					</tr>
+					@RenderProduct(tag)
+				}
+				else if (navigationItem is EndpointNavigationItem endpoint)
+				{
+					var endpointOperations =
+						endpoint is { NavigationItems.Count: > 0 } && endpoint.NavigationItems.All(n => n.Hidden)
+							? endpoint.NavigationItems
+							: [];
+						if (endpointOperations.Count > 0)
+						{
+							<tr>
+								<td class="api-name">@(endpoint.NavigationTitle)</td>
+								<td>@RenderOp(endpointOperations)</td>
+							</tr>
+						}
+						else
+						{
+							@RenderProduct(endpoint)
+						}
+				}
+				else if (navigationItem is OperationNavigationItem operation)
+				{
+					<tr>
+						<td class="api-name">@(operation.NavigationTitle)</td>
+						<td>@RenderOp([operation])</td>
+					</tr>
+				}
+				else
+				{
+					throw new Exception($"Unexpected type: {item.GetType().FullName}");
+				}
+			}
+		}
+
+		return HtmlString.Empty;
+
+	}
 }
 <section id="elastic-docs-v3">
 	<h1>@Model.ApiInfo.Title</h1>
 	<p>@Model.ApiInfo.Description</p>
-	<p>License: @Model.ApiInfo.License?.Identifier</p>
+	<p>License: @Model.ApiInfo.License?.Name</p>
+	<div class="api-overview">
+		<table>
+			@RenderProduct(Model.CurrentNavigationItem.NavigationRoot)
+		</table>
+	</div>
 </section>
