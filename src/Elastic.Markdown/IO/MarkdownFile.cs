@@ -57,7 +57,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		ScopeDirectory = build.Configuration.ScopeDirectory;
 
 		NavigationRoot = set.Tree;
-		NavigationSource = set.Source;
 	}
 
 	public bool PartOfNavigation { get; set; }
@@ -65,8 +64,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
-
-	public Uri NavigationSource { get; set; }
 
 	private IDiagnosticsCollector Collector { get; }
 

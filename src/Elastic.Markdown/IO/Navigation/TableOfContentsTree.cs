@@ -8,7 +8,7 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 
-[DebuggerDisplay("Toc >{Depth} {FolderName} ({NavigationItems.Count} items)")]
+[DebuggerDisplay("Toc: {Depth} {NavigationSource} > ({NavigationItems.Count} items)")]
 public class TableOfContentsTree : DocumentationGroup, IRootNavigationItem<MarkdownFile, INavigationItem>
 {
 	public Uri Source { get; }
