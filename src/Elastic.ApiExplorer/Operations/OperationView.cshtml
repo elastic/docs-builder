@@ -34,7 +34,7 @@
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
 			<li class="api-url-list-item">
-				<a href="@overload.Url" class="@current">
+				<a href="@overload.Url" class="@current" hx-disable="true">
 					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
 					 <span class="api-url">@overload.Model.Route</span>
 				</a>
