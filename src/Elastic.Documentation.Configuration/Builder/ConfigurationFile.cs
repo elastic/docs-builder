@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
@@ -61,7 +62,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(IDocumentationContext context)
+	public ConfigurationFile(IDocumentationContext context, VersionsConfiguration versionsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -157,6 +158,32 @@ public record ConfigurationFile : ITableOfContentsScope
 						reader.EmitWarning($"{entry.Key} is not a known configuration", entry.Key);
 						break;
 				}
+			}
+
+			foreach (var (id, system) in versionsConfig.VersioningSystems)
+			{
+				var name = id.ToStringFast(true);
+				var current = system.Current;
+				var key = $"version.{name}";
+				_substitutions[key] = system.Current;
+
+				key = $"version.{name}.base";
+				_substitutions[key] = system.Base;
+
+				key = $"version.{name}.major_minor";
+				_substitutions[key] = $"{current.Major:N0}.{current.Minor:N0}";
+
+				key = $"version.{name}.major_x";
+				_substitutions[key] = $"{current.Major:N0}.x";
+
+				key = $"version.{name}.major_component";
+				_substitutions[key] = $"{current.Major:N0}";
+
+				key = $"version.{name}.next_minor";
+				_substitutions[key] = new SemVersion(current.Major, current.Minor + 1, current.Patch, current.Prerelease, current.Metadata);
+
+				key = $"version.{name}.next_major";
+				_substitutions[key] = new SemVersion(current.Major + 1, current.Minor, current.Patch, current.Prerelease, current.Metadata);
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");
