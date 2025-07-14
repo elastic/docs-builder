@@ -53,7 +53,7 @@ public class NavigationPrefixChecker
 		_logger = logFactory.CreateLogger<NavigationPrefixChecker>();
 		_logFactoryFactory = logFactory;
 
-		var tocTopLevelMappings = AssembleSources.GetConfiguredSources(context);
+		var tocTopLevelMappings = AssembleSources.GetTocMappings(context);
 		_uriResolver = new PublishEnvironmentUriResolver(tocTopLevelMappings, context.Environment);
 	}
 

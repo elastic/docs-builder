@@ -288,7 +288,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), INavigationHtmlWriter.AllLevels, ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, INavigationHtmlWriter.AllLevels, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,
