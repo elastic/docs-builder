@@ -71,7 +71,7 @@
 	li {
 		a {
 			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
-			@apply border-white rounded-sm border;
+			@apply rounded-sm border border-white;
 		}
 		a:hover {
 			@apply bg-grey-10;
@@ -79,7 +79,7 @@
 		}
 		a.current {
 			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
-			@apply border-white rounded-sm border;
+			@apply rounded-sm border border-white;
 		}
 		a.current:hover {
 			@apply bg-grey-10;
@@ -89,7 +89,7 @@
 	li:only-child {
 		a.current {
 			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
-			@apply border-white rounded-sm border;
+			@apply rounded-sm border border-white;
 		}
 		a.current:hover {
 			@apply bg-grey-10;
@@ -103,7 +103,7 @@
 		td:has(h2) {
 		}
 		td:has(h3) {
-			@apply border-b-grey-20 border-b-1 pb-2 mb-2;
+			@apply border-b-grey-20 mb-2 border-b-1 pb-2;
 		}
 		td.api-name {
 			@apply pr-2;
@@ -114,7 +114,7 @@
 			@apply border-b-grey-10 border-b-1;
 		}
 		tr:has(td.api-name) td {
-			@apply pt-4 mt-4 pb-4 mb-4;
+			@apply mt-4 mb-4 pt-4 pb-4;
 		}
 	}
 }
@@ -134,10 +134,7 @@
 		'Courier New',
 		monospace
 	);
-	font-feature-settings: var(
-		--default-mono-font-feature-settings,
-		normal
-	);
+	font-feature-settings: var(--default-mono-font-feature-settings, normal);
 	font-variation-settings: var(
 		--default-mono-font-variation-settings,
 		normal
