@@ -82,7 +82,7 @@
 }
 <section id="elastic-docs-v3">
 	<h1>@Model.ApiInfo.Title</h1>
-	<p>@Model.ApiInfo.Description</p>
+	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
 	<p>License: @Model.ApiInfo.License?.Name</p>
 	<div class="api-overview">
 		<table>
