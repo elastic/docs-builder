@@ -176,7 +176,7 @@ public class SubstitutionParser : InlineParser
 		startPosition -= openSticks;
 		startPosition = Math.Max(startPosition, 0);
 
-		var key = content.ToString().Trim(['{', '}']).ToLowerInvariant();
+		var key = content.ToString().Trim(['{', '}']).Trim().ToLowerInvariant();
 		var found = false;
 		var replacement = string.Empty;
 		var components = key.Split('|');
