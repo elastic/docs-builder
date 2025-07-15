@@ -3,6 +3,7 @@ sub:
   frontmatter_key: "Front Matter Value"
   a-key-with-dashes: "A key with dashes"
   version: 7.17.0
+  hello-world: "Hello world!"
 ---
 
 # Substitutions
@@ -26,7 +27,7 @@ Doing so will result in a build error.
 
 To use the variables in your files, surround them in curly brackets (`{{variable}}`).
 
-## Example
+### Example
 
 Here are some variable substitutions:
 
@@ -35,6 +36,97 @@ Here are some variable substitutions:
 | {{frontmatter_key}}   | Front Matter |
 | {{a-key-with-dashes}} | Front Matter |
 | {{a-global-variable}} | `docset.yml` |
+
+## Mutations
+
+Substitutions can be mutated using a chain of operators seperated by a pipe (`|`).
+
+````markdown
+`{{hello-world | trim | lc | tc}}`
+````
+
+Will trim, lowercase and finally titlecase the contents of the 'hello-world' variable.
+
+### Operators
+
+
+| Operator | Purpose                                            |
+|----------|----------------------------------------------------|
+| `lc`     | LowerCase,                                         |
+| `uc`     | UpperCase,                                         |
+| `tc`     | TitleCase, capitalizes all words,                  |
+| `c`      | Capitalize the first letter,                       |
+| `kc`     | Convert to KebabCase,                              |
+| `sc`     | Convert to SnakeCase,                              |
+| `cc`     | Convert to CamelCase,                              |
+| `pc`     | Convert to PascalCase,                             |
+| `trim`   | Trim common non word characters from start and end |
+
+For variables declaring a semantic version or `Major.Minor` the following operations are also exposed
+
+| Operator | Purpose                                  |
+|----------|------------------------------------------|
+| `M`      | Display only the major component         |
+| `M.x`    | Display major component followed by '.x' |
+| `M.M`    | Display only the major and the minor     |
+| `M+1`    | The next major version                   |
+| `M.M+1`  | The next minor version                   |
+
+### Example
+
+Given the following frontmatter:
+
+```yaml
+---
+sub:
+  hello-world: "Hello world!"
+---
+```
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+* Lowercase: {{hello-world | lc}}
+* Uppercase: {{hello-world | uc}}
+* TitleCase: {{hello-world | tc}}
+* kebab-case: {{hello-world | kc}}
+* camelCase: {{hello-world | tc | cc}}
+* PascalCase: {{hello-world | pc}}
+* SnakeCase: {{hello-world | sc}}
+* CapitalCase (chained): {{hello-world | lc | c}}
+* Trim: {{hello-world | trim}}
+* M.x: {{version.stack | M.x }}
+* M.M: {{version.stack | M.M }}
+* M: {{version.stack | M }}
+* M+1: {{version.stack | M+1 }}
+* M+1 | M.M: {{version.stack | M+1 | M.M }}
+* M.M+1: {{version.stack | M.M+1 }}
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+* Lowercase: {{hello-world | lc}}
+* Uppercase: {{hello-world | uc}}
+* TitleCase: {{hello-world | tc}}
+* kebab-case: {{hello-world | kc}}
+* camelCase: {{hello-world | tc | cc}}
+* PascalCase: {{hello-world | pc}}
+* SnakeCase: {{hello-world | sc}}
+* CapitalCase (chained): {{hello-world | lc | c}}
+* Trim: {{hello-world | trim}}
+* M.x: {{version.stack | M.x }}
+* M.M: {{version.stack | M.M }}
+* M: {{version.stack | M }}
+* M+1: {{version.stack | M+1 }}
+* M+1 | M.M: {{version.stack | M+1 | M.M }}
+* M.M+1: {{version.stack | M.M+1 }}
+````
+:::
+
+::::
 
 ## Code blocks
 

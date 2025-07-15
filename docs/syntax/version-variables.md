@@ -10,14 +10,21 @@ Besides the current version, the following suffixes are available:
 
 | Version substitution                 | result                            | purpose                                 |
 |--------------------------------------|-----------------------------------|-----------------------------------------| 
-| `{{versions.stack}}`                 | {{version.stack}}                 | Current version                         |
-| `{{versions.stack.major_minor}}`     | {{version.stack.major_minor}}     | Current `MAJOR.MINOR`                   |
-| `{{versions.stack.major_x}}`         | {{version.stack.major_x}}         | Current `MAJOR.X`                       |
-| `{{versions.stack.major_component}}` | {{version.stack.major_component}} | Current major component                 |
-| `{{versions.stack.next_major}}`      | {{version.stack.next_major}}      | The next major version                  |
-| `{{versions.stack.next_minor}}`      | {{version.stack.next_minor}}      | The next minor version                  |
-| `{{versions.stack.base}}`            | {{version.stack.base}}            | The first version on the new doc system |
+| `{{version.stack}}`                 | {{version.stack}}                 | Current version                         |
+| `{{version.stack.base}}`            | {{version.stack.base}}            | The first version on the new doc system |
 
+## Formatting
+
+Using specialized [mutation operators](substitutions.md#mutations) versions 
+can be printed in any kind of ways.
+
+
+| Version substitution   | result    |
+|------------------------|-----------|
+| `{{version.stack| M.M}}`    |  {{version.stack|M.M}} |
+| `{{version.stack.base | M }}`     | {{version.stack.base | M }} |
+| `{{version.stack | M+1       | M }}` | {{version.stack | M+1 | M }} |
+| `{{version.stack.base | M.M+1 }}` | {{version.stack.base | M.M+1 }} |
 
 ## Available versioning schemes.
 
