@@ -21,7 +21,7 @@ Besides the current version, the following suffixes are available:
 
 ## Available versioning schemes.
 
-This is dictated by the [version.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml) configuration file
+This is dictated by the [versions.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml) configuration file
 
 * `stack`
 * `ece`
