@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -209,7 +210,8 @@ public class SubstitutionParser : InlineParser
 		};
 
 		if (!found)
-			processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} is undefined");
+			// We temporarily diagnose variable spaces as hints. We used to not read this at all.
+			processor.Emit(key.Contains(' ') ? Severity.Error : Severity.Hint, line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} is undefined");
 		else
 		{
 			List<SubstitutionMutation>? mutations = null;
