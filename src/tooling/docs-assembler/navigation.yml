@@ -217,24 +217,8 @@ toc:
   - toc: reference
     path_prefix: reference
     children:
-      # Security
-      # ✅ https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
-      - toc: docs-content://reference/security
-        path_prefix: reference/security
-        # Children include: Endpoint command reference, Elastic Defend,
-        # Fields and object schemas
-        children:
-         - toc: detection-rules://
-           path_prefix: reference/security/prebuilt-rules
 
-      # Observability
-      # ✅ https://github.com/elastic/docs-content/blob/main/reference/observability/toc.yml
-      - toc: docs-content://reference/observability
-        path_prefix: reference/observability
-        # Children include: Fields and object schemas, Elastic Entity Model,
-        # Infrastructure app fields
-
-      # Elasticsearch and index management
+      # Elasticsearch
       # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch/toc.yml
       - toc: elasticsearch://reference/elasticsearch
         path_prefix: reference/elasticsearch
@@ -322,6 +306,28 @@ toc:
               # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/community-contributed/toc.yml
               - toc: elasticsearch://reference/community-contributed
                 path_prefix: reference/elasticsearch/clients/community
+
+          # Elasticsearch plugins
+          # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch-plugins/toc.yml
+          - toc: elasticsearch://reference/elasticsearch-plugins
+            path_prefix: reference/elasticsearch/plugins
+          
+      # Security
+      # ✅ https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
+      - toc: docs-content://reference/security
+        path_prefix: reference/security
+        # Children include: Endpoint command reference, Elastic Defend,
+        # Fields and object schemas
+        children:
+         - toc: detection-rules://
+           path_prefix: reference/security/prebuilt-rules
+
+      # Observability
+      # ✅ https://github.com/elastic/docs-content/blob/main/reference/observability/toc.yml
+      - toc: docs-content://reference/observability
+        path_prefix: reference/observability
+        # Children include: Fields and object schemas, Elastic Entity Model,
+        # Infrastructure app fields
 
       # Elastic Distributions of OpenTelemetry (EDOT)
       # ✅ https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
@@ -466,11 +472,6 @@ toc:
         path_prefix: reference/kibana
         # Children include the entire AsciiDoc book
         # (minus pages moved to docs-content)
-
-      # Elasticsearch plugins
-      # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch-plugins/toc.yml
-      - toc: elasticsearch://reference/elasticsearch-plugins
-        path_prefix: reference/elasticsearch/plugins
 
       # Query languages
       # ✅ https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
