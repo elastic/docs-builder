@@ -55,6 +55,9 @@ This is dictated by the [version.yml](https://github.com/elastic/docs-builder/bl
 The following are available but should not be used. These map to serverless projects and have a fixed high version number.
 
 * `all`
+* `ech`
+* `ess` (This is deprectated but was added for backwards-compatibility.)
+
 * `serverless`
 * `elasticsearch`
 * `observability`
