@@ -181,7 +181,7 @@ public class SubstitutionParser : InlineParser
 		var replacement = string.Empty;
 		var components = key.Split('|');
 		if (components.Length > 1)
-			key = components[0].Trim();
+			key = components[0].Trim(['{', '}']).Trim().ToLowerInvariant();
 
 		if (context.Substitutions.TryGetValue(key, out var value))
 		{
