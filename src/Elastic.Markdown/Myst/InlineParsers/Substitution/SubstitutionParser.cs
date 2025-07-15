@@ -211,7 +211,7 @@ public class SubstitutionParser : InlineParser
 
 		if (!found)
 			// We temporarily diagnose variable spaces as hints. We used to not read this at all.
-			processor.Emit(key.Contains(' ') ? Severity.Error : Severity.Hint, line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} is undefined");
+			processor.Emit(key.Contains(' ') ? Severity.Hint : Severity.Error, line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} is undefined");
 		else
 		{
 			List<SubstitutionMutation>? mutations = null;
