@@ -163,27 +163,11 @@ public record ConfigurationFile : ITableOfContentsScope
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
 			{
 				var name = id.ToStringFast(true);
-				var current = system.Current;
 				var key = $"version.{name}";
 				_substitutions[key] = system.Current;
 
 				key = $"version.{name}.base";
 				_substitutions[key] = system.Base;
-
-				key = $"version.{name}.major_minor";
-				_substitutions[key] = $"{current.Major:N0}.{current.Minor:N0}";
-
-				key = $"version.{name}.major_x";
-				_substitutions[key] = $"{current.Major:N0}.x";
-
-				key = $"version.{name}.major_component";
-				_substitutions[key] = $"{current.Major:N0}";
-
-				key = $"version.{name}.next_minor";
-				_substitutions[key] = new SemVersion(current.Major, current.Minor + 1, current.Patch, current.Prerelease, current.Metadata);
-
-				key = $"version.{name}.next_major";
-				_substitutions[key] = new SemVersion(current.Major + 1, current.Minor, current.Patch, current.Prerelease, current.Metadata);
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");
