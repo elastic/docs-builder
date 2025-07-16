@@ -93,6 +93,7 @@ toc:
       - file: frontmatter.md
       - file: icons.md
       - file: images.md
+      - file: kbd.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
