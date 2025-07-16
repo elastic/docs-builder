@@ -27,9 +27,9 @@ using Microsoft.Extensions.Options;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class RepositoryCommands(ICoreService githubActionsService, ILoggerFactory logger, IOptions<VersionsConfiguration> versionsConfigOption)
+internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
 {
-	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
@@ -55,10 +55,10 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
-		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
+		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
 
@@ -93,7 +93,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 
 		_log.LogInformation("Building all repositories for environment {Environment}", environment);
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);
@@ -115,7 +115,7 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 		}
 
 		_log.LogInformation("Get all clone directory information");
-		var cloner = new AssemblerRepositorySourcer(logger, assembleContext);
+		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();
 		var checkouts = checkoutResult.Checkouts.ToArray();
 
@@ -123,18 +123,18 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 			throw new Exception("No checkouts found");
 
 		_log.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logger, assembleContext, checkouts, versionsConfigOption.Value, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, versionsConfigOption.Value, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		_log.LogInformation("Create global navigation");
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(navigationFile, assembleContext, navigation, assembleSources);
+		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation);
 		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
-		var builder = new AssemblerBuilder(logger, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
 		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
@@ -158,11 +158,11 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 	[Command("update-all-link-reference")]
 	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
 	{
-		var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService);
+		var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 		// The environment ist not relevant here.
 		// It's only used to get the list of repositories.
 		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
-		var cloner = new RepositorySourcer(logger, assembleContext.CheckoutDirectory, new FileSystem(), collector);
+		var cloner = new RepositorySourcer(logFactory, assembleContext.CheckoutDirectory, new FileSystem(), collector);
 		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
 		{
 			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
@@ -186,8 +186,8 @@ internal sealed class RepositoryCommands(ICoreService githubActionsService, ILog
 						checkout.Directory.FullName,
 						outputPath
 					);
-					var set = new DocumentationSet(context, logger);
-					var generator = new DocumentationGenerator(set, logger, null, null, null, new NoopDocumentationFileExporter());
+					var set = new DocumentationSet(context, logFactory);
+					var generator = new DocumentationGenerator(set, logFactory, null, null, null, new NoopDocumentationFileExporter());
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();

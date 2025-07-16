@@ -38,9 +38,9 @@ public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGro
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer markdownStringRenderer, ILoggerFactory logger)
+public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, IMarkdownStringRenderer markdownStringRenderer)
 {
-	private readonly ILogger _logger = logger.CreateLogger<OpenApiGenerator>();
+	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 
@@ -288,7 +288,7 @@ public class OpenApiGenerator(BuildContext context, IMarkdownStringRenderer mark
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, new Uri("http://ignored.example"), INavigationHtmlWriter.AllLevels, ctx);
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, INavigationHtmlWriter.AllLevels, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,

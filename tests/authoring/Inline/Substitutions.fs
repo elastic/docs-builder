@@ -46,6 +46,7 @@ The following should be subbed: {{hello-world}}
 not a comment
 not a {{valid-key}}
 not a {substitution}
+The following should be subbed too: {{ hello-world }}
 """
 
     [<Fact>]
@@ -58,5 +59,7 @@ not a {substitution}
  <p>The following should be subbed: Hello World!
  	not a comment
  	not a {{valid-key}}
- 	not a {substitution}</p>
+ 	not a {substitution}
+    The following should be subbed too: Hello World!
+ 	</p>
 """

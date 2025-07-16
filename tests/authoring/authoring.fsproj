@@ -40,9 +40,11 @@
     <Compile Include="Framework\MarkdownDocumentAssertions.fs"/>
     <Compile Include="Framework\CrossLinkResolverAssertions.fs" />
     <Compile Include="Inline\Substitutions.fs"/>
+    <Compile Include="Inline\SubstitutionMutations.fs" />
     <Compile Include="Inline\InlineAnchors.fs"/>
     <Compile Include="Inline\Comments.fs"/>
     <Compile Include="Inline\AppliesToRole.fs" />
+    <Compile Include="Inline\KbdRole.fs" />
     <Compile Include="Inline\InlineAppliesTo.fs" />
     <Compile Include="Inline\InlineLinks.fs" />
     <Compile Include="Inline\CrossLinks.fs" />

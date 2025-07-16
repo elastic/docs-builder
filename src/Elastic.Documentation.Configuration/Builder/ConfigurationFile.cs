@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
@@ -61,7 +62,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(IDocumentationContext context)
+	public ConfigurationFile(IDocumentationContext context, VersionsConfiguration versionsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -157,6 +158,16 @@ public record ConfigurationFile : ITableOfContentsScope
 						reader.EmitWarning($"{entry.Key} is not a known configuration", entry.Key);
 						break;
 				}
+			}
+
+			foreach (var (id, system) in versionsConfig.VersioningSystems)
+			{
+				var name = id.ToStringFast(true);
+				var key = $"version.{name}";
+				_substitutions[key] = system.Current;
+
+				key = $"version.{name}.base";
+				_substitutions[key] = system.Base;
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");

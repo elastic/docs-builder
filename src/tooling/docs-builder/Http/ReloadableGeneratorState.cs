@@ -12,40 +12,41 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Http;
 
-/// <summary>Singleton behaviour enforced by registration on <see cref="IServiceCollection"/></summary>
+/// <summary>Singleton behavior enforced by registration on <see cref="IServiceCollection"/></summary>
 public class ReloadableGeneratorState(
+	ILoggerFactory logFactory,
 	IDirectoryInfo sourcePath,
 	IDirectoryInfo outputPath,
-	BuildContext context,
-	ILoggerFactory logger
-)
+	BuildContext context)
 {
 	private IDirectoryInfo SourcePath { get; } = sourcePath;
 	private IDirectoryInfo OutputPath { get; } = outputPath;
 	public IDirectoryInfo ApiPath { get; } = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
 
-	private DocumentationGenerator _generator = new(new DocumentationSet(context, logger), logger);
+	private DocumentationGenerator _generator = new(new DocumentationSet(context, logFactory), logFactory);
 	public DocumentationGenerator Generator => _generator;
 
 	public async Task ReloadAsync(Cancel ctx)
 	{
 		SourcePath.Refresh();
 		OutputPath.Refresh();
-		var docSet = new DocumentationSet(context, logger);
+		var docSet = new DocumentationSet(context, logFactory);
 		_ = await docSet.LinkResolver.FetchLinks(ctx);
-		var generator = new DocumentationGenerator(docSet, logger);
+		var generator = new DocumentationGenerator(docSet, logFactory);
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);
 
 		await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
 	}
 
+	public async Task ReloadApiReferences(Cancel ctx) => await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
+
 	private async Task ReloadApiReferences(IMarkdownStringRenderer markdownStringRenderer, Cancel ctx)
 	{
 		if (ApiPath.Exists)
 			ApiPath.Delete(true);
 		ApiPath.Create();
-		var generator = new OpenApiGenerator(context, markdownStringRenderer, logger);
+		var generator = new OpenApiGenerator(logFactory, context, markdownStringRenderer);
 		await generator.Generate(ctx);
 	}
 }

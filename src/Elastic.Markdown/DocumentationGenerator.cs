@@ -53,7 +53,7 @@ public class DocumentationGenerator
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
-		ILoggerFactory logger,
+		ILoggerFactory logFactory,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
@@ -67,7 +67,7 @@ public class DocumentationGenerator
 		_documentationFileOutputProvider = documentationFileOutputProvider;
 		_conversionCollector = conversionCollector;
 		_writeFileSystem = docSet.Context.WriteFileSystem;
-		_logger = logger.CreateLogger(nameof(DocumentationGenerator));
+		_logger = logFactory.CreateLogger(nameof(DocumentationGenerator));
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;
@@ -180,7 +180,13 @@ public class DocumentationGenerator
 	{
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
-		var keysNotInUse = definedKeys.Except(inUse).ToArray();
+		var keysNotInUse = definedKeys.Except(inUse)
+				// versions keys are injected
+				.Where(key => !key.StartsWith("version."))
+				// reserving context namespace
+				.Where(key => !key.StartsWith("context."))
+				.ToArray();
+
 		// If we have less than 20 unused keys, emit them separately,
 		// Otherwise emit one hint with all of them for brevity
 		if (keysNotInUse.Length >= 20)

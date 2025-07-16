@@ -93,6 +93,7 @@ toc:
       - file: frontmatter.md
       - file: icons.md
       - file: images.md
+      - file: kbd.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
@@ -100,6 +101,7 @@ toc:
       - file: sidebars.md
       - file: stepper.md
       - file: substitutions.md
+      - file: version-variables.md
       - file: sundries.md
       - file: tables.md
       - file: tabs.md

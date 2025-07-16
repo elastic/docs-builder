@@ -11,32 +11,25 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class DiffCommands(ILoggerFactory logger, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
+internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
 {
 	/// <summary>
-	/// Validates redirect updates in the current branch using the redirects file against changes reported by git.
+	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
 	/// </summary>
 	/// <param name="path">The baseline path to perform the check</param>
 	/// <param name="ctx"></param>
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	[Command("validate")]
-	[ConsoleAppFilter<StopwatchFilter>]
-	[ConsoleAppFilter<CatchExceptionFilter>]
 	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
 	{
-		var log = logger.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
-
 		path ??= "docs";
 
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService).StartAsync(ctx);
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
