@@ -52,7 +52,7 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	}
 
 	/// <inheritdoc />
-	public bool IsUsingNavigationDropdown => NavigationItems.OfType<ClassificationNavigationItem>().Any();
+	public bool IsUsingNavigationDropdown => false;
 }
 
 public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationItem> : INodeNavigationItem<TGroupingModel, TNavigationItem>
@@ -106,7 +106,7 @@ public class ClassificationNavigationItem(ApiClassification classification, Land
 	public override string Id { get; } = ShortId.Create(classification.Name);
 
 	/// <inheritdoc />
-	public bool IsUsingNavigationDropdown => true;
+	public bool IsUsingNavigationDropdown => false;
 }
 
 public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)

@@ -166,6 +166,11 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
+#if DEBUG
+		// only reload when actually debugging
+		if (System.Diagnostics.Debugger.IsAttached)
+			await holder.ReloadApiReferences(ctx);
+#endif
 		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)

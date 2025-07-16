@@ -7,10 +7,9 @@
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
 @{
-	var parent = Model.CurrentNavigationItem.Parent as EndpointNavigationItem;
 	var self = Model.CurrentNavigationItem as OperationNavigationItem;
 	var allOperations =
-		parent is not null && parent.NavigationItems.Count > 0 && parent.NavigationItems.All(n => n.Hidden)
+		Model.CurrentNavigationItem.Parent is EndpointNavigationItem { NavigationItems.Count: > 0 } parent && parent.NavigationItems.All(n => n.Hidden)
 			? parent.NavigationItems
 			: self is not null
 				? [self]

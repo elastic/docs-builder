@@ -39,6 +39,8 @@ public class ReloadableGeneratorState(
 		await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
 	}
 
+	public async Task ReloadApiReferences(Cancel ctx) => await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
+
 	private async Task ReloadApiReferences(IMarkdownStringRenderer markdownStringRenderer, Cancel ctx)
 	{
 		if (ApiPath.Exists)
