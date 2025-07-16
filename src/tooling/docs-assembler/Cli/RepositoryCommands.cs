@@ -85,7 +85,7 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 		[ExporterParser] IReadOnlySet<ExportOption>? exporters = null,
 		Cancel ctx = default)
 	{
-		exporters ??= new HashSet<ExportOption>([ExportOption.Html]);
+		exporters ??= new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
 
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
@@ -223,7 +223,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 {
 	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<ExportOption> result)
 	{
-		result = new HashSet<ExportOption>([ExportOption.Html]);
+		result = new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
 		var set = new HashSet<ExportOption>();
 		var ranges = s.Split(',');
 		foreach (var range in ranges)
@@ -235,6 +235,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"es" => ExportOption.Elasticsearch,
 				"elasticsearch" => ExportOption.Elasticsearch,
 				"html" => ExportOption.Html,
+				"config" => ExportOption.Configuration,
 				_ => null
 			};
 			if (export.HasValue)

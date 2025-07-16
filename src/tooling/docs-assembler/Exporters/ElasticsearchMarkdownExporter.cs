@@ -16,6 +16,43 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Exporters;
 
+public class ConfigurationExporter(ILoggerFactory logFactory, AssembleContext context) : IMarkdownExporter
+{
+	private readonly ILogger<ConfigurationExporter> _logger = logFactory.CreateLogger<ConfigurationExporter>();
+
+	/// <inheritdoc />
+	public ValueTask StartAsync(CancellationToken ctx = default) => default;
+
+	/// <inheritdoc />
+	public ValueTask StopAsync(CancellationToken ctx = default) => default;
+
+	/// <inheritdoc />
+	public ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, CancellationToken ctx) => default;
+
+	/// <inheritdoc />
+	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, CancellationToken ctx)
+	{
+		_logger.LogInformation("Exporting configuration");
+		var config = context.ConfigurationPath;
+		var fs = context.WriteFileSystem;
+		var configFolder = fs.DirectoryInfo.New(Path.Combine(context.OutputDirectory.FullName, "config"));
+		if (!configFolder.Exists)
+			configFolder.Create();
+
+		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", config.Name, configFolder.FullName);
+		context.WriteFileSystem.File.Copy(config.FullName, Path.Combine(configFolder.FullName, config.Name), true);
+
+		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", context.NavigationPath.Name, configFolder.FullName);
+		context.WriteFileSystem.File.Copy(context.NavigationPath.FullName, Path.Combine(configFolder.FullName, context.NavigationPath.Name), true);
+
+		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", context.HistoryMappingPath.Name, configFolder.FullName);
+		context.WriteFileSystem.File.Copy(context.HistoryMappingPath.FullName, Path.Combine(configFolder.FullName, context.HistoryMappingPath.Name), true);
+
+
+		return default;
+	}
+}
+
 public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 {
 	private readonly DiagnosticsCollector _collector;
