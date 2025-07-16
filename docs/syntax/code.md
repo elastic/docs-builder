@@ -309,6 +309,11 @@ GET /mydocuments/_search
 
 ::::
 
+### Code block substitutions
+
+You can use substitutions to insert reusable values into your code block examples.
+Check the [code blocks substitutions syntax](./substitutions.md#code-blocks) for more information.
+
 ## Inline code
 
 Use backticks to create an inline code span.
