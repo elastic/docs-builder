@@ -25,6 +25,7 @@ module ResultsAssertions =
                 match l.Type with
                 | ChangeType.Modified -> true
                 | ChangeType.Inserted -> true
+                | ChangeType.Deleted -> true
                 | _ -> false
             )
             |> Seq.length

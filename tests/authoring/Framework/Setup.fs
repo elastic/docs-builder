@@ -210,7 +210,13 @@ type Setup =
             )
         )
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
-        let context = BuildContext(collector, fileSystem, UrlPathPrefix=(options.UrlPathPrefix |> Option.defaultValue ""), versionsConfig = versionConfig)
+        let context = BuildContext(
+            collector,
+            fileSystem,
+            UrlPathPrefix = (options.UrlPathPrefix |> Option.defaultValue ""),
+            versionsConfig = versionConfig,
+            CanonicalBaseUrl = Uri("https://www.elastic.co/")
+        )
         let logger = new TestLoggerFactory()
         let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)

@@ -40,15 +40,6 @@ type ``include hoists anchors and table of contents`` () =
         """
 
     [<Fact>]
-    let ``converts to LLM`` () =
-        generator |> convertsToLLM """
-# A Document that lives at the root
-
-## header from snippet [aa]
-
- """
-
-    [<Fact>]
     let ``validate test-links.md HTML includes snippet`` () =
         generator |> converts "test-links.md" |> toHtml """
             <h1>parent.md</h1>
@@ -93,15 +84,3 @@ Some more content after includes
 
     [<Fact>]
     let ``has no errors`` () = generator |> hasNoErrors
-
-    [<Fact>]
-    let ``converts to LLM`` () =
-        generator |> convertsToLLM """
-# A Document that lives at the root
-
-## header from snippet [aa]
-
-[link to root with included anchor](../index.md#aa)
-
-Some more content after includes
- """

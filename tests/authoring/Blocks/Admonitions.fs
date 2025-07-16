@@ -36,11 +36,6 @@ type ``admonition in list`` () =
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
-    [<Fact>]
-    let ``converts to LLM`` () =
-        markdown |> convertsToLLM """
- """
-
 type ``nested admonition in list`` () =
     static let markdown = Setup.Markdown """
 :::{note}

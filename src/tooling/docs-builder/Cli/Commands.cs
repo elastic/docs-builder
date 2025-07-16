@@ -15,6 +15,7 @@ using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -144,7 +145,11 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 			metadataOnly ??= metaValue;
 		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
 
-		var generator = new DocumentationGenerator(set, logFactory, null, null, null, exporter);
+		// Add LLM markdown export alongside HTML generation
+		var markdownExporters = new List<IMarkdownExporter>();
+		markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
+
+		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray(), exporter);
 		_ = await generator.GenerateAll(ctx);
 
 

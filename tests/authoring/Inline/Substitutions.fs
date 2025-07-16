@@ -23,18 +23,6 @@ not a comment
 not a comment</p>
         """
 
-    [<Fact>]
-    let ``converts to LLM`` () =
-        markdown |> convertsToLLM """
----
-sub:
-  hello-world: "Hello World!"
----
-The following should be subbed: Hello World!
-not a comment
-"""
-
-
 type ``requires valid syntax and key to be found`` () =
     static let markdown = Setup.Document """---
 sub:

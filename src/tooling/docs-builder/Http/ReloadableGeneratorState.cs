@@ -6,7 +6,9 @@ using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -32,7 +34,12 @@ public class ReloadableGeneratorState(
 		OutputPath.Refresh();
 		var docSet = new DocumentationSet(context, logFactory);
 		_ = await docSet.LinkResolver.FetchLinks(ctx);
-		var generator = new DocumentationGenerator(docSet, logFactory);
+
+		// Add LLM markdown export for dev server
+		var markdownExporters = new List<IMarkdownExporter>();
+		markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
+
+		var generator = new DocumentationGenerator(docSet, logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);
 
