@@ -167,9 +167,9 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
-        versioningSystems.Add(VersioningSystemId.Elasticsearch, 
+        versioningSystems.Add(VersioningSystemId.ElasticsearchProject, 
             VersioningSystem(
-                Id = VersioningSystemId.Elasticsearch,
+                Id = VersioningSystemId.ElasticsearchProject,
                 Current = SemVersion(8, 0, 0),
                 Base = SemVersion(8, 0, 0)
             )
@@ -188,16 +188,16 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
-        versioningSystems.Add(VersioningSystemId.Observability, 
+        versioningSystems.Add(VersioningSystemId.ObservabilityProject, 
             VersioningSystem(
-                Id = VersioningSystemId.Observability,
+                Id = VersioningSystemId.ObservabilityProject,
                 Current = SemVersion(8, 0, 0),
                 Base = SemVersion(8, 0, 0)
             )
         )
-        versioningSystems.Add(VersioningSystemId.Security, 
+        versioningSystems.Add(VersioningSystemId.SecurityProject, 
             VersioningSystem(
-                Id = VersioningSystemId.Security,
+                Id = VersioningSystemId.SecurityProject,
                 Current = SemVersion(8, 0, 0),
                 Base = SemVersion(8, 0, 0)
             )
