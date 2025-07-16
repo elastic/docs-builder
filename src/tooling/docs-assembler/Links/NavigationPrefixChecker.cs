@@ -34,12 +34,12 @@ public class NavigationPrefixChecker
 {
 	private readonly ILogger _logger;
 	private readonly PublishEnvironmentUriResolver _uriResolver;
-	private readonly ILoggerFactory _loggerFactory;
+	private readonly ILoggerFactory _logFactoryFactory;
 	private readonly ImmutableHashSet<string> _repositories;
 	private readonly ImmutableHashSet<Uri> _phantoms;
 
 	/// <inheritdoc cref="NavigationPrefixChecker"/>
-	public NavigationPrefixChecker(ILoggerFactory logger, AssembleContext context)
+	public NavigationPrefixChecker(ILoggerFactory logFactory, AssembleContext context)
 	{
 		_phantoms = GlobalNavigationFile.GetPhantomPrefixes(context);
 
@@ -50,10 +50,10 @@ public class NavigationPrefixChecker
 			.Select(r => r.Name)
 			.ToImmutableHashSet();
 
-		_logger = logger.CreateLogger<NavigationPrefixChecker>();
-		_loggerFactory = logger;
+		_logger = logFactory.CreateLogger<NavigationPrefixChecker>();
+		_logFactoryFactory = logFactory;
 
-		var tocTopLevelMappings = AssembleSources.GetConfiguredSources(context);
+		var tocTopLevelMappings = AssembleSources.GetTocMappings(context);
 		_uriResolver = new PublishEnvironmentUriResolver(tocTopLevelMappings, context.Environment);
 	}
 
@@ -85,7 +85,7 @@ public class NavigationPrefixChecker
 	private async Task FetchAndValidateCrossLinks(DiagnosticsCollector collector, string? updateRepository, RepositoryLinks? updateReference, Cancel ctx)
 	{
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
-		var fetcher = new LinksIndexCrossLinkFetcher(linkIndexProvider, _loggerFactory);
+		var fetcher = new LinksIndexCrossLinkFetcher(_logFactoryFactory, linkIndexProvider);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var dictionary = new Dictionary<string, SeenPaths>();

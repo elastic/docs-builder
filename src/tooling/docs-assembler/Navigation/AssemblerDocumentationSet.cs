@@ -25,7 +25,7 @@ public record AssemblerDocumentationSet
 	public DocumentationSet DocumentationSet { get; }
 
 	public AssemblerDocumentationSet(
-		ILoggerFactory logger,
+		ILoggerFactory logFactory,
 		AssembleContext context,
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
@@ -76,6 +76,6 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logger, crossLinkResolver, treeCollector);
+		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, treeCollector);
 	}
 }

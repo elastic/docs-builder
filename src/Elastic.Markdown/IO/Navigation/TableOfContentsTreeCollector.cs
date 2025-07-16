@@ -11,11 +11,7 @@ public class TableOfContentsTreeCollector
 {
 	private Dictionary<Uri, TableOfContentsTree> NestedTableOfContentsTrees { get; } = [];
 
-	public void Collect(Uri source, TableOfContentsTree tree) =>
-		NestedTableOfContentsTrees[source] = tree;
-
-	public void Collect(TocReference tocReference, TableOfContentsTree tree) =>
-		NestedTableOfContentsTrees[tocReference.Source] = tree;
+	public void Collect(Uri source, TableOfContentsTree tree) => NestedTableOfContentsTrees[source] = tree;
 
 	public bool TryGetTableOfContentsTree(Uri source, [NotNullWhen(true)] out TableOfContentsTree? tree) =>
 		NestedTableOfContentsTrees.TryGetValue(source, out tree);

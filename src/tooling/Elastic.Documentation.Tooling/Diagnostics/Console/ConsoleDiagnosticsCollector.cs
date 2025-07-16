@@ -10,8 +10,8 @@ using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Elastic.Documentation.Tooling.Diagnostics.Console;
 
-public class ConsoleDiagnosticsCollector(ILoggerFactory loggerFactory, ICoreService? githubActions = null)
-	: DiagnosticsCollector([new Log(loggerFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)]
+public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService? githubActions = null)
+	: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)]
 	)
 {
 	private readonly List<Diagnostic> _errors = [];

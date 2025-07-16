@@ -18,7 +18,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
 		Directory.SetCurrentDirectory(workingDirectory!);
 
-		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
+		var mover = new Move(LoggerFactory, ReadFileSystem, WriteFileSystem, Set);
 		await mover.Execute("testing/mover/first-page.md", "new-folder/hello-world.md", true, TestContext.Current.CancellationToken);
 
 		mover.Changes.Should().HaveCount(1);
@@ -47,7 +47,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
 		Directory.SetCurrentDirectory(workingDirectory!);
 
-		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
+		var mover = new Move(LoggerFactory, ReadFileSystem, WriteFileSystem, Set);
 		await mover.Execute("testing/mover/first-page.md", "new-folder", true, TestContext.Current.CancellationToken);
 
 		mover.Changes.Should().HaveCount(1);
@@ -75,7 +75,7 @@ public class MoverTests(ITestOutputHelper output) : NavigationTestsBase(output)
 		var workingDirectory = Set.Configuration.SourceFile.DirectoryName;
 		Directory.SetCurrentDirectory(workingDirectory!);
 
-		var mover = new Move(ReadFileSystem, WriteFileSystem, Set, LoggerFactory);
+		var mover = new Move(LoggerFactory, ReadFileSystem, WriteFileSystem, Set);
 		await mover.Execute("testing/mover", "new-folder", true, TestContext.Current.CancellationToken);
 
 		mover.Changes.Should().HaveCount(2);

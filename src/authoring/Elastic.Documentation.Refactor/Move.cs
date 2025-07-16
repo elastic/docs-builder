@@ -15,10 +15,10 @@ public record ChangeSet(IFileInfo From, IFileInfo To);
 public record Change(IFileInfo Source, string OriginalContent, string NewContent);
 public record LinkModification(string OldLink, string NewLink, string SourceFile, int LineNumber, int ColumnNumber);
 
-public partial class Move(IFileSystem readFileSystem, IFileSystem writeFileSystem, DocumentationSet documentationSet, ILoggerFactory loggerFactory)
+public partial class Move(ILoggerFactory logFactory, IFileSystem readFileSystem, IFileSystem writeFileSystem, DocumentationSet documentationSet)
 {
 
-	private readonly ILogger _logger = loggerFactory.CreateLogger<Move>();
+	private readonly ILogger _logger = logFactory.CreateLogger<Move>();
 	private readonly Dictionary<ChangeSet, List<Change>> _changes = [];
 	private readonly Dictionary<ChangeSet, List<LinkModification>> _linkModifications = [];
 
