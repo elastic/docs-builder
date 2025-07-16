@@ -57,7 +57,7 @@ public class DocsSyncTests
 					}
 				]
 			});
-		var planStrategy = new AwsS3SyncPlanStrategy(mockS3Client, "fake", context, new LoggerFactory());
+		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
 		// Act
 		var plan = await planStrategy.Plan(Cancel.None);
@@ -130,7 +130,7 @@ public class DocsSyncTests
 			{
 				transferredFiles = fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
 			});
-		var applier = new AwsS3SyncApplyStrategy(moxS3Client, moxTransferUtility, "fake", context, new LoggerFactory(), collector);
+		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), moxS3Client, moxTransferUtility, "fake", context, collector);
 
 		// Act
 		await applier.Apply(plan, Cancel.None);

@@ -14,32 +14,24 @@ public static class ProcessorDiagnosticExtensions
 {
 	private static string CreateExceptionMessage(string message, Exception? e) => message + (e != null ? Environment.NewLine + e : string.Empty);
 
-	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message)
+	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message) =>
+		processor.Emit(Severity.Error, line, column, length, message);
+
+
+	public static void EmitWarning(this InlineProcessor processor, int line, int column, int length, string message) =>
+		processor.Emit(Severity.Warning, line, column, length, message);
+
+	public static void EmitHint(this InlineProcessor processor, int line, int column, int length, string message) =>
+		processor.Emit(Severity.Hint, line, column, length, message);
+
+	public static void Emit(this InlineProcessor processor, Severity severity, int line, int column, int length, string message)
 	{
 		var context = processor.GetContext();
 		if (context.SkipValidation)
 			return;
 		var d = new Diagnostic
 		{
-			Severity = Severity.Error,
-			File = processor.GetContext().MarkdownSourcePath.FullName,
-			Column = column,
-			Line = line,
-			Message = message,
-			Length = length
-		};
-		context.Build.Collector.Write(d);
-	}
-
-
-	public static void EmitWarning(this InlineProcessor processor, int line, int column, int length, string message)
-	{
-		var context = processor.GetContext();
-		if (context.SkipValidation)
-			return;
-		var d = new Diagnostic
-		{
-			Severity = Severity.Warning,
+			Severity = severity,
 			File = processor.GetContext().MarkdownSourcePath.FullName,
 			Column = column,
 			Line = line,

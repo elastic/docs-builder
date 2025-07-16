@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService githubActionsService)
+internal sealed class LegacyDocsCommands(ILoggerFactory logFactory, ICoreService githubActionsService)
 {
-	private readonly ILogger<Program> _log = logger.CreateLogger<Program>();
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
@@ -28,7 +28,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService git
 	public async Task<int> CreateBloomBin(string builtDocsDir, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);
@@ -44,7 +44,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logger, ICoreService git
 	public async Task<int> PageExists(string path, Cancel ctx = default)
 	{
 		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logger, githubActionsService)
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
 		}.StartAsync(ctx);

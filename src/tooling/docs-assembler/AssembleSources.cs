@@ -51,26 +51,28 @@ public class AssembleSources
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
-	public static async Task<AssembleSources> AssembleAsync(ILoggerFactory logger, AssembleContext context, Checkout[] checkouts, VersionsConfiguration versionsConfiguration, Cancel ctx)
+	public static async Task<AssembleSources> AssembleAsync(ILoggerFactory logFactory, AssembleContext context, Checkout[] checkouts, VersionsConfiguration versionsConfiguration, Cancel ctx)
 	{
-		var sources = new AssembleSources(logger, context, checkouts, versionsConfiguration);
+		var sources = new AssembleSources(logFactory, context, checkouts, versionsConfiguration);
 		foreach (var (_, set) in sources.AssembleSets)
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
 		return sources;
 	}
 
-	private AssembleSources(ILoggerFactory logger, AssembleContext assembleContext, Checkout[] checkouts, VersionsConfiguration versionsConfiguration)
+	private AssembleSources(ILoggerFactory logFactory, AssembleContext assembleContext, Checkout[] checkouts, VersionsConfiguration versionsConfiguration)
 	{
 		AssembleContext = assembleContext;
 		NavigationTocMappings = GetTocMappings(assembleContext);
 		HistoryMappings = GetHistoryMapping(assembleContext);
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logger, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
+
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
 		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, assembleContext.Environment);
+
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logger, assembleContext, c, crossLinkResolver, TreeCollector, versionsConfiguration))
+			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, TreeCollector, versionsConfiguration))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 
