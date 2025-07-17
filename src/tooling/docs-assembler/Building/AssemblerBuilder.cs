@@ -6,7 +6,6 @@ using System.Collections.Frozen;
 using System.Text.Json;
 using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
