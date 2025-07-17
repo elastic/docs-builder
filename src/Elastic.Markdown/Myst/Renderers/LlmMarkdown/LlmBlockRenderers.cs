@@ -15,6 +15,7 @@ using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using CodeBlock = Markdig.Syntax.CodeBlock;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -104,7 +105,7 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 		if (heading.Inline == null)
 			return string.Empty;
 		return heading.Inline.Descendants()
-			.OfType<Markdig.Syntax.Inlines.LiteralInline>()
+			.OfType<LiteralInline>()
 			.Select(l => l.Content.ToString())
 			.Aggregate(string.Empty, (current, text) => current + text);
 	}
@@ -306,7 +307,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 					BuildContext = renderer.BuildContext
 				};
 				// Render cell content to temporary writer
-				foreach (var inline in cell.Descendants().OfType<Markdig.Syntax.Inlines.Inline>())
+				foreach (var inline in cell.Descendants().OfType<Inline>())
 					tempRenderer.Write(inline);
 
 				// Write padded content
@@ -345,7 +346,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 					BuildContext = renderer.BuildContext
 				};
 				// Render cell content to temporary writer
-				foreach (var inline in cell.Descendants().OfType<Markdig.Syntax.Inlines.Inline>())
+				foreach (var inline in cell.Descendants().OfType<Inline>())
 					tempRenderer.Write(inline);
 
 				// Write padded content
@@ -385,7 +386,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 					BuildContext = renderer.BuildContext
 				};
 				// Render cell content to temporary writer
-				foreach (var inline in cell.Descendants().OfType<Markdig.Syntax.Inlines.Inline>())
+				foreach (var inline in cell.Descendants().OfType<Inline>())
 				{
 					tempRenderer.Write(inline);
 				}

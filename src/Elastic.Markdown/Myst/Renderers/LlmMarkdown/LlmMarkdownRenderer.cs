@@ -71,7 +71,7 @@ public class LlmMarkdownRenderer : TextRendererBase
 
 		// Add custom renderers for your MyST extensions
 		ObjectRenderers.Add(new LlmDirectiveRenderer());
-		ObjectRenderers.Add(new LlmMarkdown.LlmEnhancedCodeBlockRenderer());
+		ObjectRenderers.Add(new LlmEnhancedCodeBlockRenderer());
 
 		// Add default object renderers for CommonMark elements
 		ObjectRenderers.Add(new LlmHeadingRenderer());
