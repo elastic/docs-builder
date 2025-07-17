@@ -155,7 +155,7 @@ public class DocumentationWebHost
 			.UseRouting();
 
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(holder, "index.md", ctx));
+			ServeDocumentationFile(holder, "index", ctx));
 
 		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, "", ctx));
