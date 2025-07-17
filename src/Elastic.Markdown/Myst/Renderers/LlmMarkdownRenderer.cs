@@ -76,7 +76,7 @@ public class LlmMarkdownRenderer : TextRendererBase
 		ObjectRenderers.Add(new LlmYamlFrontMatterRenderer());
 
 		// Add inline renderers
-		ObjectRenderers.Add(new LlmSubstituionLeafRenderer());
+		ObjectRenderers.Add(new LlmSubstitutionLeafRenderer());
 		ObjectRenderers.Add(new LlmRoleRenderer());
 		ObjectRenderers.Add(new LlmLinkInlineRenderer());
 		ObjectRenderers.Add(new LlmEmphasisInlineRenderer());
