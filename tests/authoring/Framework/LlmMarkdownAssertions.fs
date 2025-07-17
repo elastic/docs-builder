@@ -8,12 +8,11 @@ open System
 open System.Diagnostics
 open System.IO
 open Elastic.Markdown.Exporters
-open Elastic.Markdown.Myst.Renderers
 open JetBrains.Annotations
 open Xunit.Sdk
 
 [<AutoOpen>]
-module LlmTestAssertions =
+module LlmMarkdownAssertions =
 
     let toNewLLM (actual: MarkdownResult) =
         use writer = new StringWriter()  
@@ -26,16 +25,12 @@ module LlmTestAssertions =
         )
         LlmMarkdownExporter.ConvertToLlmMarkdown(actual.Document, markdownExportFileContext).Trim()
 
-
     [<DebuggerStepThrough>]
     let convertsToNewLLM ([<LanguageInjection("markdown")>]expected: string) (actual: Lazy<GeneratorResults>) =
         let results = actual.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         let actualLLM = toNewLLM defaultFile
-
-        // The new exporter adds a title, so we need to account for that in the expected output.
         let expectedWithTitle = $"{expected}".Trim()
-
         let difference = diff expectedWithTitle actualLLM
         match difference with
         | s when String.IsNullOrEmpty s -> ()

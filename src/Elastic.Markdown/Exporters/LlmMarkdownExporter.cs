@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Abstractions;
+using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -25,21 +26,32 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public ValueTask StopAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
-	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx) => ValueTask.FromResult(true);
+	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
+	{
+		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
+		var zipPath = Path.Combine(outputDirectory, "llm.zip");
+		using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+		{
+			var llmsTxt = Path.Combine(outputFolder.FullName, "llms.txt");
+			_ = zip.CreateEntryFromFile(llmsTxt, "llms.txt");
+
+			var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
+
+			foreach (var file in markdownFiles)
+			{
+				var relativePath = Path.GetRelativePath(outputDirectory, file);
+				_ = zip.CreateEntryFromFile(file, relativePath);
+			}
+		}
+		return ValueTask.FromResult(true);
+	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
-		// Convert the parsed markdown document to LLM-friendly format using our custom renderers
 		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext);
-
-		// Determine output file path
 		var outputFile = GetLlmOutputFile(fileContext);
-
-		// Ensure output directory exists
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
-
-		// Write LLM markdown with metadata header
 		var contentWithMetadata = CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
 			outputFile.FullName,
@@ -47,28 +59,18 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			Encoding.UTF8,
 			ctx
 		);
-
 		return true;
 	}
 
 	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context)
 	{
 		using var writer = new StringWriter();
-		var state = new ParserState(context.BuildContext)
-		{
-			YamlFrontMatter = context.SourceFile.YamlFrontMatter,
-			MarkdownSourcePath = context.SourceFile.SourceFile,
-			CrossLinkResolver = context.Resolvers.CrossLinkResolver,
-			DocumentationFileLookup = context.Resolvers.DocumentationFileLookup
-		};
-		var parserContext = new ParserContext(state);
 		var renderer = new LlmMarkdownRenderer(writer)
 		{
 			BuildContext = context.BuildContext
 		};
 		_ = renderer.Render(document);
-		var content = writer.ToString();
-		return content;
+		return writer.ToString();
 	}
 
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
@@ -77,35 +79,26 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var fs = source.FileSystem;
 		var defaultOutputFile = fileContext.DefaultOutputFile;
 
-		// Handle both index.md and index.html files (HTML output files)
 		var fileName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
 		if (fileName == "index")
 		{
 			var root = fileContext.BuildContext.DocumentationOutputDirectory;
 
-			// Root index becomes llm-docs.md
 			if (defaultOutputFile.Directory!.FullName == root.FullName)
-			{
-				return fs.FileInfo.New(Path.Combine(root.FullName, "llm-docs.md"));
-			}
-			else
-			{
-				// For index files: /docs/section/index.html -> /docs/section.llm.md
-				// This allows users to append .llm.md to any URL path
-				var folderName = defaultOutputFile.Directory!.Name;
-				return fs.FileInfo.New(Path.Combine(
-					defaultOutputFile.Directory!.Parent!.FullName,
-					$"{folderName}.md"
-				));
-			}
+				return fs.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
+
+			// For index files: /docs/section/index.html -> /docs/section.md
+			// This allows users to append .md to any URL path
+			var folderName = defaultOutputFile.Directory!.Name;
+			return fs.FileInfo.New(Path.Combine(
+				defaultOutputFile.Directory!.Parent!.FullName,
+				$"{folderName}.md"
+			));
 		}
-		else
-		{
-			// Regular files: /docs/section/page.html -> /docs/section/page.llm.md
-			var directory = defaultOutputFile.Directory!.FullName;
-			var baseName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
-			return fs.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
-		}
+		// Regular files: /docs/section/page.html -> /docs/section/page.llm.md
+		var directory = defaultOutputFile.Directory!.FullName;
+		var baseName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
+		return fs.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
 	}
 
 
