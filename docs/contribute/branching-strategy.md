@@ -39,7 +39,7 @@ After it has been established that a repository should publish from a version br
 
 1. [Add new triggers to the `docs-build` CI integration](/configure/content-sources.md#ci-configuration). Merge these changes to `main` or `master` and the intended version branches.
 2. Open a PR to trigger the CI integration and confirm that the docs build.
-3. Open a PR updating the [docs assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml):  
+3. Open a PR updating the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml):  
    * Specify which is the `current` branch for the repository. This branch is the branch from which docs are deployed to production at [elastic.co/docs](http://elastic.co/docs).  
    * Specify which is the `next` branch for the repository. The branch defined as `next` publishes docs internally to [staging-website.elastic.co/docs](http://staging-website.elastic.co/docs)  
      * Setting this branch to the next version branch in line is a good practice to preview docs change for an upcoming version.  
@@ -60,10 +60,10 @@ When you publish from specific version branches, you need to bump the version br
 
 Add an action as part of that repo’s release process for the release manager to update this same assembler file and bump the `current` branch with each release, as appropriate. The `next` branch also needs to be bumped if it is not set to `main`. 
 
-When these releases happen, create a PR against the [assembler file](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml) that defines the new `current` branch, to merge on release day.
+When these releases happen, create a PR against the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) that defines the new `current` branch, to merge on release day.
 
 :::{tip}
-Regardless of the branching strategy, you also need to update the current version in [versions.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml) as part of your release process. This version number is used in documentation variables and drives our [dynamic version badge logic](/contribute/cumulative-docs.md#how-do-these-tags-behave-in-the-output).
+Regardless of the branching strategy, you also need to update the current version in [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml) as part of your release process. This version number is used in documentation variables and drives our [dynamic version badge logic](/contribute/cumulative-docs.md#how-do-these-tags-behave-in-the-output).
 :::
 
 
@@ -123,7 +123,7 @@ The changes must then be backported to their relevant version branches, and no f
 
 For example, in a situation where 9.0, 9.1, and 9.2 are already released, and the 9.3 branch has already been cut:
 
-* The branch set as `current` in the [docs assembler](https://github.com/elastic/docs-builder/blob/625e75b35841be938a8df76a62deeee811ba52d4/src/tooling/docs-assembler/assembler.yml#L70) is 9.2.  
+* The branch set as `current` in the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) is 9.2.  
 * The branch set as `next` (where the content development first happens), is `main`.  
 * 9.4 changes are only done on the `main` branch.  
 * 9.3 changes are done on the `main` branch and backported to the 9.3 branch.  

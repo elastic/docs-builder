@@ -12,8 +12,7 @@ Specifically for versioned products, badges will display differently when the `a
 
   Example: {applies_to}`stack: removed 99.99`
 
-This is computed at build time (there is a docs build every 30 minutes). The documentation team tracks and maintains released versions for these products centrally in [versions.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml).
-
+This is computed at build time (there is a docs build every 30 minutes). The documentation team tracks and maintains released versions for these products centrally in [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml). 
 When multiple lifecycle statuses and versions are specified in the sources, several badges are shown.
 
 :::{note}

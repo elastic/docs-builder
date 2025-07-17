@@ -35,7 +35,7 @@ Tagged
 
 This is the default. To get started, follow our [guide](/migration/guide/index.md) to set up the new docs folder structure and CI configuration.
 
-Once setup ensure the repository is added to our `assembler.yml`  under `references`. 
+Once setup ensure the repository is added to our [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml)  under `references`. 
 
 For example say you want to onboard `elastic/my-repository` into the production build:
 
@@ -59,7 +59,7 @@ Once the repository is added, its navigation still needs to be injected into to 
 ### Tagged
 
 If you want to have more control over the timing of when your docs go live to production. Configure the repository
-in our `assembler.yml` to have a fixed git reference (typically a branch) deploy the `current` content source to production.
+in our [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) to have a fixed git reference (typically a branch) deploy the `current` content source to production.
 
 ```yaml
 references:

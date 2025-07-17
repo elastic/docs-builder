@@ -20,7 +20,8 @@ public enum ExportOption
 {
 	Html = 0,
 	LLMText = 1,
-	Elasticsearch = 2
+	Elasticsearch = 2,
+	Configuration = 3
 }
 
 public class AssemblerBuilder(
@@ -55,30 +56,34 @@ public class AssemblerBuilder(
 		var markdownExporters = new List<IMarkdownExporter>(3);
 		if (exportOptions.Contains(ExportOption.LLMText))
 			markdownExporters.Add(new LLMTextExporter());
+		if (exportOptions.Contains(ExportOption.Configuration))
+			markdownExporters.Add(new ConfigurationExporter(logFactory, context));
 		if (exportOptions.Contains(ExportOption.Elasticsearch) && esExporter is { })
 			markdownExporters.Add(esExporter);
-		var noopBuild = !exportOptions.Contains(ExportOption.Html);
+		var noHtmlOutput = !exportOptions.Contains(ExportOption.Html);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
+		var fs = context.ReadFileSystem;
+		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
 		foreach (var (_, set) in assembleSets)
 		{
 			var checkout = set.Checkout;
 			if (checkout.Repository.Skip)
 			{
-				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
+				context.Collector.EmitWarning(reportPath, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
 				continue;
 			}
 
 			try
 			{
-				var result = await BuildAsync(set, noopBuild, markdownExporters.ToArray(), ctx);
+				var result = await BuildAsync(set, noHtmlOutput, markdownExporters.ToArray(), ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
-				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its not yet been migrated to V3");
+				context.Collector.EmitWarning(reportPath, $"Skipping {checkout.Repository.Origin} as its not yet been migrated to V3");
 			}
 			catch (Exception e)
 			{

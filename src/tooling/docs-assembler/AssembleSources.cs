@@ -63,7 +63,7 @@ public class AssembleSources
 	{
 		AssembleContext = assembleContext;
 		NavigationTocMappings = GetTocMappings(assembleContext);
-		HistoryMappings = GetHistoryMapping(assembleContext);
+		HistoryMappings = GetLegacyUrlMappings(assembleContext);
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
@@ -97,7 +97,7 @@ public class AssembleSources
 				var file = tocFiles.FirstOrDefault(f => f.Exists);
 				if (file is null)
 				{
-					assembleContext.Collector.EmitWarning(assembleContext.ConfigurationPath.FullName, $"Unable to find toc file in {tocDirectory}");
+					assembleContext.Collector.EmitWarning(assembleContext.ConfigurationFileProvider.AssemblerFile, $"Unable to find toc file in {tocDirectory}");
 					file = tocFiles.First();
 				}
 
@@ -113,10 +113,10 @@ public class AssembleSources
 			.ToFrozenDictionary();
 	}
 
-	private static FrozenDictionary<string, IReadOnlyCollection<string>> GetHistoryMapping(AssembleContext context)
+	private static FrozenDictionary<string, IReadOnlyCollection<string>> GetLegacyUrlMappings(AssembleContext context)
 	{
 		var dictionary = new Dictionary<string, IReadOnlyCollection<string>>();
-		var reader = new YamlStreamReader(context.HistoryMappingPath, context.Collector);
+		var reader = new YamlStreamReader(context.ConfigurationFileProvider.LegacyUrlMappingsFile, context.Collector);
 		string? stack = null;
 		foreach (var entry in reader.Read())
 		{
@@ -154,7 +154,7 @@ public class AssembleSources
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
 	{
 		var dictionary = new Dictionary<Uri, NavigationTocMapping>();
-		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
+		var reader = new YamlStreamReader(context.ConfigurationFileProvider.NavigationFile, context.Collector);
 		var entries = new List<KeyValuePair<Uri, NavigationTocMapping>>();
 		foreach (var entry in reader.Read())
 		{

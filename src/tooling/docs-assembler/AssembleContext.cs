@@ -18,26 +18,24 @@ public class AssembleContext
 
 	public DiagnosticsCollector Collector { get; }
 
-	public AssemblyConfiguration Configuration { get; set; }
+	public AssemblyConfiguration Configuration { get; }
 
-	public IFileInfo ConfigurationPath { get; }
+	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 
-	public IFileInfo NavigationPath { get; }
+	public IDirectoryInfo CheckoutDirectory { get; }
 
-	public IFileInfo HistoryMappingPath { get; }
-
-	public IDirectoryInfo CheckoutDirectory { get; set; }
-
-	public IDirectoryInfo OutputDirectory { get; set; }
+	public IDirectoryInfo OutputDirectory { get; }
 
 	public bool Force { get; init; }
 
 	/// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
-	public PublishEnvironment Environment { get; set; }
+	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(
+		AssemblyConfiguration configuration,
+		ConfigurationFileProvider configurationFileProvider,
 		string environment,
 		DiagnosticsCollector collector,
 		IFileSystem readFileSystem,
@@ -50,23 +48,8 @@ public class AssembleContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var configPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "tooling", "docs-assembler", "assembler.yml");
-		// temporarily fallback to embedded assembler.yml
-		// This will live in docs-content soon
-		if (!ReadFileSystem.File.Exists(configPath))
-			ExtractAssemblerConfiguration(configPath, "assembler.yml");
-		ConfigurationPath = ReadFileSystem.FileInfo.New(configPath);
-		Configuration = AssemblyConfiguration.Deserialize(ReadFileSystem.File.ReadAllText(ConfigurationPath.FullName));
-
-		var navigationPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "tooling", "docs-assembler", "navigation.yml");
-		if (!ReadFileSystem.File.Exists(navigationPath))
-			ExtractAssemblerConfiguration(navigationPath, "navigation.yml");
-		NavigationPath = ReadFileSystem.FileInfo.New(navigationPath);
-
-		var historyMappingPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "tooling", "docs-assembler", "legacy-url-mappings.yml");
-		if (!ReadFileSystem.File.Exists(historyMappingPath))
-			ExtractAssemblerConfiguration(historyMappingPath, "legacy-url-mappings.yml");
-		HistoryMappingPath = ReadFileSystem.FileInfo.New(historyMappingPath);
+		Configuration = configuration;
+		ConfigurationFileProvider = configurationFileProvider;
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
 			throw new Exception($"Could not find environment {environment}");
@@ -77,24 +60,5 @@ public class AssembleContext
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
-
-
-	}
-
-	private void ExtractAssemblerConfiguration(string configPath, string file)
-	{
-		var embeddedStaticFiles = Assembly.GetExecutingAssembly()
-			.GetManifestResourceNames()
-			.ToList();
-		var configFile = embeddedStaticFiles.First(f => f.EndsWith(file));
-		using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(configFile);
-		if (resourceStream == null)
-			return;
-
-		var outputFile = WriteFileSystem.FileInfo.New(configPath);
-		if (outputFile.Directory is { Exists: false })
-			outputFile.Directory.Create();
-		using var stream = outputFile.OpenWrite();
-		resourceStream.CopyTo(stream);
 	}
 }

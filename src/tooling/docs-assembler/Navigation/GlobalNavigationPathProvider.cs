@@ -113,7 +113,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			}
 
 			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", repositoryName, relativePath);
-			_context.Collector.EmitError(_context.NavigationPath, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
+			_context.Collector.EmitError(_context.ConfigurationFileProvider.NavigationFile, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
 			return fs.FileInfo.New(fallBack);
 		}
 
