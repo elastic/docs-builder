@@ -13,11 +13,7 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 /// </summary>
 public class LlmMarkdownRenderer : TextRendererBase
 {
-	/// <summary>
-	/// BuildContext for accessing configuration like CanonicalBaseUrl for URL transformation
-	/// </summary>
 	public required BuildContext BuildContext { get; init; }
-
 	private bool _isAtLineStart = true;
 
 	/// <summary>
@@ -36,32 +32,23 @@ public class LlmMarkdownRenderer : TextRendererBase
 	/// </summary>
 	public void EnsureBlockSpacing()
 	{
-		EnsureLine(); // Ensure we're at start of line
-		Writer.WriteLine(); // Add one empty line
+		EnsureLine();
+		Writer.WriteLine();
 		_isAtLineStart = true;
 	}
 
-	/// <summary>
-	/// Writes a line of text to the output
-	/// </summary>
 	public void WriteLine(string text = "")
 	{
 		Writer.WriteLine(text);
 		_isAtLineStart = true;
 	}
 
-	/// <summary>
-	/// Writes text to the output (tracks line state for EnsureLine)
-	/// </summary>
 	public void Write(string text)
 	{
 		Writer.Write(text);
 		_isAtLineStart = text.EndsWith(Environment.NewLine) || text.EndsWith('\n');
 	}
 
-	/// <summary>
-	/// Writes the content of a leaf inline element
-	/// </summary>
 	public void WriteLeafInline(LeafBlock leafBlock)
 	{
 		if (leafBlock.Inline != null)
