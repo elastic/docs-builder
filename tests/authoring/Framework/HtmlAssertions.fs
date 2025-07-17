@@ -145,27 +145,6 @@ actual: {actual}
         defaultFile |> toHtml expected
 
     [<DebuggerStepThrough>]
-    let toLLM ([<LanguageInjection("markdown")>]expected: string) (actual: MarkdownResult) =
-        let actualLLM =
-            let buildContext = actual.Context.Generator.Context
-            let writer = new StringWriter()
-            let renderer = LlmMarkdownRenderer(writer, BuildContext = buildContext)
-            renderer.Render(actual.Document) |> ignore
-            writer.ToString()
-
-        let difference = diff expected actualLLM
-        match difference with
-        | s when String.IsNullOrEmpty s -> ()
-        | d ->
-            let msg = $"""LLM text was not equal
--- DIFF --
-{d}
-
-"""
-            raise (XunitException(msg))
-
-
-    [<DebuggerStepThrough>]
     let containsHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =
 
         let prettyExpected = prettyHtml expected None

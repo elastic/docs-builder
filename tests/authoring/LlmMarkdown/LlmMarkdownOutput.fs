@@ -337,7 +337,7 @@ This text is also visible
         // Get the actual LLM output string for additional assertions
         let results = markdown.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        let actualLLM = toNewLLM defaultFile
+        let actualLLM = toLlmMarkdown defaultFile
         
         // Test that visible content is present and formatted correctly
         test <@ actualLLM = "This text is visible\nThis text is also visible" @>

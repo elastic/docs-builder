@@ -14,7 +14,7 @@ open Xunit.Sdk
 [<AutoOpen>]
 module LlmMarkdownAssertions =
 
-    let toNewLLM (actual: MarkdownResult) =
+    let toLlmMarkdown (actual: MarkdownResult) =
         use writer = new StringWriter()  
         let markdownExportFileContext = MarkdownExportFileContext(
             BuildContext = actual.Context.Generator.Context,
@@ -29,7 +29,7 @@ module LlmMarkdownAssertions =
     let convertsToNewLLM ([<LanguageInjection("markdown")>]expected: string) (actual: Lazy<GeneratorResults>) =
         let results = actual.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        let actualLLM = toNewLLM defaultFile
+        let actualLLM = toLlmMarkdown defaultFile
         let expectedWithTitle = $"{expected}".Trim()
         let difference = diff expectedWithTitle actualLLM
         match difference with
