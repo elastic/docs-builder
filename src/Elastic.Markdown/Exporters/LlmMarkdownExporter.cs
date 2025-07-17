@@ -33,8 +33,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var zipPath = Path.Combine(outputDirectory, "llm.zip");
 		using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
 		{
-			var llmsTxt = Path.Combine(outputFolder.FullName, "llms.txt");
-			_ = zip.CreateEntryFromFile(llmsTxt, "llms.txt");
+			var llmsTxt = Path.Combine(outputDirectory, "llms.txt");
+			var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
+			_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
 
 			var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
 
