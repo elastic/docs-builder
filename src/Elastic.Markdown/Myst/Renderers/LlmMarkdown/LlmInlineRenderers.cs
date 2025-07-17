@@ -8,7 +8,7 @@ using Elastic.Markdown.Myst.Roles.Kbd;
 using Markdig.Renderers;
 using Markdig.Syntax.Inlines;
 
-namespace Elastic.Markdown.Myst.Renderers;
+namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, LinkInline>
 {

@@ -2,11 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.CodeDom.Compiler;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -19,10 +14,9 @@ using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers;
 using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
 using CodeBlock = Markdig.Syntax.CodeBlock;
 
-namespace Elastic.Markdown.Myst.Renderers;
+namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 /// <summary>
 /// Helper methods for common rendering patterns in LLM renderers

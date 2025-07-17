@@ -11,9 +11,7 @@ open AngleSharp.Diffing
 open AngleSharp.Diffing.Core
 open AngleSharp.Html
 open AngleSharp.Html.Parser
-open Elastic.Markdown.Exporters
-open Elastic.Markdown.Myst
-open Elastic.Markdown.Myst.Renderers
+open Elastic.Markdown.Myst.Renderers.LlmMarkdown
 open JetBrains.Annotations
 open Xunit.Sdk
 
@@ -150,14 +148,11 @@ actual: {actual}
     let toLLM ([<LanguageInjection("markdown")>]expected: string) (actual: MarkdownResult) =
         let actualLLM =
             let buildContext = actual.Context.Generator.Context
-            let resolvers = actual.Context.Set.MarkdownParser.Resolvers
-            let yamlFrontMatter = actual.File.YamlFrontMatter
-            
             let writer = new StringWriter()
             let renderer = LlmMarkdownRenderer(writer, BuildContext = buildContext)
             renderer.Render(actual.Document) |> ignore
             writer.ToString()
-            // LLMTextExporter.ToLLMText(buildContext, yamlFrontMatter, resolvers, actual.File.SourceFile)
+
         let difference = diff expected actualLLM
         match difference with
         | s when String.IsNullOrEmpty s -> ()

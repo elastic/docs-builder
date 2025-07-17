@@ -2,13 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO;
 using Elastic.Documentation.Configuration;
-using Elastic.Markdown.Exporters;
 using Markdig.Renderers;
 using Markdig.Syntax;
 
-namespace Elastic.Markdown.Myst.Renderers;
+namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 /// <summary>
 /// Base renderer that outputs CommonMark-compliant markdown optimized for LLM consumption
@@ -86,7 +84,7 @@ public class LlmMarkdownRenderer : TextRendererBase
 
 		// Add custom renderers for your MyST extensions
 		ObjectRenderers.Add(new LlmDirectiveRenderer());
-		ObjectRenderers.Add(new LlmEnhancedCodeBlockRenderer());
+		ObjectRenderers.Add(new LlmMarkdown.LlmEnhancedCodeBlockRenderer());
 
 		// Add default object renderers for CommonMark elements
 		ObjectRenderers.Add(new LlmHeadingRenderer());
