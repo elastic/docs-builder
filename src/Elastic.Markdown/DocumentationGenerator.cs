@@ -13,6 +13,7 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst.Renderers;
@@ -346,13 +347,15 @@ public class DocumentationGenerator
 	{
 		await DocumentationSet.Tree.Resolve(ctx);
 		var document = await markdown.ParseFullAsync(ctx);
-		await using var writer = new StringWriter();
-		var renderer = new LlmMarkdownRenderer(writer)
+		var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		await using var stringWriter = DocumentationObjectPoolProvider.StringWriterPool.Get();
+		stringWriter.SetStringBuilder(stringBuilder);
+		var renderer = new LlmMarkdownRenderer(stringWriter)
 		{
 			BuildContext = DocumentationSet.Context
 		};
 		_ = renderer.Render(document);
-		return writer.ToString().Trim();
+		return stringBuilder.ToString().Trim();
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)

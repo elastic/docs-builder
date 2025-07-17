@@ -66,13 +66,16 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context)
 	{
-		using var writer = new StringWriter();
-		var renderer = new LlmMarkdownRenderer(writer)
+		var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		using var stringWriter = DocumentationObjectPoolProvider.StringWriterPool.Get();
+		stringWriter.SetStringBuilder(stringBuilder);
+
+		var renderer = new LlmMarkdownRenderer(stringWriter)
 		{
 			BuildContext = context.BuildContext
 		};
 		_ = renderer.Render(document);
-		return writer.ToString();
+		return stringBuilder.ToString();
 	}
 
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
@@ -107,7 +110,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
-		var metadata = new StringBuilder();
+		var metadata = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 
 		_ = metadata.AppendLine("---");
 		_ = metadata.AppendLine($"title: {sourceFile.Title}");

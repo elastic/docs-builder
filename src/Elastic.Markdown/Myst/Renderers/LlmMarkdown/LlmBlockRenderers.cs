@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -20,15 +21,23 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public static class LlmRenderingHelpers
 {
+	public static ReusableStringWriter CreateTempWriter()
+	{
+		var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		var sw = DocumentationObjectPoolProvider.StringWriterPool.Get();
+		sw.SetStringBuilder(stringBuilder);
+		return sw;
+	}
+
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
-		using var tempWriter = new StringWriter();
-		var tempRenderer = new LlmMarkdownRenderer(tempWriter)
+		using var sw = CreateTempWriter();
+		var tempRenderer = new LlmMarkdownRenderer(sw)
 		{
-			BuildContext = renderer.BuildContext // Copy BuildContext for URL transformation
+			BuildContext = renderer.BuildContext
 		};
 		_ = tempRenderer.Render(block);
-		var content = tempWriter.ToString().TrimEnd();
+		var content = sw.ToString();
 		if (string.IsNullOrEmpty(content))
 			return;
 		var lines = content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
@@ -191,13 +200,13 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 
 	private static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, Block block, string baseIndent, bool isOrdered)
 	{
-		using var tempWriter = new StringWriter();
-		var tempRenderer = new LlmMarkdownRenderer(tempWriter)
+		using var sw = LlmRenderingHelpers.CreateTempWriter();
+		var tempRenderer = new LlmMarkdownRenderer(sw)
 		{
 			BuildContext = renderer.BuildContext
 		};
 		_ = tempRenderer.Render(block);
-		var blockOutput = tempWriter.ToString();
+		var blockOutput = sw.ToString();
 
 		var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
 		var lines = blockOutput.Split('\n');
@@ -291,20 +300,17 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				renderer.Writer.Write(" ");
 
 				// Capture cell content
-				var cellContent = new StringWriter();
-				var tempRenderer = new LlmMarkdownRenderer(cellContent)
+				using var sw = LlmRenderingHelpers.CreateTempWriter();
+				var tempRenderer = new LlmMarkdownRenderer(sw)
 				{
-					BuildContext = renderer.BuildContext // Copy BuildContext for URL transformation
+					BuildContext = renderer.BuildContext
 				};
-
 				// Render cell content to temporary writer
 				foreach (var inline in cell.Descendants().OfType<Markdig.Syntax.Inlines.Inline>())
-				{
 					tempRenderer.Write(inline);
-				}
 
 				// Write padded content
-				var content = cellContent.ToString();
+				var content = sw.ToString();
 				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
 				renderer.Writer.Write(" |");
 				cellIndex++;
@@ -333,20 +339,17 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				renderer.Writer.Write(" ");
 
 				// Capture cell content
-				var cellContent = new StringWriter();
-				var tempRenderer = new LlmMarkdownRenderer(cellContent)
+				using var sw = LlmRenderingHelpers.CreateTempWriter();
+				var tempRenderer = new LlmMarkdownRenderer(sw)
 				{
-					BuildContext = renderer.BuildContext // Copy BuildContext for URL transformation
+					BuildContext = renderer.BuildContext
 				};
-
 				// Render cell content to temporary writer
 				foreach (var inline in cell.Descendants().OfType<Markdig.Syntax.Inlines.Inline>())
-				{
 					tempRenderer.Write(inline);
-				}
 
 				// Write padded content
-				var content = cellContent.ToString();
+				var content = sw.ToString();
 				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
 				renderer.Writer.Write(" |");
 				cellIndex++;
@@ -376,12 +379,11 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 			foreach (var cell in row.Cast<TableCell>())
 			{
 				// Capture cell content
-				var cellContent = new StringWriter();
-				var tempRenderer = new LlmMarkdownRenderer(cellContent)
+				using var sw = LlmRenderingHelpers.CreateTempWriter();
+				var tempRenderer = new LlmMarkdownRenderer(sw)
 				{
-					BuildContext = renderer.BuildContext // Copy BuildContext for URL transformation
+					BuildContext = renderer.BuildContext
 				};
-
 				// Render cell content to temporary writer
 				foreach (var inline in cell.Descendants().OfType<Markdig.Syntax.Inlines.Inline>())
 				{
@@ -389,7 +391,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				}
 
 				// Update width if this cell is wider
-				var content = cellContent.ToString();
+				var content = sw.ToString();
 				widths[cellIndex] = Math.Max(widths[cellIndex], content.Length);
 				cellIndex++;
 			}
@@ -510,7 +512,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
-		using var sw = new StringWriter();
+		using var sw = LlmRenderingHelpers.CreateTempWriter();
+
 		var originalWriter = renderer.Writer;
 		renderer.Writer = sw;
 		try
@@ -561,10 +564,10 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 	private static string GetPlainTextFromLeafBlock(LlmMarkdownRenderer renderer, LeafBlock leafBlock)
 	{
-		using var tempWriter = new StringWriter();
-		var tempRenderer = new LlmMarkdownRenderer(tempWriter) { BuildContext = renderer.BuildContext };
+		using var sw = LlmRenderingHelpers.CreateTempWriter();
+		var tempRenderer = new LlmMarkdownRenderer(sw) { BuildContext = renderer.BuildContext };
 		tempRenderer.WriteLeafInline(leafBlock);
-		var markdownText = tempWriter.ToString();
+		var markdownText = sw.ToString();
 		return markdownText.StripMarkdown();
 	}
 }

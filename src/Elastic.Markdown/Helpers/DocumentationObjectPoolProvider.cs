@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Renderers;
 using Microsoft.Extensions.ObjectPool;
 
