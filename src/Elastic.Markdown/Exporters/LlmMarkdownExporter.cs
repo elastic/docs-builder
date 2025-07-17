@@ -111,9 +111,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		_ = metadata.AppendLine("---");
 		_ = metadata.AppendLine($"title: {sourceFile.Title}");
 
-		if (!string.IsNullOrEmpty(sourceFile.Url))
-			_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{sourceFile.Url}");
-
 		if (!string.IsNullOrEmpty(sourceFile.YamlFrontMatter?.Description))
 			_ = metadata.AppendLine($"description: {sourceFile.YamlFrontMatter.Description}");
 		else
@@ -122,6 +119,10 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			var generateDescription = descriptionGenerator.GenerateDescription(context.Document);
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
+
+		if (!string.IsNullOrEmpty(sourceFile.Url))
+			_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{sourceFile.Url}");
+
 		var configProducts = context.BuildContext.Configuration.Products.Select(p =>
 		{
 			if (Products.AllById.TryGetValue(p, out var product))
