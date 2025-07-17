@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Chorn.EmbeddedResourceAccessGenerator" />
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="Samboy063.Tomlet" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
@@ -18,6 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="versions.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\versions.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\assembler.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\navigation.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
   </ItemGroup>
 </Project>

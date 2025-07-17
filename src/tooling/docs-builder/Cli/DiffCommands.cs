@@ -12,11 +12,10 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
+internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githubActionsService, VersionsConfiguration versionsConfig)
 {
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
@@ -34,7 +33,7 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 
-		var buildContext = new BuildContext(collector, fs, fs, versionsConfigOption.Value, root.FullName, null);
+		var buildContext = new BuildContext(collector, fs, fs, versionsConfig, root.FullName, null);
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));

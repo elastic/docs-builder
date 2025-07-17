@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Text.Json;
 using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
@@ -65,12 +66,14 @@ public class AssemblerBuilder(
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
+		var fs = context.ReadFileSystem;
+		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
 		foreach (var (_, set) in assembleSets)
 		{
 			var checkout = set.Checkout;
 			if (checkout.Repository.Skip)
 			{
-				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
+				context.Collector.EmitWarning(reportPath, $"Skipping {checkout.Repository.Origin} as its marked as skip in configuration");
 				continue;
 			}
 
@@ -81,7 +84,7 @@ public class AssemblerBuilder(
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{
-				context.Collector.EmitWarning(context.ConfigurationPath.FullName, $"Skipping {checkout.Repository.Origin} as its not yet been migrated to V3");
+				context.Collector.EmitWarning(reportPath, $"Skipping {checkout.Repository.Origin} as its not yet been migrated to V3");
 			}
 			catch (Exception e)
 			{

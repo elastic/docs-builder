@@ -111,6 +111,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Legac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.LegacyDocs.Tests", "tests\Elastic.Documentation.LegacyDocs.Tests\Elastic.Documentation.LegacyDocs.Tests.csproj", "{164F55EC-9412-4CD4-81AD-3598B57632A6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{6FAB566B-76E3-4E90-8A5C-E75B0F1E1C63}"
+	ProjectSection(SolutionItems) = preProject
+		config\versions.yml = config\versions.yml
+		config\assembler.yml = config\assembler.yml
+		config\legacy-url-mappings.yml = config\legacy-url-mappings.yml
+		config\navigation.yml = config\navigation.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

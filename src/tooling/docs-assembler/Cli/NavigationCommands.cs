@@ -10,13 +10,18 @@ using Documentation.Assembler.Links;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class NavigationCommands(ILoggerFactory logFactory, ICoreService githubActionsService)
+internal sealed class NavigationCommands(
+	AssemblyConfiguration configuration,
+	ConfigurationFileProvider configurationFileProvider,
+	ILoggerFactory logFactory,
+	ICoreService githubActionsService
+)
 {
 	/// <summary> Validates navigation.yml does not contain colliding path prefixes </summary>
 	/// <param name="ctx"></param>
@@ -24,7 +29,7 @@ internal sealed class NavigationCommands(ILoggerFactory logFactory, ICoreService
 	public async Task<int> Validate(Cancel ctx = default)
 	{
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
-		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+		var assembleContext = new AssembleContext(configuration, configurationFileProvider, "dev", collector, new FileSystem(), new FileSystem(), null, null);
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
@@ -51,11 +56,11 @@ internal sealed class NavigationCommands(ILoggerFactory logFactory, ICoreService
 
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
-		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
-
 		var fs = new FileSystem();
+		var assembleContext = new AssembleContext(configuration, configurationFileProvider, "dev", collector, fs, fs, null, null);
+
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformation.Create(root, new FileSystem(), logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
+		var repository = GitCheckoutInformation.Create(root, fs, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);

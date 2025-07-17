@@ -23,7 +23,9 @@ public class AssemblerConfigurationTests
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationFileProvider = new ConfigurationFileProvider(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]

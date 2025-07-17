@@ -34,9 +34,4 @@
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
   </ItemGroup>
   
-  <ItemGroup>
-    <EmbeddedResource Include="assembler.yml" />
-    <EmbeddedResource Include="navigation.yml" />
-    <EmbeddedResource Include="legacy-url-mappings.yml" />
-  </ItemGroup>
 </Project>
