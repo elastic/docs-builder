@@ -54,8 +54,9 @@ public class ConfigurationFileProvider
 
 	private static StreamReader GetEmbeddedStream(EmbeddedResource resource)
 	{
-		var stream = resource.GetStream();
-		var reader = new StreamReader(stream, leaveOpen: false);
+		var name = resource.GetResourceName().Replace(".......config.", ".");
+		var resourceStream = typeof(EmbeddedResource).Assembly.GetManifestResourceStream(name)!;
+		var reader = new StreamReader(resourceStream, leaveOpen: false);
 		return reader;
 	}
 

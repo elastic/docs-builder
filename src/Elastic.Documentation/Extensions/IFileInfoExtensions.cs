@@ -10,6 +10,7 @@ public static class IFileInfoExtensions
 {
 	public static string ReadToEnd(this IFileInfo fileInfo)
 	{
+		fileInfo.Refresh();
 		if (!fileInfo.Exists)
 			return string.Empty;
 
