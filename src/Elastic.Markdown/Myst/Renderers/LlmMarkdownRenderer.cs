@@ -4,6 +4,7 @@
 
 using System.IO;
 using Elastic.Documentation.Configuration;
+using Elastic.Markdown.Exporters;
 using Markdig.Renderers;
 using Markdig.Syntax;
 
@@ -71,18 +72,17 @@ public class LlmMarkdownRenderer : TextRendererBase
 
 	public LlmMarkdownRenderer(TextWriter writer) : base(writer)
 	{
-
 		// Add renderer to skip YAML frontmatter blocks (prevents them from appearing as visible content)
 		ObjectRenderers.Add(new LlmYamlFrontMatterRenderer());
 
 		// Add inline renderers
+		ObjectRenderers.Add(new LlmSubstituionLeafRenderer());
 		ObjectRenderers.Add(new LlmRoleRenderer());
 		ObjectRenderers.Add(new LlmLinkInlineRenderer());
 		ObjectRenderers.Add(new LlmEmphasisInlineRenderer());
 		ObjectRenderers.Add(new LlmCodeInlineRenderer());
 		ObjectRenderers.Add(new LlmLiteralInlineRenderer());
 		ObjectRenderers.Add(new LlmLineBreakInlineRenderer());
-
 
 		// Add custom renderers for your MyST extensions
 		ObjectRenderers.Add(new LlmDirectiveRenderer());

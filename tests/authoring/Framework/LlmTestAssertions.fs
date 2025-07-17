@@ -16,11 +16,16 @@ open Xunit.Sdk
 module LlmTestAssertions =
 
     let toNewLLM (actual: MarkdownResult) =
-        use writer = new StringWriter()
-        // Here we explicitly use the new LlmMarkdownRenderer with BuildContext
-        let renderer = LlmMarkdownRenderer(writer, BuildContext = actual.Context.Generator.Context)
-        renderer.Render(actual.Document) |> ignore
-        writer.ToString().Trim()
+        use writer = new StringWriter()  
+        let markdownExportFileContext = MarkdownExportFileContext(
+            BuildContext = actual.Context.Generator.Context,
+            Resolvers = actual.Context.Set.MarkdownParser.Resolvers,
+            Document = actual.Document,
+            SourceFile = actual.File,
+            DefaultOutputFile = actual.File.SourceFile
+        )
+        LlmMarkdownExporter.ConvertToLlmMarkdown(actual.Document, markdownExportFileContext).Trim()
+
 
     [<DebuggerStepThrough>]
     let convertsToNewLLM ([<LanguageInjection("markdown")>]expected: string) (actual: Lazy<GeneratorResults>) =

@@ -9,7 +9,7 @@ open Xunit
 open authoring
 
 type ``basic text formatting`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 This is **bold** and *italic* text.
 """
 
@@ -19,8 +19,7 @@ This is **bold** and *italic* text.
 """
 
 type ``headings`` () =
-    static let markdown = Setup.Markdown """
-# Heading 1
+    static let markdown = Setup.Document """
 ## Heading 2
 ### Heading 3
 """
@@ -28,10 +27,6 @@ type ``headings`` () =
     [<Fact>]
     let ``converts to standard markdown headings`` () =
         markdown |> convertsToNewLLM """
-
-# Heading 1
-
-
 ## Heading 2
 
 
@@ -39,7 +34,7 @@ type ``headings`` () =
 """
 
 type ``code blocks`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 ```python
 def hello():
     print("Hello, world!")
@@ -58,7 +53,7 @@ def hello():
 """
 
 type ``enhanced code blocks`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 ```python title="Hello World Example"
 def hello():
     print("Hello, world!") # <1>
@@ -77,7 +72,7 @@ def hello():
 """
 
 type ``lists`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 - Item 1
 - Item 2
   - Nested item 1
@@ -116,7 +111,7 @@ type ``lists`` () =
 """
 
 type ``tables`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 | Header 1 | Header 2 |
 |---|---|
 | Cell 1 | Cell 2 |
@@ -133,7 +128,7 @@ type ``tables`` () =
 """
 
 type ``applies_to role`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 This is an inline {applies_to}`stack: preview 9.1` element.
 """
 
@@ -144,7 +139,7 @@ This is an inline {applies_to}`stack: preview 9.1` element.
         """
 
 type ``admonition directive`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 :::{note}
 This is a note admonition.
 :::
@@ -193,7 +188,7 @@ Here is a list:
 """
 
 type ``image directive`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 ```{image} /path/to/image.png
 :alt: Alt text
 :width: 300px
@@ -227,7 +222,7 @@ type ``include directive`` () =
 """
 
 type ``multiple elements`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 This is a paragraph with **bold** and *italic* text.
 
 ```python
@@ -263,7 +258,7 @@ def hello():
 
 
 type ``directive in list should be indented correctly`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 * List item 1
   ```python
   def hello():
@@ -294,7 +289,7 @@ type ``directive in list should be indented correctly`` () =
 """
 
 type ``tabs`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 ::::{tab-set}
 
 :::{tab-item} Tab #1 title
@@ -325,7 +320,7 @@ This is where the content for tab #2 goes.
 
 
 type ``comments`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 This text is visible
 
 % This is a comment
@@ -352,7 +347,7 @@ This text is also visible
         test <@ not (actualLLM.Contains("This is also a comment")) @>
 
 type ``dropdown`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 :::{dropdown} Dropdown title
 This is where the content for the dropdown goes.
 :::
@@ -367,7 +362,7 @@ This is where the content for the dropdown goes.
 """
         
 type ``definition list`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 `First Term`
 :   This is the definition of the first term.
     - This a list in a definition
@@ -398,7 +393,7 @@ type ``definition list`` () =
 </definitions>
 """
 type ``image`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 ![elasticsearch](images/64x64_Color_elasticsearch-logo-color-64px.png "elasticsearch =50%")
 """
 
@@ -409,7 +404,7 @@ type ``image`` () =
 """
 
 type ``kbd role`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 {kbd}`cmd+enter`
 """
 
@@ -420,7 +415,7 @@ type ``kbd role`` () =
 """
 
 type ``codeblock in list`` () =
-    static let markdown = Setup.Markdown """
+    static let markdown = Setup.Document """
 - List item 1  
   ```python
   def hello():
@@ -448,4 +443,48 @@ type ``codeblock in list`` () =
      def hello():
          print("Hello, world!")
      ```
+"""
+
+type ``substitions`` () =
+    static let markdown = Setup.Document """---
+sub:
+  hello-world: "Hello World!"
+---
+
+Hello, this is a substitution: {{hello-world}}
+This is not a substitution: {{not-found}}
+"""
+
+    [<Fact>]
+    let ``rendered correctly`` () =
+        markdown |> convertsToNewLLM """
+Hello, this is a substitution: Hello World!
+This is not a substitution: {{not-found}}
+"""
+
+type ``substition in codeblock`` () =
+    static let markdown = Setup.Document """---
+sub:
+  hello-world: "Hello World!"
+---
+
+```plaintext
+Hello, this is a substitution: {{hello-world}}
+```
+
+```plaintext subs=true
+Hello, this is a substitution: {{hello-world}}
+```
+"""
+
+    [<Fact>]
+    let ``substitution in codeblock is only replaced when subs=true`` () =
+        markdown |> convertsToNewLLM """
+```plaintext
+Hello, this is a substitution: {{hello-world}}
+```
+
+```plaintext
+Hello, this is a substitution: Hello World!
+```
 """

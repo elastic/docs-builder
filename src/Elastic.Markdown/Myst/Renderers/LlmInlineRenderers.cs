@@ -73,6 +73,12 @@ public class LlmEmphasisInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 	}
 }
 
+public class LlmSubstituionLeafRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, SubstitutionLeaf>
+{
+	protected override void Write(LlmMarkdownRenderer renderer, SubstitutionLeaf obj)
+		=> renderer.Writer.Write(obj.Found ? obj.Replacement : obj.Content);
+}
+
 /// <summary>
 /// Renders inline code as standard CommonMark code spans
 /// </summary>
@@ -103,13 +109,10 @@ public class LlmLineBreakInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRend
 	{
 		if (obj.IsHard)
 		{
-			renderer.Writer.Write("  "); // Two spaces for hard break
+			// renderer.Writer.Write("  "); // Two spaces for hard break
 			renderer.WriteLine();
 		}
-		else
-		{
-			renderer.Writer.Write(" "); // Soft break becomes space
-		}
+		renderer.WriteLine();
 	}
 }
 
@@ -120,14 +123,6 @@ public class LlmRoleRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RoleL
 {
 	protected override void Write(LlmMarkdownRenderer renderer, RoleLeaf obj)
 	{
-		// Convert role to a format LLMs can understand
-		// For example: :doc:`page` becomes [page](page) or just "page" depending on role type
-
-		// RoleLeaf has a Role property and inherits Content from CodeInline
-		var roleName = obj.Role ?? "unknown";
-		var content = obj.Content;
-
-
 		switch (obj)
 		{
 			case KbdRole kbd:
@@ -144,41 +139,4 @@ public class LlmRoleRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RoleL
 				}
 		}
 	}
-
-	private static string ExtractRoleContent(Role role) =>
-		// Extract text content from role's children
-		role.Descendants()
-			.OfType<LiteralInline>()
-			.Select(l => l.Content.ToString())
-			.Aggregate(string.Empty, (current, text) => current + text);
 }
-
-/// <summary>
-/// Renders MyST substitutions by expanding them to their replacement text
-/// </summary>
-public class LlmSubstitutionRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, SubstitutionLeaf>
-{
-	protected override void Write(LlmMarkdownRenderer renderer, SubstitutionLeaf obj)
-	{
-		// Include substitution info as comment for LLM understanding
-		renderer.Writer.Write("<!-- SUBSTITUTION: ");
-		renderer.Writer.Write(obj.Content);
-		renderer.Writer.Write(" = ");
-		renderer.Writer.Write(obj.Replacement);
-		renderer.Writer.Write(" -->");
-
-		// Output the replacement text for LLM consumption
-		renderer.Writer.Write(obj.Found ? obj.Replacement : obj.Content);
-	}
-}
-
-/// <summary>
-/// Renders container inlines by processing their children
-/// </summary>
-public class LlmContainerInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ContainerInline>
-{
-	protected override void Write(LlmMarkdownRenderer renderer, ContainerInline obj) => renderer.WriteChildren(obj);
-}
-
-// Note: LlmHtmlInlineRenderer was removed since HTML is disabled in the base pipeline (.DisableHtml())
-// HTML elements are not parsed into the AST, making HTML renderers unnecessary dead code

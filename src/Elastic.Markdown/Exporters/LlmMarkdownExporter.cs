@@ -8,6 +8,8 @@ using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Renderers;
 using Markdig.Syntax;
 
@@ -49,26 +51,27 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return true;
 	}
 
-	private string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context)
+	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context)
 	{
 		using var writer = new StringWriter();
-
-		// Create a new renderer for consistent LLM output with BuildContext for URL transformation
+		var state = new ParserState(context.BuildContext)
+		{
+			YamlFrontMatter = context.SourceFile.YamlFrontMatter,
+			MarkdownSourcePath = context.SourceFile.SourceFile,
+			CrossLinkResolver = context.Resolvers.CrossLinkResolver,
+			DocumentationFileLookup = context.Resolvers.DocumentationFileLookup
+		};
+		var parserContext = new ParserContext(state);
 		var renderer = new LlmMarkdownRenderer(writer)
 		{
 			BuildContext = context.BuildContext
 		};
-
 		_ = renderer.Render(document);
 		var content = writer.ToString();
-
-		// Apply substitutions to the final content
-		content = ApplySubstitutions(content, context);
-
 		return content;
 	}
 
-	private IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
+	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
 	{
 		var source = fileContext.SourceFile.SourceFile;
 		var fs = source.FileSystem;
@@ -105,93 +108,37 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		}
 	}
 
-	private string ApplySubstitutions(string content, MarkdownExportFileContext context)
-	{
-		// Get combined substitutions (global + file-specific)
-		var substitutions = GetCombinedSubstitutions(context);
-
-		// Process substitutions in the content
-		foreach (var (key, value) in substitutions)
-		{
-			// Replace {{key}} with value
-			content = content.Replace($"{{{{{key}}}}}", value);
-		}
-
-		return content;
-	}
-
-	private ConcurrentDictionary<string, string> GetCombinedSubstitutions(MarkdownExportFileContext context)
-	{
-		// Get global substitutions from BuildContext
-		var globalSubstitutions = context.BuildContext.Configuration.Substitutions;
-
-		// Get file-specific substitutions from YamlFrontMatter
-		var fileSubstitutions = context.SourceFile.YamlFrontMatter?.Properties;
-
-		// Create a new dictionary with all substitutions
-		var allSubstitutions = new ConcurrentDictionary<string, string>();
-
-		// Add file-specific substitutions first
-		if (fileSubstitutions != null)
-		{
-			foreach (var (key, value) in fileSubstitutions)
-			{
-				_ = allSubstitutions.TryAdd(key, value);
-			}
-		}
-
-		// Add global substitutions (will override file-specific ones if there are conflicts)
-		foreach (var (key, value) in globalSubstitutions)
-		{
-			_ = allSubstitutions.TryAdd(key, value);
-		}
-
-		return allSubstitutions;
-	}
 
 	private string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
 		var sourceFile = context.SourceFile;
 		var metadata = new StringBuilder();
 
-		// Add metadata header
-		// _ = metadata.AppendLine("<!-- LLM-Optimized Markdown Document -->");
 		_ = metadata.AppendLine("---");
-		// _ = metadata.AppendLine($"<!-- Source: {Path.GetRelativePath(context.BuildContext.DocumentationOutputDirectory.FullName, sourceFile.SourceFile.FullName)} -->");
-		// _ = metadata.AppendLine($"<!-- Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC -->");
 		_ = metadata.AppendLine($"title: {sourceFile.Title}");
 
 		if (!string.IsNullOrEmpty(sourceFile.Url))
-		{
 			_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{sourceFile.Url}");
-		}
 
 		if (!string.IsNullOrEmpty(sourceFile.YamlFrontMatter?.Description))
-		{
 			_ = metadata.AppendLine($"description: {sourceFile.YamlFrontMatter.Description}");
-		}
 		else
 		{
 			var descriptionGenerator = new DescriptionGenerator();
 			var generateDescription = descriptionGenerator.GenerateDescription(context.Document);
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
-
-
 		var configProducts = context.BuildContext.Configuration.Products.Select(p =>
 		{
 			if (Products.AllById.TryGetValue(p, out var product))
 				return product;
 			throw new ArgumentException($"Invalid product id: {p}");
 		});
-
 		var frontMatterProducts = sourceFile.YamlFrontMatter?.Products ?? [];
-
 		var allProducts = frontMatterProducts
 			.Union(configProducts)
 			.Distinct()
 			.ToList();
-
 		if (allProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
@@ -200,14 +147,8 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		}
 
 		_ = metadata.AppendLine("---");
-
-		// Add an empty line after metadata
 		_ = metadata.AppendLine();
-
-		// Add the title as H1 heading
 		_ = metadata.AppendLine($"# {sourceFile.Title}");
-
-		// Add the converted markdown content
 		_ = metadata.Append(llmMarkdown);
 
 		return metadata.ToString();
