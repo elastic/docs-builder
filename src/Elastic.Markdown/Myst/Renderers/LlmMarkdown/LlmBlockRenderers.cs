@@ -18,17 +18,8 @@ using CodeBlock = Markdig.Syntax.CodeBlock;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
-/// <summary>
-/// Helper methods for common rendering patterns in LLM renderers
-/// </summary>
 public static class LlmRenderingHelpers
 {
-	/// <summary>
-	/// Renders a block with fixed indentation applied to each line
-	/// </summary>
-	/// <param name="renderer">The target renderer to write to</param>
-	/// <param name="block">The block to render</param>
-	/// <param name="indentation">The indentation string to apply to each line (default: 2 spaces)</param>
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
 		using var tempWriter = new StringWriter();
@@ -37,17 +28,14 @@ public static class LlmRenderingHelpers
 			BuildContext = renderer.BuildContext // Copy BuildContext for URL transformation
 		};
 		_ = tempRenderer.Render(block);
-
-		// Get the rendered content and add indentation to each line
 		var content = tempWriter.ToString().TrimEnd();
-		if (!string.IsNullOrEmpty(content))
+		if (string.IsNullOrEmpty(content))
+			return;
+		var lines = content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+		foreach (var line in lines)
 		{
-			var lines = content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
-			foreach (var line in lines)
-			{
-				renderer.Write(indentation);
-				renderer.WriteLine(line);
-			}
+			renderer.Write(indentation);
+			renderer.WriteLine(line);
 		}
 	}
 
@@ -56,30 +44,22 @@ public static class LlmRenderingHelpers
 	/// </summary>
 	public static string? MakeAbsoluteUrl(LlmMarkdownRenderer renderer, string? url)
 	{
-		if (string.IsNullOrEmpty(url) || renderer.BuildContext.CanonicalBaseUrl == null)
+		if (
+			string.IsNullOrEmpty(url)
+			|| renderer.BuildContext.CanonicalBaseUrl == null
+			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
+			|| !Uri.IsWellFormedUriString(url, UriKind.Relative))
 			return url;
-
-		// If URL is already absolute, return as-is
-		if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-			return url;
-
-		// If URL is relative, prepend canonical base URL
-		if (Uri.IsWellFormedUriString(url, UriKind.Relative))
+		try
 		{
-			try
-			{
-				var baseUri = renderer.BuildContext.CanonicalBaseUrl;
-				var absoluteUri = new Uri(baseUri, url);
-				return absoluteUri.ToString();
-			}
-			catch
-			{
-				// If URI construction fails, return original URL
-				return url;
-			}
+			var baseUri = renderer.BuildContext.CanonicalBaseUrl;
+			var absoluteUri = new Uri(baseUri, url);
+			return absoluteUri.ToString();
 		}
-
-		return url;
+		catch
+		{
+			return url;
+		}
 	}
 }
 
@@ -91,27 +71,22 @@ public class LlmYamlFrontMatterRenderer : MarkdownObjectRenderer<LlmMarkdownRend
 	protected override void Write(LlmMarkdownRenderer renderer, YamlFrontMatterBlock obj)
 	{
 		// Intentionally skip rendering YAML frontmatter - it should not appear in LLM output
-		// The frontmatter content is already processed and available through context.SourceFile.YamlFrontMatter
+		// The frontmatter content is currently handled in LlmMarkdownExporter.cs
+		// TODO: Handle YAML frontmatter in LLM output here
 	}
 }
 
-/// <summary>
-/// Renders headings as clean CommonMark headings with improved spacing for readability
-/// </summary>
 public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, HeadingBlock>
 {
 	protected override void Write(LlmMarkdownRenderer renderer, HeadingBlock obj)
 	{
-		// Add extra spacing before headings - always add multiple newlines
-		renderer.Writer.WriteLine();
-		renderer.Writer.WriteLine();
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine();
 
-		// Extract just the text content for clean headings
 		var headingText = ExtractHeadingText(obj);
 
-		// Output as standard markdown heading
-		renderer.Writer.Write(new string('#', obj.Level));
-		renderer.Writer.Write(' ');
+		renderer.Write(new string('#', obj.Level));
+		renderer.Write(" ");
 		renderer.WriteLine(headingText);
 	}
 
@@ -119,8 +94,6 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 	{
 		if (heading.Inline == null)
 			return string.Empty;
-
-		// Extract plain text from inline elements
 		return heading.Inline.Descendants()
 			.OfType<Markdig.Syntax.Inlines.LiteralInline>()
 			.Select(l => l.Content.ToString())
@@ -128,13 +101,11 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 	}
 }
 
-/// <summary>
-/// Renders paragraphs with proper spacing for LLM readability
-/// </summary>
 public class LlmParagraphRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ParagraphBlock>
 {
 	protected override void Write(LlmMarkdownRenderer renderer, ParagraphBlock obj)
 	{
+		// Only add newline if the paragraph is not within an element
 		if (obj.Parent is MarkdownDocument)
 			renderer.EnsureBlockSpacing();
 		renderer.WriteLeafInline(obj);
@@ -142,30 +113,21 @@ public class LlmParagraphRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	}
 }
 
-/// <summary>
-/// Renders enhanced code blocks (your custom extension) as standard code blocks with optional metadata
-/// and improved spacing for readability
-/// </summary>
-public partial class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, EnhancedCodeBlock>
+public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, EnhancedCodeBlock>
 {
 	protected override void Write(LlmMarkdownRenderer renderer, EnhancedCodeBlock obj)
 	{
-		// Ensure single empty line before code block
 		renderer.EnsureBlockSpacing();
-
-		// Add caption as comment if present
 		if (!string.IsNullOrEmpty(obj.Caption))
 		{
 			renderer.Write("<!-- Caption: ");
 			renderer.Write(obj.Caption);
 			renderer.WriteLine(" -->");
 		}
-
 		renderer.Write("```");
 		if (!string.IsNullOrEmpty(obj.Language))
 			renderer.Write(obj.Language);
 		renderer.WriteLine();
-
 		var lastNonEmptyIndex = GetLastNonEmptyLineIndex(obj);
 		for (var i = 0; i <= lastNonEmptyIndex; i++)
 		{
@@ -173,8 +135,6 @@ public partial class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMa
 			renderer.Write(line.ToString());
 			renderer.WriteLine();
 		}
-
-		// Close code block
 		renderer.WriteLine("```");
 	}
 
@@ -226,15 +186,9 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 		}
 	}
 
-	/// <summary>
-	/// Gets the continuation indent for multi-line list items
-	/// </summary>
 	private static string GetContinuationIndent(string baseIndent, bool isOrdered) =>
 		baseIndent + new string(' ', isOrdered ? 3 : 2);
 
-	/// <summary>
-	/// Renders any block type with proper list continuation indentation
-	/// </summary>
 	private static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, Block block, string baseIndent, bool isOrdered)
 	{
 		using var tempWriter = new StringWriter();
@@ -304,13 +258,11 @@ public class LlmQuoteBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 	}
 }
 
-/// <summary>
-/// Renders thematic breaks as standard markdown horizontal rules
-/// </summary>
 public class LlmThematicBreakRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ThematicBreakBlock>
 {
 	protected override void Write(LlmMarkdownRenderer renderer, ThematicBreakBlock obj)
 	{
+		renderer.EnsureBlockSpacing();
 		renderer.Writer.WriteLine("---");
 		renderer.EnsureLine();
 	}
@@ -447,9 +399,6 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 	}
 }
 
-/// <summary>
-/// Renders MyST directives as structured comments for LLM understanding with improved visual separation
-/// </summary>
 public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, DirectiveBlock>
 {
 	protected override void Write(LlmMarkdownRenderer renderer, DirectiveBlock obj)
@@ -459,7 +408,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case ImageBlock imageBlock:
 				WriteImageBlock(renderer, imageBlock);
 				return;
-			// Special handling for include directives
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
@@ -509,18 +457,11 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.EnsureLine();
 	}
 
-	/// <summary>
-	/// Renders definition lists as structured XML for better LLM comprehension
-	/// </summary>
-	/// <summary>
-	/// Renders include directives by fetching and rendering the included content
-	/// </summary>
 	private void WriteIncludeBlock(LlmMarkdownRenderer renderer, IncludeBlock block)
 	{
-		// If the include wasn't found or path is null, just write a comment
 		if (!block.Found || block.IncludePath is null)
 		{
-			renderer.Writer.WriteLine($"<!-- INCLUDE ERROR: File not found or invalid path -->");
+			renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "File not found or invalid path");
 			return;
 		}
 
@@ -530,7 +471,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		if (!snippet.Exists)
 		{
-			renderer.Writer.WriteLine($"<!-- INCLUDE ERROR: File does not exist: {block.IncludePath} -->");
+			renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "File not found or invalid path");
 			return;
 		}
 
@@ -540,62 +481,40 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			// For literal includes, output the content as a code block
 			// Read the file content
 			var content = block.Build.ReadFileSystem.File.ReadAllText(block.IncludePath);
-
-			// Add language if specified
-			renderer.Writer.Write("```");
+			renderer.Write("```");
 			if (!string.IsNullOrEmpty(block.Language))
-			{
-				renderer.Writer.Write(block.Language);
-			}
-
+				renderer.Write(block.Language);
 			renderer.WriteLine();
-			// Add an extra newline after the opening code block marker
-			renderer.Writer.WriteLine();
-
-			// Write the content
-			renderer.Writer.Write(content);
-
-			// Close the code block
-			renderer.Writer.WriteLine();
-			renderer.Writer.WriteLine("```");
-
-			// Add multiple line breaks after code blocks for better readability
+			renderer.Write(content);
+			renderer.WriteLine();
+			renderer.WriteLine("```");
 		}
 		else
 		{
-			// For regular includes, parse as markdown and render
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default)
+				var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, Cancel.None)
 					.GetAwaiter().GetResult();
-
-				// Use the same renderer to render the included content
 				_ = renderer.Render(document);
 			}
 			catch (Exception ex)
 			{
-				renderer.Writer.WriteLine($"<!-- INCLUDE ERROR: Failed to parse included content: {ex.Message} -->");
+				renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "Failed to parse included content", ex);
 			}
 		}
 
 		renderer.EnsureLine();
 	}
 
-	/// <summary>
-	/// Writes children with the specified indentation applied to each line
-	/// </summary>
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
-		// Simple approach: capture output and manually add indentation
+		// Capture output and manually add indentation
 		using var sw = new StringWriter();
 		var originalWriter = renderer.Writer;
 		renderer.Writer = sw;
-
 		try
 		{
-			// Render children to our temporary writer
-
 			switch (container)
 			{
 				case ContainerBlock containerBlock:
@@ -605,30 +524,15 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 					renderer.WriteLeafInline(leafBlock);
 					break;
 			}
-
-
-			// Get the output and add indentation to each non-empty line
 			var content = sw.ToString();
 			if (string.IsNullOrEmpty(content))
 				return;
 			var reader = new StringReader(content);
 			while (reader.ReadLine() is { } line)
-			{
-				if (string.IsNullOrWhiteSpace(line))
-				{
-					// Empty line - write as-is
-					originalWriter.WriteLine();
-				}
-				else
-				{
-					// Non-empty line - add indentation
-					originalWriter.WriteLine(indent + line);
-				}
-			}
+				originalWriter.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : indent + line);
 		}
 		finally
 		{
-			// Restore original writer
 			renderer.Writer = originalWriter;
 		}
 	}

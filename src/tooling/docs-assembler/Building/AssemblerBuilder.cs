@@ -55,7 +55,7 @@ public class AssemblerBuilder(
 
 		var markdownExporters = new List<IMarkdownExporter>(3);
 		if (exportOptions.Contains(ExportOption.LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter()); // Use new advanced LLM renderer
+			markdownExporters.Add(new LlmMarkdownExporter());
 		if (exportOptions.Contains(ExportOption.Elasticsearch) && esExporter is { })
 			markdownExporters.Add(esExporter);
 		var noopBuild = !exportOptions.Contains(ExportOption.Html);
