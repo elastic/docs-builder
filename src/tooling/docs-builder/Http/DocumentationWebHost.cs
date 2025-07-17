@@ -10,7 +10,10 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Renderers;
+using Markdig.Syntax;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -187,6 +190,17 @@ public class DocumentationWebHost
 	{
 		var generator = holder.Generator;
 		const string navPartialSuffix = ".nav.html";
+
+		// Check if the original request is asking for LLM-rendered markdown
+		var requestLlmMarkdown = slug.EndsWith(".md");
+		var originalSlug = slug;
+
+		// If requesting .md output, remove the .md extension to find the source file
+		if (requestLlmMarkdown)
+		{
+			slug = slug[..^3]; // Remove ".md" extension
+		}
+
 		if (slug.EndsWith(navPartialSuffix))
 		{
 			var segments = slug.Split("/");
@@ -218,8 +232,18 @@ public class DocumentationWebHost
 		switch (documentationFile)
 		{
 			case MarkdownFile markdown:
-				var rendered = await generator.RenderLayout(markdown, ctx);
-				return Results.Content(rendered.Html, "text/html");
+				if (requestLlmMarkdown)
+				{
+					// Render using LLM pipeline for CommonMark output
+					var llmRendered = await generator.RenderLlmMarkdown(markdown, ctx);
+					return Results.Content(llmRendered, "text/markdown; charset=utf-8");
+				}
+				else
+				{
+					// Regular HTML rendering
+					var rendered = await generator.RenderLayout(markdown, ctx);
+					return Results.Content(rendered.Html, "text/html");
+				}
 
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
