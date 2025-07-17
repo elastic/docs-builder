@@ -133,37 +133,6 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 	// ReSharper disable once InconsistentNaming
 	private static MarkdownPipeline? PipelineCached;
 
-	/// <summary>
-	/// Creates a MarkdownPipelineBuilder configured with all standard MyST extensions.
-	/// This is the authoritative source for MyST pipeline configuration that can be extended by other components.
-	/// </summary>
-	public static MarkdownPipelineBuilder CreateBaseBuilder()
-	{
-		var builder = new MarkdownPipelineBuilder()
-			.UseInlineAnchors()
-			.UsePreciseSourceLocation()
-			.UseDiagnosticLinks()
-			.UseHeadingsWithSlugs()
-			.UseEmphasisExtras(EmphasisExtraOptions.Default)
-			.UseInlineAppliesTo()
-			.UseInlineIcons()
-			.UseInlineKbd()
-			.UseSubstitution()
-			.UseComments()
-			.UseYamlFrontMatter()
-			.UseGridTables()
-			.UsePipeTables()
-			.UseDirectives()
-			.UseDefinitionLists()
-			.UseEnhancedCodeBlocks()
-			.UseHtmxLinkInlineRenderer()
-			.DisableHtml()
-			.UseWhiteSpaceNormalizer()
-			.UseHardBreaks();
-		_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
-		return builder;
-	}
-
 	public static MarkdownPipeline Pipeline
 	{
 		get
@@ -171,8 +140,28 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			if (PipelineCached is not null)
 				return PipelineCached;
 
-			// Use the shared base builder to ensure consistency
-			var builder = CreateBaseBuilder();
+			var builder = new MarkdownPipelineBuilder()
+				.UseInlineAnchors()
+				.UsePreciseSourceLocation()
+				.UseDiagnosticLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UseInlineAppliesTo()
+				.UseInlineIcons()
+				.UseInlineKbd()
+				.UseSubstitution()
+				.UseComments()
+				.UseYamlFrontMatter()
+				.UseGridTables()
+				.UsePipeTables()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseEnhancedCodeBlocks()
+				.UseHtmxLinkInlineRenderer()
+				.DisableHtml()
+				.UseWhiteSpaceNormalizer()
+				.UseHardBreaks();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			PipelineCached = builder.Build();
 			return PipelineCached;
 		}

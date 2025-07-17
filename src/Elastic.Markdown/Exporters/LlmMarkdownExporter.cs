@@ -149,13 +149,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	}
 }
 
-/// <summary>
-/// Extension methods for easy integration with existing build configuration
-/// </summary>
 public static class LlmMarkdownExporterExtensions
 {
-	/// <summary>
-	/// Adds LLM markdown export to the documentation generator with consistent rendering settings
-	/// </summary>
 	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) => exporters.Add(new LlmMarkdownExporter());
 }
