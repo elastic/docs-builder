@@ -27,13 +27,17 @@ public record GlobalNavigationFile : ITableOfContentsScope
 	{
 		_context = context;
 		_assembleSources = assembleSources;
+		NavigationFile = context.ConfigurationFileProvider.NavigationFile;
 		TableOfContents = Deserialize("toc");
 		Phantoms = Deserialize("phantoms");
-		ScopeDirectory = _context.NavigationPath.Directory!;
+		ScopeDirectory = NavigationFile.Directory!;
 	}
+
+	private IFileInfo NavigationFile { get; }
 
 	public static bool ValidatePathPrefixes(AssembleContext context)
 	{
+		var fileProvider = context.ConfigurationFileProvider;
 		var sourcePathPrefixes = GetAllPathPrefixes(context);
 		var pathPrefixSet = new HashSet<string>();
 		var valid = true;
@@ -43,9 +47,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 			if (pathPrefixSet.Add(prefix))
 				continue;
 			var duplicateOf = sourcePathPrefixes.First(p => p.Host == pathPrefix.Host && p.AbsolutePath == pathPrefix.AbsolutePath);
-			context.Collector.EmitError(context.NavigationPath.FullName,
-				$"Duplicate path prefix: {pathPrefix} duplicate: {duplicateOf}"
-			);
+			context.Collector.EmitError(fileProvider.NavigationFile, $"Duplicate path prefix: {pathPrefix} duplicate: {duplicateOf}");
 			valid = false;
 		}
 		return valid;
@@ -60,7 +62,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 
 	private static ImmutableHashSet<Uri> GetSourceUris(string key, AssembleContext context)
 	{
-		var reader = new YamlStreamReader(context.NavigationPath, context.Collector);
+		var reader = new YamlStreamReader(context.ConfigurationFileProvider.NavigationFile, context.Collector);
 		var set = new HashSet<Uri>();
 		foreach (var entry in reader.Read())
 		{
@@ -142,15 +144,15 @@ public record GlobalNavigationFile : ITableOfContentsScope
 		}
 	}
 	public void EmitWarning(string message) =>
-		_context.Collector.EmitWarning(_context.NavigationPath.FullName, message);
+		_context.Collector.EmitWarning(NavigationFile, message);
 
 	public void EmitError(string message) =>
-		_context.Collector.EmitWarning(_context.NavigationPath.FullName, message);
+		_context.Collector.EmitWarning(NavigationFile, message);
 
 
 	private IReadOnlyCollection<TocReference> Deserialize(string key)
 	{
-		var reader = new YamlStreamReader(_context.NavigationPath, _context.Collector);
+		var reader = new YamlStreamReader(NavigationFile, _context.Collector);
 		try
 		{
 			foreach (var entry in reader.Read())

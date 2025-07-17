@@ -23,7 +23,18 @@ public class AssemblerConfigurationTests
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationFileProvider = new ConfigurationFileProvider(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+	}
+
+	[Fact]
+	public void ReadsConfigurationFiles()
+	{
+		Context.ConfigurationFileProvider.VersionFile.Name.Should().Be("versions.yml");
+		Context.ConfigurationFileProvider.NavigationFile.Name.Should().Be("navigation.yml");
+		Context.ConfigurationFileProvider.AssemblerFile.Name.Should().Be("assembler.yml");
+		Context.ConfigurationFileProvider.LegacyUrlMappingsFile.Name.Should().Be("legacy-url-mappings.yml");
 	}
 
 	[Fact]

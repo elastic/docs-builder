@@ -9,7 +9,7 @@ using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
 
-await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, _ => { });
+await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, (s, p) => { });
 ConsoleApp.ServiceProvider = serviceProvider;
 
 var app = ConsoleApp.Create();

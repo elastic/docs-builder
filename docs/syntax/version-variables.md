@@ -28,7 +28,7 @@ can be printed in any kind of ways.
 
 ## Available versioning schemes.
 
-This is dictated by the [versions.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml) configuration file
+This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml) configuration file
 
 * `stack`
 * `ece`

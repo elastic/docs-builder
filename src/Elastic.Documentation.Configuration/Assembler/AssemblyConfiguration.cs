@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Extensions;
 using YamlDotNet.Serialization;
 using YamlStaticContext = Elastic.Documentation.Configuration.Serialization.YamlStaticContext;
 
@@ -10,6 +11,9 @@ namespace Elastic.Documentation.Configuration.Assembler;
 
 public record AssemblyConfiguration
 {
+	public static AssemblyConfiguration Create(ConfigurationFileProvider provider) =>
+		Deserialize(provider.AssemblerFile.ReadToEnd());
+
 	public static AssemblyConfiguration Deserialize(string yaml)
 	{
 		var input = new StringReader(yaml);

@@ -10,6 +10,8 @@ using Amazon.S3;
 using Amazon.S3.Transfer;
 using ConsoleAppFramework;
 using Documentation.Assembler.Deploying;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Documentation.Tooling.Filters;
@@ -17,7 +19,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class DeployCommands(ILoggerFactory logFactory, ICoreService githubActionsService)
+internal sealed class DeployCommands(
+	AssemblyConfiguration assemblyConfiguration,
+	ConfigurationFileProvider configurationFileProvider,
+	ILoggerFactory logFactory,
+	ICoreService githubActionsService
+)
 {
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
@@ -40,7 +47,8 @@ internal sealed class DeployCommands(ILoggerFactory logFactory, ICoreService git
 		{
 			NoHints = true
 		}.StartAsync(ctx);
-		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
+		var fs = new FileSystem();
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
 		var s3Client = new AmazonS3Client();
 		IDocsSyncPlanStrategy planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
 		var plan = await planner.Plan(ctx);
@@ -77,7 +85,8 @@ internal sealed class DeployCommands(ILoggerFactory logFactory, ICoreService git
 		{
 			NoHints = true
 		}.StartAsync(ctx);
-		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
+		var fs = new FileSystem();
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
 		var s3Client = new AmazonS3Client();
 		var transferUtility = new TransferUtility(s3Client, new TransferUtilityConfig
 		{

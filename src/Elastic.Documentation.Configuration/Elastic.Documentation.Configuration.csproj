@@ -18,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="versions.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\versions.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\assembler.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\navigation.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
   </ItemGroup>
 </Project>

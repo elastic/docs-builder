@@ -45,7 +45,7 @@ Then, successfully run a docs build on the `main` branch. This is a requirement.
 
 ::::{step} Add the repository to the assembler and navigation configs
 
-Edit the [assembler.yml](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml) file to add the repository. Refer to [assembler.yml](../configure/site/content.md) for more information.
+Edit the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) file to add the repository. Refer to [assembler.yml](../configure/site/content.md) for more information.
 
 For example, to add the `elastic/yadda-docs` repository:
 
@@ -58,7 +58,7 @@ references:
 In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 :::
 
-Then, edit the [navigation.yml](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/navigation.yml) file to add the repository to the navigation.
+Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation.
 
 For example, to add the `elastic/yadda-docs` repository under **Reference**:
 

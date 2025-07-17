@@ -21,7 +21,7 @@ using Microsoft.Extensions.Options;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
+internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubActionsService, VersionsConfiguration versionsConfig)
 {
 	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
@@ -37,7 +37,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	[Command("serve")]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
-		var host = new DocumentationWebHost(logFactory, path, port, new FileSystem(), new MockFileSystem(), versionsConfigOption.Value);
+		var host = new DocumentationWebHost(logFactory, path, port, new FileSystem(), new MockFileSystem(), versionsConfig);
 		_log.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
 		);
@@ -107,7 +107,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, fileSystem, versionsConfigOption.Value, path, output)
+			context = new BuildContext(collector, fileSystem, fileSystem, versionsConfig, path, output)
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
@@ -213,7 +213,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	{
 		var fileSystem = new FileSystem();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, null).StartAsync(ctx);
-		var context = new BuildContext(collector, fileSystem, fileSystem, versionsConfigOption.Value, path, null);
+		var context = new BuildContext(collector, fileSystem, fileSystem, versionsConfig, path, null);
 		var set = new DocumentationSet(context, logFactory);
 
 		var moveCommand = new Move(logFactory, fileSystem, fileSystem, set);

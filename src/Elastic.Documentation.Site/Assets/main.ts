@@ -1,6 +1,7 @@
 import { initCopyButton } from './copybutton'
 import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
+import { initImageCarousel } from './image-carousel'
 import './markdown/applies-to'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
@@ -34,6 +35,7 @@ document.addEventListener('htmx:load', function (event) {
     initSmoothScroll()
     openDetailsWithAnchor()
     initDismissibleBanner()
+    initImageCarousel()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
