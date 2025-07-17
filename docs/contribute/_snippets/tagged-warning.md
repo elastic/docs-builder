@@ -3,5 +3,5 @@ Some repositories use a [tagged branching strategy](/contribute/branching-strate
 
 For detailed backporting guidance, refer to the example in [Choose the docs branching strategy for a repository](/contribute/branching-strategy.md#workflow-2-tagged).
 
-To determine the published branches for a repository, find the repository in [assembler.yml](https://github.com/elastic/docs-builder/blob/main/src/tooling/docs-assembler/assembler.yml).
+To determine the published branches for a repository, find the repository in [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml).
 :::

@@ -18,20 +18,20 @@ public class AssembleContext
 
 	public DiagnosticsCollector Collector { get; }
 
-	public AssemblyConfiguration Configuration { get; set; }
+	public AssemblyConfiguration Configuration { get; }
 
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 
-	public IDirectoryInfo CheckoutDirectory { get; set; }
+	public IDirectoryInfo CheckoutDirectory { get; }
 
-	public IDirectoryInfo OutputDirectory { get; set; }
+	public IDirectoryInfo OutputDirectory { get; }
 
 	public bool Force { get; init; }
 
 	/// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
-	public PublishEnvironment Environment { get; set; }
+	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(
 		AssemblyConfiguration configuration,
@@ -60,7 +60,5 @@ public class AssembleContext
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
-
-
 	}
 }

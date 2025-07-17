@@ -29,6 +29,15 @@ public class AssemblerConfigurationTests
 	}
 
 	[Fact]
+	public void ReadsConfigurationFiles()
+	{
+		Context.ConfigurationFileProvider.VersionFile.Name.Should().Be("versions.yml");
+		Context.ConfigurationFileProvider.NavigationFile.Name.Should().Be("navigation.yml");
+		Context.ConfigurationFileProvider.AssemblerFile.Name.Should().Be("assembler.yml");
+		Context.ConfigurationFileProvider.LegacyUrlMappingsFile.Name.Should().Be("legacy-url-mappings.yml");
+	}
+
+	[Fact]
 	public void ReadsContentSource()
 	{
 		var environments = Context.Configuration.Environments;

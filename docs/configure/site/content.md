@@ -1,13 +1,13 @@
 # `assembler.yml`
 
-The global navigation is defined in the `assembler.yml` file. This file can roughly be thought of as the V3 equivalent of conf.yaml in the asciidoc build system. This file, which writers own, allows for arbitrary nesting of `docset.yml` and `toc.yml` references. This file will live in the `elastic/docs-content` repository, but will not build or have any influence over the `docs-builder` builds in that repo.
+The global navigation is defined in the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) file. This file can roughly be thought of as the V3 equivalent of conf.yaml in the asciidoc build system. This file, which writers own, allows for arbitrary nesting of `docset.yml` and `toc.yml` references. This file will live in the `elastic/docs-content` repository, but will not build or have any influence over the `docs-builder` builds in that repo.
 
-The global navigation that is defined in `assembler.yml` can be composed of three main resources:
+The global navigation that is defined in [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) can be composed of three main resources:
 1. Local TOC files: toc.yml files that live in the docs-content repository.
 2. External TOC files: A subset of a content set (represented by a toc.yml file) that is external to the docs-content repository.
 3. External content set declarations: An entire docset.yml file that is external to the docs-content repository.
 
-The `assembler.yml` file might look something like this:
+The [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) file might look something like this:
 
 ```yaml
 

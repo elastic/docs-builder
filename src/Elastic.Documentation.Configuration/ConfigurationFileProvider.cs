@@ -34,7 +34,7 @@ public class ConfigurationFileProvider
 
 	private IFileInfo CreateTemporaryConfigurationFile(EmbeddedResource resource)
 	{
-		var fileName = resource.GetResourceName().Split('_').Last();
+		var fileName = string.Join(".", resource.GetResourceName().Split('.')[^2..]);
 		using var stream = GetLocalOrEmbedded(resource);
 		var context = stream.ReadToEnd();
 		var fi = _fileSystem.FileInfo.New(Path.Combine(TemporaryDirectory.FullName, fileName));
@@ -44,12 +44,11 @@ public class ConfigurationFileProvider
 
 	private StreamReader GetLocalOrEmbedded(EmbeddedResource resource)
 	{
-		var fileName = resource.GetResourceName().Split('_').Last();
+		var fileName = string.Join(".", resource.GetResourceName().Split('.')[^2..]);
 		var configPath = GetLocalPath(fileName);
 		if (!_fileSystem.File.Exists(configPath))
 			return GetEmbeddedStream(resource);
-		var stream = resource.GetStream();
-		var reader = new StreamReader(stream, leaveOpen: false);
+		var reader = _fileSystem.File.OpenText(configPath);
 		return reader;
 	}
 

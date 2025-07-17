@@ -31,7 +31,7 @@ This tagging system is mandatory for all of the public-facing documentation. We 
 
 ## How version awareness works in Docs V3
 
-Docs V3 uses a central version config called [versions.yml](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Configuration/versions.yml), which tracks the latest released versions of our products. It also tracks the earliest version of each product documented in the Docs V3 system (the earliest available on elastic.co/docs). 
+Docs V3 uses a central version config called [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml), which tracks the latest released versions of our products. It also tracks the earliest version of each product documented in the Docs V3 system (the earliest available on elastic.co/docs). 
 
 This central version config is used in certain inline version variables, and drives our [dynamic rendering logic](#how-do-these-tags-behave-in-the-output). This logic allows us to label documentation related to unreleased versions as `planned`, continuously release documentation, and document our Serverless and {{stack}} offerings in one place.
 
