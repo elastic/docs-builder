@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Chorn.EmbeddedResourceAccessGenerator" />
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="Samboy063.Tomlet" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>

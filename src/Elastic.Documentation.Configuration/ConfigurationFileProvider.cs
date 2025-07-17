@@ -10,16 +10,18 @@ namespace Elastic.Documentation.Configuration;
 public class ConfigurationFileProvider
 {
 	private readonly IFileSystem _fileSystem;
+	private readonly string _assemblyName;
 
 	public ConfigurationFileProvider(IFileSystem fileSystem)
 	{
 		_fileSystem = fileSystem;
+		_assemblyName = typeof(ConfigurationFileProvider).Assembly.GetName().Name!;
 		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
 
-		VersionFile = CreateTemporaryConfigurationFile(EmbeddedResource.______config_versions_yml);
-		AssemblerFile = CreateTemporaryConfigurationFile(EmbeddedResource.______config_assembler_yml);
-		NavigationFile = CreateTemporaryConfigurationFile(EmbeddedResource.______config_navigation_yml);
-		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile(EmbeddedResource.______config_legacy_url_mappings_yml);
+		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
+		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
+		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
+		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 	}
 
 	private IDirectoryInfo TemporaryDirectory { get; }
@@ -32,30 +34,28 @@ public class ConfigurationFileProvider
 
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
-	private IFileInfo CreateTemporaryConfigurationFile(EmbeddedResource resource)
+	private IFileInfo CreateTemporaryConfigurationFile(string fileName)
 	{
-		var fileName = string.Join(".", resource.GetResourceName().Split('.')[^2..]);
-		using var stream = GetLocalOrEmbedded(resource);
+		using var stream = GetLocalOrEmbedded(fileName);
 		var context = stream.ReadToEnd();
 		var fi = _fileSystem.FileInfo.New(Path.Combine(TemporaryDirectory.FullName, fileName));
 		_fileSystem.File.WriteAllText(fi.FullName, context);
 		return fi;
 	}
 
-	private StreamReader GetLocalOrEmbedded(EmbeddedResource resource)
+	private StreamReader GetLocalOrEmbedded(string fileName)
 	{
-		var fileName = string.Join(".", resource.GetResourceName().Split('.')[^2..]);
 		var configPath = GetLocalPath(fileName);
 		if (!_fileSystem.File.Exists(configPath))
-			return GetEmbeddedStream(resource);
+			return GetEmbeddedStream(fileName);
 		var reader = _fileSystem.File.OpenText(configPath);
 		return reader;
 	}
 
-	private static StreamReader GetEmbeddedStream(EmbeddedResource resource)
+	private StreamReader GetEmbeddedStream(string fileName)
 	{
-		var name = resource.GetResourceName().Replace(".......config.", ".");
-		var resourceStream = typeof(EmbeddedResource).Assembly.GetManifestResourceStream(name)!;
+		var resourceName = $"{_assemblyName}.{fileName}";
+		var resourceStream = typeof(ConfigurationFileProvider).Assembly.GetManifestResourceStream(resourceName)!;
 		var reader = new StreamReader(resourceStream, leaveOpen: false);
 		return reader;
 	}
