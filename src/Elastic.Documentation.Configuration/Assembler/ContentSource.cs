@@ -17,5 +17,9 @@ public enum ContentSource
 
 	[JsonStringEnumMemberName("current")]
 	[Display(Name = "current")]
-	Current
+	Current,
+
+	[JsonStringEnumMemberName("edge")]
+	[Display(Name = "edge")]
+	Edge
 }

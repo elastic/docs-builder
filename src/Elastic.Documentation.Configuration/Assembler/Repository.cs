@@ -35,6 +35,9 @@ public record Repository
 	[YamlMember(Alias = "next")]
 	public string GitReferenceNext { get; set; } = "main";
 
+	[YamlMember(Alias = "edge")]
+	public string GitReferenceEdge { get; set; } = "main";
+
 	[YamlMember(Alias = "checkout_strategy")]
 	public CheckoutStrategy CheckoutStrategy { get; set; } = CheckoutStrategy.Partial;
 
@@ -45,6 +48,7 @@ public record Repository
 	{
 		ContentSource.Current => GitReferenceCurrent,
 		ContentSource.Next => GitReferenceNext,
+		ContentSource.Edge => GitReferenceEdge,
 		_ => throw new ArgumentException($"The content source {contentSource} is not supported.", nameof(contentSource))
 	};
 }

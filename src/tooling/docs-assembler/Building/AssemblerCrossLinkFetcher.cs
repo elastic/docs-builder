@@ -29,9 +29,7 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfig
 			if (repository.Skip)
 				continue;
 
-			var branch = publishEnvironment.ContentSource == ContentSource.Current
-				? repository.GitReferenceCurrent
-				: repository.GitReferenceNext;
+			var branch = repository.GetBranch(publishEnvironment.ContentSource);
 
 			var linkReference = await Fetch(repositoryName, [branch], ctx);
 			linkReferences.Add(repositoryName, linkReference);

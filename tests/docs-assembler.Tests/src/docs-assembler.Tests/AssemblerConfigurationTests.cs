@@ -70,6 +70,12 @@ public class AssemblerConfigurationTests
 			.And.Be("main");
 		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.Be("main");
+		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
+			.And.Be("main");
+
+		var beats = config.ReferenceRepositories["apm-server"];
+		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.NotBe("main");
 
 	}
 }

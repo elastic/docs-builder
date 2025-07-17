@@ -27,11 +27,15 @@ environments:
       LAZY_LOAD_NAVIGATION: true
   dev:
     uri: http://localhost:4000
-    content_source: next
+    content_source: edge
     path_prefix: docs
 
 named_git_references:
-  stack: &stack 9.0
+  stack:
+    current: &stack_current 9.0
+    next: &stack_next 9.1
+    edge: &stack_edge main
+
   cloud-hosted: ms-120
 
 ###
@@ -68,8 +72,9 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   beats:
-    current: "9.0"
-    next: main
+   current: *stack_current
+   next: *stack_next
+   edge: *stack_edge
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -81,8 +86,9 @@ references:
   ecs-logging-ruby:
   ecs-logging:
   ecs:
-    current: "9.0"
-    next: main
+   current: *stack_current
+   next: *stack_next
+   edge: *stack_edge
   elastic-otel-dotnet:
   elastic-otel-java:
   elastic-otel-node:
@@ -93,8 +99,9 @@ references:
   integrations:
   logstash-docs-md:
   logstash:
-    current: "9.0"
-    next: main
+   current: *stack_current
+   next: *stack_next
+   edge: *stack_edge
   opentelemetry:
   
   # @elastic/admin-docs

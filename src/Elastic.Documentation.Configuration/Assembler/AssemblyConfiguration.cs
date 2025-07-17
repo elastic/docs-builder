@@ -55,6 +55,8 @@ public record AssemblyConfiguration
 			repository.GitReferenceCurrent = "main";
 		if (string.IsNullOrEmpty(repository.GitReferenceNext))
 			repository.GitReferenceNext = "main";
+		if (string.IsNullOrEmpty(repository.GitReferenceEdge))
+			repository.GitReferenceEdge = "main";
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
