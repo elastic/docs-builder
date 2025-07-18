@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Extensions;
+using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlStaticContext = Elastic.Documentation.Configuration.Serialization.YamlStaticContext;
 
@@ -55,6 +56,8 @@ public record AssemblyConfiguration
 			repository.GitReferenceCurrent = "main";
 		if (string.IsNullOrEmpty(repository.GitReferenceNext))
 			repository.GitReferenceNext = "main";
+		if (string.IsNullOrEmpty(repository.GitReferenceEdge))
+			repository.GitReferenceEdge = "main";
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
@@ -80,8 +83,8 @@ public record AssemblyConfiguration
 	[YamlMember(Alias = "environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
 
-	[YamlMember(Alias = "named_git_references")]
-	public Dictionary<string, string> NamedGitReferences { get; set; } = [];
+	[YamlMember(Alias = "shared_configuration")]
+	public Dictionary<string, Repository> SharedConfigurations { get; set; } = [];
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
 	/// <paramref name="repository"/>.
