@@ -347,10 +347,7 @@ public class DocumentationGenerator
 	{
 		await DocumentationSet.Tree.Resolve(ctx);
 		var document = await markdown.ParseFullAsync(ctx);
-		return DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(DocumentationSet.Context, renderer =>
-		{
-			_ = renderer.Render(document);
-		}).Trim();
+		return LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)

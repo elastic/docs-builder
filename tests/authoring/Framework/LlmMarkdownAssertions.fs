@@ -16,14 +16,7 @@ module LlmMarkdownAssertions =
 
     let toLlmMarkdown (actual: MarkdownResult) =
         use writer = new StringWriter()  
-        let markdownExportFileContext = MarkdownExportFileContext(
-            BuildContext = actual.Context.Generator.Context,
-            Resolvers = actual.Context.Set.MarkdownParser.Resolvers,
-            Document = actual.Document,
-            SourceFile = actual.File,
-            DefaultOutputFile = actual.File.SourceFile
-        )
-        LlmMarkdownExporter.ConvertToLlmMarkdown(actual.Document, markdownExportFileContext).Trim()
+        LlmMarkdownExporter.ConvertToLlmMarkdown(actual.Document, actual.Context.Generator.Context).Trim()
 
     [<DebuggerStepThrough>]
     let convertsToNewLLM ([<LanguageInjection("markdown")>]expected: string) (actual: Lazy<GeneratorResults>) =

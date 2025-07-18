@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -45,7 +46,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
-		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext);
+		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 		var outputFile = GetLlmOutputFile(fileContext);
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -59,8 +60,8 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return true;
 	}
 
-	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context) =>
-		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext, renderer =>
+	public static string ConvertToLlmMarkdown(MarkdownDocument document, BuildContext context) =>
+		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context, renderer =>
 		{
 			_ = renderer.Render(document);
 		});
