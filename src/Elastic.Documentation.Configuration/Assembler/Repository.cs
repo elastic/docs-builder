@@ -29,6 +29,12 @@ public record Repository
 	[YamlMember(Alias = "repo")]
 	public string Origin { get; set; } = string.Empty;
 
+	[YamlMember(Alias = "checkout_strategy")]
+	public CheckoutStrategy CheckoutStrategy { get; set; } = CheckoutStrategy.Partial;
+
+	[YamlMember(Alias = "skip")]
+	public bool Skip { get; set; }
+
 	[YamlMember(Alias = "current")]
 	public string GitReferenceCurrent { get; set; } = "main";
 
@@ -38,12 +44,6 @@ public record Repository
 	[YamlMember(Alias = "edge")]
 	public string GitReferenceEdge { get; set; } = "main";
 
-	[YamlMember(Alias = "checkout_strategy")]
-	public CheckoutStrategy CheckoutStrategy { get; set; } = CheckoutStrategy.Partial;
-
-	[YamlMember(Alias = "skip")]
-	public bool Skip { get; set; }
-
 	public string GetBranch(ContentSource contentSource) => contentSource switch
 	{
 		ContentSource.Current => GitReferenceCurrent,
@@ -51,4 +51,5 @@ public record Repository
 		ContentSource.Edge => GitReferenceEdge,
 		_ => throw new ArgumentException($"The content source {contentSource} is not supported.", nameof(contentSource))
 	};
+
 }
