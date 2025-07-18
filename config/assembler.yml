@@ -20,6 +20,8 @@ environments:
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
+    # need to follow up in a PR after edge is available on published docker images
+    # content_source: edge
     content_source: current
     google_tag_manager:
       enabled: false
@@ -27,12 +29,14 @@ environments:
       LAZY_LOAD_NAVIGATION: true
   dev:
     uri: http://localhost:4000
-    content_source: next
+    content_source: current
     path_prefix: docs
 
-named_git_references:
-  stack: &stack 9.0
-  cloud-hosted: ms-120
+shared_configuration:
+  stack: &stack
+    current:  9.0
+    next: 9.1
+    edge: main
 
 ###
 # 'narrative' shares the same keys as keys in 'references' (<repository_config>)
@@ -67,9 +71,6 @@ references:
   apm-agent-rum-js:
   apm-aws-lambda:
   apm-k8s-attacher:
-  beats:
-    current: "9.0"
-    next: main
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -80,9 +81,6 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
-  ecs:
-    current: "9.0"
-    next: main
   elastic-otel-dotnet:
   elastic-otel-java:
   elastic-otel-node:
@@ -92,11 +90,26 @@ references:
   integration-docs:
   integrations:
   logstash-docs-md:
-  logstash:
-    current: "9.0"
-    next: main
   opentelemetry:
-  
+
+  # stack aligned gated
+  # TODO we can use *stack after merging this PR
+  #beats: *stack
+  #ecs: *stack
+  #logstash: *stack
+  beats:
+    current:  9.0
+    next: 9.1
+    edge: main
+  ecs:
+    current:  9.0
+    next: 9.0
+    edge: main
+  logstash:
+    current:  9.0
+    next: 9.1
+    edge: main
+
   # @elastic/admin-docs
   cloud-on-k8s:
   cloud:
