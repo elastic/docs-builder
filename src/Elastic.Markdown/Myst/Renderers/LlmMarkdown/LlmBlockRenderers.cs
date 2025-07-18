@@ -21,8 +21,6 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public static class LlmRenderingHelpers
 {
-<<<<<<< Updated upstream
-=======
 	/// <summary>
 	/// Renders content with indentation using a flexible indentation strategy
 	/// </summary>
@@ -66,10 +64,6 @@ public static class LlmRenderingHelpers
 		}
 	}
 
-	/// <summary>
-	/// Backwards compatibility method that preserves the original simple behavior
-	/// </summary>
->>>>>>> Stashed changes
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
 		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (tmpRenderer, obj) =>
