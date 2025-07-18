@@ -59,16 +59,11 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		return true;
 	}
 
-	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context)
-	{
-		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
-		subscription.SetBuildContext(context.BuildContext!);
-		var renderer = subscription.LlmMarkdownRenderer;
-		_ = renderer.Render(document);
-		var result = subscription.RentedStringBuilder!.ToString();
-		DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
-		return result;
-	}
+	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context) =>
+		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext!, renderer =>
+		{
+			_ = renderer.Render(document);
+		});
 
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
 	{

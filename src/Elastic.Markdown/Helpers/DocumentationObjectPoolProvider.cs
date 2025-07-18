@@ -19,8 +19,22 @@ internal static class DocumentationObjectPoolProvider
 	public static readonly ObjectPool<StringBuilder> StringBuilderPool = PoolProvider.CreateStringBuilderPool(256, 4 * 1024);
 	public static readonly ObjectPool<ReusableStringWriter> StringWriterPool = PoolProvider.Create(new ReusableStringWriterPooledObjectPolicy());
 	public static readonly ObjectPool<HtmlRenderSubscription> HtmlRendererPool = PoolProvider.Create(new HtmlRendererPooledObjectPolicy());
-	public static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
+	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
 
+	public static string UseLlmMarkdownRenderer(BuildContext buildContext, Action<LlmMarkdownRenderer> action)
+	{
+		var subscription = LlmMarkdownRendererPool.Get();
+		subscription.SetBuildContext(buildContext);
+		try
+		{
+			action(subscription.LlmMarkdownRenderer);
+			return subscription.RentedStringBuilder!.ToString();
+		}
+		finally
+		{
+			LlmMarkdownRendererPool.Return(subscription);
+		}
+	}
 
 	private sealed class ReusableStringWriterPooledObjectPolicy : IPooledObjectPolicy<ReusableStringWriter>
 	{
@@ -37,14 +51,6 @@ internal static class DocumentationObjectPoolProvider
 	{
 		public required HtmlRenderer HtmlRenderer { get; init; }
 		public StringBuilder? RentedStringBuilder { get; internal set; }
-	}
-
-	public sealed class LlmMarkdownRenderSubscription
-	{
-		public required LlmMarkdownRenderer LlmMarkdownRenderer { get; init; }
-		public StringBuilder? RentedStringBuilder { get; internal set; }
-
-		public void SetBuildContext(BuildContext buildContext) => LlmMarkdownRenderer.BuildContext = buildContext;
 	}
 
 	private sealed class HtmlRendererPooledObjectPolicy : IPooledObjectPolicy<HtmlRenderSubscription>
@@ -81,6 +87,14 @@ internal static class DocumentationObjectPoolProvider
 		}
 	}
 
+	private sealed class LlmMarkdownRenderSubscription
+	{
+		public required LlmMarkdownRenderer LlmMarkdownRenderer { get; init; }
+		public StringBuilder? RentedStringBuilder { get; internal set; }
+
+		public void SetBuildContext(BuildContext buildContext) => LlmMarkdownRenderer.BuildContext = buildContext;
+	}
+
 	private sealed class LlmMarkdownRendererPooledObjectPolicy : IPooledObjectPolicy<LlmMarkdownRenderSubscription>
 	{
 		public LlmMarkdownRenderSubscription Create()
@@ -90,7 +104,7 @@ internal static class DocumentationObjectPoolProvider
 			stringWriter.SetStringBuilder(stringBuilder);
 			var renderer = new LlmMarkdownRenderer(stringWriter)
 			{
-				BuildContext = null
+				BuildContext = null!
 			};
 			return new LlmMarkdownRenderSubscription { LlmMarkdownRenderer = renderer, RentedStringBuilder = stringBuilder };
 		}
