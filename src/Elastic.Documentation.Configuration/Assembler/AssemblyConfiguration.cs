@@ -51,13 +51,13 @@ public record AssemblyConfiguration
 		// ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
 		var repository = r ?? new TRepository();
 		// ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
-		repository.Name = name;
-		if (string.IsNullOrEmpty(repository.GitReferenceCurrent))
-			repository.GitReferenceCurrent = "main";
-		if (string.IsNullOrEmpty(repository.GitReferenceNext))
-			repository.GitReferenceNext = "main";
-		if (string.IsNullOrEmpty(repository.GitReferenceEdge))
-			repository.GitReferenceEdge = "main";
+		repository = repository with
+		{
+			Name = name,
+			GitReferenceCurrent = string.IsNullOrEmpty(repository.GitReferenceCurrent) ? "main" : repository.GitReferenceCurrent,
+			GitReferenceNext = string.IsNullOrEmpty(repository.GitReferenceNext) ? "main" : repository.GitReferenceNext,
+			GitReferenceEdge = string.IsNullOrEmpty(repository.GitReferenceEdge) ? "main" : repository.GitReferenceEdge,
+		};
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
