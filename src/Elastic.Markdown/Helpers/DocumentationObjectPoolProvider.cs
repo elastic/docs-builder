@@ -8,7 +8,6 @@ using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Renderers;
-using Markdig.Syntax;
 using Microsoft.Extensions.ObjectPool;
 
 namespace Elastic.Markdown.Helpers;
