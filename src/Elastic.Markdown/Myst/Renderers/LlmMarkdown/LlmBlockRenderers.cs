@@ -23,9 +23,9 @@ public static class LlmRenderingHelpers
 {
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (obj, tmpRenderer) =>
 		{
-			_ = tempRenderer.Render(block);
+			_ = tmpRenderer.Render(obj);
 		});
 
 		if (string.IsNullOrEmpty(content))
@@ -190,11 +190,10 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 
 	private static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, Block block, string baseIndent, bool isOrdered)
 	{
-		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (obj, tmpRenderer) =>
 		{
-			_ = tempRenderer.Render(block);
+			_ = tmpRenderer.Render(obj);
 		});
-
 		var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
 		var lines = blockOutput.Split('\n');
 		for (var i = 0; i < lines.Length; i++)
@@ -287,15 +286,11 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				renderer.Writer.Write(" ");
 
 				// Capture cell content
-				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, cell.Descendants().OfType<Inline>(), static (obj, tmpRenderer) =>
 				{
-					// Render cell content to temporary writer
-					foreach (var inline in cell.Descendants().OfType<Inline>())
-					{
-						tempRenderer.Write(inline);
-					}
+					foreach (var inline in obj)
+						tmpRenderer.Write(inline);
 				});
-
 				// Write padded content
 				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
 				renderer.Writer.Write(" |");
@@ -325,13 +320,10 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				renderer.Writer.Write(" ");
 
 				// Capture cell content
-				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, cell.Descendants().OfType<Inline>(), static (obj, tmpRenderer) =>
 				{
-					// Render cell content to temporary writer
-					foreach (var inline in cell.Descendants().OfType<Inline>())
-					{
-						tempRenderer.Write(inline);
-					}
+					foreach (var inline in obj)
+						tmpRenderer.Write(inline);
 				});
 
 				// Write padded content
@@ -364,13 +356,10 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 			foreach (var cell in row.Cast<TableCell>())
 			{
 				// Capture cell content
-				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, cell.Descendants().OfType<Inline>(), static (obj, tmpRenderer) =>
 				{
-					// Render cell content to temporary writer
-					foreach (var inline in cell.Descendants().OfType<Inline>())
-					{
-						tempRenderer.Write(inline);
-					}
+					foreach (var inline in obj)
+						tmpRenderer.Write(inline);
 				});
 
 				// Update width if this cell is wider
@@ -494,15 +483,15 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, container, static (obj, tmpRenderer) =>
 		{
-			switch (container)
+			switch (obj)
 			{
 				case ContainerBlock containerBlock:
-					tempRenderer.WriteChildren(containerBlock);
+					tmpRenderer.WriteChildren(containerBlock);
 					break;
 				case LeafBlock leafBlock:
-					tempRenderer.WriteLeafInline(leafBlock);
+					tmpRenderer.WriteLeafInline(leafBlock);
 					break;
 			}
 		});
@@ -538,11 +527,10 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 	private static string GetPlainTextFromLeafBlock(LlmMarkdownRenderer renderer, LeafBlock leafBlock)
 	{
-		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, tempRenderer =>
+		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, leafBlock, static (obj, tmpRenderer) =>
 		{
-			tempRenderer.WriteLeafInline(leafBlock);
+			tmpRenderer.WriteLeafInline(obj);
 		});
-
 		return markdownText.StripMarkdown();
 	}
 }

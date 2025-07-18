@@ -8,6 +8,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Renderers;
+using Markdig.Syntax;
 using Microsoft.Extensions.ObjectPool;
 
 namespace Elastic.Markdown.Helpers;
@@ -21,13 +22,13 @@ internal static class DocumentationObjectPoolProvider
 	public static readonly ObjectPool<HtmlRenderSubscription> HtmlRendererPool = PoolProvider.Create(new HtmlRendererPooledObjectPolicy());
 	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
 
-	public static string UseLlmMarkdownRenderer(BuildContext buildContext, Action<LlmMarkdownRenderer> action)
+	public static string UseLlmMarkdownRenderer<TContext>(BuildContext buildContext, TContext context, Action<TContext, LlmMarkdownRenderer> action)
 	{
 		var subscription = LlmMarkdownRendererPool.Get();
 		subscription.SetBuildContext(buildContext);
 		try
 		{
-			action(subscription.LlmMarkdownRenderer);
+			action(context, subscription.LlmMarkdownRenderer);
 			return subscription.RentedStringBuilder!.ToString();
 		}
 		finally
