@@ -36,6 +36,11 @@ shared_configuration:
     next: 9.1
     edge: main
 
+  master: &master
+    current: master
+    next: master
+    edge: master
+
 ###
 # 'narrative' shares the same keys as keys in 'references' (<repository_config>)
 # 'narrative' defines the docs-content repository
@@ -99,15 +104,9 @@ references:
 
   # @elastic/admin-docs
   cloud-on-k8s:
-  cloud:
-    current: master
-    next: master
-  curator:
-    current: master
-    next: master
-  ecctl:
-    current: master
-    next: master
+  cloud: *master
+  curator: *master
+  ecctl: *master
 
   # @elastic/admin-docs and @elastic/developer-docs
   elasticsearch:
