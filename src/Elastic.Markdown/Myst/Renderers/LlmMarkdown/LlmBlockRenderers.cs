@@ -21,49 +21,6 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public static class LlmRenderingHelpers
 {
-	/// <summary>
-	/// Renders content with indentation using a flexible indentation strategy
-	/// </summary>
-	/// <param name="renderer">The markdown renderer</param>
-	/// <param name="markdownObject">The markdown object to render</param>
-	/// <param name="baseIndent">Base indentation to apply</param>
-	/// <param name="lineIndentSelector">Optional function to customize indentation per line (lineIndex, lineContent) => indent</param>
-	/// <param name="preserveCodeBlockIndentation">Whether to preserve original indentation for code blocks</param>
-	public static void RenderContentWithIndentation(
-		LlmMarkdownRenderer renderer,
-		MarkdownObject markdownObject,
-		string baseIndent = "  ",
-		Func<int, string, string>? lineIndentSelector = null,
-		bool preserveCodeBlockIndentation = false)
-	{
-		var output = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, markdownObject, static (tmpRenderer, obj) =>
-		{
-			_ = tmpRenderer.Render(obj);
-		});
-
-		if (string.IsNullOrEmpty(output))
-			return;
-
-		var lines = output.Split('\n');
-		for (var i = 0; i < lines.Length; i++)
-		{
-			var line = lines[i];
-			var indent = lineIndentSelector?.Invoke(i, line) ?? baseIndent;
-
-			if (i == 0)
-				renderer.Write(line);
-			else if (!string.IsNullOrWhiteSpace(line))
-			{
-				renderer.WriteLine();
-				renderer.Write(indent);
-				var lineToWrite = preserveCodeBlockIndentation ? line : line.TrimStart();
-				renderer.Write(lineToWrite);
-			}
-			else if (i < lines.Length - 1)
-				renderer.WriteLine();
-		}
-	}
-
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
 		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (tmpRenderer, obj) =>
