@@ -76,6 +76,5 @@ public class AssemblerConfigurationTests
 		var beats = config.ReferenceRepositories["beats"];
 		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.NotBe("main");
-
 	}
 }
