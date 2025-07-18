@@ -74,6 +74,9 @@ references:
   apm-agent-rum-js:
   apm-aws-lambda:
   apm-k8s-attacher:
+  ecs:
+    current: 9.0 # releases do not always align with the Stack version
+    next: main
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -98,9 +101,6 @@ references:
   #stack aligned using gated deploys
   beats: *stack
   logstash: *stack
-  ecs:
-    <<: *stack
-    next: main
 
   # @elastic/admin-docs
   cloud-on-k8s:
