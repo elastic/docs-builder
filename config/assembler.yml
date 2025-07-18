@@ -20,9 +20,7 @@ environments:
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
-    # need to follow up in a PR after edge is available on published docker images
-    # content_source: edge
-    content_source: current
+    content_source: edge
     google_tag_manager:
       enabled: false
     feature_flags:
@@ -92,23 +90,11 @@ references:
   logstash-docs-md:
   opentelemetry:
 
-  # stack aligned gated
-  # TODO we can use *stack after merging this PR
-  #beats: *stack
-  #ecs: *stack
-  #logstash: *stack
-  beats:
-    current:  9.0
-    next: 9.1
-    edge: main
+  beats: *stack
+  logstash: *stack
   ecs:
-    current:  9.0
-    next: 9.0
-    edge: main
-  logstash:
-    current:  9.0
-    next: 9.1
-    edge: main
+    <<: *stack
+    next: main
 
   # @elastic/admin-docs
   cloud-on-k8s:
