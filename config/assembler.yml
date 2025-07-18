@@ -90,6 +90,7 @@ references:
   logstash-docs-md:
   opentelemetry:
 
+  #stack aligned using gated deploys
   beats: *stack
   logstash: *stack
   ecs:
