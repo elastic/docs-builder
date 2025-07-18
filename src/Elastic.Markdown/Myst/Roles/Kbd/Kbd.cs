@@ -68,6 +68,38 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		return string.Join(" + ", kbdElements);
 	}
 
+	public static string RenderLlm(KeyboardShortcut shortcut)
+	{
+		var viewModels = shortcut.Keys.Select(ToViewModel);
+		var kbdElements = viewModels.Select(viewModel => viewModel switch
+		{
+			SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => RenderLlm(singleKeyboardKeyViewModel),
+			AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel => RenderLlm(alternateKeyboardKeyViewModel),
+			_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
+		});
+		return string.Join(" + ", kbdElements);
+	}
+
+	private static string RenderLlm(SingleKeyboardKeyViewModel singleKeyboardKeyViewModel)
+	{
+		var sb = new StringBuilder();
+		_ = sb.Append("<kbd>");
+		_ = sb.Append(singleKeyboardKeyViewModel.DisplayText);
+		_ = sb.Append("</kbd>");
+		return sb.ToString();
+	}
+
+	private static string RenderLlm(AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel)
+	{
+		var sb = new StringBuilder();
+		_ = sb.Append("<kbd>");
+		_ = sb.Append(alternateKeyboardKeyViewModel.Primary.DisplayText);
+		_ = sb.Append(" / ");
+		_ = sb.Append(alternateKeyboardKeyViewModel.Alternate.DisplayText);
+		_ = sb.Append("</kbd>");
+		return sb.ToString();
+	}
+
 	private static string Render(AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel)
 	{
 		var sb = new StringBuilder();

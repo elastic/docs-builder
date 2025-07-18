@@ -38,6 +38,7 @@
     <Compile Include="Framework\HtmlAssertions.fs"/>
     <Compile Include="Framework\ErrorCollectorAssertions.fs"/>
     <Compile Include="Framework\MarkdownDocumentAssertions.fs"/>
+    <Compile Include="Framework\LlmMarkdownAssertions.fs" />
     <Compile Include="Framework\CrossLinkResolverAssertions.fs" />
     <Compile Include="Inline\Substitutions.fs"/>
     <Compile Include="Inline\SubstitutionMutations.fs" />
@@ -60,10 +61,7 @@
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />
     <Compile Include="Directives\IncludeBlocks.fs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="Linters\WhiteSpaceNormalizers.fs" />
+    <Compile Include="LlmMarkdown\LlmMarkdownOutput.fs" />
   </ItemGroup>
-
 </Project>

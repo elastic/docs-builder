@@ -13,8 +13,11 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Markdown.Myst.Renderers;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -338,6 +341,13 @@ public class DocumentationGenerator
 		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
+	}
+
+	public async Task<string> RenderLlmMarkdown(MarkdownFile markdown, Cancel ctx)
+	{
+		await DocumentationSet.Tree.Resolve(ctx);
+		var document = await markdown.ParseFullAsync(ctx);
+		return LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)

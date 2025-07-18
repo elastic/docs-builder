@@ -11,8 +11,7 @@ open AngleSharp.Diffing
 open AngleSharp.Diffing.Core
 open AngleSharp.Html
 open AngleSharp.Html.Parser
-open Elastic.Markdown.Exporters
-open Elastic.Markdown.Myst
+open Elastic.Markdown.Myst.Renderers.LlmMarkdown
 open JetBrains.Annotations
 open Xunit.Sdk
 
@@ -144,33 +143,6 @@ actual: {actual}
 
         let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         defaultFile |> toHtml expected
-
-    [<DebuggerStepThrough>]
-    let toLLM ([<LanguageInjection("markdown")>]expected: string) (actual: MarkdownResult) =
-        let actualLLM =
-            let buildContext = actual.Context.Generator.Context
-            let resolvers = actual.Context.Set.MarkdownParser.Resolvers
-            let yamlFrontMatter = actual.File.YamlFrontMatter
-            LLMTextExporter.ToLLMText(buildContext, yamlFrontMatter, resolvers, actual.File.SourceFile)
-        let difference = diff expected actualLLM
-        match difference with
-        | s when String.IsNullOrEmpty s -> ()
-        | d ->
-            let msg = $"""LLM text was not equal
--- DIFF --
-{d}
-
-"""
-            raise (XunitException(msg))
-
-
-    [<DebuggerStepThrough>]
-    let convertsToLLM ([<LanguageInjection("markdown")>]expected: string) (actual: Lazy<GeneratorResults>) =
-        let actual = actual.Value
-
-        let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        defaultFile |> toLLM expected
-
 
     [<DebuggerStepThrough>]
     let containsHtml ([<LanguageInjection("html")>]expected: string) (actual: MarkdownResult) =

@@ -11,6 +11,8 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.Renderers;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using RazorSlices;

@@ -12,6 +12,7 @@ using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
@@ -55,7 +56,7 @@ public class AssemblerBuilder(
 
 		var markdownExporters = new List<IMarkdownExporter>(3);
 		if (exportOptions.Contains(ExportOption.LLMText))
-			markdownExporters.Add(new LLMTextExporter());
+			markdownExporters.Add(new LlmMarkdownExporter());
 		if (exportOptions.Contains(ExportOption.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context));
 		if (exportOptions.Contains(ExportOption.Elasticsearch) && esExporter is { })
