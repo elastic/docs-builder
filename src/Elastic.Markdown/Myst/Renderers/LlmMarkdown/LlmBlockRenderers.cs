@@ -21,6 +21,55 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public static class LlmRenderingHelpers
 {
+<<<<<<< Updated upstream
+=======
+	/// <summary>
+	/// Renders content with indentation using a flexible indentation strategy
+	/// </summary>
+	/// <param name="renderer">The markdown renderer</param>
+	/// <param name="markdownObject">The markdown object to render</param>
+	/// <param name="baseIndent">Base indentation to apply</param>
+	/// <param name="lineIndentSelector">Optional function to customize indentation per line (lineIndex, lineContent) => indent</param>
+	/// <param name="preserveCodeBlockIndentation">Whether to preserve original indentation for code blocks</param>
+	public static void RenderContentWithIndentation(
+		LlmMarkdownRenderer renderer,
+		MarkdownObject markdownObject,
+		string baseIndent = "  ",
+		Func<int, string, string>? lineIndentSelector = null,
+		bool preserveCodeBlockIndentation = false)
+	{
+		var output = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, markdownObject, static (tmpRenderer, obj) =>
+		{
+			_ = tmpRenderer.Render(obj);
+		});
+
+		if (string.IsNullOrEmpty(output))
+			return;
+
+		var lines = output.Split('\n');
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var line = lines[i];
+			var indent = lineIndentSelector?.Invoke(i, line) ?? baseIndent;
+
+			if (i == 0)
+				renderer.Write(line);
+			else if (!string.IsNullOrWhiteSpace(line))
+			{
+				renderer.WriteLine();
+				renderer.Write(indent);
+				var lineToWrite = preserveCodeBlockIndentation ? line : line.TrimStart();
+				renderer.Write(lineToWrite);
+			}
+			else if (i < lines.Length - 1)
+				renderer.WriteLine();
+		}
+	}
+
+	/// <summary>
+	/// Backwards compatibility method that preserves the original simple behavior
+	/// </summary>
+>>>>>>> Stashed changes
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
 		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (tmpRenderer, obj) =>
@@ -279,25 +328,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 		// Render table header
 		if (table.Count > 0 && table[0] is TableRow headerRow)
 		{
-			renderer.Writer.Write("|");
-			var cellIndex = 0;
-			foreach (var cell in headerRow.Cast<TableCell>())
-			{
-				renderer.Writer.Write(" ");
-
-				// Capture cell content
-				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, cell.Descendants().OfType<Inline>(), static (tmpRenderer, obj) =>
-				{
-					foreach (var inline in obj)
-						tmpRenderer.Write(inline);
-				});
-				// Write padded content
-				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
-				renderer.Writer.Write(" |");
-				cellIndex++;
-			}
-
-			renderer.WriteLine();
+			RenderTableRowCells(renderer, headerRow, columnWidths);
 
 			// Render separator row with proper alignment
 			renderer.Writer.Write("|");
@@ -313,27 +344,26 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 		// Render table body with aligned columns
 		foreach (var row in table.Skip(1).Cast<TableRow>())
 		{
-			renderer.Writer.Write("|");
-			var cellIndex = 0;
-			foreach (var cell in row.Cast<TableCell>())
-			{
-				renderer.Writer.Write(" ");
-
-				// Capture cell content
-				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, cell.Descendants().OfType<Inline>(), static (tmpRenderer, obj) =>
-				{
-					foreach (var inline in obj)
-						tmpRenderer.Write(inline);
-				});
-
-				// Write padded content
-				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
-				renderer.Writer.Write(" |");
-				cellIndex++;
-			}
-
-			renderer.WriteLine();
+			RenderTableRowCells(renderer, row, columnWidths);
 		}
+	}
+
+	/// <summary>
+	/// Renders a table row with proper cell alignment and padding
+	/// </summary>
+	private static void RenderTableRowCells(LlmMarkdownRenderer renderer, TableRow row, int[] columnWidths)
+	{
+		renderer.Writer.Write("|");
+		var cellIndex = 0;
+		foreach (var cell in row.Cast<TableCell>())
+		{
+			renderer.Writer.Write(" ");
+			var content = RenderTableCellContent(renderer, cell);
+			renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
+			renderer.Writer.Write(" |");
+			cellIndex++;
+		}
+		renderer.WriteLine();
 	}
 
 	/// <summary>
@@ -352,24 +382,32 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 		// Process all rows to find maximum width for each column
 		foreach (var row in table.Cast<TableRow>())
 		{
-			var cellIndex = 0;
-			foreach (var cell in row.Cast<TableCell>())
+			for (var cellIndex = 0; cellIndex < row.Count; cellIndex++)
 			{
+				var cell = row[cellIndex] as TableCell;
 				// Capture cell content
-				var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, cell.Descendants().OfType<Inline>(), static (tmpRenderer, obj) =>
-				{
-					foreach (var inline in obj)
-						tmpRenderer.Write(inline);
-				});
+				var content = RenderTableCellContent(renderer, cell!);
 
 				// Update width if this cell is wider
 				widths[cellIndex] = Math.Max(widths[cellIndex], content.Length);
-				cellIndex++;
 			}
 		}
 
 		return widths;
 	}
+
+	/// <summary>
+	/// Renders the inline content of a table cell to plain text
+	/// </summary>
+	private static string RenderTableCellContent(LlmMarkdownRenderer renderer, TableCell cell) =>
+		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
+			renderer.BuildContext,
+			cell.Descendants().OfType<Inline>(),
+			static (tmpRenderer, obj) =>
+			{
+				foreach (var inline in obj)
+					tmpRenderer.Write(inline);
+			});
 }
 
 public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, DirectiveBlock>
