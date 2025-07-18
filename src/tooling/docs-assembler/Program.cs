@@ -21,6 +21,7 @@ ConsoleApp.ServiceProvider = serviceProvider;
 
 var app = ConsoleApp.Create();
 app.UseFilter<ReplaceLogFilter>();
+app.UseFilter<InfoLoggerFilter>();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 
