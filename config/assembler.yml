@@ -71,7 +71,6 @@ references:
   apm-agent-rum-js:
   apm-aws-lambda:
   apm-k8s-attacher:
-  beats: *stack
   ecs-dotnet:
   ecs-logging-go-logrus:
   ecs-logging-go-zap:
@@ -82,7 +81,6 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
-  ecs: *stack
   elastic-otel-dotnet:
   elastic-otel-java:
   elastic-otel-node:
@@ -92,9 +90,26 @@ references:
   integration-docs:
   integrations:
   logstash-docs-md:
-  logstash: *stack
   opentelemetry:
-  
+
+  # stack aligned gated
+  # TODO we can use *stack after merging this PR
+  #beats: *stack
+  #ecs: *stack
+  #logstash: *stack
+  beats:
+    current:  9.0
+    next: 9.1
+    edge: main
+  ecs:
+    current:  9.0
+    next: 9.1
+    edge: main
+  logstash:
+    current:  9.0
+    next: 9.1
+    edge: main
+
   # @elastic/admin-docs
   cloud-on-k8s:
   cloud:
