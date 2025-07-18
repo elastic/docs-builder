@@ -13,7 +13,7 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 /// </summary>
 public class LlmMarkdownRenderer : TextRendererBase
 {
-	public required BuildContext BuildContext { get; init; }
+	public required BuildContext? BuildContext { get; set; }
 	private bool _isAtLineStart = true;
 
 	/// <summary>

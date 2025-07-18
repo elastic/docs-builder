@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Renderers;
 using Microsoft.Extensions.ObjectPool;
 
@@ -17,6 +19,7 @@ internal static class DocumentationObjectPoolProvider
 	public static readonly ObjectPool<StringBuilder> StringBuilderPool = PoolProvider.CreateStringBuilderPool(256, 4 * 1024);
 	public static readonly ObjectPool<ReusableStringWriter> StringWriterPool = PoolProvider.Create(new ReusableStringWriterPooledObjectPolicy());
 	public static readonly ObjectPool<HtmlRenderSubscription> HtmlRendererPool = PoolProvider.Create(new HtmlRendererPooledObjectPolicy());
+	public static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
 
 
 	private sealed class ReusableStringWriterPooledObjectPolicy : IPooledObjectPolicy<ReusableStringWriter>
@@ -36,6 +39,14 @@ internal static class DocumentationObjectPoolProvider
 		public StringBuilder? RentedStringBuilder { get; internal set; }
 	}
 
+	public sealed class LlmMarkdownRenderSubscription
+	{
+		public required LlmMarkdownRenderer LlmMarkdownRenderer { get; init; }
+		public StringBuilder? RentedStringBuilder { get; internal set; }
+
+		public void SetBuildContext(BuildContext buildContext) => LlmMarkdownRenderer.BuildContext = buildContext;
+	}
+
 	private sealed class HtmlRendererPooledObjectPolicy : IPooledObjectPolicy<HtmlRenderSubscription>
 	{
 		public HtmlRenderSubscription Create()
@@ -51,7 +62,6 @@ internal static class DocumentationObjectPoolProvider
 
 		public bool Return(HtmlRenderSubscription subscription)
 		{
-			//subscription.RentedStringBuilder = null;
 			//return string builder
 			if (subscription.RentedStringBuilder is not null)
 				StringBuilderPool.Return(subscription.RentedStringBuilder);
@@ -71,4 +81,42 @@ internal static class DocumentationObjectPoolProvider
 		}
 	}
 
+	private sealed class LlmMarkdownRendererPooledObjectPolicy : IPooledObjectPolicy<LlmMarkdownRenderSubscription>
+	{
+		public LlmMarkdownRenderSubscription Create()
+		{
+			var stringBuilder = StringBuilderPool.Get();
+			using var stringWriter = StringWriterPool.Get();
+			stringWriter.SetStringBuilder(stringBuilder);
+			var renderer = new LlmMarkdownRenderer(stringWriter)
+			{
+				BuildContext = null
+			};
+			return new LlmMarkdownRenderSubscription { LlmMarkdownRenderer = renderer, RentedStringBuilder = stringBuilder };
+		}
+
+		public bool Return(LlmMarkdownRenderSubscription subscription)
+		{
+			//return string builder
+			if (subscription.RentedStringBuilder is not null)
+				StringBuilderPool.Return(subscription.RentedStringBuilder);
+
+			subscription.RentedStringBuilder = null;
+
+			var renderer = subscription.LlmMarkdownRenderer;
+
+			//reset string writer
+			((ReusableStringWriter)renderer.Writer).Reset();
+
+			// reseed string writer with string builder
+			var stringBuilder = StringBuilderPool.Get();
+			subscription.RentedStringBuilder = stringBuilder;
+			((ReusableStringWriter)renderer.Writer).SetStringBuilder(stringBuilder);
+
+			// Reset BuildContext to null for reuse
+			renderer.BuildContext = null!;
+
+			return true;
+		}
+	}
 }

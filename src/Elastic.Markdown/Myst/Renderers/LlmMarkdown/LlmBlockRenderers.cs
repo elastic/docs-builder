@@ -22,23 +22,21 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public static class LlmRenderingHelpers
 {
-	public static ReusableStringWriter CreateTempWriter()
-	{
-		var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
-		var sw = DocumentationObjectPoolProvider.StringWriterPool.Get();
-		sw.SetStringBuilder(stringBuilder);
-		return sw;
-	}
+	// public static ReusableStringWriter CreateTempWriter()
+	// {
+	// 	var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+	// 	var sw = DocumentationObjectPoolProvider.StringWriterPool.Get();
+	// 	sw.SetStringBuilder(stringBuilder);
+	// 	return sw;
+	// }
 
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
-		using var sw = CreateTempWriter();
-		var tempRenderer = new LlmMarkdownRenderer(sw)
-		{
-			BuildContext = renderer.BuildContext
-		};
+		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+		subscription.SetBuildContext(renderer.BuildContext!);
+		var tempRenderer = subscription.LlmMarkdownRenderer;
 		_ = tempRenderer.Render(block);
-		var content = sw.ToString();
+		var content = subscription.RentedStringBuilder!.ToString();
 		if (string.IsNullOrEmpty(content))
 			return;
 		var lines = content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
@@ -47,6 +45,7 @@ public static class LlmRenderingHelpers
 			renderer.Write(indentation);
 			renderer.WriteLine(line);
 		}
+		DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 	}
 
 	/// <summary>
@@ -56,7 +55,7 @@ public static class LlmRenderingHelpers
 	{
 		if (
 			string.IsNullOrEmpty(url)
-			|| renderer.BuildContext.CanonicalBaseUrl == null
+			|| renderer.BuildContext!.CanonicalBaseUrl == null
 			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
 			|| !Uri.IsWellFormedUriString(url, UriKind.Relative))
 			return url;
@@ -201,13 +200,11 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 
 	private static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, Block block, string baseIndent, bool isOrdered)
 	{
-		using var sw = LlmRenderingHelpers.CreateTempWriter();
-		var tempRenderer = new LlmMarkdownRenderer(sw)
-		{
-			BuildContext = renderer.BuildContext
-		};
+		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+		subscription.SetBuildContext(renderer.BuildContext!);
+		var tempRenderer = subscription.LlmMarkdownRenderer;
 		_ = tempRenderer.Render(block);
-		var blockOutput = sw.ToString();
+		var blockOutput = subscription.RentedStringBuilder!.ToString();
 
 		var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
 		var lines = blockOutput.Split('\n');
@@ -225,6 +222,7 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 			else if (i < lines.Length - 1)
 				renderer.WriteLine();
 		}
+		DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 	}
 
 	/// <summary>
@@ -301,20 +299,19 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				renderer.Writer.Write(" ");
 
 				// Capture cell content
-				using var sw = LlmRenderingHelpers.CreateTempWriter();
-				var tempRenderer = new LlmMarkdownRenderer(sw)
-				{
-					BuildContext = renderer.BuildContext
-				};
+				var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+				subscription.SetBuildContext(renderer.BuildContext!);
+				var tempRenderer = subscription.LlmMarkdownRenderer;
 				// Render cell content to temporary writer
 				foreach (var inline in cell.Descendants().OfType<Inline>())
 					tempRenderer.Write(inline);
 
 				// Write padded content
-				var content = sw.ToString();
+				var content = subscription.RentedStringBuilder!.ToString();
 				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
 				renderer.Writer.Write(" |");
 				cellIndex++;
+				DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 			}
 
 			renderer.WriteLine();
@@ -340,20 +337,19 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				renderer.Writer.Write(" ");
 
 				// Capture cell content
-				using var sw = LlmRenderingHelpers.CreateTempWriter();
-				var tempRenderer = new LlmMarkdownRenderer(sw)
-				{
-					BuildContext = renderer.BuildContext
-				};
+				var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+				subscription.SetBuildContext(renderer.BuildContext!);
+				var tempRenderer = subscription.LlmMarkdownRenderer;
 				// Render cell content to temporary writer
 				foreach (var inline in cell.Descendants().OfType<Inline>())
 					tempRenderer.Write(inline);
 
 				// Write padded content
-				var content = sw.ToString();
+				var content = subscription.RentedStringBuilder!.ToString();
 				renderer.Writer.Write(content.PadRight(columnWidths[cellIndex]));
 				renderer.Writer.Write(" |");
 				cellIndex++;
+				DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 			}
 
 			renderer.WriteLine();
@@ -380,11 +376,9 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 			foreach (var cell in row.Cast<TableCell>())
 			{
 				// Capture cell content
-				using var sw = LlmRenderingHelpers.CreateTempWriter();
-				var tempRenderer = new LlmMarkdownRenderer(sw)
-				{
-					BuildContext = renderer.BuildContext
-				};
+				var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+				subscription.SetBuildContext(renderer.BuildContext!);
+				var tempRenderer = subscription.LlmMarkdownRenderer;
 				// Render cell content to temporary writer
 				foreach (var inline in cell.Descendants().OfType<Inline>())
 				{
@@ -392,9 +386,10 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				}
 
 				// Update width if this cell is wider
-				var content = sw.ToString();
+				var content = subscription.RentedStringBuilder!.ToString();
 				widths[cellIndex] = Math.Max(widths[cellIndex], content.Length);
 				cellIndex++;
+				DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 			}
 		}
 
@@ -464,7 +459,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	{
 		if (!block.Found || block.IncludePath is null)
 		{
-			renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "File not found or invalid path");
+			renderer.BuildContext!.Collector.EmitError(block.IncludePath ?? string.Empty, "File not found or invalid path");
 			return;
 		}
 
@@ -474,7 +469,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		if (!snippet.Exists)
 		{
-			renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "File not found or invalid path");
+			renderer.BuildContext!.Collector.EmitError(block.IncludePath ?? string.Empty, "File not found or invalid path");
 			return;
 		}
 
@@ -503,7 +498,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			}
 			catch (Exception ex)
 			{
-				renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "Failed to parse included content", ex);
+				renderer.BuildContext!.Collector.EmitError(block.IncludePath ?? string.Empty, "Failed to parse included content", ex);
 			}
 		}
 
@@ -513,32 +508,25 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
-		using var sw = LlmRenderingHelpers.CreateTempWriter();
-
-		var originalWriter = renderer.Writer;
-		renderer.Writer = sw;
-		try
+		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+		subscription.SetBuildContext(renderer.BuildContext!);
+		var tempRenderer = subscription.LlmMarkdownRenderer;
+		switch (container)
 		{
-			switch (container)
-			{
-				case ContainerBlock containerBlock:
-					renderer.WriteChildren(containerBlock);
-					break;
-				case LeafBlock leafBlock:
-					renderer.WriteLeafInline(leafBlock);
-					break;
-			}
-			var content = sw.ToString();
-			if (string.IsNullOrEmpty(content))
-				return;
-			var reader = new StringReader(content);
-			while (reader.ReadLine() is { } line)
-				originalWriter.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : indent + line);
+			case ContainerBlock containerBlock:
+				tempRenderer.WriteChildren(containerBlock);
+				break;
+			case LeafBlock leafBlock:
+				tempRenderer.WriteLeafInline(leafBlock);
+				break;
 		}
-		finally
-		{
-			renderer.Writer = originalWriter;
-		}
+		var content = subscription.RentedStringBuilder!.ToString();
+		if (string.IsNullOrEmpty(content))
+			return;
+		var reader = new StringReader(content);
+		while (reader.ReadLine() is { } line)
+			renderer.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : indent + line);
+		DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 	}
 }
 
@@ -565,10 +553,12 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 	private static string GetPlainTextFromLeafBlock(LlmMarkdownRenderer renderer, LeafBlock leafBlock)
 	{
-		using var sw = LlmRenderingHelpers.CreateTempWriter();
-		var tempRenderer = new LlmMarkdownRenderer(sw) { BuildContext = renderer.BuildContext };
+		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+		subscription.SetBuildContext(renderer.BuildContext!);
+		var tempRenderer = subscription.LlmMarkdownRenderer;
 		tempRenderer.WriteLeafInline(leafBlock);
-		var markdownText = sw.ToString();
+		var markdownText = subscription.RentedStringBuilder!.ToString();
+		DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
 		return markdownText.StripMarkdown();
 	}
 }

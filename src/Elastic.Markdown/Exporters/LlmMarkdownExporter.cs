@@ -61,16 +61,13 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public static string ConvertToLlmMarkdown(MarkdownDocument document, MarkdownExportFileContext context)
 	{
-		var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
-		using var stringWriter = DocumentationObjectPoolProvider.StringWriterPool.Get();
-		stringWriter.SetStringBuilder(stringBuilder);
-
-		var renderer = new LlmMarkdownRenderer(stringWriter)
-		{
-			BuildContext = context.BuildContext
-		};
+		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
+		subscription.SetBuildContext(context.BuildContext!);
+		var renderer = subscription.LlmMarkdownRenderer;
 		_ = renderer.Render(document);
-		return stringBuilder.ToString();
+		var result = subscription.RentedStringBuilder!.ToString();
+		DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Return(subscription);
+		return result;
 	}
 
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
