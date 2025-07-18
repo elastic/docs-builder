@@ -20,6 +20,8 @@ environments:
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
+    # need to follow up in a PR after edge is available on published docker images
+    # content_source: edge
     content_source: current
     google_tag_manager:
       enabled: false
@@ -27,7 +29,7 @@ environments:
       LAZY_LOAD_NAVIGATION: true
   dev:
     uri: http://localhost:4000
-    content_source: edge
+    content_source: current
     path_prefix: docs
 
 shared_configuration:
