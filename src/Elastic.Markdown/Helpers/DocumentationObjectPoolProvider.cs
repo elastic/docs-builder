@@ -22,13 +22,13 @@ internal static class DocumentationObjectPoolProvider
 	public static readonly ObjectPool<HtmlRenderSubscription> HtmlRendererPool = PoolProvider.Create(new HtmlRendererPooledObjectPolicy());
 	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
 
-	public static string UseLlmMarkdownRenderer<TContext>(BuildContext buildContext, TContext context, Action<TContext, LlmMarkdownRenderer> action)
+	public static string UseLlmMarkdownRenderer<TContext>(BuildContext buildContext, TContext context, Action<LlmMarkdownRenderer, TContext> action)
 	{
 		var subscription = LlmMarkdownRendererPool.Get();
 		subscription.SetBuildContext(buildContext);
 		try
 		{
-			action(context, subscription.LlmMarkdownRenderer);
+			action(subscription.LlmMarkdownRenderer, context);
 			return subscription.RentedStringBuilder!.ToString();
 		}
 		finally

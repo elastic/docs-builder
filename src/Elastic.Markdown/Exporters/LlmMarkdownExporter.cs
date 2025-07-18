@@ -61,7 +61,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	}
 
 	public static string ConvertToLlmMarkdown(MarkdownDocument document, BuildContext context) =>
-		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context, document, static (obj, renderer) =>
+		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context, document, static (renderer, obj) =>
 		{
 			_ = renderer.Render(obj);
 		});
