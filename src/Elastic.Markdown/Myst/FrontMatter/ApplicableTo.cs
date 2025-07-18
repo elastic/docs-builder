@@ -78,11 +78,15 @@ public record DeploymentApplicability
 	[YamlMember(Alias = "ess")]
 	public AppliesCollection? Ess { get; set; }
 
+	[YamlMember(Alias = "ech")]
+	public AppliesCollection? Ech { get; set; } // ess alias, preferred
+
 	public static DeploymentApplicability All { get; } = new()
 	{
 		Ece = AppliesCollection.GenerallyAvailable,
 		Eck = AppliesCollection.GenerallyAvailable,
 		Ess = AppliesCollection.GenerallyAvailable,
+		Ech = AppliesCollection.GenerallyAvailable,
 		Self = AppliesCollection.GenerallyAvailable
 	};
 }
@@ -187,7 +191,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 	private static readonly string[] KnownKeys =
 	[
 		"stack", "deployment", "serverless", "product",
-		"ece", "eck", "ess", "self",
+		"ece", "eck", "ess", "ech", "self",
 		"elasticsearch", "observability", "security",
 		"ecctl", "curator",
 		"apm_agent_android","apm_agent_dotnet", "apm_agent_go", "apm_agent_ios", "apm_agent_java", "apm_agent_node", "apm_agent_php", "apm_agent_python", "apm_agent_ruby", "apm_agent_rum",
@@ -241,6 +245,17 @@ public class ApplicableToConverter : IYamlTypeConverter
 		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
 			applicableTo.ProductApplicability = product;
 
+		switch (applicableTo.Deployment)
+		{
+			case { Ech: null, Ess: not null }:
+				diagnostics.Add((Severity.Hint, "Please prefer \"ech\" over  \"ess\". The key \"ess\" is deprecated."));
+				break;
+			case { Ech: not null, Ess: not null }:
+				diagnostics.Add((Severity.Hint, "Please use \"ech\" instead of \"ess\". The key \"ess\" is deprecated and you cannot use both at the same time."));
+				break;
+		}
+
+
 		if (diagnostics.Count > 0)
 			applicableTo.Diagnostics = new YamlDiagnosticsCollection(diagnostics);
 		return applicableTo;
@@ -261,6 +276,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 				Ece = av,
 				Eck = av,
 				Ess = av,
+				Ech = av,
 				Self = av
 			};
 		}
@@ -324,6 +340,7 @@ public class ApplicableToConverter : IYamlTypeConverter
 		{
 			{ "ece", a => d.Ece = a },
 			{ "eck", a => d.Eck = a },
+			{ "ech", a => d.Ech = a },
 			{ "ess", a => d.Ess = a },
 			{ "self", a => d.Self = a }
 		};
