@@ -103,7 +103,7 @@ references:
     edge: main
   ecs:
     current:  9.0
-    next: 9.1
+    next: 9.0
     edge: main
   logstash:
     current:  9.0

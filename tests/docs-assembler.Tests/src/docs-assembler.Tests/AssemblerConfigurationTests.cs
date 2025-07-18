@@ -73,7 +73,7 @@ public class AssemblerConfigurationTests
 		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
 			.And.Be("main");
 
-		var beats = config.ReferenceRepositories["apm-server"];
+		var beats = config.ReferenceRepositories["beats"];
 		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.NotBe("main");
 
