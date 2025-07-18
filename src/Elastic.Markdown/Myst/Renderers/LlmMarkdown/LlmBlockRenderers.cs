@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -22,14 +21,6 @@ namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 public static class LlmRenderingHelpers
 {
-	// public static ReusableStringWriter CreateTempWriter()
-	// {
-	// 	var stringBuilder = DocumentationObjectPoolProvider.StringBuilderPool.Get();
-	// 	var sw = DocumentationObjectPoolProvider.StringWriterPool.Get();
-	// 	sw.SetStringBuilder(stringBuilder);
-	// 	return sw;
-	// }
-
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
 		var subscription = DocumentationObjectPoolProvider.LlmMarkdownRendererPool.Get();
