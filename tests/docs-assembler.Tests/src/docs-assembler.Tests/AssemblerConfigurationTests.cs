@@ -55,10 +55,10 @@ public class AssemblerConfigurationTests
 	public void ReadsVersions()
 	{
 		var config = Context.Configuration;
-		config.NamedGitReferences.Should().NotBeEmpty()
+		config.SharedConfigurations.Should().NotBeEmpty()
 			.And.ContainKey("stack");
 
-		config.NamedGitReferences["stack"].Should().NotBeNullOrEmpty();
+		config.SharedConfigurations["stack"].GitReferenceEdge.Should().NotBeNullOrEmpty();
 
 		//var agent = config.ReferenceRepositories["elasticsearch"];
 		//agent.GitReferenceCurrent.Should().NotBeNullOrEmpty()
