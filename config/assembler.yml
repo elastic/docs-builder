@@ -136,3 +136,4 @@ references:
     current: 9.0
     next: main
     skip: true
+    sparse_paths: ["docs", "config"]
