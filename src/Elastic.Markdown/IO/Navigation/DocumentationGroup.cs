@@ -175,7 +175,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				// the index file can either be the discovered `index.md` or the parent group's
 				// explicit index page. E.g., when grouping related files together.
 				// If the page is referenced as hidden in the TOC do not include it in the navigation
-				if (indexFile != md && indexReference != file)
+				if (indexFile != md)
 					AddToNavigationItems(new FileNavigationItem(md, this, file.Hidden), ref fileIndex);
 			}
 			else if (tocItem is FolderReference folder)
