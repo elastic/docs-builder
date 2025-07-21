@@ -32,6 +32,16 @@ toc:
       - file: index.md
       - file: locally.md
       - file: on-the-web.md
+      - folder: api-docs-contribution
+        children:
+          - file: index.md
+          - file: overview.md
+          - file: checklist.md
+          - file: guidelines.md
+          - file: organize-annotate.md
+          - file: workflows.md
+          - file: quickstart.md
+          - file: help.md
       - file: move.md
       - file: redirects.md
       - file: cumulative-docs.md
