@@ -5,6 +5,7 @@
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Markdig.Extensions.DefinitionLists;
@@ -380,8 +381,25 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.Writer.Write("<");
 		renderer.Writer.Write(obj.Directive);
 
-		if (obj is ITitledBlock titledBlock)
-			renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
+		switch (obj)
+		{
+			case AdmonitionBlock when obj.Directive
+				is "note" or "tip" or "warning" or "important":
+				// skip for these directives
+				// otherwise it will render as <note title="Note">
+				break;
+			case ITitledBlock titledBlock:
+				renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
+				break;
+		}
+
+		// if (obj is ITitledBlock titledBlock
+		// 	&& obj.Directive != "note"
+		// 	&& obj.Directive != "warning"
+		// 	&& obj.Directive != "tip"
+		// 	&& obj.Directive != "important"
+		// )
+		// 	renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
 
 		renderer.WriteLine(">");
 		renderer.EnsureLine();
