@@ -33,7 +33,7 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 }
 
 public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+	: DirectiveBlock(parser, context), IBlockTitle
 {
 	public override string Directive => "tab-item";
 

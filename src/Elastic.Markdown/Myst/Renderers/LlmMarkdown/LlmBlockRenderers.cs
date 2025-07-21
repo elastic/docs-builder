@@ -8,7 +8,6 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
-using Elastic.Markdown.Myst.Directives.Tabs;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
@@ -384,14 +383,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		switch (obj)
 		{
-			case DropdownBlock dropdown:
-				renderer.Writer.Write($" title=\"{dropdown.Title}\"");
+			case AdmonitionBlock when obj.Directive
+				is "note" or "tip" or "warning" or "important":
+				// skip for these directives
+				// otherwise it will render as <note title="Note">
 				break;
-			case TabItemBlock tabItem:
-				renderer.Writer.Write($" title=\"{tabItem.Title}\"");
-				break;
-			case AdmonitionBlock admonition when obj.Directive is "admonition":
-				renderer.Writer.Write($" title=\"{admonition.Title}\"");
+			case IBlockTitle titledBlock:
+				renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
 				break;
 		}
 
