@@ -81,22 +81,10 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 	{
 		renderer.EnsureBlockSpacing();
 		renderer.WriteLine();
-
-		var headingText = ExtractHeadingText(obj);
-
 		renderer.Write(new string('#', obj.Level));
 		renderer.Write(" ");
-		renderer.WriteLine(headingText);
-	}
-
-	private static string ExtractHeadingText(HeadingBlock heading)
-	{
-		if (heading.Inline == null)
-			return string.Empty;
-		return heading.Inline.Descendants()
-			.OfType<LiteralInline>()
-			.Select(l => l.Content.ToString())
-			.Aggregate(string.Empty, (current, text) => current + text);
+		if (obj.Inline is { } inline)
+			renderer.WriteChildren(inline);
 	}
 }
 
