@@ -59,7 +59,7 @@ public interface IPositionalNavigation
 		do
 		{
 			var next = NavigationIndexedByOrder.GetValueOrDefault(index + 1);
-			if (next is not null && !next.Hidden)
+			if (next is not null && !next.Hidden && next.Url != currentNavigation.Url)
 				return next;
 			index++;
 		} while (index <= NavigationIndexedByOrder.Count - 1);
