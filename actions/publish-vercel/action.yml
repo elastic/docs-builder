@@ -36,7 +36,7 @@ runs:
         }
         EOF
 
-    - uses: amondnet/vercel-action@v25.2.0 #deploy
+    - uses: amondnet/vercel-action@v41.1.4 #deploy
       with:
         vercel-token: ${{ inputs.VERCEL_TOKEN }} # Required
         vercel-args: '--prod' #Optional
