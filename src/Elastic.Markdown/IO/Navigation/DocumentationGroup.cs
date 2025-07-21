@@ -99,7 +99,15 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		groups = [];
 		navigationItems = [];
 		files = [];
+		var fileReferences = lookups.TableOfContents.OfType<FileReference>().ToArray();
 		var indexFile = virtualIndexFile;
+		FileReference? indexReference = null;
+		if (indexFile is null)
+		{
+			indexReference =
+				fileReferences.FirstOrDefault(f => f.RelativePath.EndsWith("index.md"))
+				?? fileReferences.FirstOrDefault();
+		}
 
 		var list = navigationItems;
 
@@ -158,14 +166,16 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				}
 
 				files.Add(md);
-				if (file.RelativePath.EndsWith("index.md") && d is MarkdownFile i)
-					indexFile ??= i;
+				if (file.RelativePath.EndsWith("index.md"))
+					indexFile ??= md;
+				else if (indexReference == file)
+					indexFile ??= md;
 
 				// Add the page to navigation items unless it's the index file
 				// the index file can either be the discovered `index.md` or the parent group's
 				// explicit index page. E.g., when grouping related files together.
 				// If the page is referenced as hidden in the TOC do not include it in the navigation
-				if (indexFile != md)
+				if (indexFile != md && indexReference != file)
 					AddToNavigationItems(new FileNavigationItem(md, this, file.Hidden), ref fileIndex);
 			}
 			else if (tocItem is FolderReference folder)
