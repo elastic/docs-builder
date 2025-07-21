@@ -393,14 +393,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				break;
 		}
 
-		// if (obj is ITitledBlock titledBlock
-		// 	&& obj.Directive != "note"
-		// 	&& obj.Directive != "warning"
-		// 	&& obj.Directive != "tip"
-		// 	&& obj.Directive != "important"
-		// )
-		// 	renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
-
 		renderer.WriteLine(">");
 		renderer.EnsureLine();
 
