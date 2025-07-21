@@ -83,8 +83,8 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 		renderer.WriteLine();
 		renderer.Write(new string('#', obj.Level));
 		renderer.Write(" ");
-		if (obj.Inline is { } inline)
-			renderer.WriteChildren(inline);
+		if (obj.Inline is not null)
+			renderer.WriteChildren(obj.Inline);
 	}
 }
 
