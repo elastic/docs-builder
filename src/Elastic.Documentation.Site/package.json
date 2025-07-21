@@ -63,7 +63,7 @@
     "htmx-ext-head-support": "2.0.4",
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.6",
-    "select-dom": "9.3.1",
+    "select-dom": "9.4.0",
     "tailwindcss": "4.1.11",
     "tippy.js": "6.3.7",
     "ua-parser-js": "2.0.4"
