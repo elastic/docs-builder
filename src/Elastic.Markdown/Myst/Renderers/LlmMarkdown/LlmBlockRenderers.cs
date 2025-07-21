@@ -388,7 +388,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				// skip for these directives
 				// otherwise it will render as <note title="Note">
 				break;
-			case ITitledBlock titledBlock:
+			case IBlockTitle titledBlock:
 				renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
 				break;
 		}

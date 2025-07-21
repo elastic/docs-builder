@@ -13,7 +13,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 
-public interface ITitledBlock
+public interface IBlockTitle
 {
 	string Title { get; }
 }

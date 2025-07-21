@@ -8,7 +8,7 @@ namespace Elastic.Markdown.Myst.Directives.Admonition;
 
 public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "dropdown", context);
 
-public class AdmonitionBlock : DirectiveBlock, ITitledBlock
+public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 {
 	public AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context) : base(parser, context)
 	{

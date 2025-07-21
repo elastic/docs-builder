@@ -16,7 +16,7 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 	}
 }
 
-public class StepBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context), ITitledBlock
+public class StepBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context), IBlockTitle
 {
 	public override string Directive => "step";
 	public string Title { get; private set; } = string.Empty;
