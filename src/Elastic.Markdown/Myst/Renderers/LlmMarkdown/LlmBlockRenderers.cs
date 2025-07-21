@@ -5,10 +5,8 @@
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
-using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
-using Elastic.Markdown.Myst.Directives.Tabs;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
@@ -382,18 +380,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.Writer.Write("<");
 		renderer.Writer.Write(obj.Directive);
 
-		switch (obj)
-		{
-			case DropdownBlock dropdown:
-				renderer.Writer.Write($" title=\"{dropdown.Title}\"");
-				break;
-			case TabItemBlock tabItem:
-				renderer.Writer.Write($" title=\"{tabItem.Title}\"");
-				break;
-			case AdmonitionBlock admonition when obj.Directive is "admonition":
-				renderer.Writer.Write($" title=\"{admonition.Title}\"");
-				break;
-		}
+		if (obj is ITitledBlock titledBlock)
+			renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
 
 		renderer.WriteLine(">");
 		renderer.EnsureLine();

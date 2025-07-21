@@ -8,7 +8,7 @@ namespace Elastic.Markdown.Myst.Directives.Admonition;
 
 public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "dropdown", context);
 
-public class AdmonitionBlock : DirectiveBlock
+public class AdmonitionBlock : DirectiveBlock, ITitledBlock
 {
 	public AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context) : base(parser, context)
 	{
@@ -45,5 +45,3 @@ public class AdmonitionBlock : DirectiveBlock
 		Title = Title.ReplaceSubstitutions(context);
 	}
 }
-
-
