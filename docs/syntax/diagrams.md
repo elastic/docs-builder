@@ -84,7 +84,7 @@ sequenceDiagram
 :::::{tab-item} Rendered
 ::::{diagram} mermaid
 sequenceDiagram
-    participant A as Alice
+    participant A as Ada
     participant B as Bob
     A->>B: Hello Bob, how are you?
     B-->>A: Great!

@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Westwind.AspNetCore.LiveReload;
@@ -151,6 +152,12 @@ public class DocumentationWebHost
 				{
 					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
 					RequestPath = "/_static"
+				})
+			.UseStaticFiles(
+				new StaticFileOptions
+				{
+					FileProvider = new PhysicalFileProvider(Context.DocumentationOutputDirectory.FullName),
+					RequestPath = ""
 				})
 			.UseRouting();
 

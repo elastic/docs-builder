@@ -71,7 +71,8 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		// Register diagram for tracking and cleanup
 		DiagramRegistry.RegisterDiagram(LocalSvgPath);
 
-		// Cache diagram asynchronously
+		// Cache diagram asynchronously - fire and forget
+		// Use simplified approach without lock files to avoid orphaned locks
 		_ = Task.Run(() => TryCacheDiagramAsync(context));
 	}
 
@@ -125,7 +126,7 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 			var outputDirectory = context.Build.DocumentationOutputDirectory.FullName;
 			var fullPath = Path.Combine(outputDirectory, LocalSvgPath);
 
-			// Skip if file already exists
+			// Skip if file already exists - simple check without locking
 			if (File.Exists(fullPath))
 				return;
 
@@ -136,17 +137,41 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 				_ = Directory.CreateDirectory(directory);
 			}
 
-			// Download SVG from Kroki
-			using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-			var svgContent = await httpClient.GetStringAsync(EncodedUrl);
+			// Download SVG from Kroki using shared HttpClient
+			var svgContent = await DiagramHttpClient.Instance.GetStringAsync(EncodedUrl);
 
-			// Write to local file
-			await File.WriteAllTextAsync(fullPath, svgContent);
+			// Basic validation - ensure we got SVG content
+			// SVG can start with XML declaration, DOCTYPE, or directly with <svg>
+			if (string.IsNullOrWhiteSpace(svgContent) || !svgContent.Contains("<svg", StringComparison.OrdinalIgnoreCase))
+			{
+				// Invalid content - don't cache
+				return;
+			}
+
+			// Write to local file atomically using a temp file
+			var tempPath = fullPath + ".tmp";
+			await File.WriteAllTextAsync(tempPath, svgContent);
+			File.Move(tempPath, fullPath);
 		}
-		catch
+		catch (HttpRequestException)
 		{
-			// Silent failure - caching is opportunistic
-			// The system will fall back to Kroki URLs
+			// Network-related failures - silent fallback to Kroki URLs
+			// Caching is opportunistic, network issues shouldn't generate warnings
+		}
+		catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+		{
+			// Timeout - silent fallback to Kroki URLs
+			// Timeouts are expected in slow network conditions
+		}
+		catch (IOException)
+		{
+			// File system issues - silent fallback to Kroki URLs
+			// Disk space or permission issues shouldn't break builds
+		}
+		catch (Exception)
+		{
+			// Unexpected errors - silent fallback to Kroki URLs
+			// Caching is opportunistic, any failure should fallback gracefully
 		}
 	}
 }
