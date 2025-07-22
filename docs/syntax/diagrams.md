@@ -143,16 +143,6 @@ digraph G {
 
 ::::::
 
-## How it works
-
-The diagram directive:
-
-1. **Parses** the diagram type from the directive argument
-2. **Extracts** the diagram content from the directive body
-3. **Encodes** the content using zlib compression and Base64URL encoding
-4. **Generates** a Kroki URL in the format: `https://kroki.io/{type}/svg/{encoded-content}`
-5. **Renders** an HTML `<img>` tag that loads the diagram from Kroki
-
 ## Error handling
 
 If the diagram content is empty or the encoding fails, an error message will be displayed instead of the diagram.
