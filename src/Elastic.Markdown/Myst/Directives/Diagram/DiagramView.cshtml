@@ -4,7 +4,17 @@
 	if (diagram?.EncodedUrl != null)
 	{
 		<div class="diagram" data-diagram-type="@diagram.DiagramType">
-			<img src="@diagram.EncodedUrl" alt="@diagram.DiagramType diagram" loading="lazy" />
+			@if (!string.IsNullOrEmpty(diagram.LocalSvgPath))
+			{
+				<img src="@diagram.LocalSvgPath" 
+				     alt="@diagram.DiagramType diagram" 
+				     loading="lazy"
+				     onerror="this.src='@diagram.EncodedUrl'" />
+			}
+			else
+			{
+				<img src="@diagram.EncodedUrl" alt="@diagram.DiagramType diagram" loading="lazy" />
+			}
 		</div>
 	}
 	else

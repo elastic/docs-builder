@@ -16,6 +16,7 @@ using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
@@ -106,6 +107,9 @@ public class DocumentationGenerator
 
 	public async Task<GenerationResult> GenerateAll(Cancel ctx)
 	{
+		// Clear diagram registry for fresh tracking
+		DiagramRegistry.Clear();
+
 		var result = new GenerationResult();
 
 		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
@@ -141,6 +145,13 @@ public class DocumentationGenerator
 
 		_logger.LogInformation($"Generating links.json");
 		var linkReference = await GenerateLinkReference(ctx);
+
+		// Clean up unused diagram files
+		var cleanedCount = DiagramRegistry.CleanupUnusedDiagrams(DocumentationSet.OutputDirectory.FullName);
+		if (cleanedCount > 0)
+		{
+			_logger.LogInformation("Cleaned up {CleanedCount} unused diagram files", cleanedCount);
+		}
 
 		// ReSharper disable once WithExpressionModifiesAllMembers
 		return result with
