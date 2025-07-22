@@ -102,13 +102,11 @@ public static class DiagramEncoder
 	/// </summary>
 	/// <param name="bytes">The bytes to encode</param>
 	/// <returns>The Base64URL encoded string</returns>
-	private static string EncodeBase64Url(byte[] bytes)
-	{
+	private static string EncodeBase64Url(byte[] bytes) =>
 #if NET9_0_OR_GREATER
 		// You can use this in previous version of .NET with Microsoft.Bcl.Memory package
-		return System.Buffers.Text.Base64Url.EncodeToString(bytes);
+		System.Buffers.Text.Base64Url.EncodeToString(bytes);
 #else
-		return Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_');
+		Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_');
 #endif
-	}
 }
