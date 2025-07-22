@@ -60,10 +60,10 @@ This command runs multiple steps in sequence:
 2. Generates the schema JSON (`generate`)
 3. Transforms to OpenAPI format for language clients (`transform-to-openapi`)
 4. Filters for serverless (`filter-for-serverless`)
-5. Lints the docs (`lint-docs`)
+5. Lints the language clients OpenAPIdocs (`lint-docs`)
 
-:::{tip}
-If you want to write great docs, you should fix all linter warnings and not just errors. Soon we will make this a requirement!
+:::{note}
+Some of the linter errors at this stage may be false alarms, and are fixed by path consolidation and overlays. You'll need to run `make lint` later against the docs-specific OpenAPI files.
 :::
 ::::
 
@@ -74,11 +74,24 @@ make transform-to-openapi-for-docs
 Generates the OpenAPI files specifically for docs purposes. This step also runs `generate-language-examples` to autogenerate examples for the various language clients and `curl`.
 
 :::{note}
-Be careful, the `transform-to-openapi` command (run by `make contrib`) is used for client libraries and does not generate the JSON schema files needed for docs purposes.
+The `transform-to-openapi` command (run by `make contrib`) is used for client libraries and does not generate the JSON schema files needed for docs purposes.
 :::
 ::::
 
+::::{step} Lint your docs
+
+Run this command to lint your docs-specific OpenAPI files:
+```shell
+make lint-docs
+```
+
+You should try to fix all linter warnings and not just errors.
+::::
+
 ::::{step} Apply overlays
+
+[OpenAPI overlays](https://github.com/OAI/Overlay-Specification?tab=readme-ov-file#overlay-specification) are used to handle publisher-specific requirements or work around rendering limitations. For example, they sort the list of tags alphabetically and apply `x-model` extensions to abbreviate deeply nested/recursive schema objects.
+
 ```shell
 make overlay-docs
 ```
@@ -90,7 +103,7 @@ npm install -g bump-cli
 bump preview output/openapi/elasticsearch-openapi-docs-final.json # Preview Elasticsearch API docs
 bump preview output/openapi/elasticsearch-serverless-openapi-docs-final.json # Preview Elasticsearch serverless API docs
 ```
-This creates a temporary URL hosted by Bump to preview your changes and share with others.
+This creates a temporary URL to preview your changes and share with others.
 ::::
 
 ::::{step} Open a pull request

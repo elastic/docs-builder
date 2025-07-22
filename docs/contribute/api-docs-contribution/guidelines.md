@@ -4,7 +4,7 @@ This page covers the core guidelines for excellent API docs. Learn how to write 
 
 ## Write summaries and descriptions
 
-Most objects in your Open API specification (i.e. operations, parameters, properties, etc.) accept both concise summaries and detailed descriptions to help users understand their purpose and usage.
+Most objects in your Open API specification accept both concise summaries and detailed descriptions to help users understand their purpose and usage.
 
 ### Write summaries
 
@@ -33,7 +33,7 @@ paths:
   /indices/{index}:
     get:
       summary: Get index information
-      description: Retrieves configuration and mapping information...
+      description: Retrieve configuration and mapping information...
 ```
 :::
 
@@ -98,7 +98,7 @@ paths:
     get:
       summary: List books
       description: |
-        Retrieves a paginated list of books from the library catalog.
+        Retrieve a paginated list of books from the library catalog.
         Use query parameters to filter by author, genre, or publication year.
         Results are sorted by title by default.
 ```
@@ -136,9 +136,9 @@ components:
             The date when the book was first published in ISO 8601 format.
             Used for filtering and sorting operations.
 ```
-::{tip}
+:::{tip}
 Learn more about providing long descriptions in YAML in the [OpenAPI docs](https://learn.openapis.org/specification/docs.html#providing-long-descriptions-in-yaml).
-::
+:::
 :::
 
 :::{tab-item} Elasticsearch
@@ -152,7 +152,7 @@ Write comments above class definitions:
 /**
  * Get index information
  * 
- * Retrieves configuration and mapping information for one or more indices.
+ * Retrieve configuration and mapping information for one or more indices.
  * You can use this API to check index settings, mappings, and other metadata
  * before performing operations that might affect the index structure.
  */
@@ -191,9 +191,9 @@ Path parameters are variables in URL paths that users must provide to access spe
 
 Here are some principles for documenting path parameters:
 
-- **Write clear summaries and descriptions:** Follow the general guidance for [writing summaries](#write-summaries) and [descriptions](#write-descriptions)
+- **Write clear descriptions:** Follow the general guidance for [writing descriptions](#write-descriptions)
 - **All path parameters are required:** the `required` field must be present and it must be `true` in the OpenAPI doc
-- **Provide alternative paths for optional variations:** If you need optional parameters, create separate endpoint definitions
+- **Provide alternative paths for optional variations:** If you need optional parameters, create separate endpoint definitions or list the variations in the description
 - **Document parameter constraints:** Specify valid formats, patterns, or value ranges
 - **Explain parameter relationships:** Clarify how multiple path parameters work together and any dependencies between them
 
@@ -277,7 +277,7 @@ urls: [
 
 ## Document enum values
 
-Enums define a fixed set of allowed values for a property. Well-documented enum values help users understand the purpose of each option and when to use it.
+Enumerated types (enums) define a fixed set of allowed values for a property. Well-documented enum values help users understand the purpose of each option and when to use it.
 
 Here are some principles for documenting enum values:
 
@@ -314,22 +314,6 @@ components:
         - `query_then_fetch`: Searches across all fields using default settings
         - `dfs_query_then_fetch`: Performs distributed frequency scoring before fetching results  
         - `query_and_fetch`: Fetches results immediately without scoring optimization
-```
-
-For inline enums in parameters:
-
-```yaml
-parameters:
-  - name: refresh
-    in: query
-    schema:
-      type: string
-      enum: [true, false, wait_for]
-      description: |
-        When to refresh the affected shards:
-        - `true`: Refresh immediately after the operation
-        - `false`: Don't refresh (default)
-        - `wait_for`: Wait for a refresh to happen naturally
 ```
 :::
 
@@ -368,15 +352,13 @@ Examples help users understand how to use your API with realistic request and re
 Here are some principles for effective examples:
 
 - **Use realistic data:** Provide examples that reflect actual use cases rather than placeholder values
-- **Write clear summaries:** Introduce the example with a meaningful summary that explains its purpose
+- **Write clear summaries:** Introduce the example with a very brief summary that explains its purpose (reused as dropdown label in the docs)
 - **Write clear descriptions:** Explain what the example accomplishes in more detail and why it's useful
 - **Include edge cases:** Show how to handle optional parameters, error conditions, and different response types
 - **Point out key details:** Highlight important aspects users might miss
 - **Show variations:** Demonstrate alternative approaches or related concepts
-- **Use descriptive names:** Choose meaningful file names and summaries that indicate the example's purpose
 - **Provide realistic response bodies:** Each response body should have a realistic example. It must not contain any sensitive or confidential data
 - **Include success responses:** Include at least one example for each success response (HTTP 200)
-- **Schema flexibility:** Examples don't need to strictly validate against schemas, but should represent valid responses
 
 #### Generated examples
 
@@ -397,10 +379,43 @@ Learn more:
 
 ### Examples
 
+::::{tab-set}
+:group: implementations
+
+:::{tab-item} OpenAPI
+:sync: openapi
+
+The OpenAPI specification supports examples in several ways:
+
+**Individual parameter examples** can be defined directly in specifications:
+
+```yaml
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          description: Filter employees by department
+          example: "engineering"
+        hireDate:
+          type: string
+          format: date
+          description: Minimum hire date in ISO 8601 format
+          example: "2020-01-01"
+```
+
+For more complex examples, OpenAPI provides the [Example Object](https://spec.openapis.org/oas/v3.0.3#example-object), which can be attached to request bodies, responses, or parameters.
+:::
+
+:::{tab-item} Elasticsearch
+:sync: elasticsearch
+
 **File-based examples** use a structured folder approach alongside your API specification:
 
 ```
-/your-api/examples/
+/specification/your-api/examples/
   ├── request/
   │   ├── basic-search.yml
   │   └── advanced-filters.yml
@@ -436,28 +451,13 @@ value: |-
 - `value` - The actual request/response body
 - `method_request` - HTTP method and path (request examples only)
 
-**Individual parameter examples** can also be defined directly in specifications:
-
-```yaml
-components:
-  schemas:
-    SearchRequest:
-      type: object
-      properties:
-        department:
-          type: string
-          description: Filter employees by department
-          example: "engineering"
-        hireDate:
-          type: string
-          format: date
-          description: Minimum hire date in ISO 8601 format
-          example: "2020-01-01"
-```
-
 :::{warning}
 For Elasticsearch APIs, you only need to provide Console examples. Examples for other programming languages (including cURL) are **generated automatically** and added to [docs/examples/languageExamples.json](https://github.com/elastic/elasticsearch-specification/blob/main/docs/examples/languageExamples.json).
 :::
+:::
+:::
+
+::::
 
 ## Add links
 
@@ -503,19 +503,6 @@ paths:
         Creates a new index with optional settings and mappings.
         See also: [Delete Index](delete-index) and [Update Index Sets](update-index-settings).
 ```
-
-**Cross-reference links** between schema components use JSON references:
-
-```yaml
-components:
-  schemas:
-    SearchRequest:
-      type: object
-      properties:
-        query:
-          $ref: '#/components/schemas/QueryContainer'
-          description: The query to execute
-```
 :::
 
 :::{tab-item} Elasticsearch
@@ -550,6 +537,69 @@ Both annotations require corresponding entries in [`specification/_doc_ids/table
 
 :::{note}
 Each endpoint can only have one `@ext_doc_id`. For multiple links, use inline markdown in descriptions.
+:::
+:::
+
+::::
+
+## Set default values
+
+Default values can only be applied to optional parameters or properties in OpenAPI specifications using the `default` field.
+
+### Examples
+
+::::{tab-set}
+:group: implementations
+
+:::{tab-item} OpenAPI
+:sync: openapi
+
+Specify defaults directly in schema definitions:
+
+```yaml
+components:
+  schemas:
+    SearchSettings:
+      properties:
+        size:
+          type: integer
+          default: 10
+        timeout:
+          type: string
+          default: "1m"
+```
+
+For arrays:
+
+```yaml
+parameters:
+  - name: fields
+    in: query
+    schema:
+      type: array
+      items:
+        type: string
+      default: ["id", "name", "created"]
+```
+:::
+
+:::{tab-item} Elasticsearch
+:sync: elasticsearch
+
+Use the `@server_default` annotation for optional properties:
+
+```ts
+class Foo {
+  /** @server_default "hello" */
+  baz?: string
+  
+  /** @server_default ["hello", "world"] */
+  tags?: string[]
+}
+```
+
+:::{note}
+Default values only work on optional properties and appear in parameter documentation without affecting client behavior.
 :::
 :::
 

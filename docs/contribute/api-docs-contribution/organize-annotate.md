@@ -46,69 +46,6 @@ When adding operation identifiers:
 - Make `operationId`s valid for use in URLs (no special characters)
 - Use consistent naming patterns across related operations
 
-## Set default values
-
-Default values can only be applied to optional parameters or properties in OpenAPI specifications using the `default` field.
-
-### Examples
-
-::::{tab-set}
-:group: implementations
-
-:::{tab-item} OpenAPI
-:sync: openapi
-
-Specify defaults directly in schema definitions:
-
-```yaml
-components:
-  schemas:
-    SearchSettings:
-      properties:
-        size:
-          type: integer
-          default: 10
-        timeout:
-          type: string
-          default: "1m"
-```
-
-For arrays:
-
-```yaml
-parameters:
-  - name: fields
-    in: query
-    schema:
-      type: array
-      items:
-        type: string
-      default: ["id", "name", "created"]
-```
-:::
-
-:::{tab-item} Elasticsearch
-:sync: elasticsearch
-
-Use the `@server_default` annotation for optional properties:
-
-```ts
-class Foo {
-  /** @server_default "hello" */
-  baz?: string
-  
-  /** @server_default ["hello", "world"] */
-  tags?: string[]
-}
-```
-
-:::{note}
-Default values only work on optional properties and appear in parameter documentation without affecting client behavior.
-:::
-:::
-
-::::
-
 ## Group APIs with tags
 
 We use [tags](https://swagger.io/docs/specification/v3_0/grouping-operations-with-tags/) to group APIs by feature.
@@ -219,12 +156,12 @@ The extensions properties are implemented as patterned fields that are always pr
 
 | **Field**       | **Description** |
 |-----------------|-----------------|
-| `x-beta` | Indicates that something is in beta. **Note:** Prefer `x-state` instead.<br> <br>Content with `x-beta` is **not** included in Bump.sh’s automatic changelog. [More info](https://docs.bump.sh/help/specification-support/doc-beta/) |
+| `x-beta` | Indicates that something is in beta. **Note:** Use `x-state` instead. |
 | `x-codeSamples` | Defines code examples and their programming language. [Docs](https://docs.bump.sh/help/specification-support/doc-code-samples/) |
 | `x-displayName` | Overrides tag names at the document level to align with documentation standards. |
 | `x-feedbackLink` | Adds a link for users to send feedback. [Docs](https://docs.bump.sh/help/publish-documentation/feedback/) |
 | `x-model` | Used to abbreviate deeply nested/recursive API sections (e.g., Elasticsearch query DSL). Should include an `externalDocs` link. Currently only applied via overlays. |
-| `x-state` | Indicates lifecycle state (e.g., “Technical preview; added in 9.1.0”). Appears next to the operation/property. If used with `x-beta: true`, changelog impact is suppressed, and the label is replaced. [Example Kibana PR](https://github.com/elastic/kibana/pull/228662) |
+| `x-state` | Indicates lifecycle state (e.g., “Technical preview; added in 9.1.0”). Appears next to the operation/property. |
 | `x-topics` | Adds extra pages shown below the introduction. [Docs](https://docs.bump.sh/help/enhance-documentation-content/topics/) |
 
 :::{note}
@@ -259,21 +196,6 @@ paths:
       x-state: "Beta; Added in 8.5.0"
       # ...
 ```
-
-**Deployment restrictions** are also included in the `x-state` value:
-
-```yaml
-components:
-  schemas:
-    SearchRequest:
-      type: object
-      properties:
-        dfs:
-          type: boolean
-          description: Use distributed frequency scoring
-          x-state: "Stack only; Added in 7.0.0"
-```
-
 **Deprecation notices** use the standard OpenAPI `deprecated` boolean field:
 
 ```yaml
