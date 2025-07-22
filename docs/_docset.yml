@@ -86,7 +86,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
-      - file: diagrams.md
+      - hidden: diagrams.md
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md
