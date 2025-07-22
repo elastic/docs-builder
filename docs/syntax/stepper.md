@@ -1,10 +1,10 @@
 # Stepper
 
 Steppers provide a visual representation of sequential steps, commonly used in tutorials or guides
-to break down processes into manageable stages.
+to break down processes into manageable stages. For example, you can usee steppers instead of numbered
+section headings when documenting a supertask or a complex procedure. An example is the [Observability Get Started](https://www.elastic.co/docs/solutions/observability/get-started).
 
-By default every step title is a link with a generated anchor.
-But you can override the default anchor by adding the `:anchor:` option to the step.
+By default every step title is a link with a generated anchor. You can override the default anchor by adding the `:anchor:` option to the step.
 
 ## Basic stepper
 
