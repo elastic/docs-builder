@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -64,6 +65,8 @@ public record BuildContext : IDocumentationContext
 		init => _urlPathPrefix = value;
 	}
 
+	public DiagramRegistry DiagramRegistry { get; }
+
 	public BuildContext(IDiagnosticsCollector collector, IFileSystem fileSystem, VersionsConfiguration versionsConfig)
 		: this(collector, fileSystem, fileSystem, versionsConfig, null, null)
 	{
@@ -105,5 +108,6 @@ public record BuildContext : IDocumentationContext
 		{
 			Enabled = false
 		};
+		DiagramRegistry = new DiagramRegistry(writeFileSystem);
 	}
 }

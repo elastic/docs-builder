@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
@@ -58,6 +59,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public string CurrentUrlPath { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; }
 	public BuildContext Build { get; }
+	public DiagramRegistry DiagramRegistry => Build.DiagramRegistry;
 	public bool SkipValidation { get; }
 	public Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }

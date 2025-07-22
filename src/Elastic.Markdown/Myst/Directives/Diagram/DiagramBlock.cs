@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.Diagram;
@@ -68,12 +69,9 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		// Register diagram for tracking and cleanup
-		DiagramRegistry.RegisterDiagram(LocalSvgPath);
-
-		// Cache diagram asynchronously - fire and forget
-		// Use simplified approach without lock files to avoid orphaned locks
-		_ = Task.Run(() => TryCacheDiagramAsync(context));
+		// Register diagram for tracking, cleanup, and batch caching
+		var outputDirectory = context.Build.DocumentationOutputDirectory.FullName;
+		context.DiagramRegistry.RegisterDiagramForCaching(LocalSvgPath, EncodedUrl, outputDirectory);
 	}
 
 	private string? ExtractContent()
@@ -106,9 +104,9 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 	private string GenerateLocalPath(ParserContext context)
 	{
 		var markdownFileName = "unknown";
-		if (context.MarkdownSourcePath?.FullName != null)
+		if (context.MarkdownSourcePath?.Name is not null)
 		{
-			markdownFileName = Path.GetFileNameWithoutExtension(context.MarkdownSourcePath.FullName);
+			markdownFileName = Path.GetFileNameWithoutExtension(context.MarkdownSourcePath.Name);
 		}
 
 		var filename = $"{markdownFileName}-diagram-{DiagramType}-{ContentHash}.svg";
@@ -118,63 +116,5 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		return localPath.Replace(Path.DirectorySeparatorChar, '/');
 	}
 
-	private async Task TryCacheDiagramAsync(ParserContext context)
-	{
-		if (string.IsNullOrEmpty(EncodedUrl) || string.IsNullOrEmpty(LocalSvgPath))
-			return;
 
-		try
-		{
-			// Determine the full output path
-			var outputDirectory = context.Build.DocumentationOutputDirectory.FullName;
-			var fullPath = Path.Combine(outputDirectory, LocalSvgPath);
-
-			// Skip if file already exists - simple check without locking
-			if (File.Exists(fullPath))
-				return;
-
-			// Create directory if it doesn't exist
-			var directory = Path.GetDirectoryName(fullPath);
-			if (directory != null && !Directory.Exists(directory))
-			{
-				_ = Directory.CreateDirectory(directory);
-			}
-
-			// Download SVG from Kroki using shared HttpClient
-			var svgContent = await DiagramHttpClient.Instance.GetStringAsync(EncodedUrl);
-
-			// Basic validation - ensure we got SVG content
-			// SVG can start with XML declaration, DOCTYPE, or directly with <svg>
-			if (string.IsNullOrWhiteSpace(svgContent) || !svgContent.Contains("<svg", StringComparison.OrdinalIgnoreCase))
-			{
-				// Invalid content - don't cache
-				return;
-			}
-
-			// Write to local file atomically using a temp file
-			var tempPath = fullPath + ".tmp";
-			await File.WriteAllTextAsync(tempPath, svgContent);
-			File.Move(tempPath, fullPath);
-		}
-		catch (HttpRequestException)
-		{
-			// Network-related failures - silent fallback to Kroki URLs
-			// Caching is opportunistic, network issues shouldn't generate warnings
-		}
-		catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-		{
-			// Timeout - silent fallback to Kroki URLs
-			// Timeouts are expected in slow network conditions
-		}
-		catch (IOException)
-		{
-			// File system issues - silent fallback to Kroki URLs
-			// Disk space or permission issues shouldn't break builds
-		}
-		catch (Exception)
-		{
-			// Unexpected errors - silent fallback to Kroki URLs
-			// Caching is opportunistic, any failure should fallback gracefully
-		}
-	}
 }

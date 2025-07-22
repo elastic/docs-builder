@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
@@ -108,7 +109,7 @@ public class DocumentationGenerator
 	public async Task<GenerationResult> GenerateAll(Cancel ctx)
 	{
 		// Clear diagram registry for fresh tracking
-		DiagramRegistry.Clear();
+		DocumentationSet.Context.DiagramRegistry.Clear();
 
 		var result = new GenerationResult();
 
@@ -146,8 +147,15 @@ public class DocumentationGenerator
 		_logger.LogInformation($"Generating links.json");
 		var linkReference = await GenerateLinkReference(ctx);
 
+		// Download diagram files in parallel
+		var downloadedCount = await DocumentationSet.Context.DiagramRegistry.CreateDiagramCachedFiles(_logger, DocumentationSet.Context.ReadFileSystem);
+		if (downloadedCount > 0)
+		{
+			_logger.LogInformation("Downloaded {DownloadedCount} diagram files from Kroki", downloadedCount);
+		}
+
 		// Clean up unused diagram files
-		var cleanedCount = DiagramRegistry.CleanupUnusedDiagrams(DocumentationSet.OutputDirectory.FullName);
+		var cleanedCount = DocumentationSet.Context.DiagramRegistry.CleanupUnusedDiagrams(DocumentationSet.OutputDirectory);
 		if (cleanedCount > 0)
 		{
 			_logger.LogInformation("Cleaned up {CleanedCount} unused diagram files", cleanedCount);

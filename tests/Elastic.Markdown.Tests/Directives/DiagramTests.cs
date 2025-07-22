@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using FluentAssertions;
 
@@ -102,77 +103,64 @@ public class DiagramBlockEmptyTests(ITestOutputHelper output) : DirectiveTest<Di
 public class DiagramRegistryTests
 {
 	[Fact]
-	public void ClearResetsRegistry()
+	public void CleanupUnusedDiagramsWithNoActiveFilesCleansAllFiles()
 	{
-		// Arrange
-		DiagramRegistry.RegisterDiagram("test-path.svg");
-
-		// Act
-		DiagramRegistry.Clear();
-
-		// Assert - registry should be empty, cleanup should not find any files to remove
 		var fileSystem = new MockFileSystem();
-		var cleanedCount = DiagramRegistry.CleanupUnusedDiagrams("/test", fileSystem);
-		cleanedCount.Should().Be(0);
+		var registry = new DiagramRegistry(fileSystem);
+		registry.RegisterDiagramForCaching("test-path.svg", "http://example.com/test", "/test");
+
+		// Clear registry to simulate no active diagrams
+		registry.Clear();
+
+		var cleanedCount = registry.CleanupUnusedDiagrams(fileSystem.DirectoryInfo.New("/test"));
+
+		cleanedCount.Should().Be(0); // No files to clean since directory doesn't exist
 	}
 
 	[Fact]
-	public void CleanupRemovesUnusedFiles()
+	public void CleanupUnusedDiagramsWithActiveAndUnusedFilesCleansOnlyUnused()
 	{
-		// Arrange
-		DiagramRegistry.Clear();
-		DiagramRegistry.RegisterDiagram("images/generated-graphs/active-diagram.svg");
+		var fileSystem = new MockFileSystem();
+		var registry = new DiagramRegistry(fileSystem);
+		registry.Clear();
+		registry.RegisterDiagramForCaching("images/generated-graphs/active-diagram.svg", "http://example.com/active", "/output");
 
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			["/output/images/generated-graphs/active-diagram.svg"] = new MockFileData("<svg>active</svg>"),
-			["/output/images/generated-graphs/unused-diagram.svg"] = new MockFileData("<svg>unused</svg>"),
-			["/output/images/generated-graphs/another-unused.svg"] = new MockFileData("<svg>another</svg>")
-		});
+		fileSystem.AddDirectory("/output/images/generated-graphs");
+		fileSystem.AddFile("/output/images/generated-graphs/active-diagram.svg", "active content");
+		fileSystem.AddFile("/output/images/generated-graphs/unused-diagram.svg", "unused content");
 
-		// Act
-		var cleanedCount = DiagramRegistry.CleanupUnusedDiagrams("/output", fileSystem);
+		var cleanedCount = registry.CleanupUnusedDiagrams(fileSystem.DirectoryInfo.New("/output"));
 
-		// Assert
-		cleanedCount.Should().Be(2);
+		cleanedCount.Should().Be(1);
 		fileSystem.File.Exists("/output/images/generated-graphs/active-diagram.svg").Should().BeTrue();
 		fileSystem.File.Exists("/output/images/generated-graphs/unused-diagram.svg").Should().BeFalse();
-		fileSystem.File.Exists("/output/images/generated-graphs/another-unused.svg").Should().BeFalse();
 	}
 
 	[Fact]
-	public void CleanupHandlesMissingDirectory()
+	public void CleanupUnusedDiagramsWithNonexistentDirectoryReturnsZero()
 	{
-		// Arrange
-		DiagramRegistry.Clear();
 		var fileSystem = new MockFileSystem();
+		var registry = new DiagramRegistry(fileSystem);
+		registry.Clear();
 
-		// Act & Assert - should not throw
-		var cleanedCount = DiagramRegistry.CleanupUnusedDiagrams("/nonexistent", fileSystem);
+		var cleanedCount = registry.CleanupUnusedDiagrams(fileSystem.DirectoryInfo.New("/nonexistent"));
+
 		cleanedCount.Should().Be(0);
 	}
 
 	[Fact]
-	public void CleanupRemovesEmptyDirectories()
+	public void CleanupUnusedDiagramsRemovesEmptyDirectories()
 	{
-		// Arrange
-		DiagramRegistry.Clear();
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			["/output/images/generated-graphs/unused.svg"] = new MockFileData("<svg>unused</svg>")
-		});
+		var fileSystem = new MockFileSystem();
+		var registry = new DiagramRegistry(fileSystem);
+		registry.Clear();
 
-		// Verify initial state
-		fileSystem.Directory.Exists("/output/images/generated-graphs").Should().BeTrue();
-		fileSystem.File.Exists("/output/images/generated-graphs/unused.svg").Should().BeTrue();
+		fileSystem.AddDirectory("/output/images/generated-graphs/subdir");
+		fileSystem.AddFile("/output/images/generated-graphs/subdir/unused.svg", "content");
 
-		// Act
-		var cleanedCount = DiagramRegistry.CleanupUnusedDiagrams("/output", fileSystem);
+		var cleanedCount = registry.CleanupUnusedDiagrams(fileSystem.DirectoryInfo.New("/output"));
 
-		// Assert
 		cleanedCount.Should().Be(1);
-		fileSystem.File.Exists("/output/images/generated-graphs/unused.svg").Should().BeFalse();
-		fileSystem.Directory.Exists("/output/images/generated-graphs").Should().BeFalse();
-		// Note: /output/images may still exist if MockFileSystem creates it as a parent directory
+		fileSystem.Directory.Exists("/output/images/generated-graphs/subdir").Should().BeFalse();
 	}
 }
