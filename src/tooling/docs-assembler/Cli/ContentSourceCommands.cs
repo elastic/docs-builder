@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Building;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
@@ -13,7 +14,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class ContentSourceCommands(ICoreService githubActionsService, ILoggerFactory logFactory)
+internal sealed class ContentSourceCommands(
+	ILoggerFactory logFactory,
+	AssemblyConfiguration configuration,
+	ConfigurationFileProvider configurationFileProvider,
+	ICoreService githubActionsService
+)
 {
 	[Command("validate")]
 	public async Task<int> Validate(Cancel ctx = default)
@@ -26,7 +32,8 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		_ = collector.StartAsync(ctx);
 
 		// environment does not matter to check the configuration, defaulting to dev
-		var context = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null)
+		var fs = new FileSystem();
+		var context = new AssembleContext(configuration, configurationFileProvider, "dev", collector, fs, fs, null, null)
 		{
 			Force = false,
 			AllowIndexing = false
@@ -36,11 +43,12 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		var links = await fetcher.FetchLinkIndex(ctx);
 		var repositories = context.Configuration.ReferenceRepositories.Values.Concat<Repository>([context.Configuration.Narrative]).ToList();
 
+		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
 		foreach (var repository in repositories)
 		{
 			if (!links.Repositories.TryGetValue(repository.Name, out var registryMapping))
 			{
-				collector.EmitError(context.ConfigurationPath, $"'{repository}' does not exist in link index");
+				collector.EmitError(reportPath, $"'{repository}' does not exist in link index");
 				continue;
 			}
 
@@ -48,12 +56,12 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 			var next = repository.GetBranch(ContentSource.Next);
 			if (!registryMapping.TryGetValue(next, out _))
 			{
-				collector.EmitError(context.ConfigurationPath,
+				collector.EmitError(reportPath,
 					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexReader.RegistryUrl}");
 			}
 			if (!registryMapping.TryGetValue(current, out _))
 			{
-				collector.EmitError(context.ConfigurationPath,
+				collector.EmitError(reportPath,
 					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexReader.RegistryUrl}");
 			}
 		}
@@ -89,7 +97,7 @@ internal sealed class ContentSourceCommands(ICoreService githubActionsService, I
 		_ = collector.StartAsync(ctx);
 
 		// environment does not matter to check the configuration, defaulting to dev
-		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null)
+		var assembleContext = new AssembleContext(configuration, configurationFileProvider, "dev", collector, new FileSystem(), new FileSystem(), null, null)
 		{
 			Force = false,
 			AllowIndexing = false

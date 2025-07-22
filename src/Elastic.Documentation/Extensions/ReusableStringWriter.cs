@@ -18,6 +18,8 @@ public sealed class ReusableStringWriter : TextWriter
 
 	public void Reset() => _sb = null;
 
+	public override string ToString() => _sb?.ToString() ?? string.Empty;
+
 	public override void Write(char value) => _sb?.Append(value);
 
 	public override void Write(char[] buffer, int index, int count)

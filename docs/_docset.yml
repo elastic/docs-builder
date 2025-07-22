@@ -94,6 +94,7 @@ toc:
       - file: frontmatter.md
       - file: icons.md
       - file: images.md
+      - file: kbd.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
@@ -101,6 +102,7 @@ toc:
       - file: sidebars.md
       - file: stepper.md
       - file: substitutions.md
+      - file: version-variables.md
       - file: sundries.md
       - file: tables.md
       - file: tabs.md
@@ -123,6 +125,10 @@ toc:
       - file: custom-highlighters.md
       - hidden: archive.md
       - hidden: landing-page.md
+      - file: nest-under-index/index.md
+        children:
+          - file: nest-under-index/nested-page-1.md
+          - file: nest-under-index/nested-page-2.md
       - folder: mover
         children:
           - file: first-page.md

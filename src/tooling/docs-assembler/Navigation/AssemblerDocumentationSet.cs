@@ -30,7 +30,8 @@ public record AssemblerDocumentationSet
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
 		TableOfContentsTreeCollector treeCollector,
-		VersionsConfiguration versionsConfiguration)
+		VersionsConfiguration versionsConfiguration
+	)
 	{
 		AssembleContext = context;
 		Checkout = checkout;
@@ -47,7 +48,7 @@ public record AssemblerDocumentationSet
 			RepositoryName = checkout.Repository.Name,
 			Ref = checkout.HeadReference,
 			Remote = $"elastic/${checkout.Repository.Name}",
-			Branch = checkout.Repository.GitReferenceCurrent
+			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
 		var buildContext = new BuildContext(

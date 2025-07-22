@@ -44,11 +44,11 @@ public enum VersioningSystemId
 	[Display(Name = "serverless")]
 	Serverless,
 	[Display(Name = "elasticsearch")]
-	Elasticsearch,
+	ElasticsearchProject,
 	[Display(Name = "observability")]
-	Observability,
+	ObservabilityProject,
 	[Display(Name = "security")]
-	Security,
+	SecurityProject,
 	[Display(Name = "apm_agent_android")]
 	ApmAgentAndroid,
 	[Display(Name = "apm_agent_ios")]

@@ -59,7 +59,7 @@ public interface IPositionalNavigation
 		do
 		{
 			var next = NavigationIndexedByOrder.GetValueOrDefault(index + 1);
-			if (next is not null && !next.Hidden)
+			if (next is not null && !next.Hidden && next.Url != currentNavigation.Url)
 				return next;
 			index++;
 		} while (index <= NavigationIndexedByOrder.Count - 1);
@@ -189,6 +189,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		Tree = new TableOfContentsTree(Source, Context, lookups, treeCollector, ref fileIndex);
 
+		var navigationIndex = 0;
+		UpdateNavigationIndex(Tree.NavigationItems, ref navigationIndex);
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 
 		var excludedChildren = markdownFiles.Where(f => !f.PartOfNavigation).ToArray();
@@ -208,6 +210,28 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			.ToFrozenDictionary();
 
 		ValidateRedirectsExists();
+	}
+
+	private void UpdateNavigationIndex(IReadOnlyCollection<INavigationItem> navigationItems, ref int navigationIndex)
+	{
+		foreach (var item in navigationItems)
+		{
+			switch (item)
+			{
+				case FileNavigationItem fileNavigationItem:
+					var fileIndex = Interlocked.Increment(ref navigationIndex);
+					fileNavigationItem.NavigationIndex = fileIndex;
+					break;
+				case DocumentationGroup documentationGroup:
+					var groupIndex = Interlocked.Increment(ref navigationIndex);
+					documentationGroup.NavigationIndex = groupIndex;
+					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
+					break;
+				default:
+					Context.EmitError(Context.ConfigurationPath, $"Unhandled navigation item type: {item.GetType()}");
+					break;
+			}
+		}
 	}
 
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }

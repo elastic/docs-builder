@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
+using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Serialization;

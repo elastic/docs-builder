@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Extensions;
+using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlStaticContext = Elastic.Documentation.Configuration.Serialization.YamlStaticContext;
 
@@ -10,6 +12,9 @@ namespace Elastic.Documentation.Configuration.Assembler;
 
 public record AssemblyConfiguration
 {
+	public static AssemblyConfiguration Create(ConfigurationFileProvider provider) =>
+		Deserialize(provider.AssemblerFile.ReadToEnd());
+
 	public static AssemblyConfiguration Deserialize(string yaml)
 	{
 		var input = new StringReader(yaml);
@@ -46,11 +51,13 @@ public record AssemblyConfiguration
 		// ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
 		var repository = r ?? new TRepository();
 		// ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
-		repository.Name = name;
-		if (string.IsNullOrEmpty(repository.GitReferenceCurrent))
-			repository.GitReferenceCurrent = "main";
-		if (string.IsNullOrEmpty(repository.GitReferenceNext))
-			repository.GitReferenceNext = "main";
+		repository = repository with
+		{
+			Name = name,
+			GitReferenceCurrent = string.IsNullOrEmpty(repository.GitReferenceCurrent) ? "main" : repository.GitReferenceCurrent,
+			GitReferenceNext = string.IsNullOrEmpty(repository.GitReferenceNext) ? "main" : repository.GitReferenceNext,
+			GitReferenceEdge = string.IsNullOrEmpty(repository.GitReferenceEdge) ? "main" : repository.GitReferenceEdge,
+		};
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
@@ -76,8 +83,8 @@ public record AssemblyConfiguration
 	[YamlMember(Alias = "environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
 
-	[YamlMember(Alias = "named_git_references")]
-	public Dictionary<string, string> NamedGitReferences { get; set; } = [];
+	[YamlMember(Alias = "shared_configuration")]
+	public Dictionary<string, Repository> SharedConfigurations { get; set; } = [];
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
 	/// <paramref name="repository"/>.

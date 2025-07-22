@@ -167,9 +167,9 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
-        versioningSystems.Add(VersioningSystemId.Elasticsearch, 
+        versioningSystems.Add(VersioningSystemId.ElasticsearchProject, 
             VersioningSystem(
-                Id = VersioningSystemId.Elasticsearch,
+                Id = VersioningSystemId.ElasticsearchProject,
                 Current = SemVersion(8, 0, 0),
                 Base = SemVersion(8, 0, 0)
             )
@@ -188,16 +188,16 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
-        versioningSystems.Add(VersioningSystemId.Observability, 
+        versioningSystems.Add(VersioningSystemId.ObservabilityProject, 
             VersioningSystem(
-                Id = VersioningSystemId.Observability,
+                Id = VersioningSystemId.ObservabilityProject,
                 Current = SemVersion(8, 0, 0),
                 Base = SemVersion(8, 0, 0)
             )
         )
-        versioningSystems.Add(VersioningSystemId.Security, 
+        versioningSystems.Add(VersioningSystemId.SecurityProject, 
             VersioningSystem(
-                Id = VersioningSystemId.Security,
+                Id = VersioningSystemId.SecurityProject,
                 Current = SemVersion(8, 0, 0),
                 Base = SemVersion(8, 0, 0)
             )
@@ -210,11 +210,19 @@ type Setup =
             )
         )
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
-        let context = BuildContext(collector, fileSystem, UrlPathPrefix=(options.UrlPathPrefix |> Option.defaultValue ""), versionsConfig = versionConfig)
+        let context = BuildContext(
+            collector,
+            fileSystem,
+            UrlPathPrefix = (options.UrlPathPrefix |> Option.defaultValue ""),
+            versionsConfig = versionConfig,
+            CanonicalBaseUrl = Uri("https://www.elastic.co/")
+        )
         let logger = new TestLoggerFactory()
         let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)
-        let set = DocumentationSet(context, logger, linkResolver);
+        let set = DocumentationSet(context, logger, linkResolver)
+        
+        
         let generator = DocumentationGenerator(set, logger, null, null, null, null, conversionCollector)
 
         let context = {

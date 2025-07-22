@@ -1,0 +1,51 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Image.ImageCarouselViewModel>
+@{
+    // Convert semantic height values to pixel values
+    string? pixelHeight = Model.FixedHeight?.ToLower() switch
+    {
+        "small" => "350px",
+        "medium" => "750px",
+        "auto" or null or "" => null,
+        _ => null // Default to none for invalid values
+    };
+    
+    var hasFixedHeight = !string.IsNullOrEmpty(pixelHeight);
+    var trackStyle = hasFixedHeight ? $"height: {pixelHeight};" : "";
+}
+<div class="carousel-container" @(hasFixedHeight ? "data-fixed-height" : "")>
+    <div class="carousel-track" style="@trackStyle">
+        @for (int i = 0; i < Model.Images.Count; i++)
+        {
+            var image = Model.Images[i];
+            <div class="carousel-slide" data-index="@i" @(i == 0 ? "data-active=true" : "")>
+                <a class="carousel-image-reference" href="@image.ImageUrl" target="_blank">
+                    <img loading="lazy" title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
+                </a>
+            </div>
+        }
+    </div>
+    
+    @if (Model.Images.Count > 1)
+    {
+        <button type="button" class="carousel-control carousel-prev" aria-label="Previous slide">
+            <span aria-hidden="true">←</span>
+        </button>
+        <button type="button" class="carousel-control carousel-next" aria-label="Next slide">
+            <span aria-hidden="true">→</span>
+        </button>
+    }
+    
+    @if (Model.Images.Count > 1)
+    {
+        <div class="carousel-indicators">
+            @for (int i = 0; i < Model.Images.Count; i++)
+            {
+                <button type="button" 
+                        class="carousel-indicator" 
+                        data-index="@i"
+                        @(i == 0 ? "data-active=true" : "")
+                        aria-label="Go to slide @(i+1)"></button>
+            }
+        </div>
+    }
+</div>

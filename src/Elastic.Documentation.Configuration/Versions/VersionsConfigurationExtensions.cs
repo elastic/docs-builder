@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Serialization;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -12,19 +11,15 @@ namespace Elastic.Documentation.Configuration.Versions;
 
 public static class VersionsConfigurationExtensions
 {
-	private static readonly string ResourceName = "Elastic.Documentation.Configuration.versions.yml";
-
-	public static IServiceCollection AddVersions(this IServiceCollection services)
+	public static VersionsConfiguration CreateVersionConfiguration(this ConfigurationFileProvider provider)
 	{
-		var assembly = typeof(VersionsConfigurationExtensions).Assembly;
-		using var stream = assembly.GetManifestResourceStream(ResourceName) ?? throw new FileNotFoundException(ResourceName);
-		using var reader = new StreamReader(stream);
+		var path = provider.VersionFile;
 
 		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.Build();
 
-		var dto = deserializer.Deserialize<VersionsConfigDto>(reader);
+		var dto = deserializer.Deserialize<VersionsConfigDto>(path.OpenText());
 
 		var versions = dto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
@@ -35,10 +30,7 @@ public static class VersionsConfigurationExtensions
 				Current = ToSemVersion(kvp.Value.Current)
 			});
 		var config = new VersionsConfiguration { VersioningSystems = versions };
-
-		_ = services.AddSingleton<IOptions<VersionsConfiguration>>(new OptionsWrapper<VersionsConfiguration>(config));
-
-		return services;
+		return config;
 	}
 
 	private static VersioningSystemId ToVersioningSystemId(string id)

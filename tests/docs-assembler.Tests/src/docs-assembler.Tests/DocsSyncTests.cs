@@ -7,6 +7,7 @@ using Amazon.S3;
 using Amazon.S3.Transfer;
 using Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 using FluentAssertions;
@@ -35,7 +36,9 @@ public class DocsSyncTests
 			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
 		});
 
-		var context = new AssembleContext("dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var configurationFileProvider = new ConfigurationFileProvider(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		var context = new AssembleContext(config, configurationFileProvider, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<Amazon.S3.Model.ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new Amazon.S3.Model.ListObjectsV2Response
 			{
@@ -97,7 +100,9 @@ public class DocsSyncTests
 		{
 			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
 		});
-		var context = new AssembleContext("dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var configurationFileProvider = new ConfigurationFileProvider(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		var context = new AssembleContext(config, configurationFileProvider, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		var plan = new SyncPlan
 		{
 			Count = 6,

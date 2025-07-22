@@ -13,6 +13,11 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives;
 
+public interface IBlockTitle
+{
+	string Title { get; }
+}
+
 public interface IBlockExtension : IBlock
 {
 	BuildContext Build { get; }

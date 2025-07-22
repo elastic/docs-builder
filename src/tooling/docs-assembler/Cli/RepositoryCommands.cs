@@ -13,7 +13,6 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
@@ -23,11 +22,16 @@ using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Documentation.Assembler.Cli;
 
-internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService githubActionsService, IOptions<VersionsConfiguration> versionsConfigOption)
+internal sealed class RepositoryCommands(
+	AssemblyConfiguration assemblyConfiguration,
+	VersionsConfiguration versionsConfig,
+	ConfigurationFileProvider configurationFileProvider,
+	ILoggerFactory logFactory,
+	ICoreService githubActionsService
+)
 {
 	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
@@ -57,7 +61,8 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
-		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null);
+		var fs = new FileSystem();
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
@@ -72,7 +77,7 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 	/// <summary> Builds all repositories </summary>
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="allowIndexing"> Allow indexing and following of html files</param>
+	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="exporters"> configure exporters explicitly available (html,llmtext,es), defaults to html</param>
 	/// <param name="ctx"></param>
@@ -85,7 +90,7 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 		[ExporterParser] IReadOnlySet<ExportOption>? exporters = null,
 		Cancel ctx = default)
 	{
-		exporters ??= new HashSet<ExportOption>([ExportOption.Html]);
+		exporters ??= new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
 
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
@@ -100,7 +105,8 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 
 		_log.LogInformation("Creating assemble context");
 
-		var assembleContext = new AssembleContext(environment, collector, new FileSystem(), new FileSystem(), null, null)
+		var fs = new FileSystem();
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null)
 		{
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false
@@ -123,7 +129,7 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 			throw new Exception("No checkouts found");
 
 		_log.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, versionsConfigOption.Value, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, versionsConfig, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		_log.LogInformation("Create global navigation");
@@ -161,8 +167,9 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 		var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 		// The environment ist not relevant here.
 		// It's only used to get the list of repositories.
-		var assembleContext = new AssembleContext("prod", collector, new FileSystem(), new FileSystem(), null, null);
-		var cloner = new RepositorySourcer(logFactory, assembleContext.CheckoutDirectory, new FileSystem(), collector);
+		var fs = new FileSystem();
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, "prod", collector, fs, fs, null, null);
+		var cloner = new RepositorySourcer(logFactory, assembleContext.CheckoutDirectory, fs, collector);
 		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
 		{
 			{ NarrativeRepository.RepositoryName, assembleContext.Configuration.Narrative }
@@ -182,7 +189,7 @@ internal sealed class RepositoryCommands(ILoggerFactory logFactory, ICoreService
 						collector,
 						new FileSystem(),
 						new FileSystem(),
-						versionsConfigOption.Value,
+						versionsConfig,
 						checkout.Directory.FullName,
 						outputPath
 					);
@@ -223,7 +230,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 {
 	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<ExportOption> result)
 	{
-		result = new HashSet<ExportOption>([ExportOption.Html]);
+		result = new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
 		var set = new HashSet<ExportOption>();
 		var ranges = s.Split(',');
 		foreach (var range in ranges)
@@ -235,6 +242,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"es" => ExportOption.Elasticsearch,
 				"elasticsearch" => ExportOption.Elasticsearch,
 				"html" => ExportOption.Html,
+				"config" => ExportOption.Configuration,
 				_ => null
 			};
 			if (export.HasValue)

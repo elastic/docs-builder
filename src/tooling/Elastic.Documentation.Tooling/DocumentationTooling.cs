@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using Actions.Core.Extensions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -14,22 +17,32 @@ namespace Elastic.Documentation.Tooling;
 
 public static class DocumentationTooling
 {
-	public static ServiceProvider CreateServiceProvider(ref string[] args, Action<IServiceCollection>? configure = null)
+	public static ServiceProvider CreateServiceProvider(ref string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 	{
 		var defaultLogLevel = LogLevel.Information;
 		ProcessCommandLineArguments(ref args, ref defaultLogLevel);
 
 		var services = new ServiceCollection();
-		CreateServiceCollection(services, defaultLogLevel);
-		configure?.Invoke(services);
+		CreateServiceCollection(services, defaultLogLevel, configure);
 		return services.BuildServiceProvider();
 	}
 
-	public static void CreateServiceCollection(IServiceCollection services, LogLevel defaultLogLevel)
+	public static void CreateServiceCollection(
+		IServiceCollection services,
+		LogLevel defaultLogLevel,
+		Action<IServiceCollection, ConfigurationFileProvider>? configure = null
+	)
 	{
 		_ = services
 			.AddGitHubActionsCore()
-			.AddVersions();
+			.AddSingleton<DiagnosticsChannel>()
+			.AddSingleton<DiagnosticsCollector>()
+			.AddSingleton<ConfigurationFileProvider>()
+			.AddConfigurationFileProvider((s, p) =>
+			{
+				_ = s.AddSingleton(p.CreateVersionConfiguration());
+				configure?.Invoke(s, p);
+			});
 		services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
 		_ = services.AddLogging(x => x
 			.ClearProviders()

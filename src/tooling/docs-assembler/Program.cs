@@ -6,16 +6,16 @@ using System.Diagnostics.CodeAnalysis;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
-using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, services => services
-	.AddSingleton<DiagnosticsChannel>()
-	.AddSingleton<DiagnosticsCollector>()
-);
+await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, (s, p) =>
+{
+	_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+});
 
 ConsoleApp.ServiceProvider = serviceProvider;
 

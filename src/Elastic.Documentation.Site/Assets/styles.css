@@ -9,12 +9,14 @@
 @import './markdown/tabs.css';
 @import './markdown/code.css';
 @import './markdown/icons.css';
+@import './markdown/kbd.css';
 @import './copybutton.css';
 @import './markdown/admonition.css';
 @import './markdown/dropdown.css';
 @import './markdown/table.css';
 @import './markdown/definition-list.css';
 @import './markdown/images.css';
+@import './markdown/image-carousel.css';
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';
@@ -226,4 +228,10 @@ body {
 
 .tippy-content {
 	white-space: pre-line;
+}
+
+.icon,
+.icon > * {
+	user-select: none;
+	pointer-events: none;
 }

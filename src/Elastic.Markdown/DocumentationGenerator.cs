@@ -13,8 +13,11 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Markdown.Myst.Renderers;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -180,7 +183,13 @@ public class DocumentationGenerator
 	{
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
-		var keysNotInUse = definedKeys.Except(inUse).ToArray();
+		var keysNotInUse = definedKeys.Except(inUse)
+				// versions keys are injected
+				.Where(key => !key.StartsWith("version."))
+				// reserving context namespace
+				.Where(key => !key.StartsWith("context."))
+				.ToArray();
+
 		// If we have less than 20 unused keys, emit them separately,
 		// Otherwise emit one hint with all of them for brevity
 		if (keysNotInUse.Length >= 20)
@@ -332,6 +341,13 @@ public class DocumentationGenerator
 		};
 		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.GenerationState);
 		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(stateFile.FullName, bytes, ctx);
+	}
+
+	public async Task<string> RenderLlmMarkdown(MarkdownFile markdown, Cancel ctx)
+	{
+		await DocumentationSet.Tree.Resolve(ctx);
+		var document = await markdown.ParseFullAsync(ctx);
+		return LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)

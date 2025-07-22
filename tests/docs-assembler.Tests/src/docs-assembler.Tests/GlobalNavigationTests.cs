@@ -37,7 +37,9 @@ public class GlobalNavigationPathProviderTests
 			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
 			: checkoutDirectory;
 		Collector = new DiagnosticsCollector([]);
-		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationFileProvider = new ConfigurationFileProvider(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
 
 	private Checkout CreateCheckout(IFileSystem fs, string name) =>
@@ -88,7 +90,10 @@ public class GlobalNavigationPathProviderTests
 
 		await using var collector = new DiagnosticsCollector([]);
 
-		var assembleContext = new AssembleContext("dev", collector, new FileSystem(), new FileSystem(), null, null);
+		var fileSystem = new FileSystem();
+		var configurationFileProvider = new ConfigurationFileProvider(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		var assembleContext = new AssembleContext(config, configurationFileProvider, "dev", collector, fileSystem, fileSystem, null, null);
 
 		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
 
@@ -148,7 +153,8 @@ public class GlobalNavigationPathProviderTests
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		var referenceNav = navigation.NavigationLookup[expectedRoot];
-		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
+		navigation.NavigationItems.OfType<TableOfContentsTree>()
+			.Should().HaveSameCount(navigation.NavigationLookup);
 
 		referenceNav.Should().NotBeNull();
 		var navigationLookup = referenceNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
@@ -275,7 +281,9 @@ public class GlobalNavigationPathProviderTests
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext("prod", collector, fs, fs, null, null);
+		var configurationFileProvider = new ConfigurationFileProvider(fs);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		var assembleContext = new AssembleContext(config, configurationFileProvider, "prod", collector, fs, fs, null, null);
 		var repos = assembleContext.Configuration.ReferenceRepositories
 			.Where(kv => !kv.Value.Skip)
 			.Select(kv => kv.Value.Name)
@@ -307,11 +315,11 @@ public class GlobalNavigationPathProviderTests
 		var resolvedUri = uriResolver.Resolve(new Uri("docs-content://reference/apm/something.md"), "/reference/apm/something");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/something");
 
-		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-ios://reference/instrumentation.md"), "/reference/instrumentation");
-		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/ios/instrumentation");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-nodejs://reference/instrumentation.md"), "/reference/instrumentation");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/nodejs/instrumentation");
 
-		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-android://reference/a/file.md"), "/reference/a/file");
-		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/android/a/file");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-dotnet://reference/a/file.md"), "/reference/a/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/dotnet/a/file");
 
 		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet/b/file");

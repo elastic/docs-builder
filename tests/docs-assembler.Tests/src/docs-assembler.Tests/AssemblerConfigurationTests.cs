@@ -23,7 +23,18 @@ public class AssemblerConfigurationTests
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		Context = new AssembleContext("dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationFileProvider = new ConfigurationFileProvider(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+	}
+
+	[Fact]
+	public void ReadsConfigurationFiles()
+	{
+		Context.ConfigurationFileProvider.VersionFile.Name.Should().Be("versions.yml");
+		Context.ConfigurationFileProvider.NavigationFile.Name.Should().Be("navigation.yml");
+		Context.ConfigurationFileProvider.AssemblerFile.Name.Should().Be("assembler.yml");
+		Context.ConfigurationFileProvider.LegacyUrlMappingsFile.Name.Should().Be("legacy-url-mappings.yml");
 	}
 
 	[Fact]
@@ -44,10 +55,10 @@ public class AssemblerConfigurationTests
 	public void ReadsVersions()
 	{
 		var config = Context.Configuration;
-		config.NamedGitReferences.Should().NotBeEmpty()
+		config.SharedConfigurations.Should().NotBeEmpty()
 			.And.ContainKey("stack");
 
-		config.NamedGitReferences["stack"].Should().NotBeNullOrEmpty();
+		config.SharedConfigurations["stack"].GitReferenceEdge.Should().NotBeNullOrEmpty();
 
 		//var agent = config.ReferenceRepositories["elasticsearch"];
 		//agent.GitReferenceCurrent.Should().NotBeNullOrEmpty()
@@ -59,6 +70,11 @@ public class AssemblerConfigurationTests
 			.And.Be("main");
 		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.Be("main");
+		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
+			.And.Be("main");
 
+		var beats = config.ReferenceRepositories["beats"];
+		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.NotBe("main");
 	}
 }
