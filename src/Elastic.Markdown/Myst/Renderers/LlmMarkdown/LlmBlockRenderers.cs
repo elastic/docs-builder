@@ -431,11 +431,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Render the diagram content with indentation
 		if (!string.IsNullOrWhiteSpace(diagramBlock.Content))
 		{
-			var lines = diagramBlock.Content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
-			foreach (var line in lines)
-			{
-				renderer.WriteLine(line);
-			}
+			var reader = new StringReader(diagramBlock.Content);
+			while (reader.ReadLine() is { } line)
+				renderer.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : "  " + line);
 		}
 
 		renderer.WriteLine("</diagram>");

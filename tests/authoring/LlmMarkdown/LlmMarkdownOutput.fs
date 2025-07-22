@@ -510,16 +510,16 @@ y -> z: nice to meet you
     let ``renders diagram with type information`` () =
         markdown |> convertsToNewLLM """
 <diagram type="mermaid">
-flowchart LR
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Action 1]
-    B -->|No| D[Action 2]
-    C --> E[End]
-    D --> E
+  flowchart LR
+      A[Start] --> B{Decision}
+      B -->|Yes| C[Action 1]
+      B -->|No| D[Action 2]
+      C --> E[End]
+      D --> E
 </diagram>
 
 <diagram type="d2">
-x -> y: hello world
-y -> z: nice to meet you
+  x -> y: hello world
+  y -> z: nice to meet you
 </diagram>
 """
