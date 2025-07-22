@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using FluentAssertions;
-using System.IO.Abstractions.TestingHelpers;
 
 namespace Elastic.Markdown.Tests.Directives;
 
