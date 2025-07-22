@@ -112,7 +112,10 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		}
 
 		var filename = $"{markdownFileName}-diagram-{DiagramType}-{ContentHash}.svg";
-		return Path.Combine("images", "generated-graphs", filename);
+		var localPath = Path.Combine("images", "generated-graphs", filename);
+
+		// Normalize path separators to forward slashes for web compatibility
+		return localPath.Replace(Path.DirectorySeparatorChar, '/');
 	}
 
 	private async Task TryCacheDiagramAsync(ParserContext context)
