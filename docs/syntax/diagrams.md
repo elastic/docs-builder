@@ -1,8 +1,8 @@
-# Diagram Directive
+# Diagrams
 
 The `diagram` directive allows you to render various types of diagrams using the [Kroki](https://kroki.io/) service. Kroki supports many diagram types including Mermaid, D2, Graphviz, PlantUML, and more.
 
-## Basic Usage
+## Basic usage
 
 The basic syntax for the diagram directive is:
 
@@ -14,7 +14,7 @@ The basic syntax for the diagram directive is:
 
 If no diagram type is specified, it defaults to `mermaid`.
 
-## Supported Diagram Types
+## Supported diagram types
 
 The diagram directive supports the following diagram types:
 
@@ -35,8 +35,12 @@ The diagram directive supports the following diagram types:
 
 ## Examples
 
-### Mermaid Flowchart (Default)
+### Mermaid flowchart (default)
 
+::::::{tab-set}
+
+:::::{tab-item} Source
+```markdown
 ::::{diagram}
 flowchart LR
     A[Start] --> B{Decision}
@@ -45,9 +49,28 @@ flowchart LR
     C --> E[End]
     D --> E
 ::::
+```
+:::::
 
-### Mermaid Sequence Diagram
+:::::{tab-item} Rendered
+::::{diagram}
+flowchart LR
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+    C --> E[End]
+    D --> E
+::::
+:::::
 
+::::::
+
+### Mermaid sequence diagram
+
+::::::{tab-set}
+
+:::::{tab-item} Source
+```markdown
 ::::{diagram} mermaid
 sequenceDiagram
     participant A as Alice
@@ -55,16 +78,49 @@ sequenceDiagram
     A->>B: Hello Bob, how are you?
     B-->>A: Great!
 ::::
+```
+:::::
 
-### D2 Diagram
+:::::{tab-item} Rendered
+::::{diagram} mermaid
+sequenceDiagram
+    participant A as Alice
+    participant B as Bob
+    A->>B: Hello Bob, how are you?
+    B-->>A: Great!
+::::
+:::::
 
+::::::
+
+### D2 diagram
+
+::::::{tab-set}
+
+:::::{tab-item} Source
+```markdown
 ::::{diagram} d2
 x -> y: hello world
 y -> z: nice to meet you
 ::::
+```
+:::::
 
-### Graphviz Diagram
+:::::{tab-item} Rendered
+::::{diagram} d2
+x -> y: hello world
+y -> z: nice to meet you
+::::
+:::::
 
+::::::
+
+### Graphviz diagram
+
+::::::{tab-set}
+
+:::::{tab-item} Source
+```markdown
 ::::{diagram} graphviz
 digraph G {
     rankdir=LR;
@@ -72,8 +128,22 @@ digraph G {
     A -> C;
 }
 ::::
+```
+:::::
 
-## How It Works
+:::::{tab-item} Rendered
+::::{diagram} graphviz
+digraph G {
+    rankdir=LR;
+    A -> B -> C;
+    A -> C;
+}
+::::
+:::::
+
+::::::
+
+## How it works
 
 The diagram directive:
 
@@ -83,17 +153,6 @@ The diagram directive:
 4. **Generates** a Kroki URL in the format: `https://kroki.io/{type}/svg/{encoded-content}`
 5. **Renders** an HTML `<img>` tag that loads the diagram from Kroki
 
-## Error Handling
+## Error handling
 
 If the diagram content is empty or the encoding fails, an error message will be displayed instead of the diagram.
-
-## Implementation Details
-
-The diagram directive is implemented using:
-
-- **DiagramBlock**: Parses the directive and extracts content
-- **DiagramEncoder**: Handles compression and encoding using the same algorithm as the Kroki documentation
-- **DiagramView**: Renders the final HTML with the Kroki URL
-- **Kroki Service**: External service that generates SVG diagrams from encoded content
-
-The encoding follows the Kroki specification exactly, ensuring compatibility with all supported diagram types.
