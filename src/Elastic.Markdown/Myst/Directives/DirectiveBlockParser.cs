@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Mermaid;
@@ -108,6 +109,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		// for dev-docs
 		if (info.IndexOf("{mermaid}") > 0)
 			return new MermaidBlock(this, context);
+
+		if (info.IndexOf("{diagram}") > 0)
+			return new DiagramBlock(this, context);
 
 		if (info.IndexOf("{include}") > 0)
 			return new IncludeBlock(this, context);
