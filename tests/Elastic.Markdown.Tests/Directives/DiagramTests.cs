@@ -31,7 +31,7 @@ flowchart LR
 	public void GeneratesEncodedUrl() => Block!.EncodedUrl.Should().StartWith("https://kroki.io/mermaid/svg/");
 
 	[Fact]
-	public void RendersImageTag() => Html.Should().Contain("<img src=\"images/generated-graphs/");
+	public void RendersImageTag() => Html.Should().Contain("<img src=\"/images/generated-graphs/");
 
 	[Fact]
 	public void GeneratesContentHash() => Block!.ContentHash.Should().NotBeNullOrEmpty();
