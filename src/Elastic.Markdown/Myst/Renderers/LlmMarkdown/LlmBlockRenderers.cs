@@ -6,6 +6,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Markdig.Extensions.DefinitionLists;
@@ -372,6 +373,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
+			case DiagramBlock diagramBlock:
+				WriteDiagramBlock(renderer, diagramBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -414,6 +418,27 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Make image URL absolute for better LLM consumption
 		var absoluteImageUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, imageBlock.ImageUrl);
 		renderer.WriteLine($"![{imageBlock.Alt}]({absoluteImageUrl})");
+		renderer.EnsureLine();
+	}
+
+	private static void WriteDiagramBlock(LlmMarkdownRenderer renderer, DiagramBlock diagramBlock)
+	{
+		renderer.EnsureBlockSpacing();
+
+		// Render diagram as structured comment with type information
+		renderer.WriteLine($"<diagram type=\"{diagramBlock.DiagramType}\">");
+
+		// Render the diagram content with indentation
+		if (!string.IsNullOrWhiteSpace(diagramBlock.Content))
+		{
+			var lines = diagramBlock.Content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+			foreach (var line in lines)
+			{
+				renderer.WriteLine(line);
+			}
+		}
+
+		renderer.WriteLine("</diagram>");
 		renderer.EnsureLine();
 	}
 
