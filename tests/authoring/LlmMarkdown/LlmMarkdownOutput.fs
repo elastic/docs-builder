@@ -445,7 +445,7 @@ type ``codeblock in list`` () =
      ```
 """
 
-type ``substitions`` () =
+type ``substitutions`` () =
     static let markdown = Setup.Document """---
 sub:
   hello-world: "Hello World!"
@@ -462,7 +462,7 @@ Hello, this is a substitution: Hello World!
 This is not a substitution: {{not-found}}
 """
 
-type ``substition in codeblock`` () =
+type ``substitution in codeblock`` () =
     static let markdown = Setup.Document """---
 sub:
   hello-world: "Hello World!"
@@ -522,4 +522,19 @@ y -> z: nice to meet you
   x -> y: hello world
   y -> z: nice to meet you
 </diagram>
+"""
+        
+type ``substitution in heading`` () =
+    static let markdown = Setup.Document """---
+sub:
+  world: "World"
+---
+
+## Hello, {{world}}!
+"""
+
+    [<Fact>]
+    let ``renders correctly`` () =
+        markdown |> convertsToNewLLM """
+## Hello, World!
 """
