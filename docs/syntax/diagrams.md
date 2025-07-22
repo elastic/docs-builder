@@ -2,6 +2,10 @@
 
 The `diagram` directive allows you to render various types of diagrams using the [Kroki](https://kroki.io/) service. Kroki supports many diagram types including Mermaid, D2, Graphviz, PlantUML, and more.
 
+::::{warning}
+This is an experimental feature. It may change in the future.
+::::
+
 ## Basic usage
 
 The basic syntax for the diagram directive is:
