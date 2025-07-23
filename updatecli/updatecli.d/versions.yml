@@ -26,11 +26,18 @@ actions:
 
 sources:
   latest-stack-version:
-    name: Get latest Elastic Stack version
-    kind: json
+    name: Get latest stack version
+    kind: githubrelease
+    transformers:
+      - trimprefix: v 
     spec:
-      file: https://artifacts.elastic.co/releases/stack.json
-      key: "releases[-1].version"
+      owner: elastic
+      repository: elasticsearch
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: regex
+        pattern: "v9.(\\d*).(\\d*)$"
 
   latest-edot-android-version:
     name: Get latest release version for the apm-agent-android
