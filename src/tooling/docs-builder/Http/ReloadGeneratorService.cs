@@ -1,6 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -25,12 +26,12 @@ public sealed class ReloadGeneratorService(
 		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName)
 		{
 			NotifyFilter = NotifyFilters.Attributes
-							   | NotifyFilters.CreationTime
-							   | NotifyFilters.DirectoryName
-							   | NotifyFilters.FileName
-							   | NotifyFilters.LastWrite
-							   | NotifyFilters.Security
-							   | NotifyFilters.Size
+			               | NotifyFilters.CreationTime
+			               | NotifyFilters.DirectoryName
+			               | NotifyFilters.FileName
+			               | NotifyFilters.LastWrite
+			               | NotifyFilters.Security
+			               | NotifyFilters.Size
 		};
 
 		watcher.Changed += OnChanged;
@@ -144,5 +145,4 @@ public sealed class ReloadGeneratorService(
 
 		public void Dispose() => _semaphore.Dispose();
 	}
-
 }
