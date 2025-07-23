@@ -30,7 +30,7 @@ sources:
     kind: json
     spec:
       file: https://artifacts.elastic.co/releases/stack.json
-      key: "releases.version"
+      key: "releases[-1].version"
 
   latest-edot-android-version:
     name: Get latest release version for the apm-agent-android
