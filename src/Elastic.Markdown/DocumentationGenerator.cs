@@ -147,25 +147,38 @@ public class DocumentationGenerator
 		_logger.LogInformation($"Generating links.json");
 		var linkReference = await GenerateLinkReference(ctx);
 
-		// Download diagram files in parallel
-		var downloadedCount = await DocumentationSet.Context.DiagramRegistry.CreateDiagramCachedFiles(_logger, DocumentationSet.Context.ReadFileSystem);
-		if (downloadedCount > 0)
-		{
-			_logger.LogInformation("Downloaded {DownloadedCount} diagram files from Kroki", downloadedCount);
-		}
-
-		// Clean up unused diagram files
-		var cleanedCount = DocumentationSet.Context.DiagramRegistry.CleanupUnusedDiagrams(DocumentationSet.OutputDirectory);
-		if (cleanedCount > 0)
-		{
-			_logger.LogInformation("Cleaned up {CleanedCount} unused diagram files", cleanedCount);
-		}
+		await CreateDiagramCachedFiles();
+		CleanupUnusedDiagrams();
 
 		// ReSharper disable once WithExpressionModifiesAllMembers
 		return result with
 		{
 			Redirects = linkReference.Redirects ?? []
 		};
+	}
+
+	/// <summary>
+	/// Downloads diagram files in parallel from Kroki
+	/// </summary>
+	public async Task CreateDiagramCachedFiles()
+	{
+		var downloadedCount = await DocumentationSet.Context.DiagramRegistry.CreateDiagramCachedFiles(_logger, DocumentationSet.Context.ReadFileSystem);
+		if (downloadedCount > 0)
+		{
+			_logger.LogInformation("Downloaded {DownloadedCount} diagram files from Kroki", downloadedCount);
+		}
+	}
+
+	/// <summary>
+	/// Cleans up unused diagram files from the output directory
+	/// </summary>
+	public void CleanupUnusedDiagrams()
+	{
+		var cleanedCount = DocumentationSet.Context.DiagramRegistry.CleanupUnusedDiagrams(DocumentationSet.OutputDirectory);
+		if (cleanedCount > 0)
+		{
+			_logger.LogInformation("Cleaned up {CleanedCount} unused diagram files", cleanedCount);
+		}
 	}
 
 	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)

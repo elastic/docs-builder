@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -153,12 +154,6 @@ public class DocumentationWebHost
 					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
 					RequestPath = "/_static"
 				})
-			.UseStaticFiles(
-				new StaticFileOptions
-				{
-					FileProvider = new PhysicalFileProvider(Context.DocumentationOutputDirectory.FullName),
-					RequestPath = ""
-				})
 			.UseRouting();
 
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
@@ -257,6 +252,16 @@ public class DocumentationWebHost
 			default:
 				if (s == "index.md")
 					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Url);
+
+				// Check for cached SVG files (e.g., generated diagrams) in the output directory
+				if (Path.GetExtension(slug).Equals(".svg", StringComparison.OrdinalIgnoreCase))
+				{
+					var svgPath = Path.Combine(generator.DocumentationSet.OutputDirectory.FullName, slug.TrimStart('/'));
+					if (File.Exists(svgPath))
+					{
+						return Results.File(svgPath, "image/svg+xml");
+					}
+				}
 
 				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
 					return Results.NotFound();

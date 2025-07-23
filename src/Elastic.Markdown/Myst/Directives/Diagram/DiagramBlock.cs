@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Myst.Directives.Diagram;
 
@@ -70,7 +71,12 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		}
 
 		// Register diagram for tracking, cleanup, and batch caching
+		// Use the markdown file's scope directory for proper relative path resolution
 		var outputDirectory = context.Build.DocumentationOutputDirectory.FullName;
+		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		{
+			outputDirectory = currentMarkdown.ScopeDirectory.FullName;
+		}
 		context.DiagramRegistry.RegisterDiagramForCaching(LocalSvgPath, EncodedUrl, outputDirectory);
 	}
 
