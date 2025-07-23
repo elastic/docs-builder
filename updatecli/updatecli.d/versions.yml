@@ -22,7 +22,7 @@ actions:
       automerge: false
       labels:
         - dependencies
-      title: '[Automation] Bump Elastic Docs versions'
+      title: '[Automation] Bump product version numbers'
 
 sources:
   latest-stack-version:
