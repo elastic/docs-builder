@@ -25,6 +25,13 @@ actions:
       title: '[Automation] Bump EDOT versions'
 
 sources:
+  latest-stack-version:
+    name: Get latest Elastic Stack version
+    kind: json
+    spec:
+      file: https://artifacts.elastic.co/releases/stack.json
+      key: "releases.version"
+
   latest-edot-android-version:
     name: Get latest release version for the apm-agent-android
     kind: githubrelease
@@ -48,7 +55,7 @@ sources:
       repository: elastic-agent
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
-      versionFilter:
+      versionfilter:
         kind: regex
         pattern: "v9.(\\d*).(\\d*)$"
 
@@ -101,7 +108,7 @@ sources:
       repository: elastic-otel-node
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
-      versionFilter:
+      versionfilter:
         kind: regex
         pattern: "^v(\\d*).(\\d*).(\\d*)$"
 
@@ -292,198 +299,178 @@ targets:
     name: 'Update config/versions.yml edot-android {{ source "latest-edot-android-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-android-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_android:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-android-version" }}'
+      key: versioning_systems.edot_android.current
 
   update-docs-docset-collector:
     name: 'Update config/versions.yml edot-collector {{ source "latest-edot-collector-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-collector-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_collector:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-collector-version" }}'
+      key: versioning_systems.edot_collector.current
 
   update-docs-docset-dotnet:
     name: 'Update config/versions.yml edot-dotnet {{ source "latest-edot-dotnet-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-dotnet-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_dotnet:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-dotnet-version" }}'
+      key: versioning_systems.edot_dotnet.current
 
   update-docs-docset-ios:
     name: 'Update config/versions.yml edot-ios {{ source "latest-edot-ios-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-ios-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_ios:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-ios-version" }}'
+      key: versioning_systems.edot_ios.current
 
   update-docs-docset-java:
     name: 'Update config/versions.yml edot-java {{ source "latest-edot-java-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-java-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_java:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-java-version" }}'
+      key: versioning_systems.edot_java.current
 
   update-docs-docset-node:
     name: 'Update config/versions.yml edot-node {{ source "latest-edot-node-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-node-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_node:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-node-version" }}'
+      key: versioning_systems.edot_node.current
 
   update-docs-docset-php:
     name: 'Update config/versions.yml edot-php {{ source "latest-edot-php-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-php-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_php:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-php-version" }}'
+      key: versioning_systems.edot_php.current
 
   update-docs-docset-python:
     name: 'Update config/versions.yml edot-python {{ source "latest-edot-python-version" }}'
     scmid: githubConfig
     sourceid: latest-edot-python-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(edot_python:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-edot-python-version" }}'
+      key: versioning_systems.edot_python.current
 
   update-docs-docset-ece:
     name: 'Update config/versions.yml ece {{ source "latest-ece-version" }}'
     scmid: githubConfig
     sourceid: latest-ece-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(ece:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-ece-version" }}'
+      key: versioning_systems.ece.current
 
   update-docs-docset-eck:
     name: 'Update config/versions.yml eck {{ source "latest-eck-version" }}'
     scmid: githubConfig
     sourceid: latest-eck-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(eck:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-eck-version" }}'
+      key: versioning_systems.eck.current
 
   update-docs-docset-ecctl:
     name: 'Update config/versions.yml ecctl {{ source "latest-ecctl-version" }}'
     scmid: githubConfig
     sourceid: latest-ecctl-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(ecctl:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-ecctl-version" }}'
+      key: versioning_systems.ecctl.current
 
   update-docs-docset-curator:
     name: 'Update config/versions.yml curator {{ source "latest-curator-version" }}'
     scmid: githubConfig
     sourceid: latest-curator-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(curator:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-curator-version" }}'
+      key: versioning_systems.curator.current
 
   update-docs-docset-apm-agent-dotnet:
     name: 'Update config/versions.yml apm_agent_dotnet {{ source "latest-apm-agent-dotnet-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-dotnet-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_dotnet:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-dotnet-version" }}'
+      key: versioning_systems.apm_agent_dotnet.current
 
   update-docs-docset-apm-agent-go:
     name: 'Update config/versions.yml apm_agent_go {{ source "latest-apm-agent-go-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-go-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_go:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-go-version" }}'
+      key: versioning_systems.apm_agent_go.current
 
   update-docs-docset-apm-agent-java:
     name: 'Update config/versions.yml apm_agent_java {{ source "latest-apm-agent-java-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-java-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_java:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-java-version" }}'
+      key: versioning_systems.apm_agent_java.current
 
   update-docs-docset-apm-agent-node:
     name: 'Update config/versions.yml apm_agent_node {{ source "latest-apm-agent-node-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-node-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_node:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-node-version" }}'
+      key: versioning_systems.apm_agent_node.current
 
   update-docs-docset-apm-agent-php:
     name: 'Update config/versions.yml apm_agent_php {{ source "latest-apm-agent-php-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-php-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_php:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-php-version" }}'
+      key: versioning_systems.apm_agent_php.current
 
   update-docs-docset-apm-agent-python:
     name: 'Update config/versions.yml apm_agent_python {{ source "latest-apm-agent-python-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-python-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_python:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-python-version" }}'
+      key: versioning_systems.apm_agent_python.current
 
   update-docs-docset-apm-agent-ruby:
     name: 'Update config/versions.yml apm_agent_ruby {{ source "latest-apm-agent-ruby-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-ruby-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_ruby:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-ruby-version" }}'
+      key: versioning_systems.apm_agent_ruby.current
 
   update-docs-docset-apm-agent-rum:
     name: 'Update config/versions.yml apm_agent_rum {{ source "latest-apm-agent-rum-version" }}'
     scmid: githubConfig
     sourceid: latest-apm-agent-rum-version
-    kind: file
+    kind: yaml
     spec:
       file: config/versions.yml
-      matchpattern: '(apm_agent_rum:\s+base:\s+[\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-apm-agent-rum-version" }}'
+      key: versioning_systems.apm_agent_rum.current
