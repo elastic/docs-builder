@@ -26,7 +26,54 @@ can be printed in any kind of ways.
 | `{{version.stack | M+1       | M }}` | {{version.stack | M+1 | M }} |
 | `{{version.stack.base | M.M+1 }}` | {{version.stack.base | M.M+1 }} |
 
-## Available versioning schemes.
+## Mutation Operators in Links and Code Blocks
+
+Mutation operators also work correctly in links and code blocks, making them versatile for various documentation contexts.
+
+### In Links
+
+Mutation operators can be used in both link URLs and link text:
+
+```markdown subs=false
+[Download version {{version.stack | M.M}}](https://download.elastic.co/{{version.stack | M.M}}/elasticsearch.tar.gz)
+[Latest major version](https://elastic.co/guide/en/elasticsearch/reference/{{version.stack | M}}/index.html)
+```
+
+Which renders as:
+
+[Download version {{version.stack | M.M}}](https://download.elastic.co/{{version.stack | M.M}}/elasticsearch.tar.gz)
+[Latest major version](https://elastic.co/guide/en/elasticsearch/reference/{{version.stack | M}}/index.html)
+
+### In Code Blocks
+
+Mutation operators work in enhanced code blocks when `subs=true` is specified:
+
+````markdown subs=false
+```bash subs=true
+curl -X GET "localhost:9200/_cluster/health?v&pretty"
+echo "Elasticsearch {{version.stack | M.M}} is running"
+```
+````
+
+Which renders as:
+
+```bash subs=true
+curl -X GET "localhost:9200/_cluster/health?v&pretty"
+echo "Elasticsearch {{version.stack | M.M}} is running"
+```
+
+### Whitespace Handling
+
+Mutation operators are robust and handle whitespace around the pipe character correctly:
+
+| Syntax | Result | Notes |
+|--------|--------| ----- |
+| `{{version.stack|M.M}}` | {{version.stack|M.M}} | No spaces |
+| `{{version.stack | M.M}}` | {{version.stack | M.M}} | Spaces around pipe |
+| `{{version.stack |M.M}}` | {{version.stack |M.M}} | Space before pipe |
+| `{{version.stack| M.M}}` | {{version.stack| M.M}} | Space after pipe |
+
+## Available versioning schemes
 
 This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml) configuration file
 

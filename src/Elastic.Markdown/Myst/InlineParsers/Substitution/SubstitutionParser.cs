@@ -66,60 +66,9 @@ public class SubstitutionRenderer : HtmlObjectRenderer<SubstitutionLeaf>
 			return;
 		}
 
-		foreach (var mutation in leaf.Mutations)
-		{
-			var (success, update) = mutation switch
-			{
-				SubstitutionMutation.MajorComponent => TryGetVersion(replacement, v => $"{v.Major}"),
-				SubstitutionMutation.MajorX => TryGetVersion(replacement, v => $"{v.Major}.x"),
-				SubstitutionMutation.MajorMinor => TryGetVersion(replacement, v => $"{v.Major}.{v.Minor}"),
-				SubstitutionMutation.IncreaseMajor => TryGetVersion(replacement, v => $"{v.Major + 1}.0.0"),
-				SubstitutionMutation.IncreaseMinor => TryGetVersion(replacement, v => $"{v.Major}.{v.Minor + 1}.0"),
-				SubstitutionMutation.LowerCase => (true, replacement.ToLowerInvariant()),
-				SubstitutionMutation.UpperCase => (true, replacement.ToUpperInvariant()),
-				SubstitutionMutation.Capitalize => (true, Capitalize(replacement)),
-				SubstitutionMutation.KebabCase => (true, ToKebabCase(replacement)),
-				SubstitutionMutation.CamelCase => (true, ToCamelCase(replacement)),
-				SubstitutionMutation.PascalCase => (true, ToPascalCase(replacement)),
-				SubstitutionMutation.SnakeCase => (true, ToSnakeCase(replacement)),
-				SubstitutionMutation.TitleCase => (true, TitleCase(replacement)),
-				SubstitutionMutation.Trim => (true, Trim(replacement)),
-				_ => throw new Exception($"encountered an unknown mutation '{mutation.ToStringFast(true)}'")
-			};
-			if (!success)
-			{
-				_ = renderer.Write(leaf.Content);
-				return;
-			}
-			replacement = update;
-		}
+		// Apply mutations using shared utility
+		replacement = SubstitutionMutationHelper.ApplyMutations(replacement, leaf.Mutations);
 		_ = renderer.Write(replacement);
-	}
-
-	private static string ToCamelCase(string str) => JsonNamingPolicy.CamelCase.ConvertName(str.Replace(" ", string.Empty));
-	private static string ToSnakeCase(string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str).Replace(" ", string.Empty);
-	private static string ToKebabCase(string str) => JsonNamingPolicy.KebabCaseLower.ConvertName(str).Replace(" ", string.Empty);
-	private static string ToPascalCase(string str) => TitleCase(str).Replace(" ", string.Empty);
-
-	private static string TitleCase(string str) => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(str);
-
-	private static string Trim(string str) =>
-		str.AsSpan().Trim(['!', ' ', '\t', '\r', '\n', '.', ',', ')', '(', ':', ';', '<', '>', '[', ']']).ToString();
-
-	private static string Capitalize(string input) =>
-		input switch
-		{
-			null => string.Empty,
-			"" => string.Empty,
-			_ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
-		};
-
-	private (bool, string) TryGetVersion(string version, Func<SemVersion, string> mutate)
-	{
-		if (!SemVersion.TryParse(version, out var v) && !SemVersion.TryParse(version + ".0", out v))
-			return (false, string.Empty);
-
-		return (true, mutate(v));
 	}
 }
 
@@ -177,12 +126,12 @@ public class SubstitutionParser : InlineParser
 		startPosition -= openSticks;
 		startPosition = Math.Max(startPosition, 0);
 
-		var key = content.ToString().Trim(['{', '}']).Trim().ToLowerInvariant();
+		var rawKey = content.ToString().Trim(['{', '}']).Trim().ToLowerInvariant();
 		var found = false;
 		var replacement = string.Empty;
-		var components = key.Split('|');
-		if (components.Length > 1)
-			key = components[0].Trim(['{', '}']).Trim().ToLowerInvariant();
+
+		// Use shared mutation parsing logic
+		var (key, mutationStrings) = SubstitutionMutationHelper.ParseKeyWithMutations(rawKey);
 
 		if (context.Substitutions.TryGetValue(key, out var value))
 		{
@@ -215,19 +164,21 @@ public class SubstitutionParser : InlineParser
 		else
 		{
 			List<SubstitutionMutation>? mutations = null;
-			if (components.Length >= 10)
+			if (mutationStrings.Length >= 10)
 				processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} defines too many mutations, none will be applied");
-			else if (components.Length > 1)
+			else if (mutationStrings.Length > 0)
 			{
-				foreach (var c in components[1..])
+				foreach (var mutationStr in mutationStrings)
 				{
-					if (SubstitutionMutationExtensions.TryParse(c.Trim(), out var mutation, true, true))
+					// Ensure mutation string is properly trimmed and normalized
+					var trimmedMutation = mutationStr.Trim();
+					if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
 					{
 						mutations ??= [];
 						mutations.Add(mutation);
 					}
 					else
-						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{c}' on {{{key}}} is undefined");
+						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{trimmedMutation}' on {{{key}}} is undefined");
 				}
 			}
 
