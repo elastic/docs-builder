@@ -22,7 +22,7 @@ actions:
       automerge: false
       labels:
         - dependencies
-      title: '[Automation] Bump EDOT versions'
+      title: '[Automation] Bump Elastic Docs versions'
 
 sources:
   latest-stack-version:
