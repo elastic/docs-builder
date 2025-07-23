@@ -177,14 +177,12 @@ public class SubstitutionParser : InlineParser
 		startPosition -= openSticks;
 		startPosition = Math.Max(startPosition, 0);
 
-		var key = content.ToString().Trim(['{', '}']).Trim().ToLowerInvariant();
+		var rawKey = content.ToString().Trim(['{', '}']).Trim().ToLowerInvariant();
 		var found = false;
 		var replacement = string.Empty;
 
-		// Improved handling of pipe-separated components with better whitespace handling
-		var components = key.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-		if (components.Length > 1)
-			key = components[0].Trim();
+		// Use shared mutation parsing logic
+		var (key, mutationStrings) = SubstitutionMutationHelper.ParseKeyWithMutations(rawKey);
 
 		if (context.Substitutions.TryGetValue(key, out var value))
 		{
@@ -217,21 +215,21 @@ public class SubstitutionParser : InlineParser
 		else
 		{
 			List<SubstitutionMutation>? mutations = null;
-			if (components.Length >= 10)
+			if (mutationStrings.Length >= 10)
 				processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} defines too many mutations, none will be applied");
-			else if (components.Length > 1)
+			else if (mutationStrings.Length > 0)
 			{
-				foreach (var c in components[1..])
+				foreach (var mutationStr in mutationStrings)
 				{
 					// Ensure mutation string is properly trimmed and normalized
-					var mutationStr = c.Trim();
-					if (SubstitutionMutationExtensions.TryParse(mutationStr, out var mutation, true, true))
+					var trimmedMutation = mutationStr.Trim();
+					if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
 					{
 						mutations ??= [];
 						mutations.Add(mutation);
 					}
 					else
-						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{mutationStr}' on {{{key}}} is undefined");
+						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{trimmedMutation}' on {{{key}}} is undefined");
 				}
 			}
 
