@@ -66,60 +66,10 @@ public class SubstitutionRenderer : HtmlObjectRenderer<SubstitutionLeaf>
 			return;
 		}
 
-		foreach (var mutation in leaf.Mutations)
-		{
-			var (success, update) = mutation switch
-			{
-				SubstitutionMutation.MajorComponent => TryGetVersion(replacement, v => $"{v.Major}"),
-				SubstitutionMutation.MajorX => TryGetVersion(replacement, v => $"{v.Major}.x"),
-				SubstitutionMutation.MajorMinor => TryGetVersion(replacement, v => $"{v.Major}.{v.Minor}"),
-				SubstitutionMutation.IncreaseMajor => TryGetVersion(replacement, v => $"{v.Major + 1}.0.0"),
-				SubstitutionMutation.IncreaseMinor => TryGetVersion(replacement, v => $"{v.Major}.{v.Minor + 1}.0"),
-				SubstitutionMutation.LowerCase => (true, replacement.ToLowerInvariant()),
-				SubstitutionMutation.UpperCase => (true, replacement.ToUpperInvariant()),
-				SubstitutionMutation.Capitalize => (true, Capitalize(replacement)),
-				SubstitutionMutation.KebabCase => (true, ToKebabCase(replacement)),
-				SubstitutionMutation.CamelCase => (true, ToCamelCase(replacement)),
-				SubstitutionMutation.PascalCase => (true, ToPascalCase(replacement)),
-				SubstitutionMutation.SnakeCase => (true, ToSnakeCase(replacement)),
-				SubstitutionMutation.TitleCase => (true, TitleCase(replacement)),
-				SubstitutionMutation.Trim => (true, Trim(replacement)),
-				_ => throw new Exception($"encountered an unknown mutation '{mutation.ToStringFast(true)}'")
-			};
-			if (!success)
-			{
-				_ = renderer.Write(leaf.Content);
-				return;
-			}
-			replacement = update;
-		}
+		// Apply mutations using shared utility
+		var mutationStrings = leaf.Mutations.Select(m => m.ToStringFast(true)).ToArray();
+		replacement = SubstitutionMutationHelper.ApplyMutations(replacement, mutationStrings);
 		_ = renderer.Write(replacement);
-	}
-
-	private static string ToCamelCase(string str) => JsonNamingPolicy.CamelCase.ConvertName(str.Replace(" ", string.Empty));
-	private static string ToSnakeCase(string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str).Replace(" ", string.Empty);
-	private static string ToKebabCase(string str) => JsonNamingPolicy.KebabCaseLower.ConvertName(str).Replace(" ", string.Empty);
-	private static string ToPascalCase(string str) => TitleCase(str).Replace(" ", string.Empty);
-
-	private static string TitleCase(string str) => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(str);
-
-	private static string Trim(string str) =>
-		str.AsSpan().Trim(['!', ' ', '\t', '\r', '\n', '.', ',', ')', '(', ':', ';', '<', '>', '[', ']']).ToString();
-
-	private static string Capitalize(string input) =>
-		input switch
-		{
-			null => string.Empty,
-			"" => string.Empty,
-			_ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
-		};
-
-	private (bool, string) TryGetVersion(string version, Func<SemVersion, string> mutate)
-	{
-		if (!SemVersion.TryParse(version, out var v) && !SemVersion.TryParse(version + ".0", out v))
-			return (false, string.Empty);
-
-		return (true, mutate(v));
 	}
 }
 
