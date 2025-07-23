@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 
 namespace Elastic.Markdown.Helpers;
 
@@ -83,7 +85,7 @@ public static class Interpolation
 				// Apply mutations if present
 				if (components.Length > 1)
 				{
-					value = ApplyMutations(value, components[1..]);
+					value = ApplyMutationsUsingExistingSystem(value, components[1..]);
 				}
 
 				replacement ??= span.ToString();
@@ -95,62 +97,68 @@ public static class Interpolation
 		return replaced;
 	}
 
-	private static string ApplyMutations(string value, string[] mutations)
+	private static string ApplyMutationsUsingExistingSystem(string value, string[] mutations)
 	{
 		var result = value;
-		foreach (var mutation in mutations)
+		foreach (var mutationStr in mutations)
 		{
-			var mutationStr = mutation.Trim();
-			result = mutationStr switch
+			var trimmedMutation = mutationStr.Trim();
+			if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
 			{
-				"M" => TryGetVersionMajor(result),
-				"M.M" => TryGetVersionMajorMinor(result),
-				"M.x" => TryGetVersionMajorX(result),
-				"M+1" => TryGetVersionIncreaseMajor(result),
-				"M.M+1" => TryGetVersionIncreaseMinor(result),
-				"lc" => result.ToLowerInvariant(),
-				"uc" => result.ToUpperInvariant(),
-				"tc" => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(result.ToLowerInvariant()),
-				"c" => char.ToUpperInvariant(result[0]) + result[1..].ToLowerInvariant(),
-				"trim" => result.Trim(),
-				_ => result // Unknown mutation, return unchanged
-			};
+				// Use the same logic as SubstitutionRenderer.Write
+				var (success, update) = mutation switch
+				{
+					SubstitutionMutation.MajorComponent => TryGetVersion(result, v => $"{v.Major}"),
+					SubstitutionMutation.MajorX => TryGetVersion(result, v => $"{v.Major}.x"),
+					SubstitutionMutation.MajorMinor => TryGetVersion(result, v => $"{v.Major}.{v.Minor}"),
+					SubstitutionMutation.IncreaseMajor => TryGetVersion(result, v => $"{v.Major + 1}.0.0"),
+					SubstitutionMutation.IncreaseMinor => TryGetVersion(result, v => $"{v.Major}.{v.Minor + 1}.0"),
+					SubstitutionMutation.LowerCase => (true, result.ToLowerInvariant()),
+					SubstitutionMutation.UpperCase => (true, result.ToUpperInvariant()),
+					SubstitutionMutation.Capitalize => (true, Capitalize(result)),
+					SubstitutionMutation.KebabCase => (true, ToKebabCase(result)),
+					SubstitutionMutation.CamelCase => (true, ToCamelCase(result)),
+					SubstitutionMutation.PascalCase => (true, ToPascalCase(result)),
+					SubstitutionMutation.SnakeCase => (true, ToSnakeCase(result)),
+					SubstitutionMutation.TitleCase => (true, TitleCase(result)),
+					SubstitutionMutation.Trim => (true, Trim(result)),
+					_ => (false, result)
+				};
+				if (success)
+				{
+					result = update;
+				}
+			}
 		}
 		return result;
 	}
 
-	private static string TryGetVersionMajor(string version)
+	private static (bool Success, string Result) TryGetVersion(string version, Func<SemVersion, string> transform)
 	{
-		if (Version.TryParse(version, out var v))
-			return v.Major.ToString();
-		return version;
+		if (!SemVersion.TryParse(version, out var v) && !SemVersion.TryParse(version + ".0", out v))
+			return (false, version);
+		return (true, transform(v));
 	}
 
-	private static string TryGetVersionMajorMinor(string version)
-	{
-		if (Version.TryParse(version, out var v))
-			return $"{v.Major}.{v.Minor}";
-		return version;
-	}
+	// These methods match the exact implementation in SubstitutionRenderer
+	private static string Capitalize(string input) =>
+		input switch
+		{
+			null => string.Empty,
+			"" => string.Empty,
+			_ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
+		};
 
-	private static string TryGetVersionMajorX(string version)
-	{
-		if (Version.TryParse(version, out var v))
-			return $"{v.Major}.x";
-		return version;
-	}
+	private static string ToKebabCase(string str) => JsonNamingPolicy.KebabCaseLower.ConvertName(str).Replace(" ", string.Empty);
 
-	private static string TryGetVersionIncreaseMajor(string version)
-	{
-		if (Version.TryParse(version, out var v))
-			return $"{v.Major + 1}.0.0";
-		return version;
-	}
+	private static string ToCamelCase(string str) => JsonNamingPolicy.CamelCase.ConvertName(str).Replace(" ", string.Empty);
 
-	private static string TryGetVersionIncreaseMinor(string version)
-	{
-		if (Version.TryParse(version, out var v))
-			return $"{v.Major}.{v.Minor + 1}.0";
-		return version;
-	}
+	private static string ToPascalCase(string str) => TitleCase(str).Replace(" ", string.Empty);
+
+	private static string ToSnakeCase(string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str).Replace(" ", string.Empty);
+
+	private static string TitleCase(string str) => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(str);
+
+	private static string Trim(string str) =>
+		str.AsSpan().Trim(['!', ' ', '\t', '\r', '\n', '.', ',', ')', '(', ':', ';', '<', '>', '[', ']']).ToString();
 }
