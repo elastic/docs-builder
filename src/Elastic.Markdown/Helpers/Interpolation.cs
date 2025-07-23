@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
@@ -67,13 +68,23 @@ public static class Interpolation
 				continue;
 
 			var spanMatch = span.Slice(match.Index, match.Length);
-			var key = spanMatch.Trim(['{', '}']);
+			var fullKey = spanMatch.Trim(['{', '}']);
+
+			// Handle mutation operators (same logic as SubstitutionParser)
+			var components = fullKey.ToString().Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+			var key = components.Length > 1 ? components[0].Trim() : fullKey.ToString();
 			foreach (var lookup in lookups)
 			{
 				if (!lookup.TryGetValue(key, out var value))
 					continue;
 
 				collector?.CollectUsedSubstitutionKey(key);
+
+				// Apply mutations if present
+				if (components.Length > 1)
+				{
+					value = ApplyMutations(value, components[1..]);
+				}
 
 				replacement ??= span.ToString();
 				replacement = replacement.Replace(spanMatch.ToString(), value);
@@ -82,5 +93,64 @@ public static class Interpolation
 		}
 
 		return replaced;
+	}
+
+	private static string ApplyMutations(string value, string[] mutations)
+	{
+		var result = value;
+		foreach (var mutation in mutations)
+		{
+			var mutationStr = mutation.Trim();
+			result = mutationStr switch
+			{
+				"M" => TryGetVersionMajor(result),
+				"M.M" => TryGetVersionMajorMinor(result),
+				"M.x" => TryGetVersionMajorX(result),
+				"M+1" => TryGetVersionIncreaseMajor(result),
+				"M.M+1" => TryGetVersionIncreaseMinor(result),
+				"lc" => result.ToLowerInvariant(),
+				"uc" => result.ToUpperInvariant(),
+				"tc" => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(result.ToLowerInvariant()),
+				"c" => char.ToUpperInvariant(result[0]) + result[1..].ToLowerInvariant(),
+				"trim" => result.Trim(),
+				_ => result // Unknown mutation, return unchanged
+			};
+		}
+		return result;
+	}
+
+	private static string TryGetVersionMajor(string version)
+	{
+		if (Version.TryParse(version, out var v))
+			return v.Major.ToString();
+		return version;
+	}
+
+	private static string TryGetVersionMajorMinor(string version)
+	{
+		if (Version.TryParse(version, out var v))
+			return $"{v.Major}.{v.Minor}";
+		return version;
+	}
+
+	private static string TryGetVersionMajorX(string version)
+	{
+		if (Version.TryParse(version, out var v))
+			return $"{v.Major}.x";
+		return version;
+	}
+
+	private static string TryGetVersionIncreaseMajor(string version)
+	{
+		if (Version.TryParse(version, out var v))
+			return $"{v.Major + 1}.0.0";
+		return version;
+	}
+
+	private static string TryGetVersionIncreaseMinor(string version)
+	{
+		if (Version.TryParse(version, out var v))
+			return $"{v.Major}.{v.Minor + 1}.0";
+		return version;
 	}
 }

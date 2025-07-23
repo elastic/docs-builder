@@ -180,9 +180,11 @@ public class SubstitutionParser : InlineParser
 		var key = content.ToString().Trim(['{', '}']).Trim().ToLowerInvariant();
 		var found = false;
 		var replacement = string.Empty;
-		var components = key.Split('|');
+
+		// Improved handling of pipe-separated components with better whitespace handling
+		var components = key.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 		if (components.Length > 1)
-			key = components[0].Trim(['{', '}']).Trim().ToLowerInvariant();
+			key = components[0].Trim();
 
 		if (context.Substitutions.TryGetValue(key, out var value))
 		{
@@ -221,13 +223,15 @@ public class SubstitutionParser : InlineParser
 			{
 				foreach (var c in components[1..])
 				{
-					if (SubstitutionMutationExtensions.TryParse(c.Trim(), out var mutation, true, true))
+					// Ensure mutation string is properly trimmed and normalized
+					var mutationStr = c.Trim();
+					if (SubstitutionMutationExtensions.TryParse(mutationStr, out var mutation, true, true))
 					{
 						mutations ??= [];
 						mutations.Add(mutation);
 					}
 					else
-						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{c}' on {{{key}}} is undefined");
+						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{mutationStr}' on {{{key}}} is undefined");
 				}
 			}
 
