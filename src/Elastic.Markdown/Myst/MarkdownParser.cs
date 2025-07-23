@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Documentation.Configuration;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -23,7 +24,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
+public partial class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 {
 	private BuildContext Build { get; } = build;
 	public IParserResolvers Resolvers { get; } = resolvers;
@@ -69,7 +70,11 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			CrossLinkResolver = resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
-		var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline, context);
+
+		// Preprocess substitutions in link patterns before Markdig parsing
+		var preprocessedMarkdown = PreprocessLinkSubstitutions(markdown, context);
+
+		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 		return markdownDocument;
 	}
 
@@ -105,7 +110,10 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		else
 			inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
 
-		var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
+		// Preprocess substitutions in link patterns before Markdig parsing
+		var preprocessedMarkdown = PreprocessLinkSubstitutions(inputMarkdown, (ParserContext)context);
+
+		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 		return markdownDocument;
 	}
 
@@ -166,4 +174,30 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			return PipelineCached;
 		}
 	}
+
+	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System.Text.RegularExpressions.RegexOptions.Multiline)]
+	private static partial System.Text.RegularExpressions.Regex LinkPattern();
+
+	/// <summary>
+	/// Preprocesses substitutions specifically in link patterns [text](url) before Markdig parsing
+	/// </summary>
+	private static string PreprocessLinkSubstitutions(string markdown, ParserContext context) =>
+		LinkPattern().Replace(markdown, match =>
+		{
+			var linkText = match.Groups[1].Value;
+			var linkUrl = match.Groups[2].Value;
+
+			// Only preprocess external links to preserve internal link validation behavior
+			// Check if URL contains substitutions and looks like it might resolve to an external URL
+			if (linkUrl.Contains("{{") && (linkUrl.Contains("http") || linkText.Contains("{{")))
+			{
+				// Apply substitutions to both link text and URL
+				var processedText = linkText.ReplaceSubstitutions(context);
+				var processedUrl = linkUrl.ReplaceSubstitutions(context);
+				return $"[{processedText}]({processedUrl})";
+			}
+
+			// Return original match for internal links
+			return match.Value;
+		});
 }
