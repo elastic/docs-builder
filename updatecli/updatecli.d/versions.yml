@@ -295,6 +295,15 @@ sources:
         kind: latest
 
 targets:
+  update-docs-docset-stack:
+    name: 'Update config/versions.yml stack {{ source "latest-stack-version" }}'
+    scmid: githubConfig
+    sourceid: latest-stack-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.stack.current
+
   update-docs-docset-android:
     name: 'Update config/versions.yml edot-android {{ source "latest-edot-android-version" }}'
     scmid: githubConfig
