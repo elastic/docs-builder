@@ -15,7 +15,7 @@ scms:
       force: false
 
 actions:
-  elastic-agent:
+  docs-builder:
     kind: github/pullrequest
     scmid: githubConfig
     spec:
