@@ -138,19 +138,6 @@ sources:
       versionfilter:
         kind: latest
 
-  latest-ece-version:
-    name: Get latest release version for Elastic Cloud Enterprise
-    kind: githubrelease
-    transformers:
-      - trimprefix: v
-    spec:
-      owner: elastic
-      repository: cloud-enterprise
-      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
-      versionfilter:
-        kind: latest
-
   latest-eck-version:
     name: Get latest release version for Elastic Cloud on Kubernetes
     kind: githubrelease
@@ -375,15 +362,6 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.edot_python.current
-
-  update-docs-docset-ece:
-    name: 'Update config/versions.yml ece {{ source "latest-ece-version" }}'
-    scmid: githubConfig
-    sourceid: latest-ece-version
-    kind: yaml
-    spec:
-      file: config/versions.yml
-      key: versioning_systems.ece.current
 
   update-docs-docset-eck:
     name: 'Update config/versions.yml eck {{ source "latest-eck-version" }}'
