@@ -33,6 +33,22 @@ public static class SubstitutionMutationHelper
 	/// Applies mutations to a value using the existing SubstitutionMutation system
 	/// </summary>
 	/// <param name="value">The original value to transform</param>
+	/// <param name="mutations">Collection of SubstitutionMutation enums to apply</param>
+	/// <returns>The transformed value</returns>
+	public static string ApplyMutations(string value, IReadOnlyCollection<SubstitutionMutation> mutations)
+	{
+		var result = value;
+		foreach (var mutation in mutations)
+		{
+			result = ApplySingleMutation(result, mutation);
+		}
+		return result;
+	}
+
+	/// <summary>
+	/// Applies mutations to a value using the existing SubstitutionMutation system
+	/// </summary>
+	/// <param name="value">The original value to transform</param>
 	/// <param name="mutations">Array of mutation strings to apply</param>
 	/// <returns>The transformed value</returns>
 	public static string ApplyMutations(string value, string[] mutations)
@@ -43,32 +59,39 @@ public static class SubstitutionMutationHelper
 			var trimmedMutation = mutationStr.Trim();
 			if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
 			{
-				// Use the same logic as SubstitutionRenderer.Write
-				var (success, update) = mutation switch
-				{
-					SubstitutionMutation.MajorComponent => TryGetVersion(result, v => $"{v.Major}"),
-					SubstitutionMutation.MajorX => TryGetVersion(result, v => $"{v.Major}.x"),
-					SubstitutionMutation.MajorMinor => TryGetVersion(result, v => $"{v.Major}.{v.Minor}"),
-					SubstitutionMutation.IncreaseMajor => TryGetVersion(result, v => $"{v.Major + 1}.0.0"),
-					SubstitutionMutation.IncreaseMinor => TryGetVersion(result, v => $"{v.Major}.{v.Minor + 1}.0"),
-					SubstitutionMutation.LowerCase => (true, result.ToLowerInvariant()),
-					SubstitutionMutation.UpperCase => (true, result.ToUpperInvariant()),
-					SubstitutionMutation.Capitalize => (true, Capitalize(result)),
-					SubstitutionMutation.KebabCase => (true, ToKebabCase(result)),
-					SubstitutionMutation.CamelCase => (true, ToCamelCase(result)),
-					SubstitutionMutation.PascalCase => (true, ToPascalCase(result)),
-					SubstitutionMutation.SnakeCase => (true, ToSnakeCase(result)),
-					SubstitutionMutation.TitleCase => (true, TitleCase(result)),
-					SubstitutionMutation.Trim => (true, Trim(result)),
-					_ => (false, result)
-				};
-				if (success)
-				{
-					result = update;
-				}
+				result = ApplySingleMutation(result, mutation);
 			}
 		}
 		return result;
+	}
+
+	/// <summary>
+	/// Applies a single mutation to a value
+	/// </summary>
+	/// <param name="value">The value to transform</param>
+	/// <param name="mutation">The mutation to apply</param>
+	/// <returns>The transformed value</returns>
+	private static string ApplySingleMutation(string value, SubstitutionMutation mutation)
+	{
+		var (success, result) = mutation switch
+		{
+			SubstitutionMutation.MajorComponent => TryGetVersion(value, v => $"{v.Major}"),
+			SubstitutionMutation.MajorX => TryGetVersion(value, v => $"{v.Major}.x"),
+			SubstitutionMutation.MajorMinor => TryGetVersion(value, v => $"{v.Major}.{v.Minor}"),
+			SubstitutionMutation.IncreaseMajor => TryGetVersion(value, v => $"{v.Major + 1}.0.0"),
+			SubstitutionMutation.IncreaseMinor => TryGetVersion(value, v => $"{v.Major}.{v.Minor + 1}.0"),
+			SubstitutionMutation.LowerCase => (true, value.ToLowerInvariant()),
+			SubstitutionMutation.UpperCase => (true, value.ToUpperInvariant()),
+			SubstitutionMutation.Capitalize => (true, Capitalize(value)),
+			SubstitutionMutation.KebabCase => (true, ToKebabCase(value)),
+			SubstitutionMutation.CamelCase => (true, ToCamelCase(value)),
+			SubstitutionMutation.PascalCase => (true, ToPascalCase(value)),
+			SubstitutionMutation.SnakeCase => (true, ToSnakeCase(value)),
+			SubstitutionMutation.TitleCase => (true, TitleCase(value)),
+			SubstitutionMutation.Trim => (true, Trim(value)),
+			_ => (false, value)
+		};
+		return success ? result : value;
 	}
 
 	private static (bool Success, string Result) TryGetVersion(string version, Func<SemVersion, string> transform)

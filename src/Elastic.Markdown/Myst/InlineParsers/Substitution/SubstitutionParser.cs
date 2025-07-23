@@ -67,8 +67,7 @@ public class SubstitutionRenderer : HtmlObjectRenderer<SubstitutionLeaf>
 		}
 
 		// Apply mutations using shared utility
-		var mutationStrings = leaf.Mutations.Select(m => m.ToStringFast(true)).ToArray();
-		replacement = SubstitutionMutationHelper.ApplyMutations(replacement, mutationStrings);
+		replacement = SubstitutionMutationHelper.ApplyMutations(replacement, leaf.Mutations);
 		_ = renderer.Write(replacement);
 	}
 }
