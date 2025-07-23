@@ -34,7 +34,7 @@ Mutation operators also work correctly in links and code blocks, making them ver
 
 Mutation operators can be used in both link URLs and link text:
 
-```markdown
+```markdown subs=false
 [Download version {{version.stack | M.M}}](https://download.elastic.co/{{version.stack | M.M}}/elasticsearch.tar.gz)
 [Latest major version](https://elastic.co/guide/en/elasticsearch/reference/{{version.stack | M}}/index.html)
 ```
@@ -48,7 +48,7 @@ Which renders as:
 
 Mutation operators work in enhanced code blocks when `subs=true` is specified:
 
-````markdown
+````markdown subs=false
 ```bash subs=true
 curl -X GET "localhost:9200/_cluster/health?v&pretty"
 echo "Elasticsearch {{version.stack | M.M}} is running"
