@@ -114,11 +114,11 @@ public static class SubstitutionMutationHelper
 
 	private static string ToCamelCase(string str) => JsonNamingPolicy.CamelCase.ConvertName(str).Replace(" ", string.Empty);
 
-	private static string ToPascalCase(string str) => JsonNamingPolicy.CamelCase.ConvertName(str).Replace(" ", string.Empty);
+	private static string ToPascalCase(string str) => TitleCase(str).Replace(" ", string.Empty);
 
 	private static string ToSnakeCase(string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str).Replace(" ", string.Empty);
 
 	private static string TitleCase(string str) => str.Split(' ').Select(word => Capitalize(word)).Aggregate((a, b) => $"{a} {b}");
 
-	private static string Trim(string str) => str.Trim();
+	private static string Trim(string str) => str.TrimEnd('!', '.', ',', ';', ':', '?', ' ', '\t', '\n', '\r');
 }
