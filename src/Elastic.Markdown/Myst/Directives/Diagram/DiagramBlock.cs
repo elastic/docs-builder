@@ -72,8 +72,11 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		// only register SVG if we can look up the Markdown
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			var path = context.Build.ReadFileSystem.FileInfo.New(Path.Combine(currentMarkdown.ScopeDirectory.FullName, localPath));
-			context.DiagramRegistry.RegisterDiagramForCaching(path, EncodedUrl);
+			var fs = context.Build.ReadFileSystem;
+			var scopePath = fs.FileInfo.New(Path.Combine(currentMarkdown.ScopeDirectory.FullName, localPath));
+			var relativeScopePath = fs.Path.GetRelativePath(context.Build.DocumentationSourceDirectory.FullName, scopePath.FullName);
+			var outputPath = fs.FileInfo.New(Path.Combine(context.Build.DocumentationOutputDirectory.FullName, relativeScopePath));
+			context.DiagramRegistry.RegisterDiagramForCaching(outputPath, EncodedUrl);
 		}
 		else
 			this.EmitError($"Can not locate markdown source for {context.MarkdownSourcePath} to register diagram for caching.");

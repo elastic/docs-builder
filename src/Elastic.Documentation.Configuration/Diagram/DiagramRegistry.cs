@@ -83,6 +83,7 @@ public class DiagramRegistry(ILoggerFactory logFactory, BuildContext context) : 
 				if (directory != null && !_writeFileSystem.Directory.Exists(directory))
 					_ = _writeFileSystem.Directory.CreateDirectory(directory);
 
+				_logger.LogWarning("Creating local diagram:  {LocalPath}", localPath);
 				// Download SVG content
 				var svgContent = await _httpClient.GetStringAsync(diagramInfo.EncodedUrl, ct);
 
