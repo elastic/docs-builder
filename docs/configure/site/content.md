@@ -17,17 +17,54 @@ This section defines different build environments for the documentation site.
 
 Each environment specifies configuration details such as the site URI, content source, path prefix, Google Tag Manager settings, and feature flags.
 
+Example:
+
+```yml
+environments:
+  prod:
+    uri: https://www.elastic.co
+    path_prefix: docs
+    content_source: current
+    allow_indexing: true
+    google_tag_manager:
+      enabled: true
+      id: GTM-KNJMG2M
+```
+
 ## `shared_configuration`
 
-This section defines YAML anchors for common settings shared among multiple repositories.
+This section defines YAML anchors for common settings shared among multiple repositories and deployment environments.
+
+The following example sets a unique `stack` version for each of the three defined deployment environments:
+
+```yml
+  stack: &stack
+    current:  9.0
+    next: 9.1
+    edge: main
+```
 
 ## `narrative`
 
 Configures the main `docs-content` repository.
 
+Example:
+
+```yml
+narrative:
+  checkout_strategy: full
+```
+
 ## `references`
 
 Configures all other repositories whose docs content should be included or referenced in the build. Each can have custom settings for branch, checkout method, etc.
+
+Example:
+
+```yml
+references:
+  apm-server:
+```
 
 ### Branching strategy
 
