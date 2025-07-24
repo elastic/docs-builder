@@ -30,48 +30,20 @@ Tagged
 :   Allows you to 'tag' a single git reference (typically a branch) as `current` which will be used to deploy to production.
     Allowing you to control the timing of when new documentation should go live.
 
+### Add a new content set
 
-### Continuous deployment
+To get started:
 
-This is the default. To get started, follow our [guide](/migration/guide/index.md) to set up the new docs folder structure and CI configuration.
+1. Follow our [guide](/migration/guide/index.md) to set up the new docs folder structure and CI configuration.
+1. Configure the repository source in `assembler.yml`. See [](./site/content.md) for details.
 
-Once setup ensure the repository is added to our [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml)  under `references`. 
+  :::{note}
+  The tagged branching strategy requires first following our [migration guide](/migration/guide/index.md) and configuring the documentation CI integration.
+  Our CI integration checks will block until `current` is successfully configured.
+  :::
 
-For example say you want to onboard `elastic/my-repository` into the production build:
-
-```yaml
-references:
-  my-repository:
-```
-
-Is equivalent to specifying.
-
-```yaml
-references:
-  my-repository:
-    next: main
-    current: main
-```
-
-% TODO we need navigation.yml docs
-Once the repository is added, its navigation still needs to be injected into to global site navigation.
-
-### Tagged
-
-If you want to have more control over the timing of when your docs go live to production. Configure the repository
-in our [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) to have a fixed git reference (typically a branch) deploy the `current` content source to production.
-
-```yaml
-references:
-  my-other-repository:
-    next: main
-    current: 9.0
-```
-
-:::{note}
-In order for `9.0` to be onboarded it needs to first follow our [migration guide](/migration/guide/index.md) and have our documentation CI integration setup.
-Our CI integration checks will block until `current` is successfully configured
-:::
+1. Inject the content set into the global navigation. See [](./site/navigation.md) for details.
+1. Optionally set up legacy URL mappings. See [](./site/legacy-url-mappings.md) for details.
 
 #### CI configuration
 

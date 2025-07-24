@@ -64,8 +64,9 @@ toc:
         children:
           - file: index.md
           - file: content.md
-          - file: landing-page.md
-          - file: redirects.md
+          - file: navigation.md
+          - file: versions.md
+          - file: legacy-url-mappings.md
       - folder: content-set
         children:
           - file: index.md

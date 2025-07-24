@@ -58,7 +58,7 @@ references:
 In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 :::
 
-Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation.
+Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation. Refer to [navigation.yml](../configure/site/navigation.md) for more information.
 
 For example, to add the `elastic/yadda-docs` repository under **Reference**:
 
@@ -76,6 +76,21 @@ For example, to add the `elastic/yadda-docs` repository under **Reference**:
 ```
 
 ::::
+
+::::{step} (Optional) Add a new version scheme
+
+If you're adding a product with a new versioning scheme, edit the [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml) file to add the versioning scheme to the build. Refer to [navigation.yml](../configure/site/versions.md) for more information.
+
+For example, to add version 13.5 of yadda-docs:
+
+```yml
+  yadda-docs:
+    base: 13.0
+    current: 13.5
+```
+
+::::
+
 :::::
 
 ## Add .artifacts to .gitignore
