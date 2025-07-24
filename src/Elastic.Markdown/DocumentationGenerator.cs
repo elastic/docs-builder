@@ -161,9 +161,7 @@ public class DocumentationGenerator
 	{
 		var downloadedCount = await DocumentationSet.DiagramRegistry.CreateDiagramCachedFiles(ctx);
 		if (downloadedCount > 0)
-		{
 			_logger.LogInformation("Downloaded {DownloadedCount} diagram files from Kroki", downloadedCount);
-		}
 	}
 
 	/// <summary>

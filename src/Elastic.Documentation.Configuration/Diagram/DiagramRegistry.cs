@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Microsoft.Extensions.Logging;
 
@@ -69,6 +70,13 @@ public class DiagramRegistry(ILoggerFactory logFactory, BuildContext context) : 
 				// Skip if the file already exists
 				if (_readFileSystem.File.Exists(diagramInfo.OutputFile.FullName))
 					return;
+
+				// If we are running on CI, and we are creating cached files we should fail the build and alert the user to create them
+				if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
+				{
+					context.Collector.EmitGlobalError($"Discovered new diagram SVG '{localPath}' please run `docs-builder --force` to ensure a cached version is generated");
+					return;
+				}
 
 				// Create the directory if needed
 				var directory = _writeFileSystem.Path.GetDirectoryName(diagramInfo.OutputFile.FullName);
