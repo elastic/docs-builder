@@ -1,0 +1,16 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Diagram.DiagramViewModel>
+@{
+	var diagram = Model.DiagramBlock;
+	if (diagram?.EncodedUrl != null)
+	{
+		<div class="diagram" data-diagram-type="@diagram.DiagramType">
+			<img src="@diagram.EncodedUrl" alt="@diagram.DiagramType diagram" loading="lazy" />
+		</div>
+	}
+	else
+	{
+		<div class="diagram-error">
+			<p>Failed to render diagram</p>
+		</div>
+	}
+}

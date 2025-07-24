@@ -6,9 +6,9 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
-using Elastic.Markdown.Myst.Directives.Tabs;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
@@ -81,22 +81,10 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 	{
 		renderer.EnsureBlockSpacing();
 		renderer.WriteLine();
-
-		var headingText = ExtractHeadingText(obj);
-
 		renderer.Write(new string('#', obj.Level));
 		renderer.Write(" ");
-		renderer.WriteLine(headingText);
-	}
-
-	private static string ExtractHeadingText(HeadingBlock heading)
-	{
-		if (heading.Inline == null)
-			return string.Empty;
-		return heading.Inline.Descendants()
-			.OfType<LiteralInline>()
-			.Select(l => l.Content.ToString())
-			.Aggregate(string.Empty, (current, text) => current + text);
+		if (obj.Inline is not null)
+			renderer.WriteChildren(obj.Inline);
 	}
 }
 
@@ -373,6 +361,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
+			case DiagramBlock diagramBlock:
+				WriteDiagramBlock(renderer, diagramBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -384,14 +375,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		switch (obj)
 		{
-			case DropdownBlock dropdown:
-				renderer.Writer.Write($" title=\"{dropdown.Title}\"");
+			case AdmonitionBlock when obj.Directive
+				is "note" or "tip" or "warning" or "important":
+				// skip for these directives
+				// otherwise it will render as <note title="Note">
 				break;
-			case TabItemBlock tabItem:
-				renderer.Writer.Write($" title=\"{tabItem.Title}\"");
-				break;
-			case AdmonitionBlock admonition when obj.Directive is "admonition":
-				renderer.Writer.Write($" title=\"{admonition.Title}\"");
+			case IBlockTitle titledBlock:
+				renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
 				break;
 		}
 
@@ -416,6 +406,25 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Make image URL absolute for better LLM consumption
 		var absoluteImageUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, imageBlock.ImageUrl);
 		renderer.WriteLine($"![{imageBlock.Alt}]({absoluteImageUrl})");
+		renderer.EnsureLine();
+	}
+
+	private static void WriteDiagramBlock(LlmMarkdownRenderer renderer, DiagramBlock diagramBlock)
+	{
+		renderer.EnsureBlockSpacing();
+
+		// Render diagram as structured comment with type information
+		renderer.WriteLine($"<diagram type=\"{diagramBlock.DiagramType}\">");
+
+		// Render the diagram content with indentation
+		if (!string.IsNullOrWhiteSpace(diagramBlock.Content))
+		{
+			var reader = new StringReader(diagramBlock.Content);
+			while (reader.ReadLine() is { } line)
+				renderer.WriteLine(string.IsNullOrWhiteSpace(line) ? string.Empty : "  " + line);
+		}
+
+		renderer.WriteLine("</diagram>");
 		renderer.EnsureLine();
 	}
 

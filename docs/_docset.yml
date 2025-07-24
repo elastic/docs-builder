@@ -86,6 +86,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - hidden: diagrams.md
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md
@@ -124,6 +125,10 @@ toc:
       - file: custom-highlighters.md
       - hidden: archive.md
       - hidden: landing-page.md
+      - file: nest-under-index/index.md
+        children:
+          - file: nest-under-index/nested-page-1.md
+          - file: nest-under-index/nested-page-2.md
       - folder: mover
         children:
           - file: first-page.md

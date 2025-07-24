@@ -445,7 +445,7 @@ type ``codeblock in list`` () =
      ```
 """
 
-type ``substitions`` () =
+type ``substitutions`` () =
     static let markdown = Setup.Document """---
 sub:
   hello-world: "Hello World!"
@@ -462,7 +462,7 @@ Hello, this is a substitution: Hello World!
 This is not a substitution: {{not-found}}
 """
 
-type ``substition in codeblock`` () =
+type ``substitution in codeblock`` () =
     static let markdown = Setup.Document """---
 sub:
   hello-world: "Hello World!"
@@ -487,4 +487,54 @@ Hello, this is a substitution: {{hello-world}}
 ```plaintext
 Hello, this is a substitution: Hello World!
 ```
+"""
+
+type ``diagram directive`` () =
+    static let markdown = Setup.Document """
+::::{diagram} mermaid
+flowchart LR
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+    C --> E[End]
+    D --> E
+::::
+
+::::{diagram} d2
+x -> y: hello world
+y -> z: nice to meet you
+::::
+"""
+
+    [<Fact>]
+    let ``renders diagram with type information`` () =
+        markdown |> convertsToNewLLM """
+<diagram type="mermaid">
+  flowchart LR
+      A[Start] --> B{Decision}
+      B -->|Yes| C[Action 1]
+      B -->|No| D[Action 2]
+      C --> E[End]
+      D --> E
+</diagram>
+
+<diagram type="d2">
+  x -> y: hello world
+  y -> z: nice to meet you
+</diagram>
+"""
+        
+type ``substitution in heading`` () =
+    static let markdown = Setup.Document """---
+sub:
+  world: "World"
+---
+
+## Hello, {{world}}!
+"""
+
+    [<Fact>]
+    let ``renders correctly`` () =
+        markdown |> convertsToNewLLM """
+## Hello, World!
 """

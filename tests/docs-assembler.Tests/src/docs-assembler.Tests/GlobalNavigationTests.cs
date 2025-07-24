@@ -153,7 +153,8 @@ public class GlobalNavigationPathProviderTests
 
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 		var referenceNav = navigation.NavigationLookup[expectedRoot];
-		navigation.NavigationItems.Should().HaveSameCount(navigation.NavigationLookup);
+		navigation.NavigationItems.OfType<TableOfContentsTree>()
+			.Should().HaveSameCount(navigation.NavigationLookup);
 
 		referenceNav.Should().NotBeNull();
 		var navigationLookup = referenceNav.NavigationItems.OfType<TableOfContentsTree>().ToDictionary(i => i.Source, i => i);
@@ -314,11 +315,11 @@ public class GlobalNavigationPathProviderTests
 		var resolvedUri = uriResolver.Resolve(new Uri("docs-content://reference/apm/something.md"), "/reference/apm/something");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/something");
 
-		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-ios://reference/instrumentation.md"), "/reference/instrumentation");
-		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/ios/instrumentation");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-nodejs://reference/instrumentation.md"), "/reference/instrumentation");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/nodejs/instrumentation");
 
-		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-android://reference/a/file.md"), "/reference/a/file");
-		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/android/a/file");
+		resolvedUri = uriResolver.Resolve(new Uri("apm-agent-dotnet://reference/a/file.md"), "/reference/a/file");
+		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/apm/agents/dotnet/a/file");
 
 		resolvedUri = uriResolver.Resolve(new Uri("elasticsearch-net://reference/b/file.md"), "/reference/b/file");
 		resolvedUri.Should().Be("https://www.elastic.co/docs/reference/elasticsearch/clients/dotnet/b/file");

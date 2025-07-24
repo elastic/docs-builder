@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Documentation.Configuration;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives;
@@ -23,7 +24,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
+public partial class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 {
 	private BuildContext Build { get; } = build;
 	public IParserResolvers Resolvers { get; } = resolvers;
@@ -69,7 +70,11 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			CrossLinkResolver = resolvers.CrossLinkResolver
 		};
 		var context = new ParserContext(state);
-		var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline, context);
+
+		// Preprocess substitutions in link patterns before Markdig parsing
+		var preprocessedMarkdown = PreprocessLinkSubstitutions(markdown, context);
+
+		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 		return markdownDocument;
 	}
 
@@ -105,7 +110,10 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 		else
 			inputMarkdown = await path.FileSystem.File.ReadAllTextAsync(path.FullName, ctx);
 
-		var markdownDocument = Markdig.Markdown.Parse(inputMarkdown, pipeline, context);
+		// Preprocess substitutions in link patterns before Markdig parsing
+		var preprocessedMarkdown = PreprocessLinkSubstitutions(inputMarkdown, (ParserContext)context);
+
+		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 		return markdownDocument;
 	}
 
@@ -165,5 +173,92 @@ public class MarkdownParser(BuildContext build, IParserResolvers resolvers)
 			PipelineCached = builder.Build();
 			return PipelineCached;
 		}
+	}
+
+	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System.Text.RegularExpressions.RegexOptions.Multiline)]
+	private static partial System.Text.RegularExpressions.Regex LinkPattern();
+
+	/// <summary>
+	/// Preprocesses substitutions specifically in link patterns [text](url) before Markdig parsing
+	/// Only processes links that are not inside code blocks with subs=false
+	/// </summary>
+	private static string PreprocessLinkSubstitutions(string markdown, ParserContext context)
+	{
+		// Find all code block boundaries to avoid processing links inside subs=false blocks
+		var codeBlockRanges = GetCodeBlockRanges(markdown);
+
+		return LinkPattern().Replace(markdown, match =>
+		{
+			// Check if this link is inside a code block with subs=false
+			if (IsInsideSubsDisabledCodeBlock(match.Index, codeBlockRanges))
+			{
+				return match.Value; // Don't process links in subs=false code blocks
+			}
+
+			var linkText = match.Groups[1].Value;
+			var linkUrl = match.Groups[2].Value;
+
+			// Only preprocess external links to preserve internal link validation behavior
+			// Check if URL contains substitutions and looks like it might resolve to an external URL
+			if (linkUrl.Contains("{{") && (linkUrl.Contains("http") || linkText.Contains("{{")))
+			{
+				// Apply substitutions to both link text and URL
+				var processedText = linkText.ReplaceSubstitutions(context);
+				var processedUrl = linkUrl.ReplaceSubstitutions(context);
+				return $"[{processedText}]({processedUrl})";
+			}
+
+			// Return original match for internal links
+			return match.Value;
+		});
+	}
+
+	private static List<(int start, int end, bool subsDisabled)> GetCodeBlockRanges(string markdown)
+	{
+		var ranges = new List<(int start, int end, bool subsDisabled)>();
+		var lines = markdown.Split('\n');
+		var currentPos = 0;
+
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var line = lines[i];
+
+			// Check for code block start (``` or ````)
+			if (line.TrimStart().StartsWith("```"))
+			{
+				// Check if this line contains subs=false
+				var subsDisabled = line.Contains("subs=false");
+				var blockStart = currentPos;
+
+				// Find the end of the code block
+				var blockEnd = currentPos + line.Length;
+				for (var j = i + 1; j < lines.Length; j++)
+				{
+					blockEnd += lines[j].Length + 1; // +1 for newline
+					if (lines[j].TrimStart().StartsWith("```"))
+					{
+						break;
+					}
+				}
+
+				ranges.Add((blockStart, blockEnd, subsDisabled));
+			}
+
+			currentPos += line.Length + 1; // +1 for newline
+		}
+
+		return ranges;
+	}
+
+	private static bool IsInsideSubsDisabledCodeBlock(int index, List<(int start, int end, bool subsDisabled)> codeBlockRanges)
+	{
+		foreach (var (start, end, subsDisabled) in codeBlockRanges)
+		{
+			if (index >= start && index <= end && subsDisabled)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }

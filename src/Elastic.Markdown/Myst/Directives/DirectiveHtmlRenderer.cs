@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -38,6 +39,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		switch (directiveBlock)
 		{
+			case DiagramBlock diagramBlock:
+				WriteDiagram(renderer, diagramBlock);
+				return;
 			case MermaidBlock mermaidBlock:
 				WriteMermaid(renderer, mermaidBlock);
 				return;
@@ -239,6 +243,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			TabSetIndex = block.TabSetIndex,
 			SyncKey = block.SyncKey,
 			TabSetGroupKey = block.TabSetGroupKey
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
+	{
+		var slice = DiagramView.Create(new DiagramViewModel
+		{
+			DirectiveBlock = block,
+			DiagramBlock = block
 		});
 		RenderRazorSlice(slice, renderer);
 	}
