@@ -1,5 +1,5 @@
 ---
-navigation_title: `assembler.yml`
+navigation_title: assembler.yml
 ---
 
 # `assembler.yml`

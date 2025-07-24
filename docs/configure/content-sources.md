@@ -23,12 +23,13 @@ This allows you as an owner of a repository to choose two different branching st
 
 The new documentation system supports 2 branching strategies.
 
-Continuous deployment 
-:   This is the default where a repositories `main` or `master` branch is continuously deployed to production.
+### Continuous deployment 
 
-Tagged
-:   Allows you to 'tag' a single git reference (typically a branch) as `current` which will be used to deploy to production.
-    Allowing you to control the timing of when new documentation should go live.
+This is the default where a repositories `main` or `master` branch is continuously deployed to production.
+
+### Tagged
+
+Allows you to 'tag' a single git reference (typically a branch) as `current` which will be used to deploy to production. Allowing you to control the timing of when new documentation should go live.
 
 ### Add a new content set
 
