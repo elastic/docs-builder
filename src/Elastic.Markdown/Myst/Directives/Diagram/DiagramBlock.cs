@@ -29,10 +29,8 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 	/// </summary>
 	public string? EncodedUrl { get; private set; }
 
-	/// <summary>
-	/// The local SVG path relative to the output directory
-	/// </summary>
-	public string? LocalSvgPath { get; private set; }
+	/// The local SVG Url
+	public string? LocalSvgUrl { get; private set; }
 
 	/// <summary>
 	/// Content hash for unique identification and caching
@@ -56,8 +54,9 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		// Generate content hash for caching
 		ContentHash = GenerateContentHash(DiagramType, Content);
 
-		// Generate local path for cached SVG
-		LocalSvgPath = GenerateLocalPath(context);
+		// Generate the local path and url for cached SVG
+		var localPath = GenerateLocalPath(context);
+		LocalSvgUrl = localPath.Replace(Path.DirectorySeparatorChar, '/');
 
 		// Generate the encoded URL for Kroki
 		try
@@ -70,14 +69,14 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		// Register diagram for tracking, cleanup, and batch caching
-		// Use the markdown file's scope directory for proper relative path resolution
-		var outputDirectory = context.Build.DocumentationOutputDirectory.FullName;
+		// only register SVG if we can look up the Markdown
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			outputDirectory = currentMarkdown.ScopeDirectory.FullName;
+			var path = context.Build.ReadFileSystem.FileInfo.New(Path.Combine(currentMarkdown.ScopeDirectory.FullName, localPath));
+			context.DiagramRegistry.RegisterDiagramForCaching(path, EncodedUrl);
 		}
-		context.DiagramRegistry.RegisterDiagramForCaching(LocalSvgPath, EncodedUrl, outputDirectory);
+		else
+			this.EmitError($"Can not locate markdown source for {context.MarkdownSourcePath} to register diagram for caching.");
 	}
 
 	private string? ExtractContent()
@@ -109,17 +108,13 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	private string GenerateLocalPath(ParserContext context)
 	{
-		var markdownFileName = "unknown";
-		if (context.MarkdownSourcePath?.Name is not null)
-		{
-			markdownFileName = Path.GetFileNameWithoutExtension(context.MarkdownSourcePath.Name);
-		}
+		var markdownFileName = Path.GetFileNameWithoutExtension(context.MarkdownSourcePath.Name);
 
 		var filename = $"{markdownFileName}-diagram-{DiagramType}-{ContentHash}.svg";
 		var localPath = Path.Combine("images", "generated-graphs", filename);
 
 		// Normalize path separators to forward slashes for web compatibility
-		return localPath.Replace(Path.DirectorySeparatorChar, '/');
+		return localPath;
 	}
 
 

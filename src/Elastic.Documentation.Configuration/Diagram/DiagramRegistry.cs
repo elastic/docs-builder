@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Configuration.Diagram;
@@ -11,53 +12,41 @@ namespace Elastic.Documentation.Configuration.Diagram;
 /// <summary>
 /// Information about a diagram that needs to be cached
 /// </summary>
-/// <param name="LocalSvgPath">Local SVG path relative to output directory</param>
+/// <param name="OutputFile">The intended cache output file location</param>
 /// <param name="EncodedUrl">Encoded Kroki URL for downloading</param>
-/// <param name="OutputDirectory">Full path to output directory</param>
-public record DiagramCacheInfo(string LocalSvgPath, string EncodedUrl, string OutputDirectory);
+public record DiagramCacheInfo(IFileInfo OutputFile, string EncodedUrl);
 
-/// <summary>
 /// Registry to track active diagrams and manage cleanup of outdated cached files
-/// </summary>
-/// <param name="writeFileSystem">File system for write/delete operations during cleanup</param>
-public class DiagramRegistry(IFileSystem writeFileSystem) : IDisposable
+public class DiagramRegistry(ILoggerFactory logFactory, BuildContext context) : IDisposable
 {
-	private readonly ConcurrentDictionary<string, bool> _activeDiagrams = new();
+	private readonly ILogger<DiagramRegistry> _logger = logFactory.CreateLogger<DiagramRegistry>();
 	private readonly ConcurrentDictionary<string, DiagramCacheInfo> _diagramsToCache = new();
-	private readonly IFileSystem _writeFileSystem = writeFileSystem;
+	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
+	private readonly IFileSystem _readFileSystem = context.ReadFileSystem;
 	private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
 
 	/// <summary>
 	/// Register a diagram for caching (collects info for later batch processing)
 	/// </summary>
-	/// <param name="localSvgPath">The local SVG path relative to output directory</param>
+	/// <param name="localSvgPath">The local SVG path relative to the output directory</param>
 	/// <param name="encodedUrl">The encoded Kroki URL for downloading</param>
-	/// <param name="outputDirectory">The full path to output directory</param>
-	public void RegisterDiagramForCaching(string localSvgPath, string encodedUrl, string outputDirectory)
+	/// <param name="outputDirectory">The full path to the output directory</param>
+	public void RegisterDiagramForCaching(IFileInfo outputFile, string encodedUrl)
 	{
-		if (string.IsNullOrEmpty(localSvgPath) || string.IsNullOrEmpty(encodedUrl))
+		if (string.IsNullOrEmpty(encodedUrl))
 			return;
 
-		_ = _activeDiagrams.TryAdd(localSvgPath, true);
-		_ = _diagramsToCache.TryAdd(localSvgPath, new DiagramCacheInfo(localSvgPath, encodedUrl, outputDirectory));
-	}
+		if (!outputFile.IsSubPathOf(context.DocumentationOutputDirectory))
+			return;
 
-	/// <summary>
-	/// Clear all registered diagrams (called at start of build)
-	/// </summary>
-	public void Clear()
-	{
-		_activeDiagrams.Clear();
-		_diagramsToCache.Clear();
+		_ = _diagramsToCache.TryAdd(outputFile.FullName, new DiagramCacheInfo(outputFile, encodedUrl));
 	}
 
 	/// <summary>
 	/// Create cached diagram files by downloading from Kroki in parallel
 	/// </summary>
-	/// <param name="logger">Logger for reporting download activity</param>
-	/// <param name="readFileSystem">File system for checking existing files</param>
 	/// <returns>Number of diagrams downloaded</returns>
-	public async Task<int> CreateDiagramCachedFiles(ILogger logger, IFileSystem readFileSystem)
+	public async Task<int> CreateDiagramCachedFiles(Cancel ctx)
 	{
 		if (_diagramsToCache.IsEmpty)
 			return 0;
@@ -67,23 +56,24 @@ public class DiagramRegistry(IFileSystem writeFileSystem) : IDisposable
 		await Parallel.ForEachAsync(_diagramsToCache.Values, new ParallelOptions
 		{
 			MaxDegreeOfParallelism = Environment.ProcessorCount,
-			CancellationToken = CancellationToken.None
+			CancellationToken = ctx
 		}, async (diagramInfo, ct) =>
 		{
+			var localPath = _readFileSystem.Path.GetRelativePath(context.DocumentationOutputDirectory.FullName, diagramInfo.OutputFile.FullName);
+
 			try
 			{
-				var fullPath = _writeFileSystem.Path.Combine(diagramInfo.OutputDirectory, diagramInfo.LocalSvgPath);
-
-				// Skip if file already exists
-				if (readFileSystem.File.Exists(fullPath))
+				if (!diagramInfo.OutputFile.IsSubPathOf(context.DocumentationOutputDirectory))
 					return;
 
-				// Create directory if needed
-				var directory = _writeFileSystem.Path.GetDirectoryName(fullPath);
+				// Skip if the file already exists
+				if (_readFileSystem.File.Exists(diagramInfo.OutputFile.FullName))
+					return;
+
+				// Create the directory if needed
+				var directory = _writeFileSystem.Path.GetDirectoryName(diagramInfo.OutputFile.FullName);
 				if (directory != null && !_writeFileSystem.Directory.Exists(directory))
-				{
 					_ = _writeFileSystem.Directory.CreateDirectory(directory);
-				}
 
 				// Download SVG content
 				var svgContent = await _httpClient.GetStringAsync(diagramInfo.EncodedUrl, ct);
@@ -91,36 +81,34 @@ public class DiagramRegistry(IFileSystem writeFileSystem) : IDisposable
 				// Validate SVG content
 				if (string.IsNullOrWhiteSpace(svgContent) || !svgContent.Contains("<svg", StringComparison.OrdinalIgnoreCase))
 				{
-					logger.LogWarning("Invalid SVG content received for diagram {LocalPath}", diagramInfo.LocalSvgPath);
+					_logger.LogWarning("Invalid SVG content received for diagram {LocalPath}", localPath);
 					return;
 				}
 
-				// Write atomically using temp file
-				var tempPath = fullPath + ".tmp";
+				// Write atomically using a temp file
+				var tempPath = $"{diagramInfo.OutputFile.FullName}.tmp";
 				await _writeFileSystem.File.WriteAllTextAsync(tempPath, svgContent, ct);
-				_writeFileSystem.File.Move(tempPath, fullPath);
+				_writeFileSystem.File.Move(tempPath, diagramInfo.OutputFile.FullName);
 
 				_ = Interlocked.Increment(ref downloadCount);
-				logger.LogDebug("Downloaded diagram: {LocalPath}", diagramInfo.LocalSvgPath);
+				_logger.LogDebug("Downloaded diagram: {LocalPath}", localPath);
 			}
 			catch (HttpRequestException ex)
 			{
-				logger.LogWarning("Failed to download diagram {LocalPath}: {Error}", diagramInfo.LocalSvgPath, ex.Message);
+				_logger.LogWarning("Failed to download diagram {LocalPath}: {Error}", localPath, ex.Message);
 			}
 			catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
 			{
-				logger.LogWarning("Timeout downloading diagram {LocalPath}", diagramInfo.LocalSvgPath);
+				_logger.LogWarning("Timeout downloading diagram {LocalPath}", localPath);
 			}
 			catch (Exception ex)
 			{
-				logger.LogWarning("Unexpected error downloading diagram {LocalPath}: {Error}", diagramInfo.LocalSvgPath, ex.Message);
+				_logger.LogWarning("Unexpected error downloading diagram {LocalPath}: {Error}", localPath, ex.Message);
 			}
 		});
 
 		if (downloadCount > 0)
-		{
-			logger.LogInformation("Downloaded {DownloadCount} diagram files from Kroki", downloadCount);
-		}
+			_logger.LogInformation("Downloaded {DownloadCount} diagram files from Kroki", downloadCount);
 
 		return downloadCount;
 	}
@@ -128,26 +116,27 @@ public class DiagramRegistry(IFileSystem writeFileSystem) : IDisposable
 	/// <summary>
 	/// Clean up unused diagram files from the cache directory
 	/// </summary>
-	/// <param name="outputDirectory">The output directory containing cached diagrams</param>
 	/// <returns>Number of files cleaned up</returns>
-	public int CleanupUnusedDiagrams(IDirectoryInfo outputDirectory)
+	public int CleanupUnusedDiagrams()
 	{
-		var graphsDir = _writeFileSystem.Path.Combine(outputDirectory.FullName, "images", "generated-graphs");
-		if (!_writeFileSystem.Directory.Exists(graphsDir))
+		if (!_readFileSystem.Directory.Exists(context.DocumentationOutputDirectory.FullName))
 			return 0;
-
-		var existingFiles = _writeFileSystem.Directory.GetFiles(graphsDir, "*.svg", SearchOption.AllDirectories);
+		var folders = _writeFileSystem.Directory.GetDirectories(context.DocumentationOutputDirectory.FullName, "generated-graphs", SearchOption.AllDirectories);
+		var existingFiles = folders
+			.Select(f => (Folder: f, Files: _writeFileSystem.Directory.GetFiles(f, "*.svg", SearchOption.TopDirectoryOnly)))
+			.ToArray();
+		if (existingFiles.Length == 0)
+			return 0;
 		var cleanedCount = 0;
 
 		try
 		{
-			foreach (var file in existingFiles)
+			foreach (var (folder, files) in existingFiles)
 			{
-				var relativePath = _writeFileSystem.Path.GetRelativePath(outputDirectory.FullName, file);
-				var normalizedPath = relativePath.Replace(_writeFileSystem.Path.DirectorySeparatorChar, '/');
-
-				if (!_activeDiagrams.ContainsKey(normalizedPath))
+				foreach (var file in files)
 				{
+					if (_diagramsToCache.ContainsKey(file))
+						continue;
 					try
 					{
 						_writeFileSystem.File.Delete(file);
@@ -158,10 +147,9 @@ public class DiagramRegistry(IFileSystem writeFileSystem) : IDisposable
 						// Silent failure - cleanup is opportunistic
 					}
 				}
+				// Clean up empty directories
+				CleanupEmptyDirectories(folder);
 			}
-
-			// Clean up empty directories
-			CleanupEmptyDirectories(graphsDir);
 		}
 		catch
 		{
@@ -175,22 +163,26 @@ public class DiagramRegistry(IFileSystem writeFileSystem) : IDisposable
 	{
 		try
 		{
-			foreach (var subDir in _writeFileSystem.Directory.GetDirectories(directory))
-			{
-				CleanupEmptyDirectories(subDir);
+			var folder = _writeFileSystem.DirectoryInfo.New(directory);
+			if (!folder.IsSubPathOf(context.DocumentationOutputDirectory))
+				return;
 
-				if (!_writeFileSystem.Directory.EnumerateFileSystemEntries(subDir).Any())
-				{
-					try
-					{
-						_writeFileSystem.Directory.Delete(subDir);
-					}
-					catch
-					{
-						// Silent failure - cleanup is opportunistic
-					}
-				}
-			}
+			if (folder.Name != "generated-graphs")
+				return;
+
+			if (_writeFileSystem.Directory.EnumerateFileSystemEntries(folder.FullName).Any())
+				return;
+
+			_writeFileSystem.Directory.Delete(folder.FullName);
+
+			var parentFolder = folder.Parent;
+			if (parentFolder is null || parentFolder.Name != "images")
+				return;
+
+			if (_writeFileSystem.Directory.EnumerateFileSystemEntries(parentFolder.FullName).Any())
+				return;
+
+			_writeFileSystem.Directory.Delete(folder.FullName);
 		}
 		catch
 		{

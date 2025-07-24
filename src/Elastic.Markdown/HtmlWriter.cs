@@ -43,7 +43,7 @@ public class HtmlWriter(
 	public string Render(string markdown, IFileInfo? source)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
-		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var parsed = DocumentationSet.MarkdownParser.ParseString(markdown, source, null);
 		return MarkdownFile.CreateHtml(parsed);
 	}
 

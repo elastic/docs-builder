@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -132,6 +133,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public ConcurrentDictionary<string, NavigationRenderResult> NavigationRenderResults { get; } = [];
 
+	public DiagramRegistry DiagramRegistry { get; }
+
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,
@@ -143,6 +146,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		Source = ContentSourceMoniker.Create(context.Git.RepositoryName, null);
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.DocumentationOutputDirectory;
+		DiagramRegistry = new DiagramRegistry(logFactory, context);
 		LinkResolver =
 			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(logFactory, context.Configuration, Aws3LinkIndexReader.CreateAnonymous()));
 		Configuration = context.Configuration;
@@ -154,7 +158,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			CrossLinkResolver = LinkResolver,
 			DocumentationFileLookup = DocumentationFileLookup
 		};
-		MarkdownParser = new MarkdownParser(context, resolver);
+		MarkdownParser = new MarkdownParser(context, resolver, DiagramRegistry);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName

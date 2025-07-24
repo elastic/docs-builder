@@ -4,9 +4,9 @@
 	if (diagram?.EncodedUrl != null)
 	{
 		<div class="diagram" data-diagram-type="@diagram.DiagramType">
-			@if (!string.IsNullOrEmpty(diagram.LocalSvgPath))
+			@if (!string.IsNullOrEmpty(diagram.LocalSvgUrl))
 			{
-				<img src="/@diagram.LocalSvgPath" 
+				<img src="/@diagram.LocalSvgUrl" 
 				     alt="@diagram.DiagramType diagram" 
 				     loading="lazy"
 				     onerror="this.src='@diagram.EncodedUrl'" />

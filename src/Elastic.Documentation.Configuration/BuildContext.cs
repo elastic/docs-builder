@@ -65,8 +65,6 @@ public record BuildContext : IDocumentationContext
 		init => _urlPathPrefix = value;
 	}
 
-	public DiagramRegistry DiagramRegistry { get; }
-
 	public BuildContext(IDiagnosticsCollector collector, IFileSystem fileSystem, VersionsConfiguration versionsConfig)
 		: this(collector, fileSystem, fileSystem, versionsConfig, null, null)
 	{
@@ -108,6 +106,5 @@ public record BuildContext : IDocumentationContext
 		{
 			Enabled = false
 		};
-		DiagramRegistry = new DiagramRegistry(writeFileSystem);
 	}
 }

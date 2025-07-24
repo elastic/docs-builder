@@ -45,6 +45,7 @@ public record ParserState(BuildContext Build) : ParserResolvers
 
 	public required IFileInfo MarkdownSourcePath { get; init; }
 	public required YamlFrontMatter? YamlFrontMatter { get; init; }
+	public required DiagramRegistry DiagramRegistry { get; init; }
 
 	public IFileInfo? ParentMarkdownPath { get; init; }
 	public bool SkipValidation { get; init; }
@@ -59,7 +60,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public string CurrentUrlPath { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; }
 	public BuildContext Build { get; }
-	public DiagramRegistry DiagramRegistry => Build.DiagramRegistry;
+	public DiagramRegistry DiagramRegistry { get; }
 	public bool SkipValidation { get; }
 	public Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
@@ -76,6 +77,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		CrossLinkResolver = state.CrossLinkResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;
 		DocumentationFileLookup = state.DocumentationFileLookup;
+		DiagramRegistry = state.DiagramRegistry;
 
 		CurrentUrlPath = DocumentationFileLookup(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile md
 			? md.Url

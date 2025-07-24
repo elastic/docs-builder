@@ -108,9 +108,6 @@ public class DocumentationGenerator
 
 	public async Task<GenerationResult> GenerateAll(Cancel ctx)
 	{
-		// Clear diagram registry for fresh tracking
-		DocumentationSet.Context.DiagramRegistry.Clear();
-
 		var result = new GenerationResult();
 
 		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
@@ -147,7 +144,7 @@ public class DocumentationGenerator
 		_logger.LogInformation($"Generating links.json");
 		var linkReference = await GenerateLinkReference(ctx);
 
-		await CreateDiagramCachedFiles();
+		await CreateDiagramCachedFiles(ctx);
 		CleanupUnusedDiagrams();
 
 		// ReSharper disable once WithExpressionModifiesAllMembers
@@ -160,9 +157,9 @@ public class DocumentationGenerator
 	/// <summary>
 	/// Downloads diagram files in parallel from Kroki
 	/// </summary>
-	public async Task CreateDiagramCachedFiles()
+	public async Task CreateDiagramCachedFiles(Cancel ctx)
 	{
-		var downloadedCount = await DocumentationSet.Context.DiagramRegistry.CreateDiagramCachedFiles(_logger, DocumentationSet.Context.ReadFileSystem);
+		var downloadedCount = await DocumentationSet.DiagramRegistry.CreateDiagramCachedFiles(ctx);
 		if (downloadedCount > 0)
 		{
 			_logger.LogInformation("Downloaded {DownloadedCount} diagram files from Kroki", downloadedCount);
@@ -174,11 +171,9 @@ public class DocumentationGenerator
 	/// </summary>
 	public void CleanupUnusedDiagrams()
 	{
-		var cleanedCount = DocumentationSet.Context.DiagramRegistry.CleanupUnusedDiagrams(DocumentationSet.OutputDirectory);
+		var cleanedCount = DocumentationSet.DiagramRegistry.CleanupUnusedDiagrams();
 		if (cleanedCount > 0)
-		{
 			_logger.LogInformation("Cleaned up {CleanedCount} unused diagram files", cleanedCount);
-		}
 	}
 
 	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)
