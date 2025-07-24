@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 
 namespace Elastic.Markdown.Helpers;
 
@@ -67,17 +70,27 @@ public static class Interpolation
 				continue;
 
 			var spanMatch = span.Slice(match.Index, match.Length);
-			var key = spanMatch.Trim(['{', '}']);
+			var fullKey = spanMatch.Trim(['{', '}']);
+
+			// Enhanced mutation support: parse key and mutations using shared utility
+			var (cleanKey, mutations) = SubstitutionMutationHelper.ParseKeyWithMutations(fullKey.ToString());
+
 			foreach (var lookup in lookups)
 			{
-				if (!lookup.TryGetValue(key, out var value))
-					continue;
+				if (lookup.TryGetValue(cleanKey, out var value))
+				{
+					// Apply mutations if present using shared utility
+					if (mutations.Length > 0)
+					{
+						value = SubstitutionMutationHelper.ApplyMutations(value, mutations);
+					}
 
-				collector?.CollectUsedSubstitutionKey(key);
+					collector?.CollectUsedSubstitutionKey(cleanKey);
 
-				replacement ??= span.ToString();
-				replacement = replacement.Replace(spanMatch.ToString(), value);
-				replaced = true;
+					replacement ??= span.ToString();
+					replacement = replacement.Replace(spanMatch.ToString(), value);
+					replaced = true;
+				}
 			}
 		}
 
