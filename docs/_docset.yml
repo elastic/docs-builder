@@ -149,5 +149,7 @@ toc:
           - folder: baz
             children:
               - file: qux.md
-  - title: "Getting Started Guide"
-    crosslink: docs-content://get-started/introduction.md
+      - title: "Getting Started Guide"
+        crosslink: docs-content://get-started/introduction.md
+      - title: "Test title"
+        crosslink: docs-content://solutions/search/elasticsearch-basics-quickstart.md

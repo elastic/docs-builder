@@ -72,11 +72,37 @@ cross_links:
   - docs-content
 ```
 
+#### Adding cross-links in Markdown content
+
 To link to a document in the `docs-content` repository, you would write the link as follows:
 
-```
+```markdown
 [Link to docs-content doc](docs-content://directory/another-directory/file.md)
 ```
+
+You can also link to specific anchors within the document:
+
+```markdown
+[Link to specific section](docs-content://directory/file.md#section-id)
+```
+
+#### Adding cross-links in navigation
+
+Cross-links can also be included in navigation structures. When creating a `toc.yml` file or defining navigation in `docset.yml`, you can add cross-links as follows:
+
+```yaml
+toc:
+  - file: index.md
+  - title: External Documentation
+    cross_link: docs-content://directory/file.md
+  - folder: local-section
+    children:
+      - file: index.md
+      - title: API Reference
+        cross_link: elasticsearch://api/index.html
+```
+
+Cross-links in navigation will be automatically resolved during the build process, maintaining consistent linking between related documentation across repositories.
 
 ### `exclude`
 

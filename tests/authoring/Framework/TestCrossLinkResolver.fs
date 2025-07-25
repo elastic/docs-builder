@@ -28,6 +28,10 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
         member this.UriResolver = uriResolver
 
         member this.FetchLinks(ctx) =
+            // Clear existing entries to prevent duplicate key errors when called multiple times
+            this.LinkReferences.Clear()
+            this.DeclaredRepositories.Clear()
+            
             let redirects = RepositoryLinks.SerializeRedirects config.Redirects
             // language=json
             let json = $$"""{
@@ -66,7 +70,6 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
             this.LinkReferences.Add("kibana", reference)
             this.DeclaredRepositories.Add("docs-content") |> ignore;
             this.DeclaredRepositories.Add("kibana") |> ignore;
-            this.DeclaredRepositories.Add("elasticsearch") |> ignore
 
             let indexEntries =
                 this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
