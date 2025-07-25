@@ -147,3 +147,5 @@ toc:
           - folder: baz
             children:
               - file: qux.md
+  - link: https://github.com/elastic/docs-builder
+    title: GitHub repository
