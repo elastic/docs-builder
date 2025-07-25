@@ -61,7 +61,7 @@
 				// Only render children if we're within the allowed level depth
 				// MaxLevel of -1 means render all levels
 				bool shouldRenderChildren = Model.MaxLevel == -1 || Model.Level < (Model.MaxLevel);
-				<ul class="w-full hidden peer-has-checked:block ml-4">
+				<ul class="block w-full markdown-content hidden peer-has-checked:block ml-4">
 					@if (shouldRenderChildren)
 					{
 						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
@@ -100,7 +100,6 @@
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic! flex items-center"
 			>
 				@ext.NavigationTitle
-				<svg class="ml-1 inline w-4 h-4 text-grey-60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3h7v7m0 0L10 21l-7-7 11-11z"/></svg>
 			</a>
 		</li>
 	}
