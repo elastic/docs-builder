@@ -1,11 +1,10 @@
 # Applies to
 
 <!--
-This page explains concrete usage of the applies_to tag. Cumulative authoring philosophy and guidance goes in contribute/cumulative-docs.md. 
+This page explains concrete usage of the applies_to tag. Cumulative authoring philosophy and guidance goes in contribute/cumulative-docs.md.
 -->
 
-
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/cumulative-docs.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](/contribute/cumulative-docs/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
 
@@ -51,7 +50,7 @@ been established earlier.
 ❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you
 do not need to tag a new GA feature.
 
-For detailed guidance, refer to [](/contribute/cumulative-docs.md).
+For detailed guidance, refer to [](/contribute/cumulative-docs/index.md).
 
 ## Syntax
 
@@ -72,20 +71,20 @@ Where:
 
 Note that a key without any value doesn't show any badge in the output.
 
+### Key
+
+:::{include} /_snippets/applies_to-key.md
+:::
+
 ### Lifecycle
 
-`applies_to` accepts the following lifecycle states:
-
-* `preview`
-* `beta`
-* `deprecated`
-* `removed`
-* `unavailable`
-* `ga`
+:::{include} /_snippets/applies_to-lifecycle.md
+:::
 
 ### Version
 
-Can be in either `major.minor` or `major.minor.patch` format
+:::{include} /_snippets/applies_to-version.md
+:::
 
 Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
 
@@ -254,7 +253,7 @@ applies_to:
 
 ```{applies_to}
 stack: preview 9.1
-serverless: planned
+serverless: ga
 
 apm_agent_dotnet: ga 1.0.0
 apm_agent_java: beta 1.0.0
@@ -274,9 +273,9 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam
 sit amet auctor odio. Donec ac placerat nunc. {applies_to}`stack: preview` Aenean scelerisque viverra lectus
 nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictum.
 
-- {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. 
+- {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc.
 - {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam.
-- {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim. 
+- {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim.
 
 #### Stack
 
