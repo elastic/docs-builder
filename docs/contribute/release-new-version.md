@@ -32,12 +32,15 @@ If you're releasing a version older than the current `base`, or restoring suppor
 
 This file maps legacy URL paths (like `en/elasticsearch/reference/`) to the list of versions that exist at that path.
 
-For example, to release a new 8.19 version of the Elastic Stack:
+For example, to release the 8.19 version of the Elastic Stack, update the `stack` versions array to include the new version number:
 
-```diff
-- stack: &stack [ '9.0+', '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17' ]
-+ stack: &stack [ '9.0+', '8.19', '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17' ]
+```yml
+- stack: &stack [ '9.0+', '8.19', '8.18', '8.17', ... ]
 ```
+
+:::{important}
+The first version in the `mappings` list is treated as the "current" version in documentation version dropdown.
+:::
 
 See [`legacy-url-mappings.yml`](../configure/site/legacy-url-mappings.md) for more information.
 
