@@ -82,6 +82,11 @@ public record GlobalNavigation : IPositionalNavigation
 					_ = allNavigationItems.Add(documentationGroup);
 					UpdateParent(allNavigationItems, documentationGroup.NavigationItems, documentationGroup);
 					break;
+				case ExternalLinkNavigationItem extLink:
+					if (parent is not null)
+						extLink.Parent = parent;
+					_ = allNavigationItems.Add(extLink);
+					break;
 				default:
 					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");
 					break;
@@ -104,6 +109,10 @@ public record GlobalNavigation : IPositionalNavigation
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
 					documentationGroup.NavigationIndex = groupIndex;
 					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
+					break;
+				case ExternalLinkNavigationItem extLink:
+					var linkIndex = Interlocked.Increment(ref navigationIndex);
+					extLink.NavigationIndex = linkIndex;
 					break;
 				default:
 					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");

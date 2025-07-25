@@ -19,6 +19,7 @@ using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
+using ExternalLinkNavigationItem = Elastic.Documentation.Site.Navigation.ExternalLinkNavigationItem;
 
 namespace Elastic.Markdown.IO;
 
@@ -226,6 +227,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
 					documentationGroup.NavigationIndex = groupIndex;
 					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
+					break;
+				case ExternalLinkNavigationItem ext:
+					var linkIndex = Interlocked.Increment(ref navigationIndex);
+					ext.NavigationIndex = linkIndex;
 					break;
 				default:
 					Context.EmitError(Context.ConfigurationPath, $"Unhandled navigation item type: {item.GetType()}");

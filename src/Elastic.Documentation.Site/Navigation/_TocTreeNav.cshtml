@@ -1,4 +1,5 @@
 @using Elastic.Documentation.Site.Navigation
+
 @inherits RazorSlice<NavigationTreeItem>
 @{
 	var isTopLevel = Model.Level == 0;
@@ -60,7 +61,7 @@
 				// Only render children if we're within the allowed level depth
 				// MaxLevel of -1 means render all levels
 				bool shouldRenderChildren = Model.MaxLevel == -1 || Model.Level < (Model.MaxLevel);
-				<ul class="w-full hidden peer-has-checked:block ml-4">
+				<ul class="block w-full markdown-content hidden peer-has-checked:block ml-4">
 					@if (shouldRenderChildren)
 					{
 						@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
@@ -86,6 +87,19 @@
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
 			>
 				@leaf.NavigationTitle
+			</a>
+		</li>
+	}
+	else if (item is ExternalLinkNavigationItem ext)
+	{
+		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+			<a
+				href="@ext.Url"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="sidebar-link grow group-[.current]/li:text-blue-elastic! flex items-center"
+			>
+				@ext.NavigationTitle
 			</a>
 		</li>
 	}

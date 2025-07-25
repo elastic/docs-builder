@@ -130,6 +130,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 	{
 		string? file = null;
 		string? folder = null;
+		string? link = null;
+		string? linkTitle = null;
 		string[]? detectionRules = null;
 		TableOfContentsConfiguration? toc = null;
 		var detectionRulesFound = false;
@@ -147,6 +149,12 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				case "file":
 					hiddenFile = key == "hidden";
 					file = ReadFile(reader, entry, parentPath);
+					break;
+				case "link":
+					link = reader.ReadString(entry);
+					break;
+				case "title":
+					linkTitle = reader.ReadString(entry);
 					break;
 				case "folder":
 					folder = ReadFolder(reader, entry, parentPath);
@@ -197,6 +205,15 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 
 			var path = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
 			return [new FileReference(this, path, hiddenFile, children ?? [])];
+		}
+
+		if (link is not null)
+		{
+			// external links cannot have children
+			if (children is not null)
+				reader.EmitWarning("'link' entries may not contain 'children'", tocEntry);
+
+			return [new LinkReference(this, link, linkTitle ?? link)];
 		}
 
 		if (folder is not null)
