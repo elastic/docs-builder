@@ -465,8 +465,16 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, Cancel.None)
-					.GetAwaiter().GetResult();
+				var state = new ParserState(block.Build)
+				{
+					MarkdownSourcePath = snippet,
+					YamlFrontMatter = block.Context.YamlFrontMatter,
+					DocumentationFileLookup = block.Context.DocumentationFileLookup,
+					CrossLinkResolver = block.Context.CrossLinkResolver,
+					ParentMarkdownPath = parentPath,
+					DiagramRegistry = block.Context.DiagramRegistry
+				};
+				var document = MarkdownParser.ParseSnippetAsync(snippet, state, Cancel.None).GetAwaiter().GetResult();
 				_ = renderer.Render(document);
 			}
 			catch (Exception ex)

@@ -53,5 +53,3 @@ public static class DiagnosticsCollectorExtensions
 	public static void EmitGlobalHint(this IDiagnosticsCollector collector, string message) =>
 		collector.EmitHint(string.Empty, message);
 }
-
-

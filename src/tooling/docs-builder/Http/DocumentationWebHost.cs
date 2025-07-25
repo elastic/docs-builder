@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -18,6 +19,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Westwind.AspNetCore.LiveReload;
@@ -191,15 +193,12 @@ public class DocumentationWebHost
 		var generator = holder.Generator;
 		const string navPartialSuffix = ".nav.html";
 
-		// Check if the original request is asking for LLM-rendered markdown
+		// Check if the original request is asking for LLM-rendered Markdown
 		var requestLlmMarkdown = slug.EndsWith(".md");
-		var originalSlug = slug;
 
 		// If requesting .md output, remove the .md extension to find the source file
 		if (requestLlmMarkdown)
-		{
 			slug = slug[..^3]; // Remove ".md" extension
-		}
 
 		if (slug.EndsWith(navPartialSuffix))
 		{
@@ -250,6 +249,14 @@ public class DocumentationWebHost
 			default:
 				if (s == "index.md")
 					return Results.Redirect(generator.DocumentationSet.MarkdownFiles.First().Url);
+
+				// Check for cached SVG files (e.g., generated diagrams) in the output directory
+				if (Path.GetExtension(slug).Equals(".svg", StringComparison.OrdinalIgnoreCase))
+				{
+					var svgPath = Path.Combine(generator.DocumentationSet.OutputDirectory.FullName, slug.TrimStart('/'));
+					if (File.Exists(svgPath))
+						return Results.File(svgPath, "image/svg+xml");
+				}
 
 				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
 					return Results.NotFound();

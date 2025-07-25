@@ -2,7 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Security.Cryptography;
+using System.Text;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Myst.Directives.Diagram;
 
@@ -25,6 +29,14 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 	/// </summary>
 	public string? EncodedUrl { get; private set; }
 
+	/// The local SVG Url
+	public string? LocalSvgUrl { get; private set; }
+
+	/// <summary>
+	/// Content hash for unique identification and caching
+	/// </summary>
+	public string? ContentHash { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		// Extract diagram type from arguments or default to "mermaid"
@@ -39,6 +51,13 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
+		// Generate content hash for caching
+		ContentHash = GenerateContentHash(DiagramType, Content);
+
+		// Generate the local path and url for cached SVG
+		var localPath = GenerateLocalPath(context);
+		LocalSvgUrl = localPath.Replace(Path.DirectorySeparatorChar, '/');
+
 		// Generate the encoded URL for Kroki
 		try
 		{
@@ -47,7 +66,20 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 		catch (Exception ex)
 		{
 			this.EmitError($"Failed to encode diagram: {ex.Message}", ex);
+			return;
 		}
+
+		// only register SVG if we can look up the Markdown
+		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		{
+			var fs = context.Build.ReadFileSystem;
+			var scopePath = fs.FileInfo.New(Path.Combine(currentMarkdown.ScopeDirectory.FullName, localPath));
+			var relativeScopePath = fs.Path.GetRelativePath(context.Build.DocumentationSourceDirectory.FullName, scopePath.FullName);
+			var outputPath = fs.FileInfo.New(Path.Combine(context.Build.DocumentationOutputDirectory.FullName, relativeScopePath));
+			context.DiagramRegistry.RegisterDiagramForCaching(outputPath, EncodedUrl);
+		}
+		else
+			this.EmitError($"Can not locate markdown source for {context.MarkdownSourcePath} to register diagram for caching.");
 	}
 
 	private string? ExtractContent()
@@ -68,4 +100,25 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 		return lines.Count > 0 ? string.Join("\n", lines) : null;
 	}
+
+	private string GenerateContentHash(string diagramType, string content)
+	{
+		var input = $"{diagramType}:{content}";
+		var bytes = Encoding.UTF8.GetBytes(input);
+		var hash = SHA256.HashData(bytes);
+		return Convert.ToHexString(hash)[..12].ToLowerInvariant();
+	}
+
+	private string GenerateLocalPath(ParserContext context)
+	{
+		var markdownFileName = Path.GetFileNameWithoutExtension(context.MarkdownSourcePath.Name);
+
+		var filename = $"{markdownFileName}-diagram-{DiagramType}-{ContentHash}.svg";
+		var localPath = Path.Combine("images", "generated-graphs", filename);
+
+		// Normalize path separators to forward slashes for web compatibility
+		return localPath;
+	}
+
+
 }

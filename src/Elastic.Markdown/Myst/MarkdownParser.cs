@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
@@ -24,7 +25,7 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst;
 
-public partial class MarkdownParser(BuildContext build, IParserResolvers resolvers)
+public partial class MarkdownParser(BuildContext build, IParserResolvers resolvers, DiagramRegistry diagramRegistry)
 {
 	private BuildContext Build { get; } = build;
 	public IParserResolvers Resolvers { get; } = resolvers;
@@ -45,30 +46,37 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			YamlFrontMatter = matter,
 			DocumentationFileLookup = Resolvers.DocumentationFileLookup,
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
-			SkipValidation = skip
+			SkipValidation = skip,
+			DiagramRegistry = diagramRegistry
 		};
 		var context = new ParserContext(state);
 		return ParseAsync(path, context, pipeline, ctx);
 	}
 
-	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
-		ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
+	public MarkdownDocument ParseString(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
+		ParseMarkdownString(markdown, path, matter, Pipeline);
 
-	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
-		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
+	public MarkdownDocument MinimalParseString(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
+		ParseMarkdownString(markdown, path, matter, MinimalPipeline);
 
-	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, pipeline);
+	private MarkdownDocument ParseMarkdownString(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
+		ParseMarkdownString(Build, Resolvers, markdown, path, matter, pipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
+	public MarkdownDocument ParseMarkdownString(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
 	{
 		var state = new ParserState(build)
 		{
 			MarkdownSourcePath = path,
 			YamlFrontMatter = matter,
 			DocumentationFileLookup = resolvers.DocumentationFileLookup,
-			CrossLinkResolver = resolvers.CrossLinkResolver
+			CrossLinkResolver = resolvers.CrossLinkResolver,
+			DiagramRegistry = diagramRegistry
 		};
+		return ParseMarkdownString(markdown, pipeline, state);
+	}
+
+	public static MarkdownDocument ParseMarkdownString(string markdown, MarkdownPipeline pipeline, ParserState state)
+	{
 		var context = new ParserContext(state);
 
 		// Preprocess substitutions in link patterns before Markdig parsing
@@ -78,27 +86,13 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return markdownDocument;
 	}
 
-	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
-		YamlFrontMatter? matter, Cancel ctx)
+	public static Task<MarkdownDocument> ParseSnippetAsync(IFileInfo path, ParserState state, Cancel ctx)
 	{
-		var state = new ParserState(build)
-		{
-			MarkdownSourcePath = path,
-			YamlFrontMatter = matter,
-			DocumentationFileLookup = resolvers.DocumentationFileLookup,
-			CrossLinkResolver = resolvers.CrossLinkResolver,
-			ParentMarkdownPath = parentPath
-		};
 		var context = new ParserContext(state);
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-
-	private static async Task<MarkdownDocument> ParseAsync(
-		IFileInfo path,
-		MarkdownParserContext context,
-		MarkdownPipeline pipeline,
-		Cancel ctx)
+	private static async Task<MarkdownDocument> ParseAsync(IFileInfo path, MarkdownParserContext context, MarkdownPipeline pipeline, Cancel ctx)
 	{
 		string inputMarkdown;
 		if (path.FileSystem is FileSystem)
