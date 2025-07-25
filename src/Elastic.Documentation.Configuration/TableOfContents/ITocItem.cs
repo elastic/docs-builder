@@ -27,15 +27,15 @@ public record TocReference(Uri Source, ITableOfContentsScope TableOfContentsScop
 	/// A phantom table of contents is a table of contents that is not rendered in the UI but is used to generate the TOC.
 	/// This should be used sparingly and needs explicit configuration in navigation.yml.
 	/// It's typically used for container TOC that holds various other TOC's where its children are rehomed throughout the navigation.
-	/// <para>Examples of phantom toc's:</para>
-	/// <list type="">
-	///		<item> - toc: elasticsearch://reference</item>
-	///		<item> - toc: docs-content://</item>
-	/// </list>
-	/// <para>Because navigation.yml does exhaustive checks to ensure all toc.yml files are referenced, marking these containers as phantoms
-	/// ensures that these skip validation checks
-	/// </para>
 	/// </summary>
 	public bool IsPhantom { get; init; }
 }
+
+/// <summary>
+/// Represents an external link in the table of contents.
+/// </summary>
+/// <param name="TableOfContentsScope">Scope this link belongs to.</param>
+/// <param name="Url">Absolute URL of the external resource.</param>
+/// <param name="Title">Display title for the link.</param>
+public record LinkReference(ITableOfContentsScope TableOfContentsScope, string Url, string Title) : ITocItem;
 

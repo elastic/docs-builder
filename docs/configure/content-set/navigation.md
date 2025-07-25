@@ -159,6 +159,39 @@ toc:
   - toc: solutions
 ```
 
+#### External links
+
+You can include links to external websites directly in your navigation tree. Use the `link` key with a valid URL, and provide a human-friendly `title`.
+
+```yaml
+toc:
+  - link: https://elastic.co
+    title: Elastic Website
+  - toc: getting-started
+  - link: https://github.com/elastic/docs-builder
+    title: Docs Builder Repository
+```
+
+Docs-builder renders external links with an icon, opens them in a new tab, and adds `rel="noopener noreferrer"` for security.
+
+Best practices:
+
+* Use external links sparingly in your primary navigation, placing them near the bottom of a section when possible.
+* Provide clear titles that indicate the link leads to an external resource.
+* Periodically verify that external URLs remain valid, and update them if destinations change.
+
+
+The `toc` key can include nested `toc.yml` files.
+
+The following example includes two sub-`toc.yml` files located in directories named `elastic-basics` and `solutions`:
+
+```yml
+toc:
+  - file: index.md
+  - toc: elastic-basics
+  - toc: solutions
+```
+
 ### Attributes
 
 Example:
