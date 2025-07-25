@@ -37,6 +37,7 @@ toc:
       - file: cumulative-docs.md
       - file: branching-strategy.md
       - file: add-repo.md
+      - file: release-new-version.md
   - folder: migration
     children:
       - file: index.md
