@@ -14,7 +14,7 @@ Depending on what you're trying to communicate, you can use the following patter
   Instead, contributors should be able to add them anywhere they need, and the system should
   be in charge of rendering them clearly.
 
-* Always put the newest version first when [listing multiple versions]().
+* Always put the newest version first when listing multiple versions.
 
 % Reference: https://github.com/elastic/kibana/pull/229485/files#r2231876006
 * Avoid using version numbers in prose adjacent to `applies_to` badge to prevent
