@@ -94,12 +94,12 @@ Cross-links can also be included in navigation structures. When creating a `toc.
 toc:
   - file: index.md
   - title: External Documentation
-    cross_link: docs-content://directory/file.md
+    crosslink: docs-content://directory/file.md
   - folder: local-section
     children:
       - file: index.md
       - title: API Reference
-        cross_link: elasticsearch://api/index.html
+        crosslink: elasticsearch://api/index.html
 ```
 
 Cross-links in navigation will be automatically resolved during the build process, maintaining consistent linking between related documentation across repositories.
