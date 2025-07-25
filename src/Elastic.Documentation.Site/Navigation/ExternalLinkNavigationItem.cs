@@ -4,17 +4,17 @@
 
 using Elastic.Documentation.Site.Navigation;
 
-namespace Elastic.Markdown.IO.Navigation;
+namespace Elastic.Documentation.Site.Navigation;
 
 /// <summary>
 /// Navigation item representing an external URL in the TOC.
 /// </summary>
-public record ExternalLinkNavigationItem(string ExternalUrl, string Title, DocumentationGroup Group)
+public record ExternalLinkNavigationItem(string ExternalUrl, string Title, INodeNavigationItem<INavigationModel, INavigationItem> Parent, IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot)
 	: INavigationItem
 {
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = Group;
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = Parent;
 
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = NavigationRoot;
 
 	public string Url => ExternalUrl;
 

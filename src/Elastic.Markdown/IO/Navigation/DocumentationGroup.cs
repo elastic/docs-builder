@@ -6,9 +6,9 @@ using System.Diagnostics;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
-using Elastic.Markdown.IO.Navigation; // for ExternalLinkNavigationItem
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
+using ExternalLinkNavigationItem = Elastic.Documentation.Site.Navigation.ExternalLinkNavigationItem;
 
 namespace Elastic.Markdown.IO.Navigation;
 
@@ -181,7 +181,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 			}
 			else if (tocItem is LinkReference extLink)
 			{
-				var nav = new ExternalLinkNavigationItem(extLink.Url, extLink.Title, this);
+				var nav = new ExternalLinkNavigationItem(extLink.Url, extLink.Title, this, rootNavigationItem);
 				AddToNavigationItems(nav, ref fileIndex);
 			}
 			else if (tocItem is FolderReference folder)
