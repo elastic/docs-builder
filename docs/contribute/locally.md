@@ -23,14 +23,14 @@ This guide follows the first option. If you'd like to clone the repository and b
 
 ::::{tab-item} macOS & Linux
 
-1. **Download and run the install script**   
+1. **Download and run the install script**
 
    Run this command to download and install the latest version of `docs-builder`:
 
    ```sh
    curl -sL https://ela.st/docs-builder-install | sh
    ```
-   
+
    This downloads the latest binary to `/usr/local/bin`, makes it an executable, and installs it to your user PATH. This means you can use the `docs-builder` command from any location of your machine to deploy and run documentation repositories like `docs-builder`,  `docs-content` and so on.
 
    You can optionally specify a specific version to install:
@@ -53,7 +53,7 @@ This guide follows the first option. If you'd like to clone the repository and b
    Run `docs-builder` without `serve` to run a full build and detect errors.
    :::
 
-To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub. 
+To download and install the binary file manually, refer to [Releases](https://github.com/elastic/docs-builder/releases) on GitHub.
 
 If you get a `Permission denied` error, make sure that you aren't trying to run a directory instead of a file. Also, grant the binary file execution permissions using `chmod +x docs-builder`.
 
@@ -61,7 +61,7 @@ If you get a `Permission denied` error, make sure that you aren't trying to run 
 
 ::::{tab-item} Windows
 
-1. **Download and run the install script**   
+1. **Download and run the install script**
 
    Run this command to download and install the latest version of `docs-builder`:
 
@@ -106,7 +106,7 @@ git clone https://github.com/elastic/docs-content.git
 
 We write docs in Markdown. Refer to our [syntax](../syntax/index.md) guide for the flavor of Markdown we support and all of our custom directives that enable you to add a little extra pizzazz to your docs.
 
-This documentation is **cumulative**. This means that a new set of docs is not published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content. [Learn how to write cumulative documentation](cumulative-docs.md).
+This documentation is **cumulative**. This means that a new set of docs is not published for every minor release. Instead, each page stays valid over time and incorporates version-specific changes directly within the content. [Learn how to write cumulative documentation](/contribute/cumulative-docs/index.md).
 
 :::{include} _snippets/tagged-warning.md
 :::
