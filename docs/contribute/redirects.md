@@ -1,28 +1,32 @@
 ---
 navigation_title: "Redirects"
 ---
-# Adding redirects to link resolving
 
-If you [move files around](move.md) or simply need to delete a few pages you might end up in a chicken-and-egg situation. The files you move or delete might still be linked to by other [documentation sets](../configure/content-set/index.md).
+# Manage redirects across doc sets
 
-Redirects allow you to force other documentation sets to resolve old links to their new location.
-This allows you to publish your changes and work to update the other documentation sets.
+When you [move](move.md) or delete pages, other [documentation sets](../configure/content-set/index.md) might still link to them. This can lead to a chicken-and-egg problem: you can't publish your changes without breaking links elsewhere.
 
-:::{note}
-The source and target URLs must both be within Elastic Docs V3.
-You cannot use this process to redirect to [API docs](https://www.elastic.co/docs/api/), for example.
-:::
+Redirects let you map old links to new targets across documentation sets, so you can publish changes while updating other doc sets.
+
+## Limitations
+
+Redirects only work within Elastic Docs V3 content sets. You cannot use this method to redirect to external destinations like [API docs](https://www.elastic.co/docs/api/).
+
+For API redirects, consult with the documentation engineering team on Slack (#elastic-docs-v3).
+
+For elastic.co/guide redirects, open a [web team request](http://ela.st/web-request).
 
 ## File location.
 
-The file should be located next to your `docset.yml` file
+Redirects are configured at the content set-level.
+The configuration file should be located next to your `docset.yml` file:
 
 * `redirects.yml` if you use `docset.yml`
 * `_redirects.yml` if you use `_docset.yml`
 
 ## Syntax
 
-A full overview of the syntax, don't worry we'll zoom after!
+Example syntax:
 
 ```yaml
 redirects:
@@ -66,8 +70,7 @@ redirects:
 
 ### Redirect preserving all anchors
 
-This will rewrite `4th-page.md#anchor` to `5th-page#anchor` while still validating the 
-anchor is valid like normal.
+This example redirects `4th-page.md#anchor` to `5th-page.md#anchor`:
 
 ```yaml
 redirects:
@@ -75,23 +78,24 @@ redirects:
 ```
 ### Redirect stripping all anchors
 
-Here both `9th-page.md` and `7th-page.md` redirect to `5th-page.md` but the crosslink resolver
-will strip any anchors on `9th-page.md` and `7th-page.md`.
-
-:::{note}
-The following two are equivalent. The `!` prefix provides a convenient shortcut
-:::
+This example strips all anchors from the source page.
+Any remaining links resolving to anchors on `7th-page.md` will fail link validation.
 
 ```yaml
-redirects:
-  'testing/redirects/9th-page.md': '!testing/redirects/5th-page.md'
+redirects
   'testing/redirects/7th-page.md':
     to: 'testing/redirects/5th-page.md'
     anchors: '!'
 ```
 
-A special case is redirecting to the page itself when a section gets removed/renamed.
-In which case `to:` can simply be omitted
+Alternate syntax:
+
+```yaml
+redirects:
+  'testing/redirects/7th-page.md': '!testing/redirects/5th-page.md'
+```
+
+To handle removed anchors on a page that still exists, omit the `to:` field:
 
 ```yaml
   'testing/redirects/third-page.md':
@@ -99,15 +103,13 @@ In which case `to:` can simply be omitted
       'removed-anchor':
 ```
 
-### Redirect renaming anchors
+### Redirect with renamed anchors
 
-* `first-page-old.md#old-anchor` will redirect to `second-page.md#active-anchor`
-* `first-page-old.md#removed-anchor` will redirect to `second-page.md`
+This example redirects:
 
-Any anchor not listed will be forwarded and validated e.g;
-
-* `first-page-old.md#another-anchor` will redirect to `second-page.md#another-anchor` and validate 
-  `another-anchor` exists in `second-page.md`
+- `first-page-old.md#old-anchor` → `second-page.md#active-anchor`
+- `first-page-old.md#removed-anchor` → `second-page.md`
+- Any other anchor is passed through and validated normally.
 
 ```yaml
 redirects:
@@ -120,9 +122,7 @@ redirects:
 
 ### Redirecting to other repositories
 
-It is possible to redirect to other repositories. The syntax is the same as when linking on documentation sets:
-
-* 'other-repo://reference/section/new-cross-repo-page.md'
+Use the `repo://path/to/page.md` syntax to redirect across repositories.
 
 ```yaml
 redirects:
