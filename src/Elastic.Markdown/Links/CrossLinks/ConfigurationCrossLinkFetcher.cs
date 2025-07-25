@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -12,18 +13,48 @@ namespace Elastic.Markdown.Links.CrossLinks;
 
 public class ConfigurationCrossLinkFetcher(ILoggerFactory logFactory, ConfigurationFile configuration, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(logFactory, linkIndexProvider)
 {
+	private readonly ILogger _logger = logFactory.CreateLogger(nameof(ConfigurationCrossLinkFetcher));
+
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{
 		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
+
 		foreach (var repository in configuration.CrossLinkRepositories)
 		{
 			_ = declaredRepositories.Add(repository);
-			var linkReference = await Fetch(repository, ["main", "master"], ctx);
-			linkReferences.Add(repository, linkReference);
-			var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
-			linkIndexEntries.Add(repository, linkIndexReference);
+			try
+			{
+				var linkReference = await Fetch(repository, ["main", "master"], ctx);
+				linkReferences.Add(repository, linkReference);
+
+				var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
+				linkIndexEntries.Add(repository, linkIndexReference);
+			}
+			catch (Exception ex)
+			{
+				// Log the error but continue processing other repositories
+				_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", repository);
+
+				// Add an empty entry so we at least recognize the repository exists
+				if (!linkReferences.ContainsKey(repository))
+				{
+					linkReferences.Add(repository, new RepositoryLinks
+					{
+						Links = [],
+						Origin = new GitCheckoutInformation
+						{
+							Branch = "main",
+							RepositoryName = repository,
+							Remote = "origin",
+							Ref = "refs/heads/main"
+						},
+						UrlPathPrefix = "",
+						CrossLinks = []
+					});
+				}
+			}
 		}
 
 		return new FetchedCrossLinks

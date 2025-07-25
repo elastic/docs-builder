@@ -209,6 +209,25 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
 			.ToFrozenDictionary();
 
+		// Validate cross-repo links in navigation
+
+		try
+		{
+			// First ensure links are fetched - this is essential for resolving links properly
+			_ = LinkResolver.FetchLinks(new Cancel()).GetAwaiter().GetResult();
+
+			NavigationCrossLinkValidator.ValidateNavigationCrossLinksAsync(
+				Tree,
+				LinkResolver,
+				(msg) => Context.EmitError(Context.ConfigurationPath, msg)
+			).GetAwaiter().GetResult();
+		}
+		catch (Exception e)
+		{
+			// Log the error but don't fail the build
+			Context.EmitError(Context.ConfigurationPath, $"Error validating cross-links in navigation: {e.Message}");
+		}
+
 		ValidateRedirectsExists();
 	}
 
@@ -221,6 +240,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 				case FileNavigationItem fileNavigationItem:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
 					fileNavigationItem.NavigationIndex = fileIndex;
+					break;
+				case CrossLinkNavigationItem crossLinkNavigationItem:
+					var crossLinkIndex = Interlocked.Increment(ref navigationIndex);
+					crossLinkNavigationItem.NavigationIndex = crossLinkIndex;
 					break;
 				case DocumentationGroup documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
@@ -241,6 +264,9 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		if (item is ILeafNavigationItem<INavigationModel> leaf)
 			return [leaf];
 
+		if (item is CrossLinkNavigationItem crossLink)
+			return [crossLink];
+
 		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
 		{
 			var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
@@ -254,6 +280,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		if (item is FileNavigationItem f)
 			return [(f.Model.CrossLink, item)];
+		if (item is CrossLinkNavigationItem cl)
+			return [(cl.Url, item)]; // Use the URL as the key for cross-links
 		if (item is DocumentationGroup g)
 		{
 			var index = new List<(string, INavigationItem)>
