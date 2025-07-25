@@ -129,6 +129,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 	private IEnumerable<ITocItem>? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string parentPath)
 	{
 		string? file = null;
+		string? crossLink = null;
+		string? title = null;
 		string? folder = null;
 		string[]? detectionRules = null;
 		TableOfContentsConfiguration? toc = null;
@@ -147,6 +149,13 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				case "file":
 					hiddenFile = key == "hidden";
 					file = ReadFile(reader, entry, parentPath);
+					break;
+				case "title":
+					title = reader.ReadString(entry);
+					break;
+				case "crosslink":
+					hiddenFile = false;
+					crossLink = reader.ReadString(entry);
 					break;
 				case "folder":
 					folder = ReadFolder(reader, entry, parentPath);
@@ -197,6 +206,12 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 
 			var path = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
 			return [new FileReference(this, path, hiddenFile, children ?? [])];
+		}
+
+		if (crossLink is not null)
+		{
+			// No validation here - we'll validate cross-links separately
+			return [new CrossLinkReference(this, crossLink, title, hiddenFile, children ?? [])];
 		}
 
 		if (folder is not null)

@@ -119,7 +119,13 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 		foreach (var tocItem in lookups.TableOfContents)
 		{
-			if (tocItem is FileReference file)
+			if (tocItem is CrossLinkReference crossLink)
+			{
+				// Create a special navigation item for cross-repository links
+				var crossLinkItem = new CrossLinkNavigationItem(crossLink.CrossLinkUri, crossLink.Title, this, crossLink.Hidden);
+				AddToNavigationItems(crossLinkItem, ref fileIndex);
+			}
+			else if (tocItem is FileReference file)
 			{
 				if (!lookups.FlatMappedFiles.TryGetValue(file.RelativePath, out var d))
 				{
