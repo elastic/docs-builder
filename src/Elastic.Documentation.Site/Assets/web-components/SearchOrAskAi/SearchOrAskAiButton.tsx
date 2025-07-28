@@ -17,7 +17,11 @@ import * as React from 'react'
 import { useEffect, Suspense, lazy } from 'react'
 
 // Lazy load the modal component
-const SearchOrAskAiModal = lazy(() => import('./SearchOrAskAiModal').then(module => ({ default: module.SearchOrAskAiModal })))
+const SearchOrAskAiModal = lazy(() =>
+    import('./SearchOrAskAiModal').then((module) => ({
+        default: module.SearchOrAskAiModal,
+    }))
+)
 
 export const SearchOrAskAiButton = () => {
     const searchTerm = useSearchTerm()
@@ -92,11 +96,13 @@ export const SearchOrAskAiButton = () => {
                     <EuiOverlayMask>
                         <EuiFocusTrap onClickOutside={closeModal}>
                             <EuiPanel role="dialog" css={positionCss}>
-                                <Suspense fallback={
-                                    <div css={loadingCss}>
-                                        <EuiLoadingSpinner size="xl"  />
-                                    </div>
-                                }>
+                                <Suspense
+                                    fallback={
+                                        <div css={loadingCss}>
+                                            <EuiLoadingSpinner size="xl" />
+                                        </div>
+                                    }
+                                >
                                     <SearchOrAskAiModal />
                                 </Suspense>
                             </EuiPanel>
