@@ -7,7 +7,10 @@
   "scripts": {
     "watch": "parcel watch",
     "build": "parcel build",
-    "lint": "eslint .",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ignore-pattern './_static/*' --ignore-pattern 'jest.config.js'",
     "fmt:check": "prettier --check .",
     "fmt:write": "prettier --write ."
   },
@@ -31,14 +34,8 @@
   },
   "private": true,
   "devDependencies": {
-    "@elastic/datemath": "5.0.3",
-    "@elastic/eui": "106.0.0",
-    "@elastic/eui-theme-borealis": "3.3.0",
-    "@emotion/css": "11.13.5",
-    "@emotion/react": "11.14.0",
     "@eslint/js": "9.31.0",
     "@parcel/reporter-bundle-analyzer": "2.15.4",
-    "@r2wc/react-to-web-component": "2.0.4",
     "@tailwindcss/postcss": "4.1.11",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "eslint": "9.31.0",
@@ -57,7 +54,12 @@
     "defaults"
   ],
   "dependencies": {
+    "@elastic/eui": "106.0.0",
     "@elastic/highlightjs-esql": "1.1.0",
+    "@emotion/css": "11.13.5",
+    "@emotion/react": "11.14.0",
+    "@microsoft/fetch-event-source": "2.0.1",
+    "@r2wc/react-to-web-component": "2.0.4",
     "clipboard": "2.0.11",
     "highlight.js": "11.11.1",
     "htmx-ext-head-support": "2.0.4",
@@ -66,6 +68,9 @@
     "select-dom": "9.4.0",
     "tailwindcss": "4.1.11",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.4"
+    "ua-parser-js": "2.0.4",
+    "uuid": "11.1.0",
+    "zod": "4.0.8",
+    "zustand": "5.0.6"
   }
 }
