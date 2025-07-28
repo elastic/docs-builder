@@ -29,7 +29,7 @@ sources:
     name: Get latest stack version
     kind: githubrelease
     transformers:
-      - trimprefix: v 
+      - trimprefix: v
     spec:
       owner: elastic
       repository: elasticsearch
