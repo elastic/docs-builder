@@ -6,8 +6,6 @@ using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text;
-using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
