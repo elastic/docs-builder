@@ -1,5 +1,5 @@
+/** @jsxImportSource @emotion/react */
 import '../../eui-icons-cache'
-import { SearchOrAskAiModal } from './SearchOrAskAiModal'
 import { useModalActions, useModalIsOpen } from './modal.store'
 import { useSearchActions, useSearchTerm } from './search.store'
 import {
@@ -10,10 +10,14 @@ import {
     EuiPanel,
     EuiTextTruncate,
     EuiText,
+    EuiLoadingSpinner,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useEffect } from 'react'
+import { useEffect, Suspense, lazy } from 'react'
+
+// Lazy load the modal component
+const SearchOrAskAiModal = lazy(() => import('./SearchOrAskAiModal').then(module => ({ default: module.SearchOrAskAiModal })))
 
 export const SearchOrAskAiButton = () => {
     const searchTerm = useSearchTerm()
@@ -28,6 +32,13 @@ export const SearchOrAskAiButton = () => {
         top: 48px;
         width: 90ch;
         max-width: 100%;
+    `
+
+    const loadingCss = css`
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
     `
 
     useEffect(() => {
@@ -81,7 +92,13 @@ export const SearchOrAskAiButton = () => {
                     <EuiOverlayMask>
                         <EuiFocusTrap onClickOutside={closeModal}>
                             <EuiPanel role="dialog" css={positionCss}>
-                                <SearchOrAskAiModal />
+                                <Suspense fallback={
+                                    <div css={loadingCss}>
+                                        <EuiLoadingSpinner size="xl"  />
+                                    </div>
+                                }>
+                                    <SearchOrAskAiModal />
+                                </Suspense>
                             </EuiPanel>
                         </EuiFocusTrap>
                     </EuiOverlayMask>

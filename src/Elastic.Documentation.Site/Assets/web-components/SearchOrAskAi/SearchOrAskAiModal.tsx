@@ -20,12 +20,7 @@ export const SearchOrAskAiModal = () => {
     const { setSearchTerm, submitAskAiTerm } = useSearchActions()
 
     return (
-        <EuiPanel
-            css={css`
-                max-height: 80vh;
-                overflow: hidden;
-            `}
-        >
+        <>
             <EuiFieldSearch
                 fullWidth
                 placeholder="Search the docs or ask Elastic Docs AI Assistant"
@@ -61,6 +56,6 @@ export const SearchOrAskAiModal = () => {
                     This feature is in beta. Got feedback? We'd love to hear it!
                 </EuiText>
             </div>
-        </EuiPanel>
+        </>
     )
 }
