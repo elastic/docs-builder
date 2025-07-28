@@ -1,155 +1,157 @@
 @layer components {
-	.highlight {
-		@apply mt-4;
-	}
+	.markdown-content {
+		.highlight {
+			@apply mt-4;
+		}
 
-	pre {
-		@apply grid;
+		pre {
+			@apply grid;
+			code {
+				@apply text-grey-30 overflow-x-auto rounded-none border-0 p-6! text-sm;
+				background-color: #22272e;
+				mix-blend-mode: unset;
+				line-height: 1.5em;
+				word-break: normal;
+			}
+			code:first-child {
+				@apply rounded-t-sm;
+			}
+			code:last-child {
+				@apply rounded-b-sm;
+			}
+			code.language-apiheader {
+				@apply border-b-grey-80 border-b-1;
+			}
+		}
+
+		pre code .code-callout {
+			@apply ml-1;
+			user-select: none;
+			&::after {
+				content: attr(data-index);
+			}
+		}
+
+		ol.code-callouts {
+			li {
+				@apply relative pl-1;
+				counter-increment: code-callout-counter;
+				list-style-type: none;
+			}
+
+			li::before {
+				content: counter(code-callout-counter);
+				position: absolute;
+				top: 1px;
+				left: calc(-1 * var(--spacing) * 6);
+			}
+		}
+
+		pre code .code-callout .hljs-number {
+			@apply text-white!;
+		}
+
+		pre code .code-callout,
+		ol.code-callouts li::before {
+			@apply bg-blue-elastic inline-flex size-4.5 items-center justify-center rounded-full font-mono text-xs! text-white!;
+		}
+
 		code {
-			@apply text-grey-30 overflow-x-auto rounded-none border-0 p-6! text-sm;
-			background-color: #22272e;
-			mix-blend-mode: unset;
-			line-height: 1.5em;
-			word-break: normal;
-		}
-		code:first-child {
-			@apply rounded-t-sm;
-		}
-		code:last-child {
-			@apply rounded-b-sm;
-		}
-		code.language-apiheader {
-			@apply border-b-grey-80 border-b-1;
-		}
-	}
-
-	pre code .code-callout {
-		@apply ml-1;
-		user-select: none;
-		&::after {
-			content: attr(data-index);
-		}
-	}
-
-	ol.code-callouts {
-		li {
-			@apply relative pl-1;
-			counter-increment: code-callout-counter;
-			list-style-type: none;
+			@apply bg-grey-10 border-grey-20 rounded-xs border-1 font-mono;
+			font-size: 0.875em;
+			line-height: 1.4em;
+			padding-left: 0.2em;
+			padding-right: 0.2em;
+			text-decoration: inherit;
+			font-weight: inherit;
+			mix-blend-mode: multiply;
+			word-break: break-word;
 		}
 
-		li::before {
-			content: counter(code-callout-counter);
-			position: absolute;
-			top: 1px;
-			left: calc(-1 * var(--spacing) * 6);
+		.hljs-built_in,
+		.hljs-selector-tag,
+		.hljs-section,
+		.hljs-link {
+			color: var(--color-blue-elastic-70);
 		}
-	}
 
-	pre code .code-callout .hljs-number {
-		@apply text-white!;
-	}
+		.hljs-keyword {
+			color: var(--color-blue-elastic-70);
+		}
 
-	pre code .code-callout,
-	ol.code-callouts li::before {
-		@apply bg-blue-elastic inline-flex size-4.5 items-center justify-center rounded-full font-mono text-xs! text-white!;
-	}
+		.hljs {
+			color: var(--color-blue-elastic-30) !important;
+		}
+		.hljs-subst {
+			color: var(--color-purple-60);
+		}
+		.hljs-function {
+			color: var(--color-purple-60);
+		}
 
-	code {
-		@apply bg-grey-10 border-grey-20 rounded-xs border-1 font-mono;
-		font-size: 0.875em;
-		line-height: 1.4em;
-		padding-left: 0.2em;
-		padding-right: 0.2em;
-		text-decoration: inherit;
-		font-weight: inherit;
-		mix-blend-mode: multiply;
-		word-break: break-word;
-	}
+		.hljs-title,
+		.hljs-title.function,
+		.hljs-attr,
+		.hljs-meta-keyword {
+			color: var(--color-yellow-50);
+		}
 
-	.hljs-built_in,
-	.hljs-selector-tag,
-	.hljs-section,
-	.hljs-link {
-		color: var(--color-blue-elastic-70);
-	}
+		.hljs-string {
+			color: var(--color-green-50);
+		}
+		.hljs-operator {
+			color: var(--color-yellow-50);
+		}
 
-	.hljs-keyword {
-		color: var(--color-blue-elastic-70);
-	}
+		.hljs-meta,
+		.hljs-name,
+		.hljs-bullet,
+		.hljs-addition,
+		.hljs-template-tag,
+		.hljs-template-variable {
+			color: var(--color-yellow-50);
+		}
 
-	.hljs {
-		color: var(--color-blue-elastic-30) !important;
-	}
-	.hljs-subst {
-		color: var(--color-purple-60);
-	}
-	.hljs-function {
-		color: var(--color-purple-60);
-	}
+		.hljs-type,
+		.hljs-symbol {
+			color: var(--color-teal-50);
+		}
+		.hljs-variable {
+			color: var(--color-purple-50);
+		}
 
-	.hljs-title,
-	.hljs-title.function,
-	.hljs-attr,
-	.hljs-meta-keyword {
-		color: var(--color-yellow-50);
-	}
+		.hljs-comment,
+		.hljs-quote,
+		.hljs-deletion {
+			color: var(--color-grey-70);
+		}
 
-	.hljs-string {
-		color: var(--color-green-50);
-	}
-	.hljs-operator {
-		color: var(--color-yellow-50);
-	}
+		.hljs-punctuation {
+			color: var(--color-grey-50);
+			font-weight: bold;
+		}
 
-	.hljs-meta,
-	.hljs-name,
-	.hljs-bullet,
-	.hljs-addition,
-	.hljs-template-tag,
-	.hljs-template-variable {
-		color: var(--color-yellow-50);
-	}
+		.hljs-keyword,
+		.hljs-selector-tag,
+		.hljs-literal,
+		.hljs-title,
+		.hljs-section,
+		.hljs-doctag,
+		.hljs-type,
+		.hljs-name,
+		.hljs-strong {
+			font-weight: bold;
+		}
 
-	.hljs-type,
-	.hljs-symbol {
-		color: var(--color-teal-50);
-	}
-	.hljs-variable {
-		color: var(--color-purple-50);
-	}
+		.hljs-literal {
+			color: var(--color-pink-50);
+		}
+		.hljs-number {
+			color: var(--color-red-50);
+		}
 
-	.hljs-comment,
-	.hljs-quote,
-	.hljs-deletion {
-		color: var(--color-grey-70);
-	}
-
-	.hljs-punctuation {
-		color: var(--color-grey-50);
-		font-weight: bold;
-	}
-
-	.hljs-keyword,
-	.hljs-selector-tag,
-	.hljs-literal,
-	.hljs-title,
-	.hljs-section,
-	.hljs-doctag,
-	.hljs-type,
-	.hljs-name,
-	.hljs-strong {
-		font-weight: bold;
-	}
-
-	.hljs-literal {
-		color: var(--color-pink-50);
-	}
-	.hljs-number {
-		color: var(--color-red-50);
-	}
-
-	.hljs-emphasis {
-		font-style: italic;
+		.hljs-emphasis {
+			font-style: italic;
+		}
 	}
 }
