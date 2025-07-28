@@ -10,12 +10,13 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
+import { useEffect } from "react";
 
 export const SearchOrAskAiModal = () => {
     const searchTerm = useSearchTerm()
     const askAiTerm = useAskAiTerm()
     const { setSearchTerm, submitAskAiTerm } = useSearchActions()
-
+    
     return (
         <>
             <EuiFieldSearch
@@ -27,6 +28,7 @@ export const SearchOrAskAiModal = () => {
                     submitAskAiTerm(e)
                 }}
                 isClearable
+                autoFocus={true}
             />
             <EuiSpacer size="m" />
             {askAiTerm ? <AskAiAnswer /> : <Suggestions />}
