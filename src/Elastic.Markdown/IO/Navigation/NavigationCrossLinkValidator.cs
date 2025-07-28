@@ -15,11 +15,11 @@ public static class NavigationCrossLinkValidator
 	public static async Task ValidateNavigationCrossLinksAsync(
 		INavigationItem root,
 		ICrossLinkResolver crossLinkResolver,
-		Action<string> errorEmitter)
+		Action<string> errorEmitter,
+		Cancel ctx = default)
 	{
 		// Ensure cross-links are fetched before validation
-		_ = await crossLinkResolver.FetchLinks(new Cancel());
-
+		_ = await crossLinkResolver.FetchLinks(ctx);
 		// Collect all navigation items that contain cross-repo links
 		var itemsWithCrossLinks = FindNavigationItemsWithCrossLinks(root);
 
