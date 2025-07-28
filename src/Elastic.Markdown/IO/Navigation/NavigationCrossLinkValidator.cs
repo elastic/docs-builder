@@ -73,14 +73,7 @@ public static class NavigationCrossLinkValidator
 				results.Add(item);
 			}
 		}
-		else if (item is FileNavigationItem fileItem &&
-				fileItem.Url != null &&
-				Uri.TryCreate(fileItem.Url, UriKind.Absolute, out var fileUri) &&
-				fileUri.Scheme != "http" &&
-				fileUri.Scheme != "https")
-		{
-			results.Add(item);
-		}       // Recursively check children if this is a container
+		// Recursively check children if this is a container
 		if (item is INodeNavigationItem<INavigationModel, INavigationItem> containerItem)
 		{
 			foreach (var child in containerItem.NavigationItems)
