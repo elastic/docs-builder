@@ -136,7 +136,11 @@ export const AskAiAnswer = () => {
                     )}
                     {!error && isLoading && (
                         <>
-                            {messages.length > 0 && <EuiSpacer size="s" />}
+                            {messages.filter(
+                                (m) =>
+                                    m.type === 'ai_message' ||
+                                    m.type === 'ai_message_chunk'
+                            ).length > 0 && <EuiSpacer size="s" />}
                             <EuiFlexGroup
                                 alignItems="center"
                                 gutterSize="xs"

@@ -15,7 +15,6 @@ using Elastic.Documentation.Tooling;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Renderers;
-using Google.Apis.Auth.OAuth2;
 using Markdig.Syntax;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -286,9 +285,6 @@ public class DocumentationWebHost
 				return Results.Empty;
 			}
 
-			var credential = GoogleCredential.FromFile(serviceAccountKeyPath)
-				.CreateScoped("https://www.googleapis.com/auth/cloud-platform");
-
 			// Get GCP function URL
 			var gcpFunctionUrl = Environment.GetEnvironmentVariable("GCP_CHAT_FUNCTION_URL");
 			if (string.IsNullOrEmpty(gcpFunctionUrl))
@@ -302,17 +298,8 @@ public class DocumentationWebHost
 			var functionUri = new Uri(gcpFunctionUrl);
 			var audienceUrl = $"{functionUri.Scheme}://{functionUri.Host}";
 
-			// Generate ID token for GCP Cloud Function authentication
-			if (credential.UnderlyingCredential is not IOidcTokenProvider oidcProvider)
-			{
-				context.Response.StatusCode = 500;
-				await context.Response.WriteAsync("GCP credential does not support ID tokens", cancellationToken: ctx);
-				return Results.Empty;
-			}
-
-			var oidcTokenOptions = OidcTokenOptions.FromTargetAudience(audienceUrl);
-			var oidcTokenSource = await oidcProvider.GetOidcTokenAsync(oidcTokenOptions, ctx);
-			var idToken = await oidcTokenSource.GetAccessTokenAsync(ctx);
+			// Generate ID token using AOT-compatible approach
+			var idToken = await GcpIdTokenGenerator.GenerateIdTokenAsync(serviceAccountKeyPath, audienceUrl, ctx);
 
 			// Make request to GCP function
 			using var httpClient = new HttpClient();
