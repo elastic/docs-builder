@@ -1,7 +1,7 @@
 versioning_systems:
   stack: &stack
     base: 9.0
-    current: 9.1.0
+    current: 9.0.4
   
   # Using an unlikely high version
   # So that our logic that would display "planned" doesn't trigger
@@ -91,3 +91,4 @@ versioning_systems:
   edot_cf_aws:
     base: 0.1
     current: 0.1.6
+  
