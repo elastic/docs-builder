@@ -1,7 +1,7 @@
 versioning_systems:
   stack: &stack
     base: 9.0
-    current: 9.0.3
+    current: 9.0.4
   
   # Using an unlikely high version
   # So that our logic that would display "planned" doesn't trigger
@@ -16,7 +16,7 @@ versioning_systems:
   ech: *all
   eck:
     base: 3.0
-    current: 3.2
+    current: 3.0
   ess: *all
   self: *stack
 

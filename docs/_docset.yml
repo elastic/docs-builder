@@ -38,6 +38,7 @@ toc:
       - file: cumulative-docs.md
       - file: branching-strategy.md
       - file: add-repo.md
+      - file: release-new-version.md
   - folder: migration
     children:
       - file: index.md
@@ -65,8 +66,9 @@ toc:
         children:
           - file: index.md
           - file: content.md
-          - file: landing-page.md
-          - file: redirects.md
+          - file: navigation.md
+          - file: versions.md
+          - file: legacy-url-mappings.md
       - folder: content-set
         children:
           - file: index.md
@@ -87,6 +89,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - hidden: diagrams.md
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md

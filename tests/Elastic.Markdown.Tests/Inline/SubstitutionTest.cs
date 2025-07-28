@@ -205,3 +205,150 @@ sub:
 		Html.Should().NotContain("title=\"{{hello-world}}\"")
 			.And.Contain("title=\"Hello World\"");
 }
+
+public class MutationOperatorTest(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  version: "9.0.4"
+---
+
+# Testing Mutation Operators
+
+Version: {{version|M.M}}
+Version with space: {{version | M.M}}
+Major only: {{version|M}}
+Major only with space: {{version | M}}
+Major.x: {{version|M.x}}
+Major.x with space: {{version | M.x}}
+Increase major: {{version|M+1}}
+Increase major with space: {{version | M+1}}
+Increase minor: {{version|M.M+1}}
+Increase minor with space: {{version | M.M+1}}
+"""
+)
+{
+	[Fact]
+	public void MutationOperatorsWorkWithAndWithoutSpaces()
+	{
+		// Both versions with and without spaces should render the same way
+		Html.Should().Contain("Version: 9.0")
+			.And.Contain("Version with space: 9.0")
+			.And.Contain("Major only: 9")
+			.And.Contain("Major only with space: 9")
+			.And.Contain("Major.x: 9.x")
+			.And.Contain("Major.x with space: 9.x")
+			.And.Contain("Increase major: 10.0.0")
+			.And.Contain("Increase major with space: 10.0.0")
+			.And.Contain("Increase minor: 9.1.0")
+			.And.Contain("Increase minor with space: 9.1.0");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class MultipleMutationOperatorsTest(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  version: "9.0.4"
+  product: "Elasticsearch"
+---
+
+# Testing Multiple Mutation Operators
+
+Version: {{version|M.M|lc}}
+Version with spaces: {{version | M.M | lc}}
+Product: {{product|uc}}
+Product with spaces: {{product | uc}}
+"""
+)
+{
+	[Fact]
+	public void MultipleMutationOperatorsWorkWithAndWithoutSpaces()
+	{
+		// Both versions with and without spaces should render the same way
+		Html.Should().Contain("Version: 9.0")
+			.And.Contain("Version with spaces: 9.0")
+			.And.Contain("Product: ELASTICSEARCH")
+			.And.Contain("Product with spaces: ELASTICSEARCH");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class MutationOperatorsInLinksTest(ITestOutputHelper output) : InlineTest(output,
+"""
+---
+sub:
+  version: "9.0.4"
+  product: "Elasticsearch"
+---
+
+# Testing Mutation Operators in Links
+
+[Link with mutation operator](https://www.elastic.co/guide/en/elasticsearch/reference/{{version|M.M}}/index.html)
+[Link with mutation operator and space](https://www.elastic.co/guide/en/elasticsearch/reference/{{version | M.M}}/index.html)
+[Link text with mutation]({{product|uc}} {{version|M.M}})
+[Link text with mutation and space]({{product | uc}} {{version | M.M}})
+
+"""
+)
+{
+	[Fact]
+	public void MutationOperatorsWorkInLinks()
+	{
+		// Check URL mutations
+		Html.Should().Contain("href=\"https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html\"")
+			.And.NotContain("{{version|M.M}}")
+			.And.NotContain("{{version | M.M}}");
+
+		// Check link text mutations
+		Html.Should().Contain("ELASTICSEARCH 9.0")
+			.And.NotContain("{{product|uc}}")
+			.And.NotContain("{{version|M.M}}");
+
+		// Check link text mutations with spaces
+		Html.Should().Contain("ELASTICSEARCH 9.0")
+			.And.NotContain("{{product | uc}}")
+			.And.NotContain("{{version | M.M}}");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class MutationOperatorsInCodeBlocksTest(ITestOutputHelper output) : BlockTest<EnhancedCodeBlock>(output,
+"""
+---
+sub:
+  version: "9.0.4"
+  product: "Elasticsearch"
+---
+
+# Testing Mutation Operators in Code Blocks
+
+```{code} sh subs=true
+# Install Elasticsearch {{version|M.M}}
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version|M.M}}-linux-x86_64.tar.gz
+
+# With space in mutation
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{version | M.M}}-linux-x86_64.tar.gz
+```
+"""
+)
+{
+	[Fact]
+	public void MutationOperatorsWorkInCodeBlocks()
+	{
+		Html.Should().Contain("# Install Elasticsearch 9.0")
+			.And.Contain("elasticsearch-9.0-linux-x86_64.tar.gz")
+			.And.NotContain("{{version|M.M}}")
+			.And.NotContain("{{version | M.M}}");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}

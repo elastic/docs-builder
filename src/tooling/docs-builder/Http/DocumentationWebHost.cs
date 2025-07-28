@@ -6,6 +6,8 @@ using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text;
+using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
@@ -111,6 +113,9 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
+		_ = _webApplication.MapPost("/chat", async (HttpContext context, Cancel ctx) =>
+			await ProxyChatRequest(context, ctx));
+
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
 	}
@@ -215,5 +220,107 @@ public class DocumentationWebHost
 		}
 
 		return Results.Content(content, "text/html", encoding, statusCode);
+	}
+
+	private static async Task<IResult> ProxyChatRequest(HttpContext context, CancellationToken ctx)
+	{
+		try
+		{
+			// Read the frontend request body
+			var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync(ctx);
+
+			// Load GCP service account credentials
+			var serviceAccountKeyPath = Environment.GetEnvironmentVariable("GCP_SERVICE_ACCOUNT_KEY_PATH")
+				?? "service-account-key.json";
+
+			if (!File.Exists(serviceAccountKeyPath))
+			{
+				context.Response.StatusCode = 500;
+				await context.Response.WriteAsync("GCP credentials not configured", cancellationToken: ctx);
+				return Results.Empty;
+			}
+
+			// Get GCP function URL
+			var gcpFunctionUrl = Environment.GetEnvironmentVariable("GCP_CHAT_FUNCTION_URL");
+			if (string.IsNullOrEmpty(gcpFunctionUrl))
+			{
+				context.Response.StatusCode = 500;
+				await context.Response.WriteAsync("GCP function URL not configured", cancellationToken: ctx);
+				return Results.Empty;
+			}
+
+			// Extract base URL for ID token audience (service URL without path)
+			var functionUri = new Uri(gcpFunctionUrl);
+			var audienceUrl = $"{functionUri.Scheme}://{functionUri.Host}";
+
+			// Generate ID token using AOT-compatible approach
+			var idToken = await GcpIdTokenGenerator.GenerateIdTokenAsync(serviceAccountKeyPath, audienceUrl, ctx);
+
+			// Make request to GCP function
+			using var httpClient = new HttpClient();
+			var request = new HttpRequestMessage(HttpMethod.Post, gcpFunctionUrl)
+			{
+				Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
+			};
+
+			// Add authorization header with ID token
+			request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", idToken);
+
+			// Add additional headers that GCP functions commonly require
+			request.Headers.Add("User-Agent", "docs-builder-proxy/1.0");
+			request.Headers.Add("Accept", "text/event-stream, application/json");
+
+			// Ensure Content-Type is set properly for the request body
+			request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+			var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+
+			if (!response.IsSuccessStatusCode)
+			{
+				var errorContent = await response.Content.ReadAsStringAsync(ctx);
+				Console.WriteLine($"[CHAT PROXY] Error response: {errorContent}");
+				context.Response.StatusCode = (int)response.StatusCode;
+				await context.Response.WriteAsync(errorContent, cancellationToken: ctx);
+				return Results.Empty;
+			}
+
+			// Forward the response
+			context.Response.StatusCode = (int)response.StatusCode;
+			context.Response.ContentType = response.Content.Headers.ContentType?.ToString();
+
+			// // Copy response headers (but skip headers that shouldn't be forwarded)
+			// foreach (var header in response.Headers)
+			// {
+			// 	// Skip headers that can cause issues in proxy scenarios
+			// 	if (header.Key.Equals("Transfer-Encoding", StringComparison.OrdinalIgnoreCase)
+			// 		|| header.Key.Equals("Connection", StringComparison.OrdinalIgnoreCase)
+			// 		|| header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+			// 	{
+			// 		continue;
+			// 	}
+			// 	context.Response.Headers[header.Key] = header.Value.ToArray();
+			// }
+			// foreach (var header in response.Content.Headers)
+			// {
+			// 	// Skip Content-Length as it may conflict with chunked streaming
+			// 	if (header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+			// 	{
+			// 		continue;
+			// 	}
+			// 	context.Response.Headers[header.Key] = header.Value.ToArray();
+			// }
+
+			// Stream the response
+			await using var responseStream = await response.Content.ReadAsStreamAsync(ctx);
+			await responseStream.CopyToAsync(context.Response.Body, ctx);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[CHAT PROXY] Exception: {ex.Message}");
+			context.Response.StatusCode = 500;
+			await context.Response.WriteAsync($"Error proxying request: {ex.Message}", cancellationToken: ctx);
+		}
+
+		return Results.Empty;
 	}
 }
