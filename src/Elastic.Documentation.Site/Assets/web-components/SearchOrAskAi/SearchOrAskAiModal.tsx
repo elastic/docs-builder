@@ -3,7 +3,6 @@ import { Suggestions } from './Suggestions'
 import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
 import {
     EuiFieldSearch,
-    EuiPanel,
     EuiSpacer,
     EuiBetaBadge,
     EuiText,
