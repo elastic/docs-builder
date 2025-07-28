@@ -34,11 +34,13 @@ public class DocumentationWebHost
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
-		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
+		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Information);
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
+			.AddFilter("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogLevel.Warning)
+			.AddFilter("Microsoft.AspNetCore.Http.Result.ContentResult", LogLevel.Warning)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
 		var collector = new LiveModeDiagnosticsCollector(logFactory);
@@ -92,7 +94,6 @@ public class DocumentationWebHost
 		_ = _webApplication
 			.UseLiveReloadWithManualScriptInjection(_webApplication.Lifetime)
 			.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
-			//.UseMiddleware<NoInjectLiveReloadMiddleware>()
 			.UseStaticFiles(
 				new StaticFileOptions
 				{

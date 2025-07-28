@@ -23,8 +23,7 @@ namespace Westwind.AspNetCore.LiveReload;
 [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 public static class LiveReloadMiddlewareExtensions
 {
-	public static IServiceCollection AddAotLiveReload(this IServiceCollection services,
-		Action<LiveReloadConfiguration> configAction)
+	public static IServiceCollection AddAotLiveReload(this IServiceCollection services, Action<LiveReloadConfiguration> configAction)
 	{
 
 		var provider = services.BuildServiceProvider();
@@ -68,9 +67,9 @@ public static class LiveReloadMiddlewareExtensions
 
 		if (config.LiveReloadEnabled)
 		{
-			var webSocketOptions = new WebSocketOptions()
+			var webSocketOptions = new WebSocketOptions
 			{
-				KeepAliveInterval = TimeSpan.FromSeconds(300),
+				KeepAliveInterval = TimeSpan.FromSeconds(300)
 			};
 			_ = builder.UseWebSockets(webSocketOptions);
 
@@ -80,7 +79,6 @@ public static class LiveReloadMiddlewareExtensions
 					var middleWare = new NoInjectLiveReloadMiddleware(next, webApplicationLifetime);
 					return middleWare.InvokeAsync(context);
 				});
-			LiveReloadFileWatcher.StartFileWatcher();
 
 			// always refresh when the server restarts...
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
