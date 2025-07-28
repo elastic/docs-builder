@@ -213,9 +213,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		try
 		{
-			// First ensure links are fetched - this is essential for resolving links properly
-			_ = LinkResolver.FetchLinks(new Cancel()).GetAwaiter().GetResult();
-
 			NavigationCrossLinkValidator.ValidateNavigationCrossLinksAsync(
 				Tree,
 				LinkResolver,
