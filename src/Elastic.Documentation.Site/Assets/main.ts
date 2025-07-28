@@ -10,7 +10,6 @@ import { initTabs } from './tabs'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import 'htmx.org'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 

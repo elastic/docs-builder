@@ -21,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="ConsoleAppFramework.Abstractions" />
     <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Google.Apis.Auth" />
     <PackageReference Include="Westwind.AspNetCore.LiveReload" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
