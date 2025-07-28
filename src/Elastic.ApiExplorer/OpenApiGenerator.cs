@@ -62,15 +62,17 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 					? anyApi.Node.GetValue<string>()
 					: null;
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
-					? ClassifyElasticsearchTag(tag ?? "unknown")
-					: "unknown";
+				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is OpenApiAny anyTagGroup
+					? anyTagGroup.Node.GetValue<string>()
+					: openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
+						? ClassifyElasticsearchTag(tag ?? "unknown")
+						: "unknown";
 
 				var apiString = ns is null
 					? api ?? op.Value.Summary ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
 				return new
 				{
-					Classification = classification,
+					Classification = tagClassification,
 					Api = apiString,
 					Tag = tag,
 					pair.Path,
@@ -158,7 +160,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		var hasClassifications = classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
-			if (hasClassifications)
+			if (hasClassifications && classification.Name != "common")
 			{
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
@@ -264,23 +266,25 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				MarkdownRenderer = markdownStringRenderer
 			};
 			_ = await Render(prefix, navigation, navigation.Index, renderContext, navigationRenderer, ctx);
-			await RenderNavigationItems(navigation);
-			async Task RenderNavigationItems(INavigationItem currentNavigation)
-			{
-				if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
-				{
-					_ = await Render(prefix, node, node.Index, renderContext, navigationRenderer, ctx);
-					foreach (var child in node.NavigationItems)
-						await RenderNavigationItems(child);
-				}
+			await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
 
-				else
-				{
-					_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-						? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, ctx)
-						: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
-				}
-			}
+		}
+	}
+
+	private async Task RenderNavigationItems(string prefix, ApiRenderContext renderContext, IsolatedBuildNavigationHtmlWriter navigationRenderer, INavigationItem currentNavigation, Cancel ctx)
+	{
+		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
+		{
+			_ = await Render(prefix, node, node.Index, renderContext, navigationRenderer, ctx);
+			foreach (var child in node.NavigationItems)
+				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, ctx);
+		}
+
+		else
+		{
+			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
+				? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, ctx)
+				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 

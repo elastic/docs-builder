@@ -3,9 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 // ReSharper disable once CheckNamespace
 #pragma warning disable IDE0130
@@ -56,5 +60,62 @@ public static class LiveReloadMiddlewareExtensions
 		LiveReloadConfiguration.Current = config;
 
 		return services;
+	}
+
+	public static IApplicationBuilder UseLiveReloadWithManualScriptInjection(this IApplicationBuilder builder, IHostApplicationLifetime webApplicationLifetime)
+	{
+		var config = LiveReloadConfiguration.Current;
+
+		if (config.LiveReloadEnabled)
+		{
+			var webSocketOptions = new WebSocketOptions()
+			{
+				KeepAliveInterval = TimeSpan.FromSeconds(300),
+			};
+			_ = builder.UseWebSockets(webSocketOptions);
+
+			_ = builder
+				.Use((context, next) =>
+				{
+					var middleWare = new NoInjectLiveReloadMiddleware(next, webApplicationLifetime);
+					return middleWare.InvokeAsync(context);
+				});
+			LiveReloadFileWatcher.StartFileWatcher();
+
+			// always refresh when the server restarts...
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+		}
+
+		return builder;
+	}
+}
+
+
+/// <inheritdoc />
+public class NoInjectLiveReloadMiddleware(RequestDelegate next, IHostApplicationLifetime lifeTime) : LiveReloadMiddleware(next, lifeTime)
+{
+	private readonly MethodInfo _handleWebSocketRequest =
+		typeof(LiveReloadMiddleware).GetMethod("HandleWebSocketRequest", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod)!;
+
+	private readonly RequestDelegate _next = next;
+
+	public new async Task InvokeAsync(HttpContext context)
+	{
+		var config = LiveReloadConfiguration.Current;
+		if (!config.LiveReloadEnabled)
+		{
+			await _next(context);
+			return;
+		}
+
+		if (await HandleServeLiveReloadScript(context))
+			return;
+
+		// See if we have a WebSocket request. True means we handled
+		var invoked = await (Task<bool>)_handleWebSocketRequest.Invoke(this, [context])!;
+		if (invoked)
+			return;
+
+		await _next(context);
 	}
 }

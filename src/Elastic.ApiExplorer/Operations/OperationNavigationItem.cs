@@ -12,6 +12,19 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
+public interface IApiProperty
+{
+
+}
+
+public record ApiObject
+{
+	public required string Name { get; init; }
+	public IReadOnlyCollection<IApiProperty> Properties { get; init; } = [];
+}
+
+
+
 public record ApiOperation(OperationType OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)

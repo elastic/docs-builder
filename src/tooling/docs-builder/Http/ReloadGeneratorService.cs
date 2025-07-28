@@ -26,12 +26,12 @@ public sealed class ReloadGeneratorService(
 		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName)
 		{
 			NotifyFilter = NotifyFilters.Attributes
-			               | NotifyFilters.CreationTime
-			               | NotifyFilters.DirectoryName
-			               | NotifyFilters.FileName
-			               | NotifyFilters.LastWrite
-			               | NotifyFilters.Security
-			               | NotifyFilters.Size
+							| NotifyFilters.CreationTime
+							| NotifyFilters.DirectoryName
+							| NotifyFilters.FileName
+							| NotifyFilters.LastWrite
+							| NotifyFilters.Security
+							| NotifyFilters.Size
 		};
 
 		watcher.Changed += OnChanged;

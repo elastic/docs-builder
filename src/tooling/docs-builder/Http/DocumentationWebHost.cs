@@ -5,15 +5,13 @@
 using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
-using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.Renderers;
-using Markdig.Syntax;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -92,60 +90,9 @@ public class DocumentationWebHost
 	private void SetUpRoutes()
 	{
 		_ = _webApplication
-			.UseExceptionHandler(options =>
-			{
-				options.Run(async context =>
-				{
-					try
-					{
-						var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-						if (exception != null)
-						{
-							var logger = context.RequestServices.GetRequiredService<ILogger<DocumentationWebHost>>();
-							logger.LogError(
-								exception.Error,
-								"Unhandled exception processing request {Path}. Error: {Error}\nStack Trace: {StackTrace}\nInner Exception: {InnerException}",
-								context.Request.Path,
-								exception.Error.Message,
-								exception.Error.StackTrace,
-								exception.Error.InnerException?.ToString() ?? "None"
-							);
-							logger.LogError(
-								"Request Details - Method: {Method}, Path: {Path}, QueryString: {QueryString}",
-								context.Request.Method,
-								context.Request.Path,
-								context.Request.QueryString
-							);
-
-							context.Response.StatusCode = 500;
-							context.Response.ContentType = "text/html";
-							await context.Response.WriteAsync(@"
-								<html>
-									<head><title>Error</title></head>
-									<body>
-										<h1>Internal Server Error</h1>
-										<p>An error occurred while processing your request.</p>
-										<p>Please check the application logs for more details.</p>
-									</body>
-								</html>");
-						}
-					}
-					catch (Exception handlerEx)
-					{
-						var logger = context.RequestServices.GetRequiredService<ILogger<DocumentationWebHost>>();
-						logger.LogCritical(
-							handlerEx,
-							"Error handler failed to process exception. Handler Error: {Error}\nStack Trace: {StackTrace}",
-							handlerEx.Message,
-							handlerEx.StackTrace
-						);
-						context.Response.StatusCode = 500;
-						context.Response.ContentType = "text/plain";
-						await context.Response.WriteAsync("A critical error occurred.");
-					}
-				});
-			})
-			.UseLiveReload()
+			.UseLiveReloadWithManualScriptInjection(_webApplication.Lifetime)
+			.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
+			//.UseMiddleware<NoInjectLiveReloadMiddleware>()
 			.UseStaticFiles(
 				new StaticFileOptions
 				{
@@ -169,18 +116,15 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-#if DEBUG
-		// only reload when actually debugging
-		if (System.Diagnostics.Debugger.IsAttached)
-			await holder.ReloadApiReferences(ctx);
-#endif
+		var x = LiveReloadConfiguration.Current.LiveReloadScriptUrl;
+
 		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{
 			//TODO STREAM
 			var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
-			return Results.Content(contents, "text/html");
+			return LiveReloadHtml(contents, Encoding.UTF8, 200);
 		}
 
 		return Results.NotFound();
@@ -188,18 +132,18 @@ public class DocumentationWebHost
 
 	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
+		if (slug == ".well-known/appspecific/com.chrome.devtools.json")
+			return Results.NotFound();
+
 		var generator = holder.Generator;
 		const string navPartialSuffix = ".nav.html";
 
 		// Check if the original request is asking for LLM-rendered markdown
 		var requestLlmMarkdown = slug.EndsWith(".md");
-		var originalSlug = slug;
 
 		// If requesting .md output, remove the .md extension to find the source file
 		if (requestLlmMarkdown)
-		{
 			slug = slug[..^3]; // Remove ".md" extension
-		}
 
 		if (slug.EndsWith(navPartialSuffix))
 		{
@@ -238,12 +182,9 @@ public class DocumentationWebHost
 					var llmRendered = await generator.RenderLlmMarkdown(markdown, ctx);
 					return Results.Content(llmRendered, "text/markdown; charset=utf-8");
 				}
-				else
-				{
-					// Regular HTML rendering
-					var rendered = await generator.RenderLayout(markdown, ctx);
-					return Results.Content(rendered.Html, "text/html");
-				}
+				// Regular HTML rendering
+				var rendered = await generator.RenderLayout(markdown, ctx);
+				return LiveReloadHtml(rendered.Html);
 
 			case ImageFile image:
 				return Results.File(image.SourceFile.FullName, image.MimeType);
@@ -260,5 +201,18 @@ public class DocumentationWebHost
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
 				return Results.Content(renderedNotFound.Html, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
+	}
+
+	private static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)
+	{
+		if (LiveReloadConfiguration.Current.LiveReloadEnabled)
+		{
+			//var script = WebsocketScriptInjectionHelper.GetWebSocketClientJavaScript(context, true);
+			//var html = $"<script>\n{script}\n</script>";
+			var html = "\n" + $@"<script src=""{LiveReloadConfiguration.Current.LiveReloadScriptUrl}"" defer></script>";
+			content += html;
+		}
+
+		return Results.Content(content, "text/html", encoding, statusCode);
 	}
 }
