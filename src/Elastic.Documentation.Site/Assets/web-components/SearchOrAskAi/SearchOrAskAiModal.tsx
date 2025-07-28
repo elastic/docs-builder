@@ -10,7 +10,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useEffect } from "react";
 
 export const SearchOrAskAiModal = () => {
     const searchTerm = useSearchTerm()
