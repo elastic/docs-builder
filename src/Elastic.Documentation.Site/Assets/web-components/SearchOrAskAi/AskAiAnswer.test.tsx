@@ -1,11 +1,15 @@
 import { AskAiAnswer } from './AskAiAnswer'
-import { render, screen, act } from '@testing-library/react'
+import { LlmGatewayMessage, useLlmGateway } from './useLlmGateway'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
+import { act } from 'react'
 
-// Mock the dependencies
+const mockUseLlmGateway = jest.mocked(useLlmGateway)
+
 const mockSendQuestion = jest.fn(() => Promise.resolve())
 const mockRetry = jest.fn()
+const mockAbort = jest.fn()
 
 jest.mock('./search.store', () => ({
     useAskAiTerm: jest.fn(() => 'What is Elasticsearch?'),
@@ -15,6 +19,7 @@ jest.mock('./useLlmGateway', () => ({
     useLlmGateway: jest.fn(() => ({
         messages: [],
         error: null,
+        abort: mockAbort,
         retry: mockRetry,
         sendQuestion: mockSendQuestion,
     })),
@@ -26,10 +31,6 @@ jest.mock('uuid', () => ({
 }))
 
 describe('AskAiAnswer Component', () => {
-    const {
-        useLlmGateway,
-    } = require('./useLlmGateway')
-
     beforeEach(() => {
         jest.clearAllMocks()
     })
@@ -37,11 +38,12 @@ describe('AskAiAnswer Component', () => {
     describe('Initial Loading State', () => {
         test('should show loading spinner when no messages are present', () => {
             // Arrange
-            useLlmGateway.mockReturnValue({
+            mockUseLlmGateway.mockReturnValue({
                 messages: [],
                 error: null,
                 retry: mockRetry,
                 sendQuestion: mockSendQuestion,
+                abort: mockAbort,
             })
 
             // Act
@@ -57,8 +59,10 @@ describe('AskAiAnswer Component', () => {
     describe('Message Display', () => {
         test('should display AI message content correctly', () => {
             // Arrange
-            const mockMessages = [
+            const mockMessages: LlmGatewayMessage[] = [
                 {
+                    id: 'some-id-1',
+                    timestamp: 0,
                     type: 'ai_message',
                     data: {
                         content:
@@ -66,6 +70,8 @@ describe('AskAiAnswer Component', () => {
                     },
                 },
                 {
+                    id: 'some-id-2',
+                    timestamp: 0,
                     type: 'ai_message_chunk',
                     data: {
                         content: ' It provides real-time search capabilities.',
@@ -73,11 +79,12 @@ describe('AskAiAnswer Component', () => {
                 },
             ]
 
-            useLlmGateway.mockReturnValue({
+            mockUseLlmGateway.mockReturnValue({
                 messages: mockMessages,
                 error: null,
                 retry: mockRetry,
                 sendQuestion: mockSendQuestion,
+                abort: mockAbort,
             })
 
             // Act
@@ -93,11 +100,12 @@ describe('AskAiAnswer Component', () => {
     describe('Error State', () => {
         test('should display error message when there is an error', () => {
             // Arrange
-            useLlmGateway.mockReturnValue({
+            mockUseLlmGateway.mockReturnValue({
                 messages: [],
                 error: new Error('Network error'),
                 retry: mockRetry,
                 sendQuestion: mockSendQuestion,
+                abort: mockAbort,
             })
 
             // Act
@@ -118,10 +126,14 @@ describe('AskAiAnswer Component', () => {
     describe('Finished State with Feedback Buttons', () => {
         test('should show feedback buttons when answer is finished', () => {
             // Arrange
-            let onMessageCallback: (message: any) => void = () => {}
+            let onMessageCallback: (
+                message: LlmGatewayMessage
+            ) => void = () => {}
 
-            const mockMessages = [
+            const mockMessages: LlmGatewayMessage[] = [
                 {
+                    id: 'some-id-1',
+                    timestamp: 1,
                     type: 'ai_message',
                     data: {
                         content: 'Here is your answer about Elasticsearch.',
@@ -129,13 +141,14 @@ describe('AskAiAnswer Component', () => {
                 },
             ]
 
-            useLlmGateway.mockImplementation(({ onMessage }) => {
-                onMessageCallback = onMessage
+            mockUseLlmGateway.mockImplementation(({ onMessage }) => {
+                onMessageCallback = onMessage!
                 return {
                     messages: mockMessages,
                     error: null,
                     retry: mockRetry,
                     sendQuestion: mockSendQuestion,
+                    abort: mockAbort,
                 }
             })
 
@@ -144,7 +157,12 @@ describe('AskAiAnswer Component', () => {
 
             // Simulate the component receiving an 'agent_end' message to finish loading
             act(() => {
-                onMessageCallback({ type: 'agent_end' })
+                onMessageCallback({
+                    type: 'agent_end',
+                    id: 'some-id',
+                    timestamp: 12345,
+                    data: {},
+                })
             })
 
             // Assert
@@ -162,22 +180,27 @@ describe('AskAiAnswer Component', () => {
         test('should call retry function when refresh button is clicked', async () => {
             // Arrange
             const user = userEvent.setup()
-            let onMessageCallback: (message: any) => void = () => {}
+            let onMessageCallback: (
+                message: LlmGatewayMessage
+            ) => void = () => {}
 
-            const mockMessages = [
+            const mockMessages: LlmGatewayMessage[] = [
                 {
+                    id: 'some-id-1',
+                    timestamp: 12345,
                     type: 'ai_message',
                     data: { content: 'Here is your answer.' },
                 },
             ]
 
-            useLlmGateway.mockImplementation(({ onMessage }) => {
-                onMessageCallback = onMessage
+            mockUseLlmGateway.mockImplementation(({ onMessage }) => {
+                onMessageCallback = onMessage!
                 return {
                     messages: mockMessages,
                     error: null,
                     retry: mockRetry,
                     sendQuestion: mockSendQuestion,
+                    abort: mockAbort,
                 }
             })
 
@@ -185,7 +208,18 @@ describe('AskAiAnswer Component', () => {
 
             // Simulate finished state
             act(() => {
-                onMessageCallback({ type: 'agent_end' })
+                onMessageCallback({
+                    type: 'agent_start',
+                    id: 'some-id',
+                    timestamp: 12345,
+                    data: { input: {}, thread: {} },
+                })
+                onMessageCallback({
+                    type: 'agent_end',
+                    id: 'some-id',
+                    timestamp: 12346,
+                    data: {},
+                })
             })
 
             // Act
@@ -203,11 +237,12 @@ describe('AskAiAnswer Component', () => {
     describe('Question Sending', () => {
         test('should send question on component mount', () => {
             // Arrange
-            useLlmGateway.mockReturnValue({
+            mockUseLlmGateway.mockReturnValue({
                 messages: [],
                 error: null,
                 retry: mockRetry,
                 sendQuestion: mockSendQuestion,
+                abort: mockAbort,
             })
 
             // Act
