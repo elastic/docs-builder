@@ -11,8 +11,6 @@ import {
 import { css } from '@emotion/react'
 import * as React from 'react'
 
-/** @jsxImportSource @emotion/react */
-
 export const SearchOrAskAiModal = () => {
     const searchTerm = useSearchTerm()
     const askAiTerm = useAskAiTerm()

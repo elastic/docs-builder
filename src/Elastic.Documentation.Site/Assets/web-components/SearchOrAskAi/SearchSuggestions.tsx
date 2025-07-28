@@ -1,4 +1,3 @@
-/** @jsxImportSource @emotion/react */
 import { useModalActions } from './modal.store'
 import {
     EuiButton,
