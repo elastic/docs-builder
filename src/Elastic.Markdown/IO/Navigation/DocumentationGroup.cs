@@ -121,6 +121,12 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		{
 			if (tocItem is CrossLinkReference crossLink)
 			{
+				if (string.IsNullOrWhiteSpace(crossLink.Title))
+				{
+					context.EmitError(context.ConfigurationPath,
+						$"Cross-link entries must have a 'title' specified. Cross-link: {crossLink.CrossLinkUri}");
+					continue;
+				}
 				// Create a special navigation item for cross-repository links
 				var crossLinkItem = new CrossLinkNavigationItem(crossLink.CrossLinkUri, crossLink.Title, this, crossLink.Hidden);
 				AddToNavigationItems(crossLinkItem, ref fileIndex);

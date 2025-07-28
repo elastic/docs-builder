@@ -210,7 +210,6 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 
 		if (crossLink is not null)
 		{
-			// No validation here - we'll validate cross-links separately
 			return [new CrossLinkReference(this, crossLink, title, hiddenFile, children ?? [])];
 		}
 
