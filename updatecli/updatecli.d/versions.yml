@@ -280,14 +280,15 @@ sources:
     name: Get latest release version for APM RUM agent
     kind: githubrelease
     transformers:
-      - trimprefix: v
+      - trimprefix: "@elastic/apm-rum@"
     spec:
       owner: elastic
       repository: apm-agent-rum-js
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
-        kind: latest
+        kind: regex
+        pattern: "^@elastic/apm-rum@(\\d*).(\\d*).(\\d*)$"
 
 targets:
   update-docs-docset-stack:
