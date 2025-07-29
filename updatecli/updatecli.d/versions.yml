@@ -25,6 +25,7 @@ actions:
       title: '[Automation] Bump product version numbers'
 
 sources:
+  # TODO Automate only for patch releases
   # latest-stack-version:
   #   name: Get latest stack version
   #   kind: githubrelease
