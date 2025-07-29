@@ -16,7 +16,7 @@ versioning_systems:
   ech: *all
   eck:
     base: 3.0
-    current: 3.0
+    current: 3.0.0
   ess: *all
   self: *stack
 
