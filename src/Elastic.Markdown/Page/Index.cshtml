@@ -10,7 +10,6 @@
 @functions {
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
-		IsAssemblerBuild = Model.IsAssemblerBuild,
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
