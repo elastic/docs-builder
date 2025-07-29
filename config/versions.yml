@@ -52,7 +52,7 @@ versioning_systems:
     current: 4.13.0
   apm_agent_php:
     base: 1.0
-    current: 1.15
+    current: 1.15.1
   apm_agent_python:
     base: 6.0
     current: 6.23.0
