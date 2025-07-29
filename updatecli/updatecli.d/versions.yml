@@ -234,7 +234,8 @@ sources:
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
-        kind: latest
+        kind: regex
+        pattern: "^v(\\d*).(\\d*).(\\d*)$"
 
   latest-apm-agent-php-version:
     name: Get latest release version for APM PHP agent
