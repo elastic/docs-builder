@@ -12,6 +12,19 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
+public interface IApiProperty
+{
+
+}
+
+public record ApiObject
+{
+	public required string Name { get; init; }
+	public IReadOnlyCollection<IApiProperty> Properties { get; init; } = [];
+}
+
+
+
 public record ApiOperation(OperationType OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
@@ -29,6 +42,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 {
 	public OperationNavigationItem(
 		string? urlPathPrefix,
+		string apiUrlSuffix,
 		ApiOperation apiOperation,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
@@ -39,7 +53,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
 		var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
-		Url = $"{urlPathPrefix}/api/endpoints/{moniker}";
+		Url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/{moniker}";
 		Id = ShortId.Create(Url);
 	}
 

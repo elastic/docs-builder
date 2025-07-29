@@ -1,10 +1,59 @@
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
 @using Microsoft.OpenApi.Models
+@using Microsoft.OpenApi.Models.Interfaces
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	public string GetTypeName(JsonSchemaType? type)
+	{
+		var typeName = "";
+		if (type is null)
+			return "unknown and null";
+
+		if (type.Value.HasFlag(JsonSchemaType.Boolean))
+			typeName = "boolean";
+		else if (type.Value.HasFlag(JsonSchemaType.Integer))
+			typeName = "integer";
+		else if (type.Value.HasFlag(JsonSchemaType.String))
+			typeName = "string";
+		else if (type.Value.HasFlag(JsonSchemaType.Object))
+		{
+			typeName = "object";
+		}
+		else if (type.Value.HasFlag(JsonSchemaType.Null))
+			typeName = "null";
+		else if (type.Value.HasFlag(JsonSchemaType.Number))
+			typeName = "number";
+		else
+		{
+		}
+
+		if (type.Value.HasFlag(JsonSchemaType.Array))
+			typeName += " array";
+		return typeName;
+	}
+
+	public string GetTypeName(IOpenApiSchema propertyValue)
+	{
+		var typeName = string.Empty;
+		if (propertyValue.Type is not null)
+		{
+			typeName = GetTypeName(propertyValue.Type);
+			if (typeName is not "object" and not "array")
+				return typeName;
+		}
+
+		if (propertyValue.Schema is not null)
+			return propertyValue.Schema;
+
+		if (propertyValue.Enum is { Count: >0 } e)
+			return "enum";
+
+		return $"unknown value {typeName}";
+	}
 }
 @{
 	var self = Model.CurrentNavigationItem as OperationNavigationItem;
@@ -34,7 +83,7 @@
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
 			<li class="api-url-list-item">
-				<a href="@overload.Url" class="@current">
+				<a href="@overload.Url" class="@current" hx-disable="true">
 					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
 					 <span class="api-url">@overload.Model.Route</span>
 				</a>
@@ -72,15 +121,26 @@
 	@if (operation.RequestBody is not null)
 	{
 		<h3>Request Body</h3>
+		var content = operation.RequestBody.Content.FirstOrDefault().Value;
 		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@operation.RequestBody.Description</p>
 		}
+
+		if (content.Schema is not null)
+		{
 		<dl>
-			@foreach (var path in operation.RequestBody.Content)
+			@foreach (var property in content.Schema.Properties)
 			{
+				if (property.Value.Type is null)
+				{
+
+				}
+				<dt id="@property.Key"><a href="#@property.Key"><code>@property.Key</code> @GetTypeName(property.Value) </a></dt>
+				<dd>@Model.RenderMarkdown(property.Value.Description)</dd>
 			}
 		</dl>
+		}
 	}
 </section>
 <aside>

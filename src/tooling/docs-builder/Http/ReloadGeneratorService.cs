@@ -1,15 +1,14 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Westwind.AspNetCore.LiveReload;
 
 namespace Documentation.Builder.Http;
 
-public sealed class ReloadGeneratorService(
-	ReloadableGeneratorState reloadableGenerator,
-	ILogger<ReloadGeneratorService> logger) : IHostedService,
-	IDisposable
+public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGenerator, ILogger<ReloadGeneratorService> logger) : IHostedService, IDisposable
 {
 	private FileSystemWatcher? _watcher;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
@@ -22,15 +21,17 @@ public sealed class ReloadGeneratorService(
 	{
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
-		var watcher = new FileSystemWatcher(ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName)
+		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
+		Logger.LogInformation("Start file watch on: {Directory}", directory);
+		var watcher = new FileSystemWatcher(directory)
 		{
 			NotifyFilter = NotifyFilters.Attributes
-							   | NotifyFilters.CreationTime
-							   | NotifyFilters.DirectoryName
-							   | NotifyFilters.FileName
-							   | NotifyFilters.LastWrite
-							   | NotifyFilters.Security
-							   | NotifyFilters.Size
+							| NotifyFilters.CreationTime
+							| NotifyFilters.DirectoryName
+							| NotifyFilters.FileName
+							| NotifyFilters.LastWrite
+							| NotifyFilters.Security
+							| NotifyFilters.Size
 		};
 
 		watcher.Changed += OnChanged;
@@ -49,10 +50,11 @@ public sealed class ReloadGeneratorService(
 	private void Reload() =>
 		_ = _debouncer.ExecuteAsync(async ctx =>
 		{
-			Logger.LogInformation("Reload due to changes!");
 			await ReloadableGenerator.ReloadAsync(ctx);
 			Logger.LogInformation("Reload complete!");
-		}, default);
+
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+		}, Cancel.None);
 
 	public Task StopAsync(Cancel cancellationToken)
 	{
@@ -65,26 +67,27 @@ public sealed class ReloadGeneratorService(
 		if (e.ChangeType != WatcherChangeTypes.Changed)
 			return;
 
+		Logger.LogInformation("Changed: {FullPath}", e.FullPath);
+
 		if (e.FullPath.EndsWith("docset.yml"))
 			Reload();
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
 
-		Logger.LogInformation("Changed: {FullPath}", e.FullPath);
 	}
 
 	private void OnCreated(object sender, FileSystemEventArgs e)
 	{
+		Logger.LogInformation("Created: {FullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
-		Logger.LogInformation("Created: {FullPath}", e.FullPath);
 	}
 
 	private void OnDeleted(object sender, FileSystemEventArgs e)
 	{
+		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
-		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
 	}
 
 	private void OnRenamed(object sender, RenamedEventArgs e)
@@ -144,5 +147,4 @@ public sealed class ReloadGeneratorService(
 
 		public void Dispose() => _semaphore.Dispose();
 	}
-
 }
