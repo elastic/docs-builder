@@ -13,8 +13,3 @@ public enum GitChangeType
 	Untracked,
 	Other
 }
-
-public interface IRepositoryTracker
-{
-	IEnumerable<GitChange> GetChangedFiles(string lookupPath);
-}

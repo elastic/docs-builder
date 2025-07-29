@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling.ExternalCommands;
 
@@ -11,14 +12,15 @@ namespace Documentation.Builder.Tracking;
 public record GitChange(string FilePath, GitChangeType ChangeType);
 public record RenamedGitChange(string OldFilePath, string NewFilePath, GitChangeType ChangeType) : GitChange(OldFilePath, ChangeType);
 
-public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
+public class LocalGitRepositoryTracker(DiagnosticsCollector collector, BuildContext context)
+	: ExternalCommandExecutor(collector, context.DocumentationSourceDirectory)
 {
-	public IEnumerable<GitChange> GetChangedFiles(string lookupPath)
+	public IEnumerable<GitChange> GetChangedFiles()
 	{
 		var defaultBranch = GetDefaultBranch();
-		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", $"./{lookupPath}");
+		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", ".");
 		var localChanges = CaptureMultiple("git", "status", "--porcelain");
-		var stashResult = ExecInSilent([], "git", "stash", "push", "--", $"./{lookupPath}");
+		var stashResult = ExecInSilent([], "git", "stash", "push", "--", ".");
 
 		var localUnstagedChanges = Array.Empty<string>();
 		if (stashResult.ExitCode == 0 && stashResult.ConsoleOut.Count > 0 && !stashResult.ConsoleOut[0].Line.StartsWith("No local changes to save"))

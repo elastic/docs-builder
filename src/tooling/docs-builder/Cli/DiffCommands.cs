@@ -20,20 +20,17 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
 	/// </summary>
-	/// <param name="path">The baseline path to perform the check</param>
+	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
 	/// <param name="ctx"></param>
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	[Command("validate")]
-	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
+	public async Task<int> ValidateRedirects(string? path = null, Cancel ctx = default)
 	{
-		path ??= "docs";
-
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 
-		var buildContext = new BuildContext(collector, fs, fs, versionsConfig, root.FullName, null);
+		var buildContext = new BuildContext(collector, fs, fs, versionsConfig, path, null);
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
@@ -48,8 +45,8 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 			return collector.Errors;
 		}
 
-		var tracker = new LocalGitRepositoryTracker(collector, root);
-		var changed = tracker.GetChangedFiles(path);
+		var tracker = new LocalGitRepositoryTracker(collector, buildContext);
+		var changed = tracker.GetChangedFiles();
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
