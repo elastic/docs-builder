@@ -17,6 +17,7 @@ namespace Elastic.Markdown.Page;
 
 public class IndexViewModel
 {
+	public required bool IsAssemblerBuild { get; init; }
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }

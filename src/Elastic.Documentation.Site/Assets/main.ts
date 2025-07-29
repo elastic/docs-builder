@@ -35,6 +35,12 @@ document.addEventListener('htmx:load', function (event) {
     openDetailsWithAnchor()
     initDismissibleBanner()
     initImageCarousel()
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const editParam = urlParams.has('edit');
+    if (editParam) {
+        $('.edit-this-page.hidden')?.classList.remove("hidden")
+    }
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

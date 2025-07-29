@@ -10,6 +10,7 @@
 @functions {
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
+		IsAssemblerBuild = Model.IsAssemblerBuild,
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
@@ -28,7 +29,7 @@
 		NavigationHtml = Model.NavigationHtml,
 		NavigationFileName = Model.NavigationFileName,
 		UrlPathPrefix = Model.UrlPathPrefix,
-		GithubEditUrl = Model.Features.DisableGitHubEditLink ? null : Model.GithubEditUrl,
+		GithubEditUrl = Model.GithubEditUrl,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		GoogleTagManager = Model.GoogleTagManager,
