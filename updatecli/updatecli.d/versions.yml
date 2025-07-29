@@ -21,7 +21,7 @@ actions:
     spec:
       automerge: false
       labels:
-        - dependencies
+        - chore
       title: '[Automation] Bump product version numbers'
 
 sources:
