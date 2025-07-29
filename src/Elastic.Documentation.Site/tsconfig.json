@@ -14,8 +14,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "@emotion/react"
+    "jsxImportSource": "@emotion/react",
+    "types": ["jest", "@testing-library/jest-dom"]
   },
-  "include": ["Assets/**/*"],
+  "include": ["Assets/**/*", "setupTests.ts"],
   "exclude": ["node_modules", "_static"]
 }

@@ -44,9 +44,9 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 
-	public LandingNavigationItem CreateNavigation(OpenApiDocument openApiDocument)
+	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument)
 	{
-		var url = $"{context.UrlPathPrefix}/api";
+		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
 		var rootNavigation = new LandingNavigationItem(url);
 
 		var ops = openApiDocument.Paths
@@ -62,15 +62,17 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 					? anyApi.Node.GetValue<string>()
 					: null;
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
-					? ClassifyElasticsearchTag(tag ?? "unknown")
-					: "unknown";
+				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is OpenApiAny anyTagGroup
+					? anyTagGroup.Node.GetValue<string>()
+					: openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
+						? ClassifyElasticsearchTag(tag ?? "unknown")
+						: "unknown";
 
 				var apiString = ns is null
 					? api ?? op.Value.Summary ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
 				return new
 				{
-					Classification = classification,
+					Classification = tagClassification,
 					Api = apiString,
 					Tag = tag,
 					pair.Path,
@@ -158,25 +160,26 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		var hasClassifications = classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
-			if (hasClassifications)
+			if (hasClassifications && classification.Name != "common")
 			{
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-				CreateTagNavigationItems(classification, classificationNavigationItem, classificationNavigationItem, tagNavigationItems);
+				CreateTagNavigationItems(apiUrlSuffix, classification, classificationNavigationItem, classificationNavigationItem, tagNavigationItems);
 				topLevelNavigationItems.Add(classificationNavigationItem);
 				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
 				if (classificationNavigationItem.NavigationItems.Count == 0)
 					classificationNavigationItem.NavigationItems = tagNavigationItems;
 			}
 			else
-				CreateTagNavigationItems(classification, rootNavigation, rootNavigation, topLevelNavigationItems);
+				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
 		}
 		rootNavigation.NavigationItems = topLevelNavigationItems;
 		return rootNavigation;
 	}
 
 	private void CreateTagNavigationItems(
+		string apiUrlSuffix,
 		ApiClassification classification,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
@@ -190,13 +193,13 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			if (hasTags)
 			{
 				var tagNavigationItem = new TagNavigationItem(tag, rootNavigation, parent);
-				CreateEndpointNavigationItems(rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
+				CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
 				parentNavigationItems.Add(tagNavigationItem);
 				tagNavigationItem.NavigationItems = endpointNavigationItems;
 			}
 			else
 			{
-				CreateEndpointNavigationItems(rootNavigation, tag, parent, endpointNavigationItems);
+				CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, parent, endpointNavigationItems);
 				if (parent is ClassificationNavigationItem classificationNavigationItem)
 					classificationNavigationItem.NavigationItems = endpointNavigationItems;
 				else if (parent is LandingNavigationItem landingNavigationItem)
@@ -206,6 +209,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	}
 
 	private void CreateEndpointNavigationItems(
+		string apiUrlSuffix,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 		ApiTag tag,
 		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
@@ -220,7 +224,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				var operationNavigationItems = new List<OperationNavigationItem>();
 				foreach (var operation in endpoint.Operations)
 				{
-					var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, operation, rootNavigation, endpointNavigationItem)
+					var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, operation, rootNavigation, endpointNavigationItem)
 					{
 						Hidden = true
 					};
@@ -232,7 +236,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			else
 			{
 				var operation = endpoint.Operations.First();
-				var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, operation, rootNavigation, parentNavigationItem);
+				var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, operation, rootNavigation, parentNavigationItem);
 				endpointNavigationItems.Add(operationNavigationItem);
 
 			}
@@ -241,47 +245,53 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		if (context.Configuration.OpenApiSpecification is null)
+		if (context.Configuration.OpenApiSpecifications is null)
 			return;
 
-		var openApiDocument = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);
-		if (openApiDocument is null)
-			return;
-
-		var navigation = CreateNavigation(openApiDocument);
-		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
-
-		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
-
-
-		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
+		foreach (var (prefix, path) in context.Configuration.OpenApiSpecifications)
 		{
-			NavigationHtml = string.Empty,
-			CurrentNavigation = navigation,
-			MarkdownRenderer = markdownStringRenderer
-		};
-		_ = await Render(navigation, navigation.Index, renderContext, navigationRenderer, ctx);
-		await RenderNavigationItems(navigation);
+			var openApiDocument = await OpenApiReader.Create(path);
+			if (openApiDocument is null)
+				return;
 
-		async Task RenderNavigationItems(INavigationItem currentNavigation)
-		{
-			if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
+			var navigation = CreateNavigation(prefix, openApiDocument);
+			_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
+
+			var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+			var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
 			{
-				_ = await Render(node, node.Index, renderContext, navigationRenderer, ctx);
-				foreach (var child in node.NavigationItems)
-					await RenderNavigationItems(child);
-			}
+				NavigationHtml = string.Empty,
+				CurrentNavigation = navigation,
+				MarkdownRenderer = markdownStringRenderer
+			};
+			_ = await Render(prefix, navigation, navigation.Index, renderContext, navigationRenderer, ctx);
+			await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
 
-#pragma warning disable IDE0045
-			else if (currentNavigation is ILeafNavigationItem<IApiModel> leaf)
-#pragma warning restore IDE0045
-				_ = await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx);
-			else
-				throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 
-	private async Task<IFileInfo> Render<T>(INavigationItem current, T page, ApiRenderContext renderContext, IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
+	private async Task RenderNavigationItems(string prefix, ApiRenderContext renderContext, IsolatedBuildNavigationHtmlWriter navigationRenderer, INavigationItem currentNavigation, Cancel ctx)
+	{
+		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
+		{
+			_ = await Render(prefix, node, node.Index, renderContext, navigationRenderer, ctx);
+			foreach (var child in node.NavigationItems)
+				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, ctx);
+		}
+
+		else
+		{
+			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
+				? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, ctx)
+				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
+		}
+	}
+
+#pragma warning disable IDE0060
+	private async Task<IFileInfo> Render<T>(string prefix, INavigationItem current, T page, ApiRenderContext renderContext,
+#pragma warning restore IDE0060
+		IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
 		where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
 		var outputFile = OutputFile(current);

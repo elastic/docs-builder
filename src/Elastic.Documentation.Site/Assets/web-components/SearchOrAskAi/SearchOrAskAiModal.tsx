@@ -27,6 +27,7 @@ export const SearchOrAskAiModal = () => {
                     submitAskAiTerm(e)
                 }}
                 isClearable
+                autoFocus={true}
             />
             <EuiSpacer size="m" />
             {askAiTerm ? <AskAiAnswer /> : <Suggestions />}
