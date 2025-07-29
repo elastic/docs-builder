@@ -68,6 +68,8 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public string? Label { get; private set; }
 
+	private static readonly string[] AllowedUriList = ["epr.elastic.co"];
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Label = Prop("label", "name");
@@ -98,7 +100,9 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 		if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
 		{
-			this.EmitWarning($"{Directive} is using an external URI: {uri} ");
+			if (!AllowedUriList.Any(host => uri.Host.Contains(host)))
+				this.EmitWarning($"{Directive} is using an external URI: {uri} ");
+
 			Found = true;
 			ImageUrl = imageUrl;
 			return;
