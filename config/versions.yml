@@ -61,7 +61,7 @@ versioning_systems:
     current: 4.8.0
   apm_agent_rum:
     base: 5.0
-    current: 5.17.0
+    current: "@elastic/apm-rum@5.17.0"
 
   # EDOTs
   edot_collector:
