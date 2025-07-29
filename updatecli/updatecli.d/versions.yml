@@ -22,7 +22,6 @@ actions:
       automerge: false
       labels:
         - dependencies
-        - documentation
       title: '[Automation] Bump product version numbers'
 
 sources:
