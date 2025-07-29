@@ -36,10 +36,10 @@ document.addEventListener('htmx:load', function (event) {
     initDismissibleBanner()
     initImageCarousel()
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const editParam = urlParams.has('edit');
+    const urlParams = new URLSearchParams(window.location.search)
+    const editParam = urlParams.has('edit')
     if (editParam) {
-        $('.edit-this-page.hidden')?.classList.remove("hidden")
+        $('.edit-this-page.hidden')?.classList.remove('hidden')
     }
 })
 
