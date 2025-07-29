@@ -21,23 +21,24 @@ actions:
     spec:
       automerge: false
       labels:
-        - dependencies
+        - chore
       title: '[Automation] Bump product version numbers'
 
 sources:
-  latest-stack-version:
-    name: Get latest stack version
-    kind: githubrelease
-    transformers:
-      - trimprefix: v
-    spec:
-      owner: elastic
-      repository: elasticsearch
-      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
-      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
-      versionfilter:
-        kind: regex
-        pattern: "v9.(\\d*).(\\d*)$"
+  # TODO Automate only for patch releases
+  # latest-stack-version:
+  #   name: Get latest stack version
+  #   kind: githubrelease
+  #   transformers:
+  #     - trimprefix: v
+  #   spec:
+  #     owner: elastic
+  #     repository: elasticsearch
+  #     token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+  #     username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+  #     versionfilter:
+  #       kind: regex
+  #       pattern: "v9.(\\d*).(\\d*)$"
 
   latest-edot-android-version:
     name: Get latest release version for the apm-agent-android
@@ -291,15 +292,15 @@ sources:
         pattern: "^@elastic/apm-rum@(\\d*).(\\d*).(\\d*)$"
 
 targets:
-  update-docs-docset-stack:
-    name: 'Update config/versions.yml stack {{ source "latest-stack-version" }}'
-    scmid: githubConfig
-    sourceid: latest-stack-version
-    kind: file
-    spec:
-      file: config/versions.yml
-      matchpattern: '(stack: &stack\s+base: [\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-stack-version" }}'
+  # update-docs-docset-stack:
+  #   name: 'Update config/versions.yml stack {{ source "latest-stack-version" }}'
+  #   scmid: githubConfig
+  #   sourceid: latest-stack-version
+  #   kind: file
+  #   spec:
+  #     file: config/versions.yml
+  #     matchpattern: '(stack: &stack\s+base: [\d\.]+\s+current:)\s+(.+)'
+  #     replacepattern: '$1 {{ source "latest-stack-version" }}'
 
   update-docs-docset-android:
     name: 'Update config/versions.yml edot-android {{ source "latest-edot-android-version" }}'
