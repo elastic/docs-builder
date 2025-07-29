@@ -28,7 +28,7 @@
 		NavigationHtml = Model.NavigationHtml,
 		NavigationFileName = Model.NavigationFileName,
 		UrlPathPrefix = Model.UrlPathPrefix,
-		GithubEditUrl = Model.GithubEditUrl,
+		GithubEditUrl = Model.Features.DisableGitHubEditLink ? null : Model.GithubEditUrl,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		GoogleTagManager = Model.GoogleTagManager,
