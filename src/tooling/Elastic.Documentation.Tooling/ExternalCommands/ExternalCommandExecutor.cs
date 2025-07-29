@@ -24,7 +24,7 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 			collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
 	}
 
-	protected void ExecInSilent(Dictionary<string, string> environmentVars, string binary, params string[] args)
+	protected ProcessCaptureResult ExecInSilent(Dictionary<string, string> environmentVars, string binary, params string[] args)
 	{
 		var arguments = new StartArguments(binary, args)
 		{
@@ -35,6 +35,8 @@ public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, ID
 		var result = Proc.Start(arguments);
 		if (result.ExitCode != 0)
 			collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+
+		return result;
 	}
 
 	protected string[] CaptureMultiple(string binary, params string[] args) => CaptureMultiple(false, 10, binary, args);

@@ -18,9 +18,14 @@ public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirector
 		var defaultBranch = GetDefaultBranch();
 		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", $"./{lookupPath}");
 		var localChanges = CaptureMultiple("git", "status", "--porcelain");
-		ExecInSilent([], "git", "stash", "push", "--", $"./{lookupPath}");
-		var localUnstagedChanges = CaptureMultiple("git", "stash", "show", "--name-status", "-u");
-		ExecInSilent([], "git", "stash", "pop");
+		var stashResult = ExecInSilent([], "git", "stash", "push", "--", $"./{lookupPath}");
+
+		var localUnstagedChanges = Array.Empty<string>();
+		if (stashResult.ExitCode == 0 && stashResult.ConsoleOut.Count > 0 && !stashResult.ConsoleOut[0].Line.StartsWith("No local changes to save"))
+		{
+			localUnstagedChanges = CaptureMultiple("git", "stash", "show", "--name-status", "-u");
+			_ = ExecInSilent([], "git", "stash", "pop");
+		}
 
 		return [.. GetCommitChanges(commitChanges), .. GetLocalChanges(localChanges), .. GetCommitChanges(localUnstagedChanges)];
 	}
