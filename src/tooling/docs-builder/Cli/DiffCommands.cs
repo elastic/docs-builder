@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
+using static Documentation.Builder.Tracking.FileChangeType;
 
 namespace Documentation.Builder.Cli;
 
@@ -31,16 +32,12 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 		var fs = new FileSystem();
 
 		var buildContext = new BuildContext(collector, fs, fs, versionsConfig, path, null);
-		var sourceFile = buildContext.ConfigurationPath;
-		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
-
-		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
-		var redirects = redirectFileParser.Redirects;
+		var redirectFile = new RedirectFile(buildContext);
+		var redirects = redirectFile.Redirects;
 
 		if (redirects is null)
 		{
-			collector.EmitError(redirectFileInfo, "It was not possible to parse the redirects file.");
+			collector.EmitError(redirectFile.Source, "It was not possible to parse the redirects file.");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
@@ -48,17 +45,21 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 		var tracker = new LocalGitRepositoryTracker(collector, buildContext);
 		var changed = tracker.GetChangedFiles();
 
-		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
-																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
+		var noRedirects = changed.DistinctBy(c => c.FilePath)
+			.Where(c => c.ChangeType is Deleted or Renamed)
+			.Where(c => !redirects.ContainsKey(c is RenamedFileChange renamed ? renamed.OldFilePath : c.FilePath))
+			.ToArray();
+
+		foreach (var notFound in noRedirects)
 		{
-			if (notFound is RenamedGitChange renamed)
+			if (notFound is RenamedFileChange renamed)
 			{
-				collector.EmitError(redirectFileInfo.Name,
+				collector.EmitError(redirectFile.Source,
 					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
 			}
-			else if (notFound.ChangeType is GitChangeType.Deleted)
+			else if (notFound.ChangeType is Deleted)
 			{
-				collector.EmitError(redirectFileInfo.Name,
+				collector.EmitError(redirectFile.Source,
 					$"File '{notFound.FilePath}' was deleted but it has no redirect targets. This will lead to broken links.");
 			}
 		}

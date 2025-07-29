@@ -4,7 +4,7 @@
 
 namespace Documentation.Builder.Tracking;
 
-public enum GitChangeType
+public enum FileChangeType
 {
 	Added,
 	Modified,

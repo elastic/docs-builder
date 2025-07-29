@@ -2,20 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Tooling.ExternalCommands;
 
 namespace Documentation.Builder.Tracking;
 
-public record GitChange(string FilePath, GitChangeType ChangeType);
-public record RenamedGitChange(string OldFilePath, string NewFilePath, GitChangeType ChangeType) : GitChange(OldFilePath, ChangeType);
+public record FileChange(string FilePath, FileChangeType ChangeType);
+public record RenamedFileChange(string OldFilePath, string NewFilePath, FileChangeType ChangeType) : FileChange(OldFilePath, ChangeType);
+
+public interface IChangedFilesTracker
+{
+	IEnumerable<FileChange> GetChangedFiles();
+}
 
 public class LocalGitRepositoryTracker(DiagnosticsCollector collector, BuildContext context)
-	: ExternalCommandExecutor(collector, context.DocumentationSourceDirectory)
+	: ExternalCommandExecutor(collector, context.DocumentationSourceDirectory), IChangedFilesTracker
 {
-	public IEnumerable<GitChange> GetChangedFiles()
+	public IEnumerable<FileChange> GetChangedFiles()
 	{
 		var defaultBranch = GetDefaultBranch();
 		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", ".");
@@ -41,7 +45,7 @@ public class LocalGitRepositoryTracker(DiagnosticsCollector collector, BuildCont
 		return Capture("git", "symbolic-ref", "refs/remotes/origin/HEAD").Split('/').Last();
 	}
 
-	private static IEnumerable<GitChange> GetCommitChanges(string[] changes)
+	private static IEnumerable<FileChange> GetCommitChanges(string[] changes)
 	{
 		foreach (var change in changes)
 		{
@@ -51,18 +55,18 @@ public class LocalGitRepositoryTracker(DiagnosticsCollector collector, BuildCont
 
 			var changeType = parts[0] switch
 			{
-				'A' => GitChangeType.Added,
-				'M' => GitChangeType.Modified,
-				'D' => GitChangeType.Deleted,
-				'R' => GitChangeType.Renamed,
-				_ => GitChangeType.Other
+				'A' => FileChangeType.Added,
+				'M' => FileChangeType.Modified,
+				'D' => FileChangeType.Deleted,
+				'R' => FileChangeType.Renamed,
+				_ => FileChangeType.Other
 			};
 
-			yield return new GitChange(change.Split('\t')[1], changeType);
+			yield return new FileChange(change.Split('\t')[1], changeType);
 		}
 	}
 
-	private static IEnumerable<GitChange> GetLocalChanges(string[] changes)
+	private static IEnumerable<FileChange> GetLocalChanges(string[] changes)
 	{
 		foreach (var change in changes)
 		{
@@ -72,20 +76,20 @@ public class LocalGitRepositoryTracker(DiagnosticsCollector collector, BuildCont
 
 			var changeType = (changeStatusCode[0], changeStatusCode[1]) switch
 			{
-				('R', _) or (_, 'R') => GitChangeType.Renamed,
-				('D', _) or (_, 'D') when changeStatusCode[0] != 'A' => GitChangeType.Deleted,
-				('?', '?') => GitChangeType.Untracked,
-				('A', _) or (_, 'A') => GitChangeType.Added,
-				('M', _) or (_, 'M') => GitChangeType.Modified,
-				_ => GitChangeType.Other
+				('R', _) or (_, 'R') => FileChangeType.Renamed,
+				('D', _) or (_, 'D') when changeStatusCode[0] != 'A' => FileChangeType.Deleted,
+				('?', '?') => FileChangeType.Untracked,
+				('A', _) or (_, 'A') => FileChangeType.Added,
+				('M', _) or (_, 'M') => FileChangeType.Modified,
+				_ => FileChangeType.Other
 			};
 
 			var changeParts = change.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 			yield return changeType switch
 			{
-				GitChangeType.Renamed => new RenamedGitChange(changeParts[1], changeParts[3], changeType),
-				_ => new GitChange(changeParts[1], changeType)
+				FileChangeType.Renamed => new RenamedFileChange(changeParts[1], changeParts[3], changeType),
+				_ => new FileChange(changeParts[1], changeType)
 			};
 		}
 	}

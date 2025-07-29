@@ -66,6 +66,8 @@ public record ConfigurationFile : ITableOfContentsScope
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
+
+		var sourceFile = context.ConfigurationPath;
 		if (!context.ConfigurationPath.Exists)
 		{
 			Project = "unknown";
@@ -73,10 +75,7 @@ public record ConfigurationFile : ITableOfContentsScope
 			return;
 		}
 
-		var sourceFile = context.ConfigurationPath;
-		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
-		var redirectFile = new RedirectFile(redirectFileInfo, _context);
+		var redirectFile = new RedirectFile(_context);
 		Redirects = redirectFile.Redirects;
 
 		var reader = new YamlStreamReader(sourceFile, _context.Collector);

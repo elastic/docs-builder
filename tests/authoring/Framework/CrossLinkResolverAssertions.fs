@@ -34,7 +34,7 @@ module CrossLinkResolverAssertions =
                 member _.WriteFileSystem = mockFileSystem
                 member _.ConfigurationPath = mockFileSystem.FileInfo.New("mock_docset.yml")
             }
-        let redirectFileParser = RedirectFile(mockRedirectsFile, docContext)
+        let redirectFileParser = RedirectFile(docContext, mockRedirectsFile)
         redirectFileParser.Redirects
 
     let private createFetchedCrossLinks (redirectsYamlSnippet: string) (linksData: IDictionary<string, LinkMetadata>) repoName =
