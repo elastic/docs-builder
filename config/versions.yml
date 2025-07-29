@@ -43,7 +43,7 @@ versioning_systems:
     current: 1.32.0
   apm_agent_go:
     base: 2.0
-    current: 2.71
+    current: 2.7.1
   apm_agent_java:
     base: 1.0
     current: 1.55.0
