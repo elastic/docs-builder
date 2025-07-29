@@ -23,7 +23,7 @@ versioning_systems:
   # things that i don't know about
   ecctl:
     base: 1.0
-    current: 1.15
+    current: 1.15.0
   curator:
     base: 8.0
     current: 8.0.21
