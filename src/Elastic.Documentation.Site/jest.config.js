@@ -23,4 +23,5 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: [],
+  reporters: [['github-actions', {silent: false}], 'summary'],
 }
