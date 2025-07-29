@@ -19,7 +19,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, GlobalNavigat
 	public async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation, int maxLevel, Cancel ctx = default)
 	{
 		if (currentRootNavigation.Parent is not null && currentRootNavigation.Parent.Depth != 0)
-			collector.EmitGlobalError($"Passed root is not actually a root {currentRootNavigation.NavigationTitle} ({currentRootNavigation.Id}) in {currentRootNavigation.Url}");
+			collector.EmitGlobalError($"Passed root is not actually a top level navigation item {currentRootNavigation.NavigationTitle} ({currentRootNavigation.Id}) in {currentRootNavigation.Url}");
 
 		if (_renderedNavigationCache.TryGetValue((currentRootNavigation.Id, maxLevel), out var html))
 		{
