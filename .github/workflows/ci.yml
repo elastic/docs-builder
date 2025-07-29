@@ -35,7 +35,7 @@ jobs:
   build-lambda:
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
 
-  lint:
+  npm:
     runs-on: ubuntu-latest
     defaults: 
       run: 
@@ -57,6 +57,12 @@ jobs:
       
       - name: Format
         run: npm run fmt:check
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Test
+        run: npm run test
       
 
   build:

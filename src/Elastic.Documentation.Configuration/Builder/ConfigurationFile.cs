@@ -51,7 +51,7 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public IDirectoryInfo ScopeDirectory { get; }
 
-	public IFileInfo? OpenApiSpecification { get; }
+	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
 	/// This is a documentation set that is not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -112,11 +112,18 @@ public record ConfigurationFile : ITableOfContentsScope
 						// read this later
 						break;
 					case "api":
-						var specification = reader.ReadString(entry.Entry);
-						if (specification is null)
+						var configuredApis = reader.ReadDictionary(entry.Entry);
+						if (configuredApis.Count == 0)
 							break;
-						var path = Path.Combine(context.DocumentationSourceDirectory.FullName, specification);
-						OpenApiSpecification = context.ReadFileSystem.FileInfo.New(path);
+
+						var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
+						foreach (var (k, v) in configuredApis)
+						{
+							var path = Path.Combine(context.DocumentationSourceDirectory.FullName, v);
+							var fi = context.ReadFileSystem.FileInfo.New(path);
+							specs[k] = fi;
+						}
+						OpenApiSpecifications = specs;
 						break;
 					case "products":
 						if (entry.Entry.Value is not YamlSequenceNode sequence)
@@ -130,7 +137,7 @@ public record ConfigurationFile : ITableOfContentsScope
 							YamlScalarNode? productId = null;
 							foreach (var child in node.Children)
 							{
-								if (child.Key is YamlScalarNode { Value: "id" } && child.Value is YamlScalarNode scalarNode)
+								if (child is { Key: YamlScalarNode { Value: "id" }, Value: YamlScalarNode scalarNode })
 								{
 									productId = scalarNode;
 									break;

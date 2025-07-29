@@ -32,8 +32,8 @@ environments:
 
 shared_configuration:
   stack: &stack
-    current:  9.0
-    next: 9.1
+    current:  9.1
+    next: main
     edge: main
 
   master: &master
@@ -136,3 +136,4 @@ references:
     current: 9.0
     next: main
     skip: true
+    sparse_paths: ["docs", "config"]

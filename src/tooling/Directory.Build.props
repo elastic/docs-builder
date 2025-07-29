@@ -9,6 +9,7 @@
 
     <!-- TODO ENABLE to document our code properly <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
   </PropertyGroup>
 
   <ItemGroup Condition="'$(OutputType)' == 'Exe'">
