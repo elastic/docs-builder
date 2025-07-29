@@ -4,13 +4,25 @@
 
 using System.IO.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using NetEscapades.EnumGenerators;
 
 namespace Elastic.Documentation.Configuration;
+
+[EnumExtensions]
+public enum ConfigurationSource
+{
+	Local,
+	Checkout,
+	Embedded
+}
 
 public class ConfigurationFileProvider
 {
 	private readonly IFileSystem _fileSystem;
 	private readonly string _assemblyName;
+
+	public ConfigurationSource ConfigurationSource { get; private set; } = ConfigurationSource.Embedded;
+	public string? GitReference { get; }
 
 	public ConfigurationFileProvider(IFileSystem fileSystem)
 	{
@@ -22,6 +34,9 @@ public class ConfigurationFileProvider
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
+		var path = GetAppDataPath("git-ref.txt");
+		if (ConfigurationSource == ConfigurationSource.Checkout && _fileSystem.File.Exists(path))
+			GitReference = _fileSystem.File.ReadAllText(path);
 	}
 
 	private IDirectoryInfo TemporaryDirectory { get; }
@@ -45,11 +60,21 @@ public class ConfigurationFileProvider
 
 	private StreamReader GetLocalOrEmbedded(string fileName)
 	{
-		var configPath = GetLocalPath(fileName);
-		if (!_fileSystem.File.Exists(configPath))
-			return GetEmbeddedStream(fileName);
-		var reader = _fileSystem.File.OpenText(configPath);
-		return reader;
+		var localPath = GetLocalPath(fileName);
+		var appDataPath = GetAppDataPath(fileName);
+		if (_fileSystem.File.Exists(localPath))
+		{
+			ConfigurationSource = ConfigurationSource.Local;
+			var reader = _fileSystem.File.OpenText(localPath);
+			return reader;
+		}
+		if (_fileSystem.File.Exists(appDataPath))
+		{
+			ConfigurationSource = ConfigurationSource.Checkout;
+			var reader = _fileSystem.File.OpenText(appDataPath);
+			return reader;
+		}
+		return GetEmbeddedStream(fileName);
 	}
 
 	private StreamReader GetEmbeddedStream(string fileName)
@@ -60,9 +85,11 @@ public class ConfigurationFileProvider
 		return reader;
 	}
 
-	public static string LocalConfigurationDirectory => Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
+	private static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
+	private static string LocalConfigurationDirectory { get; } = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
 
 	private static string GetLocalPath(string file) => Path.Combine(LocalConfigurationDirectory, file);
+	private static string GetAppDataPath(string file) => Path.Combine(AppDataConfigurationDirectory, file);
 }
 
 public static class ConfigurationFileProviderServiceCollectionExtensions
