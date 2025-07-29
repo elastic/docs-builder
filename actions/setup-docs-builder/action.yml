@@ -1,0 +1,44 @@
+name: Set up docs-builder CLI
+
+description: 'Set up docs-builder CLI for use in actions'
+
+inputs:
+  version:
+    required: false
+    default: 'latest'
+    description: 'The docs-builder version to download and use'
+  github-token:
+    required: true
+    description: 'GitHub token'
+    default: '${{ github.token }}'
+
+runs:
+  using: composite
+
+  steps:
+    - name: acquire docs-builder binary
+      shell: bash
+      run: |
+        if [[ "${DOCS_BUILDER_VERSION}" == "edge" ]]; then
+            docker cp $(docker create --name tc ghcr.io/elastic/docs-builder:edge):/app/docs-builder . && docker rm tc
+            exit 0;
+        fi
+        
+        if [[ "${DOCS_BUILDER_VERSION}" == "latest" ]]; then
+          DOCS_BUILDER_VERSION="" # empty string to get the latest version
+        fi
+
+        gh release download "${DOCS_BUILDER_VERSION}" --pattern 'docs-builder-linux-x64.zip' --repo elastic/docs-builder
+        gh attestation verify ./docs-builder-linux-x64.zip -R elastic/docs-builder
+        unzip -p ./docs-builder-linux-x64.zip docs-builder > docs-builder
+      
+      env:
+        DOCS_BUILDER_VERSION: '${{ inputs.version }}'
+        GH_TOKEN: '${{ inputs.github-token }}'
+
+    - name: Add builder to /usr/local/bin
+      shell: bash
+      run: |
+        cp docs-builder /usr/local/bin/docs-builder
+        chmod +x /usr/local/bin/docs-builder
+        echo "::notice::docs-builder-version=$(docs-builder --version)"
