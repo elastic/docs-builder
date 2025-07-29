@@ -169,7 +169,7 @@ internal sealed class RepositoryCommands(
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation);
+		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
