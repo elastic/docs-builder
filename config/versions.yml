@@ -46,7 +46,7 @@ versioning_systems:
     current: 2.71
   apm_agent_java:
     base: 1.0
-    current: 1.54.0
+    current: 1.55.0
   apm_agent_node:
     base: 4.0
     current: 4.13.0
