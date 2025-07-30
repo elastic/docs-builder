@@ -119,6 +119,7 @@ public class HtmlWriter(
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
+			IsAssemblerBuild = DocumentationSet.Context.AssemblerBuild,
 			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
