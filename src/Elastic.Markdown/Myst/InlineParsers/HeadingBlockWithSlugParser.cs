@@ -34,11 +34,9 @@ public partial class HeadingBlockWithSlugParser : HeadingBlockParser
 	private static readonly Regex IconSyntax = IconParser.IconRegex();
 	private static readonly Regex AppliesToSyntax = AppliesToSyntaxRegex();
 
-	private static string StripAppliesToAnnotations(string text)
-	{
+	private static string StripAppliesToAnnotations(string text) =>
 		// Remove applies_to inline annotations from the text
-		return AppliesToSyntax.Replace(text, "").Trim();
-	}
+		AppliesToSyntax.Replace(text, "").Trim();
 
 	[GeneratedRegex(@"\{applies_to\}`[^`]*`", RegexOptions.Compiled)]
 	private static partial Regex AppliesToSyntaxRegex();
