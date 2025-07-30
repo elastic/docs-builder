@@ -29,9 +29,19 @@ public class HeadingBlockWithSlugBuilderExtension : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) { }
 }
 
-public class HeadingBlockWithSlugParser : HeadingBlockParser
+public partial class HeadingBlockWithSlugParser : HeadingBlockParser
 {
 	private static readonly Regex IconSyntax = IconParser.IconRegex();
+	private static readonly Regex AppliesToSyntax = AppliesToSyntaxRegex();
+
+	private static string StripAppliesToAnnotations(string text)
+	{
+		// Remove applies_to inline annotations from the text
+		return AppliesToSyntax.Replace(text, "").Trim();
+	}
+
+	[GeneratedRegex(@"\{applies_to\}`[^`]*`", RegexOptions.Compiled)]
+	private static partial Regex AppliesToSyntaxRegex();
 
 	public override bool Close(BlockProcessor processor, Block block)
 	{
@@ -39,8 +49,9 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 			return base.Close(processor, block);
 
 		var text = headingBlock.Lines.Lines[0].Slice.AsSpan();
-		// Remove icon syntax from the heading text
-		var cleanText = IconSyntax.Replace(text.ToString(), "").Trim();
+		// Remove icon syntax and applies_to annotations from the heading text
+		var cleanText = IconSyntax.Replace(text.ToString(), "");
+		cleanText = StripAppliesToAnnotations(cleanText);
 		headingBlock.SetData("header", cleanText);
 
 		if (!HeadingAnchorParser.MatchAnchorLine().IsMatch(text))
@@ -59,8 +70,10 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 			if (header.IndexOf('$') >= 0)
 				anchor = HeadingAnchorParser.MatchAnchor().Replace(anchor.ToString(), "");
 			headingBlock.SetData("anchor", anchor.ToString());
-			// Remove icon syntax from the header text when setting it as data
-			headingBlock.SetData("header", IconSyntax.Replace(header.ToString(), "").Trim());
+			// Remove icon syntax and applies_to annotations from the header text when setting it as data
+			var headerText = IconSyntax.Replace(header.ToString(), "");
+			headerText = StripAppliesToAnnotations(headerText);
+			headingBlock.SetData("header", headerText.Trim());
 			return base.Close(processor, block);
 		}
 

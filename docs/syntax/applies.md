@@ -268,7 +268,7 @@ observability: deprecated 9.0.0
 
 ### Inline
 
-#### In text
+#### In text {applies_to}`serverless: `
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat,
 sit amet auctor odio. Donec ac placerat nunc. {applies_to}`stack: preview` Aenean scelerisque viverra lectus
