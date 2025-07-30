@@ -38,7 +38,6 @@ Depending on what you're trying to communicate, you can use the following patter
 
 ## Placement of badges
 
-% Reference: https://github.com/elastic/docs-builder/issues/1574
 ### Headings
 
 Use [section annotations](/syntax/applies.md#section-annotations) immediately after a heading when the entire content between that heading and the next [heading](/syntax/headings.md) of the same and higher level.
@@ -59,12 +58,14 @@ Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with 
 ::::
 :::
 
-% Reference: https://github.com/elastic/kibana/pull/229485/files
+
 ### Definition lists
 
 The recommended placement of `applies_to` badges in definition lists varies based what part(s) of the list item relate to the badge.
 
-**If the badge is relevant to the entire contents of a list item, put it at the end of the term.** This means using an inline annotation at the end of the same line as the term. For example, on the Kibana [Advanced settings](https://www.elastic.co/docs/reference/kibana/advanced-settings#kibana-banners-settings) page, the entire `banners:linkColor` option is only available in Elastic Stack 9.1.0 and later.
+#### If the badge is relevant to the entire contents of a list item, put it at the end of the term [definition-list-item-full]
+
+This means using an inline annotation at the end of the same line as the term. For example, on the Kibana [Advanced settings](https://www.elastic.co/docs/reference/kibana/advanced-settings#kibana-banners-settings) page, the entire `banners:linkColor` option is only available in Elastic Stack 9.1.0 and later.
 
 :::{image} ./images/definition-list-entire-item.png
 :screenshot:
@@ -80,21 +81,26 @@ Do **not** put the `applies_to` badge at the beginning or end of the definition 
 ::::
 :::
 
-**If the badge is only relevant to a portion of the definition, follow the appropriate placement guidelines for the elements used in the definition.** This might include labeling just one of multiple paragraphs or one item in an ordered or unordered list. For example, on the ... page, ...
+#### If the badge is only relevant to a portion of the definition, follow the appropriate placement guidelines for the elements used in the definition [definition-list-item-part]
+
+This might include labeling just one of multiple paragraphs or one item in an ordered or unordered list. For example, on the ... page, ...
 
 ::::{image} ./images/definition-list-portion-correct.png
 :screenshot:
 :alt: Correctly using inline applies_to in a portion of a definition list item
 ::::
 
-% Reference: TBD
+
 ### Ordered and unordered lists
 
 Reorganize content as needed so the `applies_to` badge is relevant to the entire contents of the list item.
 The recommended placement of the badge varies based on the purpose of the list.
 
-**If the purpose of the list is to illustrate the difference between situations, put a badge at the start of each item.**
+#### If the purpose of the list is to illustrate the difference between situations, put a badge at the start of each item [list-compare-applies_to]
+
 This could mean distinguishing between deployment types, products, lifecycles, or versions.
+Placing the badge at the beginning of the list item, allows the reader to scan the list for the item that is relevant to them.
+
 For example, the [Alerting and action settings in Kibana](https://www.elastic.co/docs/reference/kibana/configuration-reference/alerting-settings) page lists how the default value for the `xpack.actions.preconfigured.<connector-id>.config.defaultModel` setting varies in Serverless/Stack and across versions.
 
 ::::{image} ./images/list-correct.png
@@ -102,22 +108,37 @@ For example, the [Alerting and action settings in Kibana](https://www.elastic.co
 :alt:
 ::::
 
-**If the list just happens to have one or more items that are only relevant to a specific situation, put the badge at the end of the list item.**
-(deployment type, product, lifecycle, version, etc.)
+#### If the list just happens to have one or more items that are only relevant to a specific situation, put the badge at the end of the list item [list-other]
 
-<image>
+Placing the badge at the end of the list item maintains the flow of the list without distracting the reader with badges while still making it clear that the content in that list item is only applicable to the specified situation.
+
+For example, the [Add filter controls](https://www.elastic.co/docs/explore-analyze/dashboards/add-controls) page lists ways to configure ES|QL controls. Only one of the ways they can be controlled was added for the first time in 9.1.0.
+
+::::{image} ./images/list-misc-correct.png
+:screenshot:
+:alt:
+::::
+
 
 % Reference: Slack conversation
 ### Tables
 
 The recommended placement in tables varies based on what part(s) of the table related to the `applies_to` label.
 
-**If the badge is relevant to the entire row, add the badge to the end of the first column.**
+#### If the badge is relevant to the entire row, add the badge to the end of the first column [table-row]
+
 For example, a table that contains one setting per row and a new setting is added in 9.1.0.
 
 <image>
 
-**If the badge is relevant to one cell or part of a cell, add the badge to the end of the line it applies to.**
+#### If the badge is relevant to one cell or part of a cell, add the badge to the cell it applies to [table-cell]
+
+For example, a new property is available in 9.1.0 for a setting that already existed before 9.1.0.
+
+<image>
+
+#### If the badge is relevant to part of a cell, add the badge to the end of the line it applies to [table-cell-part]
+
 For example, a new property is available in 9.1.0 for a setting that already existed before 9.1.0.
 
 <image>
@@ -128,6 +149,37 @@ If needed, break the contents of the cell into multiple lines using `<br>` to is
 
 <image>
 :::
+
+### Tabs
+
+In the future ([elastic/docs-builder#1436](https://github.com/elastic/docs-builder/issues/1436)), tabs will be able to accept `applies_to` information. Until then, if an `applies_to` badge is relevant to the entire tab item, add the badge to the beginning of the content.
+
+<image>
+
+### Admonitions
+
+In the future ([elastic/docs-builder#1436](https://github.com/elastic/docs-builder/issues/1436)), admonitions will be able to accept `applies_to` information. Until then, if an `applies_to` badge is relevant to the entire admonition, add the badge to the beginning of the content.
+
+::::{image} ./images/admonition-correct.png
+:screenshot:
+:alt:
+::::
+
+### Dropdowns
+
+In the future ([elastic/docs-builder#1436](https://github.com/elastic/docs-builder/issues/1436)), dropdowns will be able to accept `applies_to` information. Until then, if an `applies_to` badge is relevant to the entire dropdown, add the badge to the beginning of the content.
+
+<image>
+
+### Code blocks
+
+To specify `applies_to` information for a code block, refer to [](/contribute/cumulative-docs/content-patterns.md#code-block).
+
+### Images
+
+To specify `applies_to` information for an image, refer to [](/contribute/cumulative-docs/content-patterns.md#screenshot).
+
+<!-- ### Stepper -->
 
 <!-- ## Scenarios [scenarios]
 

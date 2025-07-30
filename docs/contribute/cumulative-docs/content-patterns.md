@@ -6,36 +6,88 @@ navigation_title: "Example scenarios"
 
 ## Code block content varies [code-block]
 
-### Solution A: Use a code callout [code-block-solution-a]
+Often the content in a code block will vary between situations (versions, deployment types, etc).
+There are a couple possible solutions.
+
+### Solution A: Use a code callout [code-block-callout]
+
+Using a code callout is the lightest-touch solution, but might not be sufficient in all cases.
 
 **When to use a code callout**:
 
+* The code block and its callouts fit vertically on a typical laptop screen.
+  This will reduce the risk of users copying the code snippet without reading the information in the callout.
+* Syntax is either just added or just removed — syntax is not modified.
+  It is difficult to communicate that some syntax is needed in more than one situation but varies depending on the situation.
+* The code block will not require more than 3 `applies_to`-related callouts.
+  At that point, the code becomes more difficult to read and use.
+
 **Best practices**:
+
+* Place the badge at the beginning of the callout.
+
+**Example**: A new option was made available in 9.1.0.
+
+::::{image} ./images/example-code-block-callout.png
+:screenshot:
+:alt:
+::::
+
+### Solution B: Use tabs [code-block-tabs]
+
+**When to use tabs**: If using a [code callout](#code-block-callout) isn't appropriate.
+
+**Best practices**:
+
+* Try to minimize the number of tabs where possible,
+  but do not mix tabs and `applies_to`-related code callouts.
+* Try not to include information surrounding a code block in the tabs.
+  Make the tab content as small as possible apart from the procedure itself.
 
 **Example**:
 
-### Solution B: Use tabs [code-block-solution-b]
-
-**When to use tabs**:
-
-**Best practices**:
-
-**Example**:
+::::{image} ./images/example-code-block-tabs.png
+:screenshot:
+:alt:
+::::
 
 ## Workflows vary [workflow]
 
 When one or more steps in a process differs.
 
-### Solution A: Use tabs [workflow-solution-a]
+### Solution A: Use inline `applies_to` [workflow-inline]
 
-Tabs are the least disruptive ...
-Use tabs to include workflows that vary between deployment types, versions, and more.
+Using inline `applies_to` badges to a few line items in an ordered list is the lightest-touch solution,
+but might not be sufficient in all cases.
+
+**When to use inline `applies_to`**:
+
+* Workflow steps that vary between situations can be easily isolated.
+* Each step that varies, only varies between 3 or fewer situations (deployment types, versions, etc).
+* There are no more than 3 steps that need to be split into multiple lines with `applies_to` badges.
+
+**Best practices**:
+
+* Follow the [best practices for ordered and unordered lists](/contribute/cumulative-docs/best-practices.md#ordered-and-unordered-lists)
+  including the order of items and the placement of labels.
+
+**Example**: Only one item in an ordered list varies between Serverless and stateful.
+
+::::{image} ./images/workflow-inline.png
+:screenshot:
+:alt:
+::::
+
+### Solution B: Use tabs [workflow-tabs]
+
+Tabs are minimally disruptive in many situations.
 
 **When to use tabs**:
 
-* If all the tabs fit horizontally on a single row on a typical laptop screen.
+* Using [inline `applies_to` badges](#workflow-inline) isn't appropriate.
+* All the tabs fit horizontally on a single row on a typical laptop screen.
   This is usually around a maximum of four tabs.
-* If the tab with the most content fits vertically on a typical laptop screen.
+* The tab with the most content fits vertically on a typical laptop screen.
   This is usually around of 20 lines.
 
 **Best practices**:
@@ -48,56 +100,21 @@ Use tabs to include workflows that vary between deployment types, versions, and 
 
 **Example**:
 
-:::::{tab-set}
-:group: serverless-stack
+<image>
 
-::::{tab-item} {{serverless-short}}
-:sync: serverless
+### Solution C: Use sibling pages [workflow-sibling-pages]
 
-1. Click **Create space** or select the space you want to edit.
-2. Provide:
-
-    * A meaningful name and description for the space.
-    * A URL identifier. The URL identifier is a short text string that becomes part of the Kibana URL. Kibana suggests a URL identifier based on the name of your space, but you can customize the identifier to your liking. You cannot change the space identifier later.
-
-3. Customize the avatar of the space to your liking.
-4. Save the space.
-::::
-
-::::{tab-item} {{stack}} v9
-:sync: stack
-
-1. Select **Create space** and provide a name, description, and URL identifier.
-   The URL identifier is a short text string that becomes part of the Kibana URL when you are inside that space. Kibana suggests a URL identifier based on the name of your space, but you can customize the identifier to your liking. You cannot change the space identifier once you create the space.
-
-2. Select a **Solution view**. This setting controls the navigation that all users of the space will get:
-   * **Search**: A light navigation menu focused on analytics and Search use cases. Features specific to Observability and Security are hidden.
-   * **Observability**: A light navigation menu focused on analytics and Observability use cases. Features specific to Search and Security are hidden.
-   * **Security**: A light navigation menu focused on analytics and Security use cases. Features specific to Observability and Search are hidden.
-   * **Classic**: All features from all solutions are visible by default using the classic, multilayered navigation menus. You can customize which features are visible individually.
-
-3. If you selected the **Classic** solution view, you can customize the **Feature visibility** as you need it to be for that space.
-
-   :::{note}
-   Even when disabled in this menu, some Management features can remain visible to some users depending on their privileges. Additionally, controlling feature visibility is not a security feature. To secure access to specific features on a per-user basis, you must configure Kibana Security.
-   :::
-4. Customize the avatar of the space to your liking.
-5. Save your new space by selecting **Create space**.
-::::
-
-:::::
-
-### Solution B: Use headings [workflow-solution-b]
-
-**When to use headings**:
-
-**Best practices**:
-
-**Example**:
-
-### Solution C: Use sibling pages [workflow-solution-c]
+Sibling pages are a last resort when no other solutions are appropriate.
 
 **When to use sibling pages**:
+
+* Neither [inline `applies_to` badges](#workflow-inline) or [tabs](#workflow-tabs) are appropriate.
+* The workflow has significant differences across multiple procedures.
+* There are chained procedures where not all of the procedures are needed for all contexts
+  or where the flow across procedures is muddied when versioning context is added.
+* The workflow exists in a very complex page that is already heavily using tabs and other tools we use for versioning differences.
+  This makes it difficult to add another “layer” of content.
+% * Beta to GA transitions? Hide the beta doc and leave it linked to the GA doc, which will presumably be more stable?
 
 **Best practices**:
 
@@ -105,7 +122,7 @@ Use tabs to include workflows that vary between deployment types, versions, and 
 
 ## Screenshots vary [screenshot]
 
-### Solution A: Use tabs [screenshot-solution-a]
+### Solution A: Use tabs [screenshot-tabs]
 
 **When to use tabs**:
 
@@ -113,7 +130,7 @@ Use tabs to include workflows that vary between deployment types, versions, and 
 
 **Example**:
 
-### Solution B: Add a note [screenshot-solution-b]
+### Solution B: Add a note [screenshot-note]
 
 **When to use a note**:
 
@@ -123,7 +140,7 @@ Use tabs to include workflows that vary between deployment types, versions, and 
 
 ## Multiple adjacent block elements vary [multiple-block]
 
-### Solution A: Use headings [multiple-block-solution-a]
+### Solution A: Use headings [multiple-block-headings]
 
 **When to use headings**:
 
@@ -131,7 +148,7 @@ Use tabs to include workflows that vary between deployment types, versions, and 
 
 **Example**:
 
-### Solution B: Use tabs [multiple-block-solution-b]
+### Solution B: Use tabs [multiple-block-tabs]
 
 **When to use tabs**:
 
@@ -309,13 +326,6 @@ You can edit all of the space settings you just defined at any time, except for 
 
 ## Sibling pages
 
-**Use case:**
-
-* Processes that have significant differences **across multiple procedures**
-* Chained procedures where not all of the procedures are needed for all contexts / where the flow across procedures is muddied when versioning context is added
-* Very complex pages that are already heavily using tabs and other tools we use for versioning differences, making it hard to add another “layer” of content
-* Beta to GA transitions? Hide the beta doc and leave it linked to the GA doc, which will presumably be more stable?
-
 **Number to use:** As few as possible. Consider leveraging other ways of communicating versioning differences to reduce the number of sibling pages.
 
 **When to use:**
@@ -331,3 +341,43 @@ When version differences are just too large to be handled with any of our other 
 and its sibling
 
 [{{serverless-short}} project billing dimensions](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/deploy-manage/cloud-organization/billing/serverless-project-billing-dimensions)
+
+
+:::::{tab-set}
+:group: serverless-stack
+
+::::{tab-item} {{serverless-short}}
+:sync: serverless
+
+1. Click **Create space** or select the space you want to edit.
+2. Provide:
+
+    * A meaningful name and description for the space.
+    * A URL identifier. The URL identifier is a short text string that becomes part of the Kibana URL. Kibana suggests a URL identifier based on the name of your space, but you can customize the identifier to your liking. You cannot change the space identifier later.
+
+3. Customize the avatar of the space to your liking.
+4. Save the space.
+::::
+
+::::{tab-item} {{stack}} v9
+:sync: stack
+
+1. Select **Create space** and provide a name, description, and URL identifier.
+   The URL identifier is a short text string that becomes part of the Kibana URL when you are inside that space. Kibana suggests a URL identifier based on the name of your space, but you can customize the identifier to your liking. You cannot change the space identifier once you create the space.
+
+2. Select a **Solution view**. This setting controls the navigation that all users of the space will get:
+   * **Search**: A light navigation menu focused on analytics and Search use cases. Features specific to Observability and Security are hidden.
+   * **Observability**: A light navigation menu focused on analytics and Observability use cases. Features specific to Search and Security are hidden.
+   * **Security**: A light navigation menu focused on analytics and Security use cases. Features specific to Observability and Search are hidden.
+   * **Classic**: All features from all solutions are visible by default using the classic, multilayered navigation menus. You can customize which features are visible individually.
+
+3. If you selected the **Classic** solution view, you can customize the **Feature visibility** as you need it to be for that space.
+
+   :::{note}
+   Even when disabled in this menu, some Management features can remain visible to some users depending on their privileges. Additionally, controlling feature visibility is not a security feature. To secure access to specific features on a per-user basis, you must configure Kibana Security.
+   :::
+4. Customize the avatar of the space to your liking.
+5. Save your new space by selecting **Create space**.
+::::
+
+:::::
