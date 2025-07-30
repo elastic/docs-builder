@@ -1,25 +1,28 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Image.ImageCarouselViewModel>
 @{
     // Convert semantic height values to pixel values
-    string? pixelHeight = Model.FixedHeight?.ToLower() switch
+    var maxHeightValue = Model.MaxHeight?.ToLower();
+    string? pixelHeight = maxHeightValue switch
     {
         "small" => "350px",
         "medium" => "750px",
-        "auto" or null or "" => null,
+        "auto" => "none",  // Auto means no max-height constraint
+        null or "" => null,
         _ => null // Default to none for invalid values
     };
     
-    var hasFixedHeight = !string.IsNullOrEmpty(pixelHeight);
-    var trackStyle = hasFixedHeight ? $"height: {pixelHeight};" : "";
+    var hasMaxHeight = !string.IsNullOrEmpty(pixelHeight) && maxHeightValue != null;
+    var containerStyle = hasMaxHeight ? $"--carousel-max-height: {pixelHeight};" : "";
+    var dataAttribute = maxHeightValue == "auto" ? "data-auto-height" : (hasMaxHeight ? "data-max-height" : "");
 }
-<div class="carousel-container" @(hasFixedHeight ? "data-fixed-height" : "")>
-    <div class="carousel-track" style="@trackStyle">
+<div class="carousel-container" @dataAttribute style="@containerStyle">
+    <div class="carousel-track">
         @for (int i = 0; i < Model.Images.Count; i++)
         {
             var image = Model.Images[i];
             <div class="carousel-slide" data-index="@i" @(i == 0 ? "data-active=true" : "")>
                 <a class="carousel-image-reference" href="@image.ImageUrl" target="_blank">
-                    <img loading="lazy" title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
+                    <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
                 </a>
             </div>
         }

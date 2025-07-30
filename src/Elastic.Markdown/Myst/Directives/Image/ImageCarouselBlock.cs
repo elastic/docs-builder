@@ -14,7 +14,7 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 {
 	public List<ImageBlock> Images { get; } = [];
 	public string? Id { get; set; }
-	public string? FixedHeight { get; set; }
+	public string? MaxHeight { get; set; }
 
 	public override string Directive => "carousel";
 
@@ -22,15 +22,15 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 	{
 		// Parse options
 		Id = Prop("id");
-		FixedHeight = Prop("fixed-height");
+		MaxHeight = Prop("max-height");
 
-		// Validate fixed-height option
-		if (!string.IsNullOrEmpty(FixedHeight))
+		// Validate max-height option
+		if (!string.IsNullOrEmpty(MaxHeight))
 		{
 			var validHeights = new[] { "auto", "small", "medium" };
-			if (!validHeights.Contains(FixedHeight.ToLower()))
+			if (!validHeights.Contains(MaxHeight.ToLower()))
 			{
-				this.EmitWarning($"Invalid fixed-height value '{FixedHeight}'. Valid options are: auto, small, medium. Defaulting to 'auto'.");
+				this.EmitWarning($"Invalid max-height value '{MaxHeight}'. Valid options are: auto, small, medium. Defaulting to 'auto'.");
 			}
 		}
 

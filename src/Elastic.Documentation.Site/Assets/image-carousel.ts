@@ -18,6 +18,13 @@ class ImageCarousel {
         this.slides = Array.from(
             this.container.querySelectorAll('.carousel-slide')
         )
+        
+        // Don't initialize if no slides
+        if (this.slides.length === 0) {
+            console.warn('No carousel slides found')
+            return
+        }
+        
         this.indicators = Array.from(
             this.container.querySelectorAll('.carousel-indicator')
         )
