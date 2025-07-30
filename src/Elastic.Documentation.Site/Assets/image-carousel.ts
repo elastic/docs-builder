@@ -33,6 +33,7 @@ class ImageCarousel {
 
         this.initializeSlides()
         this.setupEventListeners()
+        this.positionControls()
     }
 
     private initializeSlides(): void {
@@ -131,6 +132,64 @@ class ImageCarousel {
             rect.right <=
                 (window.innerWidth || document.documentElement.clientWidth)
         )
+    }
+
+    private positionControls(): void {
+        if (!this.prevButton || !this.nextButton) return
+
+        // Wait for images to load before positioning
+        const images = Array.from(this.container.querySelectorAll('img'))
+        if (images.length === 0) return
+
+        let loadedCount = 0
+        const totalImages = images.length
+
+        const positionAfterLoad = () => {
+            loadedCount++
+            if (loadedCount === totalImages) {
+                this.calculateControlPosition()
+            }
+        }
+
+        images.forEach(img => {
+            if (img.complete) {
+                positionAfterLoad()
+            } else {
+                img.addEventListener('load', positionAfterLoad)
+                img.addEventListener('error', positionAfterLoad) // Handle failed loads
+            }
+        })
+    }
+
+    private calculateControlPosition(): void {
+        if (!this.prevButton || !this.nextButton) return
+
+        const images = Array.from(this.container.querySelectorAll('img'))
+        let minHeight = Infinity
+
+        // Find the smallest image height among all images
+        images.forEach(img => {
+            const height = img.offsetHeight
+            if (height > 0 && height < minHeight) {
+                minHeight = height
+            }
+        })
+
+        // Position controls at 40% the height of the smallest image
+        // But ensure a minimum distance from the top (50px) and don't go below 80% of the smallest image
+        if (minHeight !== Infinity && minHeight > 0) {
+            const fortyPercentHeight = Math.floor(minHeight * 0.4)
+            const minTop = 50 // Minimum 50px from top
+            const maxTop = Math.floor(minHeight * 0.8) // Maximum 80% down the smallest image
+            
+            const controlTop = Math.max(minTop, Math.min(fortyPercentHeight, maxTop))
+            
+            this.prevButton.style.top = `${controlTop}px`
+            this.nextButton.style.top = `${controlTop}px`
+            
+            // Debug logging (remove in production)
+            console.log(`Carousel controls positioned: minHeight=${minHeight}px, controlTop=${controlTop}px`)
+        }
     }
 }
 
