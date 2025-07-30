@@ -74,7 +74,7 @@ For inline images, the alt text always overrides any title specified in the Mark
 ![Elasticsearch](/syntax/images/observability.png "Different title")
 ```
 
-![Elasticsearch](/syntax/images/observability.png "Different title")
+![Elasticsearch](/syntax/images/observability.png "Different title =50%x50%")
 
 
 ### Inline image sizing
