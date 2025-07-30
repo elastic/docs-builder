@@ -2,6 +2,7 @@
   <PropertyGroup>
     <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
   </PropertyGroup>
   <ItemGroup>
     <GlobalPackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
@@ -42,7 +43,7 @@
     <PackageVersion Include="Markdig" Version="0.41.1" />
     <PackageVersion Include="NetEscapades.EnumGenerators" Version="1.0.0-beta12" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageVersion Include="Proc" Version="0.9.1" />
-    <PackageVersion Include="RazorSlices" Version="0.9.2" />
+    <PackageVersion Include="RazorSlices" Version="0.9.4" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="2.7.0" />
