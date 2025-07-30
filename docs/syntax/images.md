@@ -29,8 +29,6 @@ Or, use the `image` directive.
 :::
 ```
 
-Note: When using the image directive, if you specify an `:alt:` value but no `:title:` value, the alt text will automatically be used as the title.
-
 :::{image} /syntax/images/observability.png
 :alt: Elasticsearch
 :width: 250px
