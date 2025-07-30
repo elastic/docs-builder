@@ -34,7 +34,7 @@ let private version _ =
 
 let private format _ = exec { run "dotnet" "format" "--verbosity" "quiet" }
 
-let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--no-hot-reload" "--" "serve" }
+let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" }
 
 let private lint _ =
     match exec {
