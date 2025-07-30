@@ -39,3 +39,20 @@ public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<Link
 			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
 		);
 }
+
+public class AbsoluteInlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
+"""
+![K8s-self-managed](/reference/images/arch-k8s-self-managed.png)
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void GeneratesAttributesInHtml() =>
+		// language=html
+		Html.ShouldContainHtml(
+			"""<p><img src="/docs/reference/images/arch-k8s-self-managed.png" alt="K8s-self-managed" /></p>"""
+		);
+}

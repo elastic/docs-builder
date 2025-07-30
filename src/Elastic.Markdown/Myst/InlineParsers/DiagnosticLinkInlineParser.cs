@@ -209,7 +209,16 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var linkMarkdown = SetLinkData(link, processor, context, file, url);
 
 		ProcessLinkText(processor, link, linkMarkdown, anchor, url, file);
-		UpdateLinkUrl(link, linkMarkdown, url, context, anchor);
+
+		// For inline images, handle URL processing like image directives do
+		if (link.IsImage)
+		{
+			link.Url = UpdateRelativeUrl(context, url);
+		}
+		else
+		{
+			UpdateLinkUrl(link, linkMarkdown, url, context, anchor);
+		}
 	}
 
 	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,

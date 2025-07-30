@@ -51,6 +51,8 @@ Screenshots are images displayed with a box-shadow. Define a screenshot by addin
 
 ## Inline images
 
+Inline images support both relative and absolute paths, like image directives.
+
 ```markdown
 Here is the same image used inline ![Elasticsearch](/syntax/images/observability.png "elasticsearch =50%x50%")
 ```
