@@ -27,10 +27,10 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 		// Validate max-height option
 		if (!string.IsNullOrEmpty(MaxHeight))
 		{
-			var validHeights = new[] { "auto", "small", "medium" };
+			var validHeights = new[] { "none", "small", "medium" };
 			if (!validHeights.Contains(MaxHeight.ToLower()))
 			{
-				this.EmitWarning($"Invalid max-height value '{MaxHeight}'. Valid options are: auto, small, medium. Defaulting to 'auto'.");
+				this.EmitWarning($"Invalid max-height value '{MaxHeight}'. Valid options are: none, small, medium. Defaulting to 'none'.");
 			}
 		}
 

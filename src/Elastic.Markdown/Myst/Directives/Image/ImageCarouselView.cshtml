@@ -6,14 +6,14 @@
     {
         "small" => "350px",
         "medium" => "750px",
-        "auto" => "none",  // Auto means no max-height constraint
+        "none" => "none",  // None means no max-height constraint
         null or "" => null,
         _ => null // Default to none for invalid values
     };
     
-    var hasMaxHeight = !string.IsNullOrEmpty(pixelHeight) && maxHeightValue != null;
+    var hasMaxHeight = !string.IsNullOrEmpty(pixelHeight) && maxHeightValue != null && maxHeightValue != "none";
     var containerStyle = hasMaxHeight ? $"--carousel-max-height: {pixelHeight};" : "";
-    var dataAttribute = maxHeightValue == "auto" ? "data-auto-height" : (hasMaxHeight ? "data-max-height" : "");
+    var dataAttribute = maxHeightValue == "none" ? "data-none-height" : (hasMaxHeight ? "data-max-height" : "");
 }
 <div class="carousel-container" @dataAttribute style="@containerStyle">
     <div class="carousel-track">

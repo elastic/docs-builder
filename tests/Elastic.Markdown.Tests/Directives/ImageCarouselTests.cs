@@ -85,7 +85,7 @@ public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : Direc
 public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:max-height: auto
+:max-height: none
 
 ```{image} img/auto.png
 :alt: Auto height image
@@ -98,9 +98,9 @@ public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : Direct
 		fileSystem.AddFile(@"docs/img/auto.png", "");
 
 	[Fact]
-	public void ParsesAutoMaxHeight()
+	public void ParsesNoneMaxHeight()
 	{
-		Block!.MaxHeight.Should().Be("auto");
+		Block!.MaxHeight.Should().Be("none");
 		Collector.Diagnostics.Count.Should().Be(0);
 	}
 }
@@ -130,7 +130,7 @@ public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : Dir
 
 		var warning = Collector.Diagnostics.First();
 		warning.Message.Should().Contain("Invalid max-height value 'large'");
-		warning.Message.Should().Contain("Valid options are: auto, small, medium");
+		warning.Message.Should().Contain("Valid options are: none, small, medium");
 	}
 }
 
