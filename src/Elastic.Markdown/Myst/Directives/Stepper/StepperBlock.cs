@@ -26,6 +26,10 @@ public class StepBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Arguments ?? string.Empty;
+
+		// Apply substitutions to the title
+		Title = Title.ReplaceSubstitutions(context);
+
 		Anchor = Prop("anchor") ?? Title.Slugify();
 
 		// Calculate heading level based on preceding heading
