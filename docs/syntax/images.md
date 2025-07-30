@@ -60,38 +60,40 @@ Here is the same image used inline ![Elasticsearch](/syntax/images/observability
 
 ### Inline image titles
 
-Titles are optional making this the minimal syntax required
+Titles are optional making this the minimal syntax required:
 
 ```markdown
 ![Elasticsearch](/syntax/images/observability.png)
 ```
 
-Including a title can be done by supplying it as an optional argument.
+For inline images, the alt text always overrides any title specified in the Markdown. This ensures consistent accessibility where both the `alt` and `title` attributes contain the same descriptive text.
 
 ```markdown
-![Elasticsearch](/syntax/images/observability.png "elasticsearch")
+![Elasticsearch](/syntax/images/observability.png "Different title")
 ```
+
+![Elasticsearch](/syntax/images/observability.png "Different title =50%x50%")
+
 
 ### Inline image sizing
 
-Inline images are supplied at the end through the title argument.
-
-This is done to maintain maximum compatibility with markdown parsers
-and previewers. 
+Image sizing is specified through the title argument. You can specify just the size without needing to provide a redundant title:
 
 ```markdown
-![alt](img.png "title =WxH")
-![alt](img.png "title =W")
+![alt](img.png "=WxH")
+![alt](img.png "=W")
 ```
+
+In this case, the alt text will be used as both the `alt` and `title` attributes, and the size parameters will be applied.
 
 `W` and `H` can be either an absolute number in pixels or a number followed by `%` to indicate relative sizing.
 
 If `H` is omitted `W` is used as the height as well.
 
 ```markdown
-![alt](img.png "title =250x330")
-![alt](img.png "title =50%x40%")
-![alt](img.png "title =50%")
+![alt](img.png "=250x330")
+![alt](img.png "=50%x40%")
+![alt](img.png "=50%")
 ```
 
 
@@ -138,7 +140,7 @@ The image carousel directive builds upon the image directive.
 
 :::{image} images/applies.png
 :alt: Second image description
-:title: Second image title
+### Title is optional - alt text will be used as title if not specified
 :::
 
 ::::

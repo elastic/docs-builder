@@ -74,7 +74,9 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 	{
 		Label = Prop("label", "name");
 		Alt = Prop("alt")?.ReplaceSubstitutions(context) ?? string.Empty;
-		Title = Prop("title")?.ReplaceSubstitutions(context);
+		// Use Alt as Title if no explicit Title is provided
+		var explicitTitle = Prop("title")?.ReplaceSubstitutions(context);
+		Title = string.IsNullOrEmpty(explicitTitle) ? Alt : explicitTitle;
 
 		Align = Prop("align");
 		Height = Prop("height", "h");

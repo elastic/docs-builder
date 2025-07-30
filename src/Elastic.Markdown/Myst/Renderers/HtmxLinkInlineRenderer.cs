@@ -20,7 +20,6 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
-			// ReSharper disable once UnusedVariable
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
 			{
 				base.Write(renderer, link);
@@ -70,8 +69,41 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 			_ = renderer.Write("</a>");
 		}
+		else if (link.IsImage)
+		{
+			// Handle inline images with ALT override logic
+			WriteImage(renderer, link);
+		}
 		else
 			base.Write(renderer, link);
+	}
+
+	private static void WriteImage(HtmlRenderer renderer, LinkInline link)
+	{
+		_ = renderer.Write("<img src=\"");
+		_ = renderer.WriteEscapeUrl(link.GetDynamicUrl?.Invoke() ?? link.Url);
+		_ = renderer.Write('"');
+
+		// Write alt text using WriteChildren to ensure substitutions are processed
+		if (link.FirstChild != null)
+		{
+			_ = renderer.Write(" alt=\"");
+			renderer.WriteChildren(link);
+			_ = renderer.Write('"');
+		}
+
+		// Write any additional attributes (like width/height from styling instructions)
+		_ = renderer.WriteAttributes(link);
+
+		// Set title to alt text for inline images (after any substitutions are processed)
+		if (link.FirstChild != null)
+		{
+			_ = renderer.Write(" title=\"");
+			renderer.WriteChildren(link);
+			_ = renderer.Write('"');
+		}
+
+		_ = renderer.Write(" />");
 	}
 }
 
