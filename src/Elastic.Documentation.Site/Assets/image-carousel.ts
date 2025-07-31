@@ -18,13 +18,13 @@ class ImageCarousel {
         this.slides = Array.from(
             this.container.querySelectorAll('.carousel-slide')
         )
-        
+
         // Don't initialize if no slides
         if (this.slides.length === 0) {
             console.warn('No carousel slides found')
             return
         }
-        
+
         this.indicators = Array.from(
             this.container.querySelectorAll('.carousel-indicator')
         )
@@ -69,7 +69,7 @@ class ImageCarousel {
         })
 
         // Handle image clicks for modal
-        this.slides.forEach(slide => {
+        this.slides.forEach((slide) => {
             const imageLink = slide.querySelector('.carousel-image-reference')
             if (imageLink) {
                 imageLink.addEventListener('click', (e) => {
@@ -168,7 +168,7 @@ class ImageCarousel {
             }
         }
 
-        images.forEach(img => {
+        images.forEach((img) => {
             if (img.complete) {
                 positionAfterLoad()
             } else {
@@ -185,7 +185,7 @@ class ImageCarousel {
         let minHeight = Infinity
 
         // Find the smallest image height among all images
-        images.forEach(img => {
+        images.forEach((img) => {
             const height = img.offsetHeight
             if (height > 0 && height < minHeight) {
                 minHeight = height
@@ -198,14 +198,19 @@ class ImageCarousel {
             const fortyPercentHeight = Math.floor(minHeight * 0.4)
             const minTop = 50 // Minimum 50px from top
             const maxTop = Math.floor(minHeight * 0.8) // Maximum 80% down the smallest image
-            
-            const controlTop = Math.max(minTop, Math.min(fortyPercentHeight, maxTop))
-            
+
+            const controlTop = Math.max(
+                minTop,
+                Math.min(fortyPercentHeight, maxTop)
+            )
+
             this.prevButton.style.top = `${controlTop}px`
             this.nextButton.style.top = `${controlTop}px`
-            
+
             // Debug logging (remove in production)
-            console.log(`Carousel controls positioned: minHeight=${minHeight}px, controlTop=${controlTop}px`)
+            console.log(
+                `Carousel controls positioned: minHeight=${minHeight}px, controlTop=${controlTop}px`
+            )
         }
     }
 }
