@@ -25,6 +25,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = ".github", ".github\.github.csproj", "{1A8659C1-222A-4824-B562-ED8F88658C05}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{67B576EE-02FA-4F9B-94BC-3630BC09ECE5}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Directory.Build.props = tests\Directory.Build.props
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Markdown.Tests", "tests\Elastic.Markdown.Tests\Elastic.Markdown.Tests.csproj", "{B27C5107-128B-465A-B8F8-8985399E4CFB}"
 EndProject
@@ -119,6 +122,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{6FAB56
 		config\navigation.yml = config\navigation.yml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests-integration", "tests-integration", "{BCAD38D5-6C83-46E2-8398-4BE463931098}"
+	ProjectSection(SolutionItems) = preProject
+		tests-integration\Directory.Build.props = tests-integration\Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tests-integration\Elastic.Assembler.IntegrationTests", "tests-integration\Elastic.Assembler.IntegrationTests\Elastic.Assembler.IntegrationTests.csproj", "{A272D3EC-FAAF-4795-A796-302725382AFF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -204,6 +214,10 @@ Global
 		{164F55EC-9412-4CD4-81AD-3598B57632A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{164F55EC-9412-4CD4-81AD-3598B57632A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{164F55EC-9412-4CD4-81AD-3598B57632A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A272D3EC-FAAF-4795-A796-302725382AFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A272D3EC-FAAF-4795-A796-302725382AFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A272D3EC-FAAF-4795-A796-302725382AFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A272D3EC-FAAF-4795-A796-302725382AFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
@@ -234,5 +248,6 @@ Global
 		{89B83007-71E6-4B57-BA78-2544BFA476DB} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{111E7029-BB29-4039-9B45-04776798A8DD} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{164F55EC-9412-4CD4-81AD-3598B57632A6} = {67B576EE-02FA-4F9B-94BC-3630BC09ECE5}
+		{A272D3EC-FAAF-4795-A796-302725382AFF} = {BCAD38D5-6C83-46E2-8398-4BE463931098}
 	EndGlobalSection
 EndGlobal

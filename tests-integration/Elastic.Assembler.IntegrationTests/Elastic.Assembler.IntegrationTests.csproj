@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj" />
+      <ProjectReference Include="..\..\src\tooling\docs-assembler\docs-assembler.csproj" />
+      <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+    </ItemGroup>
+
+</Project>
