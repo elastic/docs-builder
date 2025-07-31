@@ -7,10 +7,10 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using Api.Core;
-using Api.Core.AskAi;
-using Api.Infrastructure.Adapters;
 using Documentation.Builder.Diagnostics.LiveMode;
+using Elastic.Documentation.Api.Core;
+using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Infrastructure.Adapters;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
@@ -32,10 +32,12 @@ public class DocumentationWebHost
 
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
+	private readonly ILoggerFactory _logFactory;
 
 	public DocumentationWebHost(ILoggerFactory logFactory, string? path, int port, IFileSystem readFs, IFileSystem writeFs,
 		VersionsConfiguration versionsConfig)
 	{
+		_logFactory = logFactory;
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Information);
@@ -224,14 +226,14 @@ public class DocumentationWebHost
 		return Results.Content(content, "text/html", encoding, statusCode);
 	}
 
-	private static async Task<IResult> ProxyChatRequest(HttpContext context, CancellationToken ctx)
+	private async Task<IResult> ProxyChatRequest(HttpContext context, CancellationToken ctx)
 	{
 		// Read the frontend request body
 		var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync(ctx);
 		var askAiRequest = JsonSerializer.Deserialize<AskAiRequest>(requestBody, ApiJsonContext.Default.AskAiRequest);
 
 		// Load GCP service account credentials
-		var serviceAccountKeyPath = Environment.GetEnvironmentVariable("LLM_GATEWAY_GCP_SERVICE_ACCOUNT_KEY_PATH")
+		var serviceAccountKeyPath = Environment.GetEnvironmentVariable("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH")
 									?? "service-account-key.json";
 
 		if (!File.Exists(serviceAccountKeyPath))
@@ -242,7 +244,7 @@ public class DocumentationWebHost
 		}
 
 		// Get GCP function URL
-		var gcpFunctionUrl = Environment.GetEnvironmentVariable("LLM_GATEWAY_GCP_FUNCTION_URL");
+		var gcpFunctionUrl = Environment.GetEnvironmentVariable("LLM_GATEWAY_FUNCTION_URL");
 		if (string.IsNullOrEmpty(gcpFunctionUrl))
 		{
 			context.Response.StatusCode = 500;
@@ -263,7 +265,8 @@ public class DocumentationWebHost
 			gcpIdTokenProvider,
 			gcpFunctionUrl
 		);
-		var askAiUsecase = new AskAiUsecase(llmGatewayAskAiGateway);
+
+		var askAiUsecase = new AskAiUsecase(llmGatewayAskAiGateway, _logFactory.CreateLogger<AskAiUsecase>());
 
 		if (askAiRequest == null)
 			return Results.BadRequest("Invalid chat request.");

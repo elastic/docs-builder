@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Api.Core.AskAi;
+namespace Elastic.Documentation.Api.Core.AskAi;
 
-public record AskAiRequest(string Message, string? ThreadId);
+public interface IAskAiGateway<T>
+{
+	Task<T> AskAi(AskAiRequest askAiRequest, Cancel ctx = default);
+}

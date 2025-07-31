@@ -5,11 +5,11 @@
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
-using Api.Core;
-using Api.Core.AskAi;
-using Api.Infrastructure;
+using Elastic.Documentation.Api.Core;
+using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.Api.Lambda;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -23,14 +23,10 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGenera
 
 var app = builder.Build();
 
-app.MapPost("/ask-ai/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
-{
-	var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
-	return Results.Stream(stream, "text/event-stream");
-});
+app.MapAskAiEndpoint();
 
 app.Run();
 
 [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest), GenerationMode = JsonSourceGenerationMode.Metadata)]
 [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse), GenerationMode = JsonSourceGenerationMode.Default)]
-internal sealed partial class LambdaJsonSerializerContext : JsonSerializerContext { }
+internal sealed partial class LambdaJsonSerializerContext : JsonSerializerContext;

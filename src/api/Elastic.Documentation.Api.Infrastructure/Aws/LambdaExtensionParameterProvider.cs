@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
-namespace Api.Infrastructure.Aws;
+namespace Elastic.Documentation.Api.Infrastructure.Aws;
 
 public class LambdaExtensionParameterProvider(IHttpClientFactory httpClientFactory, ILogger<LambdaExtensionParameterProvider> logger) : IParameterProvider
 {

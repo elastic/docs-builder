@@ -4,7 +4,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Api.Core.AskAi;
+namespace Elastic.Documentation.Api.Core.AskAi;
 
 public class AskAiUsecase(IAskAiGateway<Stream> askAiGateway, ILogger<AskAiUsecase> logger)
 {
@@ -14,3 +14,5 @@ public class AskAiUsecase(IAskAiGateway<Stream> askAiGateway, ILogger<AskAiUseca
 		return await askAiGateway.AskAi(askAiRequest, ctx);
 	}
 }
+
+public record AskAiRequest(string Message, string? ThreadId);

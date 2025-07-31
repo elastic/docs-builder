@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.AskAi;
 
-namespace Api.Core;
+namespace Elastic.Documentation.Api.Core;
 
 
 [JsonSerializable(typeof(AskAiRequest))]

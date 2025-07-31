@@ -4,8 +4,8 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Api.Core</AssemblyName>
-        <RootNamespace>Api.Core</RootNamespace>
+        <AssemblyName>Elastic.Documentation.Api.Core</AssemblyName>
+        <RootNamespace>Elastic.Documentation.Api.Core</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

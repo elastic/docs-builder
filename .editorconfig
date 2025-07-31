@@ -247,6 +247,10 @@ dotnet_diagnostic.IDE0305.severity = none
 dotnet_diagnostic.IDE0072.severity = none
 
 
+[src/api/AwsLambda/**/*.cs]
+dotnet_diagnostic.IL3050.severity = none
+dotnet_diagnostic.IL2026.severity = none
+
 
 [DocumentationWebHost.cs]
 dotnet_diagnostic.IL3050.severity = none

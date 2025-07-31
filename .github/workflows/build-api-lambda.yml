@@ -16,14 +16,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      BINARY_PATH: .artifacts/AwsLambda/release_linux-x64/bootstrap
+      BINARY_PATH: .artifacts/Elastic.Documentation.Api.Lambda/release_linux-x64/bootstrap
     steps:
       - uses: actions/checkout@v4
         with: 
           ref: ${{ inputs.ref }}
       - name: Amazon Linux 2023 build
         run: |
-          docker build . -t api-lambda:latest -f src/api/AwsLambda/Dockerfile
+          docker build . -t api-lambda:latest -f src/api/Elastic.Documentation.Api.Lambda/Dockerfile
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc api-lambda:latest):/app/.artifacts/publish ./.artifacts && docker rm tc

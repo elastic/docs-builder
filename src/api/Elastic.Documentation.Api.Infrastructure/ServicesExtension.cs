@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
-using Api.Core.AskAi;
-using Api.Infrastructure.Adapters;
-using Api.Infrastructure.Aws;
+using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Infrastructure.Adapters;
+using Elastic.Documentation.Api.Infrastructure.Aws;
 using Microsoft.Extensions.DependencyInjection;
 using NetEscapades.EnumGenerators;
 
-namespace Api.Infrastructure;
+namespace Elastic.Documentation.Api.Infrastructure;
 
 [EnumExtensions]
 public enum AppEnvironment
@@ -55,7 +55,7 @@ public static class ServicesExtension
 				}
 			case AppEnvironment.Dev:
 				{
-					_ = services.AddSingleton<IParameterProvider, LocalEnvParameterProvider>();
+					_ = services.AddSingleton<IParameterProvider, LocalParameterProvider>();
 					break;
 				}
 			default:

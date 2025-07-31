@@ -13,16 +13,17 @@
       <IsPublishable>true</IsPublishable>
       <PublishAot>true</PublishAot>
       <PublishTrimmed>true</PublishTrimmed>
+
       <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
       <TrimmerSingleWarn>false</TrimmerSingleWarn>
       <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-
-      <RootNamespace>Elastic.Documentation.Lambda.Api</RootNamespace>
+      <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+      <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Core\Core.csproj" />
-      <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+      <ProjectReference Include="..\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
+      <ProjectReference Include="..\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>

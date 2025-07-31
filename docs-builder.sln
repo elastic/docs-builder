@@ -121,11 +121,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{6FAB56
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{B042CC78-5060-4091-B95A-79C71BA3908A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "src\api\Core\Core.csproj", "{F30B90AD-1A01-4A6F-9699-809FA6875B22}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Api.Core", "src\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj", "{F30B90AD-1A01-4A6F-9699-809FA6875B22}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "src\api\Infrastructure\Infrastructure.csproj", "{AE3FC78E-167F-4B6E-88EC-84743EB748B7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Api.Infrastructure", "src\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj", "{AE3FC78E-167F-4B6E-88EC-84743EB748B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AwsLambda", "src\api\AwsLambda\AwsLambda.csproj", "{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Api.Lambda", "src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj", "{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
