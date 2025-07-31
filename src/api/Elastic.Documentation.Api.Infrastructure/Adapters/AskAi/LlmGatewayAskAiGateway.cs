@@ -15,7 +15,7 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 {
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
-		var llmGatewayRequest = LlmGatewayRequest.CreateFromQuestion(askAiRequest.Message, askAiRequest.ThreadId);
+		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest);
 		var requestBody = JsonSerializer.Serialize(llmGatewayRequest, LlmGatewayContext.Default.LlmGatewayRequest);
 		var request = new HttpRequestMessage(HttpMethod.Post, options.Value.FunctionUrl)
 		{
@@ -38,15 +38,16 @@ public record LlmGatewayRequest(
 	string ThreadId
 )
 {
-	public static LlmGatewayRequest CreateFromQuestion(string question, string? threadId = null) =>
+	public static LlmGatewayRequest CreateFromRequest(AskAiRequest request) =>
 		new(
 			UserContext: new UserContext("elastic-docs-v3@invalid"),
 			PlatformContext: new PlatformContext("support_portal", "support_assistant", []),
 			Input:
 			[
-				new ChatInput("user", question)
+				new ChatInput("system", AskAiRequest.SystemPrompt),
+				new ChatInput("user", request.Message)
 			],
-			ThreadId: threadId ?? "elastic-docs-" + Guid.NewGuid()
+			ThreadId: request.ThreadId ?? "elastic-docs-" + Guid.NewGuid()
 		);
 }
 
