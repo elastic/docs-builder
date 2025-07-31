@@ -12,7 +12,7 @@ By default every step title is a link with a generated anchor. You can override 
 :::::{stepper}
 
 ::::{step} Install
-First install the {{foo}} dependencies.
+First install the dependencies.
 ```shell
 npm install
 ```
