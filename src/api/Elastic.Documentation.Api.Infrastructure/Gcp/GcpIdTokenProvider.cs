@@ -6,17 +6,18 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 
 namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
-public class GcpIdTokenProvider(HttpClient httpClient, string gcpServiceAccount, string targetAudience)
+public class GcpIdTokenProvider(HttpClient httpClient, IOptionsSnapshot<LlmGatewayOptions> options)
 {
 	public async Task<string> GenerateIdTokenAsync(Cancel cancellationToken = default)
 	{
 		// Read and parse service account key file using System.Text.Json source generation (AOT compatible)
-		var serviceAccount = JsonSerializer.Deserialize(gcpServiceAccount, GcpJsonContext.Default.ServiceAccountKey);
+		var serviceAccount = JsonSerializer.Deserialize(options.Value.ServiceAccount, GcpJsonContext.Default.ServiceAccountKey);
 
 		// Create JWT header
 		var header = new JwtHeader("RS256", "JWT", serviceAccount.PrivateKeyId);
@@ -31,7 +32,7 @@ public class GcpIdTokenProvider(HttpClient httpClient, string gcpServiceAccount,
 			"https://oauth2.googleapis.com/token",
 			now,
 			now + 300, // 5 minutes
-			targetAudience
+			options.Value.TargetAudience
 		);
 
 		var payloadJson = JsonSerializer.Serialize(payload, GcpJsonContext.Default.JwtPayload);
@@ -58,7 +59,7 @@ public class GcpIdTokenProvider(HttpClient httpClient, string gcpServiceAccount,
 		var jwt = $"{message}.{signatureBase64}";
 
 		// Exchange JWT for ID token
-		return await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
+		return await ExchangeJwtForIdToken(jwt, options.Value.TargetAudience, cancellationToken);
 	}
 
 

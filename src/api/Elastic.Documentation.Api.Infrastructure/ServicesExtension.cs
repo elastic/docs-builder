@@ -9,6 +9,7 @@ using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
 
 namespace Elastic.Documentation.Api.Infrastructure;
@@ -22,15 +23,35 @@ public enum AppEnvironment
 	[Display(Name = "prod")] Prod
 }
 
+public class LlmGatewayOptions
+{
+	public string ServiceAccount { get; set; } = string.Empty;
+	public string FunctionUrl { get; set; } = string.Empty;
+	public string TargetAudience { get; set; } = string.Empty;
+}
+
 public static class ServicesExtension
 {
-	public static void AddApiUsecases(this IServiceCollection services, string? appEnvironment) =>
-		AddApiUsecases(
-			services,
-			AppEnvironmentExtensions.TryParse(appEnvironment, out var parsedEnvironment, true)
-				? parsedEnvironment
-				: AppEnvironment.Dev
-		);
+	public static void AddApiUsecases(this IServiceCollection services, string? appEnvironment)
+	{
+		if (AppEnvironmentExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
+		{
+			AddApiUsecases(
+				services,
+				parsedEnvironment
+			);
+		}
+		else
+		{
+			var logger = services.BuildServiceProvider().GetRequiredService<ILogger>();
+			logger.LogWarning("Unable to parse environment {Environment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
+			AddApiUsecases(
+				services,
+				AppEnvironment.Dev
+			);
+		}
+	}
+
 
 	private static void AddApiUsecases(this IServiceCollection services, AppEnvironment appEnvironment)
 	{
@@ -40,7 +61,7 @@ public static class ServicesExtension
 		});
 		_ = services.AddHttpClient();
 		AddParameterProvider(services, appEnvironment);
-		AddAskAiUsecases(services, appEnvironment);
+		AddAskAiUsecase(services, appEnvironment);
 	}
 
 	// https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html
@@ -73,38 +94,22 @@ public static class ServicesExtension
 		}
 	}
 
-	private static void AddAskAiUsecases(IServiceCollection services, AppEnvironment appEnvironment)
+	private static void AddAskAiUsecase(IServiceCollection services, AppEnvironment appEnvironment)
 	{
-		_ = services.AddScoped<GcpIdTokenProvider>(serviceProvider =>
+		_ = services.Configure<LlmGatewayOptions>(options =>
 		{
-			var httpClient = serviceProvider.GetRequiredService<HttpClient>();
+			var serviceProvider = services.BuildServiceProvider();
 			var parameterProvider = serviceProvider.GetRequiredService<IParameterProvider>();
 			var appEnvString = appEnvironment.ToStringFast(true);
 
-			var serviceAccount = parameterProvider
-				.GetParam($"/elastic-docs-v3/{appEnvString}/llm-gateway-service-account")
-				.GetAwaiter()
-				.GetResult();
-			var functionUrl = parameterProvider
-				.GetParam($"/elastic-docs-v3/{appEnvString}/llm-gateway-function-url")
-				.GetAwaiter()
-				.GetResult();
+			options.ServiceAccount = parameterProvider.GetParam($"/elastic-docs-v3/{appEnvString}/llm-gateway-service-account").GetAwaiter().GetResult();
+			options.FunctionUrl = parameterProvider.GetParam($"/elastic-docs-v3/{appEnvString}/llm-gateway-function-url").GetAwaiter().GetResult();
 
-			var functionUri = new Uri(functionUrl);
-			var targetAudience = $"{functionUri.Scheme}://{functionUri.Host}";
-
-			return new GcpIdTokenProvider(httpClient, serviceAccount, targetAudience);
+			var functionUri = new Uri(options.FunctionUrl);
+			options.TargetAudience = $"{functionUri.Scheme}://{functionUri.Host}";
 		});
-
-		_ = services.AddScoped<IAskAiGateway<Stream>>(serviceProvider =>
-		{
-			var parameterProvider = serviceProvider.GetRequiredService<IParameterProvider>();
-			var tokenProvider = serviceProvider.GetRequiredService<GcpIdTokenProvider>();
-			var httpClient = serviceProvider.GetRequiredService<HttpClient>();
-			var functionUrl = parameterProvider.GetParam("/elastic-docs-v3/dev/llm-gateway-function-url").GetAwaiter().GetResult();
-			return new LlmGatewayAskAiGateway(httpClient, tokenProvider, functionUrl);
-		});
-
+		_ = services.AddScoped<GcpIdTokenProvider>();
+		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
 		_ = services.AddScoped<AskAiUsecase>();
 	}
 }

@@ -7,16 +7,17 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
+using Microsoft.Extensions.Options;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, string gcpFunctionUrl) : IAskAiGateway<Stream>
+public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, IOptionsSnapshot<LlmGatewayOptions> options) : IAskAiGateway<Stream>
 {
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
 		var llmGatewayRequest = LlmGatewayRequest.CreateFromQuestion(askAiRequest.Message, askAiRequest.ThreadId);
 		var requestBody = JsonSerializer.Serialize(llmGatewayRequest, LlmGatewayContext.Default.LlmGatewayRequest);
-		var request = new HttpRequestMessage(HttpMethod.Post, gcpFunctionUrl)
+		var request = new HttpRequestMessage(HttpMethod.Post, options.Value.FunctionUrl)
 		{
 			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
 		};
