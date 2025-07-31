@@ -32,23 +32,24 @@ public class LlmGatewayOptions
 
 public static class ServicesExtension
 {
+	private static ILogger? GetLogger(IServiceCollection services)
+	{
+		using var serviceProvider = services.BuildServiceProvider();
+		var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+		return loggerFactory?.CreateLogger(typeof(ServicesExtension));
+	}
+
 	public static void AddElasticDocsApiUsecases(this IServiceCollection services, string? appEnvironment)
 	{
 		if (AppEnvironmentExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
 		{
-			AddElasticDocsApiUsecases(
-				services,
-				parsedEnvironment
-			);
+			AddElasticDocsApiUsecases(services, parsedEnvironment);
 		}
 		else
 		{
-			var logger = services.BuildServiceProvider().GetRequiredService<ILogger>();
-			logger.LogWarning("Unable to parse environment {Environment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
-			AddElasticDocsApiUsecases(
-				services,
-				AppEnvironment.Dev
-			);
+			var logger = GetLogger(services);
+			logger?.LogWarning("Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
+			AddElasticDocsApiUsecases(services, AppEnvironment.Dev);
 		}
 	}
 
@@ -67,12 +68,15 @@ public static class ServicesExtension
 	// https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html
 	private static void AddParameterProvider(IServiceCollection services, AppEnvironment appEnvironment)
 	{
+		var logger = GetLogger(services);
+
 		switch (appEnvironment)
 		{
 			case AppEnvironment.Prod:
 			case AppEnvironment.Staging:
 			case AppEnvironment.Edge:
 				{
+					logger?.LogInformation("Configuring LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnvironment);
 					_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
 					{
 						client.BaseAddress = new Uri("http://localhost:2773");
@@ -83,6 +87,7 @@ public static class ServicesExtension
 				}
 			case AppEnvironment.Dev:
 				{
+					logger?.LogInformation("Configuring LocalParameterProvider for environment {AppEnvironment}", appEnvironment);
 					_ = services.AddSingleton<IParameterProvider, LocalParameterProvider>();
 					break;
 				}
@@ -96,6 +101,9 @@ public static class ServicesExtension
 
 	private static void AddAskAiUsecase(IServiceCollection services, AppEnvironment appEnvironment)
 	{
+		var logger = GetLogger(services);
+		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnvironment);
+
 		_ = services.Configure<LlmGatewayOptions>(options =>
 		{
 			var serviceProvider = services.BuildServiceProvider();
