@@ -4,8 +4,9 @@
 
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Adapters;
+using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Aws;
+using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Microsoft.Extensions.DependencyInjection;
 using NetEscapades.EnumGenerators;
 

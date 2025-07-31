@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters;
+namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT

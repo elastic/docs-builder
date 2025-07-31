@@ -6,8 +6,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Infrastructure.Gcp;
 
-namespace Elastic.Documentation.Api.Infrastructure.Adapters;
+namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
 public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, string gcpFunctionUrl) : IAskAiGateway<Stream>
 {
