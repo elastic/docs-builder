@@ -9,7 +9,6 @@ using Elastic.Documentation.Api.Infrastructure;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.Services.AddControllers();
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
 
@@ -17,9 +16,6 @@ var app = builder.Build();
 
 var v1 = app.MapGroup("/v1");
 v1.MapElasticDocsApiEndpoints();
-
-app.UseHttpsRedirection();
-app.MapControllers();
 
 app.Run();
 
