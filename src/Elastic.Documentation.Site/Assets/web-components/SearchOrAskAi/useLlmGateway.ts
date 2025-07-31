@@ -142,7 +142,7 @@ export const useLlmGateway = (props: Props): UseLlmGatewayResponse => {
     )
 
     const { sendMessage, abort } = useFetchEventSource<AskAiRequest>({
-        apiEndpoint: '/chat',
+        apiEndpoint: '/_api/v1/ask-ai/stream',
         onMessage,
         onError: (error) => {
             setError(error)

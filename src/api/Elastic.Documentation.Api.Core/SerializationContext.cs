@@ -9,5 +9,5 @@ namespace Elastic.Documentation.Api.Core;
 
 
 [JsonSerializable(typeof(AskAiRequest))]
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;

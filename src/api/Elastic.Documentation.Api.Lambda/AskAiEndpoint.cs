@@ -8,9 +8,9 @@ namespace Elastic.Documentation.Api.Lambda;
 
 public static class AskAiEndpoint
 {
-	public static void MapAskAiEndpoint(this IEndpointRouteBuilder app)
+	public static void MapAskAiEndpoint(this RouteGroupBuilder parentGroup)
 	{
-		var askAiGroup = app.MapGroup("/ask-ai");
+		var askAiGroup = parentGroup.MapGroup("/ask-ai");
 		_ = askAiGroup.MapPost("/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);

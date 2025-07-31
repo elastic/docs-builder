@@ -10,6 +10,7 @@ using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Elastic.Documentation.Configuration;
@@ -33,16 +34,14 @@ public class DocumentationWebHost
 
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
-	private readonly ILoggerFactory _logFactory;
 
 	public DocumentationWebHost(ILoggerFactory logFactory, string? path, int port, IFileSystem readFs, IFileSystem writeFs,
 		VersionsConfiguration versionsConfig)
 	{
-		_logFactory = logFactory;
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
+		builder.Services.AddApiUsecases("dev");
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Information);
-
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
@@ -101,6 +100,23 @@ public class DocumentationWebHost
 		_ = _webApplication
 			.UseLiveReloadWithManualScriptInjection(_webApplication.Lifetime)
 			.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
+			.Use(async (context, next) =>
+			{
+				try
+				{
+					await next(context);
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
+					Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
+					if (ex.InnerException != null)
+					{
+						Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+					}
+					throw; // Re-throw to let ASP.NET Core handle it
+				}
+			})
 			.UseStaticFiles(
 				new StaticFileOptions
 				{
@@ -118,8 +134,7 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
-		_ = _webApplication.MapPost("/chat", async (HttpContext context, Cancel ctx) =>
-			await ProxyChatRequest(context, ctx));
+		_ = _webApplication.MapPost("/_api/v1/ask-ai/stream", ProxyChatRequest);
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
@@ -227,52 +242,9 @@ public class DocumentationWebHost
 		return Results.Content(content, "text/html", encoding, statusCode);
 	}
 
-	private async Task<IResult> ProxyChatRequest(HttpContext context, CancellationToken ctx)
+	private static async Task<IResult> ProxyChatRequest(AskAiRequest request, AskAiUsecase usecase, Cancel ctx)
 	{
-		// Read the frontend request body
-		var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync(ctx);
-		var askAiRequest = JsonSerializer.Deserialize<AskAiRequest>(requestBody, ApiJsonContext.Default.AskAiRequest);
-
-		// Load GCP service account credentials
-		var serviceAccountKeyPath = Environment.GetEnvironmentVariable("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH")
-									?? "service-account-key.json";
-
-		if (!File.Exists(serviceAccountKeyPath))
-		{
-			context.Response.StatusCode = 500;
-			await context.Response.WriteAsync("GCP credentials not configured", cancellationToken: ctx);
-			return Results.Empty;
-		}
-
-		// Get GCP function URL
-		var gcpFunctionUrl = Environment.GetEnvironmentVariable("LLM_GATEWAY_FUNCTION_URL");
-		if (string.IsNullOrEmpty(gcpFunctionUrl))
-		{
-			context.Response.StatusCode = 500;
-			await context.Response.WriteAsync("GCP function URL not configured", cancellationToken: ctx);
-			return Results.Empty;
-		}
-
-		var functionUri = new Uri(gcpFunctionUrl);
-		var audienceUrl = $"{functionUri.Scheme}://{functionUri.Host}";
-		var httpClient = new HttpClient();
-		var gcpIdTokenProvider = new GcpIdTokenProvider(
-			httpClient,
-			await File.ReadAllTextAsync(serviceAccountKeyPath, ctx),
-			audienceUrl
-		);
-		var llmGatewayAskAiGateway = new LlmGatewayAskAiGateway(
-			httpClient,
-			gcpIdTokenProvider,
-			gcpFunctionUrl
-		);
-
-		var askAiUsecase = new AskAiUsecase(llmGatewayAskAiGateway, _logFactory.CreateLogger<AskAiUsecase>());
-
-		if (askAiRequest == null)
-			return Results.BadRequest("Invalid chat request.");
-
-		var responseStream = await askAiUsecase.AskAi(askAiRequest, ctx);
-		return Results.Stream(responseStream, "text/event-stream");
+		var stream = await usecase.AskAi(request, ctx);
+		return Results.Stream(stream, "text/event-stream");
 	}
 }

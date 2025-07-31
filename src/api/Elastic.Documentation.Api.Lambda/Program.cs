@@ -5,25 +5,18 @@
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
-using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Lambda;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-	options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
-});
-
-builder.Services.AddHttpClient();
-builder.Services.AddUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
-
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
+builder.Services.AddApiUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
 
 var app = builder.Build();
 
-app.MapAskAiEndpoint();
+var v1 = app.MapGroup("/v1");
+v1.MapAskAiEndpoint();
 
 app.Run();
 

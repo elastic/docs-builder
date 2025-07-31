@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Aws;
@@ -23,16 +24,21 @@ public enum AppEnvironment
 
 public static class ServicesExtension
 {
-	public static void AddUsecases(this IServiceCollection services, string? appEnvironment) =>
-		AddUsecases(
+	public static void AddApiUsecases(this IServiceCollection services, string? appEnvironment) =>
+		AddApiUsecases(
 			services,
 			AppEnvironmentExtensions.TryParse(appEnvironment, out var parsedEnvironment, true)
 				? parsedEnvironment
 				: AppEnvironment.Dev
 		);
 
-	private static void AddUsecases(this IServiceCollection services, AppEnvironment appEnvironment)
+	private static void AddApiUsecases(this IServiceCollection services, AppEnvironment appEnvironment)
 	{
+		_ = services.ConfigureHttpJsonOptions(options =>
+		{
+			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
+		});
+		_ = services.AddHttpClient();
 		AddParameterProvider(services, appEnvironment);
 		AddAskAiUsecases(services, appEnvironment);
 	}
