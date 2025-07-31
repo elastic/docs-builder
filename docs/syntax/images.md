@@ -131,7 +131,7 @@ The image carousel directive builds upon the image directive.
 ::::{carousel}
 
 :id: nested-carousel-example
-:fixed-height: small ## small, medium, auto (auto is default if fixed-height is not specified)
+:max-height: small ## small, medium, none (none is default if max-height is not specified)
 
 :::{image} images/apm.png
 :alt: First image description
@@ -148,7 +148,7 @@ The image carousel directive builds upon the image directive.
 ::::{carousel}
 
 :id: nested-carousel-example
-:fixed-height: small
+:max-height: small
 
 :::{image} images/apm.png
 :alt: First image description

@@ -68,6 +68,23 @@ class ImageCarousel {
             indicator.addEventListener('click', () => this.goToSlide(index))
         })
 
+        // Handle image clicks for modal
+        this.slides.forEach(slide => {
+            const imageLink = slide.querySelector('.carousel-image-reference')
+            if (imageLink) {
+                imageLink.addEventListener('click', (e) => {
+                    e.preventDefault()
+                    const modalId = imageLink.getAttribute('data-modal-id')
+                    if (modalId) {
+                        const modal = document.getElementById(modalId)
+                        if (modal) {
+                            modal.style.display = 'flex'
+                        }
+                    }
+                })
+            }
+        })
+
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (!this.isInViewport()) return
@@ -202,18 +219,21 @@ export function initImageCarousel(): void {
     carousels.forEach((carouselElement) => {
         const carousel = carouselElement as HTMLElement
 
-        // Get the existing track
+        // Skip if carousel already has slides (server-rendered)
+        const existingSlides = carousel.querySelectorAll('.carousel-slide')
+        if (existingSlides.length > 0) {
+            // Just initialize the existing carousel
+            new ImageCarousel(carousel)
+            return
+        }
+
+        // Get the existing track for dynamic carousels
         let track = carousel.querySelector('.carousel-track')
         if (!track) {
             track = document.createElement('div')
             track.className = 'carousel-track'
             carousel.appendChild(track)
         }
-
-        // Clean up any existing slides - this prevents duplicates
-        const existingSlides = Array.from(
-            track.querySelectorAll('.carousel-slide')
-        )
 
         // Find all image links that might be related to this carousel
         const section = findSectionForCarousel(carousel)

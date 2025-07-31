@@ -21,7 +21,7 @@
         {
             var image = Model.Images[i];
             <div class="carousel-slide" data-index="@i" @(i == 0 ? "data-active=true" : "")>
-                <a class="carousel-image-reference" href="@image.ImageUrl" target="_blank">
+                <a class="carousel-image-reference reference internal image-reference" href="javascript:void(0)" data-modal-id="modal-@(image.UniqueImageId)">
                     <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" style="@image.Style" />
                 </a>
             </div>
@@ -52,3 +52,23 @@
         </div>
     }
 </div>
+
+@* Add modal for each image *@
+@for (int i = 0; i < Model.Images.Count; i++)
+{
+    var image = Model.Images[i];
+    <div id="modal-@(image.UniqueImageId)" class="modal"
+        onclick="document.querySelector('#modal-@(image.UniqueImageId) .modal-content').contains(event.target) ? void(0) : document.getElementById('modal-@(image.UniqueImageId)').style.display='none'">
+        <div class="modal-content">
+            <span class="modal-close">
+                <a href="javascript:void(0);" class="close-button"
+                    onclick="document.getElementById('modal-@(image.UniqueImageId)').style.display='none'">
+                    &times;
+                </a>
+            </span>
+            <a class="reference internal image-reference" href="@image.ImageUrl" target="_blank">
+                <img title="@image.Title" alt="@(image.Alt ?? "")" src="@image.ImageUrl" />
+            </a>
+        </div>
+    </div>
+}

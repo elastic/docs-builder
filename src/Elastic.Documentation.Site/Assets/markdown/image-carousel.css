@@ -28,13 +28,17 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	text-decoration: none;
+}
+
+.carousel-image-reference::after {
+	display: none !important;
 }
 
 .carousel-image-reference img {
 	max-width: 100%;
 	height: auto;
 	display: block;
-	box-sizing: border-box;
 	margin: 0 auto;
 }
 
@@ -60,11 +64,11 @@
 }
 
 .carousel-prev {
-	left: 10px;
+	left: 0;
 }
 
 .carousel-next {
-	right: 10px;
+	right: 0;
 }
 
 .carousel-indicators {
@@ -92,21 +96,6 @@
 	background-color: black;
 }
 
-/* Small carousel styles */
-.carousel-container[data-max-height][style*="350px"] .carousel-control {
-	top: 150px;
-}
-
-/* Medium carousel styles */
-.carousel-container[data-max-height][style*="750px"] .carousel-control {
-	top: 200px;
-}
-
-/* None (no max-height) carousel styles */
-.carousel-container[data-none-height] .carousel-control {
-	top: 500px;
-}
-
 /* Max height carousel styles */
 .carousel-container[data-max-height] {
 	padding-bottom: 40px; /* Space for indicators */
@@ -120,9 +109,6 @@
 .carousel-container[data-max-height] .carousel-image-reference img {
 	max-height: var(--carousel-max-height);
 	width: auto;
-	height: auto;
-	display: block;
-	margin: 0 auto;
 }
 
 /* None height carousel styles - images at natural size */
@@ -130,11 +116,41 @@
 	padding-bottom: 40px; /* Space for indicators */
 }
 
-.carousel-container[data-none-height] .carousel-image-reference img {
-	max-width: 100%;
+/* Override modal styles for image carousels */
+.modal .modal-content {
+	max-width: 95vw !important;
+	max-height: 95vh !important;
+	width: auto !important;
+	height: auto !important;
+	padding: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.modal .modal-content img {
+	max-width: 95vw;
+	max-height: 95vh;
+	width: auto;
 	height: auto;
+	object-fit: contain;
 	display: block;
-	margin: 0 auto;
+}
+
+/* Ensure the close button is visible */
+.modal .modal-close {
+	background: rgba(0, 0, 0, 0.7);
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	top: -20px;
+	right: -20px;
+}
+
+.modal .modal-close a {
+	color: white;
 }
 @media (max-width: 768px) {
 	.carousel-control {
