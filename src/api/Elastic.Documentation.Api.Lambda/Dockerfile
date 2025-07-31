@@ -24,4 +24,4 @@ RUN arch=$TARGETARCH \
     && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
     && echo $TARGETOS-$arch > /tmp/rid
 
-RUN dotnet publish src/api/AwsLambda -r linux-x64 -c Release
+RUN dotnet publish src/api/Elastic.Documentation.Api.Lambda -r linux-x64 -c Release
