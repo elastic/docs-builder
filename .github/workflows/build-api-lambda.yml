@@ -23,7 +23,7 @@ jobs:
           ref: ${{ inputs.ref }}
       - name: Amazon Linux 2023 build
         run: |
-          docker build . -t api-lambda:latest -f src/api/AwsLambda/DockerFile
+          docker build . -t api-lambda:latest -f src/api/AwsLambda/Dockerfile
       - name: Get bootstrap binary
         run: |
           docker cp $(docker create --name tc api-lambda:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
