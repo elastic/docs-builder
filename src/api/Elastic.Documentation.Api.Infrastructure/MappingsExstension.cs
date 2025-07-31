@@ -3,14 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Core.AskAi;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
-namespace Elastic.Documentation.Api.Lambda;
+namespace Elastic.Documentation.Api.Infrastructure;
 
-public static class AskAiEndpoint
+public static class MappingsExtension
 {
-	public static void MapAskAiEndpoint(this RouteGroupBuilder parentGroup)
+	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group) =>
+		MapAskAiEndpoint(group);
+
+	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
-		var askAiGroup = parentGroup.MapGroup("/ask-ai");
+		var askAiGroup = group.MapGroup("/ask-ai");
 		_ = askAiGroup.MapPost("/stream", async (AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
 		{
 			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);

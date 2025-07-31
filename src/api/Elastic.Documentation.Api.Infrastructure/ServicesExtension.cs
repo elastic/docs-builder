@@ -32,11 +32,11 @@ public class LlmGatewayOptions
 
 public static class ServicesExtension
 {
-	public static void AddApiUsecases(this IServiceCollection services, string? appEnvironment)
+	public static void AddElasticDocsApiUsecases(this IServiceCollection services, string? appEnvironment)
 	{
 		if (AppEnvironmentExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
 		{
-			AddApiUsecases(
+			AddElasticDocsApiUsecases(
 				services,
 				parsedEnvironment
 			);
@@ -45,7 +45,7 @@ public static class ServicesExtension
 		{
 			var logger = services.BuildServiceProvider().GetRequiredService<ILogger>();
 			logger.LogWarning("Unable to parse environment {Environment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
-			AddApiUsecases(
+			AddElasticDocsApiUsecases(
 				services,
 				AppEnvironment.Dev
 			);
@@ -53,7 +53,7 @@ public static class ServicesExtension
 	}
 
 
-	private static void AddApiUsecases(this IServiceCollection services, AppEnvironment appEnvironment)
+	private static void AddElasticDocsApiUsecases(this IServiceCollection services, AppEnvironment appEnvironment)
 	{
 		_ = services.ConfigureHttpJsonOptions(options =>
 		{

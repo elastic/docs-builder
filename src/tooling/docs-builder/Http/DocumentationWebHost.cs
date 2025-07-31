@@ -40,7 +40,7 @@ public class DocumentationWebHost
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
-		builder.Services.AddApiUsecases("dev");
+		builder.Services.AddElasticDocsApiUsecases("dev");
 		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Information);
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
@@ -134,7 +134,9 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
-		_ = _webApplication.MapPost("/_api/v1/ask-ai/stream", ProxyChatRequest);
+
+		var apiV1 = _webApplication.MapGroup("/_api/v1");
+		apiV1.MapElasticDocsApiEndpoints();
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));
@@ -240,11 +242,5 @@ public class DocumentationWebHost
 		}
 
 		return Results.Content(content, "text/html", encoding, statusCode);
-	}
-
-	private static async Task<IResult> ProxyChatRequest(AskAiRequest request, AskAiUsecase usecase, Cancel ctx)
-	{
-		var stream = await usecase.AskAi(request, ctx);
-		return Results.Stream(stream, "text/event-stream");
 	}
 }

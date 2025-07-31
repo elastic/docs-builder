@@ -6,17 +6,16 @@ using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.Api.Lambda;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
-builder.Services.AddApiUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
+builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
 
 var app = builder.Build();
 
 var v1 = app.MapGroup("/v1");
-v1.MapAskAiEndpoint();
+v1.MapElasticDocsApiEndpoints();
 
 app.Run();
 
