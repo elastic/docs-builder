@@ -246,17 +246,7 @@ dotnet_diagnostic.IDE0305.severity = none
 # CS8509 already warns
 dotnet_diagnostic.IDE0072.severity = none
 
-
-[src/api/Elastic.Documentation.Api.Lambda/**/*.cs]
-dotnet_diagnostic.IL3050.severity = none
-dotnet_diagnostic.IL2026.severity = none
-
-
-[DocumentationWebHost.cs]
-dotnet_diagnostic.IL3050.severity = none
-dotnet_diagnostic.IL2026.severity = none
-
-[StaticWebHost.cs]
+[{src/api/Elastic.Documentation.Api.Lambda/**/*.cs,DocumentationWebHost.cs,StaticWebHost.cs}]
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none
 
