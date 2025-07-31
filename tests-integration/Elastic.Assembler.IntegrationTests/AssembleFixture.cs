@@ -4,7 +4,10 @@
 
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
+using Elastic.Documentation.ServiceDefaults;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 [assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.AssembleFixture))]
 
@@ -19,6 +22,7 @@ public class AssembleFixture : IAsyncLifetime
 	public async ValueTask InitializeAsync()
 	{
 		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Elastic_Documentation_Aspire>();
+		_ = builder.Services.AddAppLogging(LogLevel.Information);
 		DistributedApplication = await builder.BuildAsync();
 		await DistributedApplication.StartAsync();
 	}
@@ -34,7 +38,7 @@ public class AssembleFixture : IAsyncLifetime
 
 }
 
-public class DatabaseTestClass1(AssembleFixture fixture)
+public class DatabaseTestClass1(AssembleFixture fixture, ITestOutputHelper output)
 {
 	[Fact]
 	public async Task X()
@@ -43,6 +47,7 @@ public class DatabaseTestClass1(AssembleFixture fixture)
 			.WaitForResourceHealthyAsync("DocsBuilderServeStatic", cancellationToken: TestContext.Current.CancellationToken);
 		var client = fixture.DistributedApplication.CreateHttpClient("DocsBuilderServeStatic", "http");
 		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
+		output.WriteLine(root);
 		_ = root.Should().NotBeNullOrEmpty();
 	}
 

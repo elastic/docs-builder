@@ -46,14 +46,21 @@ public static class AppDefaultsExtensions
 				_ = s.AddSingleton(p.CreateVersionConfiguration());
 				configure?.Invoke(s, p);
 			});
+		_ = builder.Services.AddAppLogging(logLevel);
+
+		return builder.AddServiceDefaults();
+	}
+
+	public static TServiceCollection AddAppLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel)
+		where TServiceCollection : IServiceCollection
+	{
 		services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
 		_ = services.AddLogging(x => x
 			.ClearProviders()
 			.SetMinimumLevel(logLevel)
 			.AddConsole(c => c.FormatterName = "condensed")
 		);
-
-		return builder.AddServiceDefaults();
+		return services;
 	}
 
 	private static void ProcessCommandLineArguments(ref string[] args, ref LogLevel defaultLogLevel)
