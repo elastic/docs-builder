@@ -36,11 +36,6 @@ public static class AppDefaultsExtensions
 		ProcessCommandLineArguments(ref args, ref logLevel);
 
 		var services = builder.Services;
-		_ = services.AddLogging(x => x
-			.ClearProviders()
-			.SetMinimumLevel(logLevel).AddConsole(c => c.FormatterName = "condensed")
-		);
-
 		_ = services
 			.AddGitHubActionsCore()
 			.AddSingleton<DiagnosticsChannel>()
@@ -58,7 +53,7 @@ public static class AppDefaultsExtensions
 			.AddConsole(c => c.FormatterName = "condensed")
 		);
 
-		return builder;
+		return builder.AddServiceDefaults();
 	}
 
 	private static void ProcessCommandLineArguments(ref string[] args, ref LogLevel defaultLogLevel)

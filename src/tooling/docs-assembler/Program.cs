@@ -19,8 +19,7 @@ var builder = Host.CreateApplicationBuilder()
 	.AddAppDefaults(ref args, (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-	})
-	.AddServiceDefaults();
+	});
 
 var app = builder.ToConsoleAppBuilder();
 

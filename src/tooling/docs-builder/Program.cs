@@ -12,8 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder()
-	.AddAppDefaults(ref args)
-	.AddServiceDefaults();
+	.AddAppDefaults(ref args);
 
 var app = builder.ToConsoleAppBuilder();
 

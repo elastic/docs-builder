@@ -10,6 +10,7 @@
       <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj" />
       <ProjectReference Include="..\..\src\tooling\docs-assembler\docs-assembler.csproj" />
       <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" />
+      <ProjectReference Include="..\Elastic.Documentation.Aspire\Elastic.Documentation.Aspire.csproj" />
     </ItemGroup>
 
     <ItemGroup>

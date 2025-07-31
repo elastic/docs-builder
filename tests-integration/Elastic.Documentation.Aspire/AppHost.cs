@@ -9,10 +9,11 @@ var cloneAll = builder.AddProject<Projects.docs_assembler>("DocsAssemblerCloneAl
 var buildAll = builder.AddProject<Projects.docs_assembler>("DocsAssemblerBuildAll").WithArgs("repo", "build-all").WaitForCompletion(cloneAll);
 
 var serveStatic = builder.AddProject<Projects.docs_builder>("DocsBuilderServeStatic")
-	.WithHttpEndpoint(name: "serve-static", port: 4000, isProxied: false)
+	.WithHttpEndpoint(port: 4000, isProxied: false)
 	.WithArgs("serve-static")
+	.WithHttpHealthCheck("/", 200)
 	.WaitForCompletion(buildAll);
 
-builder.AddElasticsearch("elasticsearch");
+//builder.AddElasticsearch("elasticsearch");
 
 builder.Build().Run();
