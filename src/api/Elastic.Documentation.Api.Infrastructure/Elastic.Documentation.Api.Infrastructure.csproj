@@ -4,6 +4,8 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+        <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
         <AssemblyName>Elastic.Documentation.Api.Infrastructure</AssemblyName>
         <RootNamespace>Elastic.Documentation.Api.Infrastructure</RootNamespace>
     </PropertyGroup>
