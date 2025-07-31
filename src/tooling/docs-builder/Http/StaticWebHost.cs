@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,7 +15,7 @@ namespace Documentation.Builder.Http;
 
 public class StaticWebHost
 {
-	private readonly WebApplication _webApplication;
+	public WebApplication WebApplication { get; }
 
 	public StaticWebHost(int port)
 	{
@@ -24,7 +25,8 @@ public class StaticWebHost
 		{
 			ContentRootPath = contentRoot
 		});
-		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Warning);
+
+		_ = builder.AddAppDefaults().AddServiceDefaults();
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
@@ -32,23 +34,35 @@ public class StaticWebHost
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
 
-		_webApplication = builder.Build();
+		WebApplication = builder.Build();
 		SetUpRoutes();
 	}
 
-	public async Task RunAsync(Cancel ctx) => await _webApplication.RunAsync(ctx);
+	public async Task<bool> WaitForAppStartup(Cancel ctx)
+	{
+		var startedSource = new TaskCompletionSource();
+		var cancelledSource = new TaskCompletionSource();
 
-	public async Task StopAsync(Cancel ctx) => await _webApplication.StopAsync(ctx);
+		await using var reg1 = WebApplication.Lifetime.ApplicationStarted.Register(() => startedSource.SetResult());
+		await using var reg2 = ctx.Register(() => cancelledSource.SetResult());
+
+		var completedTask = await Task.WhenAny(startedSource.Task, cancelledSource.Task).ConfigureAwait(false);
+		return completedTask == startedSource.Task;
+	}
+
+	public async Task RunAsync(Cancel ctx) => await WebApplication.RunAsync(ctx);
+
+	public async Task StopAsync(Cancel ctx) => await WebApplication.StopAsync(ctx);
 
 	private void SetUpRoutes()
 	{
 		_ =
-			_webApplication
+			WebApplication
 				.UseRouting();
 
-		_ = _webApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
+		_ = WebApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
 
-		_ = _webApplication.MapGet("{**slug}", ServeDocumentationFile);
+		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 	}
 
 	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)

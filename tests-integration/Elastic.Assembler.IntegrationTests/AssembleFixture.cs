@@ -4,6 +4,7 @@
 
 using System.Collections.ObjectModel;
 using System.IO.Abstractions;
+using Aspire.Hosting.Testing;
 using Documentation.Assembler;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
@@ -14,6 +15,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 using FluentAssertions;
@@ -41,6 +43,7 @@ public class AssembleFixture : IAsyncLifetime
 	/// <inheritdoc />
 	public async ValueTask InitializeAsync()
 	{
+		//var builder = await DistributedApplicationTestingBuilder.CreateAsync([]);
 		var ctx = TestContext.Current.CancellationToken;
 		var logFactory = LoggerFactory.Create(builder =>
 		{
@@ -89,21 +92,21 @@ public class AssembleFixture : IAsyncLifetime
 
 		WebsiteHost = new StaticWebHost(4001);
 		WebsiteRunning = WebsiteHost.RunAsync(ctx);
+		_ = await WebsiteHost.WaitForAppStartup(ctx);
 	}
 
 }
 
-public class DatabaseTestClass1
+public class DatabaseTestClass1(AssembleFixture fixture)
 {
-	public AssembleFixture AssembleTestContext { get; }
-
-	public DatabaseTestClass1(AssembleFixture fixture) => AssembleTestContext = fixture;
-
 	[Fact]
 	public async Task X()
 	{
-		await AssembleTestContext.WebsiteRunning;
-		AssembleTestContext.Should().NotBeNull();
+		using var client = new HttpClient { BaseAddress = new Uri("http://localhost:4001") };
+		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
+		Console.WriteLine(root);
+
+		fixture.Should().NotBeNull();
 	}
 
 

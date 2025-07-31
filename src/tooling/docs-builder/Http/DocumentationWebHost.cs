@@ -9,6 +9,7 @@ using System.Text;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown.IO;
@@ -34,7 +35,7 @@ public class DocumentationWebHost
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
-		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Information);
+		_ = builder.AddAppDefaults().AddServiceDefaults();
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)

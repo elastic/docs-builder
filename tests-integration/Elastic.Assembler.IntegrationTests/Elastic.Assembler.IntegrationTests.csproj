@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Aspire.Hosting.Testing" />
     </ItemGroup>
 
 </Project>
