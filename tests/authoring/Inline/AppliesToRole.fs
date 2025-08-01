@@ -162,3 +162,26 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 	</span>
 	element.</p>
 """
+
+type ``strips applies_to annotations from headings in table of contents`` () =
+    static let markdown = Setup.Markdown """
+# Main Title
+
+## Section with applies_to {applies_to}`stack: preview 9.1`
+
+### Another section {applies_to}`serverless: beta`
+
+Some content here.
+"""
+
+    [<Fact>]
+    let ``heading text is stripped of applies_to annotations`` () =
+        let document = markdown |> converts "index.md"
+        let tocItems = document.File.PageTableOfContent.Values |> Seq.toList
+        
+        // Verify that the heading text doesn't contain the applies_to annotations
+        let sectionHeading = tocItems |> List.find (fun item -> item.Heading = "Section with applies_to")
+        let anotherSectionHeading = tocItems |> List.find (fun item -> item.Heading = "Another section")
+        
+        test <@ sectionHeading.Heading = "Section with applies_to" @>
+        test <@ anotherSectionHeading.Heading = "Another section" @>
