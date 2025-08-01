@@ -13,7 +13,7 @@ namespace Elastic.Markdown.Tests.Directives;
 public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:fixed-height: medium
+:max-height: medium
 
 ```{image} img/image1.png
 :alt: First image
@@ -38,7 +38,7 @@ public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<I
 	[Fact]
 	public void ParsesCarouselProperties()
 	{
-		Block!.FixedHeight.Should().Be("medium");
+		Block!.MaxHeight.Should().Be("medium");
 	}
 
 	[Fact]
@@ -62,7 +62,7 @@ public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<I
 public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:fixed-height: small
+:max-height: small
 
 ```{image} img/small.png
 :alt: Small image
@@ -75,9 +75,9 @@ public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : Direc
 		fileSystem.AddFile(@"docs/img/small.png", "");
 
 	[Fact]
-	public void ParsesSmallFixedHeight()
+	public void ParsesSmallMaxHeight()
 	{
-		Block!.FixedHeight.Should().Be("small");
+		Block!.MaxHeight.Should().Be("small");
 		Collector.Diagnostics.Count.Should().Be(0);
 	}
 }
@@ -85,7 +85,7 @@ public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : Direc
 public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:fixed-height: auto
+:max-height: none
 
 ```{image} img/auto.png
 :alt: Auto height image
@@ -98,9 +98,9 @@ public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : Direct
 		fileSystem.AddFile(@"docs/img/auto.png", "");
 
 	[Fact]
-	public void ParsesAutoFixedHeight()
+	public void ParsesNoneMaxHeight()
 	{
-		Block!.FixedHeight.Should().Be("auto");
+		Block!.MaxHeight.Should().Be("none");
 		Collector.Diagnostics.Count.Should().Be(0);
 	}
 }
@@ -108,7 +108,7 @@ public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : Direct
 public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
 """
 :::{carousel}
-:fixed-height: large
+:max-height: large
 
 ```{image} img/invalid.png
 :alt: Invalid height image
@@ -121,16 +121,16 @@ public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : Dir
 		fileSystem.AddFile(@"docs/img/invalid.png", "");
 
 	[Fact]
-	public void WarnsOnInvalidFixedHeight()
+	public void WarnsOnInvalidMaxHeight()
 	{
-		Block!.FixedHeight.Should().Be("large");
+		Block!.MaxHeight.Should().Be("large");
 
 		Collector.Diagnostics.Should().HaveCount(1)
 			.And.OnlyContain(d => d.Severity == Severity.Warning);
 
 		var warning = Collector.Diagnostics.First();
-		warning.Message.Should().Contain("Invalid fixed-height value 'large'");
-		warning.Message.Should().Contain("Valid options are: auto, small, medium");
+		warning.Message.Should().Contain("Invalid max-height value 'large'");
+		warning.Message.Should().Contain("Valid options are: none, small, medium");
 	}
 }
 
@@ -171,7 +171,7 @@ public class ImageCarouselMinimalTests(ITestOutputHelper output) : DirectiveTest
 	[Fact]
 	public void ParsesMinimalCarousel()
 	{
-		Block!.FixedHeight.Should().BeNull();
+		Block!.MaxHeight.Should().BeNull();
 		Block!.Images.Should().HaveCount(1);
 		Block!.Images[0].Alt.Should().Be("Minimal carousel");
 		Collector.Diagnostics.Count.Should().Be(0);
