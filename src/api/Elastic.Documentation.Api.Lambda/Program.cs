@@ -6,11 +6,15 @@ using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.ServiceDefaults;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
+builder.Services.AddAppLogging(LogLevel.Information);
+
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
+builder.WebHost.UseKestrelHttpsConfiguration();
 
 var app = builder.Build();
 
