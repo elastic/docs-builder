@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.Navigation;
+using ExternalLinkNavigationItem = Elastic.Documentation.Site.Navigation.ExternalLinkNavigationItem;
 
 namespace Elastic.Markdown.IO.Navigation;
 
@@ -177,6 +178,11 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				// If the page is referenced as hidden in the TOC do not include it in the navigation
 				if (indexFile != md)
 					AddToNavigationItems(new FileNavigationItem(md, this, file.Hidden), ref fileIndex);
+			}
+			else if (tocItem is LinkReference extLink)
+			{
+				var nav = new ExternalLinkNavigationItem(extLink.Url, extLink.Title, this, rootNavigationItem);
+				AddToNavigationItems(nav, ref fileIndex);
 			}
 			else if (tocItem is FolderReference folder)
 			{
