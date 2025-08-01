@@ -17,7 +17,7 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 	// Cache tokens by target audience to avoid regenerating them on every request
 	private static readonly ConcurrentDictionary<string, CachedToken> TokenCache = new();
 
-	private record CachedToken(string Token, DateTimeOffset ExpiresAt);
+	private sealed record CachedToken(string Token, DateTimeOffset ExpiresAt);
 
 	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
