@@ -16,7 +16,11 @@ For API redirects, consult with the documentation engineering team on Slack (#el
 
 For elastic.co/guide redirects, open a [web team request](http://ela.st/web-request).
 
-## File location.
+:::{note}
+A redirect definition should always be made in the repository that originally contained that page.
+:::
+
+## File location
 
 Redirects are configured at the content set-level.
 The configuration file should be located next to your `docset.yml` file:
