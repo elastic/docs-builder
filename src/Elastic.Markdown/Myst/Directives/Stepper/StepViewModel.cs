@@ -20,19 +20,23 @@ public class StepViewModel : DirectiveViewModel
 	/// </summary>
 	public HtmlString RenderTitle()
 	{
-		// Parse the title as markdown inline content
-		var document = Markdig.Markdown.Parse(Title, MarkdownParser.Pipeline);
-		var firstBlock = document.FirstOrDefault() as Markdig.Syntax.ParagraphBlock;
-		var inline = firstBlock?.Inline;
+		// Apply substitutions first, then parse with Markdig
+		var directiveBlock = (DirectiveBlock)DirectiveBlock;
+		var span = Title.AsSpan();
+		var processedTitle = span.ReplaceSubstitutions(directiveBlock.Build.Configuration.Substitutions, directiveBlock.Build.Collector, out var replacement)
+			? replacement : Title;
 
-		if (firstBlock == null)
-			return new(Title);
+		// Parse the processed title as markdown inline content
+		var document = Markdig.Markdown.Parse(processedTitle, MarkdownParser.Pipeline);
+
+		if (document.FirstOrDefault() is not Markdig.Syntax.ParagraphBlock firstBlock)
+			return new(processedTitle);
 
 		// Use the HTML renderer to render the inline content with full processing
 		var subscription = DocumentationObjectPoolProvider.HtmlRendererPool.Get();
 		_ = subscription.HtmlRenderer.WriteLeafInline(firstBlock);
 
-		var result = subscription.RentedStringBuilder?.ToString() ?? Title;
+		var result = subscription.RentedStringBuilder?.ToString() ?? processedTitle;
 		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
 		return new(result);
 	}
