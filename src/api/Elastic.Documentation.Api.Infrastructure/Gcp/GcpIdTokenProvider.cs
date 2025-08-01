@@ -15,14 +15,14 @@ namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 public class GcpIdTokenProvider(HttpClient httpClient)
 {
 	// Cache tokens by target audience to avoid regenerating them on every request
-	private readonly ConcurrentDictionary<string, CachedToken> _tokenCache = new();
+	private static readonly ConcurrentDictionary<string, CachedToken> TokenCache = new();
 
 	private record CachedToken(string Token, DateTimeOffset ExpiresAt);
 
 	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
 		// Check if we have a valid cached token
-		if (_tokenCache.TryGetValue(targetAudience, out var cachedToken) &&
+		if (TokenCache.TryGetValue(targetAudience, out var cachedToken) &&
 			cachedToken.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(1)) // Refresh 1 minute before expiry
 			return cachedToken.Token;
 
@@ -73,7 +73,7 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 		var idToken = await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
 
 		var expiresAt = expirationTime.Subtract(TimeSpan.FromMinutes(1));
-		_ = _tokenCache.AddOrUpdate(targetAudience,
+		_ = TokenCache.AddOrUpdate(targetAudience,
 			new CachedToken(idToken, expiresAt),
 			(_, _) => new CachedToken(idToken, expiresAt));
 
