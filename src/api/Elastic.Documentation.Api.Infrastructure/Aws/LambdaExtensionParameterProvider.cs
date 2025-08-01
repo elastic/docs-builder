@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Infrastructure.Aws;
 
-public class LambdaExtensionParameterProvider(IHttpClientFactory httpClientFactory, ILogger<LambdaExtensionParameterProvider> logger) : IParameterProvider
+public class LambdaExtensionParameterProvider(IHttpClientFactory httpClientFactory, AppEnvironment appEnvironment, ILogger<LambdaExtensionParameterProvider> logger) : IParameterProvider
 {
 	public const string HttpClientName = "AwsParametersAndSecretsLambdaExtensionClient";
 	private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientName);
@@ -18,8 +18,10 @@ public class LambdaExtensionParameterProvider(IHttpClientFactory httpClientFacto
 	{
 		try
 		{
-			logger.LogInformation("Retrieving parameter '{Name}' from Lambda Extension (SSM Parameter Store).", name);
-			var response = await _httpClient.GetFromJsonAsync<ParameterResponse>($"/systemsmanager/parameters/get?name={Uri.EscapeDataString(name)}&withDecryption={withDecryption.ToString().ToLowerInvariant()}", AwsJsonContext.Default.ParameterResponse, ctx);
+			var prefix = $"/elastic-docs-v3/{appEnvironment.Current.ToStringFast(true)}/";
+			var prefixedName = prefix + name.TrimStart('/');
+			logger.LogInformation("Retrieving parameter '{Name}' from Lambda Extension (SSM Parameter Store).", prefixedName);
+			var response = await _httpClient.GetFromJsonAsync<ParameterResponse>($"/systemsmanager/parameters/get?name={Uri.EscapeDataString(prefixedName)}&withDecryption={withDecryption.ToString().ToLowerInvariant()}", AwsJsonContext.Default.ParameterResponse, ctx);
 			return response?.Parameter?.Value ?? throw new InvalidOperationException($"Parameter value for '{name}' is null.");
 		}
 		catch (HttpRequestException httpEx)
@@ -42,23 +44,23 @@ public class LambdaExtensionParameterProvider(IHttpClientFactory httpClientFacto
 
 internal sealed class ParameterResponse
 {
-	public Parameter? Parameter { get; set; }
+	public required Parameter Parameter { get; set; }
 }
 
 internal sealed class Parameter
 {
-	public string? Arn { get; set; }
-	public string? Name { get; set; }
-	public string? Type { get; set; }
-	public string? Value { get; set; }
-	public string? Version { get; set; }
+	[JsonPropertyName("ARN")]
+	public required string Arn { get; set; }
+	public required string Name { get; set; }
+	public required string Type { get; set; }
+	public required string Value { get; set; }
+	public required int Version { get; set; }
 	public string? Selector { get; set; }
-	public string? LastModifiedDate { get; set; }
-	public string? LastModifiedUser { get; set; }
-	public string? DataType { get; set; }
+	public DateTime LastModifiedDate { get; set; }
+	public required string DataType { get; set; }
 }
 
 
 [JsonSerializable(typeof(ParameterResponse))]
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.Unspecified)]
 internal sealed partial class AwsJsonContext : JsonSerializerContext;

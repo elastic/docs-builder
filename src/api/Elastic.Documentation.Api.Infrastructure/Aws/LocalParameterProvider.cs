@@ -10,7 +10,7 @@ public class LocalParameterProvider : IParameterProvider
 	{
 		switch (name)
 		{
-			case "/elastic-docs-v3/dev/llm-gateway-service-account":
+			case "llm-gateway-service-account":
 				{
 					const string envName = "LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH";
 					var serviceAccountKeyPath = Environment.GetEnvironmentVariable(envName);
@@ -21,7 +21,7 @@ public class LocalParameterProvider : IParameterProvider
 					var serviceAccountKey = await File.ReadAllTextAsync(serviceAccountKeyPath, ctx);
 					return serviceAccountKey;
 				}
-			case "/elastic-docs-v3/dev/llm-gateway-function-url":
+			case "llm-gateway-function-url":
 				{
 					const string envName = "LLM_GATEWAY_FUNCTION_URL";
 					var value = Environment.GetEnvironmentVariable(envName);
