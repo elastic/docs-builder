@@ -12,7 +12,7 @@ using Elastic.Documentation.Api.Infrastructure;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
-builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("APP_ENVIRONMENT"));
+builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("ENVIRONMENT"));
 
 var app = builder.Build();
 
