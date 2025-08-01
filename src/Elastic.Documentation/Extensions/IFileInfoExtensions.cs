@@ -18,4 +18,29 @@ public static class IFileInfoExtensions
 		using var reader = new StreamReader(stream);
 		return reader.ReadToEnd();
 	}
+
+	/// Validates <paramref name="file"/> is in a subdirectory of <paramref name="parentDirectory"/>
+	public static bool IsSubPathOf(this IFileInfo file, IDirectoryInfo parentDirectory)
+	{
+		var parent = file.Directory;
+		return parent is not null && parent.IsSubPathOf(parentDirectory);
+	}
+}
+
+public static class IDirectoryInfoExtensions
+{
+	/// Validates <paramref name="directory"/> is subdirectory of <paramref name="parentDirectory"/>
+	public static bool IsSubPathOf(this IDirectoryInfo directory, IDirectoryInfo parentDirectory)
+	{
+		var parent = directory;
+		do
+		{
+			if (parent.FullName == parentDirectory.FullName)
+				return true;
+			parent = parent.Parent;
+		}
+		while (parent != null);
+
+		return false;
+	}
 }

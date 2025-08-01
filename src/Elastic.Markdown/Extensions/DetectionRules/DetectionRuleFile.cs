@@ -29,14 +29,14 @@ public record DetectionRuleOverviewFile : MarkdownFile
 	{
 		Title = "Prebuilt detection rules reference";
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
+		var document = MarkdownParser.MinimalParseString(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
+		var document = MarkdownParser.ParseString(markdown, SourceFile, null);
 		return Task.FromResult(document);
 	}
 
@@ -127,14 +127,14 @@ public record DetectionRuleFile : MarkdownFile
 	{
 		Title = Rule?.Name;
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.MinimalParseStringAsync(markdown, RuleSourceMarkdownPath, null);
+		var document = MarkdownParser.MinimalParseString(markdown, RuleSourceMarkdownPath, null);
 		return Task.FromResult(document);
 	}
 
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
 		var markdown = GetMarkdown();
-		var document = MarkdownParser.ParseStringAsync(markdown, RuleSourceMarkdownPath, null);
+		var document = MarkdownParser.ParseString(markdown, RuleSourceMarkdownPath, null);
 		return Task.FromResult(document);
 	}
 
