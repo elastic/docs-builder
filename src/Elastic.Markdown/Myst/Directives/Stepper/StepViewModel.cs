@@ -15,10 +15,5 @@ public class StepViewModel : DirectiveViewModel
 	/// <summary>
 	/// Renders the title with substitutions applied
 	/// </summary>
-	public HtmlString RenderTitle()
-	{
-		// For now, just return the title as-is since substitutions are already applied in FinalizeAndValidate
-		// In the future, this could be extended to handle full markdown processing
-		return new HtmlString(Title);
-	}
+	public HtmlString RenderTitle() => new HtmlString(Title);
 }
