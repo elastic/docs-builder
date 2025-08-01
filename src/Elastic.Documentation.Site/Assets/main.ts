@@ -1,5 +1,4 @@
 import { initCopyButton } from './copybutton'
-import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import './markdown/applies-to'
@@ -33,7 +32,6 @@ document.addEventListener('htmx:load', function (event) {
     }
     initSmoothScroll()
     openDetailsWithAnchor()
-    initDismissibleBanner()
     initImageCarousel()
 
     const urlParams = new URLSearchParams(window.location.search)
