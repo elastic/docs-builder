@@ -18,8 +18,22 @@ public class StepViewModel : DirectiveViewModel
 	/// <summary>
 	/// Renders the title with full markdown processing (substitutions, links, emphasis, etc.)
 	/// </summary>
-	public HtmlString RenderTitle() =>
-		// For now, just return the title as-is since substitutions are already applied in FinalizeAndValidate
-		// In the future, this could be extended to handle full markdown processing using the HTML renderer
-		new(Title);
+	public HtmlString RenderTitle()
+	{
+		// Parse the title as markdown inline content
+		var document = Markdig.Markdown.Parse(Title, MarkdownParser.Pipeline);
+		var firstBlock = document.FirstOrDefault() as Markdig.Syntax.ParagraphBlock;
+		var inline = firstBlock?.Inline;
+
+		if (firstBlock == null)
+			return new(Title);
+
+		// Use the HTML renderer to render the inline content with full processing
+		var subscription = DocumentationObjectPoolProvider.HtmlRendererPool.Get();
+		_ = subscription.HtmlRenderer.WriteLeafInline(firstBlock);
+
+		var result = subscription.RentedStringBuilder?.ToString() ?? Title;
+		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
+		return new(result);
+	}
 }
