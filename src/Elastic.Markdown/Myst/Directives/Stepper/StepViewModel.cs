@@ -15,5 +15,5 @@ public class StepViewModel : DirectiveViewModel
 	/// <summary>
 	/// Renders the title with substitutions applied
 	/// </summary>
-	public HtmlString RenderTitle() => new HtmlString(Title);
+	public HtmlString RenderTitle() => new(Title);
 }
