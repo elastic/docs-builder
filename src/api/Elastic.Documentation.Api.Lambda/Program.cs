@@ -16,7 +16,7 @@ builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("A
 
 var app = builder.Build();
 
-var v1 = app.MapGroup("/v1");
+var v1 = app.MapGroup("/docs/_api/v1");
 v1.MapElasticDocsApiEndpoints();
 
 app.Run();
