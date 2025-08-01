@@ -1,0 +1,41 @@
+---
+# This workflow is used to build the API lambda
+# lambda function bootstrap binary that can be deployed to AWS Lambda.
+name: Build API Lambda
+
+on:
+  workflow_dispatch: 
+  workflow_call: 
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: ${{ github.ref }}
+
+jobs: 
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BINARY_PATH: .artifacts/Elastic.Documentation.Api.Lambda/release_linux-x64/bootstrap
+    steps:
+      - uses: actions/checkout@v4
+        with: 
+          ref: ${{ inputs.ref }}
+      - name: Amazon Linux 2023 build
+        run: |
+          docker build . -t api-lambda:latest -f src/api/Elastic.Documentation.Api.Lambda/Dockerfile
+      - name: Get bootstrap binary
+        run: |
+          docker cp $(docker create --name tc api-lambda:latest):/app/.artifacts/publish ./.artifacts && docker rm tc
+      - name: Inspect bootstrap binary
+        run: |
+          tree .artifacts
+          stat "${BINARY_PATH}"
+      - name: Archive artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-lambda-binary
+          retention-days: 1
+          if-no-files-found: error
+          path: ${{ env.BINARY_PATH }}
