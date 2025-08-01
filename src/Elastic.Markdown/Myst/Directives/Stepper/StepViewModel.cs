@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.AspNetCore.Html;
@@ -22,10 +23,15 @@ public class StepViewModel : DirectiveViewModel
 	{
 		// Parse the title as markdown with full pipeline (including substitutions)
 		var directiveBlock = (DirectiveBlock)DirectiveBlock;
+
+		// Get the YamlFrontMatter from the original document to support local substitutions
+		var originalContext = directiveBlock.GetData("context") as ParserContext;
+		var yamlFrontMatter = originalContext?.YamlFrontMatter;
+
 		var context = new ParserContext(new ParserState(directiveBlock.Build)
 		{
 			MarkdownSourcePath = directiveBlock.CurrentFile,
-			YamlFrontMatter = null,
+			YamlFrontMatter = yamlFrontMatter,
 			DocumentationFileLookup = (path) => null!,
 			CrossLinkResolver = null!
 		});
