@@ -2,13 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Documentation.Api.Infrastructure.Aws;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
@@ -16,8 +14,18 @@ namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
 public class GcpIdTokenProvider(HttpClient httpClient)
 {
+	// Cache tokens by target audience to avoid regenerating them on every request
+	private readonly ConcurrentDictionary<string, CachedToken> _tokenCache = new();
+
+	private record CachedToken(string Token, DateTimeOffset ExpiresAt);
+
 	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
+		// Check if we have a valid cached token
+		if (_tokenCache.TryGetValue(targetAudience, out var cachedToken) &&
+			cachedToken.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(1)) // Refresh 1 minute before expiry
+			return cachedToken.Token;
+
 		// Read and parse service account key file using System.Text.Json source generation (AOT compatible)
 		var serviceAccountJson = JsonSerializer.Deserialize(serviceAccount, GcpJsonContext.Default.ServiceAccountKey);
 
@@ -27,13 +35,14 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 		var headerBase64 = Base64UrlEncode(Encoding.UTF8.GetBytes(headerJson));
 
 		// Create JWT payload
-		var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+		var now = DateTimeOffset.UtcNow;
+		var expirationTime = now.AddHours(1);
 		var payload = new JwtPayload(
 			serviceAccountJson.ClientEmail,
 			serviceAccountJson.ClientEmail,
 			"https://oauth2.googleapis.com/token",
-			now,
-			now + 300, // 5 minutes
+			now.ToUnixTimeSeconds(),
+			expirationTime.ToUnixTimeSeconds(),
 			targetAudience
 		);
 
@@ -61,7 +70,14 @@ public class GcpIdTokenProvider(HttpClient httpClient)
 		var jwt = $"{message}.{signatureBase64}";
 
 		// Exchange JWT for ID token
-		return await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
+		var idToken = await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
+
+		var expiresAt = expirationTime.Subtract(TimeSpan.FromMinutes(1));
+		_ = _tokenCache.AddOrUpdate(targetAudience,
+			new CachedToken(idToken, expiresAt),
+			(_, _) => new CachedToken(idToken, expiresAt));
+
+		return idToken;
 	}
 
 
