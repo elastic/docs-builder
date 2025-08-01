@@ -11,6 +11,7 @@
   </ItemGroup>
   <!-- AWS -->
   <ItemGroup>
+    <PackageVersion Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.9.0" />
     <PackageVersion Include="Amazon.Lambda.RuntimeSupport" Version="1.13.0" />
     <PackageVersion Include="Amazon.Lambda.Core" Version="2.5.1" />
     <PackageVersion Include="Amazon.Lambda.S3Events" Version="3.1.0" />
@@ -25,6 +26,7 @@
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.11.3" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.6.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.4" />
     <PackageVersion Include="Microsoft.OpenApi" Version="2.0.0-preview9" />
     <PackageVersion Include="System.Text.Json" Version="9.0.5" />
     <PackageVersion Include="TUnit" Version="0.25.21" />

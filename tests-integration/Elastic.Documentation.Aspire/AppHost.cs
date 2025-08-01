@@ -8,6 +8,8 @@ var cloneAll = builder.AddProject<Projects.docs_assembler>("DocsAssemblerCloneAl
 
 var buildAll = builder.AddProject<Projects.docs_assembler>("DocsAssemblerBuildAll").WithArgs("repo", "build-all").WaitForCompletion(cloneAll);
 
+var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>("ApiLambda");
+
 var serveStatic = builder.AddProject<Projects.docs_builder>("DocsBuilderServeStatic")
 	.WithHttpEndpoint(port: 4000, isProxied: false)
 	.WithArgs("serve-static")

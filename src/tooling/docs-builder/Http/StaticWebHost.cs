@@ -38,18 +38,6 @@ public class StaticWebHost
 		SetUpRoutes();
 	}
 
-	public async Task<bool> WaitForAppStartup(Cancel ctx)
-	{
-		var startedSource = new TaskCompletionSource();
-		var cancelledSource = new TaskCompletionSource();
-
-		await using var reg1 = WebApplication.Lifetime.ApplicationStarted.Register(() => startedSource.SetResult());
-		await using var reg2 = ctx.Register(() => cancelledSource.SetResult());
-
-		var completedTask = await Task.WhenAny(startedSource.Task, cancelledSource.Task).ConfigureAwait(false);
-		return completedTask == startedSource.Task;
-	}
-
 	public async Task RunAsync(Cancel ctx) => await WebApplication.RunAsync(ctx);
 
 	public async Task StopAsync(Cancel ctx) => await WebApplication.StopAsync(ctx);

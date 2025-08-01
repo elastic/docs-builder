@@ -32,9 +32,12 @@ jobs:
       - name: Validate Content Sources
         run: dotnet run --project src/tooling/docs-assembler -c release -- content-source validate
 
-  build-lambda:
+  build-link-index-updater-lambda:
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
-
+  
+  build-api-lambda:
+    uses: ./.github/workflows/build-api-lambda.yml
+  
   npm:
     runs-on: ubuntu-latest
     defaults: 
@@ -80,6 +83,9 @@ jobs:
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
+
+      - name: Install Aspire workload
+        run: dotnet workload install aspire
 
       - name: Build
         run: dotnet run --project build -c release

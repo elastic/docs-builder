@@ -19,8 +19,4 @@
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Logging\" />
-  </ItemGroup>
-
 </Project>

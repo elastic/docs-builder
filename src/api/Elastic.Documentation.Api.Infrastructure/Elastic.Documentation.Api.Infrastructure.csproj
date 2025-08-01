@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+        <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
+        <AssemblyName>Elastic.Documentation.Api.Infrastructure</AssemblyName>
+        <RootNamespace>Elastic.Documentation.Api.Infrastructure</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" />
+      <PackageReference Include="NetEscapades.EnumGenerators" />
+    </ItemGroup>
+
+</Project>
