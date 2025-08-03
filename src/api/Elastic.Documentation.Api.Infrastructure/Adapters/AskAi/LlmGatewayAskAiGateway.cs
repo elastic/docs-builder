@@ -7,21 +7,20 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
-using Microsoft.Extensions.Options;
 
 namespace Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 
-public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, IOptionsSnapshot<LlmGatewayOptions> options) : IAskAiGateway<Stream>
+public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway<Stream>
 {
 	public async Task<Stream> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
 		var llmGatewayRequest = LlmGatewayRequest.CreateFromRequest(askAiRequest);
 		var requestBody = JsonSerializer.Serialize(llmGatewayRequest, LlmGatewayContext.Default.LlmGatewayRequest);
-		var request = new HttpRequestMessage(HttpMethod.Post, options.Value.FunctionUrl)
+		var request = new HttpRequestMessage(HttpMethod.Post, options.FunctionUrl)
 		{
 			Content = new StringContent(requestBody, Encoding.UTF8, "application/json")
 		};
-		var authToken = await tokenProvider.GenerateIdTokenAsync(ctx);
+		var authToken = await tokenProvider.GenerateIdTokenAsync(options.ServiceAccount, options.TargetAudience, ctx);
 		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
 		request.Headers.Add("User-Agent", "elastic-docs-proxy/1.0");
 		request.Headers.Add("Accept", "text/event-stream");
@@ -44,7 +43,7 @@ public record LlmGatewayRequest(
 			PlatformContext: new PlatformContext("support_portal", "support_assistant", []),
 			Input:
 			[
-				new ChatInput("system", AskAiRequest.SystemPrompt),
+				new ChatInput("user", AskAiRequest.SystemPrompt),
 				new ChatInput("user", request.Message)
 			],
 			ThreadId: request.ThreadId ?? "elastic-docs-" + Guid.NewGuid()

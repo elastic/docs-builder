@@ -289,15 +289,25 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
 			.Where(step => !IsNestedInOtherDirective(step))
-			.Select(step => new
+			.Select(step =>
 			{
-				TocItem = new PageTocItem
+				var processedTitle = step.Title;
+				// Apply substitutions to step titles
+				if (subs.Count > 0 && processedTitle.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var replacement))
 				{
-					Heading = step.Title,
-					Slug = step.Anchor,
-					Level = step.HeadingLevel // Use dynamic heading level
-				},
-				step.Line
+					processedTitle = replacement;
+				}
+
+				return new
+				{
+					TocItem = new PageTocItem
+					{
+						Heading = processedTitle,
+						Slug = step.Anchor,
+						Level = step.HeadingLevel // Use dynamic heading level
+					},
+					step.Line
+				};
 			});
 
 		var toc = headingTocs
