@@ -1,4 +1,4 @@
-import { useAskAiTerm } from '../search.store'
+import { useAskAiTerm } from './search.store'
 import { LlmGatewayMessage, useLlmGateway } from './useLlmGateway'
 import {
     EuiFlexGroup,

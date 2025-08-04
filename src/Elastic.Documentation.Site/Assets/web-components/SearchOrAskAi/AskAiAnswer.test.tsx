@@ -11,7 +11,7 @@ const mockSendQuestion = jest.fn(() => Promise.resolve())
 const mockRetry = jest.fn()
 const mockAbort = jest.fn()
 
-jest.mock('../search.store', () => ({
+jest.mock('./search.store', () => ({
     useAskAiTerm: jest.fn(() => 'What is Elasticsearch?'),
 }))
 

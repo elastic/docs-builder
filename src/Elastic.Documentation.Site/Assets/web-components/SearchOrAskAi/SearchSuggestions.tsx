@@ -1,4 +1,4 @@
-import { useModalActions } from '../modal.store'
+import { useModalActions } from './modal.store'
 import {
     EuiButton,
     EuiSpacer,

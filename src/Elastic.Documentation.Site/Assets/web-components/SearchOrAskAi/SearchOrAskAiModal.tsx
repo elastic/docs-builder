@@ -1,5 +1,5 @@
-import { AskAiAnswer } from './AskAi/AskAiAnswer'
-import { SearchResults } from './Search/SearchResults'
+import { AskAiAnswer } from './AskAiAnswer'
+import { SearchResults } from './SearchResults'
 import { Suggestions } from './Suggestions'
 import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
 import {

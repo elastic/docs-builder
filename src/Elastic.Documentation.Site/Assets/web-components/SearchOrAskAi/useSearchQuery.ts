@@ -1,4 +1,4 @@
-import { useSearchTerm } from '../search.store'
+import { useSearchTerm } from './search.store'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
 import { z } from 'zod'
