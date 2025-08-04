@@ -25,7 +25,8 @@ export const useSearchQuery = () => {
         queryKey: ['search', { searchTerm: debouncedSearchTerm }],
         queryFn: async () => {
             const response = await fetch(
-                '/docs/_api/v1/search?q=' + encodeURIComponent(debouncedSearchTerm)
+                '/docs/_api/v1/search?q=' +
+                    encodeURIComponent(debouncedSearchTerm)
             )
             if (!response.ok) {
                 throw new Error(
