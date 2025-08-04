@@ -48,6 +48,9 @@ public record Repository
 	[YamlMember(Alias = "sparse_paths")]
 	public string[] SparsePaths { get; set; } = ["docs"];
 
+	[YamlMember(Alias = "private")]
+	public bool Private { get; set; }
+
 	public string GetBranch(ContentSource contentSource) => contentSource switch
 	{
 		ContentSource.Current => GitReferenceCurrent,

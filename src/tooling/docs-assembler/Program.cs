@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
@@ -16,10 +15,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder()
-	.AddAppDefaults(ref args, (s, p) =>
+	.AddDocumentationServiceDefaults(ref args, (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-	});
+	})
+	.AddDocumentationToolingDefaults();
 
 var app = builder.ToConsoleAppBuilder();
 

@@ -26,7 +26,7 @@ public class StaticWebHost
 			ContentRootPath = contentRoot
 		});
 
-		_ = builder.AddAppDefaults();
+		_ = builder.AddDocumentationServiceDefaults();
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)

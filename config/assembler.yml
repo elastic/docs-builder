@@ -94,6 +94,7 @@ references:
   elastic-otel-python:
   elastic-serverless-forwarder:
   integration-docs:
+    private: true
   integrations:
   logstash-docs-md:
   opentelemetry:
@@ -104,7 +105,12 @@ references:
 
   # @elastic/admin-docs
   cloud-on-k8s:
-  cloud: *master
+  cloud:
+    current: master
+    next: master
+    edge: master
+    private: true
+
   curator: *master
   ecctl: *master
 

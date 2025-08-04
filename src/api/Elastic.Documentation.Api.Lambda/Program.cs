@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -12,7 +11,7 @@ using Elastic.Documentation.ServiceDefaults;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.Services.AddAppLogging(LogLevel.Information);
+builder.AddDocumentationServiceDefaults(ref args);
 
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("ENVIRONMENT"));

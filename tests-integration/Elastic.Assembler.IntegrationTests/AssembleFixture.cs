@@ -24,8 +24,15 @@ public class AssembleFixture : IAsyncLifetime
 	/// <inheritdoc />
 	public async ValueTask InitializeAsync()
 	{
-		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Elastic_Documentation_Aspire>();
-		_ = builder.Services.AddAppLogging(LogLevel.Information);
+		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Elastic_Documentation_Aspire>(
+			["--skip-private-repositories"],
+			(options, settings) =>
+			{
+				options.DisableDashboard = true;
+				options.AllowUnsecuredTransport = true;
+			}
+		);
+		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
 		_ = builder.Services.AddLogging(c => c.AddInMemory());
 		DistributedApplication = await builder.BuildAsync();

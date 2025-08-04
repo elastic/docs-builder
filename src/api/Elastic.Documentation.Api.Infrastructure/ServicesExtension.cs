@@ -40,9 +40,7 @@ public static class ServicesExtension
 	public static void AddElasticDocsApiUsecases(this IServiceCollection services, string? appEnvironment)
 	{
 		if (AppEnvExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
-		{
 			AddElasticDocsApiUsecases(services, parsedEnvironment);
-		}
 		else
 		{
 			var logger = GetLogger(services);

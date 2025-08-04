@@ -10,6 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 
@@ -17,4 +18,12 @@ namespace Elastic.Documentation.Tooling;
 
 public static class DocumentationTooling
 {
+	public static TBuilder AddDocumentationToolingDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+	{
+		_ = builder.Services
+			.AddGitHubActionsCore()
+			.AddSingleton<DiagnosticsChannel>()
+			.AddSingleton<DiagnosticsCollector>();
+		return builder;
+	}
 }
