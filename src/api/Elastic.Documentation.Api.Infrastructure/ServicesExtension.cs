@@ -104,8 +104,8 @@ public static class ServicesExtension
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnv);
 		_ = services.AddSingleton<GcpIdTokenProvider>();
-		_ = services.AddSingleton<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
 		_ = services.AddScoped<LlmGatewayOptions>();
 		_ = services.AddScoped<AskAiUsecase>();
+		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
 	}
 }

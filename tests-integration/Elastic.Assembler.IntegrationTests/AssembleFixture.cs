@@ -40,8 +40,6 @@ public class AssembleFixture : IAsyncLifetime
 		await DistributedApplication.DisposeAsync();
 		GC.SuppressFinalize(this);
 	}
-
-
 }
 
 
@@ -54,7 +52,6 @@ public class DatabaseTestClass1(AssembleFixture fixture, ITestOutputHelper outpu
 			.WaitForResourceHealthyAsync("DocsBuilderServeStatic", cancellationToken: TestContext.Current.CancellationToken);
 		var client = fixture.DistributedApplication.CreateHttpClient("DocsBuilderServeStatic", "http");
 		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
-		output.WriteLine(root);
 		_ = root.Should().NotBeNullOrEmpty();
 	}
 
@@ -63,8 +60,8 @@ public class DatabaseTestClass1(AssembleFixture fixture, ITestOutputHelper outpu
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
-			return default;
+		// if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		// 	return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			output.WriteLine(resource.Message);
 		return default;
