@@ -18,6 +18,12 @@ runs:
       run: |
         git fetch --prune --unshallow --tags
         git tag --list
+
+    - name: Git config
+      shell: bash
+      run: |
+        git config --global init.defaultBranch main
+
     - uses: actions/setup-dotnet@v4
       with:
         global-json-file: global.json
@@ -37,4 +43,3 @@ runs:
         cache: npm
         cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
         node-version-file: .nvmrc
-      
