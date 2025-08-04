@@ -66,6 +66,8 @@ public partial class ConfigurationFileProvider
 		if (_fileSystem.File.Exists(tempFile))
 			return NavigationFile;
 
+		// This routine removes `toc: `'s linking to private repositories and reindents any later lines if needed.
+		// This will make any public children in the nav move up one place.
 		var spacing = -1;
 		var reindenting = -1;
 		foreach (var l in _fileSystem.File.ReadAllLines(NavigationFile.FullName))
