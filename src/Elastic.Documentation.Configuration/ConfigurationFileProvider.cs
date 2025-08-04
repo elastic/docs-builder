@@ -57,7 +57,7 @@ public partial class ConfigurationFileProvider
 
 	public IFileInfo CreateNavigationFile(IReadOnlyDictionary<string, Repository> privateRepositories)
 	{
-		if (privateRepositories.Count == 0)
+		if (privateRepositories.Count == 0 || !SkipPrivateRepositories)
 			return NavigationFile;
 
 		var targets = string.Join("|", privateRepositories.Keys);
