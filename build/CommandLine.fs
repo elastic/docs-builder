@@ -9,13 +9,22 @@ open Microsoft.FSharp.Reflection
 open System
 open Bullseye
 
+type TestSuite = All | Unit | Integration
+    with
+    member this.SuitName =
+        match FSharpValue.GetUnionFields(this, typeof<TestSuite>) with
+        | case, _ -> case.Name.ToLowerInvariant()
+
 type Build =
     | [<CliPrefix(CliPrefix.None);SubCommand>] Clean
     | [<CliPrefix(CliPrefix.None);SubCommand>] Version
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Compile
     | [<CliPrefix(CliPrefix.None);SubCommand>] Build
+
     | [<CliPrefix(CliPrefix.None);SubCommand>] Test
-    
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Unit_Test
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Integrate
+
     | [<CliPrefix(CliPrefix.None);SubCommand>] Format
     | [<CliPrefix(CliPrefix.None);SubCommand>] Watch
 
@@ -33,6 +42,7 @@ type Build =
     | [<Inherit;AltCommandLine("-s")>] Single_Target
     | [<Inherit>] Token of string 
     | [<Inherit;AltCommandLine("-c")>] Skip_Dirty_Check
+    | [<Inherit;EqualsAssignment>] Test_Suite of TestSuite
 with
     interface IArgParserTemplate with
         member this.Usage =
@@ -41,8 +51,11 @@ with
             | Clean -> "clean known output locations"
             | Version -> "print version information"
             | Build -> "Run build"
-            
-            | Test -> "runs a clean build and then runs all the tests "
+
+            | Unit_Test -> "alias to providing: test --test-suite=unit"
+            | Integrate -> "alias to providing: test --test-suite=integration"
+            | Test -> "runs a clean build and then runs all the tests unless --test-suite is provided"
+
             | Release -> "runs build, tests, and create and validates the packages shy of publishing them"
             | Publish -> "Publishes artifacts"
             | Format -> "runs dotnet format"
@@ -62,6 +75,7 @@ with
             | Single_Target -> "Runs the provided sub command without running their dependencies"
             | Token _ -> "Token to be used to authenticate with github"
             | Skip_Dirty_Check -> "Skip the clean checkout check that guards the release/publish targets"
+            | Test_Suite _ -> "Specify the test suite to run, defaults to all"
 
     member this.StepName =
         match FSharpValue.GetUnionFields(this, typeof<Build>) with
