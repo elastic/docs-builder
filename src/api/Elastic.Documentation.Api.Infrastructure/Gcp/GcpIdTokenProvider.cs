@@ -2,37 +2,48 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Options;
 
 namespace Elastic.Documentation.Api.Infrastructure.Gcp;
 
 // This is a custom implementation to create an ID token for GCP.
 // Because Google.Api.Auth.OAuth2 is not compatible with AOT
-public class GcpIdTokenProvider(HttpClient httpClient, IOptionsSnapshot<LlmGatewayOptions> options)
+public class GcpIdTokenProvider(HttpClient httpClient)
 {
-	public async Task<string> GenerateIdTokenAsync(Cancel cancellationToken = default)
+	// Cache tokens by target audience to avoid regenerating them on every request
+	private static readonly ConcurrentDictionary<string, CachedToken> TokenCache = new();
+
+	private sealed record CachedToken(string Token, DateTimeOffset ExpiresAt);
+
+	public async Task<string> GenerateIdTokenAsync(string serviceAccount, string targetAudience, Cancel cancellationToken = default)
 	{
+		// Check if we have a valid cached token
+		if (TokenCache.TryGetValue(targetAudience, out var cachedToken) &&
+			cachedToken.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(1)) // Refresh 1 minute before expiry
+			return cachedToken.Token;
+
 		// Read and parse service account key file using System.Text.Json source generation (AOT compatible)
-		var serviceAccount = JsonSerializer.Deserialize(options.Value.ServiceAccount, GcpJsonContext.Default.ServiceAccountKey);
+		var serviceAccountJson = JsonSerializer.Deserialize(serviceAccount, GcpJsonContext.Default.ServiceAccountKey);
 
 		// Create JWT header
-		var header = new JwtHeader("RS256", "JWT", serviceAccount.PrivateKeyId);
+		var header = new JwtHeader("RS256", "JWT", serviceAccountJson.PrivateKeyId);
 		var headerJson = JsonSerializer.Serialize(header, JwtHeaderJsonContext.Default.JwtHeader);
 		var headerBase64 = Base64UrlEncode(Encoding.UTF8.GetBytes(headerJson));
 
 		// Create JWT payload
-		var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+		var now = DateTimeOffset.UtcNow;
+		var expirationTime = now.AddHours(1);
 		var payload = new JwtPayload(
-			serviceAccount.ClientEmail,
-			serviceAccount.ClientEmail,
+			serviceAccountJson.ClientEmail,
+			serviceAccountJson.ClientEmail,
 			"https://oauth2.googleapis.com/token",
-			now,
-			now + 300, // 5 minutes
-			options.Value.TargetAudience
+			now.ToUnixTimeSeconds(),
+			expirationTime.ToUnixTimeSeconds(),
+			targetAudience
 		);
 
 		var payloadJson = JsonSerializer.Serialize(payload, GcpJsonContext.Default.JwtPayload);
@@ -43,7 +54,7 @@ public class GcpIdTokenProvider(HttpClient httpClient, IOptionsSnapshot<LlmGatew
 		var messageBytes = Encoding.UTF8.GetBytes(message);
 
 		// Parse the private key (removing PEM headers/footers and decoding)
-		var privateKeyPem = serviceAccount.PrivateKey
+		var privateKeyPem = serviceAccountJson.PrivateKey
 			.Replace("-----BEGIN PRIVATE KEY-----", "")
 			.Replace("-----END PRIVATE KEY-----", "")
 			.Replace("\n", "")
@@ -59,7 +70,14 @@ public class GcpIdTokenProvider(HttpClient httpClient, IOptionsSnapshot<LlmGatew
 		var jwt = $"{message}.{signatureBase64}";
 
 		// Exchange JWT for ID token
-		return await ExchangeJwtForIdToken(jwt, options.Value.TargetAudience, cancellationToken);
+		var idToken = await ExchangeJwtForIdToken(jwt, targetAudience, cancellationToken);
+
+		var expiresAt = expirationTime.Subtract(TimeSpan.FromMinutes(1));
+		_ = TokenCache.AddOrUpdate(targetAudience,
+			new CachedToken(idToken, expiresAt),
+			(_, _) => new CachedToken(idToken, expiresAt));
+
+		return idToken;
 	}
 
 

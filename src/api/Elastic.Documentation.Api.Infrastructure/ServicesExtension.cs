@@ -5,7 +5,9 @@
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +17,7 @@ using NetEscapades.EnumGenerators;
 namespace Elastic.Documentation.Api.Infrastructure;
 
 [EnumExtensions]
-public enum AppEnvironment
+public enum AppEnv
 {
 	[Display(Name = "dev")] Dev,
 	[Display(Name = "staging")] Staging,
@@ -23,11 +25,9 @@ public enum AppEnvironment
 	[Display(Name = "prod")] Prod
 }
 
-public class LlmGatewayOptions
+public class AppEnvironment
 {
-	public string ServiceAccount { get; set; } = string.Empty;
-	public string FunctionUrl { get; set; } = string.Empty;
-	public string TargetAudience { get; set; } = string.Empty;
+	public AppEnv Current { get; init; }
 }
 
 public static class ServicesExtension
@@ -41,7 +41,7 @@ public static class ServicesExtension
 
 	public static void AddElasticDocsApiUsecases(this IServiceCollection services, string? appEnvironment)
 	{
-		if (AppEnvironmentExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
+		if (AppEnvExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
 		{
 			AddElasticDocsApiUsecases(services, parsedEnvironment);
 		}
@@ -49,34 +49,37 @@ public static class ServicesExtension
 		{
 			var logger = GetLogger(services);
 			logger?.LogWarning("Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
-			AddElasticDocsApiUsecases(services, AppEnvironment.Dev);
+			AddElasticDocsApiUsecases(services, AppEnv.Dev);
 		}
 	}
 
 
-	private static void AddElasticDocsApiUsecases(this IServiceCollection services, AppEnvironment appEnvironment)
+	private static void AddElasticDocsApiUsecases(this IServiceCollection services, AppEnv appEnv)
 	{
 		_ = services.ConfigureHttpJsonOptions(options =>
 		{
 			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
 		});
 		_ = services.AddHttpClient();
-		AddParameterProvider(services, appEnvironment);
-		AddAskAiUsecase(services, appEnvironment);
+		// Register AppEnvironment as a singleton for dependency injection
+		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
+		AddParameterProvider(services, appEnv);
+		AddAskAiUsecase(services, appEnv);
+		AddSearchUsecase(services, appEnv);
 	}
 
-	// https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html
-	private static void AddParameterProvider(IServiceCollection services, AppEnvironment appEnvironment)
+	// https://docs.aws.amazon.com/systems	-manager/latest/userguide/ps-integration-lambda-extensions.html
+	private static void AddParameterProvider(IServiceCollection services, AppEnv appEnv)
 	{
 		var logger = GetLogger(services);
 
-		switch (appEnvironment)
+		switch (appEnv)
 		{
-			case AppEnvironment.Prod:
-			case AppEnvironment.Staging:
-			case AppEnvironment.Edge:
+			case AppEnv.Prod:
+			case AppEnv.Staging:
+			case AppEnv.Edge:
 				{
-					logger?.LogInformation("Configuring LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnvironment);
+					logger?.LogInformation("Configuring LambdaExtensionParameterProvider for environment {AppEnvironment}", appEnv);
 					_ = services.AddHttpClient(LambdaExtensionParameterProvider.HttpClientName, client =>
 					{
 						client.BaseAddress = new Uri("http://localhost:2773");
@@ -85,39 +88,34 @@ public static class ServicesExtension
 					_ = services.AddSingleton<IParameterProvider, LambdaExtensionParameterProvider>();
 					break;
 				}
-			case AppEnvironment.Dev:
+			case AppEnv.Dev:
 				{
-					logger?.LogInformation("Configuring LocalParameterProvider for environment {AppEnvironment}", appEnvironment);
+					logger?.LogInformation("Configuring LocalParameterProvider for environment {AppEnvironment}", appEnv);
 					_ = services.AddSingleton<IParameterProvider, LocalParameterProvider>();
 					break;
 				}
 			default:
 				{
-					throw new ArgumentOutOfRangeException(nameof(appEnvironment), appEnvironment,
+					throw new ArgumentOutOfRangeException(nameof(appEnv), appEnv,
 						"Unsupported environment for parameter provider.");
 				}
 		}
 	}
 
-	private static void AddAskAiUsecase(IServiceCollection services, AppEnvironment appEnvironment)
+	private static void AddAskAiUsecase(IServiceCollection services, AppEnv appEnv)
 	{
 		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnvironment);
-
-		_ = services.Configure<LlmGatewayOptions>(options =>
-		{
-			var serviceProvider = services.BuildServiceProvider();
-			var parameterProvider = serviceProvider.GetRequiredService<IParameterProvider>();
-			var appEnvString = appEnvironment.ToStringFast(true);
-
-			options.ServiceAccount = parameterProvider.GetParam($"/elastic-docs-v3/{appEnvString}/llm-gateway-service-account").GetAwaiter().GetResult();
-			options.FunctionUrl = parameterProvider.GetParam($"/elastic-docs-v3/{appEnvString}/llm-gateway-function-url").GetAwaiter().GetResult();
-
-			var functionUri = new Uri(options.FunctionUrl);
-			options.TargetAudience = $"{functionUri.Scheme}://{functionUri.Host}";
-		});
-		_ = services.AddScoped<GcpIdTokenProvider>();
-		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
+		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnv);
+		_ = services.AddSingleton<GcpIdTokenProvider>();
+		_ = services.AddSingleton<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
+		_ = services.AddScoped<LlmGatewayOptions>();
 		_ = services.AddScoped<AskAiUsecase>();
+	}
+	private static void AddSearchUsecase(IServiceCollection services, AppEnv appEnv)
+	{
+		var logger = GetLogger(services);
+		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
+		_ = services.AddScoped<ISearchGateway, MockSearchGateway>();
+		_ = services.AddScoped<SearchUsecase>();
 	}
 }

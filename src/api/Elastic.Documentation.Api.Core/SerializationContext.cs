@@ -4,10 +4,13 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.Search;
 
 namespace Elastic.Documentation.Api.Core;
 
 
 [JsonSerializable(typeof(AskAiRequest))]
+[JsonSerializable(typeof(SearchRequest))]
+[JsonSerializable(typeof(SearchResponse))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;
