@@ -1,4 +1,5 @@
-import { AskAiAnswer } from './AskAiAnswer'
+import { AskAiAnswer } from './AskAi/AskAiAnswer'
+import { SearchResults } from './Search/SearchResults'
 import { Suggestions } from './Suggestions'
 import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
 import {
@@ -9,6 +10,7 @@ import {
     EuiHorizontalRule,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import * as React from 'react'
 
 export const SearchOrAskAiModal = () => {
@@ -16,8 +18,10 @@ export const SearchOrAskAiModal = () => {
     const askAiTerm = useAskAiTerm()
     const { setSearchTerm, submitAskAiTerm } = useSearchActions()
 
+    const queryClient = new QueryClient()
+
     return (
-        <>
+        <QueryClientProvider client={queryClient}>
             <EuiFieldSearch
                 fullWidth
                 placeholder="Search the docs or ask Elastic Docs AI Assistant"
@@ -30,6 +34,7 @@ export const SearchOrAskAiModal = () => {
                 autoFocus={true}
             />
             <EuiSpacer size="m" />
+            <SearchResults />
             {askAiTerm ? <AskAiAnswer /> : <Suggestions />}
             <EuiHorizontalRule margin="m" />
             <div
@@ -54,6 +59,6 @@ export const SearchOrAskAiModal = () => {
                     This feature is in beta. Got feedback? We'd love to hear it!
                 </EuiText>
             </div>
-        </>
+        </QueryClientProvider>
     )
 }

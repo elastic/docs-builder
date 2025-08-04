@@ -1,4 +1,4 @@
-import { useSearchActions, useSearchTerm } from './search.store'
+import { useSearchActions, useSearchTerm } from '../search.store'
 import { EuiButton, EuiSpacer, EuiText, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'

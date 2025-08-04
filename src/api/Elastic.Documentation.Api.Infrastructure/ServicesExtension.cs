@@ -5,7 +5,9 @@
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
+using Elastic.Documentation.Api.Infrastructure.Adapters.Search;
 using Elastic.Documentation.Api.Infrastructure.Aws;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,6 +63,7 @@ public static class ServicesExtension
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddParameterProvider(services, appEnv);
 		AddAskAiUsecase(services, appEnv);
+		AddSearchUsecase(services, appEnv);
 	}
 
 	// https://docs.aws.amazon.com/systems	-manager/latest/userguide/ps-integration-lambda-extensions.html
@@ -105,5 +108,12 @@ public static class ServicesExtension
 		_ = services.AddScoped<LlmGatewayOptions>();
 		_ = services.AddScoped<AskAiUsecase>();
 		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
+	}
+	private static void AddSearchUsecase(IServiceCollection services, AppEnv appEnv)
+	{
+		var logger = GetLogger(services);
+		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
+		_ = services.AddScoped<ISearchGateway, MockSearchGateway>();
+		_ = services.AddScoped<SearchUsecase>();
 	}
 }

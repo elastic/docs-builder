@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.ServiceDefaults;
 
@@ -27,4 +28,6 @@ app.Run();
 [JsonSerializable(typeof(APIGatewayProxyRequest))]
 [JsonSerializable(typeof(APIGatewayProxyResponse))]
 [JsonSerializable(typeof(AskAiRequest))]
+[JsonSerializable(typeof(SearchRequest))]
+[JsonSerializable(typeof(SearchResponse))]
 internal sealed partial class LambdaJsonSerializerContext : JsonSerializerContext;
