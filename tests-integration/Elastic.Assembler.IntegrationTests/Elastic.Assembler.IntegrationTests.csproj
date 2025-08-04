@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj" />
-      <ProjectReference Include="..\..\src\tooling\docs-assembler\docs-assembler.csproj" />
-      <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj" />
-      <ProjectReference Include="..\Elastic.Documentation.Aspire\Elastic.Documentation.Aspire.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
+    <ProjectReference Include="..\..\src\tooling\docs-assembler\docs-assembler.csproj"/>
+    <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj"/>
+    <ProjectReference Include="..\Elastic.Documentation.Aspire\Elastic.Documentation.Aspire.csproj"/>
+  </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Aspire.Hosting.Testing" />
-      <PackageReference Include="InMemoryLogger" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Testing"/>
+    <PackageReference Include="InMemoryLogger"/>
+  </ItemGroup>
 
 </Project>

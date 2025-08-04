@@ -14,7 +14,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Assembler.IntegrationTests;
 
-
 public class DocumentationFixture : IAsyncLifetime
 {
 	public DistributedApplication DistributedApplication { get; private set; } = null!;
@@ -49,7 +48,6 @@ public class DocumentationFixture : IAsyncLifetime
 	}
 }
 
-
 public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {
 	[Fact]
@@ -68,7 +66,7 @@ public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper ou
 	{
 		GC.SuppressFinalize(this);
 		if (TestContext.Current.TestState?.Result is TestResult.Passed)
-		 	return default;
+			return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			output.WriteLine(resource.Message);
 		return default;
