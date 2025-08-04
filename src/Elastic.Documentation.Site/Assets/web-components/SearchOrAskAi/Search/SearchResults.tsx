@@ -2,13 +2,9 @@ import { useSearchTerm } from '../search.store'
 import { useSearchQuery } from './useSearchQuery'
 import {
     EuiButton,
-    EuiFlexGroup,
-    EuiFlexItem,
-    EuiIcon,
     EuiLoadingSpinner,
     EuiSpacer,
     EuiText,
-    EuiTextBlockTruncate,
     useEuiTheme,
 } from '@elastic/eui'
 import { css } from '@emotion/react'

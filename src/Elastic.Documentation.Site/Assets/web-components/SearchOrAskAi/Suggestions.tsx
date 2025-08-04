@@ -1,6 +1,5 @@
 import { AskAiSuggestions } from './AskAi/AskAiSuggestions'
 import { SearchSuggestions } from './Search/SearchSuggestions'
-import { useSearchQuery } from './Search/useSearchQuery'
 import { useSearchTerm } from './search.store'
 import { EuiHorizontalRule } from '@elastic/eui'
 import * as React from 'react'
