@@ -10,12 +10,12 @@ using InMemLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-[assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.AssembleFixture))]
+[assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.DocumentationFixture))]
 
 namespace Elastic.Assembler.IntegrationTests;
 
 
-public class AssembleFixture : IAsyncLifetime
+public class DocumentationFixture : IAsyncLifetime
 {
 	public DistributedApplication DistributedApplication { get; private set; } = null!;
 
@@ -50,10 +50,10 @@ public class AssembleFixture : IAsyncLifetime
 }
 
 
-public class DatabaseTestClass1(AssembleFixture fixture, ITestOutputHelper output) : IAsyncLifetime
+public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {
 	[Fact]
-	public async Task X()
+	public async Task AssertRequestToRootReturnsData()
 	{
 		_ = await fixture.DistributedApplication.ResourceNotifications
 			.WaitForResourceHealthyAsync("DocsBuilderServeStatic", cancellationToken: TestContext.Current.CancellationToken);
@@ -67,8 +67,8 @@ public class DatabaseTestClass1(AssembleFixture fixture, ITestOutputHelper outpu
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		// if (TestContext.Current.TestState?.Result is TestResult.Passed)
-		// 	return default;
+		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		 	return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			output.WriteLine(resource.Message);
 		return default;
