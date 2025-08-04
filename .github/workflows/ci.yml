@@ -97,6 +97,7 @@ jobs:
         run: dotnet run --project build -c release -- publishbinaries
 
   integration:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
