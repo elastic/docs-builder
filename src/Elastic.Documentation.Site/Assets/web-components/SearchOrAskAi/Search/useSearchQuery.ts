@@ -1,7 +1,7 @@
 import { useSearchTerm } from '../search.store'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
-import { z } from 'zod'
+import * as z from 'zod'
 
 const SearchResultItem = z.object({
     url: z.string(),
