@@ -2,7 +2,7 @@
 
 * `preview`
 * `beta`
+* `ga`
 * `deprecated`
 * `removed`
 * `unavailable`
-* `ga`
