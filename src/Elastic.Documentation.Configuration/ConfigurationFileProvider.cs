@@ -68,7 +68,6 @@ public partial class ConfigurationFileProvider
 
 		var spacing = -1;
 		var reindenting = -1;
-		var breakingLine = string.Empty;
 		foreach (var l in _fileSystem.File.ReadAllLines(NavigationFile.FullName))
 		{
 			var line = l;
@@ -95,10 +94,7 @@ public partial class ConfigurationFileProvider
 			{
 				var matches = Regex.Match(line, $@"^(?<spacing>\s+)-\s?toc:\s?(?:{targets})\:");
 				if (matches.Success)
-				{
 					spacing = matches.Groups["spacing"].Value.Length;
-					breakingLine = line;
-				}
 				if (spacing == 0)
 					spacing = -1;
 			}
