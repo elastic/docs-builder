@@ -1,4 +1,4 @@
-import { useSearchTerm } from './search.store'
+import { useSearchTerm } from '../search.store'
 import { useSearchQuery } from './useSearchQuery'
 import {
     EuiButton,

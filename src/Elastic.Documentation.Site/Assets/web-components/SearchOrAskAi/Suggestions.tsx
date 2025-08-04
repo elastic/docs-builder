@@ -1,5 +1,5 @@
-import { AskAiSuggestions } from './AskAiSuggestions'
-import { SearchSuggestions } from './SearchSuggestions'
+import { AskAiSuggestions } from './AskAi/AskAiSuggestions'
+import { SearchSuggestions } from './Search/SearchSuggestions'
 import { useSearchTerm } from './search.store'
 import { EuiHorizontalRule } from '@elastic/eui'
 import * as React from 'react'
