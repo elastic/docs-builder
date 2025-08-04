@@ -39,7 +39,7 @@ public static class MappingsExtension
 				Query = query
 			};
 			var searchResponse = await searchUsecase.Search(searchRequest, ctx);
-			return searchResponse;
+			return Results.Ok(searchResponse);
 		});
 	}
 }

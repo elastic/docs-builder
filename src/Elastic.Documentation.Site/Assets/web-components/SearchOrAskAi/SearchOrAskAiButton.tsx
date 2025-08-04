@@ -83,7 +83,7 @@ export const SearchOrAskAiButton = () => {
                                 truncation="end"
                             />
                         ) : (
-                            'Search docs or ask AI'
+                            'Search or ask AI'
                         )}
                     </span>
                 </EuiText>

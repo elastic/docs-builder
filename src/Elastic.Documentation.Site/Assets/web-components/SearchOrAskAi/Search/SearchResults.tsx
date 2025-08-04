@@ -16,7 +16,7 @@ export const SearchResults = () => {
     const { euiTheme } = useEuiTheme()
 
     if (!searchTerm) {
-        return <></>
+        return
     }
 
     if (error) {
