@@ -24,6 +24,10 @@ export const useSearchQuery = () => {
     return useQuery<SearchResponse>({
         queryKey: ['search', { searchTerm: debouncedSearchTerm }],
         queryFn: async () => {
+            if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
+                return SearchResponse.parse({ results: [], totalResults: 0 })
+            }
+
             const response = await fetch(
                 '/docs/_api/v1/search?q=' +
                     encodeURIComponent(debouncedSearchTerm)
