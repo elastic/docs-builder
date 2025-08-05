@@ -30,9 +30,13 @@ var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>("ApiLamb
 	.WaitFor(elasticsearch)
 	.WithReference(elasticsearch);
 
-
 var indexElasticsearch = builder.AddProject<Projects.docs_assembler>("DocsAssemblerElasticsearch")
 	.WithArgs(["repo", "build-all", "--exporters", "html,elasticsearch", .. globalArguments])
+	.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearch.GetEndpoint("http"))
+	.WithEnvironment(context =>
+	{
+		context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearch.Resource.PasswordParameter;
+	})
 	.WithReference(elasticsearch)
 	.WithExplicitStart()
 	.WaitFor(elasticsearch)

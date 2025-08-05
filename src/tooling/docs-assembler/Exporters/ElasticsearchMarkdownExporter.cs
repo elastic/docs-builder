@@ -8,6 +8,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Catalog;
 using Elastic.Ingest.Elasticsearch.Semantic;
 using Elastic.Markdown.Exporters;
 using Elastic.Transport;
@@ -19,7 +20,7 @@ namespace Documentation.Assembler.Exporters;
 public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, DiagnosticsCollector collector, DocumentationEndpoints endpoints)
 	: IMarkdownExporter, IDisposable
 {
-	private SemanticIndexChannel<DocumentationDocument>? _channel;
+	private CatalogIndexChannel<DocumentationDocument>? _channel;
 	private readonly ILogger<ElasticsearchMarkdownExporter> _logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 
 	public async ValueTask StartAsync(Cancel ctx = default)
@@ -29,14 +30,18 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, Diagnostic
 
 		var configuration = new ElasticsearchConfiguration(endpoints.Elasticsearch)
 		{
-			//Uncomment to see the requests with Fiddler
-			//ProxyAddress = "http://localhost:8866"
+			Authentication = endpoints.ElasticsearchApiKey is { } apiKey
+				? new ApiKey(apiKey)
+				: endpoints.ElasticsearchUsername is { } username && endpoints.ElasticsearchPassword is { } password
+					? new BasicAuthentication(username, password)
+					: null
 		};
+
 		var transport = new DistributedTransport(configuration);
 		//The max num threads per allocated node, from testing its best to limit our max concurrency
 		//producing to this number as well
 		var indexNumThreads = 8;
-		var options = new SemanticIndexChannelOptions<DocumentationDocument>(transport)
+		var options = new CatalogIndexChannelOptions<DocumentationDocument>(transport)
 		{
 			BufferOptions =
 			{
@@ -45,28 +50,26 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, Diagnostic
 				ExportMaxRetries = 3
 			},
 			SerializerContext = SourceGenerationContext.Default,
+			// IndexNumThreads = indexNumThreads,
 			IndexFormat = "documentation-{0:yyyy.MM.dd.HHmmss}",
-			IndexNumThreads = indexNumThreads,
 			ActiveSearchAlias = "documentation",
+			ExportBufferCallback = () => _logger.LogInformation("Exported buffer to Elasticsearch"),
 			ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document"),
 			ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2),
-			GetMapping = (inferenceId, _) => // language=json
+			//GetMapping = (inferenceId, _) => // language=json
+			GetMapping = () => // language=json
 				$$"""
 				  {
 				    "properties": {
 				      "title": { "type": "text" },
 				      "body": {
 				        "type": "text"
-				      },
-				      "abstract": {
-				         "type": "semantic_text",
-				         "inference_id": "{{inferenceId}}"
 				      }
 				    }
 				  }
 				  """
 		};
-		_channel = new SemanticIndexChannel<DocumentationDocument>(options);
+		_channel = new CatalogIndexChannel<DocumentationDocument>(options);
 		_logger.LogInformation($"Bootstrapping {nameof(SemanticIndexChannel<DocumentationDocument>)} Elasticsearch target for indexing");
 		_ = await _channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 	}
@@ -123,16 +126,12 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, Diagnostic
 			return true;
 
 		var url = file.Url;
-		// integrations are too big, we need to sanitize the fieldsets and example docs out of these.
-		if (url.Contains("/reference/integrations"))
-			return true;
 
-		// TODO!
 		var body = fileContext.LLMText ??= "string.Empty";
 		var doc = new DocumentationDocument
 		{
 			Title = file.Title,
-			//Body = body,
+			Body = body,
 			Abstract = !string.IsNullOrEmpty(body)
 				? body[..Math.Min(body.Length, 400)]
 				: string.Empty,
