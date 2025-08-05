@@ -28,6 +28,9 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfig
 		foreach (var repository in repositories)
 		{
 			var repositoryName = repository.Name;
+			if (declaredRepositories.Contains(repositoryName))
+				continue;
+
 			_ = declaredRepositories.Add(repositoryName);
 
 			if (repository.Skip)
