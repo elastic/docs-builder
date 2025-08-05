@@ -3,18 +3,25 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Actions.Core.Extensions;
 using ConsoleAppFramework;
 using Documentation.Builder.Cli;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, (s, p) => { });
-ConsoleApp.ServiceProvider = serviceProvider;
+var builder = Host.CreateApplicationBuilder()
+	.AddDocumentationServiceDefaults(ref args)
+	.AddDocumentationToolingDefaults();
 
-var app = ConsoleApp.Create();
+var app = builder.ToConsoleAppBuilder();
 
 app.UseFilter<ReplaceLogFilter>();
+app.UseFilter<InfoLoggerFilter>();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 app.UseFilter<CheckForUpdatesFilter>();

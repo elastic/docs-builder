@@ -1,0 +1,51 @@
+name: Deploy API Lambda
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: 
+    
+permissions: 
+  contents: read
+
+jobs:
+  build:
+    permissions: 
+      contents: read
+    uses: ./.github/workflows/build-api-lambda.yml
+    
+  deploy:
+    permissions: 
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    needs: build
+    environment: docs-api-edge
+    env:
+      ZIP_FILE: api-lambda.zip
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v4
+        with:
+          name: api-lambda-binary
+          
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v4
+        with:
+          name: api-lambda-binary # Defined in build-api-lambda.yml
+
+      - name: Create zip
+        run: |
+          zip -j "${ZIP_FILE}" ./bootstrap
+
+      - uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-api-deployer-edge
+          aws-region: us-east-1
+
+      - name: Upload Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name elastic-docs-v3-edge-api \
+            --zip-file "fileb://${ZIP_FILE}"

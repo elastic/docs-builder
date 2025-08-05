@@ -35,9 +35,9 @@ public class ReaderTests
 		};
 		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
 
-		context.Configuration.OpenApiSpecification.Should().NotBeNull();
+		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 
-		var x = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);
+		var x = await OpenApiReader.Create(context.Configuration.OpenApiSpecifications.First().Value);
 
 		x.Should().NotBeNull();
 		x.BaseUri.Should().NotBeNull();
@@ -63,11 +63,12 @@ public class ReaderTests
 		var collector = new DiagnosticsCollector([]);
 		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-		context.Configuration.OpenApiSpecification.Should().NotBeNull();
+		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 
-		var openApiDocument = await OpenApiReader.Create(context.Configuration.OpenApiSpecification);
+		var (urlPathPrefix, fi) = context.Configuration.OpenApiSpecifications.First();
+		var openApiDocument = await OpenApiReader.Create(fi);
 		openApiDocument.Should().NotBeNull();
-		var navigation = generator.CreateNavigation(openApiDocument);
+		var navigation = generator.CreateNavigation(urlPathPrefix, openApiDocument);
 
 		navigation.Should().NotBeNull();
 	}

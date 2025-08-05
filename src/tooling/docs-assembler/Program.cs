@@ -7,20 +7,24 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-await using var serviceProvider = DocumentationTooling.CreateServiceProvider(ref args, (s, p) =>
-{
-	_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-});
+var builder = Host.CreateApplicationBuilder()
+	.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	{
+		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+	})
+	.AddDocumentationToolingDefaults();
 
-ConsoleApp.ServiceProvider = serviceProvider;
+var app = builder.ToConsoleAppBuilder();
 
-var app = ConsoleApp.Create();
 app.UseFilter<ReplaceLogFilter>();
+app.UseFilter<InfoLoggerFilter>();
 app.UseFilter<StopwatchFilter>();
 app.UseFilter<CatchExceptionFilter>();
 
@@ -31,7 +35,7 @@ app.Add<ContentSourceCommands>("content-source");
 app.Add<DeployCommands>("deploy");
 app.Add<LegacyDocsCommands>("legacy-docs");
 
-var githubActions = ConsoleApp.ServiceProvider.GetService<ICoreService>();
+var githubActions = ConsoleApp.ServiceProvider!.GetService<ICoreService>();
 var command = githubActions?.GetInput("COMMAND");
 if (!string.IsNullOrEmpty(command))
 	args = command.Split(' ');

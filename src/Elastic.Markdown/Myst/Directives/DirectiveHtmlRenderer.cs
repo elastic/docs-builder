@@ -138,7 +138,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				Target = img.Target,
 				ImageUrl = img.ImageUrl
 			}).ToList(),
-			FixedHeight = block.FixedHeight
+			MaxHeight = block.MaxHeight
 		});
 		RenderRazorSlice(slice, renderer);
 	}

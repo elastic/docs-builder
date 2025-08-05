@@ -10,7 +10,6 @@
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <IsPublishable>true</IsPublishable>
-    <StartupHookSupport Condition="'$(Configuration)' == 'Debug'">true</StartupHookSupport>
   </PropertyGroup>
   
   <ItemGroup>

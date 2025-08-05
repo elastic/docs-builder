@@ -17,6 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" />
     <PackageReference Include="AWSSDK.S3"/>
     <PackageReference Include="ConsoleAppFramework.Abstractions"/>
     <PackageReference Include="ConsoleAppFramework" />

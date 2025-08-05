@@ -41,10 +41,10 @@ internal sealed class ContentSourceCommands(
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
 		var links = await fetcher.FetchLinkIndex(ctx);
-		var repositories = context.Configuration.ReferenceRepositories.Values.Concat<Repository>([context.Configuration.Narrative]).ToList();
+		var repositories = context.Configuration.AvailableRepositories;
 
 		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
-		foreach (var repository in repositories)
+		foreach (var repository in repositories.Values)
 		{
 			if (!links.Repositories.TryGetValue(repository.Name, out var registryMapping))
 			{

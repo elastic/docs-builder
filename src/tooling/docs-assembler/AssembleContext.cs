@@ -31,6 +31,8 @@ public class AssembleContext
 	/// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
+	public bool IgnorePrivateRepositories { get; init; }
+
 	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(

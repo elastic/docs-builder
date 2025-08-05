@@ -47,7 +47,7 @@ public record GlobalNavigation : IPositionalNavigation
 
 		var navigationIndex = 0;
 		var allNavigationItems = new HashSet<INavigationItem>();
-		UpdateParent(allNavigationItems, NavigationItems, null);
+		UpdateParent(allNavigationItems, NavigationItems, null, null);
 		UpdateNavigationIndex(NavigationItems, ref navigationIndex);
 		TopLevelItems = NavigationItems.OfType<TableOfContentsTree>().Where(t => !t.Hidden).ToList();
 		NavigationLookup = TopLevelItems.ToDictionary(kv => kv.Source, kv => kv);
@@ -64,9 +64,12 @@ public record GlobalNavigation : IPositionalNavigation
 	private void UpdateParent(
 		HashSet<INavigationItem> allNavigationItems,
 		IReadOnlyCollection<INavigationItem> navigationItems,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem>? topLevelNavigation
 	)
 	{
+		if (parent is IRootNavigationItem<INavigationModel, INavigationItem> tree)
+			topLevelNavigation ??= tree;
 		foreach (var item in navigationItems)
 		{
 			switch (item)
@@ -74,13 +77,17 @@ public record GlobalNavigation : IPositionalNavigation
 				case FileNavigationItem fileNavigationItem:
 					if (parent is not null)
 						fileNavigationItem.Parent = parent;
+					if (topLevelNavigation is not null)
+						fileNavigationItem.Model.NavigationRoot = topLevelNavigation;
 					_ = allNavigationItems.Add(fileNavigationItem);
 					break;
 				case DocumentationGroup documentationGroup:
 					if (parent is not null)
 						documentationGroup.Parent = parent;
+					if (topLevelNavigation is not null)
+						documentationGroup.Index.NavigationRoot = topLevelNavigation;
 					_ = allNavigationItems.Add(documentationGroup);
-					UpdateParent(allNavigationItems, documentationGroup.NavigationItems, documentationGroup);
+					UpdateParent(allNavigationItems, documentationGroup.NavigationItems, documentationGroup, topLevelNavigation);
 					break;
 				case ExternalLinkNavigationItem extLink:
 					if (parent is not null)

@@ -42,6 +42,39 @@ internal sealed class RepositoryCommands(
 		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
 
+	/// <summary> Clone the configuration folder </summary>
+	/// <param name="gitRef">The git reference of the config, defaults to 'main'</param>
+	[Command("init-config")]
+	public async Task<int> CloneConfigurationFolder(string? gitRef = null, Cancel ctx = default)
+	{
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
+
+		var fs = new FileSystem();
+		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "config-clone");
+		var checkoutFolder = fs.DirectoryInfo.New(cachedPath);
+		var cloner = new RepositorySourcer(logFactory, checkoutFolder, fs, collector);
+
+		// relies on the embedded configuration, but we don't expect this to change
+		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
+		repository = repository with
+		{
+			SparsePaths = ["config"]
+		};
+		if (string.IsNullOrEmpty(gitRef))
+			gitRef = "main";
+
+		_log.LogInformation("Cloning configuration ({GitReference})", gitRef);
+		var checkout = cloner.CloneRef(repository, gitRef, appendRepositoryName: false);
+		_log.LogInformation("Cloned configuration ({GitReference}) to {ConfigurationFolder}", checkout.HeadReference, checkout.Directory.FullName);
+
+		var gitRefInformationFile = Path.Combine(cachedPath, "config", "git-ref.txt");
+		await fs.File.WriteAllTextAsync(gitRefInformationFile, checkout.HeadReference, ctx);
+
+		await collector.StopAsync(ctx);
+		return collector.Errors;
+	}
+
+
 	/// <summary> Clones all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
@@ -136,7 +169,7 @@ internal sealed class RepositoryCommands(
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation);
+		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 

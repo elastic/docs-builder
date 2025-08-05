@@ -14,6 +14,10 @@
 			}
 			<a href="@Model.Link("/")" class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
 		</div>
+		@if (Model.Features.SearchOrAskAiEnabled)
+		{
+			<search-or-ask-ai></search-or-ask-ai>
+		}
 		<ul class="flex gap-6">
 			<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 				<a

@@ -16,7 +16,6 @@ using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.RepresentationModel;
 
 namespace Documentation.Assembler;
@@ -39,6 +38,7 @@ public record TocConfigurationMapping
 public class AssembleSources
 {
 	public AssembleContext AssembleContext { get; }
+
 	public FrozenDictionary<string, AssemblerDocumentationSet> AssembleSets { get; }
 
 	public FrozenDictionary<Uri, NavigationTocMapping> NavigationTocMappings { get; }
@@ -154,7 +154,8 @@ public class AssembleSources
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
 	{
 		var dictionary = new Dictionary<Uri, NavigationTocMapping>();
-		var reader = new YamlStreamReader(context.ConfigurationFileProvider.NavigationFile, context.Collector);
+		var file = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration.PrivateRepositories);
+		var reader = new YamlStreamReader(file, context.Collector);
 		var entries = new List<KeyValuePair<Uri, NavigationTocMapping>>();
 		foreach (var entry in reader.Read())
 		{

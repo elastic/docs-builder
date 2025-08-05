@@ -2,37 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-    <OutputType>Exe</OutputType>
-
-    <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
-    <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit.v3" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="GitHubActionsTestLogger" />
     <PackageReference Include="AngleSharp.Diffing" />
-
-    <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="JetBrains.Annotations" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit"/>
   </ItemGroup>
 
 </Project>
