@@ -29,6 +29,7 @@ internal sealed class RepositoryCommands(
 	AssemblyConfiguration assemblyConfiguration,
 	VersionsConfiguration versionsConfig,
 	ConfigurationFileProvider configurationFileProvider,
+	DocumentationEndpoints endpoints,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
@@ -173,7 +174,7 @@ internal sealed class RepositoryCommands(
 		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
-		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, endpoints, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
 		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);

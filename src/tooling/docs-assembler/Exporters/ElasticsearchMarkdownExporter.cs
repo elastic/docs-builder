@@ -10,27 +10,24 @@ using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Semantic;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Exporters;
 
-public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
+public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, DiagnosticsCollector collector, DocumentationEndpoints endpoints)
+	: IMarkdownExporter, IDisposable
 {
-	private readonly DiagnosticsCollector _collector;
-	private readonly SemanticIndexChannel<DocumentationDocument> _channel;
-	private readonly ILogger<ElasticsearchMarkdownExporter> _logger;
+	private SemanticIndexChannel<DocumentationDocument>? _channel;
+	private readonly ILogger<ElasticsearchMarkdownExporter> _logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 
-	public ElasticsearchMarkdownExporter(ILoggerFactory logFactory, DiagnosticsCollector collector)
+	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		_collector = collector;
-		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
+		if (_channel != null)
+			return;
 
-		var serviceDiscovery = new HttpServiceEndpointResolver();
-		var endpoint = new Uri("https+http://elasticsearch");
-		var configuration = new ElasticsearchConfiguration(endpoint)
+		var configuration = new ElasticsearchConfiguration(endpoints.Elasticsearch)
 		{
 			//Uncomment to see the requests with Fiddler
 			//ProxyAddress = "http://localhost:8866"
@@ -54,36 +51,35 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 			ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document"),
 			ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2),
 			GetMapping = (inferenceId, _) => // language=json
-			$$"""
-				{
-				  "properties": {
-				    "title": { "type": "text" },
-				    "body": {
-				      "type": "text"
-				    },
-				    "abstract": {
-				       "type": "semantic_text",
-				       "inference_id": "{{inferenceId}}"
+				$$"""
+				  {
+				    "properties": {
+				      "title": { "type": "text" },
+				      "body": {
+				        "type": "text"
+				      },
+				      "abstract": {
+				         "type": "semantic_text",
+				         "inference_id": "{{inferenceId}}"
+				      }
 				    }
 				  }
-				}
-				"""
+				  """
 		};
 		_channel = new SemanticIndexChannel<DocumentationDocument>(options);
-	}
-
-	public async ValueTask StartAsync(Cancel ctx = default)
-	{
 		_logger.LogInformation($"Bootstrapping {nameof(SemanticIndexChannel<DocumentationDocument>)} Elasticsearch target for indexing");
 		_ = await _channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 	}
 
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
+		if (_channel is null)
+			return;
+
 		_logger.LogInformation("Waiting to drain all inflight exports to Elasticsearch");
 		var drained = await _channel.WaitForDrainAsync(null, ctx);
 		if (!drained)
-			_collector.EmitGlobalError("Elasticsearch export: failed to complete indexing in a timely fashion while shutting down");
+			collector.EmitGlobalError("Elasticsearch export: failed to complete indexing in a timely fashion while shutting down");
 
 		_logger.LogInformation("Refreshing target index {Index}", _channel.IndexName);
 		var refreshed = await _channel.RefreshAsync(ctx);
@@ -93,18 +89,24 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 		_logger.LogInformation("Applying aliases to {Index}", _channel.IndexName);
 		var swapped = await _channel.ApplyAliasesAsync(ctx);
 		if (!swapped)
-			_collector.EmitGlobalError($"{nameof(ElasticsearchMarkdownExporter)} failed to apply aliases to index {_channel.IndexName}");
+			collector.EmitGlobalError($"{nameof(ElasticsearchMarkdownExporter)} failed to apply aliases to index {_channel.IndexName}");
 	}
 
 	public void Dispose()
 	{
-		_channel.Complete();
-		_channel.Dispose();
+		if (_channel is not null)
+		{
+			_channel.Complete();
+			_channel.Dispose();
+		}
 		GC.SuppressFinalize(this);
 	}
 
 	private async ValueTask<bool> TryWrite(DocumentationDocument document, Cancel ctx = default)
 	{
+		if (_channel is null)
+			return false;
+
 		if (_channel.TryWrite(document))
 			return true;
 
@@ -140,5 +142,11 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	}
 
 	/// <inheritdoc />
-	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx) => await _channel.RefreshAsync(ctx);
+	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
+	{
+		if (_channel is null)
+			return false;
+
+		return await _channel.RefreshAsync(ctx);
+	}
 }

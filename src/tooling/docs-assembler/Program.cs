@@ -21,7 +21,11 @@ var builder = Host.CreateApplicationBuilder()
 	})
 	.AddDocumentationToolingDefaults();
 
-var app = builder.ToConsoleAppBuilder();
+var app = builder.ToConsoleAppBuilder((s) =>
+{
+	ConsoleApp.ServiceProvider = s;
+	return ConsoleApp.Create();
+});
 
 app.UseFilter<ReplaceLogFilter>();
 app.UseFilter<InfoLoggerFilter>();

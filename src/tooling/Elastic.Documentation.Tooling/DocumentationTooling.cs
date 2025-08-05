@@ -2,17 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using Actions.Core.Extensions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.ServiceDiscovery;
 
 namespace Elastic.Documentation.Tooling;
 
@@ -28,8 +25,31 @@ public static class DocumentationTooling
 			.ConfigureHttpClientDefaults(static client =>
 			{
 				_ = client.AddServiceDiscovery();
+			})
+			.AddSingleton(sp =>
+			{
+				var resolver = sp.GetRequiredService<ServiceEndpointResolver>();
+				var uri = ResolveServiceEndpoint(resolver, "http://localhost:9200");
+				return new DocumentationEndpoints
+				{
+					Elasticsearch = uri
+				};
 			});
 
+
 		return builder;
+	}
+
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
+	private static Uri ResolveServiceEndpoint(ServiceEndpointResolver resolver, string fallback)
+	{
+		var get = resolver.GetEndpointsAsync("https+http://elasticsearch", Cancel.None);
+		var endpoint = get.IsCompletedSuccessfully ? get.Result : get.GetAwaiter().GetResult();
+		if (endpoint.Endpoints.Count == 0)
+			return new Uri(fallback);
+		if (endpoint.Endpoints[0].EndPoint.AddressFamily is AddressFamily.Unknown or AddressFamily.Unspecified)
+			return new Uri(fallback);
+		var uri = new Uri(endpoint.Endpoints[0].ToString() ?? throw new InvalidOperationException("No 'elasticsearch' endpoints found"));
+		return uri;
 	}
 }

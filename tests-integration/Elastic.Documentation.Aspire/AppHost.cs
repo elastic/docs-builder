@@ -33,6 +33,7 @@ var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>("ApiLamb
 
 var indexElasticsearch = builder.AddProject<Projects.docs_assembler>("DocsAssemblerElasticsearch")
 	.WithArgs(["repo", "build-all", "--exporters", "html,elasticsearch", .. globalArguments])
+	.WithReference(elasticsearch)
 	.WithExplicitStart()
 	.WaitFor(elasticsearch)
 	.WaitForCompletion(cloneAll);

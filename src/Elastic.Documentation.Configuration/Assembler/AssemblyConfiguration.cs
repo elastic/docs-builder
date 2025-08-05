@@ -27,9 +27,6 @@ public record AssemblyConfiguration
 			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
 			foreach (var (name, r) in config.ReferenceRepositories)
 			{
-				if (name == "cloud")
-				{
-				}
 				var repository = RepositoryDefaults(r, name);
 				config.ReferenceRepositories[name] = repository;
 			}

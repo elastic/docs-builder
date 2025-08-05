@@ -6,13 +6,13 @@ using System.Collections.Frozen;
 using System.Text.Json;
 using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
@@ -31,6 +31,7 @@ public class AssemblerBuilder(
 	GlobalNavigation navigation,
 	GlobalNavigationHtmlWriter writer,
 	GlobalNavigationPathProvider pathProvider,
+	DocumentationEndpoints documentationEndpoints,
 	ILegacyUrlMapper? legacyUrlMapper
 )
 {
@@ -48,7 +49,7 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var esExporter = new ElasticsearchMarkdownExporter(logFactory, context.Collector);
+		var esExporter = new ElasticsearchMarkdownExporter(logFactory, context.Collector, documentationEndpoints);
 
 		var markdownExporters = new List<IMarkdownExporter>(3);
 		if (exportOptions.Contains(ExportOption.LLMText))
