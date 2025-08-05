@@ -23,7 +23,13 @@ public static class DocumentationTooling
 		_ = builder.Services
 			.AddGitHubActionsCore()
 			.AddSingleton<DiagnosticsChannel>()
-			.AddSingleton<DiagnosticsCollector>();
+			.AddSingleton<DiagnosticsCollector>()
+			.AddServiceDiscovery()
+			.ConfigureHttpClientDefaults(static client =>
+			{
+				_ = client.AddServiceDiscovery();
+			});
+
 		return builder;
 	}
 }

@@ -48,11 +48,7 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var esExporter =
-			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
-			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
-				? new ElasticsearchMarkdownExporter(logFactory, context.Collector, url, apiKey)
-				: null;
+		var esExporter = new ElasticsearchMarkdownExporter(logFactory, context.Collector);
 
 		var markdownExporters = new List<IMarkdownExporter>(3);
 		if (exportOptions.Contains(ExportOption.LLMText))

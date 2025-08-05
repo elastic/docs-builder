@@ -23,14 +23,17 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 	private readonly SemanticIndexChannel<DocumentationDocument> _channel;
 	private readonly ILogger<ElasticsearchMarkdownExporter> _logger;
 
-	public ElasticsearchMarkdownExporter(ILoggerFactory logFactory, DiagnosticsCollector collector, string url, string apiKey)
+	public ElasticsearchMarkdownExporter(ILoggerFactory logFactory, DiagnosticsCollector collector)
 	{
 		_collector = collector;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
-		var configuration = new ElasticsearchConfiguration(new Uri(url), new ApiKey(apiKey))
+
+		var serviceDiscovery = new HttpServiceEndpointResolver();
+		var endpoint = new Uri("https+http://elasticsearch");
+		var configuration = new ElasticsearchConfiguration(endpoint)
 		{
 			//Uncomment to see the requests with Fiddler
-			ProxyAddress = "http://localhost:8866"
+			//ProxyAddress = "http://localhost:8866"
 		};
 		var transport = new DistributedTransport(configuration);
 		//The max num threads per allocated node, from testing its best to limit our max concurrency
