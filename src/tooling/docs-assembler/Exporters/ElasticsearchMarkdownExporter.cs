@@ -122,20 +122,17 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, Diagnostic
 	{
 		var file = fileContext.SourceFile;
 		var document = fileContext.Document;
-		if (file.FileName.EndsWith(".toml", StringComparison.OrdinalIgnoreCase))
-			return true;
 
 		var url = file.Url;
 
-		var body = fileContext.LLMText ??= "string.Empty";
+		//use LLM text if it was already provided (because we run with both llm and elasticsearch output)
+		var body = fileContext.LLMText ??= LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 		var doc = new DocumentationDocument
 		{
 			Title = file.Title,
+			Url = url,
 			Body = body,
-			Abstract = !string.IsNullOrEmpty(body)
-				? body[..Math.Min(body.Length, 400)]
-				: string.Empty,
-			Url = url
+			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 		};
 		return await TryWrite(doc, ctx);
 	}

@@ -14,8 +14,8 @@ public record DocumentationDocument
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
-	[JsonPropertyName("abstract")]
-	public string? Abstract { get; set; }
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
 
 	[JsonPropertyName("headings")]
 	public string[] Headings { get; set; } = [];
@@ -26,4 +26,3 @@ public record DocumentationDocument
 	[JsonPropertyName("url")]
 	public string? Url { get; set; }
 }
-

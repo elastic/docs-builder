@@ -50,4 +50,5 @@ var serveStatic = builder.AddProject<Projects.docs_builder>("DocsBuilderServeSta
 	.WaitForCompletion(buildAll);
 
 
+
 builder.Build().Run();
