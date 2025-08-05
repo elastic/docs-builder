@@ -32,6 +32,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["disable-github-edit-link"] = value;
 	}
 
+	public bool SearchOrAskAiEnabled
+	{
+		get => IsEnabled("search-or-ask-ai");
+		set => _featureFlags["search-or-ask-ai"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

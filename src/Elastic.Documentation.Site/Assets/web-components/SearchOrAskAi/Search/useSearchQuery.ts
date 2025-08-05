@@ -1,7 +1,7 @@
 import { useSearchTerm } from '../search.store'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
-import { z } from 'zod'
+import * as z from 'zod'
 
 const SearchResultItem = z.object({
     url: z.string(),
@@ -24,8 +24,13 @@ export const useSearchQuery = () => {
     return useQuery<SearchResponse>({
         queryKey: ['search', { searchTerm: debouncedSearchTerm }],
         queryFn: async () => {
+            if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
+                return SearchResponse.parse({ results: [], totalResults: 0 })
+            }
+
             const response = await fetch(
-                '/_api/v1/search?q=' + encodeURIComponent(debouncedSearchTerm)
+                '/docs/_api/v1/search?q=' +
+                    encodeURIComponent(debouncedSearchTerm)
             )
             if (!response.ok) {
                 throw new Error(

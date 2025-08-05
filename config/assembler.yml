@@ -25,6 +25,7 @@ environments:
       enabled: false
     feature_flags:
       LAZY_LOAD_NAVIGATION: true
+      SEARCH_OR_ASK_AI: true
   dev:
     uri: http://localhost:4000
     content_source: current

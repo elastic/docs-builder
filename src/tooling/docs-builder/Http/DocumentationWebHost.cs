@@ -135,7 +135,7 @@ public class DocumentationWebHost
 			ServeApiFile(holder, slug, ctx));
 
 
-		var apiV1 = _webApplication.MapGroup("/_api/v1");
+		var apiV1 = _webApplication.MapGroup("/docs/_api/v1");
 		apiV1.MapElasticDocsApiEndpoints();
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
