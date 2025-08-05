@@ -15,7 +15,7 @@ versioning_systems:
   # Ece version updates are manual
   ece:
     base: 4.0
-    current: 4.1
+    current: 4.0.1
   ech: *all
   eck:
     base: 3.0
