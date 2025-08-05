@@ -11,6 +11,9 @@ on:
         required: false
         type: string
         default: ${{ github.ref }}
+        
+permissions: 
+  contents: read
 
 jobs: 
   build:
