@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Diagram;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
@@ -16,6 +17,7 @@ using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
@@ -142,11 +144,34 @@ public class DocumentationGenerator
 		_logger.LogInformation($"Generating links.json");
 		var linkReference = await GenerateLinkReference(ctx);
 
+		await CreateDiagramCachedFiles(ctx);
+		CleanupUnusedDiagrams();
+
 		// ReSharper disable once WithExpressionModifiesAllMembers
 		return result with
 		{
 			Redirects = linkReference.Redirects ?? []
 		};
+	}
+
+	/// <summary>
+	/// Downloads diagram files in parallel from Kroki
+	/// </summary>
+	public async Task CreateDiagramCachedFiles(Cancel ctx)
+	{
+		var downloadedCount = await DocumentationSet.DiagramRegistry.CreateDiagramCachedFiles(ctx);
+		if (downloadedCount > 0)
+			_logger.LogInformation("Downloaded {DownloadedCount} diagram files from Kroki", downloadedCount);
+	}
+
+	/// <summary>
+	/// Cleans up unused diagram files from the output directory
+	/// </summary>
+	public void CleanupUnusedDiagrams()
+	{
+		var cleanedCount = DocumentationSet.DiagramRegistry.CleanupUnusedDiagrams();
+		if (cleanedCount > 0)
+			_logger.LogInformation("Cleaned up {CleanedCount} unused diagram files", cleanedCount);
 	}
 
 	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)

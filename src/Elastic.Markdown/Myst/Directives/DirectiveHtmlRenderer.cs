@@ -294,8 +294,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default)
-			.GetAwaiter().GetResult();
+		var state = new ParserState(block.Build)
+		{
+			MarkdownSourcePath = snippet,
+			YamlFrontMatter = block.Context.YamlFrontMatter,
+			DocumentationFileLookup = block.Context.DocumentationFileLookup,
+			CrossLinkResolver = block.Context.CrossLinkResolver,
+			ParentMarkdownPath = parentPath,
+			DiagramRegistry = block.Context.DiagramRegistry
+		};
+		var document = MarkdownParser.ParseSnippetAsync(snippet, state, Cancel.None).GetAwaiter().GetResult();
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
@@ -330,7 +338,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			RenderMarkdown = s =>
 			{
-				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, s, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
+				var state = new ParserState(block.Build)
+				{
+					MarkdownSourcePath = block.IncludeFrom,
+					YamlFrontMatter = block.Context.YamlFrontMatter,
+					DocumentationFileLookup = block.Context.DocumentationFileLookup,
+					CrossLinkResolver = block.Context.CrossLinkResolver,
+					DiagramRegistry = block.Context.DiagramRegistry
+				};
+				var document = MarkdownParser.ParseMarkdownString(s, MarkdownParser.Pipeline, state);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 				return html;
 			}
