@@ -4,12 +4,20 @@ on:
     branches:
       - main
   workflow_dispatch: 
+    
+permissions: 
+  contents: read
 
 jobs:
   build:
+    permissions: 
+      contents: read
     uses: ./.github/workflows/build-api-lambda.yml
     
   deploy:
+    permissions: 
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     needs: build
     environment: docs-api-edge
