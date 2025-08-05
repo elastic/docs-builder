@@ -25,14 +25,14 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	public CheckoutResult GetAll()
 	{
 		var fs = context.ReadFileSystem;
-		var repositories = Configuration.ReferenceRepositories.Values.Concat<Repository>([Configuration.Narrative]);
+		var repositories = Configuration.AvailableRepositories;
 		var checkouts = new List<Checkout>();
 		var linkRegistrySnapshotPath = Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
 		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
-		foreach (var repo in repositories)
+		foreach (var repo in repositories.Values)
 		{
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
 			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(context.Collector, checkoutFolder);
@@ -68,12 +68,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
 
-		var repositories = new Dictionary<string, Repository>(Configuration.ReferenceRepositories)
-		{
-			{ NarrativeRepository.RepositoryName, Configuration.Narrative }
-		};
-
-		await Parallel.ForEachAsync(repositories,
+		await Parallel.ForEachAsync(Configuration.AvailableRepositories,
 			new ParallelOptions
 			{
 				CancellationToken = ctx,

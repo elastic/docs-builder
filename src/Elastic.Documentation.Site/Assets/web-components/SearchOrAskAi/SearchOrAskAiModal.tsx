@@ -1,4 +1,5 @@
-import { AskAiAnswer } from './AskAiAnswer'
+import { AskAiAnswer } from './AskAi/AskAiAnswer'
+import { SearchResults } from './Search/SearchResults'
 import { Suggestions } from './Suggestions'
 import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
 import {
@@ -30,6 +31,7 @@ export const SearchOrAskAiModal = () => {
                 autoFocus={true}
             />
             <EuiSpacer size="m" />
+            <SearchResults />
             {askAiTerm ? <AskAiAnswer /> : <Suggestions />}
             <EuiHorizontalRule margin="m" />
             <div

@@ -145,7 +145,7 @@ cd docs-content
 ```
 :::::
 
-:::::{step} Run docs-builder
+:::::{step} Run {{dbuild}}  
 
 Run the `docs-builder` binary with the `serve` command to build and serve the content set to [http://localhost:3000](http://localhost:3000). If necessary, specify the path to the `docset.yml` file that you want to build with `-p`.
 

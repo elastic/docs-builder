@@ -68,11 +68,15 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public string? Label { get; private set; }
 
+	private static readonly HashSet<string> AllowedUriHosts = ["epr.elastic.co"];
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Label = Prop("label", "name");
 		Alt = Prop("alt")?.ReplaceSubstitutions(context) ?? string.Empty;
-		Title = Prop("title")?.ReplaceSubstitutions(context);
+		// Use Alt as Title if no explicit Title is provided
+		var explicitTitle = Prop("title")?.ReplaceSubstitutions(context);
+		Title = string.IsNullOrEmpty(explicitTitle) ? Alt : explicitTitle;
 
 		Align = Prop("align");
 		Height = Prop("height", "h");
@@ -98,7 +102,9 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 		if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri) && uri.Scheme.StartsWith("http"))
 		{
-			this.EmitWarning($"{Directive} is using an external URI: {uri} ");
+			if (!AllowedUriHosts.Contains(uri.Host))
+				this.EmitWarning($"{Directive} is using an external URI: {uri} ");
+
 			Found = true;
 			ImageUrl = imageUrl;
 			return;

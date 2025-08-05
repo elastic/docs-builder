@@ -26,6 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
+    <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\..\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />

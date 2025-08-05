@@ -6,7 +6,23 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Westwind.AspNetCore.LiveReload;
 
+[assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Documentation.Builder.Http.HotReloadManager))]
+
 namespace Documentation.Builder.Http;
+
+public static class HotReloadManager
+{
+	public static void ClearCache(Type[]? _) => LiveReloadMiddleware.RefreshWebSocketRequest();
+
+	public static void UpdateApplication(Type[]? _) => Task.Run(async () =>
+	{
+		await Task.Delay(1000);
+		var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
+		Console.WriteLine("UpdateApplication");
+	});
+
+}
+
 
 public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGenerator, ILogger<ReloadGeneratorService> logger) : IHostedService, IDisposable
 {
@@ -22,6 +38,9 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
 		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
+#if DEBUG
+		directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName ?? throw new InvalidOperationException("No checkout directory");
+#endif
 		Logger.LogInformation("Start file watch on: {Directory}", directory);
 		var watcher = new FileSystemWatcher(directory)
 		{
@@ -40,6 +59,9 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 		watcher.Renamed += OnRenamed;
 		watcher.Error += OnError;
 
+#if DEBUG
+		watcher.Filters.Add("*.cshtml");
+#endif
 		watcher.Filters.Add("*.md");
 		watcher.Filters.Add("docset.yml");
 		watcher.IncludeSubdirectories = true;
@@ -73,6 +95,10 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 			Reload();
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
+#if DEBUG
+		if (e.FullPath.EndsWith(".cshtml"))
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+#endif
 
 	}
 
@@ -97,6 +123,10 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 		Logger.LogInformation("    New: {NewFullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md"))
 			Reload();
+#if DEBUG
+		if (e.FullPath.EndsWith(".cshtml"))
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+#endif
 	}
 
 	private void OnError(object sender, ErrorEventArgs e) =>

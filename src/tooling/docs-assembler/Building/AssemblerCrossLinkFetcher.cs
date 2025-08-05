@@ -19,11 +19,18 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfig
 		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
-		var repositories = configuration.ReferenceRepositories.Values.Concat<Repository>([configuration.Narrative]);
+		// We do want to always fetch cross-link data for all repositories.
+		// This is public information
+		var repositories = configuration.AvailableRepositories.Values
+			.Concat(configuration.PrivateRepositories.Values)
+			.ToList();
 
 		foreach (var repository in repositories)
 		{
 			var repositoryName = repository.Name;
+			if (declaredRepositories.Contains(repositoryName))
+				continue;
+
 			_ = declaredRepositories.Add(repositoryName);
 
 			if (repository.Skip)

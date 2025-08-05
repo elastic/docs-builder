@@ -2,13 +2,11 @@
 	position: relative;
 	width: 100%;
 	margin: 2rem 0;
-	overflow: hidden;
 }
 
 .carousel-track {
 	width: 100%;
 	position: relative;
-	min-height: 200px;
 }
 
 .carousel-slide {
@@ -27,19 +25,25 @@
 }
 
 .carousel-image-reference {
-	display: block;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	text-decoration: none;
+}
+
+.carousel-image-reference::after {
+	display: none !important;
 }
 
 .carousel-image-reference img {
-	width: 100%;
+	max-width: 100%;
 	height: auto;
 	display: block;
+	margin: 0 auto;
 }
 
 .carousel-control {
 	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
 	background-color: rgba(0, 0, 0, 0.5);
 	border: none;
 	color: white;
@@ -60,11 +64,11 @@
 }
 
 .carousel-prev {
-	left: 10px;
+	left: 0;
 }
 
 .carousel-next {
-	right: 10px;
+	right: 0;
 }
 
 .carousel-indicators {
@@ -92,38 +96,61 @@
 	background-color: black;
 }
 
-/* Fixed height carousel styles */
-.carousel-container[data-fixed-height] .carousel-track {
-	min-height: auto;
+/* Max height carousel styles */
+.carousel-container[data-max-height] {
+	padding-bottom: 40px; /* Space for indicators */
+}
+
+.carousel-container[data-max-height] .carousel-track {
+	max-height: var(--carousel-max-height);
 	overflow: hidden;
 }
 
-.carousel-container[data-fixed-height] .carousel-slide {
-	height: 100%;
-	top: 0;
-	left: 0;
+.carousel-container[data-max-height] .carousel-image-reference img {
+	max-height: var(--carousel-max-height);
+	width: auto;
 }
 
-.carousel-container[data-fixed-height] .carousel-slide[data-active='true'] {
-	position: relative;
-	height: 100%;
-	top: auto;
-	left: auto;
+/* None height carousel styles - images at natural size */
+.carousel-container[data-none-height] {
+	padding-bottom: 40px; /* Space for indicators */
 }
 
-.carousel-container[data-fixed-height] .carousel-image-reference {
-	height: 100%;
+/* Override modal styles for image carousels */
+.modal .modal-content {
+	max-width: 95vw !important;
+	max-height: 95vh !important;
+	width: auto !important;
+	height: auto !important;
+	padding: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.modal .modal-content img {
+	max-width: 95vw;
+	max-height: 95vh;
+	width: auto;
+	height: auto;
+	object-fit: contain;
+	display: block;
+}
+
+/* Ensure the close button is visible */
+.modal .modal-close {
+	background: rgba(0, 0, 0, 0.7);
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	top: -20px;
+	right: -20px;
 }
 
-.carousel-container[data-fixed-height] .carousel-image-reference img {
-	width: auto;
-	height: 100%;
-	max-width: 100%;
-	object-fit: contain;
-	object-position: center;
+.modal .modal-close a {
+	color: white;
 }
 @media (max-width: 768px) {
 	.carousel-control {

@@ -11,5 +11,5 @@ namespace Elastic.Markdown.Myst.Directives.Image;
 public class ImageCarouselViewModel : DirectiveViewModel
 {
 	public required List<ImageViewModel> Images { get; init; }
-	public string? FixedHeight { get; init; }
+	public string? MaxHeight { get; init; }
 }

@@ -18,7 +18,7 @@ type ``static path to image`` () =
     [<Fact>]
     let ``validate src is anchored`` () =
         markdown |> convertsToContainingHtml """
-            <img loading="lazy" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
+            <img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/img/observability.png" style="width: 250px;" class="screenshot">
        """
 
 type ``supports --url-path-prefix`` () =
@@ -45,13 +45,13 @@ type ``supports --url-path-prefix`` () =
     [<Fact>]
     let ``validate image src contains prefix`` () =
         docs |> convertsToContainingHtml """
-            <img loading="lazy" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+            <img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
        """
 
     [<Fact>]
     let ``validate image src contains prefix when referenced relatively`` () =
         docs |> converts "folder/relative.md" |> containsHtml """
-            <img loading="lazy" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+            <img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
        """
 
     [<Fact>]
@@ -73,7 +73,7 @@ type ``image ref out of scope`` () =
     [<Fact>]
     let ``validate image src contains prefix and is anchored to documentation scope root`` () =
         docs |> convertsToContainingHtml """
-            <img loading="lazy" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
+            <img loading="lazy" title="Elasticsearch" alt="Elasticsearch" src="/docs/img/observability.png" style="width: 250px;" class="screenshot">
        """
 
     [<Fact>]

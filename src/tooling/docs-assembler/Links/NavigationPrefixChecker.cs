@@ -43,10 +43,7 @@ public class NavigationPrefixChecker
 	{
 		_phantoms = GlobalNavigationFile.GetPhantomPrefixes(context);
 
-		_repositories = context.Configuration.ReferenceRepositories
-			.Values
-			.Concat([context.Configuration.Narrative])
-			.Where(p => !p.Skip)
+		_repositories = context.Configuration.AvailableRepositories.Values
 			.Select(r => r.Name)
 			.ToImmutableHashSet();
 

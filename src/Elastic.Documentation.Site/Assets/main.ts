@@ -1,5 +1,4 @@
 import { initCopyButton } from './copybutton'
-import { initDismissibleBanner } from './dismissible-banner'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import './markdown/applies-to'
@@ -33,8 +32,13 @@ document.addEventListener('htmx:load', function (event) {
     }
     initSmoothScroll()
     openDetailsWithAnchor()
-    initDismissibleBanner()
     initImageCarousel()
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const editParam = urlParams.has('edit')
+    if (editParam) {
+        $('.edit-this-page.hidden')?.classList.remove('hidden')
+    }
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
