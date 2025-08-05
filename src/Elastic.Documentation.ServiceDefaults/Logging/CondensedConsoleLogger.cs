@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using static Crayon.Output;
 
-namespace Elastic.Documentation.Tooling.Logging;
+namespace Elastic.Documentation.ServiceDefaults.Logging;
 
 public class CondensedConsoleFormatter() : ConsoleFormatter("condensed")
 {

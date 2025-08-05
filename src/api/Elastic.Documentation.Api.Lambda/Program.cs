@@ -8,11 +8,15 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.ServiceDefaults;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
+builder.AddDocumentationServiceDefaults(ref args);
+
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("ENVIRONMENT"));
+builder.WebHost.UseKestrelHttpsConfiguration();
 
 var app = builder.Build();
 

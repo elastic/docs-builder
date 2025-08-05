@@ -15,6 +15,7 @@ using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Tooling;
 using Elastic.Markdown.IO;
@@ -40,8 +41,9 @@ public class DocumentationWebHost
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
+		_ = builder.AddDocumentationServiceDefaults();
+
 		builder.Services.AddElasticDocsApiUsecases("dev");
-		DocumentationTooling.CreateServiceCollection(builder.Services, LogLevel.Information);
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)

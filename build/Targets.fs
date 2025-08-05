@@ -107,10 +107,17 @@ let private publishContainers _ =
     createImage "docs-builder"
     createImage "docs-assembler"
 
-let private runTests _ =
+let private runTests (testSuite: TestSuite) _ =
+    let testFilter =
+        match testSuite with
+        | All -> []
+        | Unit -> ["--filter"; "FullyQualifiedName~.Tests"]
+        | Integration -> ["--filter"; "FullyQualifiedName~.IntegrationTests"]
+
     exec {
         run "dotnet" (
             ["test"; "-c"; "release"; "--no-restore"; "--no-build"; "--logger"; "GitHubActions"]
+            @ testFilter
             @ ["--"; "RunConfiguration.CollectSourceInformation=true"]
         )
     }
@@ -132,8 +139,10 @@ let Setup (parsed:ParseResults<Build>) =
             Build.Cmd
                 [Clean; Lint; Compile] [] build
         
-        | Test -> Build.Cmd [Compile] [] runTests
-        
+        | Test -> Build.Cmd [Compile] [] <| runTests TestSuite.All
+        | Unit_Test -> Build.Cmd [Compile] [] <| runTests TestSuite.Unit
+        | Integrate -> Build.Cmd [Compile] [] <| runTests TestSuite.Integration
+
         | Release ->
             Build.Cmd 
                 [PristineCheck; Build]
@@ -159,6 +168,7 @@ let Setup (parsed:ParseResults<Build>) =
 
         // flags
         | Single_Target
+        | Test_Suite _
         | Token _
         | Skip_Dirty_Check -> Build.Ignore
 

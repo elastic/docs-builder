@@ -4,7 +4,6 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Extensions;
-using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlStaticContext = Elastic.Documentation.Configuration.Serialization.YamlStaticContext;
 
@@ -13,9 +12,9 @@ namespace Elastic.Documentation.Configuration.Assembler;
 public record AssemblyConfiguration
 {
 	public static AssemblyConfiguration Create(ConfigurationFileProvider provider) =>
-		Deserialize(provider.AssemblerFile.ReadToEnd());
+		Deserialize(provider.AssemblerFile.ReadToEnd(), skipPrivateRepositories: provider.SkipPrivateRepositories);
 
-	public static AssemblyConfiguration Deserialize(string yaml)
+	public static AssemblyConfiguration Deserialize(string yaml, bool skipPrivateRepositories = false)
 	{
 		var input = new StringReader(yaml);
 
@@ -28,13 +27,28 @@ public record AssemblyConfiguration
 			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
 			foreach (var (name, r) in config.ReferenceRepositories)
 			{
+				if (name == "cloud")
+				{
+				}
 				var repository = RepositoryDefaults(r, name);
 				config.ReferenceRepositories[name] = repository;
+			}
+			var privateRepositories = config.ReferenceRepositories.Where(r => r.Value.Private).ToList();
+			foreach (var (name, _) in privateRepositories)
+			{
+				if (skipPrivateRepositories)
+					_ = config.ReferenceRepositories.Remove(name);
 			}
 
 			foreach (var (name, env) in config.Environments)
 				env.Name = name;
 			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
+
+			config.AvailableRepositories = config.ReferenceRepositories.Values
+				.Where(r => !r.Skip)
+				.Concat([config.Narrative]).ToDictionary(kvp => kvp.Name, kvp => kvp);
+
+			config.PrivateRepositories = privateRepositories.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 			return config;
 		}
 		catch (Exception e)
@@ -79,6 +93,15 @@ public record AssemblyConfiguration
 
 	[YamlMember(Alias = "references")]
 	public Dictionary<string, Repository> ReferenceRepositories { get; set; } = [];
+
+	/// All available repositories, combines <see cref="ReferenceRepositories"/> and <see cref="Narrative"/> and will filter private repositories if `skip-private-repositories`
+	/// is specified
+	[YamlIgnore]
+	public IReadOnlyDictionary<string, Repository> AvailableRepositories { get; private set; } = new Dictionary<string, Repository>();
+
+	/// Repositories marked as private, these are listed under <see cref="AvailableRepositories"/> if `--skip-private-repositories` is not specified
+	[YamlIgnore]
+	public IReadOnlyDictionary<string, Repository> PrivateRepositories { get; private set; } = new Dictionary<string, Repository>();
 
 	[YamlMember(Alias = "environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];

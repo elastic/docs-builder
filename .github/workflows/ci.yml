@@ -84,11 +84,36 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
+      - name: Install Aspire workload
+        run: dotnet workload install aspire
+
       - name: Build
         run: dotnet run --project build -c release
 
       - name: Test
-        run: dotnet run --project build -c release -- test
+        run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
         run: dotnet run --project build -c release -- publishbinaries
+
+  integration:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          dotnet: true
+
+      - name: Bootstrap Action Workspace
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+
+      - name: Install Aspire workload
+        run: dotnet workload install aspire
+
+      - name: Integration Tests
+        run: dotnet run --project build -c release -- integrate

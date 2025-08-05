@@ -10,6 +10,38 @@ using FluentAssertions;
 
 namespace Documentation.Assembler.Tests;
 
+public class PublicOnlyAssemblerConfigurationTests
+{
+	private DiagnosticsCollector Collector { get; }
+	private AssembleContext Context { get; }
+	private FileSystem FileSystem { get; }
+	private IDirectoryInfo CheckoutDirectory { get; set; }
+	public PublicOnlyAssemblerConfigurationTests()
+	{
+		FileSystem = new FileSystem();
+		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+		);
+		Collector = new DiagnosticsCollector([]);
+		var configurationFileProvider = new ConfigurationFileProvider(FileSystem, skipPrivateRepositories: true);
+		var config = AssemblyConfiguration.Create(configurationFileProvider);
+		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+	}
+
+	[Fact]
+	public void ReadsPrivateRepositories()
+	{
+		var config = Context.Configuration;
+		config.ReferenceRepositories.Should().NotBeEmpty().And.NotContainKey("cloud");
+		config.PrivateRepositories.Should().NotBeEmpty().And.ContainKey("cloud");
+		var cloud = config.PrivateRepositories["cloud"];
+		cloud.Should().NotBeNull();
+		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.Be("master");
+	}
+
+}
+
 public class AssemblerConfigurationTests
 {
 	private DiagnosticsCollector Collector { get; }
@@ -76,5 +108,9 @@ public class AssemblerConfigurationTests
 		var beats = config.ReferenceRepositories["beats"];
 		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
 			.And.NotBe("main");
+
+		var cloud = config.ReferenceRepositories["cloud"];
+		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
+			.And.Be("master");
 	}
 }

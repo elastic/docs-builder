@@ -42,9 +42,7 @@ public static class ServicesExtension
 	public static void AddElasticDocsApiUsecases(this IServiceCollection services, string? appEnvironment)
 	{
 		if (AppEnvExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
-		{
 			AddElasticDocsApiUsecases(services, parsedEnvironment);
-		}
 		else
 		{
 			var logger = GetLogger(services);
@@ -107,9 +105,9 @@ public static class ServicesExtension
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnv);
 		_ = services.AddSingleton<GcpIdTokenProvider>();
-		_ = services.AddSingleton<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
 		_ = services.AddScoped<LlmGatewayOptions>();
 		_ = services.AddScoped<AskAiUsecase>();
+		_ = services.AddScoped<IAskAiGateway<Stream>, LlmGatewayAskAiGateway>();
 	}
 	private static void AddSearchUsecase(IServiceCollection services, AppEnv appEnv)
 	{
