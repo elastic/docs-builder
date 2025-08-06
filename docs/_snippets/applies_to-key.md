@@ -6,7 +6,7 @@
   * `ech`: Applies to [Elastic Cloud Hosted](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted) deployments.
   * `ece`: Applies to [Elastic Cloud Enterprise](https://www.elastic.co/docs/deploy-manage/deploy/cloud-enterprise) deployments.
   * `self`: Applies to [self-managed](https://www.elastic.co/docs/deploy-manage/deploy/self-managed) deployments.
-  * `ess`: Applies to the the Elasticsearch Service deployments. {applies_to}`product: deprecated`
+  * `ess`: Applies to Elasticsearch Service deployments. {applies_to}`product: deprecated`
     :::{note}
     Use `ech` instead.
     :::
