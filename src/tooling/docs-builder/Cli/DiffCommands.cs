@@ -61,7 +61,9 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 			if (notFound is RenamedGitChange renamed)
 			{
 				collector.EmitError(redirectFileInfo.Name,
-					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
+					runningOnCi
+						? $"A file was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set."
+						: $"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
 			}
 			else if (notFound.ChangeType is GitChangeType.Deleted)
 			{

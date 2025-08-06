@@ -120,7 +120,7 @@ jobs:
       added_files: ${{ steps.check-files.outputs.added_files }}
       modified_files: ${{ steps.check-files.outputs.modified_files }}
       deleted_files: ${{ steps.check-files.outputs.deleted_files }}
-      renamed_files: ${{ steps.check-files.outputs.all_old_new_renamed_files }}
+      renamed_files: ${{ steps.check-files.outputs.renamed_files }}
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
@@ -133,8 +133,6 @@ jobs:
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
-          old_new_files_separator: ':'
-          include_all_old_new_renamed_files: 'true'
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
           files_ignore: |
             ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}

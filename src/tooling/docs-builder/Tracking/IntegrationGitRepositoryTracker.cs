@@ -33,12 +33,8 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 		var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
 		if (!string.IsNullOrEmpty(renamedFiles))
 		{
-			foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-			{
-				var parts = pair.Split(':');
-				if (parts.Length == 2)
-					yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
-			}
+			foreach (var file in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+				yield return new RenamedGitChange(string.Empty, file, GitChangeType.Renamed);
 		}
 	}
 }
