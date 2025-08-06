@@ -7,6 +7,14 @@
 			</version-dropdown>
 		</div>
 		<ul class="mt-6 hidden md:flex items-center lg:block gap-4">
+			<li class="view-as-markdown lg:not-first:mt-1">
+				<a href="@Model.MarkdownUrl" class="link text-sm" target="_blank">
+					<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 -1 24 24">
+						<path fill="currentColor" d="M22.131725 19.247H1.9386225C1.0239525 19.247 0.25 18.47305 0.25 17.558375v-11.11675c0 -0.914675 0.7739525 -1.688625 1.6886225 -1.688625H22.061375c0.914675 0 1.688625 0.77395 1.688625 1.688625v11.11675c0 0.914675 -0.7036 1.688625 -1.618275 1.688625ZM1.9386225 5.87875c-0.2814375 0 -0.562875 0.281425 -0.562875 0.562875v11.11675c0 0.3518 0.2814375 0.562875 0.562875 0.562875H22.061375c0.3518 0 0.562875 -0.281425 0.562875 -0.562875v-11.11675c0 -0.3518 -0.281425 -0.562875 -0.562875 -0.562875l-20.1227525 0ZM3.62725 15.86975V8.130225h2.2515l2.2515 2.814375 2.251475 -2.814375h2.2515V15.86975h-2.2515V11.437125L8.13025 14.2515l-2.2515 -2.814375V15.86975h-2.2515Zm14.1422 0L14.392225 12.140725h2.251475v-4.0105h2.2515v3.940125h2.2515L17.76945 15.86975Z" stroke-width="0.25"></path>
+					</svg>
+					View as markdown
+				</a>
+			</li>
 			@if (!string.IsNullOrEmpty(Model.GithubEditUrl))
 			{
 				<li class="edit-this-page lg:not-first:mt-1 @(Model.HideEditThisPage ? "hidden" : string.Empty)">

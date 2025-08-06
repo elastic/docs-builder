@@ -29,6 +29,7 @@
 		NavigationFileName = Model.NavigationFileName,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
+		MarkdownUrl = Model.MarkdownUrl,
 		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.IsAssemblerBuild,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
@@ -48,6 +49,7 @@
 		{
 			<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
 			<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
+			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
 		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{
