@@ -15,9 +15,7 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 		if (!string.IsNullOrEmpty(deletedFiles))
 		{
 			foreach (var file in deletedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-			{
 				yield return new GitChange(file, GitChangeType.Deleted);
-			}
 		}
 
 		var addedFiles = Environment.GetEnvironmentVariable("ADDED_FILES");
