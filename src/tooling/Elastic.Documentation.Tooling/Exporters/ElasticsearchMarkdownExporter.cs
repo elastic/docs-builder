@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Channels;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
@@ -18,10 +19,82 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Tooling.Exporters;
 
 public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
-	: IMarkdownExporter, IDisposable
+	: ElasticsearchMarkdownExporterBase<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
+		(logFactory, collector, endpoints)
 {
-	private CatalogIndexChannel<DocumentationDocument>? _channel;
-	private readonly ILogger<ElasticsearchMarkdownExporter> _logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
+	/// <inheritdoc />
+	protected override CatalogIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
+	{
+		GetMapping = () => CreateMapping(null),
+		IndexFormat = "documentation{0:yyyy.MM.dd.HHmmss}",
+		ActiveSearchAlias = "documentation"
+	};
+
+	/// <inheritdoc />
+	protected override CatalogIndexChannel<DocumentationDocument> NewChannel(CatalogIndexChannelOptions<DocumentationDocument> options) => new(options);
+}
+public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
+	: ElasticsearchMarkdownExporterBase<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
+		(logFactory, collector, endpoints)
+{
+	/// <inheritdoc />
+	protected override SemanticIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
+	{
+		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
+		IndexFormat = "semantic-documentation-{0:yyyy.MM.dd.HHmmss}",
+		ActiveSearchAlias = "semantic-documentation",
+		IndexNumThreads = IndexNumThreads,
+		InferenceCreateTimeout = TimeSpan.FromMinutes(4),
+	};
+
+	/// <inheritdoc />
+	protected override SemanticIndexChannel<DocumentationDocument> NewChannel(SemanticIndexChannelOptions<DocumentationDocument> options) => new(options);
+}
+
+public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChannel>(
+	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
+	DocumentationEndpoints endpoints)
+	: IMarkdownExporter, IDisposable
+	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
+	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
+{
+	private TChannel? _channel;
+	private readonly ILogger<IMarkdownExporter> _logger = logFactory.CreateLogger<IMarkdownExporter>();
+
+	protected abstract TChannelOptions NewOptions(DistributedTransport transport);
+	protected abstract TChannel NewChannel(TChannelOptions options);
+
+	protected int IndexNumThreads => 8;
+
+	protected static string CreateMapping(string? inferenceId) =>
+		// langugage=json
+		$$"""
+		{
+		  "properties": {
+		    "title": { "type": "text" },
+		    "body": { "type": "text" }
+		    {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
+		  }
+		}
+		""";
+
+	private static string AbstractMapping() =>
+		// langugage=json
+		"""
+		, "abstract": {
+			"type": "text",
+		}
+		""";
+
+	private static string AbstractInferenceMapping(string inferenceId) =>
+		// langugage=json
+		$$"""
+		, "abstract": {
+			"type": "semantic_text",
+			"inference_id": "{{inferenceId}}"
+		}
+		""";
 
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
@@ -41,36 +114,18 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 		var transport = new DistributedTransport(configuration);
 		//The max num threads per allocated node, from testing its best to limit our max concurrency
 		//producing to this number as well
-		var indexNumThreads = 8;
-		var options = new CatalogIndexChannelOptions<DocumentationDocument>(transport)
+		var options = NewOptions(transport);
+		options.BufferOptions = new BufferOptions
 		{
-			BufferOptions =
-			{
-				OutboundBufferMaxSize = 100,
-				ExportMaxConcurrency = indexNumThreads,
-				ExportMaxRetries = 3
-			},
-			SerializerContext = SourceGenerationContext.Default,
-			// IndexNumThreads = indexNumThreads,
-			IndexFormat = "documentation-{0:yyyy.MM.dd.HHmmss}",
-			ActiveSearchAlias = "documentation",
-			ExportBufferCallback = () => _logger.LogInformation("Exported buffer to Elasticsearch"),
-			ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document"),
-			ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2),
-			//GetMapping = (inferenceId, _) => // language=json
-			GetMapping = () => // language=json
-				$$"""
-				  {
-				    "properties": {
-				      "title": { "type": "text" },
-				      "body": {
-				        "type": "text"
-				      }
-				    }
-				  }
-				  """
+			OutboundBufferMaxSize = 100,
+			ExportMaxConcurrency = IndexNumThreads,
+			ExportMaxRetries = 3
 		};
-		_channel = new CatalogIndexChannel<DocumentationDocument>(options);
+		options.SerializerContext = SourceGenerationContext.Default;
+		options.ExportBufferCallback = () => _logger.LogInformation("Exported buffer to Elasticsearch");
+		options.ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document");
+		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
+		_channel = NewChannel(options);
 		_logger.LogInformation($"Bootstrapping {nameof(SemanticIndexChannel<DocumentationDocument>)} Elasticsearch target for indexing");
 		_ = await _channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
 	}
@@ -103,6 +158,7 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 			_channel.Complete();
 			_channel.Dispose();
 		}
+
 		GC.SuppressFinalize(this);
 	}
 
@@ -134,6 +190,9 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 			Url = url,
 			Body = body,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
+			Abstract = !string.IsNullOrEmpty(body)
+				? body[..Math.Min(body.Length, 400)]
+				: string.Empty,
 			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
 		};
 		return await TryWrite(doc, ctx);

@@ -27,6 +27,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"llmtext" => LLMText,
 				"es" => Elasticsearch,
 				"elasticsearch" => Elasticsearch,
+				"semantic" => SemanticElasticsearch,
 				"html" => Html,
 				"config" => Exporter.Configuration,
 				"links" => LinkMetadata,
@@ -62,15 +63,15 @@ public static class ExporterExtensions
 		IDocumentationConfigurationContext context
 	)
 	{
-		var esExporter = new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints);
-
 		var markdownExporters = new List<IMarkdownExporter>(3);
 		if (exportOptions.Contains(LLMText))
 			markdownExporters.Add(new LlmMarkdownExporter());
 		if (exportOptions.Contains(Exporter.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Elasticsearch))
-			markdownExporters.Add(esExporter);
+			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints));
+		if (exportOptions.Contains(SemanticElasticsearch))
+			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(logFactory, context.Collector, context.Endpoints));
 		return markdownExporters;
 	}
 }
