@@ -139,6 +139,15 @@ jobs:
             ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
             .github/**
             README.md
+      - name: List files
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        run: |
+          echo "Added files: ${{ steps.check-files.outputs.added_files }}"
+          echo "Modified files: ${{ steps.check-files.outputs.modified_files }}"
+          echo "Deleted files: ${{ steps.check-files.outputs.deleted_files }}"
+          echo "Renamed files: ${{ steps.check-files.outputs.all_old_new_renamed_files }}"
+          echo "Renamed files: ${{ steps.check-files.outputs.renamed_files }}"
+          echo "All changed files: ${{ steps.check-files.outputs.all_changed_files }}"
 
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
