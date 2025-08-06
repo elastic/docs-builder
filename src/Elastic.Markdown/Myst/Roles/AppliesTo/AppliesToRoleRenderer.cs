@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.AppliesTo;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using RazorSlices;
@@ -17,7 +18,7 @@ public class AppliesToRoleHtmlRenderer : HtmlObjectRenderer<AppliesToRole>
 		var appliesTo = role.AppliesTo;
 
 		// Skip rendering if appliesTo is null or All
-		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
+		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return;
 
 		// Create the view model with the VersionsConfig from the role's BuildContext
@@ -25,7 +26,7 @@ public class AppliesToRoleHtmlRenderer : HtmlObjectRenderer<AppliesToRole>
 		{
 			AppliesTo = appliesTo,
 			Inline = true,
-			VersionsConfig = role.BuildContext.VersionsConfig
+			VersionsConfig = role.BuildContext.VersionsConfiguration
 		};
 
 		var slice = ApplicableToRole.Create(viewModel);

@@ -3,12 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Exporters;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Exporters;
+namespace Elastic.Documentation.Tooling.Exporters;
 
-public class ConfigurationExporter(ILoggerFactory logFactory, AssembleContext context) : IMarkdownExporter
+public class ConfigurationExporter(
+	ILoggerFactory logFactory,
+	ConfigurationFileProvider configurationFileProvider,
+	IDocumentationContext context
+
+) : IMarkdownExporter
 {
 	private readonly ILogger<ConfigurationExporter> _logger = logFactory.CreateLogger<ConfigurationExporter>();
 
@@ -25,27 +31,28 @@ public class ConfigurationExporter(ILoggerFactory logFactory, AssembleContext co
 	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, CancellationToken ctx)
 	{
 		var fs = context.WriteFileSystem;
-		var configFolder = fs.DirectoryInfo.New(Path.Combine(context.OutputDirectory.FullName, "config"));
+		var outputDirectory = context.OutputDirectory;
+		var configFolder = fs.DirectoryInfo.New(Path.Combine(outputDirectory.FullName, "config"));
 		if (!configFolder.Exists)
 			configFolder.Create();
 
 		_logger.LogInformation("Exporting configuration");
 
-		var assemblerConfig = context.ConfigurationFileProvider.AssemblerFile;
+		var assemblerConfig = configurationFileProvider.AssemblerFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", assemblerConfig.Name, configFolder.FullName);
-		context.WriteFileSystem.File.Copy(assemblerConfig.FullName, Path.Combine(configFolder.FullName, assemblerConfig.Name), true);
+		fs.File.Copy(assemblerConfig.FullName, Path.Combine(configFolder.FullName, assemblerConfig.Name), true);
 
-		var navigationConfig = context.ConfigurationFileProvider.NavigationFile;
+		var navigationConfig = configurationFileProvider.NavigationFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", navigationConfig.Name, configFolder.FullName);
-		context.WriteFileSystem.File.Copy(navigationConfig.FullName, Path.Combine(configFolder.FullName, navigationConfig.Name), true);
+		fs.File.Copy(navigationConfig.FullName, Path.Combine(configFolder.FullName, navigationConfig.Name), true);
 
-		var legacyUrlMappingsConfig = context.ConfigurationFileProvider.LegacyUrlMappingsFile;
+		var legacyUrlMappingsConfig = configurationFileProvider.LegacyUrlMappingsFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", legacyUrlMappingsConfig.Name, configFolder.FullName);
-		context.WriteFileSystem.File.Copy(legacyUrlMappingsConfig.FullName, Path.Combine(configFolder.FullName, legacyUrlMappingsConfig.Name), true);
+		fs.File.Copy(legacyUrlMappingsConfig.FullName, Path.Combine(configFolder.FullName, legacyUrlMappingsConfig.Name), true);
 
-		var versionsConfig = context.ConfigurationFileProvider.VersionFile;
+		var versionsConfig = configurationFileProvider.VersionFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", versionsConfig.Name, configFolder.FullName);
-		context.WriteFileSystem.File.Copy(versionsConfig.FullName, Path.Combine(configFolder.FullName, versionsConfig.Name), true);
+		fs.File.Copy(versionsConfig.FullName, Path.Combine(configFolder.FullName, versionsConfig.Name), true);
 
 		return default;
 	}

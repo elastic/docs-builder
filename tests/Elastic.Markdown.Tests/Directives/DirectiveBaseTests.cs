@@ -70,21 +70,8 @@ $"""
 		FileSystem.GenerateDocSetYaml(root);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-		var context = new BuildContext(Collector, FileSystem, versionsConfig);
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
+		var context = new BuildContext(Collector, FileSystem, configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();

@@ -210,11 +210,17 @@ type Setup =
             )
         )
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
+        let configurationFileProvider = ConfigurationFileProvider(fileSystem)
+        let configurationContext = ConfigurationContext(
+            VersionsConfiguration = versionConfig,
+            ConfigurationFileProvider = configurationFileProvider,
+            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default)
+        )
         let context = BuildContext(
             collector,
             fileSystem,
+            configurationContext,
             UrlPathPrefix = (options.UrlPathPrefix |> Option.defaultValue ""),
-            versionsConfig = versionConfig,
             CanonicalBaseUrl = Uri("https://www.elastic.co/")
         )
         let logger = new TestLoggerFactory()
@@ -223,7 +229,7 @@ type Setup =
         let set = DocumentationSet(context, logger, linkResolver)
         
         
-        let generator = DocumentationGenerator(set, logger, null, null, null, null, conversionCollector)
+        let generator = DocumentationGenerator(set, logger, null, null, null, conversionCollector)
 
         let context = {
             Collector = collector

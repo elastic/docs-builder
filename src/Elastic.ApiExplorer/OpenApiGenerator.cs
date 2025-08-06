@@ -312,7 +312,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		{
 			const string indexHtml = "index.html";
 			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
-			var fileInfo = _writeFileSystem.FileInfo.New(Path.Combine(context.DocumentationOutputDirectory.FullName, fileName.Trim('/')));
+			var fileInfo = _writeFileSystem.FileInfo.New(Path.Combine(context.OutputDirectory.FullName, fileName.Trim('/')));
 			return fileInfo;
 		}
 	}

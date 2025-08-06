@@ -5,11 +5,10 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Markdown.Myst.FrontMatter;
+namespace Elastic.Documentation.AppliesTo;
 
 [YamlSerializable]
 public record AppliesCollection : IReadOnlyCollection<Applicability>
@@ -21,7 +20,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, out AppliesCollection? availability)
 	{
 		availability = null;
-		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
+		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.OrdinalIgnoreCase))
 		{
 			availability = GenerallyAvailable;
 			return true;
@@ -156,7 +155,7 @@ public record Applicability
 
 	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, [NotNullWhen(true)] out Applicability? availability)
 	{
-		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
+		if (string.IsNullOrWhiteSpace(value) || string.Equals(value.Trim(), "all", StringComparison.OrdinalIgnoreCase))
 		{
 			availability = GenerallyAvailable;
 			return true;

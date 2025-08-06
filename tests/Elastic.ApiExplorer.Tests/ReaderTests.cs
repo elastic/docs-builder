@@ -19,21 +19,8 @@ public class ReaderTests
 	public async Task Reads()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var context = new BuildContext(collector, new FileSystem(), configurationContext);
 
 		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 
@@ -46,22 +33,9 @@ public class ReaderTests
 	[Fact]
 	public async Task Navigation()
 	{
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
 		var collector = new DiagnosticsCollector([]);
-		var context = new BuildContext(collector, new FileSystem(), versionsConfig);
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var context = new BuildContext(collector, new FileSystem(), configurationContext);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 

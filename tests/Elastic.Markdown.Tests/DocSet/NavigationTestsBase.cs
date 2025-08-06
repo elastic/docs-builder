@@ -25,21 +25,8 @@ public class NavigationTestsBase : IAsyncLifetime
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
 		var collector = new TestDiagnosticsCollector(output);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, versionsConfig)
+		var configurationContext = TestHelpers.CreateConfigurationContext(ReadFileSystem);
+		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, configurationContext, ExportOptions.Default)
 		{
 			Force = false,
 			UrlPathPrefix = null

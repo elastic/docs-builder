@@ -4,7 +4,7 @@
 
 module ``product availability``.``yaml frontmatter``
 
-open Elastic.Markdown.Myst.FrontMatter
+open Elastic.Documentation.AppliesTo
 open JetBrains.Annotations
 open Xunit
 open authoring

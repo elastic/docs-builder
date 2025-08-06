@@ -4,7 +4,7 @@
 
 module ``inline elements``.``applies_to role``
 
-open Elastic.Markdown.Myst.FrontMatter
+open Elastic.Documentation.AppliesTo
 open Elastic.Markdown.Myst.Roles.AppliesTo
 open Swensen.Unquote
 open Xunit

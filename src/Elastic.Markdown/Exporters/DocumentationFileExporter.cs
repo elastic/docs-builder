@@ -66,7 +66,7 @@ public class DocumentationFileExporter(IFileSystem readFileSystem, IFileSystem w
 	public override async ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx)
 	{
 		if (context.File is MarkdownFile markdown)
-			context.MarkdownDocument = await context.HtmlWriter.WriteAsync(context.BuildContext.DocumentationOutputDirectory, context.OutputFile, markdown, context.ConversionCollector, ctx);
+			context.MarkdownDocument = await context.HtmlWriter.WriteAsync(context.BuildContext.OutputDirectory, context.OutputFile, markdown, context.ConversionCollector, ctx);
 		else
 		{
 			if (context.OutputFile.Directory is { Exists: false })

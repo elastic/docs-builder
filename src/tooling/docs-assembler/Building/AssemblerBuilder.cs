@@ -4,26 +4,19 @@
 
 using System.Collections.Frozen;
 using System.Text.Json;
-using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
-
-public enum ExportOption
-{
-	Html = 0,
-	LLMText = 1,
-	Elasticsearch = 2,
-	Configuration = 3
-}
 
 public class AssemblerBuilder(
 	ILoggerFactory logFactory,
@@ -40,7 +33,7 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<ExportOption> exportOptions, Cancel ctx)
+	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
@@ -48,25 +41,11 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var esExporter =
-			Environment.GetEnvironmentVariable("ELASTIC_API_KEY") is { } apiKey &&
-			Environment.GetEnvironmentVariable("ELASTIC_URL") is { } url
-				? new ElasticsearchMarkdownExporter(logFactory, context.Collector, url, apiKey)
-				: null;
-
-		var markdownExporters = new List<IMarkdownExporter>(3);
-		if (exportOptions.Contains(ExportOption.LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter());
-		if (exportOptions.Contains(ExportOption.Configuration))
-			markdownExporters.Add(new ConfigurationExporter(logFactory, context));
-		if (exportOptions.Contains(ExportOption.Elasticsearch) && esExporter is { })
-			markdownExporters.Add(esExporter);
-		var noHtmlOutput = !exportOptions.Contains(ExportOption.Html);
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
-		var fs = context.ReadFileSystem;
 		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
 		foreach (var (_, set) in assembleSets)
 		{
@@ -79,7 +58,7 @@ public class AssemblerBuilder(
 
 			try
 			{
-				var result = await BuildAsync(set, noHtmlOutput, markdownExporters.ToArray(), ctx);
+				var result = await BuildAsync(set, markdownExporters.ToArray(), ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
@@ -98,9 +77,12 @@ public class AssemblerBuilder(
 			_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
 		}
 
-		await OutputRedirectsAsync(redirects
-			.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-			.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
+		if (exportOptions.Contains(Exporter.Redirects))
+		{
+			await OutputRedirectsAsync(redirects
+				.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+				.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
+		}
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -133,7 +115,7 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 			{
 				_ = linkResolver.TryResolve(
-					(e) => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
+					e => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
 					new Uri(path),
 					out uri);
 			}
@@ -147,7 +129,7 @@ public class AssemblerBuilder(
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, bool noop, IMarkdownExporter[]? markdownExporters, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, Cancel ctx)
 	{
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
@@ -156,7 +138,6 @@ public class AssemblerBuilder(
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
 			positionalNavigation: navigation,
-			documentationExporter: noop ? new NoopDocumentationFileExporter() : null,
 			markdownExporters: markdownExporters
 		);
 		return await generator.GenerateAll(ctx);

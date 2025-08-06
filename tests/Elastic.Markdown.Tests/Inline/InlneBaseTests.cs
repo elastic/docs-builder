@@ -114,21 +114,8 @@ $"""
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
 		Collector = new TestDiagnosticsCollector(output);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-		var context = new BuildContext(Collector, FileSystem, versionsConfig)
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
+		var context = new BuildContext(Collector, FileSystem, configurationContext)
 		{
 			UrlPathPrefix = "/docs"
 		};

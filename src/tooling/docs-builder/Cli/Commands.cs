@@ -8,9 +8,11 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.ApiExplorer;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Refactor;
+using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -18,10 +20,15 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using static Elastic.Documentation.Exporter;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubActionsService, VersionsConfiguration versionsConfig)
+internal sealed class Commands(
+	ILoggerFactory logFactory,
+	ICoreService githubActionsService,
+	IConfigurationContext configurationContext
+)
 {
 	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
 
@@ -37,7 +44,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	[Command("serve")]
 	public async Task Serve(string? path = null, int port = 3000, Cancel ctx = default)
 	{
-		var host = new DocumentationWebHost(logFactory, path, port, new FileSystem(), new MockFileSystem(), versionsConfig);
+		var host = new DocumentationWebHost(logFactory, path, port, new FileSystem(), new MockFileSystem(), configurationContext);
 		_log.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
 		);
@@ -69,7 +76,11 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
-	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="exporters"> Set available exporters:
+	///					html, es, config, links, state, llm, redirect, metadata, none.
+	///					Defaults to (html, config, links, state, redirect) or 'default'.
+	/// </param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
@@ -81,10 +92,16 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 		bool? strict = null,
 		bool? allowIndexing = null,
 		bool? metadataOnly = null,
+		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
 		Cancel ctx = default
 	)
 	{
+		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
+			metadataOnly ??= metaValue;
+
+		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
+
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 		var fileSystem = new FileSystem();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
@@ -107,7 +124,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, fileSystem, versionsConfig, path, output)
+			context = new BuildContext(collector, fileSystem, fileSystem, configurationContext, exporters, path, output)
 			{
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
@@ -140,18 +157,10 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
 
-		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
-			metadataOnly ??= metaValue;
-		var exporter = metadataOnly.HasValue && metadataOnly.Value ? new NoopDocumentationFileExporter() : null;
-
-		// Add LLM markdown export alongside HTML generation
-		var markdownExporters = new List<IMarkdownExporter>();
-		markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
-
-		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray(), exporter);
+		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray());
 		_ = await generator.GenerateAll(ctx);
-
 
 		var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
 		await openApiGenerator.Generate(ctx);
@@ -176,7 +185,11 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
-	/// <param name="metadataOnly"> Only emit documentation metadata to output</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="exporters"> Set available exporters:
+	///					html, es, config, links, state, llm, redirect, metadata, none.
+	///					Defaults to (html, config, links, state, redirect) or 'default'.
+	/// </param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("")]
@@ -188,10 +201,11 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 		bool? strict = null,
 		bool? allowIndexing = null,
 		bool? metadataOnly = null,
+		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
 		Cancel ctx = default
 	) =>
-		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, canonicalBaseUrl, ctx);
+		await Generate(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, exporters, canonicalBaseUrl, ctx);
 
 
 	/// <summary>
@@ -213,7 +227,7 @@ internal sealed class Commands(ILoggerFactory logFactory, ICoreService githubAct
 	{
 		var fileSystem = new FileSystem();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, null).StartAsync(ctx);
-		var context = new BuildContext(collector, fileSystem, fileSystem, versionsConfig, path, null);
+		var context = new BuildContext(collector, fileSystem, fileSystem, configurationContext, ExportOptions.MetadataOnly, path, null);
 		var set = new DocumentationSet(context, logFactory);
 
 		var moveCommand = new Move(logFactory, fileSystem, fileSystem, set);

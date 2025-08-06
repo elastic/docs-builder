@@ -60,7 +60,6 @@ public class DocumentationGenerator
 		INavigationHtmlWriter? navigationHtmlWriter = null,
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
-		IDocumentationFileExporter? documentationExporter = null,
 		IConversionCollector? conversionCollector = null,
 		ILegacyUrlMapper? legacyUrlMapper = null,
 		IPositionalNavigation? positionalNavigation = null
@@ -78,9 +77,10 @@ public class DocumentationGenerator
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
 			positionalNavigation);
 		_documentationFileExporter =
-			documentationExporter
-			?? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
-			?? new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem);
+			docSet.Context.AvailableExporters.Contains(Exporter.Html)
+				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
+				  ?? new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem)
+				: new NoopDocumentationFileExporter();
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
 		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
@@ -108,7 +108,8 @@ public class DocumentationGenerator
 	{
 		var result = new GenerationResult();
 
-		var generationState = Context.SkipDocumentationState ? null : GetPreviousGenerationState();
+		var generateState = Context.AvailableExporters.Contains(Exporter.DocumentationState);
+		var generationState = generateState ? null : GetPreviousGenerationState();
 
 		// clear the output directory if force is true but never for assembler builds since these build multiple times to the output.
 		if (Context is { AssemblerBuild: false, Force: true }
@@ -133,16 +134,19 @@ public class DocumentationGenerator
 
 		await ExtractEmbeddedStaticResources(ctx);
 
-		if (!Context.SkipDocumentationState)
+		if (generateState)
 		{
 			_logger.LogInformation($"Generating documentation compilation state");
 			await GenerateDocumentationState(ctx);
 		}
 
-		_logger.LogInformation($"Generating links.json");
-		var linkReference = await GenerateLinkReference(ctx);
+		if (!Context.AvailableExporters.Overlaps([Exporter.LinkMetadata, Exporter.Redirects]))
+			return result;
 
-		// ReSharper disable once WithExpressionModifiesAllMembers
+		_logger.LogInformation($"Generating links.json");
+		var writeToDisk = Context.AvailableExporters.Contains(Exporter.LinkMetadata);
+		var linkReference = await GenerateLinkReference(writeToDisk, ctx);
+
 		return result with
 		{
 			Redirects = linkReference.Redirects ?? []
@@ -318,12 +322,17 @@ public class DocumentationGenerator
 		return false;
 	}
 
-	private async Task<RepositoryLinks> GenerateLinkReference(Cancel ctx)
+	private async Task<RepositoryLinks> GenerateLinkReference(bool writeToDisk, Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
-		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
-		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		if (writeToDisk)
+		{
+			if (!file.Directory!.Exists)
+				file.Directory.Create();
+			var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
+			await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		}
 		return state;
 	}
 
