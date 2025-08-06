@@ -41,6 +41,7 @@ internal sealed class DiffCommands(
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 
+		_log.LogInformation($"Initializing build context for redirect rule validation. Environment: {(runningOnCi ? "CI" : "Local")}, Lookup path: {path}");
 		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, root.FullName, null);
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
