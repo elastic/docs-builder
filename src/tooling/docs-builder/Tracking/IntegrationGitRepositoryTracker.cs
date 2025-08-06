@@ -13,6 +13,7 @@ public class IntegrationGitRepositoryTracker(ILogger<IntegrationGitRepositoryTra
 	public IEnumerable<GitChange> GetChangedFiles()
 	{
 		var deletedFiles = Environment.GetEnvironmentVariable("DELETED_FILES") ?? string.Empty;
+		Log.LogInformation("Deleted files:  {File} as deleted in integration build", deletedFiles);
 		if (!string.IsNullOrEmpty(deletedFiles))
 		{
 			foreach (var file in deletedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
@@ -37,6 +38,7 @@ public class IntegrationGitRepositoryTracker(ILogger<IntegrationGitRepositoryTra
 		}
 
 		var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
+		Log.LogInformation("Renamed files:  {File} as deleted in integration build", renamedFiles);
 		if (!string.IsNullOrEmpty(renamedFiles))
 		{
 			foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))

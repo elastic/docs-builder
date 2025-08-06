@@ -41,13 +41,11 @@ internal sealed class DiffCommands(
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 
-		_log.LogInformation($"Initializing build context for redirect rule validation. Environment: {(runningOnCi ? "CI" : "Local")}, Lookup path: {path}");
 		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, root.FullName, null);
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
 
-		_log.LogInformation($"Parsing redirects file: {redirectFileInfo.FullName}");
 		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
 		var redirects = redirectFileParser.Redirects;
 
@@ -58,7 +56,6 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
-		_log.LogInformation("Initializing repository tracker");
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(logFactory.CreateLogger<IntegrationGitRepositoryTracker>(), path) : new LocalGitRepositoryTracker(collector, root, path);
 		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
 
