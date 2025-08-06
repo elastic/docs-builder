@@ -133,7 +133,7 @@ jobs:
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
-          include_all_old_new_renamed_files: true
+          include_all_old_new_renamed_files: 'true'
           files: ${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}
           files_ignore: |
             ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
