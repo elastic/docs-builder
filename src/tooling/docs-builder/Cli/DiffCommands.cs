@@ -26,6 +26,7 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 	[Command("validate")]
 	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
 	{
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
@@ -48,8 +49,11 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 			return collector.Errors;
 		}
 
-		var tracker = new LocalGitRepositoryTracker(collector, root);
-		var changed = tracker.GetChangedFiles(path);
+		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
+		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
+
+		if (changed.Length > 0)
+			collector.EmitHint(string.Empty, $"Found {changed.Length} changed files in the current branch. Validating against redirects file '{redirectFileInfo.Name}'.");
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
