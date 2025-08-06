@@ -13,10 +13,12 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -27,9 +29,7 @@ namespace Documentation.Assembler.Cli;
 
 internal sealed class RepositoryCommands(
 	AssemblyConfiguration assemblyConfiguration,
-	VersionsConfiguration versionsConfig,
-	ConfigurationFileProvider configurationFileProvider,
-	DocumentationEndpoints endpoints,
+	IConfigurationContext configurationContext,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
@@ -96,7 +96,7 @@ internal sealed class RepositoryCommands(
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
@@ -113,7 +113,8 @@ internal sealed class RepositoryCommands(
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
 	/// <param name="environment"> The environment to build</param>
-	/// <param name="exporters"> configure exporters explicitly available (html,llmtext,es), defaults to html</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if <paramref name="exporters"/> is also set </param>
+	/// <param name="exporters"> Set available exporters: html,es,config,links,state,llm. Defaults to html,config,links,state</param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
@@ -121,10 +122,11 @@ internal sealed class RepositoryCommands(
 		bool? strict = null,
 		bool? allowIndexing = null,
 		string? environment = null,
-		[ExporterParser] IReadOnlySet<ExportOption>? exporters = null,
+		bool? metadataOnly = null,
+		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
 		Cancel ctx = default)
 	{
-		exporters ??= new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
+		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
 
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
@@ -140,7 +142,7 @@ internal sealed class RepositoryCommands(
 		_log.LogInformation("Creating assemble context");
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null)
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null)
 		{
 			Force = force ?? false,
 			AllowIndexing = allowIndexing ?? false
@@ -163,7 +165,7 @@ internal sealed class RepositoryCommands(
 			throw new Exception("No checkouts found");
 
 		_log.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, versionsConfig, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		_log.LogInformation("Create global navigation");
@@ -174,7 +176,7 @@ internal sealed class RepositoryCommands(
 		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
-		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, endpoints, historyMapper);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
 		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
@@ -202,7 +204,7 @@ internal sealed class RepositoryCommands(
 		// The environment ist not relevant here.
 		// It's only used to get the list of repositories.
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, "prod", collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "prod", collector, fs, fs, null, null);
 		var cloner = new RepositorySourcer(logFactory, assembleContext.CheckoutDirectory, fs, collector);
 		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
 		{
@@ -223,7 +225,8 @@ internal sealed class RepositoryCommands(
 						collector,
 						new FileSystem(),
 						new FileSystem(),
-						versionsConfig,
+						configurationContext,
+						ExportOptions.MetadataOnly,
 						checkout.Directory.FullName,
 						outputPath
 					);
@@ -256,33 +259,5 @@ internal sealed class RepositoryCommands(
 		await collector.StopAsync(ctx);
 
 		return collector.Errors > 0 ? 1 : 0;
-	}
-}
-
-[AttributeUsage(AttributeTargets.Parameter)]
-public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<ExportOption>>
-{
-	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<ExportOption> result)
-	{
-		result = new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
-		var set = new HashSet<ExportOption>();
-		var ranges = s.Split(',');
-		foreach (var range in ranges)
-		{
-			ExportOption? export = s[range].Trim().ToString().ToLowerInvariant() switch
-			{
-				"llm" => ExportOption.LLMText,
-				"llmtext" => ExportOption.LLMText,
-				"es" => ExportOption.Elasticsearch,
-				"elasticsearch" => ExportOption.Elasticsearch,
-				"html" => ExportOption.Html,
-				"config" => ExportOption.Configuration,
-				_ => null
-			};
-			if (export.HasValue)
-				_ = set.Add(export.Value);
-		}
-		result = set;
-		return true;
 	}
 }

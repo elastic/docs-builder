@@ -15,9 +15,9 @@ using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Exporters;
+namespace Elastic.Documentation.Tooling.Exporters;
 
-public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, DiagnosticsCollector collector, DocumentationEndpoints endpoints)
+public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
 	: IMarkdownExporter, IDisposable
 {
 	private CatalogIndexChannel<DocumentationDocument>? _channel;
@@ -28,11 +28,12 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, Diagnostic
 		if (_channel != null)
 			return;
 
-		var configuration = new ElasticsearchConfiguration(endpoints.Elasticsearch)
+		var es = endpoints.Elasticsearch;
+		var configuration = new ElasticsearchConfiguration(es.Uri)
 		{
-			Authentication = endpoints.ElasticsearchApiKey is { } apiKey
+			Authentication = es.ApiKey is { } apiKey
 				? new ApiKey(apiKey)
-				: endpoints.ElasticsearchUsername is { } username && endpoints.ElasticsearchPassword is { } password
+				: es.Username is { } username && es.Password is { } password
 					? new BasicAuthentication(username, password)
 					: null
 		};
@@ -133,6 +134,7 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, Diagnostic
 			Url = url,
 			Body = body,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
+			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
 		};
 		return await TryWrite(doc, ctx);
 	}

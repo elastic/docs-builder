@@ -11,21 +11,24 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Documentation.Configuration;
 
-public record BuildContext : IDocumentationContext
+public record BuildContext : IDocumentationSetContext, IDocumentationConfigurationContext
 {
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 
 	public IFileSystem ReadFileSystem { get; }
 	public IFileSystem WriteFileSystem { get; }
+	public IReadOnlySet<Exporter> AvailableExporters { get; }
 
 	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
-	public IDirectoryInfo DocumentationOutputDirectory { get; }
+	public IDirectoryInfo OutputDirectory { get; }
 
 	public ConfigurationFile Configuration { get; }
 
-	public VersionsConfiguration VersionsConfig { get; init; }
+	public VersionsConfiguration VersionsConfiguration { get; }
+	public ConfigurationFileProvider ConfigurationFileProvider { get; }
+	public DocumentationEndpoints Endpoints { get; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -64,8 +67,12 @@ public record BuildContext : IDocumentationContext
 		init => _urlPathPrefix = value;
 	}
 
-	public BuildContext(IDiagnosticsCollector collector, IFileSystem fileSystem, VersionsConfiguration versionsConfig)
-		: this(collector, fileSystem, fileSystem, versionsConfig, null, null)
+	public BuildContext(
+		IDiagnosticsCollector collector,
+		IFileSystem fileSystem,
+		IConfigurationContext configurationContext
+	)
+		: this(collector, fileSystem, fileSystem, configurationContext, ExportOptions.Default, null, null)
 	{
 	}
 
@@ -73,7 +80,8 @@ public record BuildContext : IDocumentationContext
 		IDiagnosticsCollector collector,
 		IFileSystem readFileSystem,
 		IFileSystem writeFileSystem,
-		VersionsConfiguration versionsConfig,
+		IConfigurationContext configurationContext,
+		IReadOnlySet<Exporter> availableExporters,
 		string? source = null,
 		string? output = null,
 		GitCheckoutInformation? gitCheckoutInformation = null
@@ -82,7 +90,10 @@ public record BuildContext : IDocumentationContext
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
-		VersionsConfig = versionsConfig;
+		AvailableExporters = availableExporters;
+		VersionsConfiguration = configurationContext.VersionsConfiguration;
+		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
+		Endpoints = configurationContext.Endpoints;
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
@@ -92,7 +103,7 @@ public record BuildContext : IDocumentationContext
 
 		DocumentationCheckoutDirectory = Paths.DetermineSourceDirectoryRoot(DocumentationSourceDirectory);
 
-		DocumentationOutputDirectory = !string.IsNullOrWhiteSpace(output)
+		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
 			: WriteFileSystem.DirectoryInfo.New(Path.Combine(rootFolder.FullName, Path.Combine(".artifacts", "docs", "html")));
 
@@ -100,7 +111,7 @@ public record BuildContext : IDocumentationContext
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-		Configuration = new ConfigurationFile(this, VersionsConfig);
+		Configuration = new ConfigurationFile(this, VersionsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{
 			Enabled = false

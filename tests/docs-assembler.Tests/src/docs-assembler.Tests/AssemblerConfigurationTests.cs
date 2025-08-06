@@ -24,8 +24,9 @@ public class PublicOnlyAssemblerConfigurationTests
 		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationFileProvider = new ConfigurationFileProvider(FileSystem, skipPrivateRepositories: true);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -55,9 +56,9 @@ public class AssemblerConfigurationTests
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		var configurationFileProvider = new ConfigurationFileProvider(FileSystem);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]

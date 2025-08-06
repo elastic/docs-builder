@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using Actions.Core.Extensions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,8 +35,8 @@ public static class DocumentationTooling
 				);
 				var elasticsearchPassword =
 					elasticsearchUri.UserInfo is { } userInfo && userInfo.Contains(':')
-					? userInfo.Split(':')[1]
-					: TryEnvVarsOptional("DOCUMENTATION_ELASTIC_PASSWORD");
+						? userInfo.Split(':')[1]
+						: TryEnvVarsOptional("DOCUMENTATION_ELASTIC_PASSWORD");
 
 				var elasticsearchUser =
 					elasticsearchUri.UserInfo is { } userInfo2 && userInfo2.Contains(':')
@@ -45,10 +46,25 @@ public static class DocumentationTooling
 				var elasticsearchApiKey = TryEnvVarsOptional("DOCUMENTATION_ELASTIC_APIKEY");
 				return new DocumentationEndpoints
 				{
-					Elasticsearch = elasticsearchUri,
-					ElasticsearchPassword = elasticsearchPassword,
-					ElasticsearchApiKey = elasticsearchApiKey,
-					ElasticsearchUsername = elasticsearchUser
+					Elasticsearch = new ElasticsearchEndpoint
+					{
+						Uri = elasticsearchUri,
+						Password = elasticsearchPassword,
+						ApiKey = elasticsearchApiKey,
+						Username = elasticsearchUser
+					},
+				};
+			})
+			.AddSingleton<IConfigurationContext>(sp =>
+			{
+				var endpoints = sp.GetRequiredService<DocumentationEndpoints>();
+				var configurationFileProvider = sp.GetRequiredService<ConfigurationFileProvider>();
+				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
+				return new ConfigurationContext
+				{
+					ConfigurationFileProvider = configurationFileProvider,
+					VersionsConfiguration = versionsConfiguration,
+					Endpoints = endpoints
 				};
 			});
 

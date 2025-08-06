@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.FrontMatter;
 using YamlDotNet.Serialization;
@@ -20,7 +21,7 @@ public static class YamlSerialization
 			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
 			.WithTypeConverter(new ProductConverter())
-			.WithTypeConverter(new ApplicableToConverter())
+			.WithTypeConverter(new ApplicableToYamlConverter())
 			.Build();
 
 		var frontMatter = deserializer.Deserialize<T>(input);

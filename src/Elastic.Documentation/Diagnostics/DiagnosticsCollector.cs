@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 namespace Elastic.Documentation.Diagnostics;
 
 public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
-	: IDiagnosticsCollector, IHostedService
+	: IDiagnosticsCollector
 {
 	private DiagnosticsChannel Channel { get; } = new();
 

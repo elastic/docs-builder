@@ -20,7 +20,7 @@ public record RuleOverviewReference : FileReference
 		string overviewFilePath,
 		string parentPath,
 		ConfigurationFile configuration,
-		IDocumentationContext context,
+		IDocumentationSetContext context,
 		IReadOnlyCollection<string> detectionRuleFolders
 	)
 		: base(tableOfContentsScope, overviewFilePath, false, [])
@@ -30,7 +30,7 @@ public record RuleOverviewReference : FileReference
 		Children = CreateTableOfContentItems(configuration, context);
 	}
 
-	private IReadOnlyCollection<ITocItem> CreateTableOfContentItems(ConfigurationFile configuration, IDocumentationContext context)
+	private IReadOnlyCollection<ITocItem> CreateTableOfContentItems(ConfigurationFile configuration, IDocumentationSetContext context)
 	{
 		var tocItems = new List<ITocItem>();
 		foreach (var detectionRuleFolder in DetectionRuleFolders)
@@ -44,7 +44,7 @@ public record RuleOverviewReference : FileReference
 			.ToArray();
 	}
 
-	private IReadOnlyCollection<ITocItem> ReadDetectionRuleFolder(ConfigurationFile configuration, IDocumentationContext context, string detectionRuleFolder)
+	private IReadOnlyCollection<ITocItem> ReadDetectionRuleFolder(ConfigurationFile configuration, IDocumentationSetContext context, string detectionRuleFolder)
 	{
 		var detectionRulesFolder = Path.Combine(ParentPath, detectionRuleFolder).TrimStart(Path.DirectorySeparatorChar);
 		var fs = context.ReadFileSystem;

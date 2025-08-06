@@ -15,7 +15,7 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 
 	private readonly PhysicalFileProvider? _staticWebFilesDuringDebug;
 
-	public EmbeddedOrPhysicalFileProvider(IDocumentationContext context)
+	public EmbeddedOrPhysicalFileProvider(IDocumentationSetContext context)
 	{
 		var documentationStaticFiles = Path.Combine(context.DocumentationSourceDirectory.FullName, "_static");
 #if DEBUG

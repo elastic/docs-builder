@@ -140,7 +140,8 @@ public class DocumentationGenerator
 		}
 
 		_logger.LogInformation($"Generating links.json");
-		var linkReference = await GenerateLinkReference(ctx);
+		var writeToDisk = _documentationFileExporter is DocumentationFileExporter;
+		var linkReference = await GenerateLinkReference(writeToDisk, ctx);
 
 		// ReSharper disable once WithExpressionModifiesAllMembers
 		return result with
@@ -318,12 +319,15 @@ public class DocumentationGenerator
 		return false;
 	}
 
-	private async Task<RepositoryLinks> GenerateLinkReference(Cancel ctx)
+	private async Task<RepositoryLinks> GenerateLinkReference(bool writeToDisk, Cancel ctx)
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
-		var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
-		await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		if (writeToDisk)
+		{
+			var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
+			await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+		}
 		return state;
 	}
 

@@ -149,7 +149,7 @@ public class HtmlWriter(
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts,
-			VersionsConfig = DocumentationSet.Context.VersionsConfig
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration
 		});
 
 		return new RenderResult

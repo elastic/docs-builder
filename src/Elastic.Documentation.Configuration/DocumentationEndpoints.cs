@@ -6,8 +6,15 @@ namespace Elastic.Documentation.Configuration;
 
 public record DocumentationEndpoints
 {
-	public required Uri Elasticsearch { get; init; }
-	public required string? ElasticsearchUsername { get; init; }
-	public required string? ElasticsearchPassword { get; init; }
-	public required string? ElasticsearchApiKey { get; init; }
+	public required ElasticsearchEndpoint Elasticsearch { get; init; }
+}
+
+public record ElasticsearchEndpoint
+{
+	public static ElasticsearchEndpoint Default { get; } = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200") };
+
+	public required Uri Uri { get; init; }
+	public string? Username { get; init; }
+	public string? Password { get; init; }
+	public string? ApiKey { get; init; }
 }

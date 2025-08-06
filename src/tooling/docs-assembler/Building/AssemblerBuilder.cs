@@ -4,12 +4,13 @@
 
 using System.Collections.Frozen;
 using System.Text.Json;
-using Documentation.Assembler.Exporters;
 using Documentation.Assembler.Navigation;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Links.CrossLinks;
@@ -17,21 +18,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
-public enum ExportOption
-{
-	Html = 0,
-	LLMText = 1,
-	Elasticsearch = 2,
-	Configuration = 3
-}
-
 public class AssemblerBuilder(
 	ILoggerFactory logFactory,
 	AssembleContext context,
 	GlobalNavigation navigation,
 	GlobalNavigationHtmlWriter writer,
 	GlobalNavigationPathProvider pathProvider,
-	DocumentationEndpoints documentationEndpoints,
 	ILegacyUrlMapper? legacyUrlMapper
 )
 {
@@ -41,7 +33,7 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<ExportOption> exportOptions, Cancel ctx)
+	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
@@ -49,21 +41,12 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var esExporter = new ElasticsearchMarkdownExporter(logFactory, context.Collector, documentationEndpoints);
-
-		var markdownExporters = new List<IMarkdownExporter>(3);
-		if (exportOptions.Contains(ExportOption.LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter());
-		if (exportOptions.Contains(ExportOption.Configuration))
-			markdownExporters.Add(new ConfigurationExporter(logFactory, context));
-		if (exportOptions.Contains(ExportOption.Elasticsearch) && esExporter is { })
-			markdownExporters.Add(esExporter);
-		var noHtmlOutput = !exportOptions.Contains(ExportOption.Html);
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
+		var noHtmlOutput = !exportOptions.Contains(Exporter.Html);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
-		var fs = context.ReadFileSystem;
 		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
 		foreach (var (_, set) in assembleSets)
 		{
@@ -130,7 +113,7 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 			{
 				_ = linkResolver.TryResolve(
-					(e) => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
+					e => _logger.LogError("An error occurred while resolving cross-link {Path}: {Error}", path, e),
 					new Uri(path),
 					out uri);
 			}
