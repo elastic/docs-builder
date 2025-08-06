@@ -30,4 +30,7 @@ public record DocumentationDocument
 
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
+
+	[JsonPropertyName("abstract")]
+	public string? Abstract { get; set; }
 }

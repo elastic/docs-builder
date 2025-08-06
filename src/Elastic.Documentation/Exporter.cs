@@ -8,13 +8,14 @@ namespace Elastic.Documentation;
 
 public enum Exporter
 {
-	Html = 0,
-	LLMText = 1,
-	Elasticsearch = 2,
-	Configuration = 3,
-	DocumentationState = 4,
-	LinkMetadata = 5,
-	Redirects = 6
+	Html,
+	LLMText,
+	Elasticsearch,
+	SemanticElasticsearch,
+	Configuration,
+	DocumentationState,
+	LinkMetadata,
+	Redirects,
 }
 public static class ExportOptions
 {
