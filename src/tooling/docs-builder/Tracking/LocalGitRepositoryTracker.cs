@@ -11,6 +11,7 @@ namespace Documentation.Builder.Tracking;
 public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
 	private string LookupPath { get; } = lookupPath;
+
 	public IEnumerable<GitChange> GetChangedFiles()
 	{
 		var defaultBranch = GetDefaultBranch();
