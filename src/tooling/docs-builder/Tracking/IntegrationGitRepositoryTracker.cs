@@ -2,10 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Microsoft.Extensions.Logging;
+
 namespace Documentation.Builder.Tracking;
 
-public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
+public class IntegrationGitRepositoryTracker(ILogger<IntegrationGitRepositoryTracker> logger, string lookupPath) : IRepositoryTracker
 {
+	private ILogger<IntegrationGitRepositoryTracker> Log { get; } = logger;
 	private string LookupPath { get; } = $"{lookupPath}/";
 	public IEnumerable<GitChange> GetChangedFiles()
 	{
@@ -13,7 +16,10 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 		if (!string.IsNullOrEmpty(deletedFiles))
 		{
 			foreach (var file in deletedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+			{
+				Log.LogInformation("Found {File} as deleted in integration build", file);
 				yield return new GitChange(file, GitChangeType.Deleted);
+			}
 		}
 
 		var addedFiles = Environment.GetEnvironmentVariable("ADDED_FILES");
@@ -33,8 +39,13 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 		var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
 		if (!string.IsNullOrEmpty(renamedFiles))
 		{
-			foreach (var file in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-				yield return new RenamedGitChange(string.Empty, file, GitChangeType.Renamed);
+			foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+			{
+				Log.LogInformation("Found {File} as renamed in integration build", pair);
+				var parts = pair.Split(':');
+				if (parts.Length == 2)
+					yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
+			}
 		}
 	}
 }

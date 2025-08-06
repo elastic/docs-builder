@@ -57,7 +57,7 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
-		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
+		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(logFactory.CreateLogger<IntegrationGitRepositoryTracker>(), path) : new LocalGitRepositoryTracker(collector, root, path);
 		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
 
 		if (changed.Length > 0)
