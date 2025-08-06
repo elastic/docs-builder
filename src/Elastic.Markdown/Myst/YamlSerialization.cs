@@ -27,6 +27,8 @@ public static class YamlSerialization
 		return frontMatter;
 
 	}
+
+
 }
 
 [YamlStaticContext]

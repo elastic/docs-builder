@@ -4,12 +4,16 @@
 
 using System.IO.Abstractions;
 using System.IO.Compression;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
+using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Syntax;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Exporters;
 
@@ -133,6 +137,18 @@ public class LlmMarkdownExporter : IMarkdownExporter
 				_ = metadata.AppendLine($"  - {product}");
 		}
 
+		// Add raw ApplicableTo from YAML front matter
+		if (sourceFile.YamlFrontMatter?.AppliesTo is not null)
+		{
+			_ = metadata.AppendLine("applies_to:");
+			var yamlContent = sourceFile.YamlFrontMatter.AppliesTo.ToString();
+			// Indent each line of the YAML content
+			var indentedLines = yamlContent.Split(Environment.NewLine)
+				.Select(line => $"  {line}")
+				.Where(line => !string.IsNullOrWhiteSpace(line));
+			_ = metadata.AppendLine(string.Join(Environment.NewLine, indentedLines));
+		}
+
 		_ = metadata.AppendLine("---");
 		_ = metadata.AppendLine();
 		_ = metadata.AppendLine($"# {sourceFile.Title}");
@@ -140,6 +156,8 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 		return metadata.ToString();
 	}
+
+
 }
 
 public static class LlmMarkdownExporterExtensions

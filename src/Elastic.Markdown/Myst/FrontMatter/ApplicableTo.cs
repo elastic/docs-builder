@@ -61,6 +61,91 @@ public record ApplicableTo
 		Deployment = DeploymentApplicability.All,
 		Product = AppliesCollection.GenerallyAvailable
 	};
+
+	public override string ToString()
+	{
+		var lines = new List<string>();
+
+		if (Stack is not null)
+			lines.Add($"stack: {Stack}");
+
+		if (Deployment is not null)
+		{
+			lines.Add("deployment:");
+			if (Deployment.Self is not null)
+				lines.Add($"  self: {Deployment.Self}");
+			if (Deployment.Ece is not null)
+				lines.Add($"  ece: {Deployment.Ece}");
+			if (Deployment.Eck is not null)
+				lines.Add($"  eck: {Deployment.Eck}");
+			if (Deployment.Ess is not null)
+				lines.Add($"  ess: {Deployment.Ess}");
+		}
+
+		if (Serverless is not null)
+		{
+			lines.Add("serverless:");
+			if (Serverless.Elasticsearch is not null)
+				lines.Add($"  elasticsearch: {Serverless.Elasticsearch}");
+			if (Serverless.Observability is not null)
+				lines.Add($"  observability: {Serverless.Observability}");
+			if (Serverless.Security is not null)
+				lines.Add($"  security: {Serverless.Security}");
+			if (Serverless.AllProjects is not null)
+				lines.Add($"  all_projects: {Serverless.AllProjects}");
+		}
+
+
+		if (ProductApplicability is not null)
+		{
+			lines.Add("product:");
+			if (ProductApplicability.Ecctl is not null)
+				lines.Add($"  ecctl: {ProductApplicability.Ecctl}");
+			if (ProductApplicability.Curator is not null)
+				lines.Add($"  curator: {ProductApplicability.Curator}");
+			if (ProductApplicability.ApmAgentAndroid is not null)
+				lines.Add($"  apm_agent_android: {ProductApplicability.ApmAgentAndroid}");
+			if (ProductApplicability.ApmAgentDotnet is not null)
+				lines.Add($"  apm_agent_dotnet: {ProductApplicability.ApmAgentDotnet}");
+			if (ProductApplicability.ApmAgentGo is not null)
+				lines.Add($"  apm_agent_go: {ProductApplicability.ApmAgentGo}");
+			if (ProductApplicability.ApmAgentIos is not null)
+				lines.Add($"  apm_agent_ios: {ProductApplicability.ApmAgentIos}");
+			if (ProductApplicability.ApmAgentJava is not null)
+				lines.Add($"  apm_agent_java: {ProductApplicability.ApmAgentJava}");
+			if (ProductApplicability.ApmAgentNode is not null)
+				lines.Add($"  apm_agent_node: {ProductApplicability.ApmAgentNode}");
+			if (ProductApplicability.ApmAgentPhp is not null)
+				lines.Add($"  apm_agent_php: {ProductApplicability.ApmAgentPhp}");
+			if (ProductApplicability.ApmAgentPython is not null)
+				lines.Add($"  apm_agent_python: {ProductApplicability.ApmAgentPython}");
+			if (ProductApplicability.ApmAgentRuby is not null)
+				lines.Add($"  apm_agent_ruby: {ProductApplicability.ApmAgentRuby}");
+			if (ProductApplicability.ApmAgentRum is not null)
+				lines.Add($"  apm_agent_rum: {ProductApplicability.ApmAgentRum}");
+			if (ProductApplicability.EdotIos is not null)
+				lines.Add($"  edot_ios: {ProductApplicability.EdotIos}");
+			if (ProductApplicability.EdotAndroid is not null)
+				lines.Add($"  edot_android: {ProductApplicability.EdotAndroid}");
+			if (ProductApplicability.EdotDotnet is not null)
+				lines.Add($"  edot_dotnet: {ProductApplicability.EdotDotnet}");
+			if (ProductApplicability.EdotJava is not null)
+				lines.Add($"  edot_java: {ProductApplicability.EdotJava}");
+			if (ProductApplicability.EdotNode is not null)
+				lines.Add($"  edot_node: {ProductApplicability.EdotNode}");
+			if (ProductApplicability.EdotPhp is not null)
+				lines.Add($"  edot_php: {ProductApplicability.EdotPhp}");
+			if (ProductApplicability.EdotPython is not null)
+				lines.Add($"  edot_python: {ProductApplicability.EdotPython}");
+			if (ProductApplicability.EdotCfAws is not null)
+				lines.Add($"  edot_cf_aws: {ProductApplicability.EdotCfAws}");
+		}
+		else if (Product is not null)
+			lines.Add($"product: {Product}");
+
+
+		return string.Join(Environment.NewLine, lines);
+	}
 }
 
 [YamlSerializable]
