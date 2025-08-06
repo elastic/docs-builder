@@ -8,17 +8,16 @@ using Elastic.Documentation.Tooling.ExternalCommands;
 
 namespace Documentation.Builder.Tracking;
 
-public record GitChange(string FilePath, GitChangeType ChangeType);
-public record RenamedGitChange(string OldFilePath, string NewFilePath, GitChangeType ChangeType) : GitChange(OldFilePath, ChangeType);
-
-public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
+public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
-	public IEnumerable<GitChange> GetChangedFiles(string lookupPath)
+	private string LookupPath { get; } = lookupPath;
+
+	public IEnumerable<GitChange> GetChangedFiles()
 	{
 		var defaultBranch = GetDefaultBranch();
-		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", $"./{lookupPath}");
+		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", $"./{LookupPath}");
 		var localChanges = CaptureMultiple("git", "status", "--porcelain");
-		ExecInSilent([], "git", "stash", "push", "--", $"./{lookupPath}");
+		ExecInSilent([], "git", "stash", "push", "--", $"./{LookupPath}");
 		var localUnstagedChanges = CaptureMultiple("git", "stash", "show", "--name-status", "-u");
 		ExecInSilent([], "git", "stash", "pop");
 

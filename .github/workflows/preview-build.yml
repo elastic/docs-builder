@@ -117,6 +117,10 @@ jobs:
     outputs:
       any_modified: ${{ steps.check-files.outputs.any_modified }}
       all_changed_files: ${{ steps.check-files.outputs.all_changed_files }}
+      added_files: ${{ steps.check-files.outputs.added_files }}
+      modified_files: ${{ steps.check-files.outputs.modified_files }}
+      deleted_files: ${{ steps.check-files.outputs.deleted_files }}
+      renamed_files: ${{ steps.check-files.outputs.renamed_files }}
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
@@ -149,6 +153,10 @@ jobs:
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
       MATCH: ${{ needs.match.outputs.content-source-match }}
+      ADDED_FILES: ${{ needs.check.outputs.added_files }}
+      MODIFIED_FILES: ${{ needs.check.outputs.modified_files }}
+      DELETED_FILES: ${{ needs.check.outputs.deleted_files }}
+      RENAMED_FILES: ${{ needs.check.outputs.renamed_files }}
     needs:
       - check
       - match
@@ -233,6 +241,19 @@ jobs:
           && github.repository == 'elastic/docs-builder'
           && steps.deployment.outputs.result
         uses: elastic/docs-builder/.github/actions/bootstrap@main
+
+      - name: 'Validate redirect rules'
+        if: >
+          env.MATCH == 'true'
+          && (
+            steps.deployment.outputs.result
+            || (
+              needs.check.outputs.any_modified == 'true' 
+              && github.event_name == 'merge_group'
+            )
+          )
+        run: |
+          dotnet run --project src/tooling/docs-builder -- diff validate
 
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!

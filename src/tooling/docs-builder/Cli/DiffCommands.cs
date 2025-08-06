@@ -22,6 +22,8 @@ internal sealed class DiffCommands(
 	IConfigurationContext configurationContext
 )
 {
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
+
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
 	/// </summary>
@@ -31,6 +33,7 @@ internal sealed class DiffCommands(
 	[Command("validate")]
 	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
 	{
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
@@ -53,8 +56,11 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
-		var tracker = new LocalGitRepositoryTracker(collector, root);
-		var changed = tracker.GetChangedFiles(path);
+		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
+		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
+
+		if (changed.Length > 0)
+			_log.LogInformation($"Found {changed.Length} changes to files related to documentation in the current branch.");
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
@@ -62,7 +68,9 @@ internal sealed class DiffCommands(
 			if (notFound is RenamedGitChange renamed)
 			{
 				collector.EmitError(redirectFileInfo.Name,
-					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
+					runningOnCi
+						? $"A file was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set."
+						: $"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
 			}
 			else if (notFound.ChangeType is GitChangeType.Deleted)
 			{
