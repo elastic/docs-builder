@@ -60,7 +60,7 @@ public class NavigationPrefixChecker
 		public required string Path { get; init; }
 	}
 
-	public async Task CheckWithLocalLinksJson(DiagnosticsCollector collector, string repository, string? localLinksJson, CancellationToken ctx)
+	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string? localLinksJson, CancellationToken ctx)
 	{
 		if (string.IsNullOrEmpty(repository))
 			throw new ArgumentNullException(nameof(repository));
@@ -76,10 +76,10 @@ public class NavigationPrefixChecker
 		await FetchAndValidateCrossLinks(collector, repository, linkReference, ctx);
 	}
 
-	public async Task CheckAllPublishedLinks(DiagnosticsCollector collector, Cancel ctx) =>
+	public async Task CheckAllPublishedLinks(IDiagnosticsCollector collector, Cancel ctx) =>
 		await FetchAndValidateCrossLinks(collector, null, null, ctx);
 
-	private async Task FetchAndValidateCrossLinks(DiagnosticsCollector collector, string? updateRepository, RepositoryLinks? updateReference, Cancel ctx)
+	private async Task FetchAndValidateCrossLinks(IDiagnosticsCollector collector, string? updateRepository, RepositoryLinks? updateReference, Cancel ctx)
 	{
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new LinksIndexCrossLinkFetcher(_logFactoryFactory, linkIndexProvider);

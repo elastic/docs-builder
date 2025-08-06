@@ -4,8 +4,8 @@
 
 module ``product availability``.``yaml directive``
 
+open Elastic.Documentation.AppliesTo
 open Elastic.Markdown.Myst.Directives.AppliesTo
-open Elastic.Markdown.Myst.FrontMatter
 open authoring
 open authoring.MarkdownDocumentAssertions
 open Swensen.Unquote

@@ -17,7 +17,7 @@ namespace Documentation.Assembler.Cli;
 internal sealed class ContentSourceCommands(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
-	ConfigurationFileProvider configurationFileProvider,
+	IConfigurationContext configurationContext,
 	ICoreService githubActionsService
 )
 {
@@ -33,11 +33,7 @@ internal sealed class ContentSourceCommands(
 
 		// environment does not matter to check the configuration, defaulting to dev
 		var fs = new FileSystem();
-		var context = new AssembleContext(configuration, configurationFileProvider, "dev", collector, fs, fs, null, null)
-		{
-			Force = false,
-			AllowIndexing = false
-		};
+		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fs, fs, null, null);
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
 		var links = await fetcher.FetchLinkIndex(ctx);
@@ -97,11 +93,7 @@ internal sealed class ContentSourceCommands(
 		_ = collector.StartAsync(ctx);
 
 		// environment does not matter to check the configuration, defaulting to dev
-		var assembleContext = new AssembleContext(configuration, configurationFileProvider, "dev", collector, new FileSystem(), new FileSystem(), null, null)
-		{
-			Force = false,
-			AllowIndexing = false
-		};
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, new FileSystem(), new FileSystem(), null, null);
 		var matches = assembleContext.Configuration.Match(repo, refName);
 		if (matches is { Current: null, Next: null, Speculative: false })
 		{

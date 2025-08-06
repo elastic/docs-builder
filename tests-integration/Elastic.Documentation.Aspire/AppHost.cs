@@ -24,14 +24,31 @@ var cloneAll = builder.AddProject<Projects.docs_assembler>("DocsAssemblerCloneAl
 var buildAll = builder.AddProject<Projects.docs_assembler>("DocsAssemblerBuildAll").WithArgs(["repo", "build-all", .. globalArguments])
 	.WaitForCompletion(cloneAll);
 
-var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>("ApiLambda").WithArgs(globalArguments);
+var elasticsearch = builder.AddElasticsearch("elasticsearch");
+
+var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>("ApiLambda").WithArgs(globalArguments)
+	.WaitFor(elasticsearch)
+	.WithReference(elasticsearch);
+
+var indexElasticsearch = builder.AddProject<Projects.docs_assembler>("DocsAssemblerElasticsearch")
+	.WithArgs(["repo", "build-all", "--exporters", "html,elasticsearch", .. globalArguments])
+	.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearch.GetEndpoint("http"))
+	.WithEnvironment(context =>
+	{
+		context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearch.Resource.PasswordParameter;
+	})
+	.WithReference(elasticsearch)
+	.WithExplicitStart()
+	.WaitFor(elasticsearch)
+	.WaitForCompletion(cloneAll);
 
 var serveStatic = builder.AddProject<Projects.docs_builder>("DocsBuilderServeStatic")
+	.WithReference(elasticsearch)
 	.WithHttpEndpoint(port: 4000, isProxied: false)
 	.WithArgs(["serve-static", .. globalArguments])
 	.WithHttpHealthCheck("/", 200)
 	.WaitForCompletion(buildAll);
 
-//builder.AddElasticsearch("elasticsearch");
+
 
 builder.Build().Run();

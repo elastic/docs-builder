@@ -18,7 +18,7 @@ namespace Documentation.Assembler.Cli;
 
 internal sealed class NavigationCommands(
 	AssemblyConfiguration configuration,
-	ConfigurationFileProvider configurationFileProvider,
+	IConfigurationContext configurationContext,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
@@ -29,7 +29,7 @@ internal sealed class NavigationCommands(
 	public async Task<int> Validate(Cancel ctx = default)
 	{
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
-		var assembleContext = new AssembleContext(configuration, configurationFileProvider, "dev", collector, new FileSystem(), new FileSystem(), null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, new FileSystem(), new FileSystem(), null, null);
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext) || assembleContext.Collector.Errors > 0)
@@ -57,7 +57,7 @@ internal sealed class NavigationCommands(
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(configuration, configurationFileProvider, "dev", collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fs, fs, null, null);
 
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformation.Create(root, fs, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName

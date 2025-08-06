@@ -114,10 +114,10 @@ public record DetectionRuleFile : MarkdownFile
 
 	public static IFileInfo OutputPath(IFileInfo rulePath, BuildContext build)
 	{
-		var relative = Path.GetRelativePath(build.DocumentationOutputDirectory.FullName, rulePath.FullName);
+		var relative = Path.GetRelativePath(build.OutputDirectory.FullName, rulePath.FullName);
 		if (relative.StartsWith("../"))
 			relative = relative[3..];
-		var newPath = Path.Combine(build.DocumentationOutputDirectory.FullName, relative);
+		var newPath = Path.Combine(build.OutputDirectory.FullName, relative);
 		return rulePath.FileSystem.FileInfo.New(newPath);
 	}
 

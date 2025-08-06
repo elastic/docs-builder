@@ -21,7 +21,7 @@ namespace Documentation.Assembler.Cli;
 
 internal sealed class DeployCommands(
 	AssemblyConfiguration assemblyConfiguration,
-	ConfigurationFileProvider configurationFileProvider,
+	IConfigurationContext configurationContext,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
@@ -48,7 +48,7 @@ internal sealed class DeployCommands(
 			NoHints = true
 		}.StartAsync(ctx);
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var s3Client = new AmazonS3Client();
 		IDocsSyncPlanStrategy planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
 		var plan = await planner.Plan(ctx);
@@ -86,7 +86,7 @@ internal sealed class DeployCommands(
 			NoHints = true
 		}.StartAsync(ctx);
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var s3Client = new AmazonS3Client();
 		var transferUtility = new TransferUtility(s3Client, new TransferUtilityConfig
 		{

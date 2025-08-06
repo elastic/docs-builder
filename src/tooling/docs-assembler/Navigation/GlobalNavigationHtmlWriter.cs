@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Navigation;
 
-public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, GlobalNavigation globalNavigation, DiagnosticsCollector collector) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, GlobalNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
 {
 	private readonly ILogger<Program> _logger = logFactory.CreateLogger<Program>();
 

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
+using Elastic.Documentation;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure;
@@ -36,8 +37,14 @@ public class DocumentationWebHost
 	private readonly IHostedService _hostedService;
 	private readonly IFileSystem _writeFileSystem;
 
-	public DocumentationWebHost(ILoggerFactory logFactory, string? path, int port, IFileSystem readFs, IFileSystem writeFs,
-		VersionsConfiguration versionsConfig)
+	public DocumentationWebHost(
+		ILoggerFactory logFactory,
+		string? path,
+		int port,
+		IFileSystem readFs,
+		IFileSystem writeFs,
+		IConfigurationContext configurationContext
+	)
 	{
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
@@ -56,11 +63,11 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, versionsConfig, path, null)
+		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
-		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.DocumentationOutputDirectory, Context);
+		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
@@ -116,6 +123,7 @@ public class DocumentationWebHost
 					{
 						Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
 					}
+
 					throw; // Re-throw to let ASP.NET Core handle it
 				}
 			})
@@ -212,6 +220,7 @@ public class DocumentationWebHost
 					var llmRendered = await generator.RenderLlmMarkdown(markdown, ctx);
 					return Results.Content(llmRendered, "text/markdown; charset=utf-8");
 				}
+
 				// Regular HTML rendering
 				var rendered = await generator.RenderLayout(markdown, ctx);
 				return LiveReloadHtml(rendered.Html);
