@@ -65,13 +65,10 @@ internal sealed class DiffCommands(
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
 		{
-			_log.LogInformation("Checking {FilePath}", notFound.FilePath);
 			if (notFound is RenamedGitChange renamed)
 			{
 				collector.EmitError(redirectFileInfo.Name,
-					runningOnCi
-						? $"A file was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set."
-						: $"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
+					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
 			}
 			else if (notFound.ChangeType is GitChangeType.Deleted)
 			{

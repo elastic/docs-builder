@@ -6,19 +6,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Tracking;
 
-public class IntegrationGitRepositoryTracker(ILogger<IntegrationGitRepositoryTracker> logger, string lookupPath) : IRepositoryTracker
+public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
 {
-	private ILogger<IntegrationGitRepositoryTracker> Log { get; } = logger;
 	private string LookupPath { get; } = $"{lookupPath}/";
 	public IEnumerable<GitChange> GetChangedFiles()
 	{
 		var deletedFiles = Environment.GetEnvironmentVariable("DELETED_FILES") ?? string.Empty;
-		Log.LogInformation("Deleted files:  {File} as deleted in integration build", deletedFiles);
 		if (!string.IsNullOrEmpty(deletedFiles))
 		{
 			foreach (var file in deletedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
 			{
-				Log.LogInformation("Found {File} as deleted in integration build", file);
 				yield return new GitChange(file, GitChangeType.Deleted);
 			}
 		}
@@ -38,12 +35,10 @@ public class IntegrationGitRepositoryTracker(ILogger<IntegrationGitRepositoryTra
 		}
 
 		var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
-		Log.LogInformation("Renamed files:  {File} as deleted in integration build", renamedFiles);
 		if (!string.IsNullOrEmpty(renamedFiles))
 		{
 			foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
 			{
-				Log.LogInformation("Found {File} as renamed in integration build", pair);
 				var parts = pair.Split(':');
 				if (parts.Length == 2)
 					yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
