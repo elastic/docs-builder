@@ -27,7 +27,11 @@ Depending on what you're trying to communicate, you can use the following patter
 
 ## Order of items
 
-**Versions.** Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in order of product development progression, too.
+% TO DO: Open an issue to force the order in the code.
+
+**Versions.** Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in reverse order of product development progression, too.
+
+<image>
 
 % Reference: https://elastic.github.io/docs-builder/versions/#defaults-and-hierarchy
 % Needs work...
@@ -35,6 +39,8 @@ Depending on what you're trying to communicate, you can use the following patter
 * **Serverless/Elastic Stack**: Serverless, Stack
 * **Deployment types**: Elastic Cloud Serverless, Elastic Cloud Hosted, Elastic Cloud on Kubernetes, Elastic Cloud Enterprise, Self-managed
 * **Monitoring for Java applications**: Elastic Distribution of OpenTelemetry (EDOT) Java, APM Java agent
+
+<image>
 
 ## Placement of badges
 
@@ -83,7 +89,7 @@ Do **not** put the `applies_to` badge at the beginning or end of the definition 
 
 #### If the badge is only relevant to a portion of the definition, follow the appropriate placement guidelines for the elements used in the definition [definition-list-item-part]
 
-This might include labeling just one of multiple paragraphs or one item in an ordered or unordered list. For example, on the ... page, ...
+This might include labeling just one of multiple paragraphs, or one item in an ordered or unordered list. For example, on the [Google Gemini Connector page](https://www.elastic.co/docs/reference/kibana/connectors-kibana/gemini-action-type#gemini-connector-configuration), the default model is different depending on the deployment type and version of the Elastic Stack. These differences should be called out with their own `applies_to` badges.
 
 ::::{image} ./images/definition-list-portion-correct.png
 :screenshot:
@@ -178,133 +184,3 @@ To specify `applies_to` information for a code block, refer to [](/contribute/cu
 ### Images
 
 To specify `applies_to` information for an image, refer to [](/contribute/cumulative-docs/content-patterns.md#screenshot).
-
-<!-- ### Stepper -->
-
-<!-- ## Scenarios [scenarios]
-
-There are several scenarios you will likely run into at some point when contributing to the docs.
-
-### Feature in beta or technical preview is removed [beta-preview-removed]
-
-If a feature in beta or technical preview is removed without going GA,
-[list both || remove the beta/preview version]
-in the `applies_to` badge.
-
-% TO DO: Copy over example content https://github.com/elastic/kibana/pull/229485/files#r2231843057
-**Example: A beta option was removed one minor after it was introduced**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-### Code block change between versions [code-blocks]
-
-If the content of a code block changes between versions,
-you have a couple options depending on the nature of the change.
-
-#### Content is added or removed [code-blocks-added-removed]
-
-Use code callouts to point out lines that have changed over time.
-
-**Example: One new option is available**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-#### Content is replaced [code-blocks-replaced]
-
-Use a tab for each version that contains a change.
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-### Adjacent block elements change between versions [adjacent-block-elements]
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-### Images change between versions [images]
-
-#### Screenshots
-
-Follow these principles to use screenshots in our unversioned documentation system:
-
-* Reduce screenshots when they don’t explicitly add value.
-* When adding a screenshot, determine the minimum viable screenshot and whether it can apply to all relevant versions.
-* Take and maintain screenshots for only the most recent version, with very few exceptions that should be considered on a case-by-case basis.
-* In case of doubt, prioritize serverless.
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-### UI changes between versions [ui]
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-### One sentence in a paragraph changes between versions [inline-elements]
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-### Table columns, rows, or cells change between versions
-
-#### Content is added or removed
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-::::
-
-#### Content is replaced
-
-**Example**
-
-::::{tab-set}
-:::{tab-item} Visual
-:::
-:::{tab-item} Syntax
-:::
-:::: -->

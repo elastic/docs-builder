@@ -119,24 +119,46 @@ Sibling pages are a last resort when no other solutions are appropriate.
 **Best practices**:
 
 **Example**:
+* [Cloud Hosted deployment billing dimensions](https://elastic.co/docs/deploy-manage/cloud-organization/billing/cloud-hosted-deployment-billing-dimensions)
+* [{{serverless-short}} project billing dimensions](https://elastic.co/docs/deploy-manage/cloud-organization/billing/serverless-project-billing-dimensions)
 
 ## Screenshots vary [screenshot]
+
+Sometimes the UI differs between versions, deployment types or other conditions.
 
 ### Solution A: Use tabs [screenshot-tabs]
 
 **When to use tabs**:
+* When the screenshot shows significantly different interfaces or workflows for each product, deployment type, or version.
+* When the screenshot represents a specific, interactive action, like clicking a button or navigating a UI that changes meaningfully between contexts.
 
 **Best practices**:
+* Keep any explanatory text outside the tab unless it's specific to the screenshot inside.
 
 **Example**:
+
+A walkthrough for configuring alerts in Kibana differs between Elastic Stack and Serverless deployments.
+
+<image>
 
 ### Solution B: Add a note [screenshot-note]
 
+In cases where only a small visual detail differs (for example, a button label or icon), it’s often more efficient to add a note rather than creating tabbed screenshots.
+
 **When to use a note**:
+* When the screenshot is mostly consistent, but includes minor visual or behavioral differences.
+* When adding another screenshot would be redundant or distracting.
 
 **Best practices**:
+* Keep notes concise, ideally one sentence.
+* Place the note directly after the screenshot.
+* Use an `applies_to` badge at the start of the note if relevant.
 
 **Example**:
+
+In Serverless, the "Create rule" button is labeled "Add rule."
+
+<image>
 
 ## Multiple adjacent block elements vary [multiple-block]
 
@@ -151,10 +173,17 @@ Sibling pages are a last resort when no other solutions are appropriate.
 ### Solution B: Use tabs [multiple-block-tabs]
 
 **When to use tabs**:
+* When the content is structurally similar but differs in detail — for example, slightly different instructions, outputs, or paths.
+* When you want to avoid repeating most of the surrounding content and isolate just the difference.
 
 **Best practices**:
+* Only include content that varies inside the tab — don’t wrap entire pages or unrelated information.
+* Keep tabs short and focused to reduce cognitive load.
+* Label tabs clearly and consistently (e.g., by version or product).
 
 **Example**:
+
+<image>
 
 ## Feature in beta or technical preview is removed [beta-removed]
 
