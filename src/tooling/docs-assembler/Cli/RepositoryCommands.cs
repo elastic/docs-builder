@@ -13,13 +13,13 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Legacy;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
-using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -27,8 +27,7 @@ namespace Documentation.Assembler.Cli;
 
 internal sealed class RepositoryCommands(
 	AssemblyConfiguration assemblyConfiguration,
-	VersionsConfiguration versionsConfig,
-	ConfigurationFileProvider configurationFileProvider,
+	IConfigurationContext configurationContext,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
@@ -41,6 +40,39 @@ internal sealed class RepositoryCommands(
 		ConsoleApp.Log = msg => _log.LogInformation(msg);
 		ConsoleApp.LogError = msg => _log.LogError(msg);
 	}
+
+	/// <summary> Clone the configuration folder </summary>
+	/// <param name="gitRef">The git reference of the config, defaults to 'main'</param>
+	[Command("init-config")]
+	public async Task<int> CloneConfigurationFolder(string? gitRef = null, Cancel ctx = default)
+	{
+		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
+
+		var fs = new FileSystem();
+		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "config-clone");
+		var checkoutFolder = fs.DirectoryInfo.New(cachedPath);
+		var cloner = new RepositorySourcer(logFactory, checkoutFolder, fs, collector);
+
+		// relies on the embedded configuration, but we don't expect this to change
+		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
+		repository = repository with
+		{
+			SparsePaths = ["config"]
+		};
+		if (string.IsNullOrEmpty(gitRef))
+			gitRef = "main";
+
+		_log.LogInformation("Cloning configuration ({GitReference})", gitRef);
+		var checkout = cloner.CloneRef(repository, gitRef, appendRepositoryName: false);
+		_log.LogInformation("Cloned configuration ({GitReference}) to {ConfigurationFolder}", checkout.HeadReference, checkout.Directory.FullName);
+
+		var gitRefInformationFile = Path.Combine(cachedPath, "config", "git-ref.txt");
+		await fs.File.WriteAllTextAsync(gitRefInformationFile, checkout.HeadReference, ctx);
+
+		await collector.StopAsync(ctx);
+		return collector.Errors;
+	}
+
 
 	/// <summary> Clones all repositories </summary>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
@@ -62,7 +94,7 @@ internal sealed class RepositoryCommands(
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
@@ -75,22 +107,27 @@ internal sealed class RepositoryCommands(
 	}
 
 	/// <summary> Builds all repositories </summary>
-	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
 	/// <param name="environment"> The environment to build</param>
-	/// <param name="exporters"> configure exporters explicitly available (html,llmtext,es), defaults to html</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="exporters"> Set available exporters:
+	///					html, es, config, links, state, llm, redirect, metadata, none.
+	///					Defaults to (html, config, links, state, redirect) or 'default'.
+	/// </param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
-		bool? force = null,
 		bool? strict = null,
-		bool? allowIndexing = null,
 		string? environment = null,
-		[ExporterParser] IReadOnlySet<ExportOption>? exporters = null,
-		Cancel ctx = default)
+		bool? metadataOnly = null,
+		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
+		Cancel ctx = default
+	)
 	{
-		exporters ??= new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
+		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
+		// ensure we never generate a documentation state for assembler builds
+		if (exporters.Contains(Exporter.DocumentationState))
+			exporters = new HashSet<Exporter>(exporters.Except([Exporter.DocumentationState]));
 
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
@@ -106,11 +143,13 @@ internal sealed class RepositoryCommands(
 		_log.LogInformation("Creating assemble context");
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, environment, collector, fs, fs, null, null)
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
+
+		if (assembleContext.OutputDirectory.Exists)
 		{
-			Force = force ?? false,
-			AllowIndexing = allowIndexing ?? false
-		};
+			_log.LogInformation("Cleaning target output directory");
+			assembleContext.OutputDirectory.Delete(true);
+		}
 
 		_log.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
@@ -129,30 +168,36 @@ internal sealed class RepositoryCommands(
 			throw new Exception("No checkouts found");
 
 		_log.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, versionsConfig, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
 		var navigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		_log.LogInformation("Create global navigation");
 		var navigation = new GlobalNavigation(assembleSources, navigationFile);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
-		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation);
+		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageChecker();
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
-		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
+		if (exporters.Contains(Exporter.LinkMetadata))
+			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
 		if (File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
-		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
-		sitemapBuilder.Generate();
+		if (exporters.Contains(Exporter.Html))
+		{
+			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+			sitemapBuilder.Generate();
+		}
 
 		await collector.StopAsync(ctx);
+
+		_log.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
@@ -168,7 +213,7 @@ internal sealed class RepositoryCommands(
 		// The environment ist not relevant here.
 		// It's only used to get the list of repositories.
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationFileProvider, "prod", collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "prod", collector, fs, fs, null, null);
 		var cloner = new RepositorySourcer(logFactory, assembleContext.CheckoutDirectory, fs, collector);
 		var repositories = new Dictionary<string, Repository>(assembleContext.Configuration.ReferenceRepositories)
 		{
@@ -189,12 +234,13 @@ internal sealed class RepositoryCommands(
 						collector,
 						new FileSystem(),
 						new FileSystem(),
-						versionsConfig,
+						configurationContext,
+						ExportOptions.MetadataOnly,
 						checkout.Directory.FullName,
 						outputPath
 					);
 					var set = new DocumentationSet(context, logFactory);
-					var generator = new DocumentationGenerator(set, logFactory, null, null, null, new NoopDocumentationFileExporter());
+					var generator = new DocumentationGenerator(set, logFactory, null, null, null);
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();
@@ -222,33 +268,5 @@ internal sealed class RepositoryCommands(
 		await collector.StopAsync(ctx);
 
 		return collector.Errors > 0 ? 1 : 0;
-	}
-}
-
-[AttributeUsage(AttributeTargets.Parameter)]
-public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<ExportOption>>
-{
-	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<ExportOption> result)
-	{
-		result = new HashSet<ExportOption>([ExportOption.Html, ExportOption.Configuration]);
-		var set = new HashSet<ExportOption>();
-		var ranges = s.Split(',');
-		foreach (var range in ranges)
-		{
-			ExportOption? export = s[range].Trim().ToString().ToLowerInvariant() switch
-			{
-				"llm" => ExportOption.LLMText,
-				"llmtext" => ExportOption.LLMText,
-				"es" => ExportOption.Elasticsearch,
-				"elasticsearch" => ExportOption.Elasticsearch,
-				"html" => ExportOption.Html,
-				"config" => ExportOption.Configuration,
-				_ => null
-			};
-			if (export.HasValue)
-				_ = set.Add(export.Value);
-		}
-		result = set;
-		return true;
 	}
 }

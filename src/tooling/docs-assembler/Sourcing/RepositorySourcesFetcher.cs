@@ -25,14 +25,14 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	public CheckoutResult GetAll()
 	{
 		var fs = context.ReadFileSystem;
-		var repositories = Configuration.ReferenceRepositories.Values.Concat<Repository>([Configuration.Narrative]);
+		var repositories = Configuration.AvailableRepositories;
 		var checkouts = new List<Checkout>();
 		var linkRegistrySnapshotPath = Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
 		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
-		foreach (var repo in repositories)
+		foreach (var repo in repositories.Values)
 		{
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
 			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(context.Collector, checkoutFolder);
@@ -68,12 +68,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
 
-		var repositories = new Dictionary<string, Repository>(Configuration.ReferenceRepositories)
-		{
-			{ NarrativeRepository.RepositoryName, Configuration.Narrative }
-		};
-
-		await Parallel.ForEachAsync(repositories,
+		await Parallel.ForEachAsync(Configuration.AvailableRepositories,
 			new ParallelOptions
 			{
 				CancellationToken = ctx,
@@ -121,7 +116,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 }
 
 
-public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
+public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, IDiagnosticsCollector collector)
 {
 	private readonly ILogger<RepositorySourcer> _logger = logFactory.CreateLogger<RepositorySourcer>();
 
@@ -130,9 +125,12 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	// </summary>
 	// <param name="repository">The repository to clone.</param>
 	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
-	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1)
+	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true)
 	{
-		var checkoutFolder = readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name));
+		var checkoutFolder =
+			appendRepositoryName
+				? readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name))
+				: checkoutDirectory;
 		IGitRepository git = new SingleCommitOptimizedGitRepository(collector, checkoutFolder);
 		if (attempt > 3)
 		{
@@ -228,7 +226,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 				git.DisableSparseCheckout();
 				break;
 			case CheckoutStrategy.Partial:
-				git.EnableSparseCheckout("docs");
+				git.EnableSparseCheckout(repository.SparsePaths);
 				break;
 			default:
 				throw new ArgumentOutOfRangeException(nameof(repository), repository.CheckoutStrategy, null);

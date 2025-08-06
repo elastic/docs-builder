@@ -119,6 +119,7 @@ public class HtmlWriter(
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
+			IsAssemblerBuild = DocumentationSet.Context.AssemblerBuild,
 			SiteName = siteName,
 			DocSetName = DocumentationSet.Name,
 			Title = markdown.Title ?? "[TITLE NOT SET]",
@@ -137,6 +138,7 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
+			MarkdownUrl = markdown.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
@@ -148,7 +150,7 @@ public class HtmlWriter(
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts,
-			VersionsConfig = DocumentationSet.Context.VersionsConfig
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration
 		});
 
 		return new RenderResult

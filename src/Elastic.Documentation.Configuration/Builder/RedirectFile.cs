@@ -12,9 +12,9 @@ public record RedirectFile
 {
 	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
 	private IFileInfo Source { get; init; }
-	private IDocumentationContext Context { get; init; }
+	private IDocumentationSetContext Context { get; init; }
 
-	public RedirectFile(IFileInfo source, IDocumentationContext context)
+	public RedirectFile(IFileInfo source, IDocumentationSetContext context)
 	{
 		Source = source;
 		Context = context;

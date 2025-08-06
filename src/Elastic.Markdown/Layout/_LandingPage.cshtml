@@ -10,7 +10,8 @@
 		<div class="container mx-auto pt-16 pb-10 grid md:grid-cols-2 items-center gap-6">
 			<div>
 				<h1 class="text-4xl font-bold font-sans text-black">Elastic Docs</h1>
-				<p class="mt-4">Find the help you need, wherever you are in your Elastic journey.</p>
+				<p class="mt-4">Welcome to the docs that cover all changes in <span class="whitespace-nowrap">Elastic Stack 9.0.0</span> and later, including <span class="whitespace-nowrap">Elastic Stack @Model.CurrentVersion</span> and <span class="whitespace-nowrap">Elastic Cloud Serverless</span>.
+					For easy reference, changes in 9.1.0 are marked inline. For details, check <a href="https://www.elastic.co/docs/get-started/versioning-availability" class="link">Understanding versioning and availability.</a></p>
 				<div class="flex md:inline-flex gap-3 mt-6">
 					<a href="@Model.Link("/get-started/")" class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
 						Get started
@@ -53,8 +54,8 @@
 							<p class="font-sans font-bold text-xl">Elasticsearch</p>
 							<p class="mt-2 grow">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
 							<div class="grid grid-cols-1 mt-6 gap-2">
-								<a href="@Model.Link("/solutions/search")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View @Model.CurrentVersion docs</a>
-								<a href="https://www.elastic.co/guide/en/elasticsearch/reference/index.html" class="text-sm text-grey-70 hover:text-grey-100 font-sans font-semibold">View other versions</a>
+								<a href="@Model.Link("/solutions/search")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
+								<a href="https://www.elastic.co/guide/en/elasticsearch/reference/index.html" class="text-sm text-grey-70 hover:text-grey-100 font-sans font-semibold">Previous versions</a>
 							</div>
 						</div>
 					</div>
@@ -66,8 +67,8 @@
 							<p class="font-sans font-bold text-xl">Observability</p>
 							<p class="mt-2 grow">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
 							<div class="grid grid-cols-1 mt-6 gap-2">
-								<a href="@Model.Link("/solutions/observability")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View @Model.CurrentVersion docs</a>
-								<a href="https://www.elastic.co/guide/en/observability/index.html" class="text-sm text-grey-70 hover:text-grey-100 font-sans font-semibold">View other versions</a>
+								<a href="@Model.Link("/solutions/observability")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
+								<a href="https://www.elastic.co/guide/en/observability/index.html" class="text-sm text-grey-70 hover:text-grey-100 font-sans font-semibold">Previous versions</a>
 							</div>
 						</div>
 					</div>
@@ -80,8 +81,8 @@
 							<p class="font-sans font-bold text-xl">Security</p>
 							<p class="mt-2 grow">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>
 							<div class="grid grid-cols-1 mt-6 gap-2">
-								<a href="@Model.Link("/solutions/security")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">View @Model.CurrentVersion docs</a>
-								<a href="https://www.elastic.co/guide/en/security/index.html" class="text-sm text-grey-70 hover:text-grey-100 font-sans font-semibold">View other versions</a>
+								<a href="@Model.Link("/solutions/security")" class="text-blue-elastic hover:text-blue-elastic-100 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
+								<a href="https://www.elastic.co/guide/en/security/index.html" class="text-sm text-grey-70 hover:text-grey-100 font-sans font-semibold">Previous versions</a>
 							</div>
 						</div>
 					</div>
@@ -224,7 +225,7 @@
 			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-6 bg-ink-dark text-white">
 				<div class="flex flex-col p-6">
 					<h3 class="font-sans font-bold text-2xl">Release notes</h3>
-					<p class="grow mt-4">Explore the latest features and changes in Elastic.</p>
+					<p class="grow mt-4">Explore the latest features and changes in Elastic, including the latest 9.1.0 version of the Elastic Stack.</p>
 					<div class="mt-6">
 						<a href="@Model.Link("/release-notes/")" class="link text-white">
 							View release notes
@@ -252,7 +253,7 @@
 					<h3 class="font-sans font-bold text-2xl">Contribute and extend</h3>
 					<p class="grow mt-4">Learn how to contribute to Elastic products and extend capabilities.</p>
 					<div class="mt-6">
-						<a href="@Model.Link("extend/kibana")" class="link text-white wrap-break-word">
+						<a href="@Model.Link("extend/")" class="link text-white wrap-break-word">
 							<span class="wrap-break-word">
 								View contribute and extend docs
 							</span>

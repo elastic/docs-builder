@@ -10,10 +10,6 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;
 
-
-public record MarkdownExportContext
-{
-}
 public record MarkdownExportFileContext
 {
 	public required BuildContext BuildContext { get; init; }

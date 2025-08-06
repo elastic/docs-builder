@@ -18,6 +18,13 @@ class ImageCarousel {
         this.slides = Array.from(
             this.container.querySelectorAll('.carousel-slide')
         )
+
+        // Don't initialize if no slides
+        if (this.slides.length === 0) {
+            console.warn('No carousel slides found')
+            return
+        }
+
         this.indicators = Array.from(
             this.container.querySelectorAll('.carousel-indicator')
         )
@@ -26,6 +33,7 @@ class ImageCarousel {
 
         this.initializeSlides()
         this.setupEventListeners()
+        this.positionControls()
     }
 
     private initializeSlides(): void {
@@ -58,6 +66,23 @@ class ImageCarousel {
         // Indicators
         this.indicators.forEach((indicator, index) => {
             indicator.addEventListener('click', () => this.goToSlide(index))
+        })
+
+        // Handle image clicks for modal
+        this.slides.forEach((slide) => {
+            const imageLink = slide.querySelector('.carousel-image-reference')
+            if (imageLink) {
+                imageLink.addEventListener('click', (e) => {
+                    e.preventDefault()
+                    const modalId = imageLink.getAttribute('data-modal-id')
+                    if (modalId) {
+                        const modal = document.getElementById(modalId)
+                        if (modal) {
+                            modal.style.display = 'flex'
+                        }
+                    }
+                })
+            }
         })
 
         // Keyboard navigation
@@ -125,6 +150,69 @@ class ImageCarousel {
                 (window.innerWidth || document.documentElement.clientWidth)
         )
     }
+
+    private positionControls(): void {
+        if (!this.prevButton || !this.nextButton) return
+
+        // Wait for images to load before positioning
+        const images = Array.from(this.container.querySelectorAll('img'))
+        if (images.length === 0) return
+
+        let loadedCount = 0
+        const totalImages = images.length
+
+        const positionAfterLoad = () => {
+            loadedCount++
+            if (loadedCount === totalImages) {
+                this.calculateControlPosition()
+            }
+        }
+
+        images.forEach((img) => {
+            if (img.complete) {
+                positionAfterLoad()
+            } else {
+                img.addEventListener('load', positionAfterLoad)
+                img.addEventListener('error', positionAfterLoad) // Handle failed loads
+            }
+        })
+    }
+
+    private calculateControlPosition(): void {
+        if (!this.prevButton || !this.nextButton) return
+
+        const images = Array.from(this.container.querySelectorAll('img'))
+        let minHeight = Infinity
+
+        // Find the smallest image height among all images
+        images.forEach((img) => {
+            const height = img.offsetHeight
+            if (height > 0 && height < minHeight) {
+                minHeight = height
+            }
+        })
+
+        // Position controls at 40% the height of the smallest image
+        // But ensure a minimum distance from the top (50px) and don't go below 80% of the smallest image
+        if (minHeight !== Infinity && minHeight > 0) {
+            const fortyPercentHeight = Math.floor(minHeight * 0.4)
+            const minTop = 50 // Minimum 50px from top
+            const maxTop = Math.floor(minHeight * 0.8) // Maximum 80% down the smallest image
+
+            const controlTop = Math.max(
+                minTop,
+                Math.min(fortyPercentHeight, maxTop)
+            )
+
+            this.prevButton.style.top = `${controlTop}px`
+            this.nextButton.style.top = `${controlTop}px`
+
+            // Debug logging (remove in production)
+            console.log(
+                `Carousel controls positioned: minHeight=${minHeight}px, controlTop=${controlTop}px`
+            )
+        }
+    }
 }
 
 // Export function to initialize carousels
@@ -136,18 +224,21 @@ export function initImageCarousel(): void {
     carousels.forEach((carouselElement) => {
         const carousel = carouselElement as HTMLElement
 
-        // Get the existing track
+        // Skip if carousel already has slides (server-rendered)
+        const existingSlides = carousel.querySelectorAll('.carousel-slide')
+        if (existingSlides.length > 0) {
+            // Just initialize the existing carousel
+            new ImageCarousel(carousel)
+            return
+        }
+
+        // Get the existing track for dynamic carousels
         let track = carousel.querySelector('.carousel-track')
         if (!track) {
             track = document.createElement('div')
             track.className = 'carousel-track'
             carousel.appendChild(track)
         }
-
-        // Clean up any existing slides - this prevents duplicates
-        const existingSlides = Array.from(
-            track.querySelectorAll('.carousel-slide')
-        )
 
         // Find all image links that might be related to this carousel
         const section = findSectionForCarousel(carousel)

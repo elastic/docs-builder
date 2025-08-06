@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Elastic.Documentation;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.FrontMatter;

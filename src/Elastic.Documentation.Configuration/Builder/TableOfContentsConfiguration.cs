@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Configuration.Builder;
 
 public record TableOfContentsConfiguration : ITableOfContentsScope
 {
-	private readonly IDocumentationContext _context;
+	private readonly IDocumentationSetContext _context;
 	private readonly int _maxTocDepth;
 	private readonly int _depth;
 	private readonly string _parentPath;
@@ -33,7 +33,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		ConfigurationFile configuration,
 		IFileInfo definitionFile,
 		IDirectoryInfo scope,
-		IDocumentationContext context,
+		IDocumentationSetContext context,
 		int depth,
 		string parentPath)
 	{

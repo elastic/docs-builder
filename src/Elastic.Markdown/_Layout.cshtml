@@ -7,19 +7,6 @@
 	{
 		if (name == GlobalSections.Footer && Model.Layout is not MarkdownPageLayout.Archive)
 		{
-			<aside id="dismissible-banner" class="admonition tip">
-				<div class="container flex justify-between items-center mx-auto">
-					<p>
-						Welcome to the docs for the <a class="link text-base" href="/docs/get-started/versioning-availability#find-docs-for-your-product-version">latest Elastic product versions</a>, including Elastic Stack 9.0 and Elastic Cloud Serverless.
-						To view previous versions, go to <a class="link text-base" target="_blank" href="https://elastic.co/guide">elastic.co/guide</a>.
-					</p>
-					<button id="dismissible-button">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-						</svg>
-					</button>
-				</div>
-			</aside>
 			//this ensures we forward footer sections declared in this project into to GlobalLayout view's section
 			await RenderSectionAsync(GlobalSections.Footer);
 		}
@@ -56,6 +43,7 @@
 						<div class="content-container md:px-4">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 						</div>
+						
 						<article id="markdown-content" class="content-container markdown-content md:px-4">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderBodyAsync()

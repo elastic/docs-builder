@@ -1,5 +1,6 @@
 'strict'
 
+import '../eui-icons-cache'
 import {
     EuiButton,
     EuiContextMenu,
@@ -15,17 +16,6 @@ import {
     useEuiTheme,
     useEuiFontSize,
 } from '@elastic/eui'
-import { icon as EuiIconVisualizeApp } from '@elastic/eui/es/components/icon/assets/app_visualize'
-import { icon as EuiIconArrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down'
-import { icon as EuiIconArrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_left'
-import { icon as EuiIconArrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right'
-import { icon as EuiIconCheck } from '@elastic/eui/es/components/icon/assets/check'
-import { icon as EuiIconDocument } from '@elastic/eui/es/components/icon/assets/document'
-import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search'
-import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
-import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user'
-import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
-import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 import {
     EuiContextMenuPanelDescriptor,
     EuiContextMenuPanelItemDescriptor,
@@ -34,20 +24,6 @@ import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import * as React from 'react'
 import { useState } from 'react'
-
-// One or more icons are passed in as an object of iconKey (string): IconComponent
-appendIconComponentCache({
-    arrowDown: EuiIconArrowDown,
-    arrowLeft: EuiIconArrowLeft,
-    arrowRight: EuiIconArrowRight,
-    document: EuiIconDocument,
-    search: EuiIconSearch,
-    trash: EuiIconTrash,
-    user: EuiIconUser,
-    wrench: EuiIconWrench,
-    visualizeApp: EuiIconVisualizeApp,
-    check: EuiIconCheck,
-})
 
 type VersionDropdownItem = {
     name: string

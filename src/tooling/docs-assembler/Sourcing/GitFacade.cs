@@ -17,14 +17,14 @@ public interface IGitRepository
 	bool IsInitialized();
 	void Pull(string branch);
 	void Fetch(string reference);
-	void EnableSparseCheckout(string folder);
+	void EnableSparseCheckout(string[] folders);
 	void DisableSparseCheckout();
 	void Checkout(string reference);
 }
 
 // This git repository implementation is optimized for pull and fetching single commits.
 // It uses `git pull --depth 1` and `git fetch --depth 1` to minimize the amount of data transferred.
-public class SingleCommitOptimizedGitRepository(DiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IGitRepository
+public class SingleCommitOptimizedGitRepository(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory) : ExternalCommandExecutor(collector, workingDirectory), IGitRepository
 {
 	private static readonly Dictionary<string, string> EnvironmentVars = new()
 	{
@@ -40,7 +40,7 @@ public class SingleCommitOptimizedGitRepository(DiagnosticsCollector collector, 
 	public bool IsInitialized() => Directory.Exists(Path.Combine(WorkingDirectory.FullName, ".git"));
 	public void Pull(string branch) => ExecIn(EnvironmentVars, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
 	public void Fetch(string reference) => ExecIn(EnvironmentVars, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
-	public void EnableSparseCheckout(string folder) => ExecIn(EnvironmentVars, "git", "sparse-checkout", "set", folder);
+	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", .. folders]);
 	public void DisableSparseCheckout() => ExecIn(EnvironmentVars, "git", "sparse-checkout", "disable");
 	public void Checkout(string reference) => ExecIn(EnvironmentVars, "git", "checkout", "--force", reference);
 

@@ -17,10 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" />
     <PackageReference Include="AWSSDK.S3"/>
     <PackageReference Include="ConsoleAppFramework.Abstractions"/>
     <PackageReference Include="ConsoleAppFramework" />
-    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Proc"  />
     <PackageReference Include="YamlDotNet"  />
     <PackageReference Include="NetEscapades.EnumGenerators" />

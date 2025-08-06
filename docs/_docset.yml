@@ -16,12 +16,14 @@ subs:
   ech:  "Elastic Cloud Hosted"
   serverless-full: "Elastic Cloud Serverless"
   ecloud: "Elastic Cloud"
+  dbuild: "docs-builder"
 
 features:
   primary-nav: false
 
-#api: kibana-openapi.json
-api: elasticsearch-openapi.json
+api:
+   elasticsearch: elasticsearch-openapi.json
+   kibana: kibana-openapi.json
 
 toc:
   - file: index.md

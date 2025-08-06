@@ -29,6 +29,8 @@
 		NavigationFileName = Model.NavigationFileName,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
+		MarkdownUrl = Model.MarkdownUrl,
+		HideEditThisPage = Model.Features.DisableGitHubEditLink && Model.IsAssemblerBuild,
 		AllowIndexing = Model.AllowIndexing,
 		CanonicalBaseUrl = Model.CanonicalBaseUrl,
 		GoogleTagManager = Model.GoogleTagManager,
@@ -36,7 +38,7 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		LegacyPages = Model.LegacyPages,
-		CurrentVersion = Model.CurrentVersion,
+		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
@@ -47,6 +49,7 @@
 		{
 			<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
 			<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
+			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
 		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{

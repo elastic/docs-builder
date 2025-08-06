@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
 
@@ -27,7 +28,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 	{
 		_context = context;
 		_assembleSources = assembleSources;
-		NavigationFile = context.ConfigurationFileProvider.NavigationFile;
+		NavigationFile = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration.PrivateRepositories);
 		TableOfContents = Deserialize("toc");
 		Phantoms = Deserialize("phantoms");
 		ScopeDirectory = NavigationFile.Directory!;
@@ -62,7 +63,8 @@ public record GlobalNavigationFile : ITableOfContentsScope
 
 	private static ImmutableHashSet<Uri> GetSourceUris(string key, AssembleContext context)
 	{
-		var reader = new YamlStreamReader(context.ConfigurationFileProvider.NavigationFile, context.Collector);
+		var navigationFile = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration.PrivateRepositories);
+		var reader = new YamlStreamReader(navigationFile, context.Collector);
 		var set = new HashSet<Uri>();
 		foreach (var entry in reader.Read())
 		{
@@ -149,10 +151,10 @@ public record GlobalNavigationFile : ITableOfContentsScope
 	public void EmitError(string message) =>
 		_context.Collector.EmitWarning(NavigationFile, message);
 
-
 	private IReadOnlyCollection<TocReference> Deserialize(string key)
 	{
-		var reader = new YamlStreamReader(NavigationFile, _context.Collector);
+		var navigationFile = _context.ConfigurationFileProvider.CreateNavigationFile(_context.Configuration.PrivateRepositories);
+		var reader = new YamlStreamReader(navigationFile, _context.Collector);
 		try
 		{
 			foreach (var entry in reader.Read())
