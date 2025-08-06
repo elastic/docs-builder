@@ -13,10 +13,11 @@ public enum Exporter
 	Elasticsearch = 2,
 	Configuration = 3,
 	DocumentationState = 4,
-	LinkMetadata = 5
+	LinkMetadata = 5,
+	Redirects = 6
 }
 public static class ExportOptions
 {
-	public static HashSet<Exporter> Default { get; } = [Html, LLMText, Configuration, DocumentationState, LinkMetadata];
-	public static HashSet<Exporter> MetadataOnly { get; } = [Configuration, DocumentationState, LinkMetadata];
+	public static HashSet<Exporter> Default { get; } = [Html, LLMText, Configuration, DocumentationState, LinkMetadata, Redirects];
+	public static HashSet<Exporter> MetadataOnly { get; } = [Configuration, DocumentationState, LinkMetadata, Redirects];
 }

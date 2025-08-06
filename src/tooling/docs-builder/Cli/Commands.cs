@@ -76,8 +76,11 @@ internal sealed class Commands(
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
-	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if <paramref name="exporters"/> is also set </param>
-	/// <param name="exporters"> Set available exporters: html,es,config,links,state,llm. Defaults to html,config,links,state</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="exporters"> Set available exporters:
+	///					html, es, config, links, state, llm, redirect, metadata, none.
+	///					Defaults to (html, config, links, state, redirect) or 'default'.
+	/// </param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("generate")]
@@ -154,11 +157,9 @@ internal sealed class Commands(
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
-		var htmlExporter = exporters.Contains(Html) ? new NoopDocumentationFileExporter() : null;
-
 		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
 
-		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray(), htmlExporter);
+		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray());
 		_ = await generator.GenerateAll(ctx);
 
 		var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
@@ -184,8 +185,11 @@ internal sealed class Commands(
 	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
-	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if <paramref name="exporters"/> is also set </param>
-	/// <param name="exporters"> Set available exporters: html,es,config,links,state,llm. Defaults to html,config,links,state</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="exporters"> Set available exporters:
+	///					html, es, config, links, state, llm, redirect, metadata, none.
+	///					Defaults to (html, config, links, state, redirect) or 'default'.
+	/// </param>
 	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
 	/// <param name="ctx"></param>
 	[Command("")]

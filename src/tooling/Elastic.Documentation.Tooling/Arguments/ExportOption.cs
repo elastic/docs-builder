@@ -18,10 +18,10 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 	{
 		result = ExportOptions.Default;
 		var set = new HashSet<Exporter>();
-		var ranges = s.Split(',');
-		foreach (var range in ranges)
+		var options = s.Split(',');
+		foreach (var option in options)
 		{
-			Exporter? export = s[range].Trim().ToString().ToLowerInvariant() switch
+			var export = s[option].Trim().ToString().ToLowerInvariant() switch
 			{
 				"llm" => LLMText,
 				"llmtext" => LLMText,
@@ -31,13 +31,25 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"config" => Exporter.Configuration,
 				"links" => LinkMetadata,
 				"state" => DocumentationState,
-				_ => null
+				"redirects" => Redirects,
+				"redirect" => Redirects,
+				"none" => null,
+				"default" => AddDefaultReturnNull(set, ExportOptions.Default),
+				"metadata" => AddDefaultReturnNull(set, ExportOptions.MetadataOnly),
+				_ => throw new Exception($"Unknown exporter {s[option].Trim().ToString().ToLowerInvariant()}")
 			};
 			if (export.HasValue)
 				_ = set.Add(export.Value);
 		}
 		result = set;
 		return true;
+	}
+
+	private static Exporter? AddDefaultReturnNull(HashSet<Exporter> set, HashSet<Exporter> defaultSet)
+	{
+		foreach (var option in defaultSet)
+			_ = set.Add(option);
+		return null;
 	}
 }
 

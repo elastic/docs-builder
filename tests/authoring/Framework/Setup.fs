@@ -229,7 +229,7 @@ type Setup =
         let set = DocumentationSet(context, logger, linkResolver)
         
         
-        let generator = DocumentationGenerator(set, logger, null, null, null, null, conversionCollector)
+        let generator = DocumentationGenerator(set, logger, null, null, null, conversionCollector)
 
         let context = {
             Collector = collector

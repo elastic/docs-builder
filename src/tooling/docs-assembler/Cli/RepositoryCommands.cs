@@ -16,12 +16,10 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
-using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -109,24 +107,27 @@ internal sealed class RepositoryCommands(
 	}
 
 	/// <summary> Builds all repositories </summary>
-	/// <param name="force"> Force a full rebuild of the destination folder</param>
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
 	/// <param name="environment"> The environment to build</param>
-	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if <paramref name="exporters"/> is also set </param>
-	/// <param name="exporters"> Set available exporters: html,es,config,links,state,llm. Defaults to html,config,links,state</param>
+	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="exporters"> Set available exporters:
+	///					html, es, config, links, state, llm, redirect, metadata, none.
+	///					Defaults to (html, config, links, state, redirect) or 'default'.
+	/// </param>
 	/// <param name="ctx"></param>
 	[Command("build-all")]
 	public async Task<int> BuildAll(
-		bool? force = null,
 		bool? strict = null,
-		bool? allowIndexing = null,
 		string? environment = null,
 		bool? metadataOnly = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
+		// ensure we never generate a documentation state for assembler builds
+		if (exporters.Contains(Exporter.DocumentationState))
+			exporters = new HashSet<Exporter>(exporters.Except([Exporter.DocumentationState]));
 
 		AssignOutputLogger();
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
@@ -142,11 +143,13 @@ internal sealed class RepositoryCommands(
 		_log.LogInformation("Creating assemble context");
 
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null)
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
+
+		if (assembleContext.OutputDirectory.Exists)
 		{
-			Force = force ?? false,
-			AllowIndexing = allowIndexing ?? false
-		};
+			_log.LogInformation("Cleaning target output directory");
+			assembleContext.OutputDirectory.Delete(true);
+		}
 
 		_log.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
@@ -179,16 +182,22 @@ internal sealed class RepositoryCommands(
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
-		await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
+		if (exporters.Contains(Exporter.LinkMetadata))
+			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
 		if (File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
-		var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
-		sitemapBuilder.Generate();
+		if (exporters.Contains(Exporter.Html))
+		{
+			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
+			sitemapBuilder.Generate();
+		}
 
 		await collector.StopAsync(ctx);
+
+		_log.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
 		if (strict ?? false)
 			return collector.Errors + collector.Warnings;
@@ -231,7 +240,7 @@ internal sealed class RepositoryCommands(
 						outputPath
 					);
 					var set = new DocumentationSet(context, logFactory);
-					var generator = new DocumentationGenerator(set, logFactory, null, null, null, new NoopDocumentationFileExporter());
+					var generator = new DocumentationGenerator(set, logFactory, null, null, null);
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();

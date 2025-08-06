@@ -38,17 +38,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public bool Force { get; init; }
 
-	public bool SkipDocumentationState { get; private set; }
-
-	public bool AssemblerBuild
-	{
-		get => _assemblerBuild;
-		init
-		{
-			_assemblerBuild = value;
-			SkipDocumentationState = value;
-		}
-	}
+	public bool AssemblerBuild { get; init; }
 
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
@@ -59,7 +49,6 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public Uri? CanonicalBaseUrl { get; init; }
 
 	private readonly string? _urlPathPrefix;
-	private readonly bool _assemblerBuild;
 
 	public string? UrlPathPrefix
 	{

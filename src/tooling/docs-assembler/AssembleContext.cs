@@ -33,11 +33,6 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 	public IDirectoryInfo OutputDirectory { get; }
 
-	public bool Force { get; init; }
-
-	/// This property is used to determine if the site should be indexed by search engines
-	public bool AllowIndexing { get; init; }
-
 	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(

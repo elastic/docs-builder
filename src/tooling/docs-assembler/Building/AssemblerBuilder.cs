@@ -42,7 +42,6 @@ public class AssemblerBuilder(
 		var redirects = new Dictionary<string, string>();
 
 		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
-		var noHtmlOutput = !exportOptions.Contains(Exporter.Html);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -59,7 +58,7 @@ public class AssemblerBuilder(
 
 			try
 			{
-				var result = await BuildAsync(set, noHtmlOutput, markdownExporters.ToArray(), ctx);
+				var result = await BuildAsync(set, markdownExporters.ToArray(), ctx);
 				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
@@ -78,9 +77,12 @@ public class AssemblerBuilder(
 			_ = await exporter.FinishExportAsync(context.OutputDirectory, ctx);
 		}
 
-		await OutputRedirectsAsync(redirects
-			.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-			.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
+		if (exportOptions.Contains(Exporter.Redirects))
+		{
+			await OutputRedirectsAsync(redirects
+				.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+				.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
+		}
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -127,7 +129,7 @@ public class AssemblerBuilder(
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, bool noop, IMarkdownExporter[]? markdownExporters, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, Cancel ctx)
 	{
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
@@ -136,7 +138,6 @@ public class AssemblerBuilder(
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
 			positionalNavigation: navigation,
-			documentationExporter: noop ? new NoopDocumentationFileExporter() : null,
 			markdownExporters: markdownExporters
 		);
 		return await generator.GenerateAll(ctx);
