@@ -57,21 +57,10 @@ internal sealed class DiffCommands(
 		}
 
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(logFactory.CreateLogger<IntegrationGitRepositoryTracker>(), path) : new LocalGitRepositoryTracker(collector, root, path);
-		_log.LogInformation("Calling GetChangedFiles");
-		GitChange[] changed = [];
-		try
-		{
-			changed = tracker.GetChangedFiles() as GitChange[] ?? [];
-		}
-		catch (Exception e)
-		{
-			_log.LogError(e, "Error while getting changed files");
-		}
+		var changed = tracker.GetChangedFiles();
 
-		_log.LogInformation("Finished GetChangedFiles");
-
-		if (changed.Length > 0)
-			_log.LogInformation($"Found {changed.Length} changes to files related to documentation in the current branch.");
+		if (changed.Any())
+			_log.LogInformation($"Found {changed.Count()} changes to files related to documentation in the current branch.");
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
