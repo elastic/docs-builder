@@ -53,7 +53,7 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
 
 		if (changed.Length > 0)
-			collector.EmitHint(string.Empty, $"Found {changed.Length} changed files in the current branch. Validating against redirects file '{redirectFileInfo.Name}'.");
+			collector.EmitHint(string.Empty, $"Found {changed.Length} changes to files related to documentation in the current branch.");
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
