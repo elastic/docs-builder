@@ -47,6 +47,7 @@ internal sealed class DiffCommands(
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
 
+		_log.LogInformation($"Parsing redirects file: {redirectFileInfo.FullName}");
 		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
 		var redirects = redirectFileParser.Redirects;
 
@@ -57,6 +58,7 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
+		_log.LogInformation("Initializing repository tracker");
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(logFactory.CreateLogger<IntegrationGitRepositoryTracker>(), path) : new LocalGitRepositoryTracker(collector, root, path);
 		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
 
@@ -66,6 +68,7 @@ internal sealed class DiffCommands(
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
 		{
+			_log.LogInformation("Checking {FilePath}", notFound.FilePath);
 			if (notFound is RenamedGitChange renamed)
 			{
 				collector.EmitError(redirectFileInfo.Name,
