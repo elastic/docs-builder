@@ -17,6 +17,8 @@ namespace Documentation.Builder.Cli;
 
 internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githubActionsService, VersionsConfiguration versionsConfig)
 {
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
+
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
 	/// </summary>
@@ -53,7 +55,7 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
 
 		if (changed.Length > 0)
-			collector.EmitHint(string.Empty, $"Found {changed.Length} changes to files related to documentation in the current branch.");
+			_log.LogInformation($"Found {changed.Length} changes to files related to documentation in the current branch.");
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
