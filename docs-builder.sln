@@ -141,6 +141,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Api.I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Api.Lambda", "src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj", "{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "diff-validate", "diff-validate", "{E7C7A02B-9AB4-455A-9A64-3D326ED1A95A}"
+	ProjectSection(SolutionItems) = preProject
+		actions\diff-validate\action.yml = actions\diff-validate\action.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -287,5 +292,6 @@ Global
 		{F30B90AD-1A01-4A6F-9699-809FA6875B22} = {B042CC78-5060-4091-B95A-79C71BA3908A}
 		{AE3FC78E-167F-4B6E-88EC-84743EB748B7} = {B042CC78-5060-4091-B95A-79C71BA3908A}
 		{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE} = {B042CC78-5060-4091-B95A-79C71BA3908A}
+		{E7C7A02B-9AB4-455A-9A64-3D326ED1A95A} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
 	EndGlobalSection
 EndGlobal
