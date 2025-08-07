@@ -34,8 +34,7 @@ toc:
       - file: index.md
       - file: locally.md
       - file: on-the-web.md
-      - file: move.md
-      - file: redirects.md
+      - file: move-new.md
       - file: cumulative-docs.md
       - file: branching-strategy.md
       - file: add-repo.md

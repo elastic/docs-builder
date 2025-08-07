@@ -117,10 +117,10 @@ jobs:
     outputs:
       any_modified: ${{ steps.check-files.outputs.any_modified }}
       all_changed_files: ${{ steps.check-files.outputs.all_changed_files }}
-      added_files: ${{ steps.check-files.outputs.added_files }}
-      modified_files: ${{ steps.check-files.outputs.modified_files }}
-      deleted_files: ${{ steps.check-files.outputs.deleted_files }}
-      renamed_files: ${{ steps.check-files.outputs.renamed_files }}
+      added_files: ${{ steps.check-modified-file-detail.outputs.added_files }}
+      modified_files: ${{ steps.check-modified-file-detail.outputs.modified_files }}
+      deleted_files: ${{ steps.check-modified-file-detail.outputs.deleted_files }}
+      renamed_files: ${{ steps.check-modified-file-detail.outputs.renamed_files }}
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
@@ -138,6 +138,48 @@ jobs:
             ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
             .github/**
             README.md
+      - name: Get modified file detail
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        id: check-modified-file-detail
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number,
+            });
+
+            const added = [];
+            const modified = [];
+            const deleted = [];
+            const renamed = [];
+            const all_changed = [];
+
+            for (const file of files) {
+              switch (file.status) {
+                case 'added':
+                  added.push(file.filename);
+                  break;
+                case 'modified':
+                  modified.push(file.filename);
+                  break;
+                case 'removed':
+                  deleted.push(file.filename);
+                  break;
+                case 'renamed':
+                  renamed.push(`${file.previous_filename}:${file.filename}`);
+                  break;
+              }
+            }
+
+            core.setOutput('added_files', added.join(' '));
+            core.setOutput('modified_files', modified.join(' '));
+            core.setOutput('deleted_files', deleted.join(' '));
+            core.setOutput('renamed_files', renamed.join(' '));          
 
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)

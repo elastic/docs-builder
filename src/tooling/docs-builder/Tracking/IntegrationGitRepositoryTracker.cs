@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Microsoft.Extensions.Logging;
+
 namespace Documentation.Builder.Tracking;
 
 public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
@@ -33,8 +35,12 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 		var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
 		if (!string.IsNullOrEmpty(renamedFiles))
 		{
-			foreach (var file in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-				yield return new RenamedGitChange(string.Empty, file, GitChangeType.Renamed);
+			foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+			{
+				var parts = pair.Split(':');
+				if (parts.Length == 2)
+					yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
+			}
 		}
 	}
 }
