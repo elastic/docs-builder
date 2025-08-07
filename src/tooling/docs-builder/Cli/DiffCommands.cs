@@ -57,10 +57,10 @@ internal sealed class DiffCommands(
 		}
 
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
-		var changed = tracker.GetChangedFiles() as GitChange[] ?? [];
+		var changed = tracker.GetChangedFiles();
 
-		if (changed.Length > 0)
-			_log.LogInformation($"Found {changed.Length} changes to files related to documentation in the current branch.");
+		if (changed.Any())
+			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count());
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
@@ -68,9 +68,7 @@ internal sealed class DiffCommands(
 			if (notFound is RenamedGitChange renamed)
 			{
 				collector.EmitError(redirectFileInfo.Name,
-					runningOnCi
-						? $"A file was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set."
-						: $"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
+					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
 			}
 			else if (notFound.ChangeType is GitChangeType.Deleted)
 			{

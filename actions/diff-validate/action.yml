@@ -1,0 +1,10 @@
+name: 'Validate Redirect Rules'
+description: 'Validates consistency of the documentation changes in relation to redirect rules'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate Redirect Rules
+      uses: elastic/docs-builder@main
+      with:
+        command: "diff validate"
