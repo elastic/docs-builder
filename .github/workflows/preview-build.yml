@@ -159,7 +159,7 @@ jobs:
             const { owner, repo } = context.repo;
             const pull_number = context.payload.pull_request.number;
             
-            const files = await github.paginate(github.rest.pulls.listFiles, {
+            const allFiles = await github.paginate(github.rest.pulls.listFiles, {
               owner,
               repo,
               pull_number,
