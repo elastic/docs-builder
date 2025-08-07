@@ -151,7 +151,6 @@ jobs:
             README.md
         with:
           script: |
-            const glob = require('@actions/glob');
             const pathPattern = process.env.PATH_PATTERN;
             const ignorePatterns = process.env.IGNORE_PATTERNS;
             const ignoreGlobber = await glob.create(ignorePatterns);
