@@ -8,7 +8,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
-using Elastic.Documentation.Site.Navigation;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Catalog;
 using Elastic.Ingest.Elasticsearch.Semantic;
@@ -22,7 +21,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Tooling.Exporters;
 
 public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
-	: ElasticsearchMarkdownExporterBase<CatalogIndexChannelOptions<DocumentationDocument>, DocumentationCatalogIndexChannel>
+	: ElasticsearchMarkdownExporterBase<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
 		(logFactory, collector, endpoints)
 {
 	/// <inheritdoc />
@@ -34,17 +33,18 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 	};
 
 	/// <inheritdoc />
-	protected override DocumentationCatalogIndexChannel NewChannel(CatalogIndexChannelOptions<DocumentationDocument> options) => new(options);
+	protected override CatalogIndexChannel<DocumentationDocument> NewChannel(CatalogIndexChannelOptions<DocumentationDocument> options) => new(options);
 }
 
 public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
-	: ElasticsearchMarkdownExporterBase<SemanticIndexChannelOptions<DocumentationDocument>, DocumentationSemanticIndexChannel>
+	: ElasticsearchMarkdownExporterBase<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
 		(logFactory, collector, endpoints)
 {
 	/// <inheritdoc />
 	protected override SemanticIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
 	{
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
+		GetMappingSetting = (_, _) => CreateMappingSetting(),
 		IndexFormat = "semantic-documentation-{0:yyyy.MM.dd.HHmmss}",
 		ActiveSearchAlias = "semantic-documentation",
 		IndexNumThreads = IndexNumThreads,
@@ -52,43 +52,7 @@ public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, ID
 	};
 
 	/// <inheritdoc />
-	protected override DocumentationSemanticIndexChannel NewChannel(SemanticIndexChannelOptions<DocumentationDocument> options) => new(options);
-}
-
-// Custom channel classes that override the settings
-public class DocumentationCatalogIndexChannel(CatalogIndexChannelOptions<DocumentationDocument> options) : CatalogIndexChannel<DocumentationDocument>(options)
-{
-	protected override IReadOnlyDictionary<string, string> GetDefaultComponentIndexSettings()
-	{
-		var settings = new Dictionary<string, string>
-		{
-			["analysis.analyzer.default_search.tokenizer"] = "whitespace",
-			["analysis.analyzer.default_search.filter.0"] = "lowercase",
-			["analysis.analyzer.default_search.filter.1"] = "synonyms_filter",
-			["analysis.filter.synonyms_filter.type"] = "synonym",
-			["analysis.filter.synonyms_filter.synonyms_set"] = "docs",
-			["analysis.filter.synonyms_filter.updateable"] = "true",
-		};
-		return settings;
-	}
-}
-
-public class DocumentationSemanticIndexChannel(SemanticIndexChannelOptions<DocumentationDocument> options)
-	: SemanticIndexChannel<DocumentationDocument>(options)
-{
-	protected override IReadOnlyDictionary<string, string> GetDefaultComponentIndexSettings()
-	{
-		var settings = new Dictionary<string, string>
-		{
-			["analysis.analyzer.default_search.tokenizer"] = "whitespace",
-			["analysis.analyzer.default_search.filter.0"] = "lowercase",
-			["analysis.analyzer.default_search.filter.1"] = "synonyms_filter",
-			["analysis.filter.synonyms_filter.type"] = "synonym",
-			["analysis.filter.synonyms_filter.synonyms_set"] = "docs",
-			["analysis.filter.synonyms_filter.updateable"] = "true",
-		};
-		return settings;
-	}
+	protected override SemanticIndexChannel<DocumentationDocument> NewChannel(SemanticIndexChannelOptions<DocumentationDocument> options) => new(options);
 }
 
 public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChannel>(
@@ -107,6 +71,31 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 
 	protected int IndexNumThreads => 8;
 
+	protected static string CreateMappingSetting() =>
+		// language=json
+		"""
+		{
+		  "analysis": {
+		    "analyzer": {
+		      "synonyms_analyzer": {
+		        "tokenizer": "whitespace",
+		        "filter": [
+		          "lowercase",
+		          "synonyms_filter"
+		        ]
+		      }
+		    },
+		    "filter": {
+		      "synonyms_filter": {
+		        "type": "synonym",
+		        "synonyms_set": "docs",
+		        "updateable": true
+		      }
+		    }
+		  }
+		}
+		""";
+
 	protected static string CreateMapping(string? inferenceId) =>
 		// langugage=json
 		$$"""
@@ -114,6 +103,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		    "properties": {
 		      "title": {
 		        "type": "text",
+		        "search_analyzer": "synonyms_analyzer",
 		        "fields": {
 		          "keyword": {
 		            "type": "keyword"
@@ -275,8 +265,8 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 
 			Abstract = !string.IsNullOrEmpty(body)
-				 	? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
-				 	: string.Empty,
+				? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
+				: string.Empty,
 			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
 			UrlSegmentCount = url.Split('/', StringSplitOptions.RemoveEmptyEntries).Length,
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
