@@ -49,6 +49,9 @@ For each type of applicability information, you can add `applies_to` metadata at
   This is useful for highlighting the applicability of specific phrases, sentences,
   or properties without disrupting the surrounding content.
 
+For a full syntax reference for page, section, and inline level `applies_to` annotations,
+refer to [](/syntax/applies.md).
+
 % TO DO: Can these be pruned? 🌿
 ## General guidelines
 
@@ -103,7 +106,7 @@ For each type of applicability information, you can add `applies_to` metadata at
 * Think across time - Product lifecycle changes with each release. Even if a feature might be deprecated or legacy in one deployment it may still be supported elsewhere. (ILM / datastreams)
 * For updates, remember they may be older than you think - Some updates that may be required to the documentation could precede v9.0. For these changes need to be made to the old ASCIIdoc versions of the content.
 
-## Product and deployment model tags [products-and-deployment-models]
+## Product and deployment model applicability [products-and-deployment-models]
 
 For the full list of supported product and deployment model tags,
 refer to [](/contribute/cumulative-docs/reference.md#key).
@@ -120,47 +123,31 @@ refer to [](/contribute/cumulative-docs/reference.md#key).
 * **Do not assume a default product or deployment type.**
   Treat all products and deployment types equally. Don't treat one as the "base" and the other as the "exception".
 
-### Example scenarios [products-and-deployment-models-examples]
+### Common scenarios [products-and-deployment-models-examples]
 
 Here are some common scenarios you might come across:
 
-* Content is about both Elastic Stack components and the Serverless UI
-  ([example](/contribute/cumulative-docs/example-scenarios.md#stateful-serverless)).
-* Content is primarily about orchestrating, deploying or configuring an installation
-  ([example](/contribute/cumulative-docs/example-scenarios.md#stateful-serverless)).
-* Content is primarily about a product following its own versioning schema
-  ([example](/contribute/cumulative-docs/example-scenarios.md#)).
+* Content is about both Elastic Stack components and the Serverless UI.
+  ([example](/contribute/cumulative-docs/example-scenarios.md#stateful-serverless))
+* Content is primarily about orchestrating, deploying or configuring an installation.
+  % TO DO: Add example
+  % ([example](/contribute/cumulative-docs/example-scenarios.md#))
+* Content is primarily about a product following its own versioning schema.
+  % TO DO: Add example
+  % ([example](/contribute/cumulative-docs/example-scenarios.md#))
 * A whole page is generally applicable to Elastic Stack 9.0 and to Serverless,
-  but one specific section isn’t applicable to Serverless
-  ([example](/contribute/cumulative-docs/example-scenarios.md#)).
+  but one specific section isn’t applicable to Serverless.
+  ([example](/contribute/cumulative-docs/example-scenarios.md#not-one-section))
 * The whole page is generally applicable to all deployment types,
   but one specific paragraph only applies to Elastic Cloud Hosted and Serverless,
-  and another paragraph only applies to Elastic Cloud Enterprise
-  ([example](/contribute/cumulative-docs/example-scenarios.md#)).
+  and another paragraph only applies to Elastic Cloud Enterprise.
+  ([example](/contribute/cumulative-docs/example-scenarios.md#one-section))
 * Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
-  Just the syntax slightly differs so that it stays inline
-  ([example](/contribute/cumulative-docs/example-scenarios.md#)).
+  Just the syntax slightly differs so that it stays inline.
+  % TO DO: Add example
+  % ([example](/contribute/cumulative-docs/example-scenarios.md#))
 
-% :::{include} /syntax/_snippets/page-level-applies-examples.md
-% :::
-
-% :::{tip}
-% Docs V3 frontmatter also supports a `products` attribute. This attribute is not surfaced to users on docs pages. Instead, it's used by the elastic.co search to let users filter their docs search results.
-% :::
-
-% Use `applies_to` in the YAML frontmatter to indicate each deployment target's availability and lifecycle status.
-% The `applies_to` attribute is used to display contextual badges on each page.
-% For the full list of supported keys and values, refer to [](/contribute/cumulative-docs/reference.md#key).
-
-% :::{include} /syntax/_snippets/section-level-applies-examples.md
-% :::
-%
-% * Likewise, when the difference is specific to just one paragraph or list item, the same rules apply. Just the syntax slightly differs so that it stays inline:
-%
-%  :::{include} /syntax/_snippets/line-level-applies-example.md
-%  :::
-
-## Version-related changes [versions]
+## Version and product lifecycle applicability [versions]
 
 ### Guidelines [versions-guidelines]
 
@@ -177,36 +164,61 @@ Here are some common scenarios you might come across:
   * For example, if a feature becomes available in {{serverless-short}} and
     doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…),
     it does not need specific tagging.
-* Consider carefully [when the change is going to be published](/contribute/branching-strategy.md).
-* We do not do date-based tagging for unversioned products.
+* **Consider carefully when the change is going to be published.**
+  Read more about how publishing can vary between repos in [](/contribute/branching-strategy.md).
+* **Do not use date-based tagging for unversioned products.**
+  `applies_to` does not accept date-based versioning.
+* **Be aware of exceptions.**
+  If the content also applies to another context (for example a feature is removed in both Kibana 9.x and Serverless),
+  then it must be kept for any user reading the page that may be using a version of Kibana prior to the removal.
 
-### Example scenarios [versions-examples]
+### Common scenarios [versions-examples]
 
-* A new feature is added to {{serverless-short}} or {{ecloud}}
-  ([example](/contribute/cumulative-docs/example-scenarios.md#)).
+#### Unversioned products
+
+For unversioned products like {{serverless-short}} or {{ecloud}}:
+
+* When a new feature is introduced in an unversioned product:
+  * If it is added in GA, label only at the page level.
+    There is no need to label newly added GA content in unversioned products at the section or line level
+    if it is already labeled as available at the page level.
+    ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-added))
+  * If it is added in technical preview or beta and the related content is added to an existing page
+    that is already labeled as generally available in the unversioned product at the page level,
+    also label the new technical preview or beta content at the section or line level.
+    ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-added))
+* When a feature in an unversioned product changes lifecycle state to `preview`, `beta`, `ga` or `deprecated`,
+  replace the previous lifecycle state with the new lifecycle state.
+  ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-changed))
+* When a feature in an unversioned product is removed, remove the content altogether
+  unless the content also applies to another context that is versioned
+  (refer to [Mixed versioned and unversioned products](#mixed)).
+
+#### Versioned products
+
+For versioned products like the Elastic Stack:
+
+* When a new feature is introduced in a versioned product, label the content with the lifecycle state
+  and the version in which it was introduced.
+  % TO DO: Add example
+  % ([example](/contribute/cumulative-docs/example-scenarios.md#))
+* When a feature in a versioned product changes lifecycle state,
+  prepend the new lifecycle state and the version in which the state changed to the beginning of the
+  value for the relevant key in `applies_to`.
+  This applies to all lifecycle states including `preview`, `beta`, `ga`, `deprecated`, and `removed`
+  ([example](/contribute/cumulative-docs/example-scenarios.md#versioned-changed)).
 
 
+#### Mixed versioned and unversioned products [mixed]
 
-
-% ### For unversioned products (typically {{serverless-short}} and {{ech}})
-%
-% :::{include} /syntax/_snippets/unversioned-lifecycle.md
-% :::
-%
-% ### For versioned products
-%
-% :::{include} /syntax/_snippets/versioned-lifecycle.md
-% :::
-%
-% ### Document features shared between serverless and {{stack}}
-%
-% :::{include} /syntax/_snippets/stack-serverless-lifecycle-example.md
-% :::
-%
-% ### Identify multiple states for the same content
-%
-% :::{include} /syntax/_snippets/multiple-lifecycle-states.md
-% :::
+* When documenting features shared between serverless and Elastic Stack,
+  ...
+  ([example](/contribute/cumulative-docs/example-scenarios.md#stateful-serverless)).
+* When a feature in an unversioned product is removed, but the content also applies to
+  another context (for example a feature is removed in both Kibana 9.x and Serverless),
+  then it must be kept for any user reading the page that may be using a version of
+  Kibana prior to the removal.
+  ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-removed))
 
 ## When to indicate something is NOT applicable
 
