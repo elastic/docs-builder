@@ -30,7 +30,7 @@ To use the variables in your files, surround them in curly brackets (`{{variable
 
 - Regular text content
 - Code blocks (when `subs=true` is specified)
-- Inline code snippets (when `{subs=true}` prefix is used)
+- Inline code snippets (when `{subs}` prefix is used)
 
 ## Example
 
@@ -177,10 +177,10 @@ cd elasticsearch-{{version}}/
 
 ## Inline code
 
-Substitutions are also supported in inline code snippets using the `{subs=true}` syntax.
+Substitutions are also supported in inline code snippets using the `{subs}` syntax.
 
 ```markdown
-{subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+{subs}`wget elasticsearch-{{version.stack}}.tar.gz`
 ```
 
 ### Inline code examples
@@ -191,11 +191,11 @@ Substitutions are also supported in inline code snippets using the `{subs=true}`
 
 Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
 
-With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+With substitutions: {subs}`wget elasticsearch-{{version.stack}}.tar.gz`
 
-Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
+Multiple variables: {subs}`export {{env-var}}={{version.stack}}`
 
-With mutations: {subs=true}`version {{version.stack | M.M}}`
+With mutations: {subs}`version {{version.stack | M.M}}`
 
 :::
 

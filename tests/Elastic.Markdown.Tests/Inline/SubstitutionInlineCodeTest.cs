@@ -18,22 +18,24 @@ sub:
 
 Regular code: `wget elasticsearch-{{version}}.tar.gz`
 
-Code with substitutions: {subs=true}`wget elasticsearch-{{version}}.tar.gz`
+Code with substitutions: {subs}`wget elasticsearch-{{version}}.tar.gz`
 
-Multiple substitutions: {subs=true}`export {{env-var}}={{version}}`
+Multiple substitutions: {subs}`export {{env-var}}={{version}}`
 
-With mutations: {subs=true}`version {{version | M.M}}`
+With mutations: {subs}`version {{version | M.M}}`
 """
 )
 {
 	[Fact]
-	public void ProcessesSubstitutionsInInlineCode()
+	public void TestSubstitutionInlineCode()
 	{
-		Html.Should()
-			.Contain("<code>wget elasticsearch-{{version}}.tar.gz</code>") // Regular code should not process subs
-			.And.Contain("<code>wget elasticsearch-8.15.0.tar.gz</code>") // Should process subs
-			.And.Contain("<code>export MY_VAR=8.15.0</code>") // Multiple subs
-			.And.Contain("<code>version 8.15</code>"); // Mutations
+		// Check that regular code blocks are not processed
+		Html.Should().Contain("<code>wget elasticsearch-{{version}}.tar.gz</code>");
+
+		// Check that {subs} inline code blocks have substitutions applied
+		Html.Should().Contain("<code>wget elasticsearch-8.15.0.tar.gz</code>");
+		Html.Should().Contain("<code>export MY_VAR=8.15.0</code>");
+		Html.Should().Contain("<code>version 8.15</code>");
 	}
 
 	[Fact]

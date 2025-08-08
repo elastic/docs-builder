@@ -10,6 +10,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
+using Elastic.Markdown.Myst.Roles;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Renderers;
@@ -20,7 +21,7 @@ using Markdig.Syntax.Inlines;
 namespace Elastic.Markdown.Myst.InlineParsers.SubstitutionInlineCode;
 
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Content: {Content}, ProcessedContent: {ProcessedContent}")]
-public class SubstitutionInlineCodeLeaf(string content, string processedContent) : CodeInline(content)
+public class SubstitutionInlineCodeLeaf(string role, string content, string processedContent) : RoleLeaf(role, content)
 {
 	public string ProcessedContent { get; } = processedContent;
 }
@@ -38,108 +39,18 @@ public class SubstitutionInlineCodeRenderer : HtmlObjectRenderer<SubstitutionInl
 	}
 }
 
-public partial class SubstitutionInlineCodeParser : InlineParser
+public partial class SubstitutionInlineCodeParser : RoleParser<SubstitutionInlineCodeLeaf>
 {
-	public SubstitutionInlineCodeParser() => OpeningCharacters = ['{'];
-
-	private readonly SearchValues<char> _values = SearchValues.Create(['\r', '\n', ' ', '\t', '}']);
-	private static readonly Regex SubstitutionPattern = SubstitutionRegex();
-
-	public override bool Match(InlineProcessor processor, ref StringSlice slice)
+	protected override SubstitutionInlineCodeLeaf CreateRole(string role, string content, InlineProcessor parserContext)
 	{
-		var match = slice.CurrentChar;
-
-		if (processor.Context is not ParserContext context)
-			return false;
-
-		Debug.Assert(match is not ('\r' or '\n'));
-
-		// Match the opened sticks
-		var openSticks = slice.CountAndSkipChar(match);
-		if (openSticks > 1)
-			return false;
-
-		var span = slice.AsSpan();
-
-		var i = span.IndexOfAny(_values);
-
-		// We got to the end of the input before seeing the match character.
-		if ((uint)i >= (uint)span.Length)
-			return false;
-
-		var closeSticks = 0;
-		while ((uint)i < (uint)span.Length && span[i] == '}')
-		{
-			closeSticks++;
-			i++;
-		}
-
-		if (closeSticks > 1)
-			return false;
-
-		var roleContent = slice.AsSpan()[..i];
-
-		// Check if this matches the "subs=true" pattern
-		if (!roleContent.SequenceEqual("{subs=true}".AsSpan()))
-			return false;
-
-		// Check if the next character is a backtick
-		if (i >= span.Length || span[i] != '`')
-			return false;
-
-		var openingBacktickPos = i;
-		var contentStartPos = i + 1; // Skip the opening backtick
-
-		var closingBacktickIndex = -1;
-		for (var j = contentStartPos; j < span.Length; j++)
-		{
-			if (span[j] != '`')
-				continue;
-			closingBacktickIndex = j;
-			break;
-		}
-
-		if (closingBacktickIndex == -1)
-			return false;
-
-		var contentSpan = span[openingBacktickPos..(closingBacktickIndex + 1)];
-
-		var startPosition = slice.Start;
-		slice.Start = startPosition + roleContent.Length + contentSpan.Length;
-
-		// We've already skipped the opening sticks. Account for that here.
-		startPosition -= openSticks;
-		startPosition = Math.Max(startPosition, 0);
-
-		var start = processor.GetSourcePosition(startPosition, out var line, out var column);
-		var end = processor.GetSourcePosition(slice.Start);
-		var sourceSpan = new SourceSpan(start, end);
-
-		// Extract the actual code content (without backticks)
-		var codeContent = contentSpan.Trim('`').ToString();
-
-		// Process substitutions in the code content
-		var processedContent = ProcessSubstitutions(codeContent, context, processor, line, column);
-
-		var leaf = new SubstitutionInlineCodeLeaf(codeContent, processedContent)
-		{
-			Delimiter = '{',
-			Span = sourceSpan,
-			Line = line,
-			Column = column,
-			DelimiterCount = openSticks
-		};
-
-		if (processor.TrackTrivia)
-		{
-			// startPosition and slice.Start include the opening/closing sticks.
-			leaf.ContentWithTrivia =
-				new StringSlice(slice.Text, startPosition + openSticks, slice.Start - openSticks - 1);
-		}
-
-		processor.Inline = leaf;
-		return true;
+		var context = (ParserContext)parserContext.Context!;
+		var processedContent = ProcessSubstitutions(content, context, parserContext, 0, 0);
+		return new SubstitutionInlineCodeLeaf(role, content, processedContent);
 	}
+
+	protected override bool Matches(ReadOnlySpan<char> role) => role.SequenceEqual("{subs}".AsSpan());
+
+	private static readonly Regex SubstitutionPattern = SubstitutionRegex();
 
 	private static string ProcessSubstitutions(string content, ParserContext context, InlineProcessor processor, int line, int column)
 	{
