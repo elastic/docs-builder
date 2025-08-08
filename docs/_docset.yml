@@ -40,8 +40,8 @@ toc:
         children:
           - file: index.md
           - file: best-practices.md
-          - file: reference.md
           - file: content-patterns.md
+          - file: reference.md
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md

@@ -32,12 +32,12 @@ This extends to deprecations and removals: No information should be removed for 
 
 To achieve this, the Markdown source files integrate a tagging system meant to identify:
 
-* **Product- or deployment-specific availability**: When content applies to or functions differently between products or deployment types (for example, Elastic Cloud Serverless or Elastic Cloud Hosted).
-* **Version-specific functionality**: When features are introduced, modified, or removed in specific versions including lifecycle changes (for example, going from Beta to GA).
+* When content applies to or functions differently between **products or deployment types**.
+* When features are introduced, modified, or removed in specific **versions** including lifecycle changes.
 
 This tagging system is mandatory for all of the public-facing documentation. We refer to it as `applies_to` tags or badges.
 
-For more detailed guidance on contributing to cumulative docs, refer to [](/contribute/cumulative-docs/best-practices.md).
+**For detailed guidance on contributing to cumulative docs, refer to [](/contribute/cumulative-docs/best-practices.md).**
 
 ### When _not_ to tag content
 

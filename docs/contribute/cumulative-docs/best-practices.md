@@ -63,6 +63,23 @@ For each type of applicability information, you can add `applies_to` metadata at
 % Reference: https://github.com/elastic/kibana/pull/229485/files#r2231850710
 % * Create hierarchy of versioned information??
 
+✅ Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when
+availability differs across deployments and environments.
+
+✅ Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every
+page.
+
+✅ Use `applies_to` tags when features change state in a specific update or release.
+
+❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle
+changes.
+
+❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has
+been established earlier.
+
+❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you
+do not need to tag a new GA feature.
+
 % TO DO: Open an issue to force the order in the code.
 ## Order of items
 
@@ -136,7 +153,7 @@ For the full list of supported `applies_to` keys, refer to [](/contribute/cumula
   * For example, you should not use version tagging when fixing typos,
     improving styling, or adding a long-forgotten setting.
 
-### Examples [versions-examples]
+### Example scenarios [versions-examples]
 
 * **A new feature is added to {{serverless-short}} or {{ecloud}}. How do I tag it?**
   Cumulative documentation is not meant to replace release notes. If a feature becomes available in {{serverless-short}} and doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…), it does not need specific tagging.
