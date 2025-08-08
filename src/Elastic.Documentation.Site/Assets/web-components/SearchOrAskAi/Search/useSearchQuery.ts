@@ -1,4 +1,3 @@
-import { useSearchTerm } from '../search.store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
 import * as z from 'zod'
@@ -35,7 +34,10 @@ export const useSearchQuery = ({ searchTerm, pageNumber = 1 }: Props) => {
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     return useQuery<SearchResponse>({
-        queryKey: ['search', { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber }],
+        queryKey: [
+            'search',
+            { searchTerm: debouncedSearchTerm.toLowerCase(), pageNumber },
+        ],
         queryFn: async () => {
             if (!debouncedSearchTerm || debouncedSearchTerm.length < 1) {
                 return SearchResponse.parse({ results: [], totalResults: 0 })

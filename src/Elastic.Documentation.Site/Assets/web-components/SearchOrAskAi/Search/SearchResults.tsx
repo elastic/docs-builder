@@ -1,5 +1,5 @@
 import { useSearchTerm } from '../search.store'
-import { SearchResponse, useSearchQuery } from './useSearchQuery'
+import { useSearchQuery } from './useSearchQuery'
 import {
     useEuiFontSize,
     EuiHighlight,
@@ -39,15 +39,15 @@ export const SearchResults = () => {
     }
 
     const highlightSearchTerms = searchTerm.toLowerCase().split(' ')
-    
+
     if (highlightSearchTerms.includes('esql')) {
-        highlightSearchTerms.push("es|ql")
+        highlightSearchTerms.push('es|ql')
     }
-    
+
     if (highlightSearchTerms.includes('dotnet')) {
-        highlightSearchTerms.push(".net")
+        highlightSearchTerms.push('.net')
     }
-    
+
     return (
         <div>
             <div
