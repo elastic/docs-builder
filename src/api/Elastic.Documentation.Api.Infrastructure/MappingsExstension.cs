@@ -32,14 +32,21 @@ public static class MappingsExtension
 	private static void MapSearchEndpoint(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/search");
-		_ = searchGroup.MapGet("/", async ([FromQuery(Name = "q")] string query, SearchUsecase searchUsecase, Cancel ctx) =>
-		{
-			var searchRequest = new SearchRequest
+		_ = searchGroup.MapGet("/",
+			async (
+				[FromQuery(Name = "q")] string query,
+				[FromQuery(Name = "page")] int? pageNumber,
+				SearchUsecase searchUsecase,
+				Cancel ctx
+			) =>
 			{
-				Query = query
-			};
-			var searchResponse = await searchUsecase.Search(searchRequest, ctx);
-			return Results.Ok(searchResponse);
-		});
+				var searchRequest = new SearchRequest
+				{
+					Query = query,
+					PageNumber = pageNumber ?? 1
+				};
+				var searchResponse = await searchUsecase.Search(searchRequest, ctx);
+				return Results.Ok(searchResponse);
+			});
 	}
 }
