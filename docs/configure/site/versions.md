@@ -16,4 +16,4 @@ Versions set in this file are surfaced to the user via `applies_to` tags.
 :::{include} /contribute/_snippets/tag-processing.md
 :::
 
-See [](../../contribute/cumulative-docs.md) for more information.
+See [](/contribute/cumulative-docs/index.md) for more information.
