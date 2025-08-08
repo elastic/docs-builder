@@ -19,6 +19,10 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 
 	public Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
 	{
+		// Clear existing entries to prevent duplicate key errors when called multiple times
+		LinkReferences.Clear();
+		DeclaredRepositories.Clear();
+
 		// language=json
 		var json = """
 		           {
@@ -47,7 +51,7 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		var reference = CrossLinkFetcher.Deserialize(json);
 		LinkReferences.Add("docs-content", reference);
 		LinkReferences.Add("kibana", reference);
-		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
+		DeclaredRepositories.AddRange(["docs-content", "kibana"]);
 
 		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
 		{

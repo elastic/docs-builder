@@ -14,6 +14,9 @@ public interface ITocItem
 public record FileReference(ITableOfContentsScope TableOfContentsScope, string RelativePath, bool Hidden, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
+public record CrossLinkReference(ITableOfContentsScope TableOfContentsScope, string CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITocItem> Children)
+	: ITocItem;
+
 public record FolderReference(ITableOfContentsScope TableOfContentsScope, string RelativePath, IReadOnlyCollection<ITocItem> Children)
 	: ITocItem;
 
