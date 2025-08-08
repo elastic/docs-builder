@@ -24,7 +24,7 @@ At a high level, you should follow these badge placement principles:
 
 ## Specific elements
 
-More specific guidance in common situations is outlined below.
+There are more specific guidelines on badge placement to follow when using specific elements.
 
 ### Headings
 
@@ -45,7 +45,6 @@ Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with 
 :alt: Rendering error when using inline applies_to with headings
 ::::
 :::
-
 
 ### Definition lists
 
@@ -72,6 +71,8 @@ Do **not** put the `applies_to` badge at the beginning or end of the definition 
 #### If the badge is only relevant to a portion of the definition, follow the appropriate placement guidelines for the elements used in the definition [definition-list-item-part]
 
 This might include labeling just one of multiple paragraphs, or one item in an ordered or unordered list. For example, on the [Google Gemini Connector page](https://www.elastic.co/docs/reference/kibana/connectors-kibana/gemini-action-type#gemini-connector-configuration), the default model is different depending on the deployment type and version of the Elastic Stack. These differences should be called out with their own `applies_to` badges.
+
+In this example, the `applies_to` badges should be at the beginning of each list item as described in [the guidelines for lists](#list-compare-applies_to).
 
 ::::{image} ./images/definition-list-portion-correct.png
 :screenshot:
@@ -153,9 +154,9 @@ using something other than a table (for example, a definition list) to avoid con
 badge applies to the whole row.
 :::
 
-#### If the badge is relevant to part of a cell, add the badge to the end of the line it applies to [table-cell-part]
+#### If the badge is relevant to part of a cell, follow the appropriate placement guidelines for the elements used in the cell [table-cell-part]
 
-For example, the [Parse AWS VPC Flow Log](https://www.elastic.co/docs/reference/beats/filebeat/processor-parse-aws-vpc-flow-log) page includes new information relevant to 9.2.0 and later about a setting that already existed before 9.2.0.
+For example, the [Parse AWS VPC Flow Log](https://www.elastic.co/docs/reference/beats/filebeat/processor-parse-aws-vpc-flow-log) page includes new information relevant to 9.2.0 and later about a setting that already existed before 9.2.0. In this example, the `applies_to` badges should be at the beginning of each list item as described in [the guidelines for lists](#list-compare-applies_to).
 
 ::::{image} ./images/table-part-of-cell-correct.png
 :screenshot:
