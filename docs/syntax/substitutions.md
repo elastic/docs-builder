@@ -215,5 +215,5 @@ With mutations: {subs=true}`version {{version.stack | M.M}}`
 ::::
 
 :::{note}
-Regular inline code (without the `{subs=true}` prefix) will not process substitutions and will display the variable placeholders as-is.
+Regular inline code (without the `{subs}` role) will not process substitutions and will display the variable placeholders as-is.
 :::
