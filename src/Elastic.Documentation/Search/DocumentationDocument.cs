@@ -8,6 +8,15 @@ using Elastic.Documentation.AppliesTo;
 
 namespace Elastic.Documentation.Search;
 
+public record ParentDocument
+{
+	[JsonPropertyName("title")]
+	public string? Title { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
+}
+
 public record DocumentationDocument
 {
 	[JsonPropertyName("title")]
@@ -31,6 +40,12 @@ public record DocumentationDocument
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
+	[JsonPropertyName("url_segment_count")]
+	public int? UrlSegmentCount { get; set; }
+
 	[JsonPropertyName("abstract")]
 	public string? Abstract { get; set; }
+
+	[JsonPropertyName("parents")]
+	public ParentDocument[] Parents { get; set; } = [];
 }

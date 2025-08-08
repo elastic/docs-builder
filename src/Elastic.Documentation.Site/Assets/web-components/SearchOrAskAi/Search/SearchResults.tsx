@@ -1,19 +1,34 @@
 import { useSearchTerm } from '../search.store'
-import { useSearchQuery } from './useSearchQuery'
+import { SearchResponse, useSearchQuery } from './useSearchQuery'
 import {
-    EuiButton,
+    useEuiFontSize,
+    EuiHighlight,
+    EuiLink,
     EuiLoadingSpinner,
     EuiSpacer,
     EuiText,
     useEuiTheme,
+    EuiIcon,
+    EuiPagination,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { useDebounce } from '@uidotdev/usehooks'
 import * as React from 'react'
+import { useEffect, useState } from 'react'
 
 export const SearchResults = () => {
     const searchTerm = useSearchTerm()
-    const { data, error, isLoading } = useSearchQuery()
+    const [activePage, setActivePage] = useState(0)
+    const debouncedSearchTerm = useDebounce(searchTerm, 300)
+    useEffect(() => {
+        setActivePage(0)
+    }, [debouncedSearchTerm])
+    const { data, error, isLoading, isFetching } = useSearchQuery({
+        searchTerm,
+        pageNumber: activePage + 1,
+    })
     const { euiTheme } = useEuiTheme()
+    const { fontSize: smallFontsize } = useEuiFontSize('xs')
 
     if (!searchTerm) {
         return
@@ -23,88 +38,186 @@ export const SearchResults = () => {
         return <div>Error loading search results: {error.message}</div>
     }
 
-    if (isLoading) {
-        return (
-            <div>
-                <EuiLoadingSpinner size="s" /> Loading search results...
-            </div>
-        )
+    const highlightSearchTerms = searchTerm.toLowerCase().split(' ')
+    
+    if (highlightSearchTerms.includes('esql')) {
+        highlightSearchTerms.push("es|ql")
     }
-
-    if (!data || data.results.length === 0) {
-        return <EuiText size="xs">No results found for "{searchTerm}"</EuiText>
+    
+    if (highlightSearchTerms.includes('dotnet')) {
+        highlightSearchTerms.push(".net")
     }
-
-    const buttonCss = css`
-        border: none;
-        vertical-align: top;
-        justify-content: flex-start;
-        block-size: 100%;
-        padding-block: 4px;
-        & > span {
-            justify-content: flex-start;
-            align-items: flex-start;
-        }
-        svg {
-            color: ${euiTheme.colors.textSubdued};
-        }
-        .euiIcon {
-            margin-top: 4px;
-        }
-    `
-
-    const trimDescription = (description: string) => {
-        const limit = 200
-        return description.length > limit
-            ? description.slice(0, limit) + '...'
-            : description
-    }
-
+    
     return (
-        <div
-            css={`
-                li:not(:first-child) {
-                    margin-top: ${euiTheme.size.xs};
-                }
-            `}
-        >
-            <EuiText size="xs">Search Results for "{searchTerm}"</EuiText>
+        <div>
+            <div
+                css={css`
+                    display: flex;
+                    gap: ${euiTheme.size.s};
+                    align-items: center;
+                `}
+            >
+                {isLoading || isFetching ? (
+                    <EuiLoadingSpinner size="s" />
+                ) : (
+                    <EuiIcon type="search" color="subdued" size="s" />
+                )}
+                <EuiText size="xs">
+                    Search results for{' '}
+                    <span
+                        css={css`
+                            font-weight: ${euiTheme.font.weight.bold};
+                        `}
+                    >
+                        {searchTerm}
+                    </span>
+                </EuiText>
+            </div>
             <EuiSpacer size="s" />
-            <ul>
-                {data.results.map((result) => (
-                    <li key={result.url}>
-                        <EuiButton
-                            css={buttonCss}
-                            iconType="document"
-                            color="text"
-                            size="s"
-                            fullWidth
-                        >
-                            <div
-                                css={css`
-                                    width: 100%;
-                                    text-align: left;
-                                `}
-                            >
-                                {result.title}
-                                <EuiSpacer size="xs" />
-                                <EuiText
+            {data && (
+                <>
+                    <ul>
+                        {data.results.map((result) => (
+                            <li key={result.url}>
+                                <div
+                                    tabIndex={0}
                                     css={css`
-                                        text-wrap: pretty;
-                                    `}
-                                    textAlign="left"
-                                    size="xs"
-                                    color="subdued"
+                            display: flex; 
+                            align-items: flex-start;
+                            gap: ${euiTheme.size.s};
+                            padding-inline: ${euiTheme.size.s};
+                            padding-block: ${euiTheme.size.xs};
+                            border-radius: ${euiTheme.border.radius.small};
+                            :hover {
+                                background-color: ${euiTheme.colors.backgroundTransparentSubdued};
+                        `}
                                 >
-                                    {trimDescription(result.description)}
-                                </EuiText>
-                            </div>
-                        </EuiButton>
-                        {/*<EuiIcon type="document" color="subdued" />*/}
-                        {/*<EuiText>{result.title}</EuiText>*/}
-                    </li>
-                ))}
-            </ul>
+                                    <EuiIcon
+                                        type="document"
+                                        color="subdued"
+                                        css={css`
+                                            margin-top: ${euiTheme.size.xs};
+                                        `}
+                                    />
+                                    <div
+                                        css={css`
+                                            width: 100%;
+                                            text-align: left;
+                                        `}
+                                    >
+                                        <EuiLink
+                                            tabIndex={-1}
+                                            href={result.url}
+                                            css={css`
+                                                .euiMark {
+                                                    background-color: ${euiTheme
+                                                        .colors
+                                                        .backgroundLightWarning};
+                                                    //background-color: transparent;
+                                                    //text-decoration: underline dotted;
+                                                    //color: inherit;
+                                                    font-weight: inherit;
+                                                }
+                                            `}
+                                        >
+                                            <EuiHighlight
+                                                search={highlightSearchTerms}
+                                                highlightAll={true}
+                                            >
+                                                {result.title}
+                                            </EuiHighlight>
+                                        </EuiLink>
+                                        <ul
+                                            css={css`
+                                                margin-top: 2px;
+                                                display: flex;
+                                                gap: 0 ${euiTheme.size.xs};
+                                                flex-wrap: wrap;
+                                                list-style: none;
+                                            `}
+                                        >
+                                            {result.parents
+                                                .slice(1) // skip /docs
+                                                .map((parent) => (
+                                                    <li
+                                                        key={
+                                                            'breadcrumb-' +
+                                                            parent.url
+                                                        }
+                                                        css={css`
+                                                            &:not(
+                                                                    :last-child
+                                                                )::after {
+                                                                content: '/';
+                                                                margin-left: ${euiTheme
+                                                                    .size.xs};
+                                                                font-size: ${smallFontsize};
+                                                                color: ${euiTheme
+                                                                    .colors
+                                                                    .text};
+                                                                margin-top: -1px;
+                                                            }
+                                                            display: inline-flex;
+                                                        `}
+                                                    >
+                                                        <EuiLink
+                                                            href={parent.url}
+                                                            color="text"
+                                                            tabIndex={-1}
+                                                        >
+                                                            <EuiText
+                                                                size="xs"
+                                                                color="subdued"
+                                                                css={css`
+                                                                    .euiMark {
+                                                                        background-color: transparent;
+                                                                        text-decoration: underline;
+                                                                        color: inherit;
+                                                                        font-weight: inherit;
+                                                                    }
+                                                                `}
+                                                            >
+                                                                <EuiHighlight
+                                                                    search={
+                                                                        highlightSearchTerms
+                                                                    }
+                                                                    highlightAll={
+                                                                        true
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        parent.title
+                                                                    }
+                                                                </EuiHighlight>
+                                                            </EuiText>
+                                                        </EuiLink>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {/*<EuiIcon type="document" color="subdued" />*/}
+                                {/*<EuiText>{result.title}</EuiText>*/}
+                            </li>
+                        ))}
+                    </ul>
+                    <div
+                        css={css`
+                            display: flex;
+                            justify-content: center;
+                        `}
+                    >
+                        <EuiPagination
+                            aria-label="Many pages example"
+                            pageCount={Math.min(data.pageCount, 20)}
+                            activePage={activePage}
+                            onPageClick={(activePage) =>
+                                setActivePage(activePage)
+                            }
+                        />
+                    </div>
+                </>
+            )}
         </div>
     )
 }
