@@ -117,10 +117,10 @@ jobs:
     outputs:
       any_modified: ${{ steps.check-files.outputs.any_modified }}
       all_changed_files: ${{ steps.check-files.outputs.all_changed_files }}
-      added_files: ${{ steps.check-files.outputs.added_files }}
-      modified_files: ${{ steps.check-files.outputs.modified_files }}
-      deleted_files: ${{ steps.check-files.outputs.deleted_files }}
-      renamed_files: ${{ steps.check-files.outputs.renamed_files }}
+      added_files: ${{ steps.check-modified-file-detail.outputs.added_files }}
+      modified_files: ${{ steps.check-modified-file-detail.outputs.modified_files }}
+      deleted_files: ${{ steps.check-modified-file-detail.outputs.deleted_files }}
+      renamed_files: ${{ steps.check-modified-file-detail.outputs.renamed_files }}
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
@@ -138,6 +138,61 @@ jobs:
             ${{ inputs.path-pattern-ignore != '' && inputs.path-pattern-ignore || '' }}
             .github/**
             README.md
+
+      - name: Get modified file detail
+        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        id: check-modified-file-detail
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          PATH_PATTERN: "${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}"
+          IGNORE_PATTERNS: |
+            ${{ inputs.path-pattern-ignore }}
+            .github/**
+            README.md
+        with:
+          script: |
+            const pathPattern = process.env.PATH_PATTERN;
+            const ignorePatterns = process.env.IGNORE_PATTERNS;
+            const ignoreGlobber = await glob.create(ignorePatterns);
+            const ignoredPaths = new Set(await ignoreGlobber.glob());
+            
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            
+            const allFiles = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number,
+            });
+            
+            const filteredFiles = allFiles.filter(file => !ignoredPaths.has(file.filename));
+            
+            const added = [];
+            const modified = [];
+            const deleted = [];
+            const renamed = [];
+            
+            for (const file of filteredFiles) {
+              switch (file.status) {
+                case 'added':
+                  added.push(file.filename);
+                  break;
+                case 'modified':
+                  modified.push(file.filename);
+                  break;
+                case 'removed':
+                  deleted.push(file.filename);
+                  break;
+                case 'renamed':
+                  renamed.push(`${file.previous_filename}:${file.filename}`);
+                  break;
+              }
+            }
+            
+            core.setOutput('added_files', added.join(' '));
+            core.setOutput('modified_files', modified.join(' '));
+            core.setOutput('deleted_files', deleted.join(' '));
+            core.setOutput('renamed_files', renamed.join(' '));              
 
   build:
     if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
@@ -255,6 +310,21 @@ jobs:
           )
         run: |
           dotnet run --project src/tooling/docs-builder -- diff validate
+
+      - name: 'Validate redirect rules'
+        if: >
+          env.MATCH == 'true'
+          && (
+            github.repository != 'elastic/docs-builder'
+            && (
+              steps.deployment.outputs.result
+              || (
+                needs.check.outputs.any_modified == 'true'
+                && github.event_name == 'merge_group'
+              )
+            )
+          )
+        uses: elastic/docs-builder/actions/diff-validate@main
 
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!

@@ -16,7 +16,11 @@ For API redirects, consult with the documentation engineering team on Slack (#el
 
 For elastic.co/guide redirects, open a [web team request](http://ela.st/web-request).
 
-## File location.
+## Validation
+
+Running `docs-builder diff validate` will give you feedback on whether all necessary redirect rules are in place after your changes. It will also run on pull requests.
+
+## File location
 
 Redirects are configured at the content set-level.
 The configuration file should be located next to your `docset.yml` file:
