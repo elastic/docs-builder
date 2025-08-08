@@ -1,34 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <AssemblyName>docs-builder</AssemblyName>
-    <RootNamespace>Documentation.Builder</RootNamespace>
-    <InvariantGlobalization>true</InvariantGlobalization>
-
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
-    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
-
-    <IsPublishable>true</IsPublishable>
-    <PublishAot>true</PublishAot>
-    <PublishTrimmed>true</PublishTrimmed>
-    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework.Abstractions" />
-    <PackageReference Include="ConsoleAppFramework" />
-    <PackageReference Include="Westwind.AspNetCore.LiveReload" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
-    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
-    <ProjectReference Include="..\..\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
-    <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
-  </ItemGroup>
 </Project>
