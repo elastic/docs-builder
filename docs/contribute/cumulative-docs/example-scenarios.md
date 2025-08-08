@@ -1,8 +1,12 @@
 ---
-navigation_title: "Example scenarios"
+navigation_title: Example scenarios
 ---
 
-# Example scenarios
+% Audience: Technical writers and other frequent docs contributors
+% Goals:
+%   * Provide realistic examples of situations with one or more solution
+
+# Cumulative docs example scenarios
 
 ## Page applies to both stateful and serverless [stateful-serverless]
 
@@ -127,7 +131,7 @@ but might not be sufficient in all cases.
 
 **Best practices**:
 
-* Follow the [best practices for ordered and unordered lists](/contribute/cumulative-docs/best-practices.md#ordered-and-unordered-lists)
+* Follow the [best practices for ordered and unordered lists](/contribute/cumulative-docs/badge-placement.md#ordered-and-unordered-lists)
   including the order of items and the placement of labels.
 
 **Example**: Only one item in an ordered list varies between Serverless and stateful.

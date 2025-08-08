@@ -20,6 +20,11 @@ With cumulative documentation, when a user arrives in our documentation from an 
 
 Users can then compare and contrast differences on a single page to understand what is available to them and explore the ways certain offerings might improve their experience.
 
+:::{image} ./images/reader-experience.png
+:screenshot:
+:alt:
+:::
+
 ## Contributor experience
 
 With cumulative documentation, there is a single "source of truth" for each feature, which helps us to maintain consistency, accuracy, and maintainability of our documentation over time, and avoids "drift" between multiple similar sets of documentation.
@@ -37,7 +42,7 @@ To achieve this, the Markdown source files integrate a tagging system meant to i
 
 This tagging system is mandatory for all of the public-facing documentation. We refer to it as `applies_to` tags or badges.
 
-**For detailed guidance on contributing to cumulative docs, refer to [](/contribute/cumulative-docs/best-practices.md).**
+**For detailed guidance on contributing to cumulative docs, refer to [](/contribute/cumulative-docs/guidelines.md).**
 
 ### When _not_ to tag content
 
@@ -45,11 +50,15 @@ This tagging system is mandatory for all of the public-facing documentation. We 
 * **Every paragraph/section**: Only tag when the context or applicability changes from what has been established earlier on the page.
 * **Unversioned products**: For products where all users are always on the latest version (like serverless), you don't need to tag workflow changes if the product lifecycle is unchanged.
 
-### How dynamic tags work
+### How dynamic tags work [how-do-these-tags-behave-in-the-output]
 
-We have a central version config called [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml), which tracks the latest released versions of our products. It also tracks the earliest version of each product documented in the Docs V3 system (the earliest available on elastic.co/docs). This central version config is used in certain inline version variables, and drives our [dynamic rendering logic](#how-do-these-tags-behave-in-the-output).
+We have a central version config called [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml), which tracks the latest released versions of our products. It also tracks the earliest version of each product documented in the Docs V3 system (the earliest available on elastic.co/docs).
 
-The logic allows us to label documentation related to unreleased versions as `planned`, continuously release documentation, and document our Serverless and {{stack}} offerings in one place.
+This central version config is used in certain inline version variables and drives our dynamic rendering logic, which allows us to label documentation related to unreleased versions as `planned`, continuously release documentation, and document our Serverless and {{stack}} offerings in one place.
+
+:::{tip}
+Read more about how site configuration works in [](/configure/site/index.md).
+:::
 
 :::{include} /contribute/_snippets/tag-processing.md
 :::
