@@ -4,6 +4,65 @@ navigation_title: "Example scenarios"
 
 # Example scenarios
 
+## Page applies to both stateful and serverless [stateful-serverless]
+
+If an entire page is primarily about using or interacting with Elastic Stack components or the Serverless UI,
+add the `stack` and `serverless` keys to the `applies_to` in the frontmatter.
+
+```yml
+---
+applies_to:
+  stack: ga
+  serverless: ga
+---
+```
+
+For example...
+
+<image>
+
+% ## Content on orchestrating, deploying, or configuring an installation
+
+## Only one section applies
+
+If the content of an entire page is generally available to Elastic Stack 9.0.0
+and the content in one section only applies to Elastic Stack 9.1.0 and later,
+add a section-level annotation to the relevant heading.
+
+````
+---
+applies_to:
+  stack: ga 9.0.0
+---
+
+# Spaces
+
+## Configure a space-level landing page [space-landing-page]
+
+```{applies_to}
+stack: ga 9.1.0
+```
+````
+
+For example...
+
+<image>
+
+## Only one section does _not_ apply
+
+A whole page is generally applicable to Elastic Stack 9.0.0 and to Serverless,
+but one specific section isn’t applicable to Serverless.
+
+### Solution [not-one-section-solution]
+
+## Only one paragraph applies
+
+### Solution [one-paragraph-solution]
+
+## Only one paragraph does _not_ apply
+
+### Solution [not-one-paragraph-solution]
+
 ## Code block content varies [code-block]
 
 Often the content in a code block will vary between situations (versions, deployment types, etc).

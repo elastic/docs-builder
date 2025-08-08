@@ -39,8 +39,8 @@ toc:
       - folder: cumulative-docs
         children:
           - file: index.md
-          - file: reference.md
           - file: best-practices.md
+          - file: reference.md
           - file: content-patterns.md
       - file: branching-strategy.md
       - file: add-repo.md
