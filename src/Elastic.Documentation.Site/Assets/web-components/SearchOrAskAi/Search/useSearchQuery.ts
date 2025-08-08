@@ -15,6 +15,8 @@ const SearchResultItem = z.object({
     parents: z.array(SearchResultItemParent),
 })
 
+export type SearchResultItem = z.infer<typeof SearchResultItem>
+
 const SearchResponse = z.object({
     results: z.array(SearchResultItem),
     totalResults: z.number(),
