@@ -175,55 +175,6 @@ cd elasticsearch-{{version}}/
 ::::
 
 
-### MD code block with subs enabled
-
-::::{tab-set}
-
-:::{tab-item} Output
-
-```bash subs=true
-echo "{{a-global-variable}}"
-```
-
-:::
-
-:::{tab-item} Markdown
-
-````markdown
-```bash subs=true
-echo "{{a-global-variable}}"
-```
-
-````
-:::
- 
-::::
-
-###  MD code block without subs enabled
-
-::::{tab-set}
-
-:::{tab-item} Output
-
-```bash 
-echo "{{a-global-variable}}"
-```
-
-:::
-
-:::{tab-item} Markdown
-
-````markdown
-```bash
-echo "{{a-global-variable}}"
-```
-
-````
-:::
-
-::::
-
-
 ## Inline code
 
 Substitutions are also supported in inline code snippets using the `{subs=true}` syntax.
