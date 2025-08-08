@@ -4,6 +4,7 @@ sub:
   a-key-with-dashes: "A key with dashes"
   version: 7.17.0
   hello-world: "Hello world!"
+  env-var: "MY_VAR"
 ---
 
 # Substitutions
@@ -25,7 +26,11 @@ subs:
 If a substitution is defined globally it may not be redefined (shaded) in a files `frontmatter`. 
 Doing so will result in a build error.
 
-To use the variables in your files, surround them in curly brackets (`{{variable}}`).
+To use the variables in your files, surround them in curly brackets (`{{variable}}`). Substitutions work in:
+
+- Regular text content
+- Code blocks (when `subs=true` is specified)
+- Inline code snippets (when `{subs=true}` prefix is used)
 
 ### Example
 
@@ -137,6 +142,49 @@ Substitutions are supported in code blocks but are disabled by default. Enable s
 # Your code with variables
 ```
 ````
+
+## Inline code
+
+Substitutions are also supported in inline code snippets using the `{subs=true}` syntax.
+
+```markdown
+{subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+```
+
+### Inline code examples
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
+
+With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+
+Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
+
+With mutations: {subs=true}`version {{version.stack | M.M}}`
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
+
+With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+
+Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
+
+With mutations: {subs=true}`version {{version.stack | M.M}}`
+````
+
+:::
+::::
+
+:::{note}
+Regular inline code (without the `{subs=true}` prefix) will not process substitutions and will display the variable placeholders as-is.
+:::
 
 ### Code directive with subs enabled
 
