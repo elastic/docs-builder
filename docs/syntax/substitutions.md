@@ -32,7 +32,7 @@ To use the variables in your files, surround them in curly brackets (`{{variable
 - Code blocks (when `subs=true` is specified)
 - Inline code snippets (when `{subs=true}` prefix is used)
 
-### Example
+## Example
 
 Here are some variable substitutions:
 
@@ -143,49 +143,6 @@ Substitutions are supported in code blocks but are disabled by default. Enable s
 ```
 ````
 
-## Inline code
-
-Substitutions are also supported in inline code snippets using the `{subs=true}` syntax.
-
-```markdown
-{subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
-```
-
-### Inline code examples
-
-::::{tab-set}
-
-:::{tab-item} Output
-
-Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
-
-With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
-
-Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
-
-With mutations: {subs=true}`version {{version.stack | M.M}}`
-
-:::
-
-:::{tab-item} Markdown
-
-````markdown
-Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
-
-With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
-
-Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
-
-With mutations: {subs=true}`version {{version.stack | M.M}}`
-````
-
-:::
-::::
-
-:::{note}
-Regular inline code (without the `{subs=true}` prefix) will not process substitutions and will display the variable placeholders as-is.
-:::
-
 ### Code directive with subs enabled
 
 ::::{tab-set}
@@ -265,3 +222,47 @@ echo "{{a-global-variable}}"
 :::
 
 ::::
+
+
+## Inline code
+
+Substitutions are also supported in inline code snippets using the `{subs=true}` syntax.
+
+```markdown
+{subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+```
+
+### Inline code examples
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
+
+With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+
+Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
+
+With mutations: {subs=true}`version {{version.stack | M.M}}`
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
+
+With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+
+Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
+
+With mutations: {subs=true}`version {{version.stack | M.M}}`
+````
+
+:::
+::::
+
+:::{note}
+Regular inline code (without the `{subs=true}` prefix) will not process substitutions and will display the variable placeholders as-is.
+:::
