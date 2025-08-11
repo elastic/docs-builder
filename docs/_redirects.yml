@@ -22,3 +22,9 @@ redirects:
   'testing/redirects/third-page.md':
     anchors:
       'removed-anchor':
+  # Related to https://github.com/elastic/docs-builder/pull/1614
+  'docs/contribute/cumulative-docs.md': 'contribute/cumulative-docs/index.md'
+  'docs/versions/content-patterns.md': 'contribute/cumulative-docs/example-scenarios.md'
+  'docs/versions/index.md': 'contribute/cumulative-docs/index.md'
+  # I shouldn't need to do this should I?
+  'docs/versions/_snippets/content-patterns-list.md': 'contribute/cumulative-docs/_snippets/content-patterns-list.md'
