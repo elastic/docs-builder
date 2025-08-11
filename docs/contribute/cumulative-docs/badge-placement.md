@@ -37,6 +37,8 @@ For example, in the [Semantic text field type](https://www.elastic.co/docs/refer
 :alt: Correct use of applies_to with headings
 ::::
 
+% FOR THE REVIEWER: IS THIS TRUE?
+% What do you think of allowing inline applies_to in headings as long as there is only one badge?
 :::{warning}
 Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with headings, which will cause rendering issues in _On this page_.
 
@@ -96,6 +98,9 @@ For example, the [Alerting and action settings in Kibana](https://www.elastic.co
 :alt:
 ::::
 
+% FOR THE REVIEWER: THOUGHTS?
+% This is what I'm seeing in the currently published docs,
+% but I'm not sure if this is what we want to recommend.
 #### If the list just happens to have one or more items that are only relevant to a specific situation, put the badge at the end of the list item [list-other]
 
 Placing the badge at the end of the list item maintains the flow of the list without distracting the reader with badges while still making it clear that the content in that list item is only applicable to the specified situation.

@@ -20,12 +20,36 @@ the Serverless UI, add both the `stack` and `serverless` keys to the `applies_to
 
 % ## Content on orchestrating, deploying, or configuring an installation
 
-## Only one section applies [one-section]
+## Section applicability differs from page applicability [page-section-varies]
 
-The whole page is generally applicable to all deployment types, but one specific paragraph
-only applies to Elastic Cloud Hosted and Serverless, and another paragraph only applies to
-Elastic Cloud Enterprise:
+When only one section has different applicability than the applicability indicated at the
+page level in the frontmatter, use section-level `applies_to` badges.
 
+### If a section applies [one-section]
+
+For example, the content on the [Security](https://www.elastic.co/docs/deploy-manage/security) page is generally applicable to all deployment types, but the first section only applies to Elastic Cloud Hosted and Serverless:
+
+* In the frontmatter, specify that the content on the page applies to all deployment types unless otherwise specified.
+* In a section-level annotation, specify that the content only applies to `ech` and `serverless`.
+
+:::{warning}
+**Don’t overload with exclusions unless it is necessary.**
+
+% FOR THE REVIEWER: IS THIS TRUE?
+In this example, we expect the reader to understand that in sections where only some deployment types are listed,
+the content is only applicable to the deployment types listed in the section-level annotation
+(and is _not_ applicable to the deployment types that are listed at the page level,
+but are omitted from section-level annotation).
+:::
+
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/example-one-section.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
 ````
 ---
 applies_to:
@@ -36,41 +60,46 @@ applies_to:
 
 [...]
 
-## Cloud organization level security [cloud-organization-level]
+## Managed security in Elastic Cloud
 
 ```{applies_to}
 deployment:
-  ess: ga
+  ech: ga
 serverless: ga
 ```
 
 [...]
-
-## Orchestrator level security [orchestrator-level]
-
-```{applies_to}
-deployment:
-  ece: ga
-```
-
-[...]
 ````
-
-% TO DO: Add real example
-% <image>
+::::
+:::::
 
 :::{tip}
 Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
-Just the syntax slightly differs so that it stays inline: `` {applies_to}`ess: ga` {applies_to}`serverless: ga` ``.
-
-
+Just the syntax slightly differs so that it stays inline: `` {applies_to}`ech: ga` {applies_to}`serverless: ga` ``.
 :::
 
-## Only one section does _not_ apply [not-one-section]
+### If one section does _not_ apply [not-one-section]
 
 A whole page is generally applicable to Elastic Stack 9.0.0 and to Serverless,
 but one specific section isn’t applicable to Serverless.
 
+For example, the content on the [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) page is generally applicable to both Serverless and stateful, but one section only applies stateful:
+
+* In the frontmatter, specify that the content on the page applies to both unless otherwise specified.
+
+% FOR THE REVIEWER: WHICH IS CORRECT?
+% The existing docs and the "real" example in the wild use different strategies.
+% Do we include `stack: ga` in the section annotation or not?
+* In a section-level annotation, specify that the content is `ga` in `stack` and is `unavailable` in `serverless`.
+
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/example-not-one-section.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
 ````
 ---
 applies_to:
@@ -85,16 +114,15 @@ applies_to:
 ## Configure a space-level landing page [space-landing-page]
 
 ```{applies_to}
+stack: ga
 serverless: unavailable
 ```
 ````
+::::
+:::::
 
 % TO DO: Add real example
 % <image>
-
-:::{warning}
-Don’t overload with exclusions unless it is necessary.
-:::
 
 :::{tip}
 Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
