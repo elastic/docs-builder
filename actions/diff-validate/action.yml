@@ -2,9 +2,8 @@ name: 'Validate Redirect Rules'
 description: 'Validates consistency of the documentation changes in relation to redirect rules'
 
 runs:
-  using: "composite"
-  steps:
-    - name: Validate Redirect Rules
-      uses: elastic/docs-builder@fix/diff-validate-ci-double-check
-      with:
-        command: "diff validate"
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-builder:edge"
+  args:
+    - "diff"
+    - "validate"

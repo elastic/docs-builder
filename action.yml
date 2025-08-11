@@ -15,9 +15,6 @@ inputs:
   metadata-only:
     description: 'Only generate documentation metadata files'
     required: false
-  command:
-    description: 'The builder command to run'
-    required: false
 outputs:
   landing-page-path:
     description: 'Path to the landing page of the documentation'
