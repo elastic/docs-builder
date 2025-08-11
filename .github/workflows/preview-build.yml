@@ -324,7 +324,7 @@ jobs:
               )
             )
           )
-        uses: elastic/docs-builder/actions/diff-validate@main
+        uses: elastic/docs-builder/actions/diff-validate@fix/diff-validate-ci-double-check
 
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
