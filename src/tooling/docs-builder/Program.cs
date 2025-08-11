@@ -38,9 +38,11 @@ app.Add<DiffCommands>("diff");
 
 var githubActions = ConsoleApp.ServiceProvider!.GetService<ICoreService>();
 var command = githubActions?.GetInput("COMMAND");
+
 if (!string.IsNullOrEmpty(command))
 	args = command.Split(' ');
-
+Console.WriteLine(args);
+Console.WriteLine(command);
 await app.RunAsync(args).ConfigureAwait(false);
 
 
