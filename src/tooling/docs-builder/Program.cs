@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Actions.Core.Extensions;
+using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Cli;
 using Elastic.Documentation.Diagnostics;
@@ -34,6 +35,11 @@ app.UseFilter<CheckForUpdatesFilter>();
 app.Add<Commands>();
 app.Add<InboundLinkCommands>("inbound-links");
 app.Add<DiffCommands>("diff");
+
+var githubActions = ConsoleApp.ServiceProvider!.GetService<ICoreService>();
+var command = githubActions?.GetInput("COMMAND");
+if (!string.IsNullOrEmpty(command))
+	args = command.Split(' ');
 
 await app.RunAsync(args).ConfigureAwait(false);
 
