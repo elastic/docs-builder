@@ -8,7 +8,13 @@ navigation_title: Example scenarios
 
 # Cumulative docs example scenarios
 
-## Page applies to both stateful and serverless [stateful-serverless]
+Browse common scenarios you might run into as a docs contributor that require different approaches to labeling cumulative docs.
+
+:::{note}
+Screenshots might not exactly match the example pages linked to.
+:::
+
+## Content applies to both stateful and serverless [stateful-serverless]
 
 If an entire page is primarily about using or interacting with both Elastic Stack components and
 the Serverless UI, add both the `stack` and `serverless` keys to the `applies_to` in the frontmatter.
@@ -18,29 +24,21 @@ the Serverless UI, add both the `stack` and `serverless` keys to the `applies_to
 :::{include} /syntax/_snippets/stack-serverless-lifecycle-example.md
 :::
 
-% ## Content on orchestrating, deploying, or configuring an installation
-
+% FOR THE REVIEWER: SHOULD THESE ACTUALLY BE THE SAME?
+% In the existing docs (https://elastic.github.io/docs-builder/contribute/cumulative-docs/#section-or-inline-contexts-situational),
+% we say to treat Stack/Serverless and deployment types differently.
+% Should we?
 ## Section applicability differs from page applicability [page-section-varies]
 
-When only one section has different applicability than the applicability indicated at the
+When a section has different applicability than the applicability indicated at the
 page level in the frontmatter, use section-level `applies_to` badges.
 
-### If a section applies [one-section]
+### If labeling deployment modes [one-section]
 
 For example, the content on the [Security](https://www.elastic.co/docs/deploy-manage/security) page is generally applicable to all deployment types, but the first section only applies to Elastic Cloud Hosted and Serverless:
 
 * In the frontmatter, specify that the content on the page applies to all deployment types unless otherwise specified.
 * In a section-level annotation, specify that the content only applies to `ech` and `serverless`.
-
-:::{warning}
-**Don’t overload with exclusions unless it is necessary.**
-
-% FOR THE REVIEWER: IS THIS TRUE?
-In this example, we expect the reader to understand that in sections where only some deployment types are listed,
-the content is only applicable to the deployment types listed in the section-level annotation
-(and is _not_ applicable to the deployment types that are listed at the page level,
-but are omitted from section-level annotation).
-:::
 
 :::::{tab-set}
 ::::{tab-item} Image
@@ -73,17 +71,24 @@ serverless: ga
 ::::
 :::::
 
+:::{warning}
+**Don’t overload with exclusions unless it is necessary.**
+
+% FOR THE REVIEWER: IS THIS TRUE?
+In this example, we expect the reader to understand that in sections where only some deployment types are listed,
+the content is only applicable to the deployment types listed in the section-level annotation
+(and is _not_ applicable to the deployment types that are listed at the page level,
+but are omitted from section-level annotation).
+:::
+
 :::{tip}
 Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
 Just the syntax slightly differs so that it stays inline: `` {applies_to}`ech: ga` {applies_to}`serverless: ga` ``.
 :::
 
-### If one section does _not_ apply [not-one-section]
+### If labeling serverless and stateful [not-one-section]
 
-A whole page is generally applicable to Elastic Stack 9.0.0 and to Serverless,
-but one specific section isn’t applicable to Serverless.
-
-For example, the content on the [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) page is generally applicable to both Serverless and stateful, but one section only applies stateful:
+For example, if a whole page is generally applicable to Elastic Stack 9.0.0 and to Serverless, but one specific section isn’t applicable to Serverless. The content on the [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) page is generally applicable to both Serverless and stateful, but one section only applies stateful:
 
 * In the frontmatter, specify that the content on the page applies to both unless otherwise specified.
 
@@ -121,48 +126,207 @@ serverless: unavailable
 ::::
 :::::
 
-% TO DO: Add real example
-% <image>
-
 :::{tip}
 Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
 Just the syntax slightly differs so that it stays inline: `` {applies_to}`serverless: unavailable` ``.
 :::
 
-## Feature added to unversioned product [unversioned-added]
+## Functionality is added to an unversioned product [unversioned-added]
 
-_Work in progress._
+When functionality is _first added_ to an unversioned product/deployment mode,
+how it is labeled depends on if the functionality is in technical preview, beta, or GA.
 
-% TO DO: Add description
-% TO DO: Add example
+### If the section lifecycle is the same as the page level [unversioned-added-same]
 
-## Feature in an unversioned product changes lifecycle [unversioned-changed]
+% FOR THE REVIEWER: IS THERE AN EXAMPLE?
+% I actually couldn't find an example where unversioned content was added
+% without also adding content for a versioned product.
+For example, on the [<page>](#) page we added content about new <something> functionality that was added to Serverless in GA.
+Since the page's frontmatter already includes `serverless: ga`, there is no need to label the added content.
 
-_Work in progress._
+:::::{tab-set}
+::::{tab-item} Image
+% :::{image} ./images/
+% :screenshot:
+% :alt:
+% :::
+::::
+::::{tab-item} Code
+::::
+:::::
 
-% TO DO: Add description
-% TO DO: Add example
+% FOR THE REVIEWER: IS THIS TRUE?
+::::::{important}
+However, if the functionality is also applicable to a specific version of a versioned product/deployment mode,
+label the content with both versioned and unversioned applicability information.
 
-## Feature in an unversioned product is removed [unversioned-removed]
+For example, on the [Lens](https://www.elastic.co/docs/explore-analyze/visualize/lens) page we added information
+about a new option that was added to Serverless in GA and the Elastic Stack in GA in 9.1.0.
+Even though it is added to Serverless, an unversioned product, in the same lifecycle state as the page-level annotation,
+we still include an inline annotation to make it clear that this is not only available in the Elastic Stack.
 
-_Work in progress._
-
-% TO DO: Add description
-
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/example-unversioned-added-same-exception.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
 ```
 ---
 applies_to:
-  stack: deprecated 9.1, removed 9.4
-  serverless: removed
+  stack: ga
+  serverless: ga
 ---
+
+# Lens [lens]
+
+[...]
+
+#### Tables
+
+**Density** {applies_to}`stack: ga 9.1` {applies_to}`serverless: ga`
+:   Make the table more or less compact. Choose between **Compact**, **Normal** (default), and **Expanded**.
+```
+::::
+:::::
+::::::
+
+### If the section lifecycle is different than the page level
+
+% FOR THE REVIEWER: IS THERE AN EXAMPLE?
+% I actually couldn't find an example of this scenario.
+For example, on the [<page>](#) page we added content about new <something> functionality that was added to Serverless in preview.
+Since this is different than the page-level applicability in the frontmatter, `serverless: ga`,
+label the content about the new functionality with `serverless: preview`.
+
+:::::{tab-set}
+::::{tab-item} Image
+% :::{image} ./images/example-not-one-section.png
+% :screenshot:
+% :alt:
+% :::
+::::
+::::{tab-item} Code
+::::
+:::::
+
+## Functionality changes lifecycle state [lifecycle-changed]
+
+When the functionality described in any content changes lifecycle state,
+how it is labeled varies by whether the product/deployment mode is versioned or unversioned.
+
+For example, the majority of the content on the [Lens](https://www.elastic.co/docs/explore-analyze/visualize/lens)
+page was applicable to both Elastic Stack and to Serverless.
+One specific section describes functionality that was in technical preview in Elastic Stack 9.0.0 and
+Serverless at the time Elastic Stack 9.0.0 was released.
+Then, the functionality became generally available in Elastic Stack in 9.1.0 and shortly before the
+Elastic Stack 9.1.0 release in Serverless.
+
+* For Elastic Stack, a versioned product, label the section with both lifecycles: `ga 9.1` and `preview 9.0`.
+* For Serverless, an unversioned product, update the section label from `serverless: preview` to `serverless: ga`.
+  Do _not_ list both lifecycles.
+
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/example-lifecycle-changed.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
+````
+---
+applies_to:
+  stack: ga
+  serverless: ga
+---
+
+# Lens [lens]
+
+[...]
+
+### Assign colors to terms [assign-colors-to-terms]
+
+```{applies_to}
+stack: ga 9.1, preview 9.0,
+serverless: ga
 ```
 
-## Feature in a versioned product changes lifecycle [versioned-changed]
+[...]
 
-_Work in progress._
+````
+::::
+:::::
 
-% TO DO: Add description
-% TO DO: Add example
+
+## Functionality is removed [removed]
+
+When the functionality described in any level of content is removed,
+how to handle it varies by whether the product/deployment mode is versioned or unversioned.
+
+For example, we removed the `securitySolution:enableVisualizationsInFlyout` setting that was described on the
+[Configure advanced settings](https://www.elastic.co/docs/solutions/security/get-started/configure-advanced-settings)
+page from the Elastic Stack in 9.1.0 and from Serverless around the same time.
+Since this this functionality is still available before 9.1.0, we need that content to continue to be
+available to users on Elastic Stack earlier versions while communicating to users on newer versions
+that it is no longer available.
+
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/example-removed-unversioned-exception.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
+````
+---
+applies_to:
+  stack: all
+  serverless:
+    security: all
+---
+
+# Configure advanced settings [security-advanced-settings]
+
+[...]
+
+## Access the event analyzer and Session View from the event or alert details flyout [visualizations-in-flyout]
+
+```{applies_to}
+stack: removed 9.1
+serverless: removed
+```
+
+[...]
+````
+::::
+:::::
+
+
+::::::{important}
+If the functionality was only ever available in an unversioned product or deployment mode,
+remove the content altogether.
+
+% FOR THE REVIEWER: IS THERE AN EXAMPLE?
+% I couldn't find an actual example of this scenario.
+% For example, we removed the <something> functionality that was described on the [<page>](#) page
+% from the Elastic Stack in 9.1.0.
+% Since this this functionality is still available in 9.0.0, we need that content to continue to be
+% available to users on Elastic Stack 9.0.0 while communicating to users on newer versions that it is no longer available.
+% :::::{tab-set}
+% ::::{tab-item} Image
+% :::{image} ./images/example-not-one-section.png
+% :screenshot:
+% :alt:
+% :::
+% ::::
+% ::::{tab-item} Code
+% ::::
+% :::::
+::::::
 
 ## Code block content varies [code-block]
 
@@ -186,11 +350,10 @@ Using a code callout is the lightest-touch solution, but might not be sufficient
 
 * Place the badge at the beginning of the callout.
 
-**Example**: A new option was made available in 9.1.0.
+**Example**: On the [Entity Analytics](https://www.elastic.co/docs/reference/beats/filebeat/filebeat-input-entity-analytics#_configuration_3) page, we added a new option to a code block that was only made available in 9.1.0.
 
 ::::{image} ./images/example-code-block-callout.png
 :screenshot:
-:alt:
 ::::
 
 ### Solution B: Use tabs [code-block-tabs]
@@ -204,11 +367,10 @@ Using a code callout is the lightest-touch solution, but might not be sufficient
 * Try not to include information surrounding a code block in the tabs.
   Make the tab content as small as possible apart from the procedure itself.
 
-**Example**:
+**Example**: On the [Upstream OpenTelemetry Collectors and language SDKs](https://www.elastic.co/docs/solutions/observability/apm/upstream-opentelemetry-collectors-language-sdks#apm-connect-open-telemetry-collector) page, we use tabs to show two different code blocks: one for Serverless and one for Elastic Stack (stateful).
 
 ::::{image} ./images/example-code-block-tabs.png
 :screenshot:
-:alt:
 ::::
 
 ## Workflows vary [workflow]
@@ -235,7 +397,6 @@ but might not be sufficient in all cases.
 
 ::::{image} ./images/workflow-inline.png
 :screenshot:
-:alt:
 ::::
 
 ### Solution B: Use tabs [workflow-tabs]
@@ -258,9 +419,11 @@ Tabs are minimally disruptive in many situations.
   Make the tab content as small as possible apart from the procedure itself.
 * Consider breaking up procedures into sets of procedures if only one section differs between contexts.
 
-% TO DO: Add example
-% **Example**:
-% <image>
+**Example**: On the [Enable audit logging](https://www.elastic.co/docs/deploy-manage/security/logging-configuration/enabling-audit-logs#enable-audit-logging-procedure) page, we use tabs to show separate ordered lists outlining the workflow for each deployment type.
+
+::::{image} ./images/example-workflow-tabs.png
+:screenshot:
+::::
 
 ### Solution C: Use sibling pages [workflow-sibling-pages]
 
@@ -274,12 +437,14 @@ Sibling pages are a last resort when no other solutions are appropriate.
   or where the flow across procedures is muddied when versioning context is added.
 * The workflow exists in a very complex page that is already heavily using tabs and other tools we use for versioning differences.
   This makes it difficult to add another “layer” of content.
-% * Beta to GA transitions? Hide the beta doc and leave it linked to the GA doc, which will presumably be more stable?
+* Product lifecycle state changes like when technical preview or beta transitions to GA.
 
-% TO DO: Add best practices
-% **Best practices**:
+**Best practices**:
 
-**Example**:
+* When using this strategy for product lifecycle changes: hide the earlier page and cross-link between the two so the more stable GA doc is more prominent, but the earlier version is still available to users who need it.
+
+**Example**: We use separate pages for ECH and Serverless billing information:
+
 * [Cloud Hosted deployment billing dimensions](https://elastic.co/docs/deploy-manage/cloud-organization/billing/cloud-hosted-deployment-billing-dimensions)
 * [{{serverless-short}} project billing dimensions](https://elastic.co/docs/deploy-manage/cloud-organization/billing/serverless-project-billing-dimensions)
 
@@ -296,10 +461,8 @@ Sometimes the UI differs between versions, deployment types or other conditions.
 **Best practices**:
 * Keep any explanatory text outside the tab unless it's specific to the screenshot inside.
 
-% TO DO: Add example
-% **Example**:
-% A walkthrough for configuring alerts in Kibana differs between Elastic Stack and Serverless deployments.
-% <image>
+**Example**: As of the Elastic Stack 9.1.0 release, there are no examples of this approach being used in live docs
+except for with images used in workflows.
 
 ### Solution B: Add a note [screenshot-note]
 
@@ -314,23 +477,12 @@ In cases where only a small visual detail differs (for example, a button label o
 * Place the note directly after the screenshot.
 * Use an `applies_to` badge at the start of the note if relevant.
 
-% TO DO: Add example
-% **Example**:
-% In Serverless, the "Create rule" button is labeled "Add rule."
-% <image>
+**Example**: As of the Elastic Stack 9.1.0 release, there are no examples of this approach being used in live docs
+except for with images used in workflows.
 
 ## Multiple adjacent block elements vary [multiple-block]
 
-### Solution A: Use headings [multiple-block-headings]
-
-_Work in progress._
-
-% TO DO: Add all sections
-% **When to use headings**:
-% **Best practices**:
-% **Example**:
-
-### Solution B: Use tabs [multiple-block-tabs]
+### Solution A: Use tabs [multiple-block-tabs]
 
 **When to use tabs**:
 * When the content is structurally similar but differs in detail — for example, slightly different instructions, outputs, or paths.
@@ -344,6 +496,37 @@ _Work in progress._
 % TO DO: Add example
 % **Example**:
 % <image>
+
+### Solution B: Use headings [multiple-block-headings]
+
+_Work in progress._
+
+% TO DO: Add all sections
+% **When to use headings**:
+% **Best practices**:
+% **Example**:
+
+## Functionality is added to multiple patch versions [multiple-patch]
+
+Sometimes, features and enhancements slip through into patch versions. In that case, the same functionality might be added for the first time to multiple patch versions at the same time.
+
+For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beats/filebeat/filebeat-input-httpjson) page, the `terminate` helper function was added to a 9.0.x and 9.1.x patch version at the same time.
+
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/example-multiple-patch.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
+```markdown
+* `terminate`: exits the template without falling back to the default value
+  and without causing an error. It takes a single string argument that is
+  logged in debug logging. {applies_to}`stack: ga 9.1.2, ga 9.0.6`
+```
+::::
+:::::
 
 ## Feature in beta or technical preview is removed [beta-removed]
 

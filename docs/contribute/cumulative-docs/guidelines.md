@@ -189,7 +189,7 @@ For unversioned products like {{serverless-short}} or {{ecloud}}:
     ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-added))
 * When a feature in an unversioned product changes lifecycle state to `preview`, `beta`, `ga` or `deprecated`,
   replace the previous lifecycle state with the new lifecycle state.
-  ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-changed))
+  ([example](/contribute/cumulative-docs/example-scenarios.md#lifecycle-changed))
 * When a feature in an unversioned product is removed, remove the content altogether
   unless the content also applies to another context that is versioned
   (refer to [Mixed versioned and unversioned products](#mixed)).
@@ -206,7 +206,7 @@ For versioned products like the Elastic Stack:
   prepend the new lifecycle state and the version in which the state changed to the beginning of the
   value for the relevant key in `applies_to`.
   This applies to all lifecycle states including `preview`, `beta`, `ga`, `deprecated`, and `removed`
-  ([example](/contribute/cumulative-docs/example-scenarios.md#versioned-changed)).
+  ([example](/contribute/cumulative-docs/example-scenarios.md#lifecycle-changed)).
 
 
 #### Mixed versioned and unversioned products [mixed]
@@ -218,7 +218,7 @@ For versioned products like the Elastic Stack:
   another context (for example a feature is removed in both Kibana 9.x and Serverless),
   then it must be kept for any user reading the page that may be using a version of
   Kibana prior to the removal.
-  ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-removed))
+  ([example](/contribute/cumulative-docs/example-scenarios.md#removed))
 
 ## When to indicate something is NOT applicable
 
