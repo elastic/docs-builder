@@ -315,7 +315,7 @@ jobs:
         if: >
           env.MATCH == 'true'
           && (
-            github.repository != 'elastic/docs-builder'
+            github.repository == 'elastic/docs-builder'
             && (
               steps.deployment.outputs.result
               || (
