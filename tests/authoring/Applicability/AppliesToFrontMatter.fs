@@ -216,15 +216,15 @@ applies_to:
 type ``sorts applies_to versions in descending order`` () =
     static let markdown = frontMatter """
 applies_to:
-   stack: ga 8.18.6, ga 9.1.2, ga 8.19.2, ga 9.0.6
+   stack: preview 8.18.6, ga 9.2, beta 9.1, preview 9.0.6
 """
     [<Fact>]
     let ``versions are sorted highest to lowest`` () =
         let expectedVersions = [
-            Applicability.op_Explicit "ga 9.1.2"
-            Applicability.op_Explicit "ga 9.0.6"
-            Applicability.op_Explicit "ga 8.19.2"
-            Applicability.op_Explicit "ga 8.18.6"
+            Applicability.op_Explicit "ga 9.2"
+            Applicability.op_Explicit "beta 9.1"
+            Applicability.op_Explicit "preview 9.0.6"
+            Applicability.op_Explicit "preview 8.18.6"
         ]
         markdown |> appliesTo (ApplicableTo(
             Stack=AppliesCollection(expectedVersions |> Array.ofList)
