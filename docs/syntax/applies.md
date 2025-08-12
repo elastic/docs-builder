@@ -20,9 +20,9 @@ applicability with precision.
 :::{include} /contribute/_snippets/tag-processing.md
 :::
 
-### Badge Rendering Order
+### Badge rendering order
 
-The applies_to badges are displayed in a consistent, logical order regardless of how they appear in your source files. This ensures users always see badges in a predictable hierarchy:
+`applies_to` badges are displayed in a consistent order regardless of how they appear in your source files. This ensures users always see badges in a predictable hierarchy:
 
 1. **Stack** - Elastic Stack
 2. **Serverless** - Elastic Cloud Serverless offerings
