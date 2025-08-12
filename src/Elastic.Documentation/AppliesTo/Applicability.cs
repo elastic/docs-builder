@@ -215,9 +215,7 @@ public record Applicability
 	}
 }
 
-/// <summary>
-/// Comparer for SemVersion objects that handles AllVersions.Instance as the lowest priority
-/// </summary>
+// Comparer for SemVersion objects that handles AllVersions.Instance as the lowest priority
 public class SemVersionComparer : IComparer<SemVersion?>
 {
 	public int Compare(SemVersion? x, SemVersion? y)
