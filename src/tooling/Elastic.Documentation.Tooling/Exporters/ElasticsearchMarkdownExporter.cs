@@ -44,7 +44,7 @@ public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, ID
 	protected override SemanticIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
 	{
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
-		GetMappingSetting = (_, _) => CreateMappingSetting(),
+		GetMappingSettings = (_, _) => CreateMappingSetting(),
 		IndexFormat = "semantic-documentation-{0:yyyy.MM.dd.HHmmss}",
 		ActiveSearchAlias = "semantic-documentation",
 		IndexNumThreads = IndexNumThreads,

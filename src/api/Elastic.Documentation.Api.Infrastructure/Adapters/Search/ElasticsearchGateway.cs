@@ -58,7 +58,8 @@ public class ElasticsearchGateway : ISearchGateway
 		var nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
 		var clientSettings = new ElasticsearchClientSettings(
 				nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default))
+				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
+			)
 			.DefaultIndex(elasticsearchOptions.IndexName)
 			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
 
