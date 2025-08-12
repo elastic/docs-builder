@@ -212,3 +212,26 @@ applies_to:
     [<Fact>]
     let ``does not render label`` () =
         markdown |> appliesTo (Unchecked.defaultof<ApplicableTo>)
+
+type ``parses applies_to with multiple categories in any order`` () =
+    static let markdown = frontMatter """
+applies_to:
+   product: ga
+   deployment:
+      eck: ga 9.0
+   serverless:
+      security: ga 9.0.0
+   stack: ga 9.1
+"""
+    [<Fact>]
+    let ``parses all categories regardless of YAML order`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection.op_Explicit "ga 9.1",
+            Serverless=ServerlessProjectApplicability(
+                Security=AppliesCollection.op_Explicit "ga 9.0.0"
+            ),
+            Deployment=DeploymentApplicability(
+                Eck=AppliesCollection.op_Explicit "ga 9.0"
+            ),
+            Product=AppliesCollection.op_Explicit "ga"
+        ))
