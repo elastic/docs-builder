@@ -80,7 +80,6 @@ refer to [](/syntax/applies.md).
 % Source: George's checklist
 * Don’t overload with exclusions unless it is necessary - If a page is only about Elastic Cloud Hosted, no need to say serverless: unavailable, just add deployment: ess:
 
-% TO DO: Open an issue to force the order in the code.
 ### Order of items
 
 **Versions.** Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in reverse order of product development progression, too.

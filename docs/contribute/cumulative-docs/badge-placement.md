@@ -27,7 +27,7 @@ At a high level, you should follow these badge placement principles:
 
 There are more specific guidelines on badge placement to follow when using specific elements.
 
-### Headings
+### Headings [headings]
 
 Use [section annotations](/syntax/applies.md#section-annotations) on the next line after a heading when the entire content between that heading and the next [heading](/syntax/headings.md) of the same or higher level is version or product-specific.
 
@@ -41,7 +41,7 @@ For example, in the [Semantic text field type](https://www.elastic.co/docs/refer
 % FOR THE REVIEWER: IS THIS TRUE?
 % What do you think of allowing inline applies_to in headings as long as there is only one badge?
 :::{warning}
-Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with headings, which will cause rendering issues in _On this page_.
+Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with headings.
 
 ::::{image} ./images/heading-incorrect.png
 :screenshot:
@@ -49,7 +49,7 @@ Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with 
 ::::
 :::
 
-### Definition lists
+### Definition lists [definition-lists]
 
 The recommended placement of `applies_to` badges in definition lists varies based on what part(s) of the list item relate to the badge.
 
@@ -75,20 +75,16 @@ Do **not** put the `applies_to` badge at the beginning or end of the definition 
 
 This might include labeling just one of multiple paragraphs, or one item in an ordered or unordered list. For example, on the [Google Gemini Connector page](https://www.elastic.co/docs/reference/kibana/connectors-kibana/gemini-action-type#gemini-connector-configuration), the default model is different depending on the deployment type and version of the Elastic Stack. These differences should be called out with their own `applies_to` badges.
 
-In this example, the `applies_to` badges should be at the beginning of each list item as described in [the guidelines for lists](#list-compare-applies_to).
+In this example, the `applies_to` badges should be at the beginning of each list item as described in [the guidelines for lists](#ordered-and-unordered-lists).
 
 ::::{image} ./images/definition-list-portion-correct.png
 :screenshot:
 :alt: Correctly using inline applies_to in a portion of a definition list item
 ::::
 
-### Ordered and unordered lists
+### Ordered and unordered lists [ordered-and-unordered-lists]
 
 Reorganize content as needed so the `applies_to` badge is relevant to the entire contents of the list item.
-The recommended placement of the badge varies based on the purpose of the list.
-
-#### If the purpose of the list is to illustrate the difference between situations, put a badge at the start of each item [list-compare-applies_to]
-
 This could mean distinguishing between deployment types, products, lifecycles, or versions.
 Placing the badge at the beginning of the list item, allows the reader to scan the list for the item that is relevant to them.
 
@@ -99,22 +95,6 @@ For example, the [Alerting and action settings in Kibana](https://www.elastic.co
 :alt:
 ::::
 
-% FOR THE REVIEWER: THOUGHTS?
-% This is what I'm seeing in the currently published docs,
-% but I'm not sure if this is what we want to recommend.
-#### If the list just happens to have one or more items that are only relevant to a specific situation, put the badge at the end of the list item [list-other]
-
-Placing the badge at the end of the list item maintains the flow of the list without distracting the reader with badges while still making it clear that the content in that list item is only applicable to the specified situation.
-
-For example, the [Add filter controls](https://www.elastic.co/docs/explore-analyze/dashboards/add-controls) page lists ways to configure ES|QL controls. Only one of the ways they can be controlled was added for the first time in 9.1.0.
-
-::::{image} ./images/list-misc-correct.png
-:screenshot:
-:alt:
-::::
-
-
-% Reference: Slack conversation
 ### Tables
 
 The recommended placement in tables varies based on what part(s) of the table related to the `applies_to` label.
@@ -143,7 +123,7 @@ Instead, contributors should be able to add them anywhere they need, and the sys
 
 #### If the badge is relevant to one cell, add the badge to the cell it applies to [table-cell]
 
-Add the badge to the cell to indicate that it applies to that one cell only.
+Add the badge to the end of the content in a cell to indicate that it applies to that one cell only.
 
 For example, the [Collect application data](https://www.elastic.co/docs/solutions/observability/apm/collect-application-data#_capabilities) page includes a table that compares functionality across two methods for collecting APM data, and only one of the methods is in technical preview.
 
@@ -162,7 +142,7 @@ badge applies to the whole row.
 
 #### If the badge is relevant to part of a cell, follow the appropriate placement guidelines for the elements used in the cell [table-cell-part]
 
-For example, the [Parse AWS VPC Flow Log](https://www.elastic.co/docs/reference/beats/filebeat/processor-parse-aws-vpc-flow-log) page includes new information relevant to 9.2.0 and later about a setting that already existed before 9.2.0. In this example, the `applies_to` badges should be at the beginning of each list item as described in [the guidelines for lists](#list-compare-applies_to).
+For example, the [Parse AWS VPC Flow Log](https://www.elastic.co/docs/reference/beats/filebeat/processor-parse-aws-vpc-flow-log) page includes new information relevant to 9.2.0 and later about a setting that already existed before 9.2.0. In this example, the `applies_to` badges should be at the beginning of each list item as described in [the guidelines for lists](#ordered-and-unordered-lists).
 
 ::::{image} ./images/table-part-of-cell-correct.png
 :screenshot:
