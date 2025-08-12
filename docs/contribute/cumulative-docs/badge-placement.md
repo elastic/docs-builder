@@ -141,7 +141,7 @@ Instead, contributors should be able to add them anywhere they need, and the sys
 ::::
 :::
 
-#### If the badge is relevant to one cell or part of a cell, add the badge to the cell it applies to [table-cell]
+#### If the badge is relevant to one cell, add the badge to the cell it applies to [table-cell]
 
 Add the badge to the cell to indicate that it applies to that one cell only.
 
