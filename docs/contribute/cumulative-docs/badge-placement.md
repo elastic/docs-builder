@@ -21,6 +21,7 @@ At a high level, you should follow these badge placement principles:
 * Consider scanning patterns - readers often scan for relevant information
 * Ensure badges don't break the natural flow of content
 * Use consistent placement patterns within similar content types
+* Consider visual grouping - readers must naturally associate the badge with its corresponding content, no more, no less
 
 ## Specific elements
 
@@ -28,7 +29,7 @@ There are more specific guidelines on badge placement to follow when using speci
 
 ### Headings
 
-Use [section annotations](/syntax/applies.md#section-annotations) immediately after a heading when the entire content between that heading and the next [heading](/syntax/headings.md) of the same or higher level is version or product-specific.
+Use [section annotations](/syntax/applies.md#section-annotations) on the next line after a heading when the entire content between that heading and the next [heading](/syntax/headings.md) of the same or higher level is version or product-specific.
 
 For example, in the [Semantic text field type](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/semantic-text#custom-by-pipelines) page, all the content in this section is only applicable to Elastic Stack versions 9.0.0 and later.
 
@@ -50,7 +51,7 @@ Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with 
 
 ### Definition lists
 
-The recommended placement of `applies_to` badges in definition lists varies based what part(s) of the list item relate to the badge.
+The recommended placement of `applies_to` badges in definition lists varies based on what part(s) of the list item relate to the badge.
 
 #### If the badge is relevant to the entire contents of a list item, put it at the end of the term [definition-list-item-full]
 

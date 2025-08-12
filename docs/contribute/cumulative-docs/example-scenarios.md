@@ -138,10 +138,7 @@ how it is labeled depends on if the functionality is in technical preview, beta,
 
 ### If the section lifecycle is the same as the page level [unversioned-added-same]
 
-% FOR THE REVIEWER: IS THERE AN EXAMPLE?
-% I actually couldn't find an example where unversioned content was added
-% without also adding content for a versioned product.
-For example, on the [<page>](#) page we added content about new <something> functionality that was added to Serverless in GA.
+For example, on the [Project settings](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/project-settings#obs-serverless-project-features) page we added content about the Observability Logs Essentials feature tier, that was added to Serverless in GA.
 Since the page's frontmatter already includes `serverless: ga`, there is no need to label the added content.
 
 :::::{tab-set}
@@ -195,9 +192,7 @@ applies_to:
 
 ### If the section lifecycle is different than the page level
 
-% FOR THE REVIEWER: IS THERE AN EXAMPLE?
-% I actually couldn't find an example of this scenario.
-For example, on the [<page>](#) page we added content about new <something> functionality that was added to Serverless in preview.
+For example, on the [Dashboard controls](https://www.elastic.co/docs/explore-analyze/dashboards/add-controls#add-esql-control) page we added content about new ES|QL controls functionality that was added to Serverless in preview.
 Since this is different than the page-level applicability in the frontmatter, `serverless: ga`,
 label the content about the new functionality with `serverless: preview`.
 
@@ -479,6 +474,12 @@ In cases where only a small visual detail differs (for example, a button label o
 
 **Example**: As of the Elastic Stack 9.1.0 release, there are no examples of this approach being used in live docs
 except for with images used in workflows.
+
+### Solution C: Keep the screenshot aligned with the latest version [screenshot-latest]
+
+In cases where the screenshot is rather conceptually demonstrating a capability, it's fine not to version it.
+
+For example, versioning the screenshot on the [Dashboards](https://www.elastic.co/docs/explore-analyze/dashboards) parent page would not add tremendous value unless the capability drastically evolves.
 
 ## Multiple adjacent block elements vary [multiple-block]
 
