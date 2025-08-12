@@ -37,7 +37,10 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		if (applications.Count == 0)
 			return false;
 
-		availability = new AppliesCollection([.. applications]);
+		// Sort by version in descending order (highest version first)
+		// Items without versions (AllVersions.Instance) are sorted last
+		var sortedApplications = applications.OrderByDescending(a => a.Version, new SemVersionComparer()).ToArray();
+		availability = new AppliesCollection(sortedApplications);
 		return true;
 	}
 
@@ -209,5 +212,28 @@ public record Applicability
 			};
 		availability = new Applicability { Version = version, Lifecycle = lifecycle };
 		return true;
+	}
+}
+
+/// <summary>
+/// Comparer for SemVersion objects that handles AllVersions.Instance as the lowest priority
+/// </summary>
+public class SemVersionComparer : IComparer<SemVersion?>
+{
+	public int Compare(SemVersion? x, SemVersion? y)
+	{
+		// Handle null cases and AllVersions.Instance cases
+		var xIsNonVersioned = x is null || ReferenceEquals(x, AllVersions.Instance);
+		var yIsNonVersioned = y is null || ReferenceEquals(y, AllVersions.Instance);
+
+		if (xIsNonVersioned && yIsNonVersioned)
+			return 0;
+		if (xIsNonVersioned)
+			return -1; // Non-versioned items sort last
+		if (yIsNonVersioned)
+			return 1;  // Non-versioned items sort last
+
+		// Use default SemVersion comparison for actual versions
+		return x!.CompareTo(y!);
 	}
 }
