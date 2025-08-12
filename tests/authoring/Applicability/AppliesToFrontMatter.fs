@@ -6,6 +6,7 @@ module ``product availability``.``yaml frontmatter``
 
 open Elastic.Documentation.AppliesTo
 open JetBrains.Annotations
+open Swensen.Unquote
 open Xunit
 open authoring
 open authoring.MarkdownDocumentAssertions
@@ -230,6 +231,41 @@ applies_to:
             Stack=AppliesCollection(expectedVersions |> Array.ofList)
         ))
 
+type ``sorts ga before all`` () =
+    static let markdown = frontMatter """
+applies_to:
+   stack: ga, all
+"""
+    [<Fact>]
+    let ``versioned items are sorted first, non-versioned items last`` () =
+        let expectedVersions = [
+            Applicability.op_Explicit "ga"
+            Applicability.op_Explicit "all"
+        ]
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection(expectedVersions |> Array.ofList)
+        ))
+        
+type ``applicability comparisons`` () =
+    [<Fact>]
+    let ``equals`` () =
+        test <@ Applicability.op_Explicit "ga" = Applicability.op_Explicit "ga"  @>
+        
+    [<Fact>]
+    let ``not equals`` () =
+        test <@ Applicability.op_Explicit "ga" <> Applicability.op_Explicit "all"  @>
+        
+    [<Fact>]
+    let ``any version beats no version`` () =
+        test <@ Applicability.op_Explicit "ga 8.1.0" > Applicability.op_Explicit "ga"  @>
+        test <@ Applicability.op_Explicit "all" < Applicability.op_Explicit "ga 8.1.0"  @>
+        
+    [<Fact>]
+    let ``comparison on version number only`` () =
+        test <@ Applicability.op_Explicit "ga 8.1.0" < Applicability.op_Explicit "beta 8.2.0"  @>
+        test <@ Applicability.op_Explicit "beta 8.1.0-beta" < Applicability.op_Explicit "beta 8.1.0"  @>
+        
+        
 type ``sorts applies_to with mixed versioned and non-versioned items`` () =
     static let markdown = frontMatter """
 applies_to:
