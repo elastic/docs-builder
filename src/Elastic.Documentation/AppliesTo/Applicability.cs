@@ -39,8 +39,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 
 		// Sort by version in descending order (the highest version first)
 		// Items without versions (AllVersions.Instance) are sorted last
-		//var sortedApplications = applications.OrderByDescending(a => a.Version, new SemVersionComparer()).ToArray();
-		var sortedApplications = applications.OrderByDescending(a => a).ToArray();
+		var sortedApplications = applications.OrderDescending().ToArray();
 		availability = new AppliesCollection(sortedApplications);
 		return true;
 	}
