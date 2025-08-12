@@ -222,6 +222,8 @@ applies_to:
    serverless:
       security: ga 9.0.0
    stack: ga 9.1
+   ecctl: ga 10.0
+   apm_agent_dotnet: ga 9.0
 """
     [<Fact>]
     let ``parses all categories regardless of YAML order`` () =
@@ -232,6 +234,10 @@ applies_to:
             ),
             Deployment=DeploymentApplicability(
                 Eck=AppliesCollection.op_Explicit "ga 9.0"
+            ),
+            ProductApplicability=ProductApplicability(
+                Ecctl=AppliesCollection.op_Explicit "ga 10.0",
+                ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0"
             ),
             Product=AppliesCollection.op_Explicit "ga"
         ))
