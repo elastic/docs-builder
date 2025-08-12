@@ -141,17 +141,6 @@ how it is labeled depends on if the functionality is in technical preview, beta,
 For example, on the [Project settings](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/project-settings#obs-serverless-project-features) page we added content about the Observability Logs Essentials feature tier, that was added to Serverless in GA.
 Since the page's frontmatter already includes `serverless: ga`, there is no need to label the added content.
 
-:::::{tab-set}
-::::{tab-item} Image
-% :::{image} ./images/
-% :screenshot:
-% :alt:
-% :::
-::::
-::::{tab-item} Code
-::::
-:::::
-
 % FOR THE REVIEWER: IS THIS TRUE?
 ::::::{important}
 However, if the functionality is also applicable to a specific version of a versioned product/deployment mode,
@@ -190,7 +179,7 @@ applies_to:
 :::::
 ::::::
 
-### If the section lifecycle is different than the page level
+### If the section lifecycle is different than the page level [unversioned-added-different]
 
 For example, on the [Dashboard controls](https://www.elastic.co/docs/explore-analyze/dashboards/add-controls#add-esql-control) page we added content about new ES|QL controls functionality that was added to Serverless in preview.
 Since this is different than the page-level applicability in the frontmatter, `serverless: ga`,
@@ -198,12 +187,29 @@ label the content about the new functionality with `serverless: preview`.
 
 :::::{tab-set}
 ::::{tab-item} Image
-% :::{image} ./images/example-not-one-section.png
-% :screenshot:
-% :alt:
-% :::
+:::{image} ./images/example-unversioned-added-different.png
+:screenshot:
+:alt:
+:::
 ::::
 ::::{tab-item} Code
+````
+---
+serverless: ga
+---
+
+# Add filter controls
+
+[...]
+
+## Add ES|QL controls
+
+```{applies_to}
+serverless: preview
+```
+
+[...]
+````
 ::::
 :::::
 
@@ -436,7 +442,8 @@ Sibling pages are a last resort when no other solutions are appropriate.
 
 **Best practices**:
 
-* When using this strategy for product lifecycle changes: hide the earlier page and cross-link between the two so the more stable GA doc is more prominent, but the earlier version is still available to users who need it.
+* Use consistent structure and terminology across sibling pages.
+* Use redirects when one version becomes the primary approach.
 
 **Example**: We use separate pages for ECH and Serverless billing information:
 
