@@ -20,6 +20,18 @@ applicability with precision.
 :::{include} /contribute/_snippets/tag-processing.md
 :::
 
+### Badge Rendering Order
+
+The applies_to badges are displayed in a consistent, logical order regardless of how they appear in your source files. This ensures users always see badges in a predictable hierarchy:
+
+1. **Stack** - Elastic Stack
+2. **Serverless** - Elastic Cloud Serverless offerings
+3. **Deployment** - Deployment options (ECE, ECK, ECH, Self-Managed)
+4. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
+5. **Product (generic)** - Generic product applicability
+
+Within the ProductApplicability category, EDOT and APM Agent items are sorted alphabetically for easy scanning.
+
 ## When and where to use `applies_to`
 
 The `applies_to` metadata can be added at different levels in the documentation:
