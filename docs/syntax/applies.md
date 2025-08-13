@@ -70,6 +70,10 @@ Where:
 - The [version](#version) is optional
 - You can specify multiple states by separating them with a comma. For example: `stack: preview 9.1, ga 9.4`
 
+:::{note}
+**Automatic Version Sorting**: When you specify multiple versions for the same product, the build system automatically sorts them in descending order (highest version first) regardless of the order you write them in the source file. For example, `stack: ga 8.18.6, ga 9.1.2, ga 8.19.2, ga 9.0.6` will be displayed as `stack: ga 9.1.2, ga 9.0.6, ga 8.19.2, ga 8.18.6`. Items without versions (like `ga` without a version or `all`) are sorted last.
+:::
+
 Note that a key without any value doesn't show any badge in the output.
 
 ### Lifecycle

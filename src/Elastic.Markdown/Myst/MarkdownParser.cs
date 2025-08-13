@@ -12,6 +12,7 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
+using Elastic.Markdown.Myst.InlineParsers.SubstitutionInlineCode;
 using Elastic.Markdown.Myst.Linters;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
@@ -154,6 +155,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseDiagnosticLinks()
 				.UseHeadingsWithSlugs()
 				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UseSubstitutionInlineCode()
 				.UseInlineAppliesTo()
 				.UseInlineIcons()
 				.UseInlineKbd()
