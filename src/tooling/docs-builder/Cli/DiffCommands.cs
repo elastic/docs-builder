@@ -45,6 +45,11 @@ internal sealed class DiffCommands(
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
+		if (!redirectFileInfo.Exists)
+		{
+			await collector.StopAsync(ctx);
+			return 0;
+		}
 
 		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
 		var redirects = redirectFileParser.Redirects;
