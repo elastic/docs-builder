@@ -26,3 +26,5 @@ redirects:
   'docs/contribute/cumulative-docs.md': 'contribute/cumulative-docs/index.md'
   'docs/versions/content-patterns.md': 'contribute/cumulative-docs/example-scenarios.md'
   'docs/versions/index.md': 'contribute/cumulative-docs/index.md'
+  # I shouldn't need to do this should I?
+  'docs/versions/_snippets/content-patterns-list.md': 'contribute/cumulative-docs/index.md'
