@@ -6,15 +6,11 @@
   * `observability`: Applies to Serverless [observability projects](https://www.elastic.co/docs/solutions/observability/get-started).
 * `stack`: Applies to the [Elastic Stack](https://www.elastic.co/docs/get-started/the-stack) including any Elastic Stack components.
 * `deployment`: Applies to some deployment type(s).
-  * `ech`: Applies to [Elastic Cloud Hosted](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted) deployments.
   * `ece`: Applies to [Elastic Cloud Enterprise](https://www.elastic.co/docs/deploy-manage/deploy/cloud-enterprise) deployments.
   * `eck`: Applies to [Elastic Cloud on Kubernetes](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s) deployments.
   * `self`: Applies to [self-managed](https://www.elastic.co/docs/deploy-manage/deploy/self-managed) deployments.
-  * `ess`: Applies to Elasticsearch Service deployments. {applies_to}`product: deprecated`
-    :::{note}
-    Use `ech` instead.
-    :::
-* `product`: Applies to a specific product.
+  * `ess`: Applies to [Elastic Cloud Hosted](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted) deployments.
+* `product`: Applies to a specific product that uses a unique versioning scheme (e.g. not `stack`, `ece`, `eck`).
   * `apm_agent_dotnet`: Applies to the [Elastic APM .NET agent](https://www.elastic.co/docs/reference/apm/agents/dotnet).
   * `apm_agent_go`: Applies to the [Elastic APM Go agent](https://www.elastic.co/docs/reference/apm/agents/go).
   * `apm_agent_java`: Applies to the [Elastic APM Java agent](https://www.elastic.co/docs/reference/apm/agents/java).
@@ -34,3 +30,7 @@
   * `edot_node`: Applies to the [Elastic Distribution of OpenTelemetry Node.js](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/nodejs/) (EDOT Node.js).
   * `edot_php`: Applies to the [Elastic Distribution of OpenTelemetry PHP](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/php/) (EDOT PHP).
   * `edot_python`: Applies to the [Elastic Distribution of OpenTelemetry Python](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/python/) (EDOT Python).
+  
+:::{note}
+The `products` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters.
+:::
