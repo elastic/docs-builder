@@ -16,8 +16,7 @@
 
     <ItemGroup>
       <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" />
-      <PackageReference Include="Elastic.Clients.Elasticsearch" />
       <PackageReference Include="NetEscapades.EnumGenerators" />
     </ItemGroup>
-  
+
 </Project>
