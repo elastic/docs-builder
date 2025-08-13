@@ -94,11 +94,17 @@ jobs:
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
+        if: ${{ matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
         run: dotnet run --project build -c release -- publishbinaries
         
       - name: Publish Containers
         if: ${{ matrix.os == 'ubuntu-latest' }} 
         run: dotnet run --project build -c release -- publishcontainers
+        
+      - name: Run Container
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: docker run ghcr.io/elastic/docs-builder:ci-${{ github.event.pull_request.number }} --help
+        
 
   integration:
     if: false
