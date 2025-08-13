@@ -314,7 +314,6 @@ jobs:
       - name: 'Validate redirect rules'
         if: >
           env.MATCH == 'true'
-          && hashFiles('docs/_redirects.yml', 'docs/redirects.yml') != ''
           && (
             github.repository != 'elastic/docs-builder'
             && (
