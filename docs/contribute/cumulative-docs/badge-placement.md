@@ -31,7 +31,7 @@ There are more specific guidelines on badge placement to follow when using speci
 
 Use [section annotations](/syntax/applies.md#section-annotations) on the next line after a heading when the entire content between that heading and the next [heading](/syntax/headings.md) of the same or higher level is version or product-specific.
 
-For example, in the [Semantic text field type](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/semantic-text#custom-by-pipelines) page, all the content in this section is only applicable to Elastic Stack versions 9.0.0 and later.
+For example, on the [Observability AI Assistant](https://www.elastic.co/docs/solutions/observability/observability-ai-assistant#choose-the-knowledge-base-language-model) page, all the content in this section is only applicable to Elastic Stack versions 9.1.0 and later.
 
 ::::{image} ./images/heading-correct.png
 :screenshot:
