@@ -10,7 +10,6 @@ public class SearchUsecase(ISearchGateway searchGateway)
 {
 	public async Task<SearchResponse> Search(SearchRequest request, Cancel ctx = default)
 	{
-		Console.WriteLine($"SearchUsecase: Received search request - Query: '{request.Query}', Page: {request.PageNumber}, Size: {request.PageSize}");
 
 		// var validationResult = validator.Validate(request);
 		// if (!validationResult.IsValid)
@@ -23,7 +22,6 @@ public class SearchUsecase(ISearchGateway searchGateway)
 			ctx
 		);
 
-		Console.WriteLine($"SearchUsecase: Gateway returned {totalHits} total hits, {results.Count} results");
 
 		return new SearchResponse
 		{
