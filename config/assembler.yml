@@ -78,7 +78,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   ecs:
-    current: 9.0 # releases do not always align with the Stack version
+    current: 9.1 # releases do not always align with the Stack version
     next: main
   ecs-dotnet:
   ecs-logging-go-logrus:
