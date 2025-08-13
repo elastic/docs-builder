@@ -30,6 +30,8 @@ environments:
     uri: http://localhost:4000
     content_source: current
     path_prefix: docs
+    feature_flags:
+      SEARCH_OR_ASK_AI: true
 
 shared_configuration:
   stack: &stack

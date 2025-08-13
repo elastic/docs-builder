@@ -37,7 +37,10 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		if (applications.Count == 0)
 			return false;
 
-		availability = new AppliesCollection([.. applications]);
+		// Sort by version in descending order (the highest version first)
+		// Items without versions (AllVersions.Instance) are sorted last
+		var sortedApplications = applications.OrderDescending().ToArray();
+		availability = new AppliesCollection(sortedApplications);
 		return true;
 	}
 
@@ -92,7 +95,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 }
 
 [YamlSerializable]
-public record Applicability
+public record Applicability : IComparable<Applicability>, IComparable
 {
 	public ProductLifecycle Lifecycle { get; init; }
 	public SemVersion? Version { get; init; }
@@ -120,6 +123,22 @@ public record Applicability
 		};
 
 
+	/// <inheritdoc />
+	public int CompareTo(Applicability? other)
+	{
+		var xIsNonVersioned = Version is null || ReferenceEquals(Version, AllVersions.Instance);
+		var yIsNonVersioned = other?.Version is null || ReferenceEquals(other.Version, AllVersions.Instance);
+
+		if (xIsNonVersioned && yIsNonVersioned)
+			return 0;
+		if (xIsNonVersioned)
+			return -1; // Non-versioned items sort last
+		if (yIsNonVersioned)
+			return 1;  // Non-versioned items sort last
+
+		return Version!.CompareTo(other!.Version);
+	}
+
 	public override string ToString()
 	{
 		if (this == GenerallyAvailable)
@@ -143,6 +162,9 @@ public record Applicability
 			_ = sb.Append(' ').Append(Version);
 		return sb.ToString();
 	}
+
+	/// <inheritdoc />
+	public int CompareTo(object? obj) => CompareTo(obj as Applicability);
 
 	public static explicit operator Applicability(string b)
 	{
@@ -210,4 +232,13 @@ public record Applicability
 		availability = new Applicability { Version = version, Lifecycle = lifecycle };
 		return true;
 	}
+
+	public static bool operator <(Applicability? left, Applicability? right) => left is null ? right is not null : left.CompareTo(right) < 0;
+
+	public static bool operator <=(Applicability? left, Applicability? right) => left is null || left.CompareTo(right) <= 0;
+
+	public static bool operator >(Applicability? left, Applicability? right) => left is not null && left.CompareTo(right) > 0;
+
+	public static bool operator >=(Applicability? left, Applicability? right) => left is null ? right is null : left.CompareTo(right) >= 0;
 }
+
