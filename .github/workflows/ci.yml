@@ -103,7 +103,7 @@ jobs:
         
       - name: Run Container
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: docker run ghcr.io/elastic/docs-builder:ci-${{ github.event.pull_request.number }} --help
+        run: docker run elastic/docs-builder:ci-${{ github.event.pull_request.number }} --help
         
 
   integration:
