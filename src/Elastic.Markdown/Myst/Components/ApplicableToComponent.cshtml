@@ -18,47 +18,6 @@
 		appliesTo.Stack
 	)
 }
-@if (appliesTo.Deployment is not null)
-{
-	if (appliesTo.Deployment.Ece is not null)
-	{
-		@RenderProduct("ECE",
-			"Elastic&nbsp;Cloud&nbsp;Enterprise",
-			VersioningSystemId.Ece,
-			appliesTo.Deployment.Ece
-		)
-	}
-
-	if (appliesTo.Deployment.Eck is not null)
-	{
-		@RenderProduct(
-			"ECK",
-			"Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes",
-			VersioningSystemId.Eck,
-			appliesTo.Deployment.Eck
-		)
-	}
-
-	if (appliesTo.Deployment.Ess is not null)
-	{
-		@RenderProduct(
-			"ECH",
-			"Elastic&nbsp;Cloud&nbsp;Hosted",
-			VersioningSystemId.Ess,
-			appliesTo.Deployment.Ess
-		)
-	}
-
-	if (appliesTo.Deployment.Self is not null)
-	{
-		@RenderProduct(
-			"Self-Managed",
-			"Self-managed Elastic&nbsp;deployments",
-			VersioningSystemId.Self,
-			appliesTo.Deployment.Self
-		)
-	}
-}
 @if (appliesTo.Serverless is not null)
 {
 	if (appliesTo.Serverless.AllProjects is not null)
@@ -103,9 +62,46 @@
 		}
 	}
 }
-@if (appliesTo.Product is not null)
+@if (appliesTo.Deployment is not null)
 {
-	@RenderProduct("", "", VersioningSystemId.All, appliesTo.Product)
+	if (appliesTo.Deployment.Ece is not null)
+	{
+		@RenderProduct("ECE",
+			"Elastic&nbsp;Cloud&nbsp;Enterprise",
+			VersioningSystemId.Ece,
+			appliesTo.Deployment.Ece
+		)
+	}
+
+	if (appliesTo.Deployment.Eck is not null)
+	{
+		@RenderProduct(
+			"ECK",
+			"Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes",
+			VersioningSystemId.Eck,
+			appliesTo.Deployment.Eck
+		)
+	}
+
+	if (appliesTo.Deployment.Ess is not null)
+	{
+		@RenderProduct(
+			"ECH",
+			"Elastic&nbsp;Cloud&nbsp;Hosted",
+			VersioningSystemId.Ess,
+			appliesTo.Deployment.Ess
+		)
+	}
+
+	if (appliesTo.Deployment.Self is not null)
+	{
+		@RenderProduct(
+			"Self-Managed",
+			"Self-managed Elastic&nbsp;deployments",
+			VersioningSystemId.Self,
+			appliesTo.Deployment.Self
+		)
+	}
 }
 @if (appliesTo.ProductApplicability is not null)
 {
@@ -118,6 +114,51 @@
 	if (pa.Curator is not null)
 	{
 		@RenderProduct("Curator", "Curator", VersioningSystemId.Curator, pa.Curator)
+	}
+
+	if (pa.EdotAndroid is not null)
+	{
+		@RenderProduct("EDOT Android", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android", VersioningSystemId.EdotAndroid, pa.EdotAndroid)
+	}
+
+	if (pa.EdotCfAws is not null)
+	{
+		@RenderProduct("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws, pa.EdotCfAws)
+	}
+
+	if (pa.EdotCollector is not null)
+	{
+		@RenderProduct("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector, pa.EdotCollector)
+	}
+
+	if (pa.EdotDotnet is not null)
+	{
+		@RenderProduct("EDOT .NET", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET", VersioningSystemId.EdotDotnet, pa.EdotDotnet)
+	}
+
+	if (pa.EdotIos is not null)
+	{
+		@RenderProduct("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos, pa.EdotIos)
+	}
+
+	if (pa.EdotJava is not null)
+	{
+		@RenderProduct("EDOT Java", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java", VersioningSystemId.EdotJava, pa.EdotJava)
+	}
+
+	if (pa.EdotNode is not null)
+	{
+		@RenderProduct("EDOT Node.js", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js", VersioningSystemId.EdotNode, pa.EdotNode)
+	}
+
+	if (pa.EdotPhp is not null)
+	{
+		@RenderProduct("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.ApmAgentPhp, pa.EdotPhp)
+	}
+
+	if (pa.EdotPython is not null)
+	{
+		@RenderProduct("EDOT Python", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python", VersioningSystemId.EdotPython, pa.EdotPython)
 	}
 
 	if (pa.ApmAgentAndroid is not null)
@@ -169,51 +210,10 @@
 	{
 		@RenderProduct("APM Agent RUM", "Application&nbsp;Performance&nbsp;Monitoring Agent for Real&nbsp;User&nbsp;Monitoring", VersioningSystemId.ApmAgentRum, pa.ApmAgentRum)
 	}
-
-	if (pa.EdotIos is not null)
-	{
-		@RenderProduct("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos, pa.EdotIos)
-	}
-
-	if (pa.EdotAndroid is not null)
-	{
-		@RenderProduct("EDOT Android", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android", VersioningSystemId.EdotAndroid, pa.EdotAndroid)
-	}
-
-	if (pa.EdotDotnet is not null)
-	{
-		@RenderProduct("EDOT .NET", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET", VersioningSystemId.EdotDotnet, pa.EdotDotnet)
-	}
-
-	if (pa.EdotJava is not null)
-	{
-		@RenderProduct("EDOT Java", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java", VersioningSystemId.EdotJava, pa.EdotJava)
-	}
-
-	if (pa.EdotNode is not null)
-	{
-		@RenderProduct("EDOT Node.js", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js", VersioningSystemId.EdotNode, pa.EdotNode)
-	}
-
-	if (pa.EdotPhp is not null)
-	{
-		@RenderProduct("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.ApmAgentPhp, pa.EdotPhp)
-	}
-
-	if (pa.EdotPython is not null)
-	{
-		@RenderProduct("EDOT Python", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python", VersioningSystemId.EdotPython, pa.EdotPython)
-	}
-
-	if (pa.EdotCfAws is not null)
-	{
-		@RenderProduct("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws, pa.EdotCfAws)
-	}
-
-	if (pa.EdotCollector is not null)
-	{
-		@RenderProduct("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector, pa.EdotCollector)
-	}
+}
+@if (appliesTo.Product is not null)
+{
+	@RenderProduct("", "", VersioningSystemId.All, appliesTo.Product)
 }
 
 @functions {
