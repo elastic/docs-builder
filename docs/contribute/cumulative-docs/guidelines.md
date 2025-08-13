@@ -16,19 +16,19 @@ Start by asking yourself:
 
 If the answer to at least one of these questions is _yes_, follow these guidelines to write cumulative documentation.
 
-## Dimensions of applicability
+## What `applies_to` tags can communicate
 
 ### Type
 
 In cumulative documentation, you can use `applies_to` to communicate:
 
-* **Product- or deployment-specific availability**: When content applies to or functions differently between products or deployment types (for example, Elastic Cloud Serverless or Elastic Cloud Hosted). Read more in [Product and deployment model tags](#products-and-deployment-models).
-* **Feature lifecycle and version-related functionality**: When features are introduced, modified, or removed in specific versions including lifecycle changes (for example, going from Beta to GA). Read more in [Tagging version-related changes](#versions).
+* **Product- or deployment-specific availability**: When content applies to or functions differently between products or deployment types (for example, Elastic Cloud Serverless or Elastic Cloud Hosted). Read more in [Product and deployment model applicability](#products-and-deployment-models).
+* **Feature lifecycle and version-related functionality**: When features are introduced, modified, or removed in specific versions, including lifecycle changes (for example, going from Beta to GA). Read more in [Version and product lifecycle applicability](#versions).
 
 Both types of applicability are added as part of the same `applies_to` tagging logic.
-The type of applicability is the [keys](/contribute/cumulative-docs/reference.md#key)
+The product or deployment type is the [key](/contribute/cumulative-docs/reference.md#key)
 and the [feature lifecycle](/contribute/cumulative-docs/reference.md#lifecycle)
-and [version](/contribute/cumulative-docs/reference.md#version) are make up the value.
+and [version](/contribute/cumulative-docs/reference.md#version) make up the value.
 
 ```
 <key>: <lifecycle> <version>
@@ -39,13 +39,13 @@ and [version](/contribute/cumulative-docs/reference.md#version) are make up the 
 For each type of applicability information, you can add `applies_to` metadata at different levels:
 
 * **Page-level** metadata is **mandatory** and must be included in the frontmatter.
-  This defines the overall applicability of the page across products, deployments, and environments.
+  This defines the overall applicability of the page across products and deployment models.
 * **Section-level** annotations allow you to specify different applicability for individual sections
   when only part of a page varies between products or versions.
 % TO DO: Add when https://github.com/elastic/docs-builder/issues/1436 is complete
 % * **Element-level** annotations allow tagging block-level elements like tabs, dropdowns, and admonitions.
 %  This is useful for ...
-* **Inline** annotations allow fine-grained annotations within paragraphs or definition lists.
+* **Inline** annotations allow fine-grained annotations within paragraphs or lists.
   This is useful for highlighting the applicability of specific phrases, sentences,
   or properties without disrupting the surrounding content.
 
@@ -74,11 +74,9 @@ refer to [](/syntax/applies.md).
   Instead, contributors should be able to add them anywhere they need, and the system should
   be in charge of rendering them clearly.
 
-% Source: https://github.com/elastic/kibana/pull/229485/files#r2231850710
-% * Create hierarchy of versioned information??
 
 % Source: George's checklist
-* Don’t overload with exclusions unless it is necessary - If a page is only about Elastic Cloud Hosted, no need to say serverless: unavailable, just add deployment: ess:
+* Use `unavailable` sparingly. For example, if a page is only about Elastic Cloud Hosted, don't add a `serverless: unavailable` tag.  Refer to [When to indicate something is NOT applicable](#when-to-indicate-something-is-not-applicable) for specific guidance.
 
 ### Order of items
 
@@ -162,7 +160,7 @@ Here are some common scenarios you might come across:
 * **Cumulative documentation is not meant to replace release notes.**
   * For example, if a feature becomes available in {{serverless-short}} and
     doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…),
-    it does not need specific tagging.
+    it does not need specific tagging. However, it does need a release note entry to document the change.
 * **Consider carefully when the change is going to be published.**
   Read more about how publishing can vary between repos in [](/contribute/branching-strategy.md).
 * **Do not use date-based tagging for unversioned products.**
@@ -182,9 +180,9 @@ For unversioned products like {{serverless-short}} or {{ecloud}}:
     There is no need to label newly added GA content in unversioned products at the section or line level
     if it is already labeled as available at the page level.
     ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-added))
-  * If it is added in technical preview or beta and the related content is added to an existing page
+  * If it is added in technical preview or beta, and the related content is added to an existing page
     that is already labeled as generally available in the unversioned product at the page level,
-    also label the new technical preview or beta content at the section or line level.
+    label the new technical preview or beta content at the section or line level.
     ([example](/contribute/cumulative-docs/example-scenarios.md#unversioned-added))
 * When a feature in an unversioned product changes lifecycle state to `preview`, `beta`, `ga` or `deprecated`,
   replace the previous lifecycle state with the new lifecycle state.
@@ -216,7 +214,7 @@ For versioned products like the Elastic Stack:
 * When a feature in an unversioned product is removed, but the content also applies to
   another context (for example a feature is removed in both Kibana 9.x and Serverless),
   then it must be kept for any user reading the page that may be using a version of
-  Kibana prior to the removal.
+  the product prior to the removal.
   ([example](/contribute/cumulative-docs/example-scenarios.md#removed))
 
 ## When to indicate something is NOT applicable
@@ -258,5 +256,4 @@ This is true for most situations. However, it can still be useful to call it out
   serverless: unavailable
   ```
   ````
-% I think we wanted to not specify stack here
 
