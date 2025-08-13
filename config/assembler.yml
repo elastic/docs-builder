@@ -98,6 +98,7 @@ references:
     private: true
   integrations:
   logstash-docs-md:
+    private: true
   opentelemetry:
 
   #stack aligned using gated deploys
