@@ -6,7 +6,7 @@
 %   * Explain its impacts on both readers and contributors
 %   * Point docs contributors to more detailed resources on how to write cumulative documentation
 
-In [elastic.co/docs](https://elastic.co/docs) (Docs V3), we write docs cumulatively regardless of the [branching strategy](/contribute/branching-strategy.md) selected. This means that in our Markdown-based docs, there is no longer a new documentation set published with every minor release: the same page stays valid over time and shows version-related evolutions.
+In [elastic.co/docs](https://elastic.co/docs) (Docs V3) we write docs cumulatively. This means that in our Markdown-based docs, there is no longer a new documentation set published with every minor release: the same page stays valid over time and shows version-related evolutions.
 
 :::{note}
 This new behavior starts with the following **versions** of our products: Elastic Stack 9.0, ECE 4.0, ECK 3.0, and even more like EDOT docs. It also includes our unversioned products: Serverless and Elastic Cloud.
