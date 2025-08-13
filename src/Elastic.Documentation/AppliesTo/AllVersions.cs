@@ -8,11 +8,6 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
-public class AllVersions() : SemVersion(9999, 9999, 9999)
-{
-	public static AllVersions Instance { get; } = new();
-}
-
 public class SemVersionConverter : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(SemVersion);
