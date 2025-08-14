@@ -90,11 +90,9 @@ You generally do not need to tag:
 
 % Source: Slack conversation
 * **Consider how badges take up space on the page**:
-  The `applies_to` badges should not require contributors to add specific Markdown real estate
-  to the page layout (such as a specific `Version` column in a table).
-  Instead, contributors should be able to add them anywhere they need, and the system should
-  be in charge of rendering them clearly.
-
+  Avoid badge placement patterns that take up unnecessary Markdown real estate.
+  For example, adding a dedicated column for applicability in a table when only
+  a few rows require an `applies_to` badge.
 % Source: George's checklist
 * **Use `unavailable` sparingly**:
   For example, if a page is only about Elastic Cloud Hosted, don't add a `serverless: unavailable` tag.
