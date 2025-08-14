@@ -34,6 +34,9 @@ public class DocumentationFixture : IAsyncLifetime
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
 		_ = builder.Services.AddLogging(c => c.AddInMemory());
+		// TODO expose this as secrets for now not needed integration tests
+		_ = builder.AddParameter("LlmGatewayUrl", "");
+		_ = builder.AddParameter("LlmGatewayServiceAccountPath", "");
 		DistributedApplication = await builder.BuildAsync();
 		InMemoryLogger = DistributedApplication.Services.GetService<InMemoryLogger>()!;
 		await DistributedApplication.StartAsync();

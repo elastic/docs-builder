@@ -30,6 +30,8 @@ environments:
     uri: http://localhost:4000
     content_source: current
     path_prefix: docs
+    feature_flags:
+      SEARCH_OR_ASK_AI: true
 
 shared_configuration:
   stack: &stack
@@ -76,7 +78,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   ecs:
-    current: 9.0 # releases do not always align with the Stack version
+    current: 9.1 # releases do not always align with the Stack version
     next: main
   ecs-dotnet:
   ecs-logging-go-logrus:

@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
-using Elastic.Documentation.Tooling;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -27,6 +27,8 @@ public class StaticWebHost
 		});
 
 		_ = builder.AddDocumentationServiceDefaults();
+
+		builder.Services.AddElasticDocsApiUsecases("dev");
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
@@ -51,6 +53,10 @@ public class StaticWebHost
 		_ = WebApplication.MapGet("/", (Cancel _) => Results.Redirect("docs"));
 
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
+
+		var apiV1 = WebApplication.MapGroup("/docs/_api/v1");
+		apiV1.MapElasticDocsApiEndpoints();
+
 	}
 
 	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
