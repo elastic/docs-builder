@@ -83,7 +83,7 @@ These examples show the syntax first, followed by the rendered admonition.
 
 ## Anchors
 
-A default anchor is automatically created for each [heading](#headings), in the form `#heading-text` (hyphenated, lowercase, special characters and spaces trimmed). To create a custom anchor, add it in square brackets at the end of a heading: `[my-better-anchor]` 
+A default anchor is automatically created for each [heading](#headings), in the form `#heading-text` (hyphenated, lowercase, special characters and spaces trimmed). To create a custom anchor, add it in square brackets at the end of a heading: `[my-better-anchor]`
 
 :::{dropdown} Default anchor
 ```markdown
@@ -114,7 +114,7 @@ A default anchor is automatically created for each [heading](#headings), in the 
 
 ## Applies to
 
-Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are a [version content pattern](../versions/content-patterns.md) in Elastic Docs v3.
+Tags that identify technical contexts: the feature base (stack/serverless), deployments, and project types that a piece of content "applies to." Use `applies_to` tags to help users determine whether content is right for their deployments and configuration. These tags are a [version content pattern](/contribute/cumulative-docs/example-scenarios.md) in Elastic Docs v3.
 
 **Example: Section tag**
 
@@ -122,7 +122,7 @@ Tags that identify technical contexts: the feature base (stack/serverless), depl
 ````markdown
 # Stack-only content
 ```{applies_to}
-stack: 
+stack:
 ```
 ````
 :::
@@ -276,9 +276,9 @@ Use `%` to add single-line comments. Use HTML-style `<!--` and `-->` for multi-l
     This is regular text
 
     <!--
-    so much depends 
+    so much depends
     upon
-    a multi-line 
+    a multi-line
     comment
     -->
     Regular text after multi-line comment
@@ -290,9 +290,9 @@ Use `%` to add single-line comments. Use HTML-style `<!--` and `-->` for multi-l
 This is regular text
 
 <!--
-so much depends 
+so much depends
 upon
-a multi-line 
+a multi-line
 comment
 -->
 Regular text after multi-line comment
@@ -311,7 +311,7 @@ Regular text after multi-line comment
 
 ## Dropdowns
 
-Collapsible blocks for hiding and showing content. 
+Collapsible blocks for hiding and showing content.
 
 ::::{dropdown} Syntax
 ```markdown
@@ -341,7 +341,7 @@ Collapsible content
 ---
 
 ## Headings
-Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level). 
+Title of a page or a section. To create a heading, add number signs `#` at the beginning of the line (one `#` for each heading level).
 
 :::{dropdown} Syntax
 ```markdown
@@ -390,8 +390,8 @@ Standard Markdown images: `[alt text]` in square brackets, followed by the image
 :::
 
 **DOs**<br>
-✅ **Do:** Store images in a centralized directory<br> 
-✅ **Do:** Follow v3 [best practices for screenshots](../versions/index.md#screenshots)<br>
+✅ **Do:** Store images in a centralized directory<br>
+✅ **Do:** Follow v3 [best practices for screenshots](/contribute/cumulative-docs/badge-placement.md#images)<br>
 ✅ **Do:** Specify `:screenshot:` in an [image directive](images.md#screenshots) to add a border
 
 **DON'Ts**<br>
@@ -406,14 +406,14 @@ Standard Markdown images: `[alt text]` in square brackets, followed by the image
 ---
 
 
-## Inline formatting 
+## Inline formatting
 Elastic Docs v3 supports standard Markdown inline formatting.
 
 `_emphasis_` &nbsp;&nbsp;&nbsp; _italics_ <br>
 `**strong**` &nbsp;&nbsp;&nbsp;**bold**  <br>
 \` `monospace` \` &nbsp;&nbsp;&nbsp; `inline code` (single backticks) <br>
 `~~strikethrough~~` &nbsp;&nbsp;&nbsp; ~~strikethrough~~ <br>
-`\* escaped` &nbsp;&nbsp;&nbsp; \* escaped character 
+`\* escaped` &nbsp;&nbsp;&nbsp; \* escaped character
 
 **DOs**<br>
 ✅ **Do:** Use `_emphasis_` to introduce a term<br>
@@ -491,7 +491,7 @@ Standard Markdown ordered (numbered) and unordered (bulleted) lists. Indent with
 
 ## Navigation title
 
-Optional [front matter](frontmatter.md) element that sets a custom title for docs navigation features: appears in the left nav (table of contents), breadcrumbs, and previous/next links. Compare [headings](#headings) (H1 = page title). 
+Optional [front matter](frontmatter.md) element that sets a custom title for docs navigation features: appears in the left nav (table of contents), breadcrumbs, and previous/next links. Compare [headings](#headings) (H1 = page title).
 
 :::{dropdown} Syntax
 
@@ -499,14 +499,14 @@ Page front matter (yaml):
 
 ```yaml
   ---
-    navigation_title: "Minimalist identifier" 
+    navigation_title: "Minimalist identifier"
   ---
 ```
 
-Page title (Markdown H1): 
+Page title (Markdown H1):
 
 ```markdown
-    # Full descriptive page title with product context  
+    # Full descriptive page title with product context
 ```
 
 :::
@@ -534,7 +534,7 @@ Page title (Markdown H1):
 
 ---
 
-## Substitutions 
+## Substitutions
 Key-value pairs that define reusable variables. They help ensure consistency and enable short forms. To use a substitution (or "sub"), surround the key with curly brackets: `{{variable}}`<br>
 
 % TODO: link to our global docset.yml?
@@ -576,11 +576,11 @@ Elastic Cloud Hosted supports most standard Kibana settings.
 **DOs** <br>
 ✅ **Do:** Check the global `docset.yml` file for existing product and feature name subs<br>
 ✅ **Do:** Use substitutions in code blocks by setting `subs=true`  <br>
-✅ **Do:** Define new page-specific substitutions as needed  
+✅ **Do:** Define new page-specific substitutions as needed
 
 **DON'Ts**<br>
 ❌ **Don't:** Override a `docset.yml` sub by defining a page-level sub with the same key (causes build errors)<br>
-❌ **Don't:** Use substitutions for common words that don't need to be standardized  
+❌ **Don't:** Use substitutions for common words that don't need to be standardized
 
 [More details: Substitutions →](./substitutions.md)
 <br>
@@ -643,22 +643,22 @@ Tab 2 content
 
 ## Tables
 
-Standard table layout for structured data. Automatically scrolls horizontally if needed. The **header** row is optional. 
+Standard table layout for structured data. Automatically scrolls horizontally if needed. The **header** row is optional.
 
 :::{dropdown} Syntax
 ```markdown
     | Header | Header |
     | ------ | ------ |
-    | Data   | Info   | 
-    | Info	 | Data   |     
+    | Data   | Info   |
+    | Info	 | Data   |
 ```
 :::
 
 :::{dropdown} Output
 | Header | Header |
 | ------ | ------ |
-| Data   | Info   | 
-| Info	 | Data   |  
+| Data   | Info   |
+| Info	 | Data   |
 :::
 
 **DOs**<br>
