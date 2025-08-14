@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.CsvFile;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -80,6 +81,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
+				return;
+			case CsvFileBlock csvFileBlock:
+				WriteCsvFileBlock(renderer, csvFileBlock);
 				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
@@ -406,5 +410,49 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			else
 				_ = renderer.Write($"(Block: {o.GetType().Name}");
 		}
+	}
+
+	private static void WriteCsvFileBlock(HtmlRenderer renderer, CsvFileBlock block)
+	{
+		if (!block.Found || block.CsvData.Count == 0)
+			return;
+
+		// Start table wrapper div with the table-wrapper class from table.css
+		_ = renderer.Write("<div class=\"table-wrapper\">");
+
+		// Write caption if provided
+		if (!string.IsNullOrEmpty(block.Caption))
+		{
+			_ = renderer.Write($"<caption>{block.Caption}</caption>");
+		}
+
+		_ = renderer.Write("<table>");
+
+		// Always write header row (first row)
+		if (block.CsvData.Count > 0)
+		{
+			_ = renderer.Write("<thead><tr>");
+			foreach (var header in block.CsvData[0])
+			{
+				_ = renderer.Write($"<th>{header}</th>");
+			}
+			_ = renderer.Write("</tr></thead>");
+		}
+
+		// Write body rows (starting from second row)
+		_ = renderer.Write("<tbody>");
+		for (var i = 1; i < block.CsvData.Count; i++)
+		{
+			_ = renderer.Write("<tr>");
+			foreach (var cell in block.CsvData[i])
+			{
+				_ = renderer.Write($"<td>{cell}</td>");
+			}
+			_ = renderer.Write("</tr>");
+		}
+		_ = renderer.Write("</tbody>");
+
+		_ = renderer.Write("</table>");
+		_ = renderer.Write("</div>");
 	}
 }
