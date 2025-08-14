@@ -1,18 +1,27 @@
----
-navigation_title: Badge placement
----
-
 % Audience: Technical writers and other frequent docs contributors
 % Goals:
 %   * Provide guidance on badge placement in specific situations
 
-# `applies_to` badge placement
+# Badge usage and placement
 
 As you continue contributing to documentation and more versions are released,
 you might have questions about how to integrate `applies_to` badges in
 cumulative documentation.
 
-## General principles
+## Use cases
+
+Depending on what you're trying to communicate, you can use the following patterns to represent
+version and deployment type differences in your docs:
+
+* **Pages**: Provide signals that a page applies to the reader.
+* **Headings**: Provide signals about a section’s scope so a user can choose to read or skip it as needed.
+* **Lists**: Identify features in a list of features that are exclusive to a specific context, or that were introduced in a specific version or comparing differing requirements, limits, and other simple, mirrored facts.
+* **Definition lists**: Identify settings or options that are exclusive to a specific context, or that were introduced in a specific version.
+* **Tabs**: Provide two sets of procedures when one or more steps in a process differs between contexts or versions.
+* **Admonitions**: Draw attention to happy differences and basic clarifications.
+* **Sibling pages**: When the information is too complex to be addressed with only the other content patterns.
+
+## General placement principles
 
 % Source: Brandon's PR review comment
 At a high level, you should follow these badge placement principles:
@@ -23,9 +32,17 @@ At a high level, you should follow these badge placement principles:
 * Use consistent placement patterns within similar content types
 * Consider visual grouping - readers must naturally associate the badge with its corresponding content, no more, no less
 
-## Specific elements
+## Placement in specific elements
 
 There are more specific guidelines on badge placement to follow when using specific elements.
+
+### Page frontmatter
+
+Use [`applies_to` in a page's frontmatter](/syntax/applies.md#page-annotations) to provide signals that a page applies to the reader.
+
+::::{warning}
+Do **not** use [section-level](/syntax/applies.md#section-annotations) or [inline annotations](/syntax/applies.md#inline-annotations) with the page title.
+::::
 
 ### Headings [headings]
 
@@ -48,6 +65,19 @@ Do **not** use [inline annotations](/syntax/applies.md#inline-annotations) with 
 :alt: Rendering error when using inline applies_to with headings
 ::::
 :::
+
+### Ordered and unordered lists [ordered-and-unordered-lists]
+
+Reorganize content as needed so the `applies_to` badge is relevant to the entire contents of the list item.
+This could mean distinguishing between deployment types, products, lifecycles, or versions.
+Placing the badge at the beginning of the list item, allows the reader to scan the list for the item that is relevant to them.
+
+For example, the [Alerting and action settings in Kibana](https://www.elastic.co/docs/reference/kibana/configuration-reference/alerting-settings) page lists how the default value for the `xpack.actions.preconfigured.<connector-id>.config.defaultModel` setting varies in Serverless/Stack and across versions.
+
+::::{image} ./images/list-correct.png
+:screenshot:
+:alt:
+::::
 
 ### Definition lists [definition-lists]
 
@@ -80,19 +110,6 @@ In this example, the `applies_to` badges should be at the beginning of each list
 ::::{image} ./images/definition-list-portion-correct.png
 :screenshot:
 :alt: Correctly using inline applies_to in a portion of a definition list item
-::::
-
-### Ordered and unordered lists [ordered-and-unordered-lists]
-
-Reorganize content as needed so the `applies_to` badge is relevant to the entire contents of the list item.
-This could mean distinguishing between deployment types, products, lifecycles, or versions.
-Placing the badge at the beginning of the list item, allows the reader to scan the list for the item that is relevant to them.
-
-For example, the [Alerting and action settings in Kibana](https://www.elastic.co/docs/reference/kibana/configuration-reference/alerting-settings) page lists how the default value for the `xpack.actions.preconfigured.<connector-id>.config.defaultModel` setting varies in Serverless/Stack and across versions.
-
-::::{image} ./images/list-correct.png
-:screenshot:
-:alt:
 ::::
 
 ### Tables

@@ -74,7 +74,11 @@ Read more about how site configuration works in [](/configure/site/index.md).
 
 Read more about _how_ to tag content in:
 
-* [](/contribute/cumulative-docs/guidelines.md)
-* [Badge placement](/contribute/cumulative-docs/badge-placement.md)
-* [Example scenarios](/contribute/cumulative-docs/example-scenarios.md)
-* [`applies_to` syntax guide](/syntax/applies.md)
+* [](/contribute/cumulative-docs/guidelines.md):
+  Review more detailed guidance on when to tag content.
+* [Badge usage and placement](/contribute/cumulative-docs/badge-placement.md):
+  Learn how to integrate `applies_to` badges into docs content.
+* [Example scenarios](/contribute/cumulative-docs/example-scenarios.md):
+  Browse common scenarios you might run into as a docs contributor that require different approaches to labeling cumulative docs.
+* [`applies_to` syntax guide](/syntax/applies.md):
+  Reference all valid values and syntax patterns available in `applies_to`.
