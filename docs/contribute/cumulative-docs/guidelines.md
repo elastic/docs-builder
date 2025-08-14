@@ -163,11 +163,11 @@ Here are some common scenarios you might come across:
   % ([example](/contribute/cumulative-docs/example-scenarios.md#))
 * A whole page is generally applicable to Elastic Stack 9.0 and to Serverless,
   but one specific section isn’t applicable to Serverless.
-  ([example](/contribute/cumulative-docs/example-scenarios.md#not-one-section))
+  ([example](/contribute/cumulative-docs/example-scenarios.md#page-section-varies-product))
 * The whole page is generally applicable to all deployment types,
   but one specific paragraph only applies to Elastic Cloud Hosted and Serverless,
   and another paragraph only applies to Elastic Cloud Enterprise.
-  ([example](/contribute/cumulative-docs/example-scenarios.md#one-section))
+  ([example](/contribute/cumulative-docs/example-scenarios.md#page-section-varies-deployment))
 * Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
   Just the syntax slightly differs so that it stays inline.
   % TO DO: Add example
