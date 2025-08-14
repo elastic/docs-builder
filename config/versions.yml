@@ -3,7 +3,7 @@ versioning_systems:
   # Updates for Stack versions are manual
   stack: &stack
     base: 9.0
-    current: 9.1.1
+    current: 9.1.2
 
   # Using an unlikely high version
   # So that our logic that would display "planned" doesn't trigger
