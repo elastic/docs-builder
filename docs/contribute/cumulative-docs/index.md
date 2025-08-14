@@ -33,22 +33,29 @@ As new minor versions are released, we want users to be able to distinguish whic
 
 This extends to deprecations and removals: No information should be removed for supported product versions, unless it was never accurate. It can be refactored to improve clarity and flow, or to accommodate information for additional products, deployment types, and versions as needed.
 
+To achieve this, the Markdown source files integrate a tagging system.
+
 ### When to tag content
 
-To achieve this, the Markdown source files integrate a tagging system meant to identify:
+Every page should include page-level `applies_to` tags to indicate which product or deployment type
+the content applies to. This is **mandatory** for every page.
 
-* When content applies to or functions differently between **products or deployment types**.
-* When features are introduced, modified, or removed in specific **versions** including lifecycle changes.
+You should also generally tag content when:
 
-This tagging system is mandatory for all of the public-facing documentation. We refer to it as `applies_to` tags or badges.
+* Functionality is added
+* Functionality changes state, like going from beta to GA
+* Availability varies, like being available in Elastic Cloud Enterprise but not in Elastic Cloud Hosted
 
 **For detailed guidance on contributing to cumulative docs, refer to [](/contribute/cumulative-docs/guidelines.md).**
 
 ### When _not_ to tag content
 
-* **Content-only changes**: Don't tag typos, formatting, or IA changes.
-* **Every paragraph/section**: Only tag when the context or applicability changes from what has been established earlier on the page.
-* **Unversioned products**: For products where all users are always on the latest version (like serverless), you don't need to tag workflow changes if the product lifecycle is unchanged.
+You generally do not need to tag:
+
+* Content-only changes, like fixing typos
+* Every paragraph/section when the applicability has been established earlier on the page
+* Unversioned products, where all users are always on the latest version,
+  when adding features that are generally available
 
 ### How dynamic tags work [how-do-these-tags-behave-in-the-output]
 
@@ -62,3 +69,12 @@ Read more about how site configuration works in [](/configure/site/index.md).
 
 :::{include} /contribute/_snippets/tag-processing.md
 :::
+
+### How to tag content
+
+Read more about _how_ to tag content in:
+
+* [](/contribute/cumulative-docs/guidelines.md)
+* [Badge placement](/contribute/cumulative-docs/badge-placement.md)
+* [Example scenarios](/contribute/cumulative-docs/example-scenarios.md)
+* [`applies_to` syntax guide](/syntax/applies.md)

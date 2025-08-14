@@ -52,56 +52,87 @@ For each type of applicability information, you can add `applies_to` metadata at
 For a full syntax reference for page, section, and inline level `applies_to` annotations,
 refer to [](/syntax/applies.md).
 
-% TO DO: Can these be pruned? 🌿
 ## General guidelines
 
-% Source: Used to be in `docs/syntax/applies.md`
-* Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when
-  availability differs across deployments and environments.
-* Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every
-  page.
-* Use `applies_to` tags when features change state in a specific update or release.
-* Do _not_ tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle
-  changes.
-* You do _not_ need to tag every section or paragraph. Only do so if the context or applicability changes from what has
-  been established earlier.
-* If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you
-  do _not_ need to tag a new GA feature.
+### When to tag content
+
+Every page should include page-level `applies_to` tags  to indicate which product or deployment type
+the content applies to. This is mandatory for every page.
+
+You should also generally tag content when:
+
+* **Functionality is added**:
+  Tag content if the functionality described is added in a specific release.
+
+* **Functionality changes state**:
+  Tag content if existing functionality changes state (`preview`, `beta`, `ga`, `deprecated`, `removed`).
+
+* **Availability varies**:
+  Tag content if the availability of the functionality described differs across products or deployment types.
+
+### When _not_ to tag content
+
+You generally do not need to tag:
+
+* **Content-only changes**:
+  Do _not_ tag content-only changes like typo fixes, formatting updates, information architecture updates,
+  or other documentation updates that don't reflect feature lifecycle changes.
+
+* **Every paragraph/section**:
+  You do _not_ need to tag every section or paragraph.
+  Only tag when the context or applicability changes from what has been established earlier on the page.
+
+* **Unversioned products**:
+  For products where all users are always on the latest version (like serverless),
+  you do _not_ need to tag workflow changes if the product lifecycle is unchanged.
+
+### Tips
 
 % Source: Slack conversation
-* The `applies_to` badges should not require contributors to add specific Markdown real estate
+* **Consider how badges take up space on the page**:
+  The `applies_to` badges should not require contributors to add specific Markdown real estate
   to the page layout (such as a specific `Version` column in a table).
   Instead, contributors should be able to add them anywhere they need, and the system should
   be in charge of rendering them clearly.
 
-
 % Source: George's checklist
-* Use `unavailable` sparingly. For example, if a page is only about Elastic Cloud Hosted, don't add a `serverless: unavailable` tag.  Refer to [When to indicate something is NOT applicable](#when-to-indicate-something-is-not-applicable) for specific guidance.
+* **Use `unavailable` sparingly**:
+  For example, if a page is only about Elastic Cloud Hosted, don't add a `serverless: unavailable` tag.
+  Refer to [When to indicate something is NOT applicable](#when-to-indicate-something-is-not-applicable) for specific guidance.
+* **Don’t assume features are available everywhere**:
+  For example, if a Kibana UI panel is missing from Serverless,
+  notate it in the documentation even if it is intuitive.
+* **Clarify version availability per context**:
+  Sometimes features GA for one deployment but remain preview for another.
+* **Think across time**:
+  Product lifecycle changes with each release.
+  Even if a feature might be deprecated or legacy in one deployment it may still be supported elsewhere.
+* **For updates, remember they may be older than you think**:
+  Some updates that may be required to the documentation could precede v9.0.
+  For these changes need to be made to the old AsciiDoc versions of the content.
 
-### Order of items
+% TO DO: Update when the PRs that auto-sort order are merged
+% Maybe move to the "how dynamic tagging works"?
+## Order of items
 
-**Versions.** Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in reverse order of product development progression, too.
+### Versions
+
+Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in reverse order of product development progression, too.
 
 % TO DO: Add example / image
 % <image>
 
 % Reference: https://elastic.github.io/docs-builder/versions/#defaults-and-hierarchy
 % Needs work...
-**Keys.** Always list [keys](/contribute/cumulative-docs/reference.md#key) in the same order for consistency. The order of keys should reflect organizational priorities. For example, use the following order:
+### Keys
+
+Always list [keys](/contribute/cumulative-docs/reference.md#key) in the same order for consistency. The order of keys should reflect organizational priorities. For example, use the following order:
 * **Serverless/Elastic Stack**: Serverless, Stack
 * **Deployment types**: Elastic Cloud Serverless, Elastic Cloud Hosted, Elastic Cloud on Kubernetes, Elastic Cloud Enterprise, Self-managed
 * **Monitoring for Java applications**: Elastic Distribution of OpenTelemetry (EDOT) Java, APM Java agent
 
 % TO DO: Add example / image
 % <image>
-
-% Source: George's checklist
-### Common pitfalls
-
-* Don’t assume features are available everywhere - If a Kibana UI panel is missing from Serverless, notate it in the documentation even if it is intuitive.
-* Clarify version availability per context - Sometimes features GA for one deployment but remain preview for another.
-* Think across time - Product lifecycle changes with each release. Even if a feature might be deprecated or legacy in one deployment it may still be supported elsewhere. (ILM / datastreams)
-* For updates, remember they may be older than you think - Some updates that may be required to the documentation could precede v9.0. For these changes need to be made to the old ASCIIdoc versions of the content.
 
 ## Product and deployment model applicability [products-and-deployment-models]
 
