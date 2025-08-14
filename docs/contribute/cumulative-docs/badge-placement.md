@@ -127,16 +127,19 @@ For example, the [Streaming Input](https://www.elastic.co/docs/reference/beats/f
 :alt:
 ::::
 
-:::{warning}
-Do **not** create a new column just for versions.
-The `applies_to` badges should _not_ require contributors to add specific Markdown real estate to the page layout.
-Instead, contributors should be able to add them anywhere they need, and the system should be in charge of rendering them clearly.
+In some cases it might be appropriate to add column dedicated to applicability,
+but you should avoid adding specific Markdown real estate to the page layout and
+causing existing tables with content from long before the base version,
+for example Elastic Stack 9.0.0, look incomplete.
+
+In the same example as above, creating a column dedicated to applicability would
+likely take up unnecessary space and could cause confusion since the majority of
+rows include content that has been available long before 9.0.0.
 
 ::::{image} ./images/table-entire-row-incorrect.png
 :screenshot:
 :alt:
 ::::
-:::
 
 #### If the badge is relevant to one cell, add the badge to the cell it applies to [table-cell]
 
