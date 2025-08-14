@@ -141,8 +141,6 @@ how it is labeled depends on if the functionality is in technical preview, beta,
 For example, on the [Project settings](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/project-settings#obs-serverless-project-features) page we added content about the Observability Logs Essentials feature tier, that was added to Serverless in GA.
 Since the page's frontmatter already includes `serverless: ga`, there is no need to label the added content.
 
-% FOR THE REVIEWER: IS THIS TRUE?
-::::::{important}
 However, if the functionality is also applicable to a specific version of a versioned product/deployment mode,
 label the content with both versioned and unversioned applicability information.
 
@@ -177,7 +175,6 @@ applies_to:
 ```
 ::::
 :::::
-::::::
 
 ### If the section lifecycle is different than the page level [unversioned-added-different]
 
@@ -265,7 +262,10 @@ serverless: ga
 ## Functionality is removed [removed]
 
 When the functionality described in any level of content is removed,
-how to handle it varies by whether the product/deployment mode is versioned or unversioned.
+how to handle it varies by which lifecycle it was in before being removed and
+whether the product/deployment mode is versioned or unversioned.
+
+### If a GA or deprecated feature is removed from a versioned product
 
 For example, we removed the `securitySolution:enableVisualizationsInFlyout` setting that was described on the
 [Configure advanced settings](https://www.elastic.co/docs/solutions/security/get-started/configure-advanced-settings)
@@ -306,28 +306,15 @@ serverless: removed
 ::::
 :::::
 
+### If a beta or technical preview feature is removed [beta-removed]
 
-::::::{important}
+If the functionality was only ever available in beta or technical preview before being removed,
+you can remove the content altogether regardless of whether it is versioned or unversioned.
+
+### If a feature is removed from an unversioned product
+
 If the functionality was only ever available in an unversioned product or deployment mode,
 remove the content altogether.
-
-% FOR THE REVIEWER: IS THERE AN EXAMPLE?
-% I couldn't find an actual example of this scenario.
-% For example, we removed the <something> functionality that was described on the [<page>](#) page
-% from the Elastic Stack in 9.1.0.
-% Since this this functionality is still available in 9.0.0, we need that content to continue to be
-% available to users on Elastic Stack 9.0.0 while communicating to users on newer versions that it is no longer available.
-% :::::{tab-set}
-% ::::{tab-item} Image
-% :::{image} ./images/example-not-one-section.png
-% :screenshot:
-% :alt:
-% :::
-% ::::
-% ::::{tab-item} Code
-% ::::
-% :::::
-::::::
 
 ## Code block content varies [code-block]
 
@@ -535,11 +522,3 @@ For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beat
 ```
 ::::
 :::::
-
-## Feature in beta or technical preview is removed [beta-removed]
-
-_Work in progress._
-
-% TO DO: Add description
-% TO DO: Add example
-% <image>
