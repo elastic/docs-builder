@@ -24,17 +24,43 @@ the Serverless UI, add both the `stack` and `serverless` keys to the `applies_to
 :::{include} /syntax/_snippets/stack-serverless-lifecycle-example.md
 :::
 
-% FOR THE REVIEWER: SHOULD THESE ACTUALLY BE THE SAME?
-% In the existing docs (https://elastic.github.io/docs-builder/contribute/cumulative-docs/#section-or-inline-contexts-situational),
-% we say to treat Stack/Serverless and deployment types differently.
-% Should we?
-## Section applicability differs from page applicability [page-section-varies]
+
+## Section applicability differs from page-level applicability [page-section-varies]
 
 When a section has different applicability than the applicability indicated at the
 page level in the frontmatter, use section-level `applies_to` badges.
 
-### If labeling deployment modes [one-section]
+### If labeling deployment modes [page-section-varies-deployment]
 
+<!--
+TO DO: Consider other alternative titles:
+* If labeling parallel content on a single page
+* If labeling applicable vs. not applicable
+-->
+
+<!--
+TO DO: Please make this better
+-->
+When a documentation set or page is primarily about orchestrating, deploying,
+or configuring an installation, it usually includes parallel content about multiple
+deployment modes (the reader picks one of several sections that is applicable to them).
+
+% Contributor experience
+In this case, docs contributors include all the deployment types that are mentioned
+throughout the page in the frontmatter `applies_to`, and in each section they include
+only the applicable deployment modes using section-level `applies_to`.
+
+% Reader experience
+The reader should assume that content in a section with a section-level `applies_to` is
+not applicable to any deployment modes that are omitted.
+
+:::{tip}
+**Don’t overload with exclusions unless it is necessary.**
+In content that is primarily about deployment modes, we do not include `unavailable` badges
+for anything in `applies_to` > `deployment`.
+:::
+
+% Example
 For example, the content on the [Security](https://www.elastic.co/docs/deploy-manage/security) page is generally applicable to all deployment types, but the first section only applies to Elastic Cloud Hosted and Serverless:
 
 * In the frontmatter, specify that the content on the page applies to all deployment types unless otherwise specified.
@@ -42,7 +68,7 @@ For example, the content on the [Security](https://www.elastic.co/docs/deploy-ma
 
 :::::{tab-set}
 ::::{tab-item} Image
-:::{image} ./images/example-one-section.png
+:::{image} ./images/page-section-varies-deployment.png
 :screenshot:
 :alt:
 :::
@@ -71,35 +97,62 @@ serverless: ga
 ::::
 :::::
 
-:::{warning}
-**Don’t overload with exclusions unless it is necessary.**
-
-% FOR THE REVIEWER: IS THIS TRUE?
-In this example, we expect the reader to understand that in sections where only some deployment types are listed,
-the content is only applicable to the deployment types listed in the section-level annotation
-(and is _not_ applicable to the deployment types that are listed at the page level,
-but are omitted from section-level annotation).
-:::
-
 :::{tip}
 Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
 Just the syntax slightly differs so that it stays inline: `` {applies_to}`ech: ga` {applies_to}`serverless: ga` ``.
 :::
 
-### If labeling serverless and stateful [not-one-section]
+### If labeling serverless vs. stateful [page-section-varies-product]
 
+<!--
+TO DO: Consider other alternative titles:
+* If labeling versioned products or serverless vs. stateful
+* If labeling available vs. unavailable
+-->
+
+<!--
+TO DO: Please make this better
+-->
+When a documentation set or page is primarily about using a product following its own
+versioning schema or some combination of Elastic Stack components and the Serverless UI,
+it usually includes content that is meant to be used together (i.e. not parallel sections
+like in [If labeling deployment modes](#page-section-varies-deployment)), but is only
+available in specific versions or either serverless or stateful.
+
+% Contributor experience
+In this case, docs contributors should include the following at the page level:
+
+* `stack` with the lowest version that applies to any content (unless it is lower
+  than the base version, {{version.stack.base}}, in which case omit the version number altogether)
+* `serverless` if applicable
+
+Then if a section contains content that applies to a different context than what is
+defined at the page level, include section-level `applies_to` only with the items
+that are different than the page-level `applies_to`.
+
+% Reader experience
+The reader should assume that content in a section with a section-level `applies_to`
+is applicable to all the contexts included in the page-level `applies_to` unless
+explicitly stated.
+
+:::{tip}
+**Don’t overload with badges that restate the page-level applicability.**
+In content that is primarily about serverless vs. stateful, use `unavailable`
+if functionality is not available at all in `serverless` or `stack`.
+Do not use `unavailable` for specific `stack` versions.
+Instead, include the lifecycle and version and the fact that it is not applicable
+to other versions will be implied.
+:::
+
+% Example
 For example, if a whole page is generally applicable to Elastic Stack 9.0.0 and to Serverless, but one specific section isn’t applicable to Serverless. The content on the [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) page is generally applicable to both Serverless and stateful, but one section only applies stateful:
 
 * In the frontmatter, specify that the content on the page applies to both unless otherwise specified.
-
-% FOR THE REVIEWER: WHICH IS CORRECT?
-% The existing docs and the "real" example in the wild use different strategies.
-% Do we include `stack: ga` in the section annotation or not?
-* In a section-level annotation, specify that the content is `ga` in `stack` and is `unavailable` in `serverless`.
+* In a section-level annotation, specify that the content is `unavailable` in `serverless`.
 
 :::::{tab-set}
 ::::{tab-item} Image
-:::{image} ./images/example-not-one-section.png
+:::{image} ./images/page-section-varies-product.png
 :screenshot:
 :alt:
 :::
@@ -119,9 +172,10 @@ applies_to:
 ## Configure a space-level landing page [space-landing-page]
 
 ```{applies_to}
-stack: ga
 serverless: unavailable
 ```
+
+[...]
 ````
 ::::
 :::::
