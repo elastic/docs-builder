@@ -20,6 +20,7 @@
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
+    <PackageReference Include="Sep" />
     <PackageReference Include="Slugify.Core" />
     <PackageReference Include="Utf8StreamReader" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />

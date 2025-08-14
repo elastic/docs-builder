@@ -42,7 +42,6 @@ A regular paragraph.
 public class BibliographyDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "bibliography");
 public class BlockQuoteDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "blockquote");
 public class FrameDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "iframe");
-public class CsvTableDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "csv-table");
 public class MystDirectiveDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "myst");
 public class TopicDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "topic");
 public class ExerciseDirectiveTest(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "exercise");
