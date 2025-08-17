@@ -1,61 +1,24 @@
 # Applies to
 
 <!--
-This page explains concrete usage of the applies_to tag. Cumulative authoring philosophy and guidance goes in contribute/cumulative-docs.md. 
+This page explains concrete usage of the applies_to tag. Cumulative authoring philosophy and guidance goes in contribute/cumulative-docs.md.
 -->
 
-
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](../contribute/cumulative-docs.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](/contribute/cumulative-docs/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
 
 * Which Elastic products and deployment models the content applies to.
 * When a feature changes state relative to the base version.
 
-This is what the `applies_to` metadata is for. It can be used at the page, section, or inline level to specify
-applicability with precision.
+This is what the `applies_to` metadata is for. It can be used at the [page](#page-annotations),
+[section](#section-annotations), or [inline](#inline-annotations) level to specify applicability with precision.
 
-## `applies_to` tags in the output
-
-:::{include} /contribute/_snippets/tag-processing.md
-:::
-
-## When and where to use `applies_to`
-
-The `applies_to` metadata can be added at different levels in the documentation:
-
-* [Page-level](#page-annotations) metadata is **mandatory** and must be included in the frontmatter. This defines the
-  overall applicability of the page across products, deployments, and environments.
-* [Section-level](#section-annotations) annotations allow you to specify different applicability for individual sections
-  when only part of a page varies between products or versions.
-* [Inline](#inline-annotations) annotations allow fine-grained annotations within paragraphs or definition lists. This
-  is useful for highlighting the applicability of specific phrases, sentences, or properties without disrupting the
-  surrounding content.
-
-### Dos and don’ts
-
-✅ Use `applies_to` tags when features change state (`preview`, `beta`, `ga`, `deprecated`, `removed`) or when
-availability differs across deployments and environments.
-
-✅ Use `applies_to` tags to indicate which product or deployment type the content applies to. This is mandatory for every
-page.
-
-✅ Use `applies_to` tags when features change state in a specific update or release.
-
-❌ Don't tag content-only changes like typos, formatting, or documentation updates that don't reflect feature lifecycle
-changes.
-
-❌ You don’t need to tag every section or paragraph. Only do so if the context or applicability changes from what has
-been established earlier.
-
-❌ If the product is not versioned (meaning all users are always on the latest version, like in serverless or cloud), you
-do not need to tag a new GA feature.
-
-For detailed guidance, refer to [](/contribute/cumulative-docs.md).
+**For detailed guidance, refer to [](/contribute/cumulative-docs/index.md).**
 
 ## Syntax
 
-The `applies_to` metadata supports an [exhaustive list of keys](#structured-model).
+The `applies_to` metadata supports an [exhaustive list of keys](#key).
 
 When you write or edit documentation, only specify the keys that apply to that content.
 Each key accepts values with the following syntax:
@@ -76,21 +39,6 @@ Where:
 
 Note that a key without any value doesn't show any badge in the output.
 
-### Lifecycle
-
-`applies_to` accepts the following lifecycle states:
-
-* `preview`
-* `beta`
-* `deprecated`
-* `removed`
-* `unavailable`
-* `ga`
-
-### Version
-
-Can be in either `major.minor` or `major.minor.patch` format
-
 Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
 
 ```
@@ -108,6 +56,22 @@ applies_to:
     elasticsearch: beta
     observability: removed
 ```
+
+### Key
+
+:::{include} /_snippets/applies_to-key.md
+:::
+
+### Lifecycle
+
+:::{include} /_snippets/applies_to-lifecycle.md
+:::
+
+### Version
+
+:::{include} /_snippets/applies_to-version.md
+:::
+
 
 ## Examples
 
@@ -258,7 +222,7 @@ applies_to:
 
 ```{applies_to}
 stack: preview 9.1
-serverless: planned
+serverless: ga
 
 apm_agent_dotnet: ga 1.0.0
 apm_agent_java: beta 1.0.0
@@ -278,9 +242,9 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam
 sit amet auctor odio. Donec ac placerat nunc. {applies_to}`stack: preview` Aenean scelerisque viverra lectus
 nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictum.
 
-- {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. 
+- {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc.
 - {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam.
-- {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim. 
+- {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim.
 
 #### Stack
 

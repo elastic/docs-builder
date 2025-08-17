@@ -36,7 +36,13 @@ toc:
       - file: on-the-web.md
       - file: move.md
       - file: redirects.md
-      - file: cumulative-docs.md
+      - folder: cumulative-docs
+        children:
+          - file: index.md
+          - file: guidelines.md
+          - file: badge-placement.md
+          - file: example-scenarios.md
+          - file: reference.md
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
@@ -113,10 +119,6 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
-  - folder: versions
-    children:
-      - file: index.md
-      - file: content-patterns.md
   # nested TOCs are only allowed from docset.yml by default
   # to prevent them from being nested deeply arbitrarily
   # use max_toc_depth to allow deeper nesting (Expert mode, consult with docs team)
@@ -147,7 +149,7 @@ toc:
       - folder: deeply-nested
         children:
           - file: index.md
-          - file: foo.md 
+          - file: foo.md
           - file: bar.md
           - folder: baz
             children:
