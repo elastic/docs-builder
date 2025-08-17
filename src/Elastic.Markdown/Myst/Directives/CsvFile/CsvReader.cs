@@ -9,15 +9,14 @@ namespace Elastic.Markdown.Myst.Directives.CsvFile;
 
 public static class CsvReader
 {
-	public static List<string[]> ReadCsvFile(string filePath, string separator, IFileSystem? fileSystem = null)
+	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, IFileSystem? fileSystem = null)
 	{
 		var fs = fileSystem ?? new FileSystem();
 		return ReadWithSep(filePath, separator, fs);
 	}
 
-	private static List<string[]> ReadWithSep(string filePath, string separator, IFileSystem fileSystem)
+	private static IEnumerable<string[]> ReadWithSep(string filePath, string separator, IFileSystem fileSystem)
 	{
-		var rows = new List<string[]>();
 		var separatorChar = separator == "," ? ',' : separator[0];
 		var spec = Sep.New(separatorChar);
 
@@ -35,7 +34,7 @@ public static class CsvReader
 				{
 					rowData[i] = row[i].ToString();
 				}
-				rows.Add(rowData);
+				yield return rowData;
 			}
 		}
 		else
@@ -49,11 +48,9 @@ public static class CsvReader
 				{
 					rowData[i] = row[i].ToString();
 				}
-				rows.Add(rowData);
+				yield return rowData;
 			}
 		}
-
-		return rows;
 	}
 
 }

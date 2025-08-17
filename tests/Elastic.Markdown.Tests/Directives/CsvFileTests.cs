@@ -37,7 +37,7 @@ Bob Johnson,35,Chicago"));
 	[Fact]
 	public void ParsesCsvDataCorrectly()
 	{
-		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem);
+		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem).ToList();
 		csvData.Should().HaveCount(4);
 		csvData[0].Should().BeEquivalentTo(["Name", "Age", "City"]);
 		csvData[1].Should().BeEquivalentTo(["John Doe", "30", "New York"]);
@@ -71,7 +71,7 @@ Jane Smith;25;Los Angeles"));
 	[Fact]
 	public void ParsesWithCustomSeparator()
 	{
-		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem);
+		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem).ToList();
 		csvData.Should().HaveCount(3);
 		csvData[0].Should().BeEquivalentTo(["Name", "Age", "City"]);
 		csvData[1].Should().BeEquivalentTo(["John Doe", "30", "New York"]);
@@ -93,7 +93,7 @@ Jane Smith,""Product Manager, Lead"",Los Angeles"));
 	[Fact]
 	public void HandlesQuotedFieldsWithCommas()
 	{
-		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem);
+		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem).ToList();
 		csvData.Should().HaveCount(3);
 		csvData[0].Should().BeEquivalentTo(["Name", "Description", "Location"]);
 		csvData[1].Should().BeEquivalentTo(["John Doe", "Software Engineer, Senior", "New York"]);
@@ -115,7 +115,7 @@ Jane Smith,""She replied """"Goodbye"""""));
 	[Fact]
 	public void HandlesEscapedQuotes()
 	{
-		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem);
+		var csvData = CsvReader.ReadCsvFile(Block!.CsvFilePath!, Block.Separator, FileSystem).ToList();
 		csvData.Should().HaveCount(3);
 		csvData[0].Should().BeEquivalentTo(["Name", "Description"]);
 		csvData[1].Should().BeEquivalentTo(["John Doe", "He said \"Hello World\" today"]);
