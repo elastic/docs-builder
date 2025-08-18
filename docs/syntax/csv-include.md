@@ -57,8 +57,6 @@ The directive includes built-in performance limits to handle large files efficie
 - **Column limit**: Maximum of 100 columns will be displayed  
 - **File size limit**: Maximum file size of 10MB
 
-
-
 ## Performance considerations
 
 The CSV directive is optimized for large files:
