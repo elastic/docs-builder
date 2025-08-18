@@ -25,14 +25,14 @@ public class ReloadableGeneratorState(
 	private IDirectoryInfo OutputPath { get; } = outputPath;
 	public IDirectoryInfo ApiPath { get; } = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
 
-	private DocumentationGenerator _generator = new(new DocumentationSet(context, logFactory), logFactory);
+	private DocumentationGenerator _generator = new(new DocumentationSet(context, logFactory, context.Collector), logFactory);
 	public DocumentationGenerator Generator => _generator;
 
 	public async Task ReloadAsync(Cancel ctx)
 	{
 		SourcePath.Refresh();
 		OutputPath.Refresh();
-		var docSet = new DocumentationSet(context, logFactory);
+		var docSet = new DocumentationSet(context, logFactory, context.Collector);
 		_ = await docSet.LinkResolver.FetchLinks(ctx);
 
 		// Add LLM markdown export for dev server

@@ -80,7 +80,7 @@ public class AssembleSources
 		HistoryMappings = GetLegacyUrlMappings(assembleContext);
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider, assembleContext.Collector);
 		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, assembleContext.Environment);
 
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);

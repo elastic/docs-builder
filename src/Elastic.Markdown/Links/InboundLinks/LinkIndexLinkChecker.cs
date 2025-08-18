@@ -25,7 +25,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 
 	public async Task CheckAll(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
+		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider, collector);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 
@@ -34,7 +34,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 
 	public async Task CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
+		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider, collector);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var filter = new RepositoryFilter
@@ -48,7 +48,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 
 	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
 	{
-		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
+		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider, collector);
 		var resolver = new CrossLinkResolver(fetcher);
 		// ReSharper disable once RedundantAssignment
 		var crossLinks = await resolver.FetchLinks(ctx);

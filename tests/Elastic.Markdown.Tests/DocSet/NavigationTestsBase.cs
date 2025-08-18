@@ -33,7 +33,7 @@ public class NavigationTestsBase : IAsyncLifetime
 		};
 
 		var linkResolver = new TestCrossLinkResolver();
-		Set = new DocumentationSet(context, LoggerFactory, linkResolver);
+		Set = new DocumentationSet(context, LoggerFactory, collector, linkResolver);
 
 		Set.Files.Should().HaveCountGreaterThan(10);
 		Generator = new DocumentationGenerator(Set, LoggerFactory);

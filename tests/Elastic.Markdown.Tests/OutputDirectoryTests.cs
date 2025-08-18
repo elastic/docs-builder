@@ -36,7 +36,7 @@ toc:
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, fileSystem, configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
-		var set = new DocumentationSet(context, logger, linkResolver);
+		var set = new DocumentationSet(context, logger, collector, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);
 
 		await generator.GenerateAll(TestContext.Current.CancellationToken);

@@ -239,7 +239,7 @@ internal sealed class RepositoryCommands(
 						checkout.Directory.FullName,
 						outputPath
 					);
-					var set = new DocumentationSet(context, logFactory);
+					var set = new DocumentationSet(context, logFactory, collector);
 					var generator = new DocumentationGenerator(set, logFactory, null, null, null);
 					_ = await generator.GenerateAll(c);
 

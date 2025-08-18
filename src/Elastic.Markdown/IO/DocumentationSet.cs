@@ -10,6 +10,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Site.Navigation;
@@ -135,6 +136,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,
+		IDiagnosticsCollector collector,
 		ICrossLinkResolver? linkResolver = null,
 		TableOfContentsTreeCollector? treeCollector = null
 	)
@@ -144,7 +146,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.OutputDirectory;
 		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(logFactory, context.Configuration, Aws3LinkIndexReader.CreateAnonymous()));
+			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(logFactory, context.Configuration, Aws3LinkIndexReader.CreateAnonymous(), collector));
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();

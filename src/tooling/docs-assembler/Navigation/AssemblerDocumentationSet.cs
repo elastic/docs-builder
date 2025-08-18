@@ -79,6 +79,6 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, treeCollector);
+		DocumentationSet = new DocumentationSet(buildContext, logFactory, context.Collector, crossLinkResolver, treeCollector);
 	}
 }

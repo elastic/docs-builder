@@ -82,7 +82,7 @@ public class NavigationPrefixChecker
 	private async Task FetchAndValidateCrossLinks(IDiagnosticsCollector collector, string? updateRepository, RepositoryLinks? updateReference, Cancel ctx)
 	{
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
-		var fetcher = new LinksIndexCrossLinkFetcher(_logFactoryFactory, linkIndexProvider);
+		var fetcher = new LinksIndexCrossLinkFetcher(_logFactoryFactory, linkIndexProvider, collector);
 		var resolver = new CrossLinkResolver(fetcher);
 		var crossLinks = await resolver.FetchLinks(ctx);
 		var dictionary = new Dictionary<string, SeenPaths>();

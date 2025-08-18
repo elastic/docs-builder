@@ -226,7 +226,7 @@ type Setup =
         let logger = new TestLoggerFactory()
         let conversionCollector = TestConversionCollector()
         let linkResolver = TestCrossLinkResolver(context.Configuration)
-        let set = DocumentationSet(context, logger, linkResolver)
+        let set = DocumentationSet(context, logger, collector, linkResolver)
         
         
         let generator = DocumentationGenerator(set, logger, null, null, null, conversionCollector)

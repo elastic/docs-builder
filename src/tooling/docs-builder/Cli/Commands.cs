@@ -153,7 +153,7 @@ internal sealed class Commands(
 			await githubActionsService.SetOutputAsync("skip", "false");
 
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logFactory);
+		var set = new DocumentationSet(context, logFactory, collector);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
@@ -228,7 +228,7 @@ internal sealed class Commands(
 		var fileSystem = new FileSystem();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, null).StartAsync(ctx);
 		var context = new BuildContext(collector, fileSystem, fileSystem, configurationContext, ExportOptions.MetadataOnly, path, null);
-		var set = new DocumentationSet(context, logFactory);
+		var set = new DocumentationSet(context, logFactory, collector);
 
 		var moveCommand = new Move(logFactory, fileSystem, fileSystem, set);
 		var result = await moveCommand.Execute(source, target, dryRun ?? false, ctx);

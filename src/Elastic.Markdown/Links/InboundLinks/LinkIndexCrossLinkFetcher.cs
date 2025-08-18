@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Links.CrossLinks;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.InboundLinks;
 
-public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(logFactory, linkIndexProvider)
+public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, IDiagnosticsCollector collector) : CrossLinkFetcher(logFactory, linkIndexProvider, collector)
 {
 	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
 	{

@@ -73,7 +73,7 @@ $"""
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var context = new BuildContext(Collector, FileSystem, configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
-		Set = new DocumentationSet(context, logger, linkResolver);
+		Set = new DocumentationSet(context, logger, Collector, linkResolver);
 		File = Set.DocumentationFileLookup(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
