@@ -30,78 +30,6 @@ the Serverless UI, add both the `stack` and `serverless` keys to the `applies_to
 When a section has different applicability than the applicability indicated at the
 page level in the frontmatter, use section-level `applies_to` badges.
 
-### If labeling deployment modes [page-section-varies-deployment]
-
-<!--
-TO DO: Consider other alternative titles:
-* If labeling parallel content on a single page
-* If labeling applicable vs. not applicable
--->
-
-<!--
-TO DO: Please make this better
--->
-When a documentation set or page is primarily about orchestrating, deploying,
-or configuring an installation, it usually includes parallel content about multiple
-deployment modes (the reader picks one of several sections that is applicable to them).
-
-% Contributor experience
-In this case, docs contributors include all the deployment types that are mentioned
-throughout the page in the frontmatter `applies_to`, and in each section they include
-only the applicable deployment modes using section-level `applies_to`.
-
-% Reader experience
-The reader should assume that content in a section with a section-level `applies_to` is
-not applicable to any deployment modes that are omitted.
-
-:::{tip}
-**Don’t overload with exclusions unless it is necessary.**
-In content that is primarily about deployment modes, we do not include `unavailable` badges
-for anything in `applies_to` > `deployment`.
-:::
-
-% Example
-For example, the content on the [Security](https://www.elastic.co/docs/deploy-manage/security) page is generally applicable to all deployment types, but the first section only applies to Elastic Cloud Hosted and Serverless:
-
-* In the frontmatter, specify that the content on the page applies to all deployment types unless otherwise specified.
-* In a section-level annotation, specify that the content only applies to `ech` and `serverless`.
-
-:::::{tab-set}
-::::{tab-item} Image
-:::{image} ./images/page-section-varies-deployment.png
-:screenshot:
-:alt:
-:::
-::::
-::::{tab-item} Code
-````
----
-applies_to:
-  deployment: all
----
-
-# Security
-
-[...]
-
-## Managed security in Elastic Cloud
-
-```{applies_to}
-deployment:
-  ech: ga
-serverless: ga
-```
-
-[...]
-````
-::::
-:::::
-
-:::{tip}
-Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
-Just the syntax slightly differs so that it stays inline: `` {applies_to}`ech: ga` {applies_to}`serverless: ga` ``.
-:::
-
 ### If labeling serverless vs. stateful [page-section-varies-product]
 
 <!--
@@ -183,6 +111,78 @@ serverless: unavailable
 :::{tip}
 Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
 Just the syntax slightly differs so that it stays inline: `` {applies_to}`serverless: unavailable` ``.
+:::
+
+### If labeling deployment modes [page-section-varies-deployment]
+
+<!--
+TO DO: Consider other alternative titles:
+* If labeling parallel content on a single page
+* If labeling applicable vs. not applicable
+-->
+
+<!--
+TO DO: Please make this better
+-->
+When a documentation set or page is primarily about orchestrating, deploying,
+or configuring an installation, it usually includes parallel content about multiple
+deployment modes (the reader picks one of several sections that is applicable to them).
+
+% Contributor experience
+In this case, docs contributors include all the deployment types that are mentioned
+throughout the page in the frontmatter `applies_to`, and in each section they include
+only the applicable deployment modes using section-level `applies_to`.
+
+% Reader experience
+The reader should assume that content in a section with a section-level `applies_to` is
+not applicable to any deployment modes that are omitted.
+
+:::{tip}
+**Don’t overload with exclusions unless it is necessary.**
+In content that is primarily about deployment modes, we do not include `unavailable` badges
+for anything in `applies_to` > `deployment`.
+:::
+
+% Example
+For example, the content on the [Security](https://www.elastic.co/docs/deploy-manage/security) page is generally applicable to all deployment types, but the first section only applies to Elastic Cloud Hosted and Serverless:
+
+* In the frontmatter, specify that the content on the page applies to all deployment types unless otherwise specified.
+* In a section-level annotation, specify that the content only applies to `ech` and `serverless`.
+
+:::::{tab-set}
+::::{tab-item} Image
+:::{image} ./images/page-section-varies-deployment.png
+:screenshot:
+:alt:
+:::
+::::
+::::{tab-item} Code
+````
+---
+applies_to:
+  deployment: all
+---
+
+# Security
+
+[...]
+
+## Managed security in Elastic Cloud
+
+```{applies_to}
+deployment:
+  ech: ga
+serverless: ga
+```
+
+[...]
+````
+::::
+:::::
+
+:::{tip}
+Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
+Just the syntax slightly differs so that it stays inline: `` {applies_to}`ech: ga` {applies_to}`serverless: ga` ``.
 :::
 
 ## Functionality is added to an unversioned product [unversioned-added]
