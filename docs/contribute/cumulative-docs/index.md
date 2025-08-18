@@ -70,6 +70,21 @@ Read more about how site configuration works in [](/configure/site/index.md).
 :::{include} /contribute/_snippets/tag-processing.md
 :::
 
+The following table shows how the badge text and corresponding tooltip text vary by release status for each lifecycle value.
+
+| Lifecycle   | Release status | Badge text                  | Tooltip text     |
+|-------------|----------------|-----------------------------|------------------|
+| preview     | prerelease     | Planned                      | The tooltip text indicates that this functionality is planned to be added in the future without a version number specified.      |
+|             | post-release   | `<KEY> PREVIEW <VERSION>`    | The tooltip text indicates that this functionality is in technical preview and may change in the future. |
+| beta        | prerelease     | Planned                      | The tooltip text indicates that this functionality is planned to be added in the future without a version number specified.      |
+|             | post-release   | `<KEY> BETA <VERSION>`       | The tooltip text indicates that this functionality is a beta feature and may change in the future. |
+| ga          | prerelease     | Planned                      | The tooltip text indicates that this functionality is planned to be added in the future without a version number specified.      |
+|             | post-release   | `<KEY> <VERSION>`            | –               |
+| deprecated  | prerelease     | Deprecation planned          | The tooltip text indicates that this functionality is planned to be deprecated in the future without a version number specified.                           |
+|             | post-release   | `<KEY> DEPRECATED <VERSION>` | –               |
+| removed     | prerelease     | Removal planned              | The tooltip text indicates that this functionality is planned to be removed in the future without a version number specified.    |
+|             | post-release   | `<KEY> REMOVED <VERSION>`    | –               |
+
 ### How to tag content
 
 Read more about _how_ to tag content in:
