@@ -1,4 +1,4 @@
-# CSV file directive
+# CSV files
 
 The `{csv-file}` directive allows you to include and render CSV files as formatted tables in your documentation. The directive automatically parses CSV content and renders it using the standard table styles defined in `table.css`.
 
