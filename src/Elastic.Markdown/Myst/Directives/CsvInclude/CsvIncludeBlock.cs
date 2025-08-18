@@ -20,7 +20,6 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 	public int MaxRows { get; private set; } = 10000;
 	public long MaxFileSizeBytes { get; private set; } = 10 * 1024 * 1024; // 10MB
 	public int MaxColumns { get; private set; } = 100;
-	public bool PreviewOnly { get; private set; }
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
@@ -30,7 +29,7 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 		if (!string.IsNullOrEmpty(separator))
 			Separator = separator;
 
-		PreviewOnly = bool.TryParse(Prop("preview-only"), out var preview) && preview;
+
 
 		ExtractCsvPath(context);
 	}

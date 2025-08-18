@@ -45,7 +45,7 @@ public class CsvIncludeViewModel : DirectiveViewModel
 				return trimmedRow;
 			}
 			return row;
-		}).Take(csvBlock.PreviewOnly ? 100 : int.MaxValue);
+		});
 	}
 
 	public static CsvIncludeViewModel Create(CsvIncludeBlock csvBlock) =>

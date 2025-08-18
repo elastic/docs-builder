@@ -57,15 +57,7 @@ The directive includes built-in performance limits to handle large files efficie
 - **Column limit**: Maximum of 100 columns will be displayed  
 - **File size limit**: Maximum file size of 10MB
 
-### Preview mode
 
-For very large files, enable preview mode to show only the first 100 rows:
-
-```markdown
-:::{csv-include} _snippets/huge-dataset.csv
-:preview-only: true
-:::
-```
 
 ## Performance considerations
 
@@ -77,5 +69,4 @@ The CSV directive is optimized for large files:
 - Warning messages are displayed when limits are exceeded
 
 For optimal performance with large CSV files, consider:
-- Using `preview-only: true` for exploratory data viewing
 - Breaking very large files into smaller, more manageable chunks
