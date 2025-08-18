@@ -3,16 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Markdown.Myst.Directives.CsvFile;
+using Elastic.Markdown.Myst.Directives.CsvInclude;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class CsvFileTests : DirectiveTest<CsvFileBlock>
+public class CsvIncludeTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvFileTests(ITestOutputHelper output) : base(output,
+	public CsvIncludeTests(ITestOutputHelper output) : base(output,
 """
-:::{csv-file} test-data.csv
+:::{csv-include} test-data.csv
 :::
 """) =>
 		// Add a test CSV file to the mock file system
@@ -26,7 +26,7 @@ Bob Johnson,35,Chicago"));
 	public void ParsesCsvFileBlock() => Block.Should().NotBeNull();
 
 	[Fact]
-	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("csv-file");
+	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("csv-include");
 
 	[Fact]
 	public void FindsCsvFile() => Block!.Found.Should().BeTrue();
@@ -49,11 +49,11 @@ Bob Johnson,35,Chicago"));
 	public void UsesCommaAsDefaultSeparator() => Block!.Separator.Should().Be(",");
 }
 
-public class CsvFileWithOptionsTests : DirectiveTest<CsvFileBlock>
+public class CsvIncludeWithOptionsTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvFileWithOptionsTests(ITestOutputHelper output) : base(output,
+	public CsvIncludeWithOptionsTests(ITestOutputHelper output) : base(output,
 """
-:::{csv-file} test-data.csv
+:::{csv-include} test-data.csv
 :caption: Sample User Data
 :separator: ;
 :::
@@ -79,11 +79,11 @@ Jane Smith;25;Los Angeles"));
 	}
 }
 
-public class CsvFileWithQuotesTests : DirectiveTest<CsvFileBlock>
+public class CsvIncludeWithQuotesTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvFileWithQuotesTests(ITestOutputHelper output) : base(output,
+	public CsvIncludeWithQuotesTests(ITestOutputHelper output) : base(output,
 """
-:::{csv-file} test-data.csv
+:::{csv-include} test-data.csv
 :::
 """) => FileSystem.AddFile("docs/test-data.csv", new MockFileData(
 @"Name,Description,Location
@@ -101,11 +101,11 @@ Jane Smith,""Product Manager, Lead"",Los Angeles"));
 	}
 }
 
-public class CsvFileWithEscapedQuotesTests : DirectiveTest<CsvFileBlock>
+public class CsvIncludeWithEscapedQuotesTests : DirectiveTest<CsvIncludeBlock>
 {
-	public CsvFileWithEscapedQuotesTests(ITestOutputHelper output) : base(output,
+	public CsvIncludeWithEscapedQuotesTests(ITestOutputHelper output) : base(output,
 """
-:::{csv-file} test-data.csv
+:::{csv-include} test-data.csv
 :::
 """) => FileSystem.AddFile("docs/test-data.csv", new MockFileData(
 @"Name,Description
@@ -123,9 +123,9 @@ Jane Smith,""She replied """"Goodbye"""""));
 	}
 }
 
-public class CsvFileNotFoundTests(ITestOutputHelper output) : DirectiveTest<CsvFileBlock>(output,
+public class CsvIncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<CsvIncludeBlock>(output,
 """
-:::{csv-file} missing-file.csv
+:::{csv-include} missing-file.csv
 :::
 """)
 {
@@ -140,9 +140,9 @@ public class CsvFileNotFoundTests(ITestOutputHelper output) : DirectiveTest<CsvF
 	}
 }
 
-public class CsvFileNoArgumentTests(ITestOutputHelper output) : DirectiveTest<CsvFileBlock>(output,
+public class CsvIncludeNoArgumentTests(ITestOutputHelper output) : DirectiveTest<CsvIncludeBlock>(output,
 """
-:::{csv-file}
+:::{csv-include}
 :::
 """)
 {

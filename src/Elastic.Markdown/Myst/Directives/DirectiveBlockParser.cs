@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
-using Elastic.Markdown.Myst.Directives.CsvFile;
+using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -122,8 +122,8 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{settings}") > 0)
 			return new SettingsBlock(this, context);
 
-		if (info.IndexOf("{csv-file}") > 0)
-			return new CsvFileBlock(this, context);
+		if (info.IndexOf("{csv-include}") > 0)
+			return new CsvIncludeBlock(this, context);
 
 		foreach (var admonition in _admonitions)
 		{

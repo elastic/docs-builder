@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using nietras.SeparatedValues;
 
-namespace Elastic.Markdown.Myst.Directives.CsvFile;
+namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 
 public static class CsvReader
 {

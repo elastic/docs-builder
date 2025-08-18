@@ -6,11 +6,11 @@ using System.Globalization;
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
 
-namespace Elastic.Markdown.Myst.Directives.CsvFile;
+namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 
-public class CsvFileBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
+public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
-	public override string Directive => "csv-file";
+	public override string Directive => "csv-include";
 
 	public string? CsvFilePath { get; private set; }
 	public string? CsvFilePathRelativeToSource { get; private set; }
@@ -30,15 +30,6 @@ public class CsvFileBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (!string.IsNullOrEmpty(separator))
 			Separator = separator;
 
-		if (int.TryParse(Prop("max-rows"), out var maxRows) && maxRows > 0)
-			MaxRows = maxRows;
-
-		if (ParseFileSize(Prop("max-size"), out var maxSize) && maxSize > 0)
-			MaxFileSizeBytes = maxSize;
-
-		if (int.TryParse(Prop("max-columns"), out var maxColumns) && maxColumns > 0)
-			MaxColumns = maxColumns;
-
 		PreviewOnly = bool.TryParse(Prop("preview-only"), out var preview) && preview;
 
 		ExtractCsvPath(context);
@@ -49,7 +40,7 @@ public class CsvFileBlock(DirectiveBlockParser parser, ParserContext context) : 
 		var csvPath = Arguments;
 		if (string.IsNullOrWhiteSpace(csvPath))
 		{
-			this.EmitError("csv-file requires an argument specifying the path to the CSV file.");
+			this.EmitError("csv-include requires an argument specifying the path to the CSV file.");
 			return;
 		}
 
@@ -81,7 +72,7 @@ public class CsvFileBlock(DirectiveBlockParser parser, ParserContext context) : 
 			{
 				var sizeMB = fileInfo.Length / (1024.0 * 1024.0);
 				var maxSizeMB = MaxFileSizeBytes / (1024.0 * 1024.0);
-				this.EmitError($"CSV file `{CsvFilePath}` is {sizeMB:F1}MB, which exceeds the maximum allowed size of {maxSizeMB:F1}MB. Use :max-size to increase the limit.");
+				this.EmitError($"CSV file `{CsvFilePath}` is {sizeMB:F1}MB, which exceeds the maximum allowed size of {maxSizeMB:F1}MB.");
 				Found = false;
 			}
 		}
@@ -91,39 +82,4 @@ public class CsvFileBlock(DirectiveBlockParser parser, ParserContext context) : 
 			Found = false;
 		}
 	}
-
-	private static bool ParseFileSize(string? sizeString, out long bytes)
-	{
-		bytes = 0;
-		if (string.IsNullOrEmpty(sizeString))
-			return false;
-
-		var multiplier = 1L;
-		var value = sizeString.ToUpperInvariant();
-
-		if (value.EndsWith("KB"))
-		{
-			multiplier = 1024;
-			value = value[..^2];
-		}
-		else if (value.EndsWith("MB"))
-		{
-			multiplier = 1024 * 1024;
-			value = value[..^2];
-		}
-		else if (value.EndsWith("GB"))
-		{
-			multiplier = 1024 * 1024 * 1024;
-			value = value[..^2];
-		}
-
-		if (double.TryParse(value, out var numericValue))
-		{
-			bytes = (long)(numericValue * multiplier);
-			return true;
-		}
-
-		return false;
-	}
-
 }

@@ -18,7 +18,7 @@ The following directives are available in Elastic Docs V3:
 
 * [Admonitions](admonitions.md) - Callouts and warnings
 * [Code blocks](code.md) - Syntax-highlighted code
-* [CSV file](csv-file.md) - Render CSV files as tables
+* [CSV include](csv-include.md) - Render CSV files as tables
 * [Diagrams](diagrams.md) - Visual diagrams and charts
 * [Dropdowns](dropdowns.md) - Collapsible content
 * [Images](images.md) - Enhanced image handling

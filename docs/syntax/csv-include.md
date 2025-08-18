@@ -1,6 +1,6 @@
 # CSV files
 
-The `{csv-file}` directive allows you to include and render CSV files as formatted tables in your documentation. The directive automatically parses CSV content and renders it using the standard table styles defined in `table.css`.
+The `{csv-include}` directive allows you to include and render CSV files as formatted tables in your documentation. The directive automatically parses CSV content and renders it using the standard table styles defined in `table.css`.
 
 ## Usage
 
@@ -8,7 +8,7 @@ The `{csv-file}` directive allows you to include and render CSV files as formatt
 
 ::::{tab-item} Output
 
-:::{csv-file} ../_snippets/sample-data.csv
+:::{csv-include} ../_snippets/sample-data.csv
 :caption: Sample user data from the database
 :::
 
@@ -17,7 +17,7 @@ The `{csv-file}` directive allows you to include and render CSV files as formatt
 ::::{tab-item} Markdown
 
 ```markdown
-:::{csv-file} _snippets/sample-data.csv
+:::{csv-include} _snippets/sample-data.csv
 :::
 ```
 
@@ -34,7 +34,7 @@ The CSV file directive supports several options to customize the table rendering
 Add a descriptive caption above the table:
 
 ```markdown
-:::{csv-file} _snippets/sample-data.csv
+:::{csv-include} _snippets/sample-data.csv
 :caption: Sample user data from the database
 :::
 ```
@@ -44,33 +44,25 @@ Add a descriptive caption above the table:
 Specify a custom field separator (default is comma):
 
 ```markdown
-:::{csv-file} _snippets/sample-data.csv
+:::{csv-include} _snippets/sample-data.csv
 :separator: ;
 :::
 ```
 
-### Size and performance limits
+### Performance limits
 
-Control how much data is loaded and displayed:
+The directive includes built-in performance limits to handle large files efficiently:
 
-```markdown
-:::{csv-file} _snippets/large-dataset.csv
-:max-rows: 5000
-:max-columns: 50
-:max-size: 20MB
-:::
-```
-
-- **max-rows**: Maximum number of rows to display (default: 10,000)
-- **max-columns**: Maximum number of columns to display (default: 100)  
-- **max-size**: Maximum file size to process (default: 10MB). Supports KB, MB, GB units.
+- **Row limit**: Maximum of 10,000 rows will be displayed
+- **Column limit**: Maximum of 100 columns will be displayed  
+- **File size limit**: Maximum file size of 10MB
 
 ### Preview mode
 
 For very large files, enable preview mode to show only the first 100 rows:
 
 ```markdown
-:::{csv-file} _snippets/huge-dataset.csv
+:::{csv-include} _snippets/huge-dataset.csv
 :preview-only: true
 :::
 ```
@@ -80,11 +72,10 @@ For very large files, enable preview mode to show only the first 100 rows:
 The CSV directive is optimized for large files:
 
 - Files are processed using streaming to avoid loading everything into memory
-- Size validation prevents processing of files that exceed the specified limits
+- Built-in size validation prevents processing of files that exceed 10MB
 - Row and column limits protect against accidentally rendering massive tables
 - Warning messages are displayed when limits are exceeded
 
 For optimal performance with large CSV files, consider:
-- Setting appropriate `max-rows` and `max-columns` limits
 - Using `preview-only: true` for exploratory data viewing
-- Increasing `max-size` only when necessary
+- Breaking very large files into smaller, more manageable chunks
