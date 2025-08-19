@@ -28,7 +28,7 @@ The following table shows how the badge text and corresponding tooltip text vary
 | beta        | prerelease     | Planned                                                                           |
 |             | post-release   | `<KEY> BETA <VERSION>` <br><br> example: {applies_to}`stack: beta 9.1`            |
 | ga          | prerelease     | Planned                                                                           |
-|             | post-release   | `<KEY> <VERSION>` <br><br> example: {applies_to}`stack: 9.1`                      |
+|             | post-release   | `<KEY> <VERSION>` <br><br> example: {applies_to}`stack: ga 9.1`                   |
 | deprecated  | prerelease     | Deprecation planned                                                               |
 |             | post-release   | `<KEY> DEPRECATED <VERSION>` <br><br> example: {applies_to}`stack: deprecated 9.1`|
 | removed     | prerelease     | Removal planned                                                                   |
