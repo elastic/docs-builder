@@ -1,0 +1,9 @@
+name: 'Validate Redirect Rules'
+description: 'Validates consistency of the documentation changes in relation to redirect rules'
+
+runs:
+  using: 'docker'
+  image: "docker://ghcr.io/elastic/docs-builder:edge"
+  args:
+    - "diff"
+    - "validate"

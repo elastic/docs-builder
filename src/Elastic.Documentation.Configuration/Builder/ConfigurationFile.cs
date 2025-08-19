@@ -15,7 +15,7 @@ namespace Elastic.Documentation.Configuration.Builder;
 
 public record ConfigurationFile : ITableOfContentsScope
 {
-	private readonly IDocumentationContext _context;
+	private readonly IDocumentationSetContext _context;
 
 	public IFileInfo SourceFile => _context.ConfigurationPath;
 
@@ -62,7 +62,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(IDocumentationContext context, VersionsConfiguration versionsConfig)
+	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;

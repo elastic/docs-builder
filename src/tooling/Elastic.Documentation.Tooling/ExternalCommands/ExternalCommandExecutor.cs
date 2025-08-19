@@ -8,10 +8,10 @@ using ProcNet;
 
 namespace Elastic.Documentation.Tooling.ExternalCommands;
 
-public abstract class ExternalCommandExecutor(DiagnosticsCollector collector, IDirectoryInfo workingDirectory)
+public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory)
 {
 	protected IDirectoryInfo WorkingDirectory => workingDirectory;
-	protected DiagnosticsCollector Collector => collector;
+	protected IDiagnosticsCollector Collector => collector;
 	protected void ExecIn(Dictionary<string, string> environmentVars, string binary, params string[] args)
 	{
 		var arguments = new ExecArguments(binary, args)

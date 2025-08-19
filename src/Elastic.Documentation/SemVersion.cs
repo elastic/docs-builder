@@ -8,6 +8,11 @@ using System.Text.RegularExpressions;
 
 namespace Elastic.Documentation;
 
+public class AllVersions() : SemVersion(9999, 9999, 9999)
+{
+	public static AllVersions Instance { get; } = new();
+}
+
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>

@@ -116,7 +116,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 }
 
 
-public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, DiagnosticsCollector collector)
+public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, IDiagnosticsCollector collector)
 {
 	private readonly ILogger<RepositorySourcer> _logger = logFactory.CreateLogger<RepositorySourcer>();
 

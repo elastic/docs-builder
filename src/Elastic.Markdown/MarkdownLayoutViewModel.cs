@@ -12,6 +12,8 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 {
 	public required string? GithubEditUrl { get; init; }
 
+	public required string MarkdownUrl { get; init; }
+
 	public required bool HideEditThisPage { get; init; }
 	public required string? ReportIssueUrl { get; init; }
 

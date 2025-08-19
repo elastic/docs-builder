@@ -4,10 +4,11 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public interface IDiagnosticsCollector : IAsyncDisposable
+public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 {
 	int Warnings { get; }
 	int Errors { get; }
@@ -24,34 +25,22 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 	void Write(Diagnostic diagnostic);
 	void CollectUsedSubstitutionKey(ReadOnlySpan<char> key);
 	void EmitCrossLink(string link);
-}
 
-public static class DiagnosticsCollectorExtensions
-{
+	void EmitError(IFileInfo file, string message, Exception? e = null) => EmitError(file.FullName, message, e);
 
-	public static void Emit(this IDiagnosticsCollector collector, Severity severity, IFileInfo file, string message) =>
-		collector.Emit(severity, file.FullName, message);
+	void Emit(Severity severity, IFileInfo file, string message) => Emit(severity, file.FullName, message);
 
-	public static void EmitError(this IDiagnosticsCollector collector, IFileInfo file, string message, Exception? e = null) =>
-		collector.EmitError(file.FullName, message, e);
+	void EmitWarning(IFileInfo file, string message) => EmitWarning(file.FullName, message);
 
-	public static void EmitWarning(this IDiagnosticsCollector collector, IFileInfo file, string message) =>
-		collector.EmitWarning(file.FullName, message);
-
-	public static void EmitHint(this IDiagnosticsCollector collector, IFileInfo file, string message) =>
-		collector.EmitHint(file.FullName, message);
+	void EmitHint(IFileInfo file, string message) => EmitHint(file.FullName, message);
 
 	/// Emit an error not associated with a file
-	public static void EmitGlobalError(this IDiagnosticsCollector collector, string message, Exception? e = null) =>
-		collector.EmitError(string.Empty, message, e);
+	void EmitGlobalError(string message, Exception? e = null) => EmitError(string.Empty, message, e);
 
 	/// Emit a warning not associated with a file
-	public static void EmitGlobalWarning(this IDiagnosticsCollector collector, string message) =>
-		collector.EmitWarning(string.Empty, message);
+	void EmitGlobalWarning(string message) => EmitWarning(string.Empty, message);
 
 	/// Emit a hint not associated with a file
-	public static void EmitGlobalHint(this IDiagnosticsCollector collector, string message) =>
-		collector.EmitHint(string.Empty, message);
+	void EmitGlobalHint(string message) => EmitHint(string.Empty, message);
+
 }
-
-

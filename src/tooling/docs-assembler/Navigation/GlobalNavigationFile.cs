@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
@@ -232,14 +233,14 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	{
 		var appliesTo = appliesToDirective.AppliesTo;
 
-		if (appliesTo is null || appliesTo == FrontMatter.ApplicableTo.All)
+		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return;
 
 		var viewModel = new Components.ApplicableToViewModel
 		{
 			AppliesTo = appliesTo,
 			Inline = false,
-			VersionsConfig = appliesToDirective.Build.VersionsConfig
+			VersionsConfig = appliesToDirective.Build.VersionsConfiguration
 		};
 
 		var slice = AppliesToView.Create(viewModel);

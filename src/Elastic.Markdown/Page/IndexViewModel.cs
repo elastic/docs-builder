@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
@@ -43,6 +44,7 @@ public class IndexViewModel
 	public required VersionDrownDownItemViewModel[]? VersionDropdownItems { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
+	public required string MarkdownUrl { get; init; }
 	public required string? ReportIssueUrl { get; init; }
 	public required ApplicableTo? AppliesTo { get; init; }
 	public required bool AllowIndexing { get; init; }

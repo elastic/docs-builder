@@ -14,7 +14,10 @@ public enum GitChangeType
 	Other
 }
 
+public record GitChange(string FilePath, GitChangeType ChangeType);
+public record RenamedGitChange(string OldFilePath, string NewFilePath, GitChangeType ChangeType) : GitChange(OldFilePath, ChangeType);
+
 public interface IRepositoryTracker
 {
-	IEnumerable<GitChange> GetChangedFiles(string lookupPath);
+	IEnumerable<GitChange> GetChangedFiles();
 }

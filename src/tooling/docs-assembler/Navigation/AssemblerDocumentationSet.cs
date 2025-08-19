@@ -30,7 +30,8 @@ public record AssemblerDocumentationSet
 		Checkout checkout,
 		CrossLinkResolver crossLinkResolver,
 		TableOfContentsTreeCollector treeCollector,
-		VersionsConfiguration versionsConfiguration
+		IConfigurationContext configurationContext,
+		IReadOnlySet<Exporter> availableExporters
 	)
 	{
 		AssembleContext = context;
@@ -55,7 +56,8 @@ public record AssemblerDocumentationSet
 			context.Collector,
 			context.ReadFileSystem,
 			context.WriteFileSystem,
-			versionsConfiguration,
+			configurationContext,
+			availableExporters,
 			path,
 			output,
 			gitConfiguration

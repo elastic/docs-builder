@@ -5,8 +5,7 @@
 namespace authoring
 
 open System.Diagnostics
-open Elastic.Markdown.Myst.CodeBlocks
-open Elastic.Markdown.Myst.FrontMatter
+open Elastic.Documentation.AppliesTo
 open Markdig.Syntax
 open Swensen.Unquote
 open Xunit.Sdk
@@ -53,4 +52,3 @@ module MarkdownDocumentAssertions =
     [<DebuggerStepThrough>]
     let markdownFile (actual: MarkdownResult) =
         actual.File
-

@@ -2,17 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Markdown.Myst.FrontMatter;
-
-public class AllVersions() : SemVersion(9999, 9999, 9999)
-{
-	public static AllVersions Instance { get; } = new();
-}
+namespace Elastic.Documentation.AppliesTo;
 
 public class SemVersionConverter : IYamlTypeConverter
 {
@@ -23,7 +17,7 @@ public class SemVersionConverter : IYamlTypeConverter
 		var value = parser.Consume<Scalar>();
 		if (string.IsNullOrWhiteSpace(value.Value))
 			return AllVersions.Instance;
-		if (string.Equals(value.Value.Trim(), "all", StringComparison.InvariantCultureIgnoreCase))
+		if (string.Equals(value.Value.Trim(), "all", StringComparison.OrdinalIgnoreCase))
 			return AllVersions.Instance;
 		return (SemVersion)value.Value;
 	}
@@ -47,4 +41,3 @@ public class SemVersionConverter : IYamlTypeConverter
 		return version is not null;
 	}
 }
-

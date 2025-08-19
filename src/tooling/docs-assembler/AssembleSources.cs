@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
@@ -51,15 +52,28 @@ public class AssembleSources
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
-	public static async Task<AssembleSources> AssembleAsync(ILoggerFactory logFactory, AssembleContext context, Checkout[] checkouts, VersionsConfiguration versionsConfiguration, Cancel ctx)
+	public static async Task<AssembleSources> AssembleAsync(
+		ILoggerFactory logFactory,
+		AssembleContext context,
+		Checkout[] checkouts,
+		IConfigurationContext configurationContext,
+		IReadOnlySet<Exporter> availableExporters,
+		Cancel ctx
+	)
 	{
-		var sources = new AssembleSources(logFactory, context, checkouts, versionsConfiguration);
+		var sources = new AssembleSources(logFactory, context, checkouts, configurationContext, availableExporters);
 		foreach (var (_, set) in sources.AssembleSets)
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
 		return sources;
 	}
 
-	private AssembleSources(ILoggerFactory logFactory, AssembleContext assembleContext, Checkout[] checkouts, VersionsConfiguration versionsConfiguration)
+	private AssembleSources(
+		ILoggerFactory logFactory,
+		AssembleContext assembleContext,
+		Checkout[] checkouts,
+		IConfigurationContext configurationContext,
+		IReadOnlySet<Exporter> availableExporters
+	)
 	{
 		AssembleContext = assembleContext;
 		NavigationTocMappings = GetTocMappings(assembleContext);
@@ -72,7 +86,7 @@ public class AssembleSources
 		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, TreeCollector, versionsConfiguration))
+			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, TreeCollector, configurationContext, availableExporters))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 
@@ -97,7 +111,8 @@ public class AssembleSources
 				var file = tocFiles.FirstOrDefault(f => f.Exists);
 				if (file is null)
 				{
-					assembleContext.Collector.EmitWarning(assembleContext.ConfigurationFileProvider.AssemblerFile, $"Unable to find toc file in {tocDirectory}");
+					assembleContext.Collector.EmitWarning(assembleContext.ConfigurationFileProvider.AssemblerFile,
+						$"Unable to find toc file in {tocDirectory}");
 					file = tocFiles.First();
 				}
 
@@ -130,7 +145,8 @@ public class AssembleSources
 
 		return dictionary.OrderByDescending(x => x.Key.Length).ToFrozenDictionary();
 
-		static void ReadHistoryMappings(IDictionary<string, IReadOnlyCollection<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry, string? newStack)
+		static void ReadHistoryMappings(IDictionary<string, IReadOnlyCollection<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry,
+			string? newStack)
 		{
 			if (entry.Entry.Value is not YamlMappingNode mappings)
 			{
@@ -141,7 +157,8 @@ public class AssembleSources
 			foreach (var mapping in mappings)
 			{
 				var mappingKey = $"{((YamlScalarNode)mapping.Key).Value}";
-				var mappingValues = ((YamlSequenceNode)mapping.Value).Children.OfType<YamlScalarNode>().Where(x => x.Value is not null).Select(x => x.Value!).ToList();
+				var mappingValues = ((YamlSequenceNode)mapping.Value).Children.OfType<YamlScalarNode>().Where(x => x.Value is not null).Select(x => x.Value!)
+					.ToList();
 				if (dictionary.TryGetValue(mappingKey, out _))
 					reader.EmitWarning($"'{mappingKey}' is already mapped to '{mappingValues}'");
 				else
@@ -166,6 +183,7 @@ public class AssembleSources
 					break;
 			}
 		}
+
 		foreach (var (source, block) in entries)
 			dictionary[source] = block;
 		return dictionary.ToFrozenDictionary();
@@ -199,6 +217,7 @@ public class AssembleSources
 				i++;
 			}
 		}
+
 		static void ReadBlock(
 			List<KeyValuePair<Uri, NavigationTocMapping>> entries,
 			YamlStreamReader reader,
@@ -290,5 +309,4 @@ public class AssembleSources
 			}
 		}
 	}
-
 }

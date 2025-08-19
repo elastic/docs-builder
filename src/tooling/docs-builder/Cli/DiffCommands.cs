@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Tracking;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
@@ -15,8 +16,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
 
-internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githubActionsService, VersionsConfiguration versionsConfig)
+internal sealed class DiffCommands(
+	ILoggerFactory logFactory,
+	ICoreService githubActionsService,
+	IConfigurationContext configurationContext
+)
 {
+	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
+
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
 	/// </summary>
@@ -26,6 +33,7 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 	[Command("validate")]
 	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
 	{
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
@@ -33,10 +41,15 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 		var fs = new FileSystem();
 		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 
-		var buildContext = new BuildContext(collector, fs, fs, versionsConfig, root.FullName, null);
+		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, root.FullName, null);
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
+		if (!redirectFileInfo.Exists)
+		{
+			await collector.StopAsync(ctx);
+			return 0;
+		}
 
 		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
 		var redirects = redirectFileParser.Redirects;
@@ -48,8 +61,11 @@ internal sealed class DiffCommands(ILoggerFactory logFactory, ICoreService githu
 			return collector.Errors;
 		}
 
-		var tracker = new LocalGitRepositoryTracker(collector, root);
-		var changed = tracker.GetChangedFiles(path);
+		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
+		var changed = tracker.GetChangedFiles();
+
+		if (changed.Any())
+			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count());
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))

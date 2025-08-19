@@ -4,6 +4,7 @@ sub:
   a-key-with-dashes: "A key with dashes"
   version: 7.17.0
   hello-world: "Hello world!"
+  env-var: "MY_VAR"
 ---
 
 # Substitutions
@@ -25,9 +26,13 @@ subs:
 If a substitution is defined globally it may not be redefined (shaded) in a files `frontmatter`. 
 Doing so will result in a build error.
 
-To use the variables in your files, surround them in curly brackets (`{{variable}}`).
+To use the variables in your files, surround them in curly brackets (`{{variable}}`). Substitutions work in:
 
-### Example
+- Regular text content
+- Code blocks (when `subs=true` is specified)
+- Inline code snippets (when `{subs}` prefix is used)
+
+## Example
 
 Here are some variable substitutions:
 
@@ -170,50 +175,45 @@ cd elasticsearch-{{version}}/
 ::::
 
 
-### MD code block with subs enabled
+## Inline code
+
+Substitutions are also supported in inline code snippets using the `{subs}` syntax.
+
+```markdown
+{subs}`wget elasticsearch-{{version.stack}}.tar.gz`
+```
+
+### Inline code examples
 
 ::::{tab-set}
 
 :::{tab-item} Output
 
-```bash subs=true
-echo "{{a-global-variable}}"
-```
+Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
+
+With substitutions: {subs}`wget elasticsearch-{{version.stack}}.tar.gz`
+
+Multiple variables: {subs}`export {{env-var}}={{version.stack}}`
+
+With mutations: {subs}`version {{version.stack | M.M}}`
 
 :::
 
 :::{tab-item} Markdown
 
 ````markdown
-```bash subs=true
-echo "{{a-global-variable}}"
-```
+Regular inline code: `wget elasticsearch-{{version.stack}}.tar.gz`
 
+With substitutions: {subs=true}`wget elasticsearch-{{version.stack}}.tar.gz`
+
+Multiple variables: {subs=true}`export {{env-var}}={{version.stack}}`
+
+With mutations: {subs=true}`version {{version.stack | M.M}}`
 ````
+
 :::
- 
 ::::
 
-###  MD code block without subs enabled
-
-::::{tab-set}
-
-:::{tab-item} Output
-
-```bash 
-echo "{{a-global-variable}}"
-```
-
+:::{note}
+Regular inline code (without the `{subs}` role) will not process substitutions and will display the variable placeholders as-is.
 :::
-
-:::{tab-item} Markdown
-
-````markdown
-```bash
-echo "{{a-global-variable}}"
-```
-
-````
-:::
-
-::::

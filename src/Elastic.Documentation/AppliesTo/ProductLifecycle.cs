@@ -4,7 +4,7 @@
 
 using YamlDotNet.Serialization;
 
-namespace Elastic.Markdown.Myst.FrontMatter;
+namespace Elastic.Documentation.AppliesTo;
 
 [YamlSerializable]
 public enum ProductLifecycle

@@ -75,7 +75,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var fileName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
 		if (fileName == "index")
 		{
-			var root = fileContext.BuildContext.DocumentationOutputDirectory;
+			var root = fileContext.BuildContext.OutputDirectory;
 
 			if (defaultOutputFile.Directory!.FullName == root.FullName)
 				return fs.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));

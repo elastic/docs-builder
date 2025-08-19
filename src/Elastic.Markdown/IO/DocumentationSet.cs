@@ -142,7 +142,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		Context = context;
 		Source = ContentSourceMoniker.Create(context.Git.RepositoryName, null);
 		SourceDirectory = context.DocumentationSourceDirectory;
-		OutputDirectory = context.DocumentationOutputDirectory;
+		OutputDirectory = context.OutputDirectory;
 		LinkResolver =
 			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(logFactory, context.Configuration, Aws3LinkIndexReader.CreateAnonymous()));
 		Configuration = context.Configuration;

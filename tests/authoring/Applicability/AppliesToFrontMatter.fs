@@ -4,8 +4,9 @@
 
 module ``product availability``.``yaml frontmatter``
 
-open Elastic.Markdown.Myst.FrontMatter
+open Elastic.Documentation.AppliesTo
 open JetBrains.Annotations
+open Swensen.Unquote
 open Xunit
 open authoring
 open authoring.MarkdownDocumentAssertions
@@ -163,8 +164,8 @@ applies_to:
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Product=AppliesCollection([
-                Applicability.op_Explicit "preview 9.5";
-                Applicability.op_Explicit "removed 9.7"
+                Applicability.op_Explicit "removed 9.7";
+                Applicability.op_Explicit "preview 9.5"
             ] |> Array.ofList)
         ))
 
@@ -212,3 +213,104 @@ applies_to:
     [<Fact>]
     let ``does not render label`` () =
         markdown |> appliesTo (Unchecked.defaultof<ApplicableTo>)
+
+type ``sorts applies_to versions in descending order`` () =
+    static let markdown = frontMatter """
+applies_to:
+   stack: preview 8.18.6, ga 9.2, beta 9.1, preview 9.0.6
+"""
+    [<Fact>]
+    let ``versions are sorted highest to lowest`` () =
+        let expectedVersions = [
+            Applicability.op_Explicit "ga 9.2"
+            Applicability.op_Explicit "beta 9.1"
+            Applicability.op_Explicit "preview 9.0.6"
+            Applicability.op_Explicit "preview 8.18.6"
+        ]
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection(expectedVersions |> Array.ofList)
+        ))
+
+type ``sorts ga before all`` () =
+    static let markdown = frontMatter """
+applies_to:
+   stack: ga, all
+"""
+    [<Fact>]
+    let ``versioned items are sorted first, non-versioned items last`` () =
+        let expectedVersions = [
+            Applicability.op_Explicit "ga"
+            Applicability.op_Explicit "all"
+        ]
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection(expectedVersions |> Array.ofList)
+        ))
+        
+type ``applicability comparisons`` () =
+    [<Fact>]
+    let ``equals`` () =
+        test <@ Applicability.op_Explicit "ga" = Applicability.op_Explicit "ga"  @>
+        
+    [<Fact>]
+    let ``not equals`` () =
+        test <@ Applicability.op_Explicit "ga" <> Applicability.op_Explicit "all"  @>
+        
+    [<Fact>]
+    let ``any version beats no version`` () =
+        test <@ Applicability.op_Explicit "ga 8.1.0" > Applicability.op_Explicit "ga"  @>
+        test <@ Applicability.op_Explicit "all" < Applicability.op_Explicit "ga 8.1.0"  @>
+        
+    [<Fact>]
+    let ``comparison on version number only`` () =
+        test <@ Applicability.op_Explicit "ga 8.1.0" < Applicability.op_Explicit "beta 8.2.0"  @>
+        test <@ Applicability.op_Explicit "beta 8.1.0-beta" < Applicability.op_Explicit "beta 8.1.0"  @>
+        
+        
+type ``sorts applies_to with mixed versioned and non-versioned items`` () =
+    static let markdown = frontMatter """
+applies_to:
+   stack: ga 8.18.6, ga, ga 9.1.2, all, ga 8.19.2
+"""
+    [<Fact>]
+    let ``versioned items are sorted first, non-versioned items last`` () =
+        let expectedVersions = [
+            Applicability.op_Explicit "ga 9.1.2"
+            Applicability.op_Explicit "ga 8.19.2"
+            Applicability.op_Explicit "ga 8.18.6"
+            Applicability.op_Explicit "ga"
+            Applicability.op_Explicit "all"
+        ]
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection(expectedVersions |> Array.ofList)
+        ))
+
+type ``sorts applies_to with patch versions correctly`` () =
+    static let markdown = frontMatter """
+applies_to:
+   stack: ga 9.1, ga 9.1.1, ga 9.0.5
+"""
+    [<Fact>]
+    let ``patch versions are sorted correctly`` () =
+        let expectedVersions = [
+            Applicability.op_Explicit "ga 9.1.1"
+            Applicability.op_Explicit "ga 9.1"
+            Applicability.op_Explicit "ga 9.0.5"
+        ]
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection(expectedVersions |> Array.ofList)
+        ))
+
+type ``sorts applies_to with major versions correctly`` () =
+    static let markdown = frontMatter """
+applies_to:
+   stack: ga 3.x, ga 5.x
+"""
+    [<Fact>]
+    let ``major versions are sorted correctly`` () =
+        let expectedVersions = [
+            Applicability.op_Explicit "ga 5.x"
+            Applicability.op_Explicit "ga 3.x"
+        ]
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection(expectedVersions |> Array.ofList)
+        ))

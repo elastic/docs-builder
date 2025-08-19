@@ -36,9 +36,9 @@ public class DocsSyncTests
 			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
 		});
 
-		var configurationFileProvider = new ConfigurationFileProvider(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		var context = new AssembleContext(config, configurationFileProvider, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<Amazon.S3.Model.ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new Amazon.S3.Model.ListObjectsV2Response
 			{
@@ -100,9 +100,9 @@ public class DocsSyncTests
 		{
 			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
 		});
-		var configurationFileProvider = new ConfigurationFileProvider(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		var context = new AssembleContext(config, configurationFileProvider, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		var plan = new SyncPlan
 		{
 			Count = 6,

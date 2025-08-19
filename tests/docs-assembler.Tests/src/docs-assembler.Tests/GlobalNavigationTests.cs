@@ -37,9 +37,9 @@ public class GlobalNavigationPathProviderTests
 			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
 			: checkoutDirectory;
 		Collector = new DiagnosticsCollector([]);
-		var configurationFileProvider = new ConfigurationFileProvider(FileSystem);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		Context = new AssembleContext(config, configurationFileProvider, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
 	}
 
 	private Checkout CreateCheckout(IFileSystem fs, string name) =>
@@ -65,21 +65,10 @@ public class GlobalNavigationPathProviderTests
 			)
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(FileSystem, r)).ToArray();
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, Context, checkouts, versionsConfig, TestContext.Current.CancellationToken);
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var assembleSources = await AssembleSources.AssembleAsync(
+			NullLoggerFactory.Instance, Context, checkouts, configurationContext, ExportOptions.Default, TestContext.Current.CancellationToken
+		);
 		return assembleSources;
 	}
 
@@ -91,9 +80,9 @@ public class GlobalNavigationPathProviderTests
 		await using var collector = new DiagnosticsCollector([]);
 
 		var fileSystem = new FileSystem();
-		var configurationFileProvider = new ConfigurationFileProvider(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		var assembleContext = new AssembleContext(config, configurationFileProvider, "dev", collector, fileSystem, fileSystem, null, null);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var assembleContext = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 
 		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
 
@@ -281,30 +270,18 @@ public class GlobalNavigationPathProviderTests
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 
 		var fs = new FileSystem();
-		var configurationFileProvider = new ConfigurationFileProvider(fs);
-		var config = AssemblyConfiguration.Create(configurationFileProvider);
-		var assembleContext = new AssembleContext(config, configurationFileProvider, "prod", collector, fs, fs, null, null);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, fs, fs, null, null);
 		var repos = assembleContext.Configuration.ReferenceRepositories
 			.Where(kv => !kv.Value.Skip)
 			.Select(kv => kv.Value.Name)
 			.Concat([NarrativeRepository.RepositoryName])
 			.ToArray();
 		var checkouts = repos.Select(r => CreateCheckout(fs, r)).ToArray();
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			}
-		};
-		var assembleSources = await AssembleSources.AssembleAsync(NullLoggerFactory.Instance, assembleContext, checkouts, versionsConfig, TestContext.Current.CancellationToken);
+		var assembleSources = await AssembleSources.AssembleAsync(
+			NullLoggerFactory.Instance, assembleContext, checkouts, configurationContext, ExportOptions.Default, TestContext.Current.CancellationToken
+		);
 		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
 		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
