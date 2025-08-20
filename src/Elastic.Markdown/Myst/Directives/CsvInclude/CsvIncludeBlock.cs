@@ -19,7 +19,7 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 	public string Separator { get; private set; } = ",";
 	public int MaxRows { get; private set; } = 25000;
 	public long MaxFileSizeBytes { get; private set; } = 10 * 1024 * 1024; // 10MB
-	public int MaxColumns { get; private set; } = 100;
+	public int MaxColumns { get; private set; } = 10;
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{

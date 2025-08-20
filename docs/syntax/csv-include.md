@@ -54,7 +54,7 @@ Specify a custom field separator (default is comma):
 The directive includes built-in performance limits to handle large files efficiently:
 
 - **Row limit**: Maximum of 25,000 rows will be displayed
-- **Column limit**: Maximum of 100 columns will be displayed  
+- **Column limit**: Maximum of 10 columns will be displayed  
 - **File size limit**: Maximum file size of 10MB
 
 ## Performance considerations
