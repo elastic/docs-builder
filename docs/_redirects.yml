@@ -27,4 +27,7 @@ redirects:
   'docs/versions/content-patterns.md': 'contribute/cumulative-docs/example-scenarios.md'
   'docs/versions/index.md': 'contribute/cumulative-docs/index.md'
   # I shouldn't need to do this should I?
+  # I'm just going to do it to get the preview to build...
   'docs/versions/_snippets/content-patterns-list.md': 'contribute/cumulative-docs/index.md'
+  'docs/contribute/cumulative-docs/images/example-not-one-section.png': 'contribute/cumulative-docs/example-scenarios.md'
+  'docs/contribute/cumulative-docs/images/example-one-section.png': 'contribute/cumulative-docs/example-scenarios.md'
