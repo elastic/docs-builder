@@ -9,6 +9,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>72f50f33-6fb9-4d08-bff3-39568fe370b3</UserSecretsId>
     <IsTestProject>false</IsTestProject>
+    <RootNamespace>Elastic.Documentation.Aspire</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
