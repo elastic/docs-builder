@@ -209,22 +209,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
 			.ToFrozenDictionary();
 
-		// Validate cross-repo links in navigation
-
-		try
-		{
-			NavigationCrossLinkValidator.ValidateNavigationCrossLinksAsync(
-				Tree,
-				LinkResolver,
-				(msg) => Context.EmitError(Context.ConfigurationPath, msg)
-			).GetAwaiter().GetResult();
-		}
-		catch (Exception e)
-		{
-			// Log the error but don't fail the build
-			Context.EmitError(Context.ConfigurationPath, $"Error validating cross-links in navigation: {e.Message}");
-		}
-
 		ValidateRedirectsExists();
 	}
 
@@ -390,8 +374,26 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
 	}
 
-	public async Task ResolveDirectoryTree(Cancel ctx) =>
+	public async Task ResolveDirectoryTree(Cancel ctx)
+	{
 		await Tree.Resolve(ctx);
+
+		// Validate cross-repo links in navigation
+		try
+		{
+			await NavigationCrossLinkValidator.ValidateNavigationCrossLinksAsync(
+				Tree,
+				LinkResolver,
+				(msg) => Context.EmitError(Context.ConfigurationPath, msg),
+				ctx
+			);
+		}
+		catch (Exception e)
+		{
+			// Log the error but don't fail the build
+			Context.EmitError(Context.ConfigurationPath, $"Error validating cross-links in navigation: {e.Message}");
+		}
+	}
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{
