@@ -129,7 +129,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests-integration", "tests-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Assembler.IntegrationTests", "tests-integration\Elastic.Assembler.IntegrationTests\Elastic.Assembler.IntegrationTests.csproj", "{A272D3EC-FAAF-4795-A796-302725382AFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspire", "tests-integration\aspire\aspire.csproj", "{4DFECE72-4A1F-4B58-918E-DCD07B585231}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspire", "aspire\aspire.csproj", "{4DFECE72-4A1F-4B58-918E-DCD07B585231}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.ServiceDefaults", "src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj", "{2A83ED35-B631-4F02-8D4C-15611D0DB72C}"
 EndProject

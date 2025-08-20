@@ -23,7 +23,7 @@ public class DocumentationFixture : IAsyncLifetime
 	/// <inheritdoc />
 	public async ValueTask InitializeAsync()
 	{
-		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Elastic_Documentation_Aspire>(
+		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
 			["--skip-private-repositories"],
 			(options, settings) =>
 			{
