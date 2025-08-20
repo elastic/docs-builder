@@ -65,7 +65,8 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "danger", 3 },
 		{ "error", 3 },
 		{ "hint", 3 },
-		{ "seealso", 3 }
+		{ "seealso", 3 },
+		{ "csv-table", 33 }
 	}.ToFrozenDictionary();
 
 	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
