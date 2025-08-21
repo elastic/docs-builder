@@ -63,5 +63,6 @@ public record CrossLinkNavigationItem : ILeafNavigationItem<INavigationModel>
 	public string Url => ResolvedUrl ?? _url; public string NavigationTitle { get; }
 	public int NavigationIndex { get; set; }
 	public bool Hidden { get; }
+	public bool IsCrossLink => true; // This is always a cross-link
 	public INavigationModel Model => null!; // Cross-link has no local model
 }

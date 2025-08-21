@@ -79,10 +79,11 @@
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
+		var hasSameTopLevelGroup = !leaf.IsCrossLink && (Model.IsPrimaryNavEnabled && leaf.NavigationRoot.Id == Model.RootNavigationId || true);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@leaf.Url"
-				@Htmx.GetNavHxAttributes(Model.IsPrimaryNavEnabled && leaf.NavigationRoot.Id == Model.RootNavigationId || true)
+				@Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
 				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
 			>
 				@leaf.NavigationTitle

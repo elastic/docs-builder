@@ -32,6 +32,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public int NavigationIndex { get; set; }
 
+	public bool IsCrossLink => false; // Documentation groups are never cross-links
+
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
 	private IReadOnlyCollection<DocumentationGroup> GroupsInOrder { get; }

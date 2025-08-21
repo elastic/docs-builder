@@ -70,5 +70,6 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	public int NavigationIndex { get; set; }
+	public bool IsCrossLink => false; // API operations are never cross-links
 
 }

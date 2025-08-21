@@ -16,4 +16,5 @@ public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group, b
 	public string Url => Model.Url;
 	public string NavigationTitle => Model.NavigationTitle;
 	public int NavigationIndex { get; set; }
+	public bool IsCrossLink => false; // File navigation items are never cross-links
 }
