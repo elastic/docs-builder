@@ -18,7 +18,6 @@ namespace Elastic.Assembler.IntegrationTests;
 
 public class DocumentationFixture : IAsyncLifetime
 {
-	private bool _failedBootstrap;
 	public DistributedApplication DistributedApplication { get; private set; } = null!;
 
 	public InMemoryLogger InMemoryLogger { get; private set; } = null!;
@@ -69,7 +68,8 @@ public class DocumentationFixture : IAsyncLifetime
 		{
 			await DistributedApplication.StopAsync();
 			await DistributedApplication.DisposeAsync();
-			throw new Exception($"Exit code should be 0 for {resourceName}: {string.Join(Environment.NewLine, InMemoryLogger.RecordedLogs.Reverse().Take(30).Reverse())}");
+			throw new Exception(
+				$"Exit code should be 0 for {resourceName}: {string.Join(Environment.NewLine, InMemoryLogger.RecordedLogs.Reverse().Take(30).Reverse())}");
 		}
 	}
 
