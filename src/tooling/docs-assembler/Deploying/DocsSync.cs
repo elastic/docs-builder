@@ -10,6 +10,8 @@ namespace Documentation.Assembler.Deploying;
 public interface IDocsSyncPlanStrategy
 {
 	Task<SyncPlan> Plan(Cancel ctx = default);
+
+	(bool, float) Validate(SyncPlan plan, float deleteThreshold);
 }
 
 public interface IDocsSyncApplyStrategy
@@ -49,8 +51,11 @@ public record SkipRequest : SyncRequest
 
 public record SyncPlan
 {
-	[JsonPropertyName("count")]
-	public required int Count { get; init; }
+	[JsonPropertyName("total_source_files")]
+	public required int TotalSourceFiles { get; init; }
+
+	[JsonPropertyName("total_files_to_sync")]
+	public required int TotalFilesToSync { get; init; }
 
 	[JsonPropertyName("delete")]
 	public required IReadOnlyList<DeleteRequest> DeleteRequests { get; init; }

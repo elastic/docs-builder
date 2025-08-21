@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Amazon.S3;
+using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
@@ -12,6 +13,7 @@ using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Tests;
 
@@ -39,21 +41,18 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
-		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<Amazon.S3.Model.ListObjectsV2Request>._, A<Cancel>._))
-			.Returns(new Amazon.S3.Model.ListObjectsV2Response
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
+			.Returns(new ListObjectsV2Response
 			{
 				S3Objects =
 				[
-					new Amazon.S3.Model.S3Object
-					{
-						Key = "docs/delete.md",
-					},
-					new Amazon.S3.Model.S3Object
+					new S3Object { Key = "docs/delete.md" },
+					new S3Object
 					{
 						Key = "docs/skip.md",
 						ETag = "\"69048c0964c9577a399b138b706a467a\""
 					}, // This is the result of CalculateS3ETag
-					new Amazon.S3.Model.S3Object
+					new S3Object
 					{
 						Key = "docs/update.md",
 						ETag = "\"existing-etag\""
@@ -63,9 +62,13 @@ public class DocsSyncTests
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
 		// Act
-		var plan = await planStrategy.Plan(Cancel.None);
+		var plan = await planStrategy.Plan(ctx: Cancel.None);
 
 		// Assert
+
+		plan.TotalSourceFiles.Should().Be(5);
+		plan.TotalFilesToSync.Should().Be(6); //including skip on server
+
 		plan.AddRequests.Count.Should().Be(3);
 		plan.AddRequests.Should().Contain(i => i.DestinationPath == "docs/add1.md");
 		plan.AddRequests.Should().Contain(i => i.DestinationPath == "docs/add2.md");
@@ -79,6 +82,114 @@ public class DocsSyncTests
 
 		plan.DeleteRequests.Count.Should().Be(1);
 		plan.DeleteRequests.Should().Contain(i => i.DestinationPath == "docs/delete.md");
+	}
+
+	[Theory]
+	[InlineData(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
+	[InlineData(8_000, 10_000, 10_000, 0, 2000, 0.2, true)]
+	[InlineData(7900, 10_000, 10_000, 0, 2100, 0.2, false)]
+	[InlineData(10_000, 0, 10_000, 10_000, 0, 0.2, true)]
+	[InlineData(2000, 0, 2000, 2000, 0, 0.2, true)]
+	public async Task ValidateAdditionsPlan(
+		int localFiles,
+		int remoteFiles,
+		int totalFilesToSync,
+		int totalFilesToAdd,
+		int totalFilesToRemove,
+		float deleteThreshold,
+		bool valid
+	)
+	{
+		var (planStrategy, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles);
+
+		// Assert
+
+		plan.TotalSourceFiles.Should().Be(localFiles);
+		plan.TotalFilesToSync.Should().Be(totalFilesToSync);
+
+		plan.AddRequests.Count.Should().Be(totalFilesToAdd);
+		plan.DeleteRequests.Count.Should().Be(totalFilesToRemove);
+
+		var (validResult, deleteRatio) = planStrategy.Validate(plan, deleteThreshold);
+
+		validResult.Should().Be(valid, $"Delete ratio is {deleteRatio} when maximum is {deleteThreshold}");
+	}
+
+	[Theory]
+	[InlineData(10_000, 0, 10_000, 0, 0, 0.2, true)]
+	[InlineData(2000, 0, 2000, 0, 0, 0.2, true)]
+	[InlineData(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
+	[InlineData(0, 10_000, 10_000, 0, 10_000, 1.0, false)]
+	[InlineData(20, 10_000, 10_000, 20, 9980, 0.2, false)]
+	[InlineData(20, 10_000, 10_000, 20, 9980, 1.0, true)]
+	[InlineData(8_000, 10_000, 10_000, 8000, 2000, 0.2, true)]
+	[InlineData(7900, 10_000, 10_000, 7900, 2100, 0.2, false)]
+	public async Task ValidateUpdatesPlan(
+		int localFiles,
+		int remoteFiles,
+		int totalFilesToSync,
+		int totalFilesToUpdate,
+		int totalFilesToRemove,
+		float deleteThreshold,
+		bool valid
+	)
+	{
+		var (planStrategy, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, "different-etag");
+
+		// Assert
+
+		plan.TotalSourceFiles.Should().Be(localFiles);
+		plan.TotalFilesToSync.Should().Be(totalFilesToSync);
+
+		plan.UpdateRequests.Count.Should().Be(totalFilesToUpdate);
+		plan.DeleteRequests.Count.Should().Be(totalFilesToRemove);
+
+		var (validResult, deleteRatio) = planStrategy.Validate(plan, deleteThreshold);
+
+		validResult.Should().Be(valid, $"Delete ratio is {deleteRatio} when maximum is {deleteThreshold}");
+	}
+
+	private static async Task<(AwsS3SyncPlanStrategy planStrategy, SyncPlan plan)> SetupS3SyncContextSetup(
+		int localFiles, int remoteFiles, string etag = "etag")
+	{
+		// Arrange
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var mockS3Client = A.Fake<IAmazonS3>();
+		var fileSystem = new MockFileSystem(new MockFileSystemOptions
+		{
+			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+		});
+		foreach (var i in Enumerable.Range(0, localFiles))
+			fileSystem.AddFile($"docs/file-{i}.md", new MockFileData($"# Local Document {i}"));
+
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+
+		var s3Objects = new List<S3Object>();
+		foreach (var i in Enumerable.Range(0, remoteFiles))
+		{
+			s3Objects.Add(new S3Object
+			{
+				Key = $"docs/file-{i}.md",
+				ETag = etag
+			});
+		}
+
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
+			.Returns(new ListObjectsV2Response
+			{
+				S3Objects = s3Objects
+			});
+
+		var mockEtagCalculator = A.Fake<IS3EtagCalculator>();
+		A.CallTo(() => mockEtagCalculator.CalculateS3ETag(A<string>._, A<Cancel>._)).Returns("etag");
+		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context, mockEtagCalculator);
+
+		// Act
+		var plan = await planStrategy.Plan(ctx: Cancel.None);
+		return (planStrategy, plan);
 	}
 
 	[Fact]
@@ -102,10 +213,12 @@ public class DocsSyncTests
 		});
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var checkoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
-			Count = 6,
+			TotalSourceFiles = 5,
+			TotalFilesToSync = 6,
 			AddRequests = [
 				new AddRequest { LocalPath = "docs/add1.md", DestinationPath = "docs/add1.md" },
 				new AddRequest { LocalPath = "docs/add2.md", DestinationPath = "docs/add2.md" },
@@ -124,8 +237,8 @@ public class DocsSyncTests
 					{ DestinationPath = "docs/delete.md" }
 			]
 		};
-		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<Amazon.S3.Model.DeleteObjectsRequest>._, A<Cancel>._))
-			.Returns(new Amazon.S3.Model.DeleteObjectsResponse
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
+			.Returns(new DeleteObjectsResponse
 			{
 				HttpStatusCode = System.Net.HttpStatusCode.OK
 			});
@@ -144,7 +257,7 @@ public class DocsSyncTests
 		transferredFiles.Length.Should().Be(4); // 3 add requests + 1 update request
 		transferredFiles.Should().NotContain("docs/skip.md");
 
-		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<Amazon.S3.Model.DeleteObjectsRequest>._, A<Cancel>._))
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
 			.MustHaveHappenedOnceExactly();
 
 		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
