@@ -30,6 +30,7 @@ public static partial class DistributedApplicationExtensions
 		foreach (var parameter in parameters)
 			builder.Configuration[$"Parameters:{parameter.Name}"] = string.Empty;
 
+		builder.Configuration[$"Parameters:DocumentationElasticUrl"] = "http://localhost.example:9200";
 		return builder;
 	}
 }
