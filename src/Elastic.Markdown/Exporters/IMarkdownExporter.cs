@@ -18,6 +18,7 @@ public record MarkdownExportFileContext
 	public required MarkdownFile SourceFile { get; init; }
 	public required IFileInfo DefaultOutputFile { get; init; }
 	public string? LLMText { get; set; }
+	public required DocumentationSet DocumentationSet { get; init; }
 }
 
 public interface IMarkdownExporter
