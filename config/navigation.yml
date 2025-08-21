@@ -27,7 +27,8 @@ toc:
   # EXTEND #
   ##########
   # I didn't touch this section (yet?)
-  - toc: extend
+  - toc: docs-content://extend/intro
+    path_prefix: extend
     children:
       - toc: kibana://extend
         path_prefix: extend/kibana
@@ -39,6 +40,8 @@ toc:
         path_prefix: extend/elasticsearch
       - toc: integrations://extend
         path_prefix: extend/integrations
+      - toc: docs-content://extend/contribute
+        path_prefix: extend/contribute
 
   #################
   # RELEASE NOTES #
