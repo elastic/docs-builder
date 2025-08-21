@@ -53,9 +53,18 @@ public class DocumentationFixture : IAsyncLifetime
 
 		await ValidateExitCode(AssemblerBuild);
 
-		_ = await DistributedApplication.ResourceNotifications
-			.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
-			.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+		try
+		{
+			_ = await DistributedApplication.ResourceNotifications
+				.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+		}
+		catch (Exception e)
+		{
+			await DistributedApplication.StopAsync();
+			await DistributedApplication.DisposeAsync();
+			throw new Exception($"{e.Message}: {string.Join(Environment.NewLine, InMemoryLogger.RecordedLogs.Reverse().Take(30).Reverse())}", e);
+		}
 	}
 
 	private async ValueTask ValidateExitCode(string resourceName)
