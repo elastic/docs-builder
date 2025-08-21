@@ -11,8 +11,9 @@ public interface IDocsSyncPlanStrategy
 {
 	Task<SyncPlan> Plan(Cancel ctx = default);
 
-	(bool, float) Validate(SyncPlan plan, float deleteThreshold);
+	PlanValidationResult Validate(SyncPlan plan, float deleteThreshold);
 }
+public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
 
 public interface IDocsSyncApplyStrategy
 {
@@ -54,8 +55,8 @@ public record SyncPlan
 	[JsonPropertyName("total_source_files")]
 	public required int TotalSourceFiles { get; init; }
 
-	[JsonPropertyName("total_files_to_sync")]
-	public required int TotalFilesToSync { get; init; }
+	[JsonPropertyName("total_sync_requests")]
+	public required int TotalSyncRequests { get; init; }
 
 	[JsonPropertyName("delete")]
 	public required IReadOnlyList<DeleteRequest> DeleteRequests { get; init; }

@@ -163,27 +163,37 @@ public class AwsS3SyncPlanStrategy(
 			AddRequests = addRequests.ToList(),
 			UpdateRequests = updateRequests.ToList(),
 			SkipRequests = skipRequests.ToList(),
-			TotalFilesToSync = deleteRequests.Count + addRequests.Count + updateRequests.Count + skipRequests.Count
+			TotalSyncRequests = deleteRequests.Count + addRequests.Count + updateRequests.Count + skipRequests.Count
 		};
 	}
 
 	/// <inheritdoc />
-	public (bool, float) Validate(SyncPlan plan, float deleteThreshold)
+	public PlanValidationResult Validate(SyncPlan plan, float deleteThreshold)
 	{
 		if (plan.TotalSourceFiles == 0)
 		{
 			_logger.LogError("No files to sync");
-			return (false, 1.0f);
+			return new(false, 1.0f, deleteThreshold);
 		}
 
-		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalFilesToSync;
+		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalSyncRequests;
+		// if the total sync requests are less than 100, we enforce a higher ratio of 0.8
+		// this allows newer assembled documentation to be in a higher state of flux
+		if (plan.TotalSyncRequests <= 100)
+			deleteThreshold = Math.Max(deleteThreshold, 0.8f);
+
+		// if the total sync requests are less than 1000, we enforce a higher ratio of 0.5
+		// this allows newer assembled documentation to be in a higher state of flux
+		else if (plan.TotalSyncRequests <= 1000)
+			deleteThreshold = Math.Max(deleteThreshold, 0.5f);
+
 		if (deleteRatio > deleteThreshold)
 		{
 			_logger.LogError("Delete ratio is {Ratio} which is greater than the threshold of {Threshold}", deleteRatio, deleteThreshold);
-			return (false, deleteRatio);
+			return new(false, deleteRatio, deleteThreshold);
 		}
 
-		return (true, deleteRatio);
+		return new(true, deleteRatio, deleteThreshold);
 	}
 
 	private async Task<Dictionary<string, S3Object>> ListObjects(Cancel ctx = default)
