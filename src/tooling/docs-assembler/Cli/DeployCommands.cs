@@ -44,9 +44,7 @@ internal sealed class DeployCommands(
 		string environment,
 		string s3BucketName,
 		string @out = "",
-#pragma warning disable IDE0060
 		float deleteThreshold = 0.2f,
-#pragma warning restore IDE0060
 		Cancel ctx = default
 	)
 	{
