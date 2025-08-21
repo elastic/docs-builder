@@ -78,12 +78,14 @@ internal sealed class RepositoryCommands(
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="fetchLatest"> If true, fetch the latest commit of the branch instead of the link registry entry ref</param>
+	/// <param name="assumeCloned"> If true, assume the repository folder already exists on disk assume it's cloned already, primarily used for testing</param>
 	/// <param name="ctx"></param>
 	[Command("clone-all")]
 	public async Task<int> CloneAll(
 		bool? strict = null,
 		string? environment = null,
 		bool? fetchLatest = null,
+		bool? assumeCloned = null,
 		Cancel ctx = default
 	)
 	{
@@ -97,7 +99,7 @@ internal sealed class RepositoryCommands(
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
-		_ = await cloner.CloneAll(fetchLatest ?? false, ctx);
+		_ = await cloner.CloneAll(fetchLatest ?? false, assumeCloned ?? false, ctx);
 
 		await collector.StopAsync(ctx);
 
