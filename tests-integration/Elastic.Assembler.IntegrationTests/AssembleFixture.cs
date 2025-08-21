@@ -18,6 +18,23 @@ using ConfigurationManager = Microsoft.Extensions.Configuration.ConfigurationMan
 
 namespace Elastic.Assembler.IntegrationTests;
 
+public static partial class DistributedApplicationExtensions
+{
+	/// <summary>
+	/// Ensures all parameters in the application configuration have values set.
+	/// </summary>
+	public static TBuilder WithEmptyParameters<TBuilder>(this TBuilder builder)
+		where TBuilder : IDistributedApplicationTestingBuilder
+	{
+		var parameters = builder.Resources.OfType<ParameterResource>().Where(p => !p.IsConnectionString).ToList();
+		foreach (var parameter in parameters)
+			builder.Configuration[$"Parameters:{parameter.Name}"] = string.Empty;
+
+		return builder;
+	}
+}
+
+
 public class DocumentationFixture : IAsyncLifetime
 {
 	public DistributedApplication DistributedApplication { get; private set; } = null!;
@@ -34,27 +51,12 @@ public class DocumentationFixture : IAsyncLifetime
 				options.DisableDashboard = true;
 				options.AllowUnsecuredTransport = true;
 				options.EnableResourceLogging = true;
-				if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
-				{
-					var config = new ConfigurationManager();
-					config["Parameters:DocumentationElasticUrl"] = string.Empty;
-					config["Parameters:DocumentationElasticApiKey"] = string.Empty;
-					config["Parameters:LlmGatewayUrl"] = string.Empty;
-					config["Parameters:LlmGatewayServiceAccountPath"] = string.Empty;
-					settings.Configuration = config;
-				}
 			}
 		);
+		_ = builder.WithEmptyParameters();
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
 		_ = builder.Services.AddLogging(c => c.AddInMemory());
-		if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
-		{
-			_ = builder.AddParameter("LlmGatewayUrl", value: string.Empty);
-			_ = builder.AddParameter("LlmGatewayServiceAccountPath", value: string.Empty);
-			_ = builder.AddParameter("DocumentationElasticUrl", value: string.Empty);
-			_ = builder.AddParameter("DocumentationElasticApiKey", value: string.Empty);
-		}
 
 
 		DistributedApplication = await builder.BuildAsync();
