@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -80,6 +81,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
+				return;
+			case CsvIncludeBlock csvIncludeBlock:
+				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
 				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
@@ -406,5 +410,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			else
 				_ = renderer.Write($"(Block: {o.GetType().Name}");
 		}
+	}
+
+	private static void WriteCsvIncludeBlock(HtmlRenderer renderer, CsvIncludeBlock block)
+	{
+		var viewModel = CsvIncludeViewModel.Create(block);
+		var slice = CsvIncludeView.Create(viewModel);
+		RenderRazorSlice(slice, renderer);
 	}
 }

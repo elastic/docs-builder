@@ -34,7 +34,7 @@ jobs:
 
       - uses: elastic/oblt-actions/updatecli/run@v1
         with:
-          command: apply --config updatecli/updatecli.d/versions.yml --values updatecli/values.d/scm.yml
+          command: apply --config .github/updatecli/updatecli.d/versions.yml --values .github/updatecli/values.d/scm.yml
         env:
           GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
 

@@ -12,6 +12,23 @@ V3 fully supports [CommonMark](https://commonmark.org/), a strongly defined, sta
 * [Directives](#directives)
 * [GitHub-flavored markdown](#github-flavored-markdown)
 
+## Available directives
+
+The following directives are available in Elastic Docs V3:
+
+* [Admonitions](admonitions.md) - Callouts and warnings
+* [Code blocks](code.md) - Syntax-highlighted code
+* [CSV include](csv-include.md) - Render CSV files as tables
+* [Diagrams](diagrams.md) - Visual diagrams and charts
+* [Dropdowns](dropdowns.md) - Collapsible content
+* [Images](images.md) - Enhanced image handling
+* [Include](file_inclusion.md) - Include content from other files
+* [Settings](automated_settings.md) - Configuration blocks
+* [Stepper](stepper.md) - Step-by-step content
+* [Tabs](tabs.md) - Tabbed content organization
+* [Tables](tables.md) - Data tables
+* [Version blocks](version-variables.md) - API version information
+
 ## Directives
 
 Directives extend CommonMark functionality. Directives have the following syntax:
