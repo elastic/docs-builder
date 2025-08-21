@@ -45,7 +45,7 @@ dotnet run --project aspire -- --skip-private-repositories
 
 This will automagically scrub the private repositories from assembler.yml and navigation.yml.
 
-Our integration tests, for instance, use this to run tests on CI tokenless.
+Our integration tests, for instance, use this to run tests on CI tokenless. When specifying this option locally we automatically inject `docs-builder`'s own docs into the `navigation.yml`. This allows us to test changes to documentation sets and their effect on assembler during PR's
 
 ## Elasticsearch Instance
 
@@ -85,7 +85,6 @@ Should have these secrets
 > Parameters:LlmGatewayServiceAccountPath = <PATH_TO_GCP_SERVICE_CREDENTIALS_FILE>   
 > Parameters:DocumentationElasticUrl = https://*.elastic.cloud:443  
 > Parameters:DocumentationElasticApiKey = ****
-
 
 To set them:
 

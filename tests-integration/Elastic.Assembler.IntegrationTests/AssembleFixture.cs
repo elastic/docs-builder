@@ -8,7 +8,6 @@ using Aspire.Hosting.Testing;
 using Elastic.Documentation.ServiceDefaults;
 using FluentAssertions;
 using InMemLogger;
-using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Aspire.ResourceNames;
