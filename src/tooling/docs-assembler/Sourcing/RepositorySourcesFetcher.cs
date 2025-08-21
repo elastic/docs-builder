@@ -35,6 +35,12 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		foreach (var repo in repositories.Values)
 		{
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
+			// if we are running locally, allow for repository path override
+			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) && !string.IsNullOrWhiteSpace(repo.Path))
+			{
+				_logger.LogInformation("{RepositoryName}: Using local override path for {RepositoryName} at {Path}", repo.Name, repo.Name, repo.Path);
+				checkoutFolder = fs.DirectoryInfo.New(repo.Path);
+			}
 			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(context.Collector, checkoutFolder);
 			if (!checkoutFolder.Exists)
 			{
@@ -57,7 +63,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		};
 	}
 
-	public async Task<CheckoutResult> CloneAll(bool fetchLatest, Cancel ctx = default)
+	public async Task<CheckoutResult> CloneAll(bool fetchLatest, bool assumeCloned, Cancel ctx = default)
 	{
 		_logger.LogInformation("Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
@@ -93,7 +99,9 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 						}
 						gitRef = entryInfo.GitReference;
 					}
-					checkouts.Add(RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest));
+
+					var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);
+					checkouts.Add(cloneInformation);
 				}, c);
 			}).ConfigureAwait(false);
 		await context.WriteFileSystem.File.WriteAllTextAsync(
@@ -125,22 +133,40 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	// </summary>
 	// <param name="repository">The repository to clone.</param>
 	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
-	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true)
+	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true, bool assumeCloned = false)
 	{
 		var checkoutFolder =
-			appendRepositoryName
+			 appendRepositoryName
 				? readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name))
 				: checkoutDirectory;
+
+		// if we are running locally, allow for repository path override
+		if (!string.IsNullOrWhiteSpace(repository.Path))
+		{
+			var di = readFileSystem.DirectoryInfo.New(repository.Path);
+			if (!di.Exists)
+			{
+				_logger.LogInformation("{RepositoryName}: Can not find {RepositoryName}@{Commit} at local override path {CheckoutFolder}", repository.Name, repository.Name, gitRef, di.FullName);
+				collector.EmitError("", $"Can not find  {repository.Name}@{gitRef} at local override path {di.FullName}");
+				return new Checkout { Directory = di, HeadReference = "", Repository = repository };
+			}
+			checkoutFolder = di;
+			assumeCloned = true;
+			_logger.LogInformation("{RepositoryName}: Using override path for {RepositoryName}@{Commit} at {CheckoutFolder}", repository.Name, repository.Name, gitRef, checkoutFolder.FullName);
+		}
+
 		IGitRepository git = new SingleCommitOptimizedGitRepository(collector, checkoutFolder);
+
+		if (assumeCloned && checkoutFolder.Exists)
+		{
+			_logger.LogInformation("{RepositoryName}: Assuming {RepositoryName}@{Commit} is already checked out to {CheckoutFolder}", repository.Name, repository.Name, gitRef, checkoutFolder.FullName);
+			return new Checkout { Directory = checkoutFolder, HeadReference = git.GetCurrentCommit(), Repository = repository };
+		}
+
 		if (attempt > 3)
 		{
 			collector.EmitError("", $"Failed to clone repository {repository.Name}@{gitRef} after 3 attempts");
-			return new Checkout
-			{
-				Directory = checkoutFolder,
-				HeadReference = "",
-				Repository = repository,
-			};
+			return new Checkout { Directory = checkoutFolder, HeadReference = "", Repository = repository };
 		}
 		_logger.LogInformation("{RepositoryName}: Cloning repository {RepositoryName}@{Commit} to {CheckoutFolder}", repository.Name, repository.Name, gitRef,
 			checkoutFolder.FullName);

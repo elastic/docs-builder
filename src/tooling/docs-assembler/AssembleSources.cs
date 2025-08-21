@@ -171,7 +171,7 @@ public class AssembleSources
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
 	{
 		var dictionary = new Dictionary<Uri, NavigationTocMapping>();
-		var file = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration.PrivateRepositories);
+		var file = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration);
 		var reader = new YamlStreamReader(file, context.Collector);
 		var entries = new List<KeyValuePair<Uri, NavigationTocMapping>>();
 		foreach (var entry in reader.Read())
