@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Configuration;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
@@ -11,6 +12,7 @@ using InMemLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Aspire.ResourceNames;
+using ConfigurationManager = Microsoft.Extensions.Configuration.ConfigurationManager;
 
 [assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.DocumentationFixture))]
 
@@ -32,6 +34,15 @@ public class DocumentationFixture : IAsyncLifetime
 				options.DisableDashboard = true;
 				options.AllowUnsecuredTransport = true;
 				options.EnableResourceLogging = true;
+				if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
+				{
+					var config = new ConfigurationManager();
+					config["Parameters:DocumentationElasticUrl"] = string.Empty;
+					config["Parameters:DocumentationElasticApiKey"] = string.Empty;
+					config["Parameters:LlmGatewayUrl"] = string.Empty;
+					config["Parameters:LlmGatewayServiceAccountPath"] = string.Empty;
+					settings.Configuration = config;
+				}
 			}
 		);
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
