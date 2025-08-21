@@ -48,6 +48,15 @@ public class DocumentationFixture : IAsyncLifetime
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
 		_ = builder.Services.AddLogging(c => c.AddInMemory());
+		if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
+		{
+			_ = builder.AddParameter("LlmGatewayUrl", value: string.Empty);
+			_ = builder.AddParameter("LlmGatewayServiceAccountPath", value: string.Empty);
+			_ = builder.AddParameter("DocumentationElasticUrl", value: string.Empty);
+			_ = builder.AddParameter("DocumentationElasticApiKey", value: string.Empty);
+		}
+
+
 		DistributedApplication = await builder.BuildAsync();
 		InMemoryLogger = DistributedApplication.Services.GetService<InMemoryLogger>()!;
 		_ = DistributedApplication.StartAsync().WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
