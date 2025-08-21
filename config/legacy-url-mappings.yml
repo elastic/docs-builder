@@ -8,7 +8,7 @@ stack: &stack [ '9.0+', '8.19', '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', 
 
 mappings:
   en/apm/agent/android/: [ '1.2.0' , '0.x' ]
-  en/apm/agent/dotnet/: [ '1.32.0', '1.8' ]
+  en/apm/agent/dotnet/: [ '1.32.0' ]
   en/apm/agent/go/: [ '2.7.1', '1.x', '0.5' ]
   en/apm/agent/java/: ['1.54.0', '0.7', '0.6']
   en/apm/agent/nodejs/: [ '4.x', '3.x', '2.x', '1.x' ]
