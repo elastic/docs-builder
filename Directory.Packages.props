@@ -57,6 +57,7 @@
     <PackageVersion Include="Proc" Version="0.9.1" />
     <PackageVersion Include="RazorSlices" Version="0.9.4" />
     <PackageVersion Include="Samboy063.Tomlet" Version="6.0.0" />
+    <PackageVersion Include="Sep" Version="0.11.0" />
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="2.7.0" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.0.15" />

@@ -17,7 +17,7 @@ The new docs repository needs to satisfy these requirements:
 
 Follow these instructions to add a new repository to the docs.
 
-:::::{stepper}   
+:::::{stepper}
 
 ::::{step} Add the repo to docs-infra
 
@@ -55,7 +55,7 @@ references:
 ```
 
 :::{tip}
-In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
+In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](/contribute/branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 :::
 
 Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation. Refer to [navigation.yml](../configure/site/navigation.md) for more information.
@@ -98,5 +98,5 @@ For example, to add version 13.5 of yadda-docs:
 For a more comfortable local `docs-builder` experience, add the following line to the `.gitignore` file of the repo:
 
 ```
-docs/.artifacts 
+docs/.artifacts
 ```

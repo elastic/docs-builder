@@ -36,6 +36,10 @@ public record Repository
 	[YamlMember(Alias = "skip")]
 	public bool Skip { get; set; }
 
+	/// <summary> Allows you to override the path to the repository, but only during local builds. </summary>
+	[YamlMember(Alias = "path")]
+	public string? Path { get; set; }
+
 	[YamlMember(Alias = "current")]
 	public string GitReferenceCurrent { get; set; } = "main";
 

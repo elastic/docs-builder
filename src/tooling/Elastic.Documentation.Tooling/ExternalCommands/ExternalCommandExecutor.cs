@@ -112,7 +112,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 				WorkingDirectory = workingDirectory.FullName,
 				Timeout = TimeSpan.FromSeconds(3),
 				WaitForExit = TimeSpan.FromSeconds(3),
-				ConsoleOutWriter = NoopConsoleWriter.Instance
+				ConsoleOutWriter = NoopConsoleWriter.Instance,
+				OnlyPrintBinaryInExceptionMessage = false
 			};
 			var result = Proc.Start(arguments);
 			var line = (result.ExitCode, muteExceptions) switch
