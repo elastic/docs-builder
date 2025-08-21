@@ -11,11 +11,21 @@ We do not use Aspire to generate production deployment scripts since [this is no
 
 ## Run all services locally
 
+You may need to install the Aspire workload first. We also recommend installing the aspire plugin 
+
+* [For Rider](https://plugins.jetbrains.com/plugin/23289--net-aspire)
+
+```bash
+sudo dotnet workload install aspire
+```
+
+Aspire is just another CLI program so can be run like all the other tools
+
 ```bash
 dotnet run --project aspire
 ```
 
-Will automatically:
+This will automatically:
 
 * clone all repositories according to `config/assembler.yml` using `docs-assembler repo clone-all`
 * do a full site build of all repositories using `docs-assembler repo build-all`
@@ -57,7 +67,6 @@ Furthermore, it makes the following indexers available in the Aspire UI
 * Semantic Elasticsearch, same but with semantic fields.
 
 These have to be run manually and can be run multiple times.
-
 
 ## User secrets
 

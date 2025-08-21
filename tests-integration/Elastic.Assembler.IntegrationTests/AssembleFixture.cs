@@ -9,6 +9,7 @@ using FluentAssertions;
 using InMemLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using static Elastic.Documentation.Aspire.ResourceNames;
 
 [assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.DocumentationFixture))]
 
@@ -24,22 +25,23 @@ public class DocumentationFixture : IAsyncLifetime
 	public async ValueTask InitializeAsync()
 	{
 		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
-			["--skip-private-repositories"],
+			["--skip-private-repositories", "--assume-cloned"],
 			(options, settings) =>
 			{
 				options.DisableDashboard = true;
 				options.AllowUnsecuredTransport = true;
+				options.EnableResourceLogging = true;
 			}
 		);
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
 		_ = builder.Services.AddLogging(c => c.AddInMemory());
-		// TODO expose this as secrets for now not needed integration tests
-		_ = builder.AddParameter("LlmGatewayUrl", "");
-		_ = builder.AddParameter("LlmGatewayServiceAccountPath", "");
 		DistributedApplication = await builder.BuildAsync();
 		InMemoryLogger = DistributedApplication.Services.GetService<InMemoryLogger>()!;
-		await DistributedApplication.StartAsync();
+		_ = DistributedApplication.StartAsync().WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
+		_ = await DistributedApplication.ResourceNotifications
+			.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
+			.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 	}
 
 	/// <inheritdoc />
@@ -56,9 +58,7 @@ public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper ou
 	[Fact]
 	public async Task AssertRequestToRootReturnsData()
 	{
-		_ = await fixture.DistributedApplication.ResourceNotifications
-			.WaitForResourceHealthyAsync("DocsBuilderServeStatic", cancellationToken: TestContext.Current.CancellationToken);
-		var client = fixture.DistributedApplication.CreateHttpClient("DocsBuilderServeStatic", "http");
+		var client = fixture.DistributedApplication.CreateHttpClient(AssemblerServe, "http");
 		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
 		_ = root.Should().NotBeNullOrEmpty();
 	}

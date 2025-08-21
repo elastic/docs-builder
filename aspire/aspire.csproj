@@ -20,12 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj" />
-    <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-assembler\docs-assembler.csproj"/>
-    <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-builder\docs-builder.csproj"/>
+    <ProjectReference Include="..\src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj" />
+    <ProjectReference Include="..\src\tooling\docs-assembler\docs-assembler.csproj"/>
+    <ProjectReference Include="..\src\tooling\docs-builder\docs-builder.csproj"/>
     
-    <ProjectReference Include="$(SolutionRoot)\src\tooling\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"  IsAspireProjectResource="false" />
-    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\src\tooling\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"  IsAspireProjectResource="false" />
+    <ProjectReference Include="..\src\Elastic.Documentation\Elastic.Documentation.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
 </Project>

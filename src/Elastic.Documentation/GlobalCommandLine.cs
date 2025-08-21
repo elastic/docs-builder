@@ -21,10 +21,7 @@ public static class GlobalCommandLine
 				i++;
 			}
 			else if (args[i] == "--skip-private-repositories")
-			{
 				skipPrivateRepositories = true;
-				i++;
-			}
 			else
 				newArgs.Add(args[i]);
 		}

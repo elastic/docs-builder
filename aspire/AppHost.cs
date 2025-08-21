@@ -7,6 +7,7 @@ using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
+using static Elastic.Documentation.Aspire.ResourceNames;
 
 // ReSharper disable UnusedVariable
 // ReSharper disable RedundantAssignment
@@ -28,9 +29,10 @@ await ConsoleApp.RunAsync(args, BuildAspireHost);
 return;
 
 // ReSharper disable once RedundantLambdaParameterType
-async Task BuildAspireHost(bool startElasticsearch, bool cloneAlways, bool skipPrivateRepositories, Cancel ctx)
+async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool skipPrivateRepositories, Cancel ctx)
 {
 	var builder = DistributedApplication.CreateBuilder(args);
+	skipPrivateRepositories = globalArguments.Contains("--skip-private-repositories");
 
 	var llmUrl = builder.AddParameter("LlmGatewayUrl", secret: true);
 	var llmServiceAccountPath = builder.AddParameter("LlmGatewayServiceAccountPath", secret: true);
@@ -38,25 +40,23 @@ async Task BuildAspireHost(bool startElasticsearch, bool cloneAlways, bool skipP
 	var elasticsearchUrl = builder.AddParameter("DocumentationElasticUrl", secret: true);
 	var elasticsearchApiKey = builder.AddParameter("DocumentationElasticApiKey", secret: true);
 
-	var cloneAll = builder.AddProject<Projects.docs_assembler>("assembler-clone");
-	var cloneDirectory = Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts", "current");
-	cloneAll = cloneAlways || !Directory.Exists(cloneDirectory)
-		? cloneAll.WithArgs(["repo", "clone-all", .. globalArguments])
-		: cloneAll.WithArgs(["repo", "clone-all", "--help"]);
+	var cloneAll = builder.AddProject<Projects.docs_assembler>(AssemblerClone);
+	string[] cloneArgs = assumeCloned ? ["--assume-cloned"] : [];
+	cloneAll = cloneAll.WithArgs(["repo", "clone-all", .. globalArguments, .. cloneArgs]);
 
-	var buildAll = builder.AddProject<Projects.docs_assembler>("assembler-build")
+	var buildAll = builder.AddProject<Projects.docs_assembler>(AssemblerBuild)
 		.WithArgs(["repo", "build-all", .. globalArguments])
 		.WaitForCompletion(cloneAll)
 		.WithParentRelationship(cloneAll);
 
-	var elasticsearchLocal = builder.AddElasticsearch("elasticsearch-local")
+	var elasticsearchLocal = builder.AddElasticsearch(ElasticsearchLocal)
 		.WithEnvironment("LICENSE", "trial");
 	if (!startElasticsearch)
 		elasticsearchLocal = elasticsearchLocal.WithExplicitStart();
 
-	var elasticsearchRemote = builder.AddExternalService("elasticsearch-remote", elasticsearchUrl);
+	var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
-	var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>("api-lambda")
+	var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>(LambdaApi)
 		.WithArgs(globalArguments)
 		.WithEnvironment("ENVIRONMENT", "dev")
 		.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
@@ -74,7 +74,7 @@ async Task BuildAspireHost(bool startElasticsearch, bool cloneAlways, bool skipP
 			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
 			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 
-	var indexElasticsearch = builder.AddProject<Projects.docs_assembler>("elasticsearch-indexer-plain")
+	var indexElasticsearch = builder.AddProject<Projects.docs_assembler>(ElasticsearchIndexerPlain)
 		.WithArgs(["repo", "build-all", "--exporters", "elasticsearch", .. globalArguments])
 		.WithExplicitStart()
 		.WaitForCompletion(cloneAll);
@@ -91,7 +91,7 @@ async Task BuildAspireHost(bool startElasticsearch, bool cloneAlways, bool skipP
 			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
 			.WithParentRelationship(elasticsearchRemote);
 
-	var indexElasticsearchSemantic = builder.AddProject<Projects.docs_assembler>("elasticsearch-indexer-semantic")
+	var indexElasticsearchSemantic = builder.AddProject<Projects.docs_assembler>(ElasticsearchIndexerSemantic)
 		.WithArgs(["repo", "build-all", "--exporters", "semantic", .. globalArguments])
 		.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal.GetEndpoint("http"))
 		.WithEnvironment(context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal.Resource.PasswordParameter)
@@ -110,7 +110,7 @@ async Task BuildAspireHost(bool startElasticsearch, bool cloneAlways, bool skipP
 			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
 			.WithParentRelationship(elasticsearchRemote);
 
-	var serveStatic = builder.AddProject<Projects.docs_builder>("assembler-serve")
+	var serveStatic = builder.AddProject<Projects.docs_builder>(AssemblerServe)
 		.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 		.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
 		.WithHttpEndpoint(port: 4000, isProxied: false)

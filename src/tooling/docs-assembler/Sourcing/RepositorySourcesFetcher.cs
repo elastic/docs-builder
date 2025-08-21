@@ -57,7 +57,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		};
 	}
 
-	public async Task<CheckoutResult> CloneAll(bool fetchLatest, Cancel ctx = default)
+	public async Task<CheckoutResult> CloneAll(bool fetchLatest, bool assumeCloned, Cancel ctx = default)
 	{
 		_logger.LogInformation("Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
@@ -93,7 +93,9 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 						}
 						gitRef = entryInfo.GitReference;
 					}
-					checkouts.Add(RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest));
+
+					var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);
+					checkouts.Add(cloneInformation);
 				}, c);
 			}).ConfigureAwait(false);
 		await context.WriteFileSystem.File.WriteAllTextAsync(
@@ -125,13 +127,24 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	// </summary>
 	// <param name="repository">The repository to clone.</param>
 	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
-	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true)
+	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true, bool assumeCloned = false)
 	{
 		var checkoutFolder =
 			appendRepositoryName
 				? readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name))
 				: checkoutDirectory;
 		IGitRepository git = new SingleCommitOptimizedGitRepository(collector, checkoutFolder);
+		if (assumeCloned && checkoutFolder.Exists)
+		{
+			_logger.LogInformation("{RepositoryName}: Assuming {RepositoryName}@{Commit} is already checked out to {CheckoutFolder}", repository.Name, repository.Name, gitRef, checkoutFolder.FullName);
+			return new Checkout
+			{
+				Directory = checkoutFolder,
+				HeadReference = git.GetCurrentCommit(),
+				Repository = repository,
+			};
+		}
+
 		if (attempt > 3)
 		{
 			collector.EmitError("", $"Failed to clone repository {repository.Name}@{gitRef} after 3 attempts");
