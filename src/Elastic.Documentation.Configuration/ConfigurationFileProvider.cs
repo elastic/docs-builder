@@ -55,8 +55,9 @@ public partial class ConfigurationFileProvider
 
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
-	public IFileInfo CreateNavigationFile(IReadOnlyDictionary<string, Repository> privateRepositories)
+	public IFileInfo CreateNavigationFile(AssemblyConfiguration configuration)
 	{
+		var privateRepositories = configuration.PrivateRepositories;
 		if (privateRepositories.Count == 0 || !SkipPrivateRepositories)
 			return NavigationFile;
 
@@ -103,6 +104,23 @@ public partial class ConfigurationFileProvider
 
 			if (spacing == -1 || reindenting > 0)
 				_fileSystem.File.AppendAllLines(tempFile, [line]);
+		}
+
+		if (configuration.AvailableRepositories.TryGetValue("docs-builder", out var docsBuildRepository) && docsBuildRepository is { Skip: false, Path: not null })
+		{
+			// language=yaml
+			_fileSystem.File.AppendAllText(tempFile,
+				"""
+				      - toc: docs-builder://
+				        path_prefix: reference/docs-builder
+				        children:
+				          - toc: docs-builder://development
+				            path_prefix: reference/docs-builder/dev
+				            children:
+				              - toc: docs-builder://development/link-validation
+				                path_prefix: reference/docs-builder/dev/link-val
+
+				""");
 		}
 		NavigationFile = _fileSystem.FileInfo.New(tempFile);
 		return NavigationFile;

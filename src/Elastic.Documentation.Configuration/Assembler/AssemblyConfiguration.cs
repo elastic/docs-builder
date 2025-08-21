@@ -30,6 +30,23 @@ public record AssemblyConfiguration
 				var repository = RepositoryDefaults(r, name);
 				config.ReferenceRepositories[name] = repository;
 			}
+
+			// if we are not running in CI, and we are skipping private repositories, and we can locate the solution directory. build the local docs-content repository
+			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI"))
+				&& skipPrivateRepositories
+				&& config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
+				&& Paths.GetSolutionDirectory() is { } solutionDir
+			)
+			{
+				var docsRepositoryPath = Path.Combine(solutionDir.FullName, "docs");
+				config.ReferenceRepositories["docs-builder"] = docsContentRepository with
+				{
+					Skip = false,
+					Path = docsRepositoryPath
+				};
+			}
+
+
 			var privateRepositories = config.ReferenceRepositories.Where(r => r.Value.Private).ToList();
 			foreach (var (name, _) in privateRepositories)
 			{
@@ -45,7 +62,9 @@ public record AssemblyConfiguration
 				.Where(r => !r.Skip)
 				.Concat([config.Narrative]).ToDictionary(kvp => kvp.Name, kvp => kvp);
 
-			config.PrivateRepositories = privateRepositories.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			config.PrivateRepositories = privateRepositories
+				.Where(r => !r.Value.Skip)
+				.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 			return config;
 		}
 		catch (Exception e)
@@ -69,6 +88,12 @@ public record AssemblyConfiguration
 			GitReferenceNext = string.IsNullOrEmpty(repository.GitReferenceNext) ? "main" : repository.GitReferenceNext,
 			GitReferenceEdge = string.IsNullOrEmpty(repository.GitReferenceEdge) ? "main" : repository.GitReferenceEdge,
 		};
+		// ensure we always null path if we are running in CI
+		if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
+			repository = repository with
+			{
+				Path = null
+			};
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
@@ -124,21 +149,34 @@ public record AssemblyConfiguration
 			var next = r.GetBranch(ContentSource.Next);
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (current == branchOrTag)
-				match = match with { Current = ContentSource.Current };
+				match = match with
+				{
+					Current = ContentSource.Current
+				};
 			if (next == branchOrTag)
-				match = match with { Next = ContentSource.Next };
+				match = match with
+				{
+					Next = ContentSource.Next
+				};
 			if (isVersionBranch && SemVersion.TryParse(branchOrTag + ".0", out var v))
 			{
 				// if the current branch is a version, only speculatively match if branch is actually a new version
 				if (SemVersion.TryParse(current + ".0", out var currentVersion))
 				{
 					if (v >= currentVersion)
-						match = match with { Speculative = true };
+						match = match with
+						{
+							Speculative = true
+						};
 				}
 				// assume we are newly onboarding the repository to current/next
 				else
-					match = match with { Speculative = true };
+					match = match with
+					{
+						Speculative = true
+					};
 			}
+
 			return match;
 		}
 
@@ -147,19 +185,27 @@ public record AssemblyConfiguration
 			// this is an unknown new elastic repository
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (isVersionBranch || branchOrTag == "main" || branchOrTag == "master")
-				return match with { Speculative = true };
+				return match with
+				{
+					Speculative = true
+				};
 		}
 
 		if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
-			match = match with { Current = ContentSource.Current };
+			match = match with
+			{
+				Current = ContentSource.Current
+			};
 		if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
-			match = match with { Next = ContentSource.Next };
+			match = match with
+			{
+				Next = ContentSource.Next
+			};
 
 		return match;
 	}
 
 	public record ContentSourceMatch(ContentSource? Current, ContentSource? Next, bool Speculative);
-
 }
 
 internal static partial class ContentSourceRegex

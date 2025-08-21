@@ -22,6 +22,8 @@ public static class GlobalCommandLine
 			}
 			else if (args[i] == "--skip-private-repositories")
 				skipPrivateRepositories = true;
+			else if (args[i] == "--inject")
+				skipPrivateRepositories = true;
 			else
 				newArgs.Add(args[i]);
 		}

@@ -28,7 +28,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 	{
 		_context = context;
 		_assembleSources = assembleSources;
-		NavigationFile = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration.PrivateRepositories);
+		NavigationFile = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration);
 		TableOfContents = Deserialize("toc");
 		Phantoms = Deserialize("phantoms");
 		ScopeDirectory = NavigationFile.Directory!;
@@ -63,7 +63,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 
 	private static ImmutableHashSet<Uri> GetSourceUris(string key, AssembleContext context)
 	{
-		var navigationFile = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration.PrivateRepositories);
+		var navigationFile = context.ConfigurationFileProvider.CreateNavigationFile(context.Configuration);
 		var reader = new YamlStreamReader(navigationFile, context.Collector);
 		var set = new HashSet<Uri>();
 		foreach (var entry in reader.Read())
@@ -153,7 +153,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 
 	private IReadOnlyCollection<TocReference> Deserialize(string key)
 	{
-		var navigationFile = _context.ConfigurationFileProvider.CreateNavigationFile(_context.Configuration.PrivateRepositories);
+		var navigationFile = _context.ConfigurationFileProvider.CreateNavigationFile(_context.Configuration);
 		var reader = new YamlStreamReader(navigationFile, _context.Collector);
 		try
 		{
