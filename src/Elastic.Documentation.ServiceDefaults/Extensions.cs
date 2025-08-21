@@ -9,7 +9,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
-using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
@@ -57,9 +56,9 @@ public static class Extensions
 			.WithTracing(tracing =>
 			{
 				_ = tracing.AddSource(builder.Environment.ApplicationName)
-					.AddAspNetCoreInstrumentation(tracing =>
+					.AddAspNetCoreInstrumentation(instrumentation =>
 						// Exclude health check requests from tracing
-						tracing.Filter = context =>
+						instrumentation.Filter = context =>
 							!context.Request.Path.StartsWithSegments(HealthEndpointPath)
 							&& !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
 					)
