@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
 
@@ -29,7 +30,7 @@ public static class NavigationCrossLinkValidator
 			{
 				var url = crossLinkItem.Url;
 				if (url != null && Uri.TryCreate(url, UriKind.Absolute, out var crossUri) &&
-					crossUri.Scheme != "http" && crossUri.Scheme != "https")
+					CrossLinkValidator.IsCrossLink(crossUri))
 				{
 					// Try to resolve the cross-link URL
 					if (crossLinkResolver.TryResolve(errorEmitter, crossUri, out var resolvedUri))
@@ -47,8 +48,7 @@ public static class NavigationCrossLinkValidator
 			else if (item is FileNavigationItem fileItem &&
 					fileItem.Url != null &&
 					Uri.TryCreate(fileItem.Url, UriKind.Absolute, out var fileUri) &&
-					fileUri.Scheme != "http" &&
-					fileUri.Scheme != "https")
+					CrossLinkValidator.IsCrossLink(fileUri))
 			{
 				// Cross-link URL detected in a FileNavigationItem, but we're not validating it yet
 			}
@@ -67,8 +67,7 @@ public static class NavigationCrossLinkValidator
 			var url = crossLinkItem.Url;
 			if (url != null &&
 				Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-				uri.Scheme != "http" &&
-				uri.Scheme != "https")
+				CrossLinkValidator.IsCrossLink(uri))
 			{
 				results.Add(item);
 			}
