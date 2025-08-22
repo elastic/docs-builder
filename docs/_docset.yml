@@ -129,6 +129,9 @@ toc:
       - file: req.md
       - folder: nested
       - file: cross-links.md
+        children:
+          - title: "Getting Started Guide"
+            crosslink: docs-content://get-started/introduction.md
       - file: custom-highlighters.md
       - hidden: archive.md
       - hidden: landing-page.md
@@ -154,7 +157,3 @@ toc:
           - folder: baz
             children:
               - file: qux.md
-      - title: "Getting Started Guide"
-        crosslink: docs-content://get-started/introduction.md
-      - title: "Test title"
-        crosslink: docs-content://solutions/search/elasticsearch-basics-quickstart.md

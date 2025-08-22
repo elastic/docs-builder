@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
@@ -123,19 +124,10 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		{
 			if (tocItem is CrossLinkReference crossLink)
 			{
-				// Validate that cross-link URI is not empty
-				if (string.IsNullOrWhiteSpace(crossLink.CrossLinkUri))
+				// Validate crosslink URI and title
+				if (!CrossLinkValidator.IsValidCrossLink(crossLink.CrossLinkUri, out var errorMessage))
 				{
-					context.EmitError(context.ConfigurationPath,
-						"Cross-link entries must have a 'crosslink' URI specified.");
-					continue;
-				}
-
-				// Validate that cross-link URI is a valid URI format
-				if (!Uri.TryCreate(crossLink.CrossLinkUri, UriKind.Absolute, out var parsedUri))
-				{
-					context.EmitError(context.ConfigurationPath,
-						$"Cross-link URI '{crossLink.CrossLinkUri}' is not a valid absolute URI format.");
+					context.EmitError(context.ConfigurationPath, errorMessage!);
 					continue;
 				}
 

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
 
@@ -157,19 +158,9 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 					hiddenFile = false;
 					crossLink = reader.ReadString(entry);
 					// Validate crosslink URI early
-					if (string.IsNullOrWhiteSpace(crossLink))
+					if (!CrossLinkValidator.IsValidCrossLink(crossLink, out var errorMessage))
 					{
-						reader.EmitError("Cross-link entries must specify a non-empty 'crosslink' URI", tocEntry);
-						crossLink = null; // Reset to prevent further processing
-					}
-					else if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var parsedUri))
-					{
-						reader.EmitError($"Cross-link URI '{crossLink}' is not a valid absolute URI format", tocEntry);
-						crossLink = null; // Reset to prevent further processing
-					}
-					else if (parsedUri.Scheme is "http" or "https" or "ftp" or "file")
-					{
-						reader.EmitError($"Cross-link URI '{crossLink}' cannot use standard web schemes (http, https, ftp, file). Use cross-repository schemes like 'docs-content://', 'kibana://', etc.", tocEntry);
+						reader.EmitError(errorMessage!, tocEntry);
 						crossLink = null; // Reset to prevent further processing
 					}
 					break;
@@ -194,6 +185,15 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		if (crossLink is not null && string.IsNullOrWhiteSpace(title))
 		{
 			reader.EmitError($"Cross-link entries must have a 'title' specified. Cross-link: {crossLink}", tocEntry);
+			return null;
+		}
+
+		// Validate that standalone titles (without content) are not allowed
+		if (!string.IsNullOrWhiteSpace(title) &&
+			file is null && crossLink is null && folder is null && toc is null &&
+			(detectionRules is null || detectionRules.Length == 0))
+		{
+			reader.EmitError($"Table of contents entries with only a 'title' are not allowed. Entry must specify content (file, crosslink, folder, or toc). Title: '{title}'", tocEntry);
 			return null;
 		}
 
