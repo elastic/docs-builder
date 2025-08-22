@@ -99,3 +99,27 @@ A regular paragraph.
 	[Fact]
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 }
+
+public class DropdownWithNameTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{dropdown} Dropdown with name
+:name: test-dropdown
+:open:
+This is a dropdown with a name
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
+
+	[Fact]
+	public void SetsCustomTitle() => Block!.Title.Should().Be("Dropdown with name");
+
+	[Fact]
+	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
+
+	[Fact]
+	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
+}

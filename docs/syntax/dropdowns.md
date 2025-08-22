@@ -10,7 +10,6 @@ Dropdowns allow you to hide and reveal content on user interaction. By default, 
 ::::{tab-item} Output
 
 :::{dropdown} Dropdown Title
-:name: basic-dropdown
 Dropdown content
 :::
 
@@ -19,7 +18,6 @@ Dropdown content
 ::::{tab-item} Markdown
 ```markdown
 :::{dropdown} Dropdown Title
-:name: basic-dropdown
 Dropdown content
 :::
 ```
@@ -37,7 +35,6 @@ You can specify that the dropdown content should be visible by default. Do this 
 
 :::{dropdown} Dropdown Title
 :open:
-:name: open-dropdown
 Dropdown content
 :::
 
@@ -47,7 +44,6 @@ Dropdown content
 ```markdown
 :::{dropdown} Dropdown Title
 :open:
-:name: open-dropdown
 Dropdown content
 :::
 ```
@@ -57,7 +53,14 @@ Dropdown content
 
 ## Deeplinking
 
-Dropdowns support deeplinking via anchor links. When you navigate to a URL with a hash that points to a dropdown or content within a dropdown, the dropdown will automatically open.
+Dropdowns support deeplinking via anchor links. When you navigate to a URL with a hash that points to a dropdown or content within a dropdown, the dropdown will automatically open. When you manually open a dropdown that has a name/anchor, the URL will automatically update to reflect the current state.
+
+### Features
+
+- **Automatic opening**: Navigate to `#dropdown-name` and the dropdown opens automatically
+- **URL updates**: Open a dropdown manually and the URL updates to show the anchor
+- **Nested content**: Link directly to headings or content within dropdowns
+- **Browser navigation**: Proper back/forward button support
 
 :::::{tab-set}
 
@@ -68,15 +71,18 @@ Dropdowns support deeplinking via anchor links. When you navigate to a URL with 
 
 This dropdown can be opened by navigating to `#deeplink-example`.
 
+When you open this dropdown manually by clicking the title, the URL will automatically update to show `#deeplink-example`.
+
 #### Nested Content [#nested-content]
 
 You can also link directly to content within dropdowns. This content has the anchor `#nested-content`.
 
 :::
 
-Test links:
-- [Link to dropdown](#deeplink-example)
-- [Link to nested content](#nested-content)
+**Test the features:**
+- [Link to dropdown](#deeplink-example) - Opens the dropdown and updates URL
+- [Link to nested content](#nested-content) - Opens dropdown and scrolls to nested content
+- Try opening/closing the dropdown manually and watch the URL change
 
 ::::
 
@@ -87,16 +93,30 @@ Test links:
 
 This dropdown can be opened by navigating to `#deeplink-example`.
 
+When you open this dropdown manually by clicking the title, the URL will automatically update to show `#deeplink-example`.
+
 #### Nested Content [#nested-content]
 
 You can also link directly to content within dropdowns. This content has the anchor `#nested-content`.
 
 :::
 
-Test links:
-- [Link to dropdown](#deeplink-example)
-- [Link to nested content](#nested-content)
+**Test the features:**
+- [Link to dropdown](#deeplink-example) - Opens the dropdown and updates URL
+- [Link to nested content](#nested-content) - Opens dropdown and scrolls to nested content
+- Try opening/closing the dropdown manually and watch the URL change
 ```
 ::::
 
 :::::
+
+### Use Cases
+
+Deeplinking is particularly useful for:
+
+- **FAQ sections**: Allow users to share links to specific questions
+- **Documentation**: Link directly to explanations that might be collapsed by default  
+- **Troubleshooting guides**: Share direct links to specific solutions
+- **API documentation**: Link to specific endpoint details within collapsed sections
+
+The URL behaves just like clicking on a heading with an anchor - it updates automatically when you interact with the content.
