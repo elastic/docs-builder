@@ -185,7 +185,7 @@ Here are some common scenarios you might come across:
 % Source: https://github.com/elastic/kibana/pull/229485/files#r2231876006
 * **Do _not_ use version numbers in prose**.
   Avoid using version numbers in prose adjacent to `applies_to` badge to prevent
-  confusion when the badge is rended with `Planned` ahead of a release.
+  confusion when the badge is rendered with `Planned` ahead of a release.
 * **Cumulative documentation is not meant to replace release notes.**
   * For example, if a feature becomes available in {{serverless-short}} and
     doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…),
