@@ -11,3 +11,10 @@ The files in this directory are used for testing purposes. Do not edit these fil
 ## Injecting a {{x}} is supported in headers.
 
 This should show up in the file's table of contents too.
+
+:::{dropdown} Dropdown Title
+:name: dropdown-title
+
+Text.
+
+:::
