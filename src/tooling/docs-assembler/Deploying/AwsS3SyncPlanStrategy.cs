@@ -109,9 +109,11 @@ public class AwsS3SyncPlanStrategy(ILoggerFactory logFactory, IAmazonS3 s3Client
 		do
 		{
 			response = await s3Client.ListObjectsV2Async(listBucketRequest, ctx);
+			if (response is null or { S3Objects: null })
+				break;
 			objects.AddRange(response.S3Objects);
-			listBucketRequest.ContinuationToken = response?.NextContinuationToken;
-		} while (response?.IsTruncated == true);
+			listBucketRequest.ContinuationToken = response.NextContinuationToken;
+		} while (response.IsTruncated == true);
 
 		return objects.ToDictionary(o => o.Key);
 	}
