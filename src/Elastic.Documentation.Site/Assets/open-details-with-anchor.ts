@@ -23,7 +23,7 @@ export function openDetailsWithAnchor() {
 function updateUrlForDropdown(details: HTMLDetailsElement, isOpening: boolean) {
     const dropdownId = details.id
     if (!dropdownId) return
-    
+
     if (isOpening) {
         // Update URL to show the dropdown anchor (like clicking a heading link)
         window.history.pushState(null, '', `#${dropdownId}`)
@@ -36,24 +36,31 @@ function updateUrlForDropdown(details: HTMLDetailsElement, isOpening: boolean) {
 export function initOpenDetailsWithAnchor() {
     // Handle initial page load
     openDetailsWithAnchor()
-    
+
     // Handle hash changes within the same page (e.g., clicking anchor links)
     window.addEventListener('hashchange', openDetailsWithAnchor)
-    
+
     // Handle manual dropdown toggling to update URL
     // Use event delegation to catch all toggle events
-    document.addEventListener('toggle', (event) => {
-        const target = event.target as HTMLElement
-        
-        // Check if the target is a details element with dropdown class
-        if (target.tagName === 'DETAILS' && target.classList.contains('dropdown')) {
-            const details = target as HTMLDetailsElement
-            const isOpening = details.open
-            
-            // Use setTimeout to ensure the toggle state has been processed
-            setTimeout(() => {
-                updateUrlForDropdown(details, isOpening)
-            }, 0)
-        }
-    }, true) // Use capture phase to ensure we catch the event
+    document.addEventListener(
+        'toggle',
+        (event) => {
+            const target = event.target as HTMLElement
+
+            // Check if the target is a details element with dropdown class
+            if (
+                target.tagName === 'DETAILS' &&
+                target.classList.contains('dropdown')
+            ) {
+                const details = target as HTMLDetailsElement
+                const isOpening = details.open
+
+                // Use setTimeout to ensure the toggle state has been processed
+                setTimeout(() => {
+                    updateUrlForDropdown(details, isOpening)
+                }, 0)
+            }
+        },
+        true
+    ) // Use capture phase to ensure we catch the event
 }
