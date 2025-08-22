@@ -13,42 +13,13 @@ public record CrossLinkNavigationItem : ILeafNavigationItem<INavigationModel>
 {
 	// Override Url accessor to use ResolvedUrl if available
 	string INavigationItem.Url => ResolvedUrl ?? Url;
-	public CrossLinkNavigationItem(string url, string? title, DocumentationGroup group, bool hidden = false)
+	public CrossLinkNavigationItem(string url, string title, DocumentationGroup group, bool hidden = false)
 	{
 		_url = url;
-		NavigationTitle = title ?? GetNavigationTitleFromUrl(url);
+		NavigationTitle = title;
 		Parent = group;
 		NavigationRoot = group.NavigationRoot;
 		Hidden = hidden;
-	}
-
-	private string GetNavigationTitleFromUrl(string url)
-	{
-		// Extract a decent title from the URL
-		try
-		{
-			if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
-			{
-				// Get the last segment of the path and remove extension
-				var lastSegment = uri.AbsolutePath.Split('/').Last();
-				lastSegment = Path.GetFileNameWithoutExtension(lastSegment);
-
-				// Convert to title case (simple version)
-				if (!string.IsNullOrEmpty(lastSegment))
-				{
-					var words = lastSegment.Replace('-', ' ').Replace('_', ' ').Split(' ');
-					var titleCase = string.Join(" ", words.Select(w =>
-						string.IsNullOrEmpty(w) ? "" : char.ToUpper(w[0]) + w[1..].ToLowerInvariant()));
-					return titleCase;
-				}
-			}
-		}
-		catch
-		{
-			// Fall back to URL if parsing fails
-		}
-
-		return url;
 	}
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }

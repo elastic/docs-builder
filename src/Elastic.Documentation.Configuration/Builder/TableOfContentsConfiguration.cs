@@ -156,6 +156,22 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 				case "crosslink":
 					hiddenFile = false;
 					crossLink = reader.ReadString(entry);
+					// Validate crosslink URI early
+					if (string.IsNullOrWhiteSpace(crossLink))
+					{
+						reader.EmitError("Cross-link entries must specify a non-empty 'crosslink' URI", tocEntry);
+						crossLink = null; // Reset to prevent further processing
+					}
+					else if (!Uri.TryCreate(crossLink, UriKind.Absolute, out var parsedUri))
+					{
+						reader.EmitError($"Cross-link URI '{crossLink}' is not a valid absolute URI format", tocEntry);
+						crossLink = null; // Reset to prevent further processing
+					}
+					else if (parsedUri.Scheme is "http" or "https" or "ftp" or "file")
+					{
+						reader.EmitError($"Cross-link URI '{crossLink}' cannot use standard web schemes (http, https, ftp, file). Use cross-repository schemes like 'docs-content://', 'kibana://', etc.", tocEntry);
+						crossLink = null; // Reset to prevent further processing
+					}
 					break;
 				case "folder":
 					folder = ReadFolder(reader, entry, parentPath);
@@ -172,6 +188,13 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 					children = ReadChildren(reader, entry, parentPath);
 					break;
 			}
+		}
+
+		// Validate that crosslink entries have titles
+		if (crossLink is not null && string.IsNullOrWhiteSpace(title))
+		{
+			reader.EmitError($"Cross-link entries must have a 'title' specified. Cross-link: {crossLink}", tocEntry);
+			return null;
 		}
 
 		if (toc is not null)
