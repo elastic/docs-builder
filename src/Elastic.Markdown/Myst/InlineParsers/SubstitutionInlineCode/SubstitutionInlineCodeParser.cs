@@ -2,21 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
-using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.InlineParsers.SubstitutionInlineCode;
 
@@ -97,13 +92,9 @@ public partial class SubstitutionInlineCodeParser : RoleParser<SubstitutionInlin
 						{
 							var trimmedMutation = mutationStr.Trim();
 							if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
-							{
 								mutations.Add(mutation);
-							}
 							else
-							{
 								processor.EmitError(line + 1, column + match.Index, match.Length, $"Mutation '{trimmedMutation}' on {{{key}}} is undefined");
-							}
 						}
 
 						if (mutations.Count > 0)

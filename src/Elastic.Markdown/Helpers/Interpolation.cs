@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
@@ -79,11 +77,9 @@ public static class Interpolation
 			{
 				if (lookup.TryGetValue(cleanKey, out var value))
 				{
-					// Apply mutations if present using shared utility
+					// Apply mutations if present using a shared utility
 					if (mutations.Length > 0)
-					{
 						value = SubstitutionMutationHelper.ApplyMutations(value, mutations);
-					}
 
 					collector?.CollectUsedSubstitutionKey(cleanKey);
 

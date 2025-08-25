@@ -11,8 +11,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Links.CrossLinks;
@@ -132,21 +130,19 @@ public class AssembleSources
 	{
 		var dictionary = new Dictionary<string, IReadOnlyCollection<string>>();
 		var reader = new YamlStreamReader(context.ConfigurationFileProvider.LegacyUrlMappingsFile, context.Collector);
-		string? stack = null;
 		foreach (var entry in reader.Read())
 		{
 			switch (entry.Key)
 			{
 				case "mappings":
-					ReadHistoryMappings(dictionary, reader, entry, stack);
+					ReadHistoryMappings(dictionary, reader, entry);
 					break;
 			}
 		}
 
 		return dictionary.OrderByDescending(x => x.Key.Length).ToFrozenDictionary();
 
-		static void ReadHistoryMappings(IDictionary<string, IReadOnlyCollection<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry,
-			string? newStack)
+		static void ReadHistoryMappings(IDictionary<string, IReadOnlyCollection<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry)
 		{
 			if (entry.Entry.Value is not YamlMappingNode mappings)
 			{
@@ -224,7 +220,7 @@ public class AssembleSources
 			YamlMappingNode tocEntry,
 			string? parent,
 			int depth,
-			int order,
+			int order, //TODO Remove this parameter
 			Uri? topLevelSource,
 			Uri? parentSource
 		)

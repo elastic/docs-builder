@@ -8,7 +8,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

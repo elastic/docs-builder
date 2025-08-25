@@ -4,7 +4,6 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Myst.CodeBlocks;
-using Elastic.Markdown.Myst.FrontMatter;
 using Markdig.Parsers;
 
 namespace Elastic.Markdown.Myst.Directives.AppliesTo;

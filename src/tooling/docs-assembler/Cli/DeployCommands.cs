@@ -14,7 +14,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Documentation.Tooling.Filters;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;

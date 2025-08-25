@@ -178,8 +178,6 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		var document = fileContext.Document;
-
 		var url = file.Url;
 
 		//use LLM text if it was already provided (because we run with both llm and elasticsearch output)

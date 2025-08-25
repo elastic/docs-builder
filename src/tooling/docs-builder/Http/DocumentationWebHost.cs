@@ -6,19 +6,12 @@ using System.IO.Abstractions;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
-using Elastic.Documentation.Api.Core;
-using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Gcp;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
-using Elastic.Documentation.Tooling;
 using Elastic.Markdown.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -120,9 +113,7 @@ public class DocumentationWebHost
 					Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
 					Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
 					if (ex.InnerException != null)
-					{
 						Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-					}
 
 					throw; // Re-throw to let ASP.NET Core handle it
 				}

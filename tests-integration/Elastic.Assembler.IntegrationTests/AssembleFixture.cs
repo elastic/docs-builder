@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Configuration;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
@@ -12,13 +11,12 @@ using InMemLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Aspire.ResourceNames;
-using ConfigurationManager = Microsoft.Extensions.Configuration.ConfigurationManager;
 
 [assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.DocumentationFixture))]
 
 namespace Elastic.Assembler.IntegrationTests;
 
-public static partial class DistributedApplicationExtensions
+public static class DistributedApplicationExtensions
 {
 	/// <summary>
 	/// Ensures all parameters in the application configuration have values set.
@@ -47,7 +45,7 @@ public class DocumentationFixture : IAsyncLifetime
 	{
 		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
 			["--skip-private-repositories", "--assume-cloned"],
-			(options, settings) =>
+			(options, _) =>
 			{
 				options.DisableDashboard = true;
 				options.AllowUnsecuredTransport = true;

@@ -37,6 +37,7 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 	{
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
+		// ReSharper disable once RedundantAssignment
 		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
 #if DEBUG
 		directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName ?? throw new InvalidOperationException("No checkout directory");

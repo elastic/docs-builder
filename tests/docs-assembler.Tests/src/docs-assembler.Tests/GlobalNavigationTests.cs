@@ -8,7 +8,6 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -219,8 +218,6 @@ public class GlobalNavigationPathProviderTests
 
 
 		IPositionalNavigation positionalNavigation = navigation;
-
-		var releaseNotes = positionalNavigation.MarkdownNavigationLookup.Where(kv => kv.Key.Contains("release-notes")).ToArray();
 
 		var addToHelm = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("apm-k8s-attacher://reference/apm-webhook-add-helm-repo.md");
 		addToHelm.Should().NotBeNull();

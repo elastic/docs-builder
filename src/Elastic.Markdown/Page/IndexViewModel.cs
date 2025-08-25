@@ -12,7 +12,6 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Page;
 

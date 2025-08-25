@@ -238,9 +238,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				{
 					blockEnd += lines[j].Length + 1; // +1 for newline
 					if (lines[j].TrimStart().StartsWith("```"))
-					{
 						break;
-					}
 				}
 
 				ranges.Add((blockStart, blockEnd, subsDisabled));

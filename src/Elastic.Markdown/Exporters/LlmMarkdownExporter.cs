@@ -8,7 +8,6 @@ using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;

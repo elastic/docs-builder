@@ -13,7 +13,7 @@ public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExc
 	private bool _cancelKeyPressed;
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
 	{
-		Console.CancelKeyPress += (sender, e) =>
+		Console.CancelKeyPress += (_, _) =>
 		{
 			logger.LogInformation("Received CTRL+C cancelling");
 			_cancelKeyPressed = true;

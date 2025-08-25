@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation.LegacyDocs;
@@ -25,6 +24,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logFactory, ICoreService
 
 	/// <summary> Generate the bloom filter binary file </summary>
 	/// <param name="builtDocsDir">The local dir of local elastic/built-docs repository</param>
+	/// <param name="ctx"></param>
 	public async Task<int> CreateBloomBin(string builtDocsDir, Cancel ctx = default)
 	{
 		AssignOutputLogger();
@@ -41,6 +41,7 @@ internal sealed class LegacyDocsCommands(ILoggerFactory logFactory, ICoreService
 
 	/// <summary> Generate the bloom filter binary file </summary>
 	/// <param name="path">The local dir of local elastic/built-docs repository</param>
+	/// <param name="ctx"></param>
 	public async Task<int> PageExists(string path, Cancel ctx = default)
 	{
 		AssignOutputLogger();

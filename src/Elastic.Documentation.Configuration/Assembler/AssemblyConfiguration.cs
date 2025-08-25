@@ -90,10 +90,8 @@ public record AssemblyConfiguration
 		};
 		// ensure we always null path if we are running in CI
 		if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
-			repository = repository with
-			{
-				Path = null
-			};
+			repository = repository with { Path = null };
+
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
@@ -149,10 +147,8 @@ public record AssemblyConfiguration
 			var next = r.GetBranch(ContentSource.Next);
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (current == branchOrTag)
-				match = match with
-				{
-					Current = ContentSource.Current
-				};
+				match = match with { Current = ContentSource.Current };
+
 			if (next == branchOrTag)
 				match = match with
 				{

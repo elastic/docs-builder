@@ -32,10 +32,12 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 		var existingRedirects = ListAllKeys(kvsArn);
 
 		var toPut = sourcedRedirects
-			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value });
+			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
+			.ToArray();
 		var toDelete = sourcedRedirects.Keys
 			.Except(existingRedirects)
-			.Select(k => new DeleteKeyRequestListItem { Key = k });
+			.Select(k => new DeleteKeyRequestListItem { Key = k })
+			.ToArray();
 
 		eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
 		_ = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);
@@ -115,11 +117,11 @@ public class AwsCloudFrontKeyValueStoreProxy(DiagnosticsCollector collector, IDi
 	private string ProcessBatchUpdates(
 		string kvsArn,
 		string eTag,
-		IEnumerable<object> items,
+		IReadOnlyCollection<object> items,
 		KvsOperation operation)
 	{
 		const int batchSize = 50;
-		ConsoleApp.Log($"Processing {items.Count()} items in batches of {batchSize} for {operation} update operation.");
+		ConsoleApp.Log($"Processing {items.Count} items in batches of {batchSize} for {operation} update operation.");
 		try
 		{
 			foreach (var batch in items.Chunk(batchSize))

@@ -113,9 +113,7 @@ public static class GcpIdTokenGenerator
 		using var document = JsonDocument.Parse(responseJson);
 
 		if (document.RootElement.TryGetProperty("id_token", out var idTokenElement))
-		{
 			return idTokenElement.GetString() ?? throw new InvalidOperationException("ID token is null");
-		}
 
 		throw new InvalidOperationException("No id_token found in response");
 	}

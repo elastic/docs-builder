@@ -4,7 +4,6 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Markdown.Myst.FrontMatter;
 
 namespace Elastic.Markdown.Myst.Components;
 

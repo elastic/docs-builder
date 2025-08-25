@@ -9,7 +9,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Microsoft.Extensions.Logging;
-using ProcNet.Std;
+// ReSharper disable DuplicateItemInLoggerTemplate
 
 namespace Documentation.Assembler.Sourcing;
 
