@@ -4,6 +4,7 @@
 
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Roles.AppliesTo;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
@@ -24,6 +25,14 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 
 	protected override void Write(HtmlRenderer renderer, HeadingBlock obj)
 	{
+		// Check for applies_to roles in headings and emit warnings
+		var appliesToRoles = obj.Descendants<AppliesToRole>();
+		foreach (var role in appliesToRoles)
+		{
+			role.BuildContext.Collector.EmitGlobalWarning(
+				"applies_to roles should not be used in headings. Use section-level {applies_to} blocks instead.");
+		}
+
 		var index = obj.Level - 1;
 		var headings = HeadingTexts;
 		var headingText = ((uint)index < (uint)headings.Length)
