@@ -222,6 +222,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
 					fileNavigationItem.NavigationIndex = fileIndex;
 					break;
+				case CrossLinkNavigationItem crossLinkNavigationItem:
+					var crossLinkIndex = Interlocked.Increment(ref navigationIndex);
+					crossLinkNavigationItem.NavigationIndex = crossLinkIndex;
+					break;
 				case DocumentationGroup documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
 					documentationGroup.NavigationIndex = groupIndex;
@@ -241,6 +245,9 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		if (item is ILeafNavigationItem<INavigationModel> leaf)
 			return [leaf];
 
+		if (item is CrossLinkNavigationItem crossLink)
+			return [crossLink];
+
 		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
 		{
 			var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
@@ -254,6 +261,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		if (item is FileNavigationItem f)
 			return [(f.Model.CrossLink, item)];
+		if (item is CrossLinkNavigationItem cl)
+			return [(cl.Url, item)]; // Use the URL as the key for cross-links
 		if (item is DocumentationGroup g)
 		{
 			var index = new List<(string, INavigationItem)>
@@ -365,8 +374,26 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
 	}
 
-	public async Task ResolveDirectoryTree(Cancel ctx) =>
+	public async Task ResolveDirectoryTree(Cancel ctx)
+	{
 		await Tree.Resolve(ctx);
+
+		// Validate cross-repo links in navigation
+		try
+		{
+			await NavigationCrossLinkValidator.ValidateNavigationCrossLinksAsync(
+				Tree,
+				LinkResolver,
+				(msg) => Context.EmitError(Context.ConfigurationPath, msg),
+				ctx
+			);
+		}
+		catch (Exception e)
+		{
+			// Log the error but don't fail the build
+			Context.EmitError(Context.ConfigurationPath, $"Error validating cross-links in navigation: {e.Message}");
+		}
+	}
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{

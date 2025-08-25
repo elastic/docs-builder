@@ -100,7 +100,7 @@ public class DocumentationGenerator
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		_logger.LogInformation("Resolving tree");
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
 		_logger.LogInformation("Resolved tree");
 	}
 
