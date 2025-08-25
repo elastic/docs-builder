@@ -18,7 +18,7 @@ jobs:
     env:
       BINARY_PATH: .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: 
           ref: ${{ inputs.ref }}
       - name: Amazon Linux 2023 build

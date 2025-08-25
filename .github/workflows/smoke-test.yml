@@ -23,11 +23,11 @@ jobs:
             landing-page-path-output: ""
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Bootstrap Action Workspace
         uses: ./.github/actions/bootstrap
         
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: ${{ matrix.repository }}
           path: test-repo

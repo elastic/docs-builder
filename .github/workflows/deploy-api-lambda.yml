@@ -24,7 +24,7 @@ jobs:
     env:
       ZIP_FILE: api-lambda.zip
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download bootstrap binary
         uses: actions/download-artifact@v4
         with:
