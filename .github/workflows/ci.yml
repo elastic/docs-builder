@@ -20,7 +20,7 @@ jobs:
   validate-assembler:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -44,7 +44,7 @@ jobs:
       run: 
         working-directory: src/Elastic.Documentation.Site
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v4
         with:
@@ -78,7 +78,7 @@ jobs:
          - macos-latest
          - windows-latest
     steps:          
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -99,7 +99,7 @@ jobs:
   integration:
     runs-on: docs-builder-latest-16
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
