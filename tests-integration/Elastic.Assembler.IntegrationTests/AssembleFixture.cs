@@ -2,17 +2,39 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Configuration;
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Elastic.Documentation.ServiceDefaults;
 using FluentAssertions;
 using InMemLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using static Elastic.Documentation.Aspire.ResourceNames;
+using ConfigurationManager = Microsoft.Extensions.Configuration.ConfigurationManager;
 
 [assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.DocumentationFixture))]
 
 namespace Elastic.Assembler.IntegrationTests;
+
+public static partial class DistributedApplicationExtensions
+{
+	/// <summary>
+	/// Ensures all parameters in the application configuration have values set.
+	/// </summary>
+	public static TBuilder WithEmptyParameters<TBuilder>(this TBuilder builder)
+		where TBuilder : IDistributedApplicationTestingBuilder
+	{
+		var parameters = builder.Resources.OfType<ParameterResource>().Where(p => !p.IsConnectionString).ToList();
+		foreach (var parameter in parameters)
+			builder.Configuration[$"Parameters:{parameter.Name}"] = string.Empty;
+
+		builder.Configuration[$"Parameters:DocumentationElasticUrl"] = "http://localhost.example:9200";
+		return builder;
+	}
+}
+
 
 public class DocumentationFixture : IAsyncLifetime
 {
@@ -23,23 +45,64 @@ public class DocumentationFixture : IAsyncLifetime
 	/// <inheritdoc />
 	public async ValueTask InitializeAsync()
 	{
-		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Elastic_Documentation_Aspire>(
-			["--skip-private-repositories"],
+		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
+			["--skip-private-repositories", "--assume-cloned"],
 			(options, settings) =>
 			{
 				options.DisableDashboard = true;
 				options.AllowUnsecuredTransport = true;
+				options.EnableResourceLogging = true;
 			}
 		);
+		_ = builder.WithEmptyParameters();
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
 		_ = builder.Services.AddLogging(c => c.AddInMemory());
-		// TODO expose this as secrets for now not needed integration tests
-		_ = builder.AddParameter("LlmGatewayUrl", "");
-		_ = builder.AddParameter("LlmGatewayServiceAccountPath", "");
+
+
 		DistributedApplication = await builder.BuildAsync();
 		InMemoryLogger = DistributedApplication.Services.GetService<InMemoryLogger>()!;
-		await DistributedApplication.StartAsync();
+		_ = DistributedApplication.StartAsync().WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
+
+		_ = await DistributedApplication.ResourceNotifications
+			.WaitForResourceAsync(AssemblerClone, KnownResourceStates.TerminalStates, cancellationToken: TestContext.Current.CancellationToken)
+			.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
+
+		await ValidateExitCode(AssemblerClone);
+
+		_ = await DistributedApplication.ResourceNotifications
+			.WaitForResourceAsync(AssemblerBuild, KnownResourceStates.TerminalStates, cancellationToken: TestContext.Current.CancellationToken)
+			.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
+
+		await ValidateExitCode(AssemblerBuild);
+
+		try
+		{
+			_ = await DistributedApplication.ResourceNotifications
+				.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+		}
+		catch (Exception e)
+		{
+			await DistributedApplication.StopAsync();
+			await DistributedApplication.DisposeAsync();
+			throw new Exception($"{e.Message}: {string.Join(Environment.NewLine, InMemoryLogger.RecordedLogs.Reverse().Take(30).Reverse())}", e);
+		}
+	}
+
+	private async ValueTask ValidateExitCode(string resourceName)
+	{
+		var eventResource = await DistributedApplication.ResourceNotifications.WaitForResourceAsync(resourceName, _ => true);
+		var id = eventResource.ResourceId;
+		if (!DistributedApplication.ResourceNotifications.TryGetCurrentState(id, out var e))
+			throw new Exception($"Could not find {resourceName} in the current state");
+		if (e.Snapshot.ExitCode is not 0)
+		{
+			await DistributedApplication.StopAsync();
+			await DistributedApplication.DisposeAsync();
+			throw new Exception(
+				$"Exit code should be 0 for {resourceName}: {string.Join(Environment.NewLine, InMemoryLogger.RecordedLogs.Reverse().Take(30).Reverse())}");
+		}
 	}
 
 	/// <inheritdoc />
@@ -56,9 +119,7 @@ public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper ou
 	[Fact]
 	public async Task AssertRequestToRootReturnsData()
 	{
-		_ = await fixture.DistributedApplication.ResourceNotifications
-			.WaitForResourceHealthyAsync("DocsBuilderServeStatic", cancellationToken: TestContext.Current.CancellationToken);
-		var client = fixture.DistributedApplication.CreateHttpClient("DocsBuilderServeStatic", "http");
+		var client = fixture.DistributedApplication.CreateHttpClient(AssemblerServe, "http");
 		var root = await client.GetStringAsync("/", TestContext.Current.CancellationToken);
 		_ = root.Should().NotBeNullOrEmpty();
 	}
