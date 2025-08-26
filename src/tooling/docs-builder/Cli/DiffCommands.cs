@@ -40,21 +40,18 @@ internal sealed class DiffCommands(
 		var fs = new FileSystem();
 
 		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
-		var sourceFile = buildContext.ConfigurationPath;
-		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
-		if (!redirectFileInfo.Exists)
+		var redirectFile = new RedirectFile(buildContext);
+		if (!redirectFile.Source.Exists)
 		{
 			await collector.StopAsync(ctx);
 			return 0;
 		}
 
-		var redirectFileParser = new RedirectFile(redirectFileInfo, buildContext);
-		var redirects = redirectFileParser.Redirects;
+		var redirects = redirectFile.Redirects;
 
 		if (redirects is null)
 		{
-			collector.EmitError(redirectFileInfo, "It was not possible to parse the redirects file.");
+			collector.EmitError(redirectFile.Source, "It was not possible to parse the redirects file.");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
@@ -62,29 +59,36 @@ internal sealed class DiffCommands(
 		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
-			collector.EmitError(redirectFileInfo, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
+			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
 		_log.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(relativePath) : new LocalGitRepositoryTracker(collector, root, relativePath);
-		var changed = tracker.GetChangedFiles().ToArray();
+		var changed = tracker.GetChangedFiles();
 
-		if (changed.Length != 0)
-			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
+		if (changed.Count != 0)
+			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count);
 
-		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
-																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
+		var missingRedirects = changed
+			.DistinctBy(c => c.FilePath)
+			.Where(c =>
+				c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
+				&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)
+			)
+			.ToArray();
+
+		foreach (var notFound in missingRedirects)
 		{
 			if (notFound is RenamedGitChange renamed)
 			{
-				collector.EmitError(redirectFileInfo.Name,
+				collector.EmitError(redirectFile.Source,
 					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
 			}
 			else if (notFound.ChangeType is GitChangeType.Deleted)
 			{
-				collector.EmitError(redirectFileInfo.Name,
+				collector.EmitError(redirectFile.Source,
 					$"File '{notFound.FilePath}' was deleted but it has no redirect targets. This will lead to broken links.");
 			}
 		}

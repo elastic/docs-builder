@@ -10,16 +10,16 @@ namespace Documentation.Builder.Tracking;
 
 public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
-	private string LookupPath { get; } = lookupPath;
+	private string LookupPath { get; } = lookupPath.Trim('\\', '/');
 
-	public IEnumerable<GitChange> GetChangedFiles()
+	public IReadOnlyCollection<GitChange> GetChangedFiles()
 	{
 		var defaultBranch = GetDefaultBranch();
 		var commitChanges = CaptureMultiple("git", "diff", "--name-status", $"{defaultBranch}...HEAD", "--", $"./{LookupPath}");
 		var localChanges = CaptureMultiple("git", "status", "--porcelain");
-		var captured = Capture("git", "stash", "push", "--", $"./{LookupPath}");
+		var gitStashDocsFolder = Capture("git", "stash", "push", "--", $"./{LookupPath}");
 		var localUnstagedChanges = Array.Empty<string>();
-		if (captured != "No local changes to save")
+		if (gitStashDocsFolder != "No local changes to save")
 		{
 			localUnstagedChanges = CaptureMultiple("git", "stash", "show", "--name-status", "-u");
 			ExecInSilent([], "git", "stash", "pop");
