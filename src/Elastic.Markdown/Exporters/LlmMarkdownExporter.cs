@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
@@ -117,7 +118,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 		var configProducts = context.BuildContext.Configuration.Products.Select(p =>
 		{
-			if (Products.AllById.TryGetValue(p, out var product))
+			if (Product.AllById(context.BuildContext.VersionsConfiguration).TryGetValue(p, out var product))
 				return product;
 			throw new ArgumentException($"Invalid product id: {p}");
 		});

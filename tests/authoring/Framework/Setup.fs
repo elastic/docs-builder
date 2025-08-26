@@ -209,7 +209,14 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
-        let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
+        let products = Dictionary<string, Product>()
+        products.Add("elasticsearch", Product(
+            Id = "elasticsearch",
+            DisplayName = "Elasticsearch",
+            VersionSystem = VersioningSystemId.ElasticsearchProject)
+            )
+        
+        let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems, Products = products)
         let configurationFileProvider = ConfigurationFileProvider(fileSystem)
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,

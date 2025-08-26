@@ -29,7 +29,15 @@ public static class VersionsConfigurationExtensions
 				Base = ToSemVersion(kvp.Value.Base),
 				Current = ToSemVersion(kvp.Value.Current)
 			});
-		var config = new VersionsConfiguration { VersioningSystems = versions };
+		var products = dto.Products.ToDictionary(
+			kvp => kvp.Key,
+			kvp => new Product
+			{
+				Id = kvp.Key,
+				DisplayName = kvp.Value.Display,
+				VersionSystem = ToVersioningSystemId(kvp.Value.VersionScheme)
+			});
+		var config = new VersionsConfiguration { Products = products, VersioningSystems = versions };
 		return config;
 	}
 
@@ -59,8 +67,17 @@ public static class VersionsConfigurationExtensions
 
 internal sealed record VersionsConfigDto
 {
+	public Dictionary<string, ProductDto> Products { get; set; } = [];
 	public Dictionary<string, VersioningSystemDto> VersioningSystems { get; set; } = [];
 }
+
+internal sealed record ProductDto
+{
+	public string Display { get; set; } = string.Empty;
+	[YamlMember(Alias = "version_system")]
+	public string VersionScheme { get; set; } = string.Empty;
+}
+
 
 internal sealed record VersioningSystemDto
 {

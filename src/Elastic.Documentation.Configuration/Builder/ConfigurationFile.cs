@@ -149,8 +149,8 @@ public record ConfigurationFile : ITableOfContentsScope
 								break;
 							}
 
-							if (!Builder.Products.AllById.ContainsKey(productId.Value))
-								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
+							if (!Product.AllById(versionsConfig).ContainsKey(productId.Value))
+								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Product.All(versionsConfig).Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
 							else
 								_ = Products.Add(productId.Value);
 						}
@@ -175,6 +175,12 @@ public record ConfigurationFile : ITableOfContentsScope
 
 				key = $"version.{name}.base";
 				_substitutions[key] = system.Base;
+			}
+
+			foreach (var (id, product) in versionsConfig.Products)
+			{
+				_substitutions[$"product.{id}"] = product.DisplayName;
+				_substitutions[$".{id}"] = product.DisplayName;
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");

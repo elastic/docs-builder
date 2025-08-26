@@ -21,8 +21,8 @@ public class AppliesToRole : RoleLeaf, IApplicableToElement
 {
 	public AppliesToRole(string role, string content, InlineProcessor parserContext) : base(role, content)
 	{
-		AppliesTo = ParseApplicableTo(content, parserContext);
 		BuildContext = parserContext.GetContext().Build;
+		AppliesTo = ParseApplicableTo(content, parserContext);
 	}
 
 	public ApplicableTo? AppliesTo { get; }
@@ -33,7 +33,7 @@ public class AppliesToRole : RoleLeaf, IApplicableToElement
 	{
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, BuildContext.VersionsConfiguration, [.. BuildContext.VersionsConfiguration.Products.Keys]);
 			if (applicableTo.Diagnostics is null)
 				return applicableTo;
 			foreach (var (severity, message) in applicableTo.Diagnostics)

@@ -1,3 +1,107 @@
+products:
+  apm:
+    display: 'APM'
+    version_system: 'stack'
+  apm-agent:
+    display: 'APM Agent'
+    version_system: 'stack'
+  auditbeat:
+    display: 'Auditbeat'
+    version_system: 'stack'
+  beats:
+    display: 'Beats'
+    version_system: 'stack'
+  cloud-control-ecctl:
+    display: 'Elastic Cloud Control ECCTL'
+    version_system: 'stack'
+  cloud-enterprise:
+    display: 'Elastic Cloud Enterprise'
+    version_system: 'stack'
+  cloud-hosted:
+    display: 'Elastic Cloud Hosted'
+    version_system: 'stack'
+  cloud-kubernetes:
+    display: 'Elastic Cloud Kubernetes'
+    version_system: 'stack'
+  cloud-serverless:
+    display: 'Elastic Cloud Serverless'
+    version_system: 'stack'
+  cloud-terraform:
+    display: 'Elastic Cloud Terraform'
+    version_system: 'stack'
+  ecs:
+    display: 'Elastic Common Schema (ECS)'
+    version_system: 'stack'
+  ecs-logging:
+    display: 'ECS Logging'
+    version_system: 'stack'
+  edot-cf:
+    display: 'EDOT Cloud Forwarder'
+    version_system: 'stack'
+  edot-sdk:
+    display: 'Elastic Distribution of OpenTelemetry SDK'
+    version_system: 'stack'
+  edot-collector:
+    display: 'Elastic Distribution of OpenTelemetry Collector'
+    version_system: 'stack'
+  elastic-agent:
+    display: 'Elastic Agent'
+    version_system: 'stack'
+  elastic-serverless-forwarder:
+    display: 'Elastic Serverless Forwarder'
+    version_system: 'stack'
+  elastic-stack:
+    display: 'Elastic Stack'
+    version_system: 'stack'
+  elasticsearch:
+    display: 'Elasticsearch'
+    version_system: 'stack'
+  elasticsearch-client:
+    display: 'Elasticsearch Client'
+    version_system: 'stack'
+  filebeat:
+    display: 'Filebeat'
+    version_system: 'stack'
+  fleet:
+    display: 'Fleet'
+    version_system: 'stack'
+  heartbeat:
+    display: 'Heartbeat'
+    version_system: 'stack'
+  integrations:
+    display: 'Integrations'
+    version_system: 'stack'
+  kibana:
+    display: 'Kibana'
+    version_system: 'stack'
+  logstash:
+    display: 'Logstash'
+    version_system: 'stack'
+  machine-learning:
+    display: 'Machine Learning'
+    version_system: 'stack'
+  metricbeat:
+    display: 'Metricbeat'
+    version_system: 'stack'
+  observability:
+    display: 'Elastic Observability'
+    version_system: 'stack'
+  packetbeat:
+    display: 'Packetbeat'
+    version_system: 'stack'
+  painless:
+    display: 'Elasticsearch Painless scripting language'
+    version_system: 'stack'
+  search-ui:
+    display: 'Search UI'
+    version_system: 'stack'
+  security:
+    display: 'Elastic Security'
+    version_system: 'stack'
+  winlogbeat:
+    display: 'Winlogbeat'
+    version_system: 'stack'
+
 versioning_systems:
   # This file contains the version numbers for various Elastic products and tools.
   # Updates for Stack versions are manual
@@ -36,9 +140,9 @@ versioning_systems:
   security: *all
 
   # APM agents
-  # apm_agent_android:
-  # base: 1.0
-  # current: 1.0.0
+  apm_agent_android:
+    base: 1.0
+    current: 1.2.0
   apm_agent_dotnet:
     base: 1.0
     current: 1.33.0
@@ -63,6 +167,12 @@ versioning_systems:
   apm_agent_rum:
     base: 5.0
     current: 5.17.0
+  apm_attacher:
+    base: 1.0
+    current: 1.1.3
+  apm_lambda:
+    base: 1.0
+    current: 1.5.8
 
   # EDOTs
   edot_collector:
@@ -92,3 +202,38 @@ versioning_systems:
   edot_cf_aws:
     base: 0.1
     current: 0.1.6
+    
+# Logging
+  ecs_logging_dotnet:
+    base: 8.0
+    current: 8.18.1
+  ecs_logging_go_logrus:
+    base: 1.0
+    current: 1.0.0
+  ecs_logging_go_zap:
+    base: 1.0
+    current: 1.0.3
+  ecs_logging_go_zerolog:
+    base: 0.2
+    current: 0.2.0
+  ecs_logging_java:
+    base: 1.0
+    current: 1.7.0
+  ecs_logging_nodejs:
+    base: 1.0
+    current: 1.5.3
+  ecs_logging_php:
+    base: 2.0
+    current: 2.0.0
+  ecs_logging_python:
+    base: 2.0
+    current: 2.2.0
+  ecs_logging_ruby:
+    base: 1.0
+    current: 1.0.0
+  esf:
+    base: 1.0
+    current: 1.20.1
+  search_ui:
+    base: 1.0
+    current: 1.24.0

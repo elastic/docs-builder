@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.FrontMatter;
 using YamlDotNet.Serialization;
@@ -12,7 +13,7 @@ namespace Elastic.Markdown.Myst;
 
 public static class YamlSerialization
 {
-	public static T Deserialize<T>(string yaml)
+	public static T Deserialize<T>(string yaml, VersionsConfiguration versions, IReadOnlyCollection<string> productKeys)
 	{
 		var input = new StringReader(yaml);
 
@@ -20,8 +21,8 @@ public static class YamlSerialization
 			.IgnoreUnmatchedProperties()
 			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
-			.WithTypeConverter(new ProductConverter())
-			.WithTypeConverter(new ApplicableToYamlConverter())
+			.WithTypeConverter(new ProductConverter(versions))
+			.WithTypeConverter(new ApplicableToYamlConverter(productKeys))
 			.Build();
 
 		var frontMatter = deserializer.Deserialize<T>(input);

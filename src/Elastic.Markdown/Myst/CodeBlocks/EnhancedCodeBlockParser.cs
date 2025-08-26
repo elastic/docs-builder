@@ -126,7 +126,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, appliesToDirective.Build.VersionsConfiguration, [.. appliesToDirective.Build.VersionsConfiguration.Products.Keys]);
 			appliesToDirective.AppliesTo = applicableTo;
 			if (appliesToDirective.AppliesTo.Diagnostics is null)
 				return;

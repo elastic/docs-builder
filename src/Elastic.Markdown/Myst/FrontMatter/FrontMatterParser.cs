@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site;
 using YamlDotNet.Serialization;
 

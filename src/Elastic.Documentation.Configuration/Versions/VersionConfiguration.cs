@@ -11,6 +11,7 @@ namespace Elastic.Documentation.Configuration.Versions;
 [YamlSerializable]
 public record VersionsConfiguration
 {
+	public required IReadOnlyDictionary<string, Product> Products { get; init; }
 	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
 	{
@@ -18,6 +19,17 @@ public record VersionsConfiguration
 			throw new ArgumentException($"Unknown versioning system: {versioningSystem}");
 		return version;
 	}
+}
+
+[YamlSerializable]
+public record Product
+{
+	public required string Id { get; init; }
+	public required string DisplayName { get; init; }
+	public required VersioningSystemId VersionSystem { get; init; }
+
+	public static IReadOnlyCollection<Product> All(VersionsConfiguration versions) => [.. versions.Products.Values];
+	public static IReadOnlyDictionary<string, Product> AllById(VersionsConfiguration versions) => versions.Products;
 }
 
 [EnumExtensions]

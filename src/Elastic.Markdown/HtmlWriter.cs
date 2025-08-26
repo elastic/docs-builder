@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;
@@ -91,7 +92,7 @@ public class HtmlWriter(
 
 		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
 		{
-			if (Products.AllById.TryGetValue(p, out var product))
+			if (Product.AllById(DocumentationSet.Context.VersionsConfiguration).TryGetValue(p, out var product))
 				return product;
 			throw new ArgumentException($"Invalid product id: {p}");
 		});

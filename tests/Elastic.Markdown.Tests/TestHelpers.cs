@@ -25,6 +25,33 @@ public static class TestHelpers
 						Base = new SemVersion(8, 0, 0)
 					}
 				}
+			},
+			Products = new Dictionary<string, Product>
+			{
+				{
+					"elasticsearch", new Product
+					{
+						Id = "elasticsearch",
+						DisplayName = "Elasticsearch",
+						VersionSystem = VersioningSystemId.Stack
+					}
+				},
+				{
+					"apm", new Product
+					{
+						Id = "apm",
+						DisplayName = "APM",
+						VersionSystem = VersioningSystemId.Stack
+					}
+				},
+				{
+					"apm-agent", new Product
+					{
+						Id = "apm-agent",
+						DisplayName = "APM Agent",
+						VersionSystem = VersioningSystemId.Stack
+					}
+				},
 			}
 		};
 		return new ConfigurationContext
