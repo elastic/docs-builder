@@ -6,39 +6,45 @@ namespace Documentation.Builder.Tracking;
 
 public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
 {
-	private string LookupPath { get; } = $"{lookupPath}/";
-	public IEnumerable<GitChange> GetChangedFiles()
+	private string LookupPath { get; } = $"{lookupPath.Trim(['/', '\\'])}/";
+	public IReadOnlyCollection<GitChange> GetChangedFiles()
 	{
-		var deletedFiles = Environment.GetEnvironmentVariable("DELETED_FILES") ?? string.Empty;
-		if (!string.IsNullOrEmpty(deletedFiles))
-		{
-			foreach (var file in deletedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-				yield return new GitChange(file, GitChangeType.Deleted);
-		}
+		return GetChanges().ToArray();
 
-		var addedFiles = Environment.GetEnvironmentVariable("ADDED_FILES");
-		if (!string.IsNullOrEmpty(addedFiles))
+		IEnumerable<GitChange> GetChanges()
 		{
-			foreach (var file in addedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-				yield return new GitChange(file, GitChangeType.Added);
-		}
-
-		var modifiedFiles = Environment.GetEnvironmentVariable("MODIFIED_FILES");
-		if (!string.IsNullOrEmpty(modifiedFiles))
-		{
-			foreach (var file in modifiedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
-				yield return new GitChange(file, GitChangeType.Modified);
-		}
-
-		var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
-		if (!string.IsNullOrEmpty(renamedFiles))
-		{
-			foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+			var deletedFiles = Environment.GetEnvironmentVariable("DELETED_FILES") ?? string.Empty;
+			if (!string.IsNullOrEmpty(deletedFiles))
 			{
-				var parts = pair.Split(':');
-				if (parts.Length == 2)
-					yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
+				foreach (var file in deletedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+					yield return new GitChange(file, GitChangeType.Deleted);
 			}
+
+			var addedFiles = Environment.GetEnvironmentVariable("ADDED_FILES");
+			if (!string.IsNullOrEmpty(addedFiles))
+			{
+				foreach (var file in addedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+					yield return new GitChange(file, GitChangeType.Added);
+			}
+
+			var modifiedFiles = Environment.GetEnvironmentVariable("MODIFIED_FILES");
+			if (!string.IsNullOrEmpty(modifiedFiles))
+			{
+				foreach (var file in modifiedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+					yield return new GitChange(file, GitChangeType.Modified);
+			}
+
+			var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
+			if (!string.IsNullOrEmpty(renamedFiles))
+			{
+				foreach (var pair in renamedFiles.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath)))
+				{
+					var parts = pair.Split(':');
+					if (parts.Length == 2)
+						yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
+				}
+			}
+
 		}
 	}
 }
