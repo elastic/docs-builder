@@ -25,6 +25,13 @@ public static class IFileInfoExtensions
 		var parent = file.Directory;
 		return parent is not null && parent.IsSubPathOf(parentDirectory);
 	}
+
+	/// Checks if <paramref name="file"/> has parent directory <paramref name="parentName"/>
+	public static bool HasParent(this IFileInfo file, string parentName)
+	{
+		var parent = file.Directory;
+		return parent is not null && parent.HasParent(parentName);
+	}
 }
 
 public static class IDirectoryInfoExtensions
@@ -36,6 +43,22 @@ public static class IDirectoryInfoExtensions
 		do
 		{
 			if (parent.FullName == parentDirectory.FullName)
+				return true;
+			parent = parent.Parent;
+		} while (parent != null);
+
+		return false;
+	}
+
+	/// Checks if <paramref name="directory"/> has parent directory <paramref name="parentName"/>
+	public static bool HasParent(this IDirectoryInfo directory, string parentName)
+	{
+		if (directory.Name == parentName)
+			return true;
+		var parent = directory;
+		do
+		{
+			if (parent.Name == parentName)
 				return true;
 			parent = parent.Parent;
 		} while (parent != null);
