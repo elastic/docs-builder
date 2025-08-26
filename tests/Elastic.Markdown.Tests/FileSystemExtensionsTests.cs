@@ -45,10 +45,12 @@ public class FileSystemExtensionsTest(ITestOutputHelper output)
 		fs.DirectoryInfo.New("/a/b/c/d").HasParent("c").Should().BeTrue();
 		fs.DirectoryInfo.New("/a/b/c/d/e").HasParent("e").Should().BeTrue();
 
+		fs.DirectoryInfo.New("/a/b/C/d").HasParent("c", StringComparison.Ordinal).Should().BeFalse();
 		var caseSensitive = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem;
 
+		// HasParent is always case-insensitive by default
 		if (caseSensitive)
-			fs.DirectoryInfo.New("/a/b/C/d").HasParent("c").Should().BeFalse();
+			fs.DirectoryInfo.New("/a/b/C/d").HasParent("c").Should().BeTrue();
 		else
 			fs.DirectoryInfo.New("/a/b/C/d").HasParent("c").Should().BeTrue();
 	}
