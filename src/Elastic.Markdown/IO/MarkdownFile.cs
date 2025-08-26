@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Links.CrossLinks;
@@ -19,7 +18,6 @@ using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
 using Markdig;
 using Markdig.Extensions.Yaml;
-using Markdig.Renderers.Roundtrip;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
@@ -294,9 +292,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				var processedTitle = step.Title;
 				// Apply substitutions to step titles
 				if (subs.Count > 0 && processedTitle.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var replacement))
-				{
 					processedTitle = replacement;
-				}
 
 				return new
 				{

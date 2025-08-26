@@ -10,7 +10,6 @@ using Documentation.Builder.Tracking;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 
@@ -62,10 +61,10 @@ internal sealed class DiffCommands(
 		}
 
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
-		var changed = tracker.GetChangedFiles();
+		var changed = tracker.GetChangedFiles().ToArray();
 
-		if (changed.Any())
-			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count());
+		if (changed.Length != 0)
+			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))

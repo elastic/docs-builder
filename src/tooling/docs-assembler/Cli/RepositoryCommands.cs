@@ -43,6 +43,7 @@ internal sealed class RepositoryCommands(
 
 	/// <summary> Clone the configuration folder </summary>
 	/// <param name="gitRef">The git reference of the config, defaults to 'main'</param>
+	/// <param name="ctx"></param>
 	[Command("init-config")]
 	public async Task<int> CloneConfigurationFolder(string? gitRef = null, Cancel ctx = default)
 	{
