@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
-using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Version;
 using FluentAssertions;
 

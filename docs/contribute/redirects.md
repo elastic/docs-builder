@@ -86,7 +86,7 @@ This example strips all anchors from the source page.
 Any remaining links resolving to anchors on `7th-page.md` will fail link validation.
 
 ```yaml
-redirects
+redirects:
   'testing/redirects/7th-page.md':
     to: 'testing/redirects/5th-page.md'
     anchors: '!'
