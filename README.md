@@ -12,8 +12,7 @@ This repository is host to:
 Both get distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
 
 The documentation files:
-* are written in common Markdown 
-  *  [Additional syntax extension](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) are supported to produce a richer writing and reading experience. 
+* are written in common Markdown with [Additional syntax extension](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
 * By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding a `docset.yml` file given the current working directory.
 
 ## Distributed documentation
