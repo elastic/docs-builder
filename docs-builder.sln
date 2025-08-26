@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{94AC66E5-3
 		dotnet-tools.json = dotnet-tools.json
 		global.json = global.json
 		Directory.Packages.props = Directory.Packages.props
+		CONTRIBUTING.MD = CONTRIBUTING.MD
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BE6011CC-1200-4957-B01F-FCCA10C5CF5A}"
