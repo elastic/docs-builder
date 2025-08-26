@@ -71,9 +71,7 @@ internal sealed class DiffCommands(
 			.Where(c =>
 			{
 				var fi = fs.FileInfo.New(c.FilePath);
-				if (fi.Extension != ".md")
-					return false;
-				return !fi.HasParent("_snippets");
+				return fi.Extension is ".md" && !fi.HasParent("_snippets");
 			})
 			.ToArray();
 
