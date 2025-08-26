@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
+using static System.StringComparison;
 
 namespace Elastic.Documentation.Extensions;
 
@@ -26,7 +28,7 @@ public static class IFileInfoExtensions
 		return parent is not null && parent.IsSubPathOf(parentDirectory);
 	}
 
-	/// Checks if <paramref name="file"/> has parent directory <paramref name="parentName"/>
+	/// Checks if <paramref name="file"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison
 	public static bool HasParent(this IFileInfo file, string parentName)
 	{
 		var parent = file.Directory;
@@ -36,13 +38,41 @@ public static class IFileInfoExtensions
 
 public static class IDirectoryInfoExtensions
 {
+	private static bool? CaseSensitiveOsCheck;
+	public static bool IsCaseSensitiveFileSystem
+	{
+
+		get
+		{
+			// heuristic to determine if the OS is case-sensitive
+			try
+			{
+				var tmp = Path.GetTempPath();
+				if (CaseSensitiveOsCheck.HasValue)
+					return CaseSensitiveOsCheck.Value;
+				var culture = CultureInfo.CurrentCulture;
+				CaseSensitiveOsCheck = !Directory.Exists(tmp.ToUpper(culture)) || !Directory.Exists(tmp.ToLower(culture));
+				return CaseSensitiveOsCheck ?? false;
+
+			}
+			catch
+			{
+				// fallback to case-insensitive unless it's linux
+				CaseSensitiveOsCheck = Environment.OSVersion.Platform == PlatformID.Unix;
+				return false;
+			}
+		}
+	}
+
+
 	/// Validates <paramref name="directory"/> is subdirectory of <paramref name="parentDirectory"/>
 	public static bool IsSubPathOf(this IDirectoryInfo directory, IDirectoryInfo parentDirectory)
 	{
+		var cmp = IsCaseSensitiveFileSystem ? Ordinal : OrdinalIgnoreCase;
 		var parent = directory;
 		do
 		{
-			if (parent.FullName == parentDirectory.FullName)
+			if (string.Equals(parent.FullName, parentDirectory.FullName, cmp))
 				return true;
 			parent = parent.Parent;
 		} while (parent != null);
@@ -50,15 +80,15 @@ public static class IDirectoryInfoExtensions
 		return false;
 	}
 
-	/// Checks if <paramref name="directory"/> has parent directory <paramref name="parentName"/>
-	public static bool HasParent(this IDirectoryInfo directory, string parentName)
+	/// Checks if <paramref name="directory"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison
+	public static bool HasParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)
 	{
-		if (directory.Name == parentName)
+		if (string.Equals(directory.Name, parentName, comparison))
 			return true;
 		var parent = directory;
 		do
 		{
-			if (parent.Name == parentName)
+			if (string.Equals(parent.Name, parentName, comparison))
 				return true;
 			parent = parent.Parent;
 		} while (parent != null);
