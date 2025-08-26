@@ -21,7 +21,7 @@ Will spin up all our services and clone and build all the documentation sets.
 dotnet run --project aspire -- --assume-cloned --skip-private-repositories
 ```
 
-`--asume-cloned` will assume a documentation set set is already cloned if available locally.
+`--assume-cloned` will assume a documentation set set is already cloned if available locally.
 
 `--skip-private-repositories` will skip cloning private repositories. It will also inject our `docs-builder docs into the 
 navigation. This allows us to validate new features' effect on the assembly process.
