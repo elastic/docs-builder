@@ -76,6 +76,8 @@ public class SitemapBuilder(
 					result.AddRange(GetNavigationItems(group.NavigationItems));
 					result.Add(group);
 					break;
+				case CrossLinkNavigationItem:
+					continue; // we do not emit cross links in the sitemap
 				default:
 					throw new Exception($"Unhandled navigation item type: {item.GetType()}");
 			}
