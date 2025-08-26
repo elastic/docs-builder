@@ -95,7 +95,7 @@ public class NavigationPrefixChecker
 
 			// Todo publish all relative folders as part of the link reference
 			// That way we don't need to iterate over all links and find all permutations of their relative paths
-			foreach (var (relativeLink, linkMetadata) in linkReference.Links)
+			foreach (var (relativeLink, _) in linkReference.Links)
 			{
 				var navigationPaths = _uriResolver.ResolveToSubPaths(new Uri($"{repository}://{relativeLink}"), relativeLink);
 				foreach (var navigationPath in navigationPaths)

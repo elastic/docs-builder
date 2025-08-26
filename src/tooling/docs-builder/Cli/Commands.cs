@@ -10,17 +10,12 @@ using Documentation.Builder.Http;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
-using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.Renderers;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using static Elastic.Documentation.Exporter;
 
 namespace Documentation.Builder.Cli;
 
