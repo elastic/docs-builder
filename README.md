@@ -100,8 +100,7 @@ jobs:
 
 ### GitHub Pages
 
-To set up the tool to publish to GitHub pages use the following configuration.
-**NOTE**: In the near feature we'll make this a dedicated single step GitHub action
+To set up the tool to publish to GitHub Pages, use the following configuration.
 
 ```yaml
 environment:
@@ -114,6 +113,8 @@ steps:
     uses: elastic/docs-builder/actions/publish@main
     id: deployment
 ```
+
+This single action will build and validate the documentation before publishing.
 
 Make sure your repository settings are set up to deploy from GitHub actions see:
 
