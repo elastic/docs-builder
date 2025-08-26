@@ -12,13 +12,13 @@ This repository is host to:
 Both get distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
 
 The documentation files:
-* are written in common Markdown with [Additional syntax extension](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
+* are written in common Markdown with [Additional syntax extensions](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
 * By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding a `docset.yml` file given the current working directory.
 
 ## Distributed documentation
 
 The main driver for folks writing documentation is `docs-builder`. 
-This tool builds each repository in isolation and in addition produces a links.json file.
+This tool builds each repository in isolation and in addition produces a full mapping of all the linkable resources it contains in a `links.json` file.
 
 Each time a repository successfully builds on its respective main integration branch, our automation will publish its links.json file.
 For example, [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json) representing all linkable resources in the Elasticsearch repository.
@@ -31,7 +31,6 @@ This allows us to:
 * Snapshot builds: only building commits that produced a `links.json` 
   * Documentation errors in one repository won't affect all the others. 
   * Resilient to repositories having build failures on their integration branches, we fall back to the last known good commit.
-
 
 ## Installation
 
