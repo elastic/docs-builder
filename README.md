@@ -13,7 +13,7 @@ Both get distributed [as native OSX, Linux and Windows binaries for several CPU 
 
 The documentation files:
 * are written in common Markdown with [Additional syntax extensions](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
-* By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding a `docset.yml` file given the current working directory.
+* By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding the `docset.yml` configuration file given the current working directory.
 
 ## Distributed documentation
 
@@ -78,6 +78,7 @@ The TLDR, however, is
 
 * `docs-builder mv` [Move files and folders](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/move)
 * `docs-builder diff validate` [Manage redirects across doc sets](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/redirects#validation)
+* `inbound-links validate-link-reference` can be used after a build to validate the local `links.json` against all published documentation.
 
 
 ## Github Action
@@ -95,8 +96,6 @@ jobs:
       - name: Build documentation
         uses: elastic/docs-builder@main
 ```
-
-
 
 ### GitHub Pages
 
