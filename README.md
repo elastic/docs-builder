@@ -78,7 +78,7 @@ The TLDR, however, is
 
 * `docs-builder mv` [Move files and folders](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/move)
 * `docs-builder diff validate` [Manage redirects across doc sets](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/redirects#validation)
-* `inbound-links validate-link-reference` can be used after a build to validate the local `links.json` against all published documentation.
+* `docs-builder inbound-links validate-link-reference` can be used after a build to validate the local `links.json` against all published documentation.
 
 
 ## Github Action
