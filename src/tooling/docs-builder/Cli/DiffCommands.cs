@@ -77,7 +77,13 @@ internal sealed class DiffCommands(
 				c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 				&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)
 			)
-			.Where(c => !fs.FileInfo.New(c.FilePath).HasParent("_snippets"))
+			.Where(c =>
+			{
+				var fi = fs.FileInfo.New(c.FilePath);
+				if (fi.Extension != ".md")
+					return false;
+				return !fi.HasParent("_snippets");
+			})
 			.ToArray();
 
 		foreach (var notFound in missingRedirects)
