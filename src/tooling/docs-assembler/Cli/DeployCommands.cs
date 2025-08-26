@@ -37,9 +37,15 @@ internal sealed class DeployCommands(
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="s3BucketName">The S3 bucket name to deploy to</param>
 	/// <param name="out"> The file to write the plan to</param>
+	/// <param name="deleteThreshold"> The percentage of deletions allowed in the plan as percentage of total files to sync</param>
 	/// <param name="ctx"></param>
 	public async Task<int> Plan(
-		string environment, string s3BucketName, string @out = "", Cancel ctx = default)
+		string environment,
+		string s3BucketName,
+		string @out = "",
+		float deleteThreshold = 0.2f,
+		Cancel ctx = default
+	)
 	{
 		AssignOutputLogger();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
@@ -51,11 +57,25 @@ internal sealed class DeployCommands(
 		var s3Client = new AmazonS3Client();
 		IDocsSyncPlanStrategy planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
 		var plan = await planner.Plan(ctx);
-		ConsoleApp.Log("Total files to sync: " + plan.Count);
+		ConsoleApp.Log("Total files to sync: " + plan.TotalSyncRequests);
 		ConsoleApp.Log("Total files to delete: " + plan.DeleteRequests.Count);
 		ConsoleApp.Log("Total files to add: " + plan.AddRequests.Count);
 		ConsoleApp.Log("Total files to update: " + plan.UpdateRequests.Count);
 		ConsoleApp.Log("Total files to skip: " + plan.SkipRequests.Count);
+		if (plan.TotalSyncRequests == 0)
+		{
+			collector.EmitError(@out, $"Plan has no files to sync so no plan will be written.");
+			await collector.StopAsync(ctx);
+			return collector.Errors;
+		}
+		var validationResult = planner.Validate(plan, deleteThreshold);
+		if (!validationResult.Valid)
+		{
+			collector.EmitError(@out, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalSyncRequests:N0} files while plan has {plan.DeleteRequests:N0} deletions");
+			await collector.StopAsync(ctx);
+			return collector.Errors;
+		}
+
 		if (!string.IsNullOrEmpty(@out))
 		{
 			var output = SyncPlan.Serialize(plan);
@@ -90,7 +110,7 @@ internal sealed class DeployCommands(
 		var transferUtility = new TransferUtility(s3Client, new TransferUtilityConfig
 		{
 			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
-			MinSizeBeforePartUpload = AwsS3SyncPlanStrategy.PartSize
+			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
 		});
 		IDocsSyncApplyStrategy applier = new AwsS3SyncApplyStrategy(logFactory, s3Client, transferUtility, s3BucketName, assembleContext, collector);
 		if (!File.Exists(planFile))
