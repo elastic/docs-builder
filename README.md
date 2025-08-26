@@ -6,8 +6,10 @@ Distributed documentation tooling for a distributed company.
 
 This repository is host to:
 
-* *`docs-builder`* command line tool to generate single doc-sets (native code, no dependencies)
+* *`docs-builder`* command line tool to generate single doc-sets
 * *`docs-assembler`* command line tool to assemble all the doc sets.
+
+Both get distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
 
 ## Distributed documentation
 
@@ -22,11 +24,12 @@ The `docs-assembler` tool then assembles all the repositories in the [link-regis
 This allows us to:
 
 * Validate outbound and inbound links ahead of time during `docs-builder` builds.
-* Documentation errors in one repository won't affect all the others.
-* Since we only build commits that have produced a `links.json` file the assembler is resilient to repositories having build failures on their integration branches.
+* Snapshot builds: only building commits that produced a `links.json` 
+  * Documentation errors in one repository won't affect all the others. 
+  * Resilient to repositories having build failures on their integration branches, we fall back to the last known good commit.
 
 
-## Installation 
+## Installation
 
 ### Linux / OSX
 ```bash
