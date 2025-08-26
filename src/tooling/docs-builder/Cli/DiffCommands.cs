@@ -11,6 +11,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 
@@ -72,11 +73,11 @@ internal sealed class DiffCommands(
 			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count);
 
 		var missingRedirects = changed
-			.DistinctBy(c => c.FilePath)
 			.Where(c =>
 				c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 				&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)
 			)
+			.Where(c => !fs.FileInfo.New(c.FilePath).HasParent("_snippets"))
 			.ToArray();
 
 		foreach (var notFound in missingRedirects)
