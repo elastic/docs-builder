@@ -19,7 +19,7 @@ public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirector
 		var localChanges = CaptureMultiple("git", "status", "--porcelain");
 		var gitStashDocsFolder = Capture("git", "stash", "push", "--", $"./{LookupPath}");
 		var localUnstagedChanges = Array.Empty<string>();
-		if (gitStashDocsFolder != "No local changes to save")
+		if (!string.Equals(gitStashDocsFolder, "No local changes to save", StringComparison.Ordinal))
 		{
 			localUnstagedChanges = CaptureMultiple("git", "stash", "show", "--name-status", "-u");
 			ExecInSilent([], "git", "stash", "pop");
