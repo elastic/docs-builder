@@ -67,16 +67,7 @@ internal sealed class DiffCommands(
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
 		_log.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(relativePath) : new LocalGitRepositoryTracker(collector, root, relativePath);
-		var changed = tracker.GetChangedFiles();
-
-		if (changed.Count != 0)
-			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count);
-
-		var missingRedirects = changed
-			.Where(c =>
-				c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
-				&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)
-			)
+		var changed = tracker.GetChangedFiles()
 			.Where(c =>
 			{
 				var fi = fs.FileInfo.New(c.FilePath);
@@ -85,6 +76,22 @@ internal sealed class DiffCommands(
 				return !fi.HasParent("_snippets");
 			})
 			.ToArray();
+
+		if (changed.Length != 0)
+			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
+
+		var missingRedirects = changed
+			.Where(c =>
+				c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
+				&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)
+			)
+			.ToArray();
+
+		if (missingRedirects.Length != 0)
+		{
+			var relativeRedirectFile = Path.GetRelativePath(root.FullName, redirectFile.Source.FullName);
+			_log.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingRedirects.Length, relativeRedirectFile);
+		}
 
 		foreach (var notFound in missingRedirects)
 		{
