@@ -2,84 +2,90 @@
 
 [![ci](https://github.com/elastic/docs-builder/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/elastic/docs-builder/actions/workflows/ci.yml)
 
-You've reached the home of the latest incarnation of the documentation tooling.
+Distributed documentation tooling for a distributed company.
 
 This repository is host to:
 
-* *`docs-builder`* command line tool to generate single doc-sets (13mb native code, no dependencies)
-* *`docs-assembler`* command line tool to assemble all the doc sets. (IN PROGRESS)
-* `elastic/docs-builder@main` Github Action to build and validate a repositories documentation
+* *`docs-builder`* command line tool to generate single doc-sets
+* *`docs-assembler`* command line tool to assemble all the doc sets.
 
-## Command line interface
+Both get distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
 
+The documentation files:
+* are written in common Markdown with [Additional syntax extensions](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) to produce a richer writing and reading experience. 
+* By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding the `docset.yml` configuration file given the current working directory.
+
+## Distributed documentation
+
+The main driver for folks writing documentation is `docs-builder`. 
+This tool builds each repository in isolation and in addition produces a full mapping of all the linkable resources it contains in a `links.json` file.
+
+Each time a repository successfully builds on its respective main integration branch, our automation will publish its links.json file.
+For example, [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json) representing all linkable resources in the Elasticsearch repository.
+
+The `docs-assembler` tool then assembles all the repositories in the [link-registry](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json) using their last known good commit.
+
+This allows us to:
+
+* Validate outbound and inbound links ahead of time, even during local `docs-builder` builds.
+* Snapshot builds: only building commits that produced a `links.json` 
+  * Documentation errors in one repository won't affect all the others. 
+  * Resilient to repositories having build failures on their integration branches, we fall back to the last known good commit.
+
+## Installation
+
+### Linux / OSX
 ```bash
-$ docs-builder --help
-Usage: [command] [options...] [-h|--help] [--version]
-
-Converts a source markdown folder or file to an output folder
-
-Options:
-  -p|--path <string?>        Defaults to the`{pwd}/docs` folder (Default: null)
-  -o|--output <string?>      Defaults to `.artifacts/html` (Default: null)
-  --path-prefix <string?>    Specifies the path prefix for urls (Default: null)
-  --force <bool?>            Force a full rebuild of the destination folder (Default: null)
-
-Commands:
-  generate        Converts a source markdown folder or file to an output folder
-  serve           Continuously serve a documentation folder at http://localhost:3000.
-  diff validate   Validates redirect rules have been applied to the current branch.
-    File systems changes will be reflected without having to restart the server.
+curl -sL https://ela.st/docs-builder-install | sh
 ```
 
-In the near term native code will be published by CI for the following platforms
-
-| OS       | Architectures |
-|----------|---------------|
-| Windows	 | x64, Arm64    |
-| Linux	   | x64, Arm64    |
-| macOS    | 	x64, Arm64   |
-
-And we'll invest time in making sure these are easily obtainable (`brew`, `winget`, `apt`)
-
-For now you can run the tool locally through `docker run`
-
-```bash
-docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
-  ghcr.io/elastic/docs-builder:edge
+### Windows
+```ps
+iex (New-Object System.Net.WebClient).DownloadString('https://ela.st/docs-builder-install-win')
 ```
 
-This ensures `.git`/`docs` and `.artifacts` (the default output directory) are mounted.
+Installing through the script will download the latest version of the tool and make it available in your `PATH`.
 
-The tool will default to incremental compilation.
-Only the changed files on subsequent runs will be compiled unless you pass `--force`
-to force a new compilation.
+If you want to manually install the tool you can download the latest release from the [Releases Page](https://github.com/elastic/docs-builder/releases)
 
-```bash
-docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
-  ghcr.io/elastic/docs-builder:edge --force
-```
+### Building locally
 
-#### Live mode
-
-Through the `serve` command you can continuously and partially compile your documentation.
+Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
 
 ```bash
-docker run -v "./.git:/app/.git" -v "./docs:/app/docs" -v "./.artifacts:/app/.artifacts" \
-  -p 3000:3000 ghcr.io/elastic/docs-builder:edge serve
+./build.sh publishbinaries
 ```
+After which the locally built binaries will be available at:
 
-Each page is compiled on demand as you browse http://localhost:3000 and is never cached so changes to files and
-navigation will always be reflected upon refresh.
+* **docs-builder**: `./.artifacts/publish/docs-builder/release/docs-builder`
+* **docs-assembler**: `./.artifacts/publish/docs-assembler/release/docs-assembler`
+ 
+## Getting Started
 
-Note the docker image is `linux-x86` and will be somewhat slower to invoke on OSX due to virtualization.
+Our [Documentation](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/locally) is the best place to learn how to start using the tool locally.
+
+The TLDR, however, is
+
+* Running `docs-builder` from the root of any checkout with a `docs` folder will build the documentation.
+  * Running `docs-builder` consecutively will only rebuild the documentation that has changed.
+  * Running `docs-builder` with the `--force` flag will force a full rebuild of the documentation.
+  * You can target different folders by passing a path to `docs-builder --path <path>`
+* Running `docs-builder serve` will provide a local server with live reloading.
+  * You can leave this command running while you add/remove/rename files in your `docs` folder.
+
+
+### Other commands to know:
+
+* `docs-builder mv` [Move files and folders](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/move)
+* `docs-builder diff validate` [Manage redirects across doc sets](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/redirects#validation)
+* `docs-builder inbound-links validate-link-reference` can be used after a build to validate the local `links.json` against all published documentation.
 
 
 ## Github Action
 
-The `docs-builder` tool is available as github action.
+The `docs-builder` tool is available as a GitHub action.
 
-Since it runs from a precompiled distroless image `~25mb` it's able to execute snappy. (no need to wait for building the tool itself)
-
+It runs as native code on a distroless image `~25mb` so there is little overhead invoking the tooling.
 
 ```yaml
 jobs:
@@ -91,12 +97,9 @@ jobs:
         uses: elastic/docs-builder@main
 ```
 
-
-
 ### GitHub Pages
 
-To set up the tool to publish to GitHub pages use the following configuration.
-**NOTE**: In the near feature we'll make this a dedicated single step GitHub action
+To set up the tool to publish to GitHub Pages, use the following configuration.
 
 ```yaml
 environment:
@@ -110,6 +113,8 @@ steps:
     id: deployment
 ```
 
+This single action will build and validate the documentation before publishing.
+
 Make sure your repository settings are set up to deploy from GitHub actions see:
 
 https://github.com/elastic/{your-repository}/settings/pages
@@ -119,84 +124,6 @@ https://github.com/elastic/{your-repository}/settings/pages
 
 ---
 
-## Validating redirection rules
-
-If documentation is moved, renamed or deleted, `docs-builder` can verify if changes in the working branch in relation to the default branch are reflected in the repository's `redirects.yml`. Verification in the local machine is currently supported.
-
-`docs-builder diff validate <path>`
-
-`<path>` is an optional parameter to customize the documentation folder path. It defaults to `docs`.
-
----
-
-## Run without docker
-
-You can use the .NET CLI to publish a self-contained `docs-builder` native code
-binary. (On my M2 Pro mac the binary is currently 16mb)
-
-Install [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0), then run:
-
-```bash
-dotnet publish "src/docs-builder/docs-builder.csproj"
-```
-
-The resulting binary `./.artifacts/publish/docs-builder/release/docs-builder` will run on machines without .NET installed.
-
-# Performance
-
-To test performance it's best to build the binary and run outside of docker:
-
-For reference here's the `markitpy-doc` docset (50k markdown files) currently takes `14s` vs `several minutes` compared to
-existing surveyed tools
-
 # Local Development
 
-## Prerequisites
-
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
-- [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
-
-
-## Continuously build all assets during development.
-
-```shell
-./build.sh watch
-```
-
-This will monitor code, cshtml template files & static files and reload the application
-if any changes.
-
-Web assets are reloaded through `parcel watch` and don't require a recompilation.
-
-Markdown files are refreshed automatically through livereload
-
-Code or layout changes will relaunch the server automatically
-
-# Release Process
-
-This section outlines the process for releasing a new version of this project.
-
-## Versioning
-
-This project uses [Semantic Versioning](https://semver.org/) and its version is
-automatically determined by [release-drafter](https://github.com/release-drafter/release-drafter)
-based on the labels of the pull requests merged into the `main` branch.
-
-See the [release-drafter configuration](./.github/release-drafter.yml) for more details.
-
-## Creating a New Release
-
-To create a new release trigger the [release](https://github.com/elastic/docs-builder/actions/workflows/release.yml) workflow on the `main` branch.
-
-Every time a pull request is merged into the `main` branch, release-drafter will
-create a draft release or update the existing draft release in the [Releases](https://github.com/elastic/docs-builder/releases) page.
-
-To create a new release you need to publish the existing draft release created by release-drafter.
-
-> [!IMPORTANT]
-> Make sure the [release-drafter workflow](https://github.com/elastic/docs-builder/actions/workflows/release-drafter.yml) is finished before publishing the release.
-
-> [!NOTE]
-> When a release is published, the [create-major-tag workflow](./.github/workflows/create-major-tag.yml)
-> will force push a new major tag in the format `vX` where `X` is the major version of the release.
-> For example, if the release is `1.2.3` was published, the workflow will force push a new tag `v1` on the same commit.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to develop locally and contribute to the project.
