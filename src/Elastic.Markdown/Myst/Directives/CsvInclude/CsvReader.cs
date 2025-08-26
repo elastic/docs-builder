@@ -31,9 +31,7 @@ public static class CsvReader
 			{
 				var rowData = new string[row.ColCount];
 				for (var i = 0; i < row.ColCount; i++)
-				{
 					rowData[i] = row[i].ToString();
-				}
 				yield return rowData;
 			}
 		}
