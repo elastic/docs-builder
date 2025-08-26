@@ -6,7 +6,7 @@ namespace Documentation.Builder.Tracking;
 
 public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
 {
-	private string LookupPath { get; } = $"{lookupPath}/";
+	private string LookupPath { get; } = $"{lookupPath.Trim(['/', '\\'])}/";
 	public IEnumerable<GitChange> GetChangedFiles()
 	{
 		var deletedFiles = Environment.GetEnvironmentVariable("DELETED_FILES") ?? string.Empty;

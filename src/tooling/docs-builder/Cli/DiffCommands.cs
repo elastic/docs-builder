@@ -27,21 +27,19 @@ internal sealed class DiffCommands(
 	/// <summary>
 	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
 	/// </summary>
-	/// <param name="path">The baseline path to perform the check</param>
+	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
 	/// <param name="ctx"></param>
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	[Command("validate")]
-	public async Task<int> ValidateRedirects([Argument] string? path = null, Cancel ctx = default)
+	public async Task<int> ValidateRedirects(string? path = null, Cancel ctx = default)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
-		path ??= "docs";
 
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
 
 		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 
-		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, root.FullName, null);
+		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
 		var sourceFile = buildContext.ConfigurationPath;
 		var redirectFileName = sourceFile.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
 		var redirectFileInfo = sourceFile.FileSystem.FileInfo.New(Path.Combine(sourceFile.Directory!.FullName, redirectFileName));
@@ -61,11 +59,20 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
-		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(path) : new LocalGitRepositoryTracker(collector, root, path);
-		var changed = tracker.GetChangedFiles();
+		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
+		if (root is null)
+		{
+			collector.EmitError(redirectFileInfo, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
+			await collector.StopAsync(ctx);
+			return collector.Errors;
+		}
+		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
+		_log.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
+		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(relativePath) : new LocalGitRepositoryTracker(collector, root, relativePath);
+		var changed = tracker.GetChangedFiles().ToArray();
 
-		if (changed.Any())
-			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Count());
+		if (changed.Length != 0)
+			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
 
 		foreach (var notFound in changed.DistinctBy(c => c.FilePath).Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
 																	&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)))
