@@ -241,6 +241,27 @@ applies_to:
                 ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0"
             ),
             Product=AppliesCollection.op_Explicit "ga"
+        ))
+
+type ``deployment types are rendered in correct order`` () =
+    static let markdown = frontMatter """
+applies_to:
+   deployment:
+      self: ga 9.0
+      ece: ga 9.1
+      ess: ga 9.2
+      eck: ga 9.3
+"""
+    [<Fact>]
+    let ``deployment types are rendered in ESS ECK ECE Self order`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "ga 9.2",
+                Eck=AppliesCollection.op_Explicit "ga 9.3",
+                Ece=AppliesCollection.op_Explicit "ga 9.1",
+                Self=AppliesCollection.op_Explicit "ga 9.0"
+            )
+        ))
 
 type ``sorts applies_to versions in descending order`` () =
     static let markdown = frontMatter """
