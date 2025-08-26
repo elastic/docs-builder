@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Roles.Icons;
 using Markdig;
 using Markdig.Helpers;
@@ -29,7 +30,7 @@ public class HeadingBlockWithSlugBuilderExtension : IMarkdownExtension
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) { }
 }
 
-public partial class HeadingBlockWithSlugParser : HeadingBlockParser
+public class HeadingBlockWithSlugParser : HeadingBlockParser
 {
 	private static readonly Regex IconSyntax = IconParser.IconRegex();
 	private static readonly Regex AppliesToSyntax = HeadingAppliesToParser.AppliesToSyntaxRegex();
@@ -40,8 +41,9 @@ public partial class HeadingBlockWithSlugParser : HeadingBlockParser
 			return base.Close(processor, block);
 
 		var text = headingBlock.Lines.Lines[0].Slice.AsSpan();
+
 		if (AppliesToSyntax.IsMatch(text))
-			processor.GetContext().Build.Collector.EmitWarning(processor.GetContext().MarkdownSourcePath, "Do not use inline 'applies_to' annotations with headings. Use a section 'applies_to' annotation instead.");
+			processor.EmitWarning("Do not use inline 'applies_to' annotations with headings. Use a section 'applies_to' annotation instead.");
 
 		// Remove icon syntax from the heading text
 		var cleanText = IconSyntax.Replace(text.ToString(), "").Trim();
