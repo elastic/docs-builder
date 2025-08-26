@@ -64,12 +64,14 @@
 }
 @if (appliesTo.Deployment is not null)
 {
-	if (appliesTo.Deployment.Ece is not null)
+
+	if (appliesTo.Deployment.Ess is not null)
 	{
-		@RenderProduct("ECE",
-			"Elastic&nbsp;Cloud&nbsp;Enterprise",
-			VersioningSystemId.Ece,
-			appliesTo.Deployment.Ece
+		@RenderProduct(
+			"ECH",
+			"Elastic&nbsp;Cloud&nbsp;Hosted",
+			VersioningSystemId.Ess,
+			appliesTo.Deployment.Ess
 		)
 	}
 
@@ -83,13 +85,12 @@
 		)
 	}
 
-	if (appliesTo.Deployment.Ess is not null)
+	if (appliesTo.Deployment.Ece is not null)
 	{
-		@RenderProduct(
-			"ECH",
-			"Elastic&nbsp;Cloud&nbsp;Hosted",
-			VersioningSystemId.Ess,
-			appliesTo.Deployment.Ess
+		@RenderProduct("ECE",
+			"Elastic&nbsp;Cloud&nbsp;Enterprise",
+			VersioningSystemId.Ece,
+			appliesTo.Deployment.Ece
 		)
 	}
 
