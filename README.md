@@ -11,19 +11,24 @@ This repository is host to:
 
 Both get distributed [as native OSX, Linux and Windows binaries for several CPU architectures.](#installation)
 
+The documentation files:
+* are written in common Markdown 
+  *  [Additional syntax extension](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/) are supported to produce a richer writing and reading experience. 
+* By conventions the documentation lives in `docs` folder but the tooling will look for any folder holding a `docset.yml` file given the current working directory.
+
 ## Distributed documentation
 
 The main driver for folks writing documentation is `docs-builder`. 
 This tool builds each repository in isolation and in addition produces a links.json file.
 
-Each time a repository successfully builds on its respective main integration branch, the tool will update its links.json file.
-Example: [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json) representing all linkable resources in the Elasticsearch repository.
+Each time a repository successfully builds on its respective main integration branch, our automation will publish its links.json file.
+For example, [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json) representing all linkable resources in the Elasticsearch repository.
 
 The `docs-assembler` tool then assembles all the repositories in the [link-registry](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json) using their last known good commit.
 
 This allows us to:
 
-* Validate outbound and inbound links ahead of time during `docs-builder` builds.
+* Validate outbound and inbound links ahead of time, even during local `docs-builder` builds.
 * Snapshot builds: only building commits that produced a `links.json` 
   * Documentation errors in one repository won't affect all the others. 
   * Resilient to repositories having build failures on their integration branches, we fall back to the last known good commit.
@@ -71,10 +76,10 @@ The TLDR, however, is
   * You can leave this command running while you add/remove/rename files in your `docs` folder.
 
 
+### Other commands to know:
 
-#### Live mode
-
-Through the `serve` command you can continuously and partially compile your documentation.
+* `docs-builder mv` [Move files and folders](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/move)
+* `docs-builder diff validate` [Manage redirects across doc sets](https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/contribute/redirects#validation)
 
 
 ## Github Action
@@ -118,16 +123,6 @@ https://github.com/elastic/{your-repository}/settings/pages
 
 ---
 ![actions/publish/github-pages.png](actions/publish/github-pages.png)
-
----
-
-## Validating redirection rules
-
-If documentation is moved, renamed or deleted, `docs-builder` can verify if changes in the working branch in relation to the default branch are reflected in the repository's `redirects.yml`. Verification in the local machine is currently supported.
-
-`docs-builder diff validate <path>`
-
-`<path>` is an optional parameter to customize the documentation folder path. It defaults to `docs`.
 
 ---
 
