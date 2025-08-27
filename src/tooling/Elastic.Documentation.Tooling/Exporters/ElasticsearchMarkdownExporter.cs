@@ -248,10 +248,10 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		IPositionalNavigation navigation = fileContext.DocumentationSet;
 
 		//use LLM text if it was already provided (because we run with both llm and elasticsearch output)
-		var body = fileContext.LLMText ??= LlmMarkdownExporter.ConvertToLlmMarkdown(document, fileContext.BuildContext);
+		var body = fileContext.LLMText ??= LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => (h.GetData("header") as string) ?? string.Empty)
+			.Select(h => h.GetData("header") as string ?? string.Empty)
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 
