@@ -22,7 +22,14 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
-	public override void FinalizeAndValidate(ParserContext context) => ExtractInclusionPath(context);
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
+		ExtractInclusionPath(context);
+	}
 
 	private void ExtractInclusionPath(ParserContext context)
 	{

@@ -11,9 +11,10 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 {
 	public override string Directive => "stepper";
 
-	public override void FinalizeAndValidate(ParserContext context)
-	{
-	}
+	public override void FinalizeAndValidate(ParserContext context) =>
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
 }
 
 public class StepBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context), IBlockTitle
@@ -25,6 +26,10 @@ public class StepBlock(DirectiveBlockParser parser, ParserContext context) : Dir
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		Title = Arguments ?? string.Empty;
 
 		Anchor = Prop("anchor") ?? Title.Slugify();

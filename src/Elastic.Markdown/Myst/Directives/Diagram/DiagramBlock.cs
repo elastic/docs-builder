@@ -27,6 +27,10 @@ public class DiagramBlock(DirectiveBlockParser parser, ParserContext context) : 
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		// Extract diagram type from arguments or default to "mermaid"
 		DiagramType = !string.IsNullOrWhiteSpace(Arguments) ? Arguments.ToLowerInvariant() : "mermaid";
 

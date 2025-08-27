@@ -19,6 +19,10 @@ public class VersionBlock(DirectiveBlockParser parser, string directive, ParserC
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		var tokens = Arguments?.Split(" ", 2, RemoveEmptyEntries) ?? [];
 		if (tokens.Length < 1)
 		{

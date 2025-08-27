@@ -1,7 +1,19 @@
+@using Elastic.Markdown.Myst.Components
+
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Admonition.AdmonitionViewModel>
+
 <details class="dropdown @Model.Classes" id="@Model.CrossReferenceName" open="@Model.Open">
 	<summary class="dropdown-title">
-		<span class="sd-summary-text">@Model.Title</span>
+		<span>
+			@if (Model.ApplicableToViewModel != null)
+			{
+				<span class="applies applies-inline">
+					@RenderPartialAsync(ApplicableToComponent.Create(Model.ApplicableToViewModel))
+					&nbsp
+				</span>
+			}
+			<span class="sd-summary-text">@Model.Title</span>
+		</span>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"

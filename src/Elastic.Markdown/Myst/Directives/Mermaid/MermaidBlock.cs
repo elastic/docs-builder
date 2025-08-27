@@ -7,7 +7,8 @@ public class MermaidBlock(DirectiveBlockParser parser, ParserContext context) : 
 {
 	public override string Directive => "mermaid";
 
-	public override void FinalizeAndValidate(ParserContext context)
-	{
-	}
+	public override void FinalizeAndValidate(ParserContext context) =>
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
 }

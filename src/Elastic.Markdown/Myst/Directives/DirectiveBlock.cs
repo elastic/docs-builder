@@ -7,9 +7,12 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Markdig.Helpers;
 using Markdig.Syntax;
+using Elastic.Markdown.Myst.Components;
+using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -96,10 +99,54 @@ public abstract class DirectiveBlock(
 	public int ClosingFencedCharCount { get; set; }
 
 	/// <summary>
+	/// Applicability of this directive, in terms of product and version.
+	/// </summary>
+	public ApplicableToViewModel? ApplicableToViewModel { get; set; }
+
+	/// <summary>
 	/// Allows blocks to finalize setting properties once fully parsed
 	/// </summary>
 	/// <param name="context"></param>
-	public abstract void FinalizeAndValidate(ParserContext context);
+	public virtual void FinalizeAndValidate(ParserContext context)
+	{
+		//context.Build.VersionsConfiguration;
+		var applicableTo = ParseApplicableTo(context);
+		if (applicableTo != null)
+		{
+			ApplicableToViewModel = new ApplicableToViewModel
+			{
+				Inline = true,
+				AppliesTo = applicableTo,
+				VersionsConfig = context.Build.VersionsConfiguration
+			};
+		}
+	}
+
+	private ApplicableTo? ParseApplicableTo(ParserContext processor)
+	{
+		if (Properties is null)
+			return null;
+		var appliesTo = Prop("applies_to");
+		if (string.IsNullOrWhiteSpace(appliesTo))
+			return null;
+
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesTo);
+			if (applicableTo.Diagnostics is null)
+				return applicableTo;
+			foreach (var (severity, message) in applicableTo.Diagnostics)
+				processor.EmitError(message);
+			applicableTo.Diagnostics = null;
+			return applicableTo;
+		}
+		catch (Exception e)
+		{
+			processor.EmitError($"Unable to parse applies_to role: {{{Directive}}}{appliesTo}", e);
+		}
+
+		return null;
+	}
 
 	internal void AddProperty(string key, string value)
 	{
