@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Reflection;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -20,7 +18,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
-			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string currentUrl)
+			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string)
 			{
 				base.Write(renderer, link);
 				return;

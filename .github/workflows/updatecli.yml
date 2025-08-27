@@ -16,7 +16,7 @@ jobs:
   bump:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Get token
         id: get_token
@@ -35,6 +35,7 @@ jobs:
       - uses: elastic/oblt-actions/updatecli/run@v1
         with:
           command: apply --config .github/updatecli/updatecli.d/versions.yml --values .github/updatecli/values.d/scm.yml
+          version-file: .updatecli-version
         env:
           GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
 
