@@ -104,13 +104,14 @@ let private publishContainers _ =
                 "-p"; $"ContainerImageTags=\"%s{labels};%s{Software.Version.Normalize()}\""
                 "-p"; $"ContainerRepository=elastic/%s{project}"
             ]
+        let noPublish = Environment.environVarOrNone "DOCKER_NO_PUBLISH"
         let registry =
-            match (ci, pr) with
-            | Some _, None -> [
+            match (ci, pr, noPublish) with
+            | Some _, None, None -> [
                     "-p"; "ContainerRegistry=ghcr.io"
                     "-p"; "ContainerUser=1001:1001";
                 ]
-            | _, _ -> []
+            | _ -> []
         exec { run "dotnet" (args @ registry) }
     createImage "docs-builder"
     createImage "docs-assembler"
