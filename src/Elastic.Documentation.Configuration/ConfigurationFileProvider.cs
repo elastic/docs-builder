@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
 using Microsoft.Extensions.DependencyInjection;
 using NetEscapades.EnumGenerators;
-using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Documentation.Configuration;
 

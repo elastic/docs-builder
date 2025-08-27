@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Tooling;
 // This exists temporarily while https://github.com/Cysharp/ConsoleAppFramework/pull/188 is open
 
 public class CompositeDisposableServiceProvider(IDisposable host, IServiceProvider serviceServiceProvider, IDisposable scope, IServiceProvider serviceProvider)
-	: IServiceProvider, IKeyedServiceProvider, IDisposable, IAsyncDisposable
+	: IKeyedServiceProvider, IDisposable, IAsyncDisposable
 {
 	public object? GetService(Type serviceType) => serviceProvider.GetService(serviceType);
 

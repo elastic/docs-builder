@@ -115,22 +115,37 @@ You generally do not need to tag:
 
 ### Versions
 
-Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in reverse order of product development progression, too.
+When listing multiple versions, author the newest version first whenever possible. This keeps files consistent and easier to maintain.
+Regardless of the source file, the build system automatically builds badge lifecycles in reverse chronological order.
+This means that badges will always appear to users from newest to oldest, which is the reverse of the product development timeline.
 
-% TO DO: Add example / image
-% <image>
+For example:
 
-% Reference: https://elastic.github.io/docs-builder/versions/#defaults-and-hierarchy
-% Needs work...
+{applies_to}`stack: preview 9.0.5, beta 9.1, ga 9.2`
+
 ### Keys
 
-Always list [keys](/contribute/cumulative-docs/reference.md#key) in the same order for consistency. The order of keys should reflect organizational priorities. For example, use the following order:
-* **Serverless/Elastic Stack**: Serverless, Stack
-* **Deployment types**: Elastic Cloud Serverless, Elastic Cloud Hosted, Elastic Cloud on Kubernetes, Elastic Cloud Enterprise, Self-managed
-* **Monitoring for Java applications**: Elastic Distribution of OpenTelemetry (EDOT) Java, APM Java agent
+The build system automatically orders multiple [keys](/contribute/cumulative-docs/reference.md#key) in a consistent pattern. This reduces authoring overhead and makes content easier for users to scan.
 
-% TO DO: Add example / image
-% <image>
+:::{important}
+Key ordering only occurs if all keys are declared in the same directive. Keys declared seperately, for example: ``` {applies_to}`stack: ga` {applies_to}`serverless: preview` ```, will not be reordered by docs-builder.
+:::
+
+Keys are ordered as follows:
+
+1. **Stack/Serverless**: Stack, Serverless
+2. **Deployment types**: ECH (Elastic Cloud Hosted), ECK (Elastic Cloud on Kubernetes), ECE (Elastic Cloud Enterprise), Self-Managed
+3. **ProductApplicability**: ECCTL, Curator, EDOT items (alphabetically), APM Agent items (alphabetically)
+
+For example:
+
+```{applies_to}
+deployment:
+  ece: ga
+  self: ga
+stack: ga
+serverless: ga
+```
 
 ## Product and deployment model applicability [products-and-deployment-models]
 

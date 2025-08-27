@@ -7,7 +7,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst.FrontMatter;
 using Markdig;
 using Markdig.Parsers;
 using Markdig.Parsers.Inlines;

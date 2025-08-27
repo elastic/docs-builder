@@ -12,10 +12,7 @@ public class LocalParameterProvider : IParameterProvider
 		{
 			case "llm-gateway-service-account":
 				{
-					const string envName = "LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH";
-					var serviceAccountKeyPath = Environment.GetEnvironmentVariable(envName);
-					if (string.IsNullOrEmpty(serviceAccountKeyPath))
-						throw new ArgumentException($"Environment variable '{envName}' not found.");
+					var serviceAccountKeyPath = GetEnv("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH");
 					if (!File.Exists(serviceAccountKeyPath))
 						throw new ArgumentException($"Service account key file not found at '{serviceAccountKeyPath}'.");
 					var serviceAccountKey = await File.ReadAllTextAsync(serviceAccountKeyPath, ctx);
@@ -23,16 +20,32 @@ public class LocalParameterProvider : IParameterProvider
 				}
 			case "llm-gateway-function-url":
 				{
-					const string envName = "LLM_GATEWAY_FUNCTION_URL";
-					var value = Environment.GetEnvironmentVariable(envName);
-					if (string.IsNullOrEmpty(value))
-						throw new ArgumentException($"Environment variable '{envName}' not found.");
-					return value;
+					return GetEnv("LLM_GATEWAY_FUNCTION_URL");
+				}
+			case "docs-elasticsearch-url":
+				{
+					return GetEnv("DOCUMENTATION_ELASTIC_URL");
+				}
+			case "docs-elasticsearch-apikey":
+				{
+					return GetEnv("DOCUMENTATION_ELASTIC_APIKEY");
+				}
+			case "docs-elasticsearch-index":
+				{
+					return "semantic-documentation-latest";
 				}
 			default:
 				{
 					throw new ArgumentException($"Parameter '{name}' not found in {nameof(LocalParameterProvider)}");
 				}
 		}
+	}
+
+	private static string GetEnv(string name)
+	{
+		var value = Environment.GetEnvironmentVariable(name);
+		if (string.IsNullOrEmpty(value))
+			throw new ArgumentException($"Environment variable '{name}' not found.");
+		return value;
 	}
 }
