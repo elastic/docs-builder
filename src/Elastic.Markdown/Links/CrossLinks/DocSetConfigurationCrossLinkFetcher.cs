@@ -16,13 +16,9 @@ public class DocSetConfigurationCrossLinkFetcher(ILoggerFactory logFactory, Conf
 	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
 {
 	private readonly ILogger _logger = logFactory.CreateLogger(nameof(DocSetConfigurationCrossLinkFetcher));
-	private FetchedCrossLinks? _cachedLinks;
 
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
-		if (_cachedLinks is not null)
-			return _cachedLinks;
-
 		Logger.LogInformation("Fetching cross-links for all repositories defined in docset.yml");
 		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
@@ -64,14 +60,11 @@ public class DocSetConfigurationCrossLinkFetcher(ILoggerFactory logFactory, Conf
 			}
 		}
 
-		_cachedLinks = new FetchedCrossLinks
+		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,
 			LinkReferences = linkReferences.ToFrozenDictionary(),
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 		};
-		return _cachedLinks;
 	}
-
-
 }
