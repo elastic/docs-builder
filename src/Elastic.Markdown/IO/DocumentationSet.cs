@@ -235,7 +235,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
 					break;
 				default:
-					Context.EmitError(Context.ConfigurationPath, $"Unhandled navigation item type: {item.GetType()}");
+					Context.EmitError(Context.ConfigurationPath, $"{nameof(DocumentationSet)}.{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
 					break;
 			}
 		}

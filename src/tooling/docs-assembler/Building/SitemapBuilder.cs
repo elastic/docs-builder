@@ -38,7 +38,7 @@ public class SitemapBuilder(
 				{
 					DocumentationGroup group => (group.Index.Url, NavigationItem: group),
 					FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
-					_ => throw new Exception($"Unhandled navigation item type: {n.GetType()}")
+					_ => throw new Exception($"{nameof(SitemapBuilder)}.{nameof(Generate)}: Unhandled navigation item type: {n.GetType()}")
 				})
 				.Select(n => n.Url)
 				.Distinct()
@@ -79,7 +79,7 @@ public class SitemapBuilder(
 				case CrossLinkNavigationItem:
 					continue; // we do not emit cross links in the sitemap
 				default:
-					throw new Exception($"Unhandled navigation item type: {item.GetType()}");
+					throw new Exception($"{nameof(SitemapBuilder)}.{nameof(GetNavigationItems)}: Unhandled navigation item type: {item.GetType()}");
 			}
 		}
 
