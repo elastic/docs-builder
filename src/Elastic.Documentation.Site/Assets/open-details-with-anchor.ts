@@ -5,16 +5,22 @@ export function openDetailsWithAnchor() {
         const target = document.querySelector(window.location.hash)
         if (target) {
             const closestDetails = target.closest('details')
-            if (closestDetails) {
+            if (closestDetails && !closestDetails.open) {
+                // Mark that we're doing a programmatic open
+                isProgrammaticOpen = true
                 closestDetails.open = true
-                // Small delay to ensure the details element is open before scrolling
+                
+                // Reset the flag after the toggle event has fired
                 setTimeout(() => {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                    })
-                }, 50)
+                    isProgrammaticOpen = false
+                }, 10)
             }
+            
+            // Chrome automatically ensures parent content is visible, scroll immediately
+            target.scrollIntoView({
+                behavior: 'instant',
+                block: 'start',
+            })
         }
     }
 }
@@ -32,6 +38,9 @@ function updateUrlForDropdown(details: HTMLDetailsElement, isOpening: boolean) {
     // This keeps the URL consistent with how headings behave
 }
 
+// Track if we're currently in a programmatic open operation
+let isProgrammaticOpen = false
+
 // Initialize the anchor handling functionality
 export function initOpenDetailsWithAnchor() {
     // Handle initial page load
@@ -39,6 +48,15 @@ export function initOpenDetailsWithAnchor() {
 
     // Handle hash changes within the same page (e.g., clicking anchor links)
     window.addEventListener('hashchange', openDetailsWithAnchor)
+
+    // Remove data-skip-url-update on first click to enable URL updates
+    document.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement
+        const dropdown = target.closest('details.dropdown') as HTMLDetailsElement
+        if (dropdown && dropdown.dataset.skipUrlUpdate === "true") {
+            delete dropdown.dataset.skipUrlUpdate
+        }
+    }, true)
 
     // Handle manual dropdown toggling to update URL
     // Use event delegation to catch all toggle events
@@ -55,10 +73,13 @@ export function initOpenDetailsWithAnchor() {
                 const details = target as HTMLDetailsElement
                 const isOpening = details.open
 
-                // Use setTimeout to ensure the toggle state has been processed
-                setTimeout(() => {
-                    updateUrlForDropdown(details, isOpening)
-                }, 0)
+                // Only update URL if NOT skipping and NOT a programmatic open
+                if (!details.dataset.skipUrlUpdate && !isProgrammaticOpen) {
+                    // Use setTimeout to ensure the toggle state has been processed
+                    setTimeout(() => {
+                        updateUrlForDropdown(details, isOpening)
+                    }, 0)
+                }
             }
         },
         true

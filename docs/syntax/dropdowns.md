@@ -9,7 +9,7 @@ Dropdowns allow you to hide and reveal content on user interaction. By default, 
 
 ::::{tab-item} Output
 
-:::{dropdown} Dropdown Title
+:::{dropdown} Dropdown Title 1
 Dropdown content
 :::
 
@@ -17,7 +17,7 @@ Dropdown content
 
 ::::{tab-item} Markdown
 ```markdown
-:::{dropdown} Dropdown Title
+:::{dropdown} Dropdown Title 1
 Dropdown content
 :::
 ```
@@ -33,7 +33,7 @@ You can specify that the dropdown content should be visible by default. Do this 
 
 ::::{tab-item} Output
 
-:::{dropdown} Dropdown Title
+:::{dropdown} Dropdown Title 2
 :open:
 Dropdown content
 :::

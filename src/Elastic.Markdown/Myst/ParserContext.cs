@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -63,6 +64,8 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
 
+	private readonly Dictionary<string, int> _slugCounters = [];
+
 	public ParserContext(ParserState state)
 	{
 		Build = state.Build;
@@ -107,5 +110,18 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 			contextSubs["context.page_title"] = title;
 
 		ContextSubstitutions = contextSubs;
+	}
+
+	public string GetUniqueSlug(string baseSlug)
+	{
+		if (!_slugCounters.TryGetValue(baseSlug, out var count))
+		{
+			_slugCounters[baseSlug] = 1;
+			return baseSlug;
+		}
+
+		count++;
+		_slugCounters[baseSlug] = count;
+		return $"{baseSlug}-{count}";
 	}
 }
