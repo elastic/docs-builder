@@ -99,6 +99,8 @@ jobs:
         
       - name: Publish Containers
         if: ${{ matrix.os == 'ubuntu-latest' }} 
+        env:
+          DOCKER_NO_PUBLISH: true
         run: dotnet run --project build -c release -- publishcontainers
         
       - name: Run Container
