@@ -19,5 +19,5 @@ public record RenamedGitChange(string OldFilePath, string NewFilePath, GitChange
 
 public interface IRepositoryTracker
 {
-	IEnumerable<GitChange> GetChangedFiles();
+	IReadOnlyCollection<GitChange> GetChangedFiles();
 }

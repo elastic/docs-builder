@@ -2,11 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Myst.Directives.Image;
 
@@ -29,9 +25,7 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 		{
 			var validHeights = new[] { "none", "small", "medium" };
 			if (!validHeights.Contains(MaxHeight.ToLower()))
-			{
 				this.EmitWarning($"Invalid max-height value '{MaxHeight}'. Valid options are: none, small, medium. Defaulting to 'none'.");
-			}
 		}
 
 		// Process child image blocks directly

@@ -5,7 +5,6 @@
 
 using ConsoleAppFramework;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Aspire.ResourceNames;
 
@@ -29,6 +28,7 @@ await ConsoleApp.RunAsync(args, BuildAspireHost);
 return;
 
 // ReSharper disable once RedundantLambdaParameterType
+// ReSharper disable once VariableHidesOuterVariable
 async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool skipPrivateRepositories, Cancel ctx)
 {
 	var builder = DistributedApplication.CreateBuilder(args);
