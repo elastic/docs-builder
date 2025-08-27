@@ -113,8 +113,7 @@ public static class ServicesExtension
 	{
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
-		_ = services.AddScoped<ElasticsearchOptions>();
-		_ = services.AddScoped<ISearchGateway, ElasticsearchGateway>();
+		_ = services.AddScoped<ISearchGateway, MockSearchGateway>();
 		_ = services.AddScoped<SearchUsecase>();
 	}
 }
