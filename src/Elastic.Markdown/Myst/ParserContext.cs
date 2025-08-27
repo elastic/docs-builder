@@ -109,7 +109,4 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 
 		ContextSubstitutions = contextSubs;
 	}
-
-	// Removed GetUniqueSlug method - we don't want to automatically create unique slugs
-	// as this masks content organization issues and creates ugly, persistent anchors
 }
