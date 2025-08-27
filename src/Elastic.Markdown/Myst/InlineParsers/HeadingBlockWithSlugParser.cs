@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Roles.Icons;
 using Markdig;
 using Markdig.Helpers;
@@ -32,6 +33,7 @@ public class HeadingBlockWithSlugBuilderExtension : IMarkdownExtension
 public class HeadingBlockWithSlugParser : HeadingBlockParser
 {
 	private static readonly Regex IconSyntax = IconParser.IconRegex();
+	private static readonly Regex AppliesToSyntax = HeadingAppliesToParser.AppliesToSyntaxRegex();
 
 	public override bool Close(BlockProcessor processor, Block block)
 	{
@@ -39,6 +41,10 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 			return base.Close(processor, block);
 
 		var text = headingBlock.Lines.Lines[0].Slice.AsSpan();
+
+		if (AppliesToSyntax.IsMatch(text))
+			processor.EmitWarning("Do not use inline 'applies_to' annotations with headings. Use a section 'applies_to' annotation instead.");
+
 		// Remove icon syntax from the heading text
 		var cleanText = IconSyntax.Replace(text.ToString(), "").Trim();
 		headingBlock.SetData("header", cleanText);
@@ -78,4 +84,10 @@ public static partial class HeadingAnchorParser
 
 	[GeneratedRegex(@"\$\$\$[^\$]+\$\$\$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex InlineAnchors();
+}
+
+public static partial class HeadingAppliesToParser
+{
+	[GeneratedRegex(@"\{applies_to\}`[^`]*`", RegexOptions.Compiled)]
+	public static partial Regex AppliesToSyntaxRegex();
 }
