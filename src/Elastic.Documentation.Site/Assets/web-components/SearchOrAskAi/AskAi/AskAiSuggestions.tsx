@@ -1,5 +1,11 @@
 import { useSearchActions, useSearchTerm } from '../search.store'
-import { EuiButton, EuiSpacer, EuiText, useEuiTheme } from '@elastic/eui'
+import {
+    EuiButton,
+    EuiIcon,
+    EuiSpacer,
+    EuiText,
+    useEuiTheme,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 
@@ -26,7 +32,16 @@ export const AskAiSuggestions = (props: Props) => {
     `
     return (
         <>
-            <EuiText size="xs">Ask Elastic Docs AI Assistant</EuiText>
+            <div
+                css={css`
+                    display: flex;
+                    gap: ${euiTheme.size.s};
+                    align-items: center;
+                `}
+            >
+                <EuiIcon type="sparkles" color="subdued" size="s" />
+                <EuiText size="xs">Ask Elastic Docs AI Assistant</EuiText>
+            </div>
             <EuiSpacer size="s" />
             {searchTerm && (
                 <EuiButton
