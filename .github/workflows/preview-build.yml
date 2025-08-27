@@ -129,7 +129,7 @@ jobs:
     steps:
       - name: Checkout
         if: contains(fromJSON('["push", "merge_group", "workflow_dispatch"]'), github.event_name)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
@@ -228,7 +228,7 @@ jobs:
             needs.check.outputs.any_modified == 'true'
             || contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
           )
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
