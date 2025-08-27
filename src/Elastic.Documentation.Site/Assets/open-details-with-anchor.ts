@@ -38,27 +38,37 @@ export function initOpenDetailsWithAnchor() {
     window.addEventListener('hashchange', openDetailsWithAnchor)
 
     // Handle dropdown URL updates
-    document.addEventListener('click', (event) => {
-        const target = event.target as HTMLElement
-        const dropdown = target.closest('details.dropdown') as HTMLDetailsElement
-        if (dropdown) {
-            const initialState = dropdown.open
-            
-            // Check state after toggle completes
-            setTimeout(() => {
-                const finalState = dropdown.open
-                const stateChanged = initialState !== finalState
-                
-                // If dropdown opened and doesn't have open-default flag, push URL
-                if (stateChanged && finalState && !dropdown.dataset.openDefault) {
-                    window.history.pushState(null, '', `#${dropdown.id}`)
-                }
-                
-                // Remove open-default flag after first interaction
-                if (dropdown.dataset.openDefault === 'true') {
-                    delete dropdown.dataset.openDefault
-                }
-            }, 10)
-        }
-    }, true)
+    document.addEventListener(
+        'click',
+        (event) => {
+            const target = event.target as HTMLElement
+            const dropdown = target.closest(
+                'details.dropdown'
+            ) as HTMLDetailsElement
+            if (dropdown) {
+                const initialState = dropdown.open
+
+                // Check state after toggle completes
+                setTimeout(() => {
+                    const finalState = dropdown.open
+                    const stateChanged = initialState !== finalState
+
+                    // If dropdown opened and doesn't have open-default flag, push URL
+                    if (
+                        stateChanged &&
+                        finalState &&
+                        !dropdown.dataset.openDefault
+                    ) {
+                        window.history.pushState(null, '', `#${dropdown.id}`)
+                    }
+
+                    // Remove open-default flag after first interaction
+                    if (dropdown.dataset.openDefault === 'true') {
+                        delete dropdown.dataset.openDefault
+                    }
+                }, 10)
+            }
+        },
+        true
+    )
 }
