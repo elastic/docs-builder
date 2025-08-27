@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -46,9 +47,6 @@ internal sealed partial class LinkRegexExtensions
 
 public class DiagnosticLinkInlineParser : LinkInlineParser
 {
-	// See https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml for a list of URI schemes
-	private static readonly ImmutableHashSet<string> ExcludedSchemes = ["http", "https", "tel", "jdbc", "mailto"];
-
 	public override bool Match(InlineProcessor processor, ref StringSlice slice)
 	{
 		var match = base.Match(processor, ref slice);
@@ -389,8 +387,5 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	}
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
-		uri != null // This means it's not a local
-		&& !ExcludedSchemes.Contains(uri.Scheme)
-		&& !uri.IsFile
-		&& !string.IsNullOrEmpty(uri.Scheme);
+		CrossLinkValidator.IsCrossLink(uri);
 }

@@ -35,8 +35,8 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		foreach (var repo in repositories.Values)
 		{
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
-			// if we are running locally, allow for repository path override
-			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) && !string.IsNullOrWhiteSpace(repo.Path))
+			// if we are running locally, always allow repository path overrides. Otherwise, only for docs-builder.
+			if (!string.IsNullOrWhiteSpace(repo.Path) && (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) || repo.Name == "docs-builder"))
 			{
 				_logger.LogInformation("{RepositoryName}: Using local override path for {RepositoryName} at {Path}", repo.Name, repo.Name, repo.Path);
 				checkoutFolder = fs.DirectoryInfo.New(repo.Path);

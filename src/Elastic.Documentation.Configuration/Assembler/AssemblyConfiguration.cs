@@ -31,9 +31,9 @@ public record AssemblyConfiguration
 				config.ReferenceRepositories[name] = repository;
 			}
 
-			// if we are not running in CI, and we are skipping private repositories, and we can locate the solution directory. build the local docs-content repository
-			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI"))
-				&& skipPrivateRepositories
+			// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
+			// this allows us to test new docset features as part of the assembler build
+			if (skipPrivateRepositories
 				&& config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
 				&& Paths.GetSolutionDirectory() is { } solutionDir
 			)

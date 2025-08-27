@@ -21,6 +21,7 @@ using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -180,7 +181,7 @@ internal sealed class RepositoryCommands(
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageChecker();
-		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.LegacyUrlMappings);
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
@@ -242,8 +243,11 @@ internal sealed class RepositoryCommands(
 						checkout.Directory.FullName,
 						outputPath
 					);
-					var set = new DocumentationSet(context, logFactory);
-					var generator = new DocumentationGenerator(set, logFactory, null, null, null);
+					var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
+					var crossLinks = await crossLinkFetcher.FetchCrossLinks(c);
+					var crossLinkResolver = new CrossLinkResolver(crossLinks);
+					var set = new DocumentationSet(context, logFactory, crossLinkResolver);
+					var generator = new DocumentationGenerator(set, logFactory);
 					_ = await generator.GenerateAll(c);
 
 					IAmazonS3 s3Client = new AmazonS3Client();

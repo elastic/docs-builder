@@ -121,13 +121,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		{
 			if (_url is not null)
 				return _url;
-			if (_set.LinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
+			if (_set.CrossLinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
 			{
 				_url = DefaultUrlPath;
 				return _url;
 			}
 			var crossLink = new Uri(CrossLink);
-			var uri = _set.LinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
+			var uri = _set.CrossLinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
 			_url = uri.AbsolutePath;
 			return _url;
 

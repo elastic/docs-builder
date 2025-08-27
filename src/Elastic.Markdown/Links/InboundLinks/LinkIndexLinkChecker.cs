@@ -26,8 +26,8 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 	public async Task CheckAll(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
-		var resolver = new CrossLinkResolver(fetcher);
-		var crossLinks = await resolver.FetchLinks(ctx);
+		var crossLinks = await fetcher.FetchCrossLinks(ctx);
+		var resolver = new CrossLinkResolver(crossLinks);
 
 		ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None);
 	}
@@ -35,8 +35,8 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 	public async Task CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
-		var resolver = new CrossLinkResolver(fetcher);
-		var crossLinks = await resolver.FetchLinks(ctx);
+		var crossLinks = await fetcher.FetchCrossLinks(ctx);
+		var resolver = new CrossLinkResolver(crossLinks);
 		var filter = new RepositoryFilter
 		{
 			LinksTo = toRepository,
@@ -49,9 +49,8 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
-		var resolver = new CrossLinkResolver(fetcher);
-		// ReSharper disable once RedundantAssignment
-		var crossLinks = await resolver.FetchLinks(ctx);
+		var crossLinks = await fetcher.FetchCrossLinks(ctx);
+		var resolver = new CrossLinkResolver(crossLinks);
 		if (string.IsNullOrEmpty(repository))
 			throw new ArgumentNullException(nameof(repository));
 		if (string.IsNullOrEmpty(localLinksJson))
@@ -105,8 +104,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 
 			foreach (var crossLink in linkReference.CrossLinks)
 			{
-				// if we are filtering we only want errors from inbound links to a certain
-				// repository
+				// if we are filtering, we only want errors from inbound links to a certain repository
 				var uri = new Uri(crossLink);
 				if (filter.LinksTo != null && uri.Scheme != filter.LinksTo)
 					continue;

@@ -20,9 +20,7 @@ public static class HotReloadManager
 		var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
 		Console.WriteLine("UpdateApplication");
 	});
-
 }
-
 
 public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGenerator, ILogger<ReloadGeneratorService> logger) : IHostedService, IDisposable
 {
