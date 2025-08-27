@@ -67,7 +67,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Containers
-        run: ./build.sh publishcontainers
+        run: ./build.sh publishcontainers\
         
   build-lambda:
     needs: 

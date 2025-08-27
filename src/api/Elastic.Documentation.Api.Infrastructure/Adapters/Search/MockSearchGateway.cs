@@ -16,14 +16,14 @@ public class MockSearchGateway : ISearchGateway
 			Title = "Kibana: Explore, Visualize, Discover Data",
 			Description =
 				"Run data analytics at speed and scale for observability, security, and search with Kibana. Powerful analysis on any data from any source.",
-			Parents = []
+			Score = 0.92
 		},
 		new SearchResultItem
 		{
 			Url = "https://www.elastic.co/docs/explore-analyze",
 			Title = "Explore and analyze | Elastic Docs",
 			Description = "Kibana provides a comprehensive suite of tools to help you search, interact with, explore, and analyze your data effectively.",
-			Parents = []
+			Score = 0.86
 		},
 		new SearchResultItem
 		{
@@ -31,7 +31,7 @@ public class MockSearchGateway : ISearchGateway
 			Title = "Install Kibana | Elastic Docs",
 			Description =
 				"Information on how to set up Kibana and get it running, including downloading, enrollment with Elasticsearch cluster, and configuration.",
-			Parents = []
+			Score = 0.75
 		},
 		new SearchResultItem
 		{
@@ -39,7 +39,7 @@ public class MockSearchGateway : ISearchGateway
 			Title = "Kibana Lens – Data visualization. Simply.",
 			Description =
 				"Kibana Lens simplifies the process of data visualization through a drag‑and‑drop experience, ideal for exploring logs, trends, and metrics.",
-			Parents = []
+			Score = 0.70
 		},
 		new SearchResultItem
 		{
@@ -47,7 +47,7 @@ public class MockSearchGateway : ISearchGateway
 			Title = "Elastic Docs – Elastic products, guides & reference",
 			Description =
 				"Official Elastic documentation. Explore guides for Elastic Cloud (hosted & on‑prem), product documentation, how‑to guides and API reference.",
-			Parents = []
+			Score = 0.88
 		},
 		new SearchResultItem
 		{
@@ -55,14 +55,14 @@ public class MockSearchGateway : ISearchGateway
 			Title = "Get started | Elastic Docs",
 			Description =
 				"Use Elasticsearch to search, index, store, and analyze data of all shapes and sizes in near real time. Kibana is the graphical user interface for Elasticsearch.",
-			Parents = []
+			Score = 0.85
 		},
 		new SearchResultItem
 		{
 			Url = "https://www.elastic.co/docs/solutions/search/elasticsearch-basics-quickstart",
 			Title = "Elasticsearch basics quickstart",
 			Description = "Hands‑on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
-			Parents = []
+			Score = 0.80
 		},
 		new SearchResultItem
 		{
@@ -70,26 +70,21 @@ public class MockSearchGateway : ISearchGateway
 			Title = "Elasticsearch API documentation",
 			Description =
 				"Elastic provides REST APIs that are used by the UI components and can be called directly to configure and access Elasticsearch features.",
-			Parents = []
+			Score = 0.78
 		}
 	];
 
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(string query, int pageNumber, int pageSize, CancellationToken ctx = default)
 	{
 		var filteredResults = Results
-			.Where(item =>
-				item.Title.Equals(query, StringComparison.OrdinalIgnoreCase) ||
-				item.Description?.Equals(query, StringComparison.OrdinalIgnoreCase) == true)
-			.ToList();
-
-		var pagedResults = filteredResults
+			.Where(item => query.Split(' ')
+				.All(token => item.Title.Contains(token, StringComparison.OrdinalIgnoreCase) ||
+							  item.Description.Contains(token, StringComparison.OrdinalIgnoreCase)))
 			.Skip((pageNumber - 1) * pageSize)
 			.Take(pageSize)
 			.ToList();
 
-		Console.WriteLine($"MockSearchGateway: Paged results count: {pagedResults.Count}");
-
 		return await Task.Delay(1000, ctx)
-			.ContinueWith(_ => (TotalHits: filteredResults.Count, Results: pagedResults), ctx);
+			.ContinueWith(_ => (TotalHits: filteredResults.Count, Results: filteredResults), ctx);
 	}
 }
