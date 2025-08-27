@@ -13,11 +13,8 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Myst.Renderers;
-using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -265,7 +262,8 @@ public class DocumentationGenerator
 						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
 						Document = document,
 						SourceFile = markdown,
-						DefaultOutputFile = outputFile
+						DefaultOutputFile = outputFile,
+						DocumentationSet = DocumentationSet
 					}, ctx);
 				}
 			}

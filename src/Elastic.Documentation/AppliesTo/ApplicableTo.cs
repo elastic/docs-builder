@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;

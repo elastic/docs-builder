@@ -287,3 +287,15 @@ nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictu
 | `` {applies_to}`serverless: beta` ``            | {applies_to}`serverless: beta`            |
 | `` {applies_to}`serverless: deprecated` ``      | {applies_to}`serverless: deprecated`      |
 | `` {applies_to}`serverless: removed` ``         | {applies_to}`serverless: removed`         |
+
+### Badge rendering order
+
+`applies_to` badges are displayed in a consistent order regardless of how they appear in your source files. This ensures users always see badges in a predictable hierarchy:
+
+1. **Stack** - Elastic Stack
+2. **Serverless** - Elastic Cloud Serverless offerings
+3. **Deployment** - Deployment options (ECH, ECK, ECE, Self-Managed)
+4. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
+5. **Product (generic)** - Generic product applicability
+
+Within the ProductApplicability category, EDOT and APM Agent items are sorted alphabetically for easy scanning.

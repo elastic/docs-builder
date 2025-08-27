@@ -14,9 +14,35 @@ public static class ProcessorDiagnosticExtensions
 {
 	private static string CreateExceptionMessage(string message, Exception? e) => message + (e != null ? Environment.NewLine + e : string.Empty);
 
+	public static void EmitError(this BlockProcessor processor, string message, int? line = null, int? column = null, int? length = null) =>
+		processor.Emit(Severity.Error, message, line, column, length);
+
+	public static void EmitWarning(this BlockProcessor processor, string message, int? line = null, int? column = null, int? length = null) =>
+		processor.Emit(Severity.Warning, message, line, column, length);
+
+	public static void EmitHint(this BlockProcessor processor, string message, int? line = null, int? column = null, int? length = null) =>
+		processor.Emit(Severity.Hint, message, line, column, length);
+
+	public static void Emit(this BlockProcessor processor, Severity severity, string message, int? line = null, int? column = null, int? length = null)
+	{
+		var context = processor.GetContext();
+		if (context.SkipValidation)
+			return;
+		var d = new Diagnostic
+		{
+			Severity = severity,
+			File = processor.GetContext().MarkdownSourcePath.FullName,
+			Column = column ?? 1,
+			Line = line ?? processor.LineIndex + 1,
+			Message = message,
+			Length = length ?? processor.Line.Length + 1
+		};
+		context.Build.Collector.Write(d);
+	}
+
+
 	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message) =>
 		processor.Emit(Severity.Error, line, column, length, message);
-
 
 	public static void EmitWarning(this InlineProcessor processor, int line, int column, int length, string message) =>
 		processor.Emit(Severity.Warning, line, column, length, message);

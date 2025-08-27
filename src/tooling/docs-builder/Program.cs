@@ -3,14 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using Actions.Core.Extensions;
 using ConsoleAppFramework;
 using Documentation.Builder.Cli;
-using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
