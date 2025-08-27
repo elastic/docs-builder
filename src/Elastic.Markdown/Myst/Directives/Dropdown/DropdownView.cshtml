@@ -1,8 +1,7 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Admonition.AdmonitionViewModel>
-<details class="dropdown @Model.Classes" 
-         id="@Model.CrossReferenceName" 
-         open="@Model.Open" 
-         data-open-default="@(Model.Open != null ? "true" : null)">
+@if (!string.IsNullOrEmpty(Model.Open))
+{
+<details class="dropdown @Model.Classes" id="@Model.CrossReferenceName" open="@Model.Open" data-open-default="true">
 	<summary class="dropdown-title">
 		<span class="sd-summary-text">@Model.Title</span>
 		<svg
@@ -19,3 +18,24 @@
 		@Model.RenderBlock()
 	</div>
 </details>
+}
+else
+{
+<details class="dropdown @Model.Classes" id="@Model.CrossReferenceName" open="@Model.Open">
+	<summary class="dropdown-title">
+		<span class="sd-summary-text">@Model.Title</span>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="w-4 mr-1 shrink -rotate-90 group-has-checked/label:rotate-0 cursor-pointer text-ink">
+			<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+		</svg>
+	</summary>
+	<div class="dropdown-content">
+		@Model.RenderBlock()
+	</div>
+</details>
+}
