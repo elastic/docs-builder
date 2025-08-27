@@ -5,10 +5,6 @@
 using System.Buffers;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
-using System.Text.Json;
-using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Markdig.Helpers;

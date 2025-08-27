@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.IO;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.Markdown.Myst.Directives.Stepper;
@@ -32,7 +29,7 @@ public class StepViewModel : DirectiveViewModel
 		{
 			MarkdownSourcePath = directiveBlock.CurrentFile,
 			YamlFrontMatter = yamlFrontMatter,
-			DocumentationFileLookup = (path) => null!,
+			DocumentationFileLookup = _ => null!,
 			CrossLinkResolver = null!
 		});
 
