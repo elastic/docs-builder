@@ -47,8 +47,11 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 		// Auto-generate CrossReferenceName for dropdowns without explicit name
 		if (string.IsNullOrEmpty(CrossReferenceName) && (Admonition == "dropdown" || Classes == "dropdown"))
 		{
+			// Only generate a simple slug if no explicit name is provided
+			// This prevents ugly numbered anchors and forces content authors to be explicit about naming
+			// when they need linkable dropdowns
 			var baseSlug = Title.Slugify();
-			CrossReferenceName = context.GetUniqueSlug($"dropdown-{baseSlug}");
+			CrossReferenceName = baseSlug;
 		}
 	}
 }

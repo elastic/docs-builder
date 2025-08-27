@@ -64,8 +64,6 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
 
-	private readonly Dictionary<string, int> _slugCounters = [];
-
 	public ParserContext(ParserState state)
 	{
 		Build = state.Build;
@@ -112,16 +110,6 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		ContextSubstitutions = contextSubs;
 	}
 
-	public string GetUniqueSlug(string baseSlug)
-	{
-		if (!_slugCounters.TryGetValue(baseSlug, out var count))
-		{
-			_slugCounters[baseSlug] = 1;
-			return baseSlug;
-		}
-
-		count++;
-		_slugCounters[baseSlug] = count;
-		return $"{baseSlug}-{count}";
-	}
+	// Removed GetUniqueSlug method - we don't want to automatically create unique slugs
+	// as this masks content organization issues and creates ugly, persistent anchors
 }
