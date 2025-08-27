@@ -34,6 +34,7 @@ type Build =
 
     | [<CliPrefix(CliPrefix.None);SubCommand>] Publish
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishBinaries
+    | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] RunLocalContainer
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishContainers
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishZip
 
@@ -67,6 +68,7 @@ with
             | PristineCheck
             | PublishBinaries
             | PublishContainers
+            | RunLocalContainer
             | PublishZip
             | ValidateLicenses
             | Compile
