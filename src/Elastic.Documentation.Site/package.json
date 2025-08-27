@@ -38,9 +38,9 @@
     "@babel/preset-env": "7.28.0",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
-    "@eslint/js": "9.33.0",
+    "@eslint/js": "9.34.0",
     "@parcel/reporter-bundle-analyzer": "2.15.4",
-    "@tailwindcss/postcss": "4.1.11",
+    "@tailwindcss/postcss": "4.1.12",
     "@testing-library/jest-dom": "6.6.4",
     "@testing-library/react": "14.3.1",
     "@testing-library/user-event": "14.6.1",
@@ -48,7 +48,7 @@
     "@types/jest": "30.0.0",
     "@types/testing-library__jest-dom": "6.0.0",
     "babel-jest": "30.0.5",
-    "eslint": "9.33.0",
+    "eslint": "9.34.0",
     "globals": "16.3.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "30.0.5",
@@ -63,7 +63,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "text-diff": "1.0.1",
-    "typescript-eslint": "8.39.0"
+    "typescript-eslint": "8.40.0"
   },
   "browserslist": [
     "defaults"
@@ -83,7 +83,7 @@
     "htmx-ext-preload": "2.1.1",
     "htmx.org": "2.0.6",
     "select-dom": "9.4.0",
-    "tailwindcss": "4.1.11",
+    "tailwindcss": "4.1.12",
     "tippy.js": "6.3.7",
     "ua-parser-js": "2.0.4",
     "uuid": "11.1.0",
