@@ -214,6 +214,55 @@ applies_to:
     let ``does not render label`` () =
         markdown |> appliesTo (Unchecked.defaultof<ApplicableTo>)
 
+type ``parses applies_to with multiple categories in any order`` () =
+    static let markdown = frontMatter """
+applies_to:
+   product: ga
+   deployment:
+      eck: ga 9.0
+   serverless:
+      security: ga 9.0.0
+   stack: ga 9.1
+   ecctl: ga 10.0
+   apm_agent_dotnet: ga 9.0
+"""
+    [<Fact>]
+    let ``parses all categories regardless of YAML order`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Stack=AppliesCollection.op_Explicit "ga 9.1",
+            Serverless=ServerlessProjectApplicability(
+                Security=AppliesCollection.op_Explicit "ga 9.0.0"
+            ),
+            Deployment=DeploymentApplicability(
+                Eck=AppliesCollection.op_Explicit "ga 9.0"
+            ),
+            ProductApplicability=ProductApplicability(
+                Ecctl=AppliesCollection.op_Explicit "ga 10.0",
+                ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0"
+            ),
+            Product=AppliesCollection.op_Explicit "ga"
+        ))
+
+type ``deployment types are rendered in correct order`` () =
+    static let markdown = frontMatter """
+applies_to:
+   deployment:
+      self: ga 9.0
+      ece: ga 9.1
+      ess: ga 9.2
+      eck: ga 9.3
+"""
+    [<Fact>]
+    let ``deployment types are rendered in ESS ECK ECE Self order`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Deployment=DeploymentApplicability(
+                Ess=AppliesCollection.op_Explicit "ga 9.2",
+                Eck=AppliesCollection.op_Explicit "ga 9.3",
+                Ece=AppliesCollection.op_Explicit "ga 9.1",
+                Self=AppliesCollection.op_Explicit "ga 9.0"
+            )
+        ))
+
 type ``sorts applies_to versions in descending order`` () =
     static let markdown = frontMatter """
 applies_to:
