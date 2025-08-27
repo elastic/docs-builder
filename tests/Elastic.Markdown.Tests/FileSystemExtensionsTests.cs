@@ -13,7 +13,7 @@ using FluentAssertions;
 
 namespace Elastic.Markdown.Tests;
 
-public class FileSystemExtensionsTest(ITestOutputHelper output)
+public class FileSystemExtensionsTest
 {
 	[Fact]
 	public void IsSubPathOfTests()

@@ -2,8 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Dropdown;
 using FluentAssertions;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -98,4 +101,55 @@ A regular paragraph.
 
 	[Fact]
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
+}
+
+public class DropdownWithNameTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{dropdown} Dropdown with name
+:name: test-dropdown
+:open:
+This is a dropdown with a name
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
+
+	[Fact]
+	public void SetsCustomTitle() => Block!.Title.Should().Be("Dropdown with name");
+
+	[Fact]
+	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
+
+	[Fact]
+	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
+}
+
+public class DuplicateDropdownTitleTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+:::{dropdown} Same title
+First dropdown content
+:::
+
+:::{dropdown} Same title
+Second dropdown content
+:::
+""")
+{
+	[Fact]
+	public void ReportsErrorForDuplicateDropdownTitles()
+	{
+		Collector.Diagnostics.Should().Contain(m =>
+			m.Severity == Severity.Error &&
+			m.Message.Contains("Duplicate dropdown title") &&
+			m.Message.Contains("'Same title'"));
+
+		// Should report error for both duplicate dropdowns
+		Collector.Diagnostics.Where(m =>
+			m.Severity == Severity.Error &&
+			m.Message.Contains("Duplicate dropdown title") &&
+			m.Message.Contains("'Same title'")).Should().HaveCount(2);
+	}
 }

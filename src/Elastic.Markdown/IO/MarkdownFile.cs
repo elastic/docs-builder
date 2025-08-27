@@ -12,6 +12,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -178,6 +179,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			_ = await MinimalParseAsync(ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+		ValidateDropdownTitles(document);
 		return document;
 	}
 
@@ -192,6 +194,34 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		foreach (var (key, value) in globalSubstitutions)
 			allProperties[key] = value;
 		return allProperties;
+	}
+
+	private void ValidateDropdownTitles(MarkdownDocument document)
+	{
+		var dropdowns = document.Descendants<DropdownBlock>().ToList();
+		if (dropdowns.Count <= 1)
+			return;
+
+		var titleGroups = dropdowns
+			.GroupBy(d => d.Title, StringComparer.OrdinalIgnoreCase)
+			.Where(g => g.Count() > 1);
+
+		foreach (var group in titleGroups)
+		{
+			var title = group.Key;
+			foreach (var dropdown in group)
+			{
+				Collector.Write(new Diagnostic
+				{
+					Severity = Severity.Error,
+					File = SourceFile.FullName,
+					Line = dropdown.Line + 1,
+					Column = dropdown.Column,
+					Length = dropdown.OpeningLength,
+					Message = $"Duplicate dropdown title '{title}' found. Each dropdown must have a unique title for proper anchor generation."
+				});
+			}
+		}
 	}
 
 	protected void ReadDocumentInstructions(MarkdownDocument document)
