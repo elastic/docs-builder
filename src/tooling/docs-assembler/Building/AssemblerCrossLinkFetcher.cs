@@ -11,11 +11,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;
 
+/// fetches all the cross-links for all repositories defined in assembler.yml configuration <see cref="AssemblyConfiguration"/>
 public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment, ILinkIndexReader linkIndexProvider)
 	: CrossLinkFetcher(logFactory, linkIndexProvider)
 {
-	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
+	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
+		Logger.LogInformation("Fetching cross-links for all repositories defined in assembler.yml");
 		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
@@ -38,7 +40,7 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfig
 
 			var branch = repository.GetBranch(publishEnvironment.ContentSource);
 
-			var linkReference = await Fetch(repositoryName, [branch], ctx);
+			var linkReference = await FetchCrossLinks(repositoryName, [branch], ctx);
 			linkReferences.Add(repositoryName, linkReference);
 			var linkIndexReference = await GetLinkIndexEntry(repositoryName, ctx);
 			linkIndexEntries.Add(repositoryName, linkIndexReference);
@@ -49,7 +51,6 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfig
 			DeclaredRepositories = declaredRepositories,
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			LinkReferences = linkReferences.ToFrozenDictionary(),
-			FromConfiguration = false
 		};
 	}
 }

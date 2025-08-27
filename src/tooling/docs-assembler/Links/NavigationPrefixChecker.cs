@@ -83,11 +83,11 @@ public class NavigationPrefixChecker
 	{
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new LinksIndexCrossLinkFetcher(_logFactoryFactory, linkIndexProvider);
-		var resolver = new CrossLinkResolver(fetcher);
-		var crossLinks = await resolver.FetchLinks(ctx);
+		var crossLinks = await fetcher.FetchCrossLinks(ctx);
+		var crossLinkResolver = new CrossLinkResolver(crossLinks);
 		var dictionary = new Dictionary<string, SeenPaths>();
 		if (!string.IsNullOrEmpty(updateRepository) && updateReference is not null)
-			crossLinks = resolver.UpdateLinkReference(updateRepository, updateReference);
+			crossLinks = crossLinkResolver.UpdateLinkReference(updateRepository, updateReference);
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
 			if (!_repositories.Contains(repository))

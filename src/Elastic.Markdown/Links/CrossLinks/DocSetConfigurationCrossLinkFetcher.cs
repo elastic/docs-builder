@@ -11,12 +11,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Links.CrossLinks;
 
-public class ConfigurationCrossLinkFetcher(ILoggerFactory logFactory, ConfigurationFile configuration, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(logFactory, linkIndexProvider)
+/// Fetches cross-links from all the declared repositories in the docset.yml configuration see <see cref="ConfigurationFile"/>
+public class DocSetConfigurationCrossLinkFetcher(ILoggerFactory logFactory, ConfigurationFile configuration, ILinkIndexReader? linkIndexProvider = null)
+	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
 {
-	private readonly ILogger _logger = logFactory.CreateLogger(nameof(ConfigurationCrossLinkFetcher));
+	private readonly ILogger _logger = logFactory.CreateLogger(nameof(DocSetConfigurationCrossLinkFetcher));
 
-	public override async Task<FetchedCrossLinks> Fetch(Cancel ctx)
+	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
+		Logger.LogInformation("Fetching cross-links for all repositories defined in docset.yml");
 		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var declaredRepositories = new HashSet<string>();
@@ -26,7 +29,7 @@ public class ConfigurationCrossLinkFetcher(ILoggerFactory logFactory, Configurat
 			_ = declaredRepositories.Add(repository);
 			try
 			{
-				var linkReference = await Fetch(repository, ["main", "master"], ctx);
+				var linkReference = await FetchCrossLinks(repository, ["main", "master"], ctx);
 				linkReferences.Add(repository, linkReference);
 
 				var linkIndexReference = await GetLinkIndexEntry(repository, ctx);
@@ -62,9 +65,6 @@ public class ConfigurationCrossLinkFetcher(ILoggerFactory logFactory, Configurat
 			DeclaredRepositories = declaredRepositories,
 			LinkReferences = linkReferences.ToFrozenDictionary(),
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
-			FromConfiguration = true
 		};
 	}
-
-
 }

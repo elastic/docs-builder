@@ -10,21 +10,32 @@ namespace Elastic.Markdown.Links.CrossLinks;
 
 public interface ICrossLinkResolver
 {
-	Task<FetchedCrossLinks> FetchLinks(Cancel ctx);
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 	IUriEnvironmentResolver UriResolver { get; }
 }
 
-public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
+public class NoopCrossLinkResolver : ICrossLinkResolver
 {
-	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
-	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
+	public static NoopCrossLinkResolver Instance { get; } = new();
 
-	public async Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
+	/// <inheritdoc />
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
 	{
-		_crossLinks = await fetcher.Fetch(ctx);
-		return _crossLinks;
+		resolvedUri = null;
+		return false;
 	}
+
+	/// <inheritdoc />
+	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
+
+	private NoopCrossLinkResolver() { }
+
+}
+
+public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
+{
+	private FetchedCrossLinks _crossLinks = crossLinks;
+	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
@@ -50,7 +61,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	{
 		resolvedUri = null;
 
-		// First check if the repository is in the declared repositories list, even if it's not in the link references
+		// First, check if the repository is in the declared repositories list, even if it's not in the link references
 		var isDeclaredRepo = fetchedCrossLinks.DeclaredRepositories.Contains(crossLinkUri.Scheme);
 
 		if (!fetchedCrossLinks.LinkReferences.TryGetValue(crossLinkUri.Scheme, out var sourceLinkReference))

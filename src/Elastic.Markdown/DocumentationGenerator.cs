@@ -48,7 +48,7 @@ public class DocumentationGenerator
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
-	public ICrossLinkResolver Resolver { get; }
+	public ICrossLinkResolver CrossLinkResolver { get; }
 	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
 
 	public DocumentationGenerator(
@@ -70,7 +70,7 @@ public class DocumentationGenerator
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;
-		Resolver = docSet.LinkResolver;
+		CrossLinkResolver = docSet.CrossLinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
 			positionalNavigation);
 		_documentationFileExporter =
@@ -119,9 +119,6 @@ public class DocumentationGenerator
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return result;
-
-		_logger.LogInformation($"Fetching external links");
-		_ = await Resolver.FetchLinks(ctx);
 
 		await ResolveDirectoryTree(ctx);
 

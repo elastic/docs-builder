@@ -233,7 +233,10 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 
 		if (crossLink is not null)
 		{
-			return [new CrossLinkReference(this, crossLink, title, hiddenFile, children ?? [])];
+			if (Uri.TryCreate(crossLink, UriKind.Absolute, out var crossUri) && CrossLinkValidator.IsCrossLink(crossUri))
+				return [new CrossLinkReference(this, crossUri, title, hiddenFile, children ?? [])];
+			else
+				reader.EmitError($"Cross-link '{crossLink}' is not a valid absolute URI format", tocEntry);
 		}
 
 		if (folder is not null)
