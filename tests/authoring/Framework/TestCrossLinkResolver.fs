@@ -8,7 +8,6 @@ open System
 open System.Collections.Generic
 open System.Collections.Frozen
 open System.Runtime.InteropServices
-open System.Threading.Tasks
 open System.Linq
 open Elastic.Documentation.Configuration.Builder
 open Elastic.Documentation.Links
@@ -19,22 +18,12 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
     let references = Dictionary<string, RepositoryLinks>()
     let declared = HashSet<string>()
     let uriResolver = IsolatedBuildEnvironmentUriResolver()
-
-    member this.LinkReferences = references
-    member this.DeclaredRepositories = declared
-
-    interface ICrossLinkResolver with
-
-        member this.UriResolver = uriResolver
-
-        member this.FetchLinks(ctx) =
-            // Clear existing entries to prevent duplicate key errors when called multiple times
-            this.LinkReferences.Clear()
-            this.DeclaredRepositories.Clear()
-            
-            let redirects = RepositoryLinks.SerializeRedirects config.Redirects
-            // language=json
-            let json = $$"""{
+    let mutable crossLinks = FetchedCrossLinks.Empty
+    
+    do
+        let redirects = RepositoryLinks.SerializeRedirects config.Redirects
+        // language=json
+        let json = $$"""{
   "origin": {
     "branch": "main",
     "remote": " https://github.com/elastic/docs-content",
@@ -65,48 +54,39 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
   }
 }
 """
-            let reference = CrossLinkFetcher.Deserialize json
-            this.LinkReferences.Add("docs-content", reference)
-            this.LinkReferences.Add("kibana", reference)
-            this.DeclaredRepositories.Add("docs-content") |> ignore;
-            this.DeclaredRepositories.Add("kibana") |> ignore;
+        let reference = CrossLinkFetcher.Deserialize json
+        references.Add("docs-content", reference)
+        references.Add("kibana", reference)
+        declared.Add("docs-content") |> ignore;
+        declared.Add("kibana") |> ignore;
 
-            let indexEntries =
-                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
-                    Repository = e.Key,
-                    Path = $"elastic/asciidocalypse/{e.Key}/links.json",
-                    Branch = "main",
-                    ETag = Guid.NewGuid().ToString(),
-                    GitReference = Guid.NewGuid().ToString()
-                 ))
+        let indexEntries =
+            references.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
+                Repository = e.Key,
+                Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
+                Branch = "main",
+                ETag = Guid.NewGuid().ToString(),
+                GitReference = Guid.NewGuid().ToString()
+             ))
 
-            let crossLinks =
-                FetchedCrossLinks(
-                    DeclaredRepositories=this.DeclaredRepositories,
-                    LinkReferences=this.LinkReferences.ToFrozenDictionary(),
-                    FromConfiguration=true,
-                    LinkIndexEntries=indexEntries.ToFrozenDictionary()
-                )
-            Task.FromResult crossLinks
+        let resolvedCrossLinks =
+            FetchedCrossLinks(
+                DeclaredRepositories=declared,
+                LinkReferences=references.ToFrozenDictionary(),
+                LinkIndexEntries=indexEntries.ToFrozenDictionary()
+            )
+        crossLinks <- resolvedCrossLinks
+
+        
+
+    member this.LinkReferences = references
+    member this.DeclaredRepositories = declared
+    
+    interface ICrossLinkResolver with
+
+        member this.UriResolver = uriResolver
 
         member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
-            let indexEntries =
-                this.LinkReferences.ToDictionary(_.Key, fun (e : KeyValuePair<string, RepositoryLinks>) -> LinkRegistryEntry(
-                    Repository = e.Key,
-                    Path = $"elastic/asciidocalypse/{e.Key}/links.json",
-                    Branch = "main",
-                    ETag = Guid.NewGuid().ToString(),
-                    GitReference = Guid.NewGuid().ToString()
-                 ));
-
-            let crossLinks =
-                FetchedCrossLinks(
-                    DeclaredRepositories=this.DeclaredRepositories,
-                    LinkReferences=this.LinkReferences.ToFrozenDictionary(),
-                    FromConfiguration=true,
-                    LinkIndexEntries=indexEntries.ToFrozenDictionary()
-
-                )
-            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri);
+            CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri)
 
 

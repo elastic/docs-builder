@@ -27,7 +27,7 @@ public record AssemblerDocumentationSet
 		ILoggerFactory logFactory,
 		AssembleContext context,
 		Checkout checkout,
-		CrossLinkResolver crossLinkResolver,
+		ICrossLinkResolver crossLinkResolver,
 		TableOfContentsTreeCollector treeCollector,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters

@@ -11,11 +11,10 @@ namespace Elastic.Markdown.IO.Navigation;
 [DebuggerDisplay("CrossLink: {Url}")]
 public record CrossLinkNavigationItem : ILeafNavigationItem<INavigationModel>
 {
-	// Override Url accessor to use ResolvedUrl if available
-	string INavigationItem.Url => ResolvedUrl ?? Url;
-	public CrossLinkNavigationItem(string url, string title, DocumentationGroup group, bool hidden = false)
+	public CrossLinkNavigationItem(Uri crossLinkUri, Uri resolvedUrl, string title, DocumentationGroup group, bool hidden = false)
 	{
-		_url = url;
+		CrossLink = crossLinkUri;
+		Url = resolvedUrl.ToString();
 		NavigationTitle = title;
 		Parent = group;
 		NavigationRoot = group.NavigationRoot;
@@ -24,14 +23,10 @@ public record CrossLinkNavigationItem : ILeafNavigationItem<INavigationModel>
 
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	// Original URL from the cross-link
-	private readonly string _url;
 
-	// Store resolved URL for rendering
-	public string? ResolvedUrl { get; set; }
-
-	// Implement the INavigationItem.Url property to use ResolvedUrl if available
-	public string Url => ResolvedUrl ?? _url; public string NavigationTitle { get; }
+	public Uri CrossLink { get; }
+	public string Url { get; }
+	public string NavigationTitle { get; }
 	public int NavigationIndex { get; set; }
 	public bool Hidden { get; }
 	public bool IsCrossLink => true; // This is always a cross-link

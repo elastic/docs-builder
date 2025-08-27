@@ -58,7 +58,7 @@ public class AssemblerBuilder(
 			try
 			{
 				var result = await BuildAsync(set, markdownExporters.ToArray(), ctx);
-				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.LinkResolver);
+				CollectRedirects(redirects, result.Redirects, checkout.Repository.Name, set.DocumentationSet.CrossLinkResolver);
 			}
 			catch (Exception e) when (e.Message.Contains("Can not locate docset.yml file in"))
 			{

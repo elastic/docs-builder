@@ -7,7 +7,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Links;
 using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
@@ -124,13 +123,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		{
 			if (tocItem is CrossLinkReference crossLink)
 			{
-				// Validate crosslink URI and title
-				if (!CrossLinkValidator.IsValidCrossLink(crossLink.CrossLinkUri, out var errorMessage))
-				{
-					context.EmitError(context.ConfigurationPath, errorMessage!);
-					continue;
-				}
-
 				// Validate that cross-link has a title
 				if (string.IsNullOrWhiteSpace(crossLink.Title))
 				{
@@ -139,9 +131,13 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					continue;
 				}
 
+				if (!lookups.CrossLinkResolver.TryResolve(msg => context.EmitError(context.ConfigurationPath, msg), crossLink.CrossLinkUri, out var resolvedUrl))
+					continue; // the crosslink resolver will emit an error already
+
 				// Create a special navigation item for cross-repository links
-				var crossLinkItem = new CrossLinkNavigationItem(crossLink.CrossLinkUri, crossLink.Title, this, crossLink.Hidden);
+				var crossLinkItem = new CrossLinkNavigationItem(crossLink.CrossLinkUri, resolvedUrl, crossLink.Title, this, crossLink.Hidden);
 				AddToNavigationItems(crossLinkItem, ref fileIndex);
+
 			}
 			else if (tocItem is FileReference file)
 			{

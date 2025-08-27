@@ -58,7 +58,7 @@ public class DocumentationWebHost
 		_hostedService = collector;
 		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
-			CanonicalBaseUrl = new Uri(hostUrl),
+			CanonicalBaseUrl = new Uri(hostUrl)
 		};
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
 		_ = builder.Services
@@ -68,7 +68,7 @@ public class DocumentationWebHost
 				s.ClientFileExtensions = ".md,.yml";
 			})
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
-			.AddHostedService<ReloadGeneratorService>();
+			.AddHostedService<ReloadGeneratorService>((_) => new ReloadGeneratorService(GeneratorState, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();

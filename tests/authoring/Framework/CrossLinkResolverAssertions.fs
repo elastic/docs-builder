@@ -60,7 +60,6 @@ module CrossLinkResolverAssertions =
         FetchedCrossLinks(
             DeclaredRepositories = declaredRepos,
             LinkReferences = FrozenDictionary.ToFrozenDictionary(dict [repoName, repositoryLinks]),
-            FromConfiguration = true,
             LinkIndexEntries = FrozenDictionary<string, LinkRegistryEntry>.Empty
         )
 
