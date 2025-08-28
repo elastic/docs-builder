@@ -9,10 +9,10 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.Components;
 using Markdig.Helpers;
 using Markdig.Syntax;
-using Elastic.Markdown.Myst.Components;
-using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives;
 
