@@ -72,6 +72,10 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		Label = Prop("label", "name");
 		Alt = Prop("alt")?.ReplaceSubstitutions(context) ?? string.Empty;
 		// Use Alt as Title if no explicit Title is provided

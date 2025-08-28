@@ -212,7 +212,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
-			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null,
+			ApplicableToViewModel = block.ApplicableToViewModel,
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -226,7 +227,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
-			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null,
+			ApplicableToViewModel = block.ApplicableToViewModel,
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -246,7 +248,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Title = block.Title,
 			TabSetIndex = block.TabSetIndex,
 			SyncKey = block.SyncKey,
-			TabSetGroupKey = block.TabSetGroupKey
+			TabSetGroupKey = block.TabSetGroupKey,
+			ApplicableToViewModel = block.ApplicableToViewModel,
 		});
 		RenderRazorSlice(slice, renderer);
 	}

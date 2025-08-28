@@ -23,15 +23,15 @@ The `applies_to` metadata supports an [exhaustive list of keys](#key).
 When you write or edit documentation, only specify the keys that apply to that content.
 Each key accepts values with the following syntax:
 
-```
+```yaml
 <key>: <lifecycle> [version]
 ```
 
 Where:
 
-- The [lifecycle](#lifecycle) is mandatory
-- The [version](#version) is optional
-- You can specify multiple states by separating them with a comma. For example: `stack: preview 9.1, ga 9.4`
+* The [lifecycle](#lifecycle) is mandatory
+* The [version](#version) is optional
+* You can specify multiple states by separating them with a comma. For example: `stack: preview 9.1, ga 9.4`
 
 :::{note}
 **Automatic Version Sorting**: When you specify multiple versions for the same product, the build system automatically sorts them in descending order (highest version first) regardless of the order you write them in the source file. For example, `stack: ga 8.18.6, ga 9.1.2, ga 8.19.2, ga 9.0.6` will be displayed as `stack: ga 9.1.2, ga 9.0.6, ga 8.19.2, ga 8.18.6`. Items without versions (like `ga` without a version or `all`) are sorted last.
@@ -41,7 +41,7 @@ Note that a key without any value doesn't show any badge in the output.
 
 Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
 
-```
+```yaml
 applies_to:
   stack: preview 9.1, ga 9.4
   deployment:
@@ -50,7 +50,7 @@ applies_to:
 
 Unversioned products use `lifecycle` tags without a version:
 
-```
+```yaml
 applies_to:
   serverless:
     elasticsearch: beta
@@ -71,7 +71,6 @@ applies_to:
 
 :::{include} /_snippets/applies_to-version.md
 :::
-
 
 ## Examples
 
@@ -173,6 +172,56 @@ Property {preview}`<version>`
 :   definition body
 ```
 
+## Directive property
+
+### Tab-item directive
+
+::::{tab-set}
+:::{tab-item}
+:applies_to: stack: beta 9.0
+This is where the content for tab #1 goes.
+:::
+:::{tab-item}
+:applies_to: stack: ga 9.1
+This is where the content for tab #2 goes.
+:::
+:::{tab-item}
+:applies_to: serverless: ga
+This is where the content for tab #3 goes.
+:::
+:::{tab-item} Titled Tab
+This is where the content for tab #4 goes.
+:::
+::::
+
+### Admonition directive
+
+:::{tip}
+:applies_to: eck: all
+This is a tip.
+:::
+
+:::{admonition} This is my callout
+:applies_to: eck: all
+It can *span* multiple lines and supports inline formatting.
+:::
+
+:::{admonition}
+:applies_to: stack: ga 9.0
+In {{stack}} 9.0, dense vector fields are always indexed as `int8_hnsw`.
+:::
+
+### Dropdown directive
+
+:::{dropdown} Rules are failing due to number of alerts
+:applies_to: stack: all
+Dropdown content
+:::
+:::{dropdown} Rules are failing due to number of alerts
+:applies_to: stack: ga 9.0
+Dropdown content
+:::
+
 ## Structured model
 
 ![Applies To Model](images/applies.png)
@@ -215,7 +264,6 @@ applies_to:
 ---
 ```
 
-
 ## Look and feel
 
 ### Block
@@ -242,15 +290,15 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam
 sit amet auctor odio. Donec ac placerat nunc. {applies_to}`stack: preview` Aenean scelerisque viverra lectus
 nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictum.
 
-- {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc.
-- {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam.
-- {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim.
+* {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc.
+* {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam.
+* {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim.
 
 #### Stack
 
 | `applies_to`                               | result                               |
 |--------------------------------------------|--------------------------------------|
-| `` {applies_to}`stack: ` ``                | {applies_to}`stack: `                |
+| `` {applies_to}`stack: ` ``                | {applies_to}`stack:`                |
 | `` {applies_to}`stack: preview` ``         | {applies_to}`stack: preview`         |
 | `` {applies_to}`stack: preview 8.18` ``    | {applies_to}`stack: preview 8.18`    |
 | `` {applies_to}`stack: preview 9.0` ``     | {applies_to}`stack: preview 9.0`     |
@@ -281,7 +329,7 @@ nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictu
 
 | `applies_to`                                    | result                                    |
 |-------------------------------------------------|-------------------------------------------|
-| `` {applies_to}`serverless: ` ``                | {applies_to}`serverless: `                |
+| `` {applies_to}`serverless: ` ``                | {applies_to}`serverless:`                |
 | `` {applies_to}`serverless: preview` ``         | {applies_to}`serverless: preview`         |
 | `` {applies_to}`serverless: ga` ``              | {applies_to}`serverless: ga`              |
 | `` {applies_to}`serverless: beta` ``            | {applies_to}`serverless: beta`            |
