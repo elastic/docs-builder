@@ -3,7 +3,6 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Admonition.AdmonitionViewModel>
 <div class="admonition @Model.Directive @Model.Classes" id="@Model.CrossReferenceName" open="@Model.Open">
 	<div class="admonition-title">
-
 		@{
 			switch (Model.Directive)
 			{
@@ -35,9 +34,12 @@
 			}
 		}
 		<span>@Model.Title</span>
-		<span class="blah applies applies-inline" style="margin-left: auto;">
-			@RenderPartialAsync(ApplicableToComponent.Create(Model.ApplicableToViewModel))
-		</span>
+		@if (Model.ApplicableToViewModel != null)
+		{
+			<span class="blah applies applies-inline" style="margin-left: auto;">
+				@RenderPartialAsync(ApplicableToComponent.Create(Model.ApplicableToViewModel))
+			</span>
+		}
 	</div>
 	<div class="admonition-content">@Model.RenderBlock()</div>
 </div>

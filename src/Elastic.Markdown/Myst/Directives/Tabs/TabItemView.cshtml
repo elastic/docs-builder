@@ -11,13 +11,17 @@
 {
 	<label class="tabs-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.TabSetGroupKey" for="@id">@Model.Title</label>
 }
+else @if (Model.ApplicableToViewModel != null)
+{
+		<label class="tabs-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.TabSetGroupKey" for="@id">
+			<span class="applies applies-inline">
+				@RenderPartialAsync(ApplicableToComponent.Create(Model.ApplicableToViewModel))
+			</span>
+		</label>
+}
 else
 {
-	<label class="tabs-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.TabSetGroupKey" for="@id">
-	<span class="applies applies-inline">
-		@RenderPartialAsync(ApplicableToComponent.Create(Model.ApplicableToViewModel))
-	</span>
-	</label>
+	<label class="tabs-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.TabSetGroupKey" for="@id">Tab @(Model.Index + 1)</label>
 }
 <div class="tabs-content" tabindex="0">
 	@Model.RenderBlock()
