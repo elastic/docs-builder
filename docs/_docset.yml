@@ -154,3 +154,19 @@ toc:
           - folder: baz
             children:
               - file: qux.md
+      - folder: breadcrumbs
+        children:
+          - file: index.md
+          - file: level-2.md
+          - folder: level-3
+            children:
+              - file: index.md
+              - file: level-3.md
+              - folder: level-4
+                children:
+                  - file: index.md
+                  - file: level-4.md
+                  - folder: level-5
+                    children:
+                      - file: index.md
+                      - file: level-5.md
