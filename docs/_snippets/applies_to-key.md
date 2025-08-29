@@ -1,4 +1,4 @@
-`applies_to` accepts the following keys in this structure:
+`applies_to` accepts the following keys in this structure.
 
 * `serverless`: Applies to [Elastic Cloud Serverless](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless).
   * `security`: Applies to Serverless [security projects](https://www.elastic.co/docs/solutions/security/get-started/create-security-project).
@@ -10,6 +10,9 @@
   * `eck`: Applies to [Elastic Cloud on Kubernetes](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s) deployments.
   * `self`: Applies to [self-managed](https://www.elastic.co/docs/deploy-manage/deploy/self-managed) deployments.
   * `ess`: Applies to [Elastic Cloud Hosted](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted) deployments.
+
+The `products` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters:
+
 * `product`: Applies to a specific product that uses a unique versioning scheme (e.g. not `stack`, `ece`, `eck`).
   * `apm_agent_dotnet`: Applies to the [Elastic APM .NET agent](https://www.elastic.co/docs/reference/apm/agents/dotnet).
   * `apm_agent_go`: Applies to the [Elastic APM Go agent](https://www.elastic.co/docs/reference/apm/agents/go).
@@ -30,7 +33,7 @@
   * `edot_node`: Applies to the [Elastic Distribution of OpenTelemetry Node.js](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/nodejs/) (EDOT Node.js).
   * `edot_php`: Applies to the [Elastic Distribution of OpenTelemetry PHP](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/php/) (EDOT PHP).
   * `edot_python`: Applies to the [Elastic Distribution of OpenTelemetry Python](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/python/) (EDOT Python).
-  
-:::{note}
-The `products` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters.
+
+:::{important}
+A key without any value doesn't show any badge in the output.
 :::

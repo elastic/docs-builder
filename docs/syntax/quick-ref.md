@@ -145,7 +145,7 @@ The `applies_to` tags are scope signals for readers, not comprehensive metadata.
 % TODO restore details when guidance has settled
 
 **DOs**<br>
-✅ **Do:** Define a set of [page-level tags](applies.md#page-annotations) in a front matter block<br>
+✅ **Do:** Define a set of [page-level tags](applies.md#syntax) in a front matter block<br>
 ✅ **Do:** Add section-level tags in an `{applies_to}` [directive](applies.md#section-annotations) after a heading<br>
 ✅ **Do:** Indicate versions (`major.minor` with an optional `[.patch]`) and release phases like `beta`
 

@@ -38,7 +38,7 @@ There are more specific guidelines on badge placement to follow when using speci
 
 ### Page frontmatter
 
-Use [`applies_to` in a page's frontmatter](/syntax/applies.md#page-annotations) to provide signals that a page applies to the reader.
+Use [`applies_to` in a page's frontmatter](/syntax/applies.md#syntax) to provide signals that a page applies to the reader.
 
 ::::{warning}
 Do **not** use [section-level](/syntax/applies.md#section-annotations) or [inline annotations](/syntax/applies.md#inline-annotations) with the page title.

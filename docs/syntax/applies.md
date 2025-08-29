@@ -1,9 +1,5 @@
 # Applies to
 
-<!--
-This page explains concrete usage of the applies_to tag. Cumulative authoring philosophy and guidance goes in contribute/cumulative-docs.md.
--->
-
 Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](/contribute/cumulative-docs/index.md): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
 
 To support this, source files use a tagging system to indicate:
@@ -11,35 +7,35 @@ To support this, source files use a tagging system to indicate:
 * Which Elastic products and deployment models the content applies to.
 * When a feature changes state relative to the base version.
 
-This is what the `applies_to` metadata is for. It can be used at the [page](#page-annotations),
+This is what the `applies_to` metadata is for. It can be used at the [page](#syntax),
 [section](#section-annotations), or [inline](#inline-annotations) level to specify applicability with precision.
 
-**For detailed guidance, refer to [](/contribute/cumulative-docs/index.md).**
+:::{note}
+For detailed guidance, refer to [](/contribute/cumulative-docs/index.md).
+:::
 
 ## Syntax
 
-The `applies_to` metadata supports an [exhaustive list of keys](#key).
+The `applies_to` metadata supports an [exhaustive list of keys](#key-value-reference).
 
-When you write or edit documentation, only specify the keys that apply to that content.
-Each key accepts values with the following syntax:
+When you write or edit documentation, only specify the keys that apply to that content. Each key accepts values with the following syntax:
 
 ```
-<key>: <lifecycle> [version]
+<key>: <lifecycle> [version], <lifecycle> [version], ...
 ```
 
 Where:
 
-- The [lifecycle](#lifecycle) is mandatory
-- The [version](#version) is optional
-- You can specify multiple states by separating them with a comma. For example: `stack: preview 9.1, ga 9.4`
+- The lifecycle is mandatory.
+- The version is optional.
 
-:::{note}
-**Automatic Version Sorting**: When you specify multiple versions for the same product, the build system automatically sorts them in descending order (highest version first) regardless of the order you write them in the source file. For example, `stack: ga 8.18.6, ga 9.1.2, ga 8.19.2, ga 9.0.6` will be displayed as `stack: ga 9.1.2, ga 9.0.6, ga 8.19.2, ga 8.18.6`. Items without versions (like `ga` without a version or `all`) are sorted last.
+:::{important}
+All documentation pages must include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment target's availability and lifecycle status. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
 :::
 
-Note that a key without any value doesn't show any badge in the output.
+### Versioned products
 
-Versioned products require a `version` tag to be used with the `lifecycle` tag. See [Syntax](#syntax):
+Versioned products require a `version` tag to be used with the `lifecycle` tag:
 
 ```
 applies_to:
@@ -57,74 +53,11 @@ applies_to:
     observability: removed
 ```
 
-### Key
-
-:::{include} /_snippets/applies_to-key.md
-:::
-
-### Lifecycle
-
-:::{include} /_snippets/applies_to-lifecycle.md
-:::
-
-### Version
-
-:::{include} /_snippets/applies_to-version.md
-:::
-
-
-## Examples
-
-### Lifecycle examples
-
-#### Unversioned products
-
-:::{include} _snippets/unversioned-lifecycle.md
-:::
-
-#### Versioned products
-
-:::{include} _snippets/versioned-lifecycle.md
-:::
-
-#### Identify multiple states for the same content
-
-:::{include} /syntax/_snippets/multiple-lifecycle-states.md
-:::
-
-### Page annotations
-
-All documentation pages **must** include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment target's availability and lifecycle status. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
-
-#### Page annotation examples
-
-:::{include} _snippets/page-level-applies-examples.md
-:::
-
 ### Section annotations
 
-```yaml {applies_to}
-stack: ga 9.1
-deployment:
-  eck: ga 9.0
-  ess: beta 9.1
-  ece: deprecated 9.2.0
-serverless:
-  security: unavailable
-  elasticsearch: beta
-  observability: deprecated
-product: preview 9.5, deprecated 9.7
-```
+A header can be followed by an `{applies_to}` directive which contextualizes the applicability of the section further.
 
-A header may be followed by an `{applies_to}` directive which will contextualize the applicability
-of the section further.
-
-:::{note}
-the `{applies_to}` directive **MUST** be preceded by a heading directly.
-:::
-
-Note that this directive requires triple backticks since its content is literal. See
-also [](index.md#literal-directives)
+Section-level `{applies_to}` directives require triple backticks because their content is literal. Refer to [](index.md#literal-directives) for more information.
 
 ````markdown
 ```{applies_to}
@@ -132,7 +65,7 @@ stack: ga 9.1
 ```
 ````
 
-In order to play even better with markdown editors the following is also supported:
+To play even better with Markdown editors the following is also supported:
 
 ````markdown
 ```yaml {applies_to}
@@ -140,30 +73,19 @@ stack: ga 9.1
 ```
 ````
 
-This will allow the YAML inside the `{applies_to}` directive to be fully highlighted.
+This allows the YAML inside the `{applies_to}` directive to be fully highlighted.
 
-#### Section annotation examples
-
-:::{include} _snippets/section-level-applies-examples.md
+:::{note}
+The `{applies_to}` directive must be preceded by a heading directly.
 :::
 
 ### Inline annotations
 
-Inline applies to can be placed anywhere using the following syntax
+You can place inline applies annotations anywhere using the following syntax:
 
 ```markdown
 This can live inline {applies_to}`section: <life-cycle> [version]`
 ```
-
-An inline version example would be {applies_to}`stack: beta 9.1` this allows you to target elements more concretely
-visually.
-
-#### Inline annotation examples
-
-* The whole page is generally applicable to Elastic Stack 9.0 and to Serverless, but one specific section isn’t applicable to Serverless (and there is no alternative):
-
-  :::{include} _snippets/line-level-applies-example.md
-  :::
 
 A specialized `{preview}` role exists to quickly mark something as a technical preview. It takes a required version number
 as an argument.
@@ -173,11 +95,81 @@ Property {preview}`<version>`
 :   definition body
 ```
 
+## Key-value reference
+
+Use the following key-value reference to find the appropriate key and value for your applicability statements.
+
+:::::{tab-set}
+
+::::{tab-item} Keys
+
+:::{include} /_snippets/applies_to-key.md
+:::
+
+::::
+
+::::{tab-item} Lifecycles
+
+:::{include} /_snippets/applies_to-lifecycle.md
+:::
+
+::::
+
+::::{tab-item} Versions
+
+:::{include} /_snippets/applies_to-version.md
+:::
+
+::::
+:::::
+
+## Examples
+
+### Lifecycle examples
+
+:::::{dropdown} Unversioned products
+
+:::{include} _snippets/unversioned-lifecycle.md
+:::
+
+:::::
+
+:::::{dropdown} Versioned products
+
+:::{include} _snippets/versioned-lifecycle.md
+:::
+
+:::::
+
+:::::{dropdown} Identify multiple states for the same content
+
+:::{include} /syntax/_snippets/multiple-lifecycle-states.md
+:::
+
+:::::
+
+### Page annotation examples
+
+:::{include} _snippets/page-level-applies-examples.md
+:::
+
+### Section annotation examples
+
+:::{include} _snippets/section-level-applies-examples.md
+:::
+
+### Inline annotation examples
+
+:::{include} _snippets/inline-level-applies-examples.md
+:::
+
 ## Structured model
 
 ![Applies To Model](images/applies.png)
 
-The above model is projected to the following structured YAML.
+The previous model is projected to the following structured YAML.
+
+:::::{dropdown} Applies to model
 
 ```yaml
 ---
@@ -214,11 +206,13 @@ applies_to:
     edot_cf_aws:
 ---
 ```
-
+:::::
 
 ## Look and feel
 
 ### Block
+
+:::::{dropdown} Block examples
 
 ```{applies_to}
 stack: preview 9.1
@@ -233,10 +227,11 @@ elasticsearch: preview 9.0.0
 security: removed 9.0.0
 observability: deprecated 9.0.0
 ```
+:::::
 
 ### Inline
 
-#### In text
+:::::{dropdown} In text
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat,
 sit amet auctor odio. Donec ac placerat nunc. {applies_to}`stack: preview` Aenean scelerisque viverra lectus
@@ -246,7 +241,9 @@ nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictu
 - {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam.
 - {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam. Mauris sed eleifend erat, sit amet auctor odio. Donec ac placerat nunc. Aenean scelerisque viverra lectus nec dignissim.
 
-#### Stack
+:::::
+
+:::::{dropdown} Stack
 
 | `applies_to`                               | result                               |
 |--------------------------------------------|--------------------------------------|
@@ -276,8 +273,9 @@ nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictu
 | `` {applies_to}`stack: removed 9.0` ``     | {applies_to}`stack: removed 9.0`     |
 | `` {applies_to}`stack: removed 9.1` ``     | {applies_to}`stack: removed 9.1`     |
 | `` {applies_to}`stack: removed 99.0` ``    | {applies_to}`stack: removed 99.0`    |
+:::::
 
-#### Serverless
+:::::{dropdown} Serverless
 
 | `applies_to`                                    | result                                    |
 |-------------------------------------------------|-------------------------------------------|
@@ -287,6 +285,7 @@ nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictu
 | `` {applies_to}`serverless: beta` ``            | {applies_to}`serverless: beta`            |
 | `` {applies_to}`serverless: deprecated` ``      | {applies_to}`serverless: deprecated`      |
 | `` {applies_to}`serverless: removed` ``         | {applies_to}`serverless: removed`         |
+:::::
 
 ### Badge rendering order
 
@@ -298,4 +297,8 @@ nec dignissim. Vestibulum ut felis nec massa auctor placerat. Maecenas vel dictu
 4. **ProductApplicability** - Specialized tools and agents (ECCTL, Curator, EDOT, APM Agents)
 5. **Product (generic)** - Generic product applicability
 
-Within the ProductApplicability category, EDOT and APM Agent items are sorted alphabetically for easy scanning.
+Within the ProductApplicability category, EDOT and APM Agent items are sorted alphabetically for better scanning.
+
+:::{note}
+Inline applies annotations are rendered in the order they appear in the source file.
+:::
