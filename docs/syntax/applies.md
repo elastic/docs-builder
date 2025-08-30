@@ -73,7 +73,7 @@ This allows the YAML inside the `{applies_to}` directive to be fully highlighted
 For more examples, refer to [Section annotation examples](#section-annotation-examples).
 
 :::{note}
-The `{applies_to}` directive must be preceded by a heading directly.
+Section-level `{applies_to}` directives must be preceded by a heading directly.
 :::
 
 ### Inline level
