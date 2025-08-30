@@ -29,31 +29,26 @@ Where:
 - The lifecycle is mandatory.
 - The version is optional.
 
+### Page level
+
+Page level annotations are added in the YAML frontmatter, starting with the `applies_to` key and following the [key-value reference](#key-value-reference). For example:
+
+```yaml
+---
+applies_to:
+  stack: ga
+  deployment:
+    ece: ga
+---
+```
+
+For more examples, refer to [Page annotation examples](#page-annotation-examples).
+
 :::{important}
-All documentation pages must include an `applies_to` tag in the YAML frontmatter. Use YAML frontmatter to indicate each deployment target's availability and lifecycle status. For a complete list of supported keys and values, see the [frontmatter syntax guide](./frontmatter.md).
+All documentation pages must include an `applies_to` tag in the YAML frontmatter.
 :::
 
-### Versioned products
-
-Versioned products require a `version` tag to be used with the `lifecycle` tag:
-
-```
-applies_to:
-  stack: preview 9.1, ga 9.4
-  deployment:
-    ece: deprecated 9.2, removed 9.8
-```
-
-Unversioned products use `lifecycle` tags without a version:
-
-```
-applies_to:
-  serverless:
-    elasticsearch: beta
-    observability: removed
-```
-
-### Section annotations
+### Section level
 
 A header can be followed by an `{applies_to}` directive which contextualizes the applicability of the section further.
 
@@ -75,11 +70,13 @@ stack: ga 9.1
 
 This allows the YAML inside the `{applies_to}` directive to be fully highlighted.
 
+For more examples, refer to [Section annotation examples](#section-annotation-examples).
+
 :::{note}
 The `{applies_to}` directive must be preceded by a heading directly.
 :::
 
-### Inline annotations
+### Inline level
 
 You can add inline applies annotations to any line using the following syntax:
 
@@ -94,6 +91,8 @@ as an argument.
 Property {preview}`<version>`
 :   definition body
 ```
+
+For more examples, refer to [Inline annotation examples](#inline-annotation-examples).
 
 ## Key-value reference
 
@@ -124,6 +123,26 @@ Use the following key-value reference to find the appropriate key and value for 
 :::::
 
 ## Examples
+
+### Versioning examples
+
+Versioned products require a `version` tag to be used with the `lifecycle` tag:
+
+```
+applies_to:
+  stack: preview 9.1, ga 9.4
+  deployment:
+    ece: deprecated 9.2, removed 9.8
+```
+
+Unversioned products use `lifecycle` tags without a version:
+
+```
+applies_to:
+  serverless:
+    elasticsearch: beta
+    observability: removed
+```
 
 ### Lifecycle and versioning examples
 

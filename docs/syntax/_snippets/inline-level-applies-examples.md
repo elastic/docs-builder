@@ -56,9 +56,9 @@ This example shows how to use directly a key from the second level of the `appli
 
 ::::{tab-item} Output
 
-- {applies_to}`{ serverless: "ga" , stack: "ga 9.1.0" }`
-- {applies_to}`{ edot_python: "preview 1.7.0" , apm_agent_java: "beta 1.0.0" }`
-- {applies_to}`{ stack: "ga 9.0" , deployment: { eck: "ga 9.0" } }`
+- {applies_to}`serverless: ga` {applies_to}`stack: ga 9.1.0`
+- {applies_to}`edot_python: preview 1.7.0, ga 1.8.0` {applies_to}`apm_agent_java: beta 1.0.0, ga 1.2.0`
+- {applies_to}`stack: ga 9.0` {applies_to}`eck: ga 3.0`
 
 ::::
 
@@ -71,30 +71,5 @@ This example shows how to use directly a key from the second level of the `appli
 ::::
 
 :::::
-
 ::::::
 
-::::::{dropdown} Complex scenarios with different product types
-
-:::::{tab-set}
-
-::::{tab-item} Output
-
-- {applies_to}`{ stack: "preview 9.1", product: { edot_python: "preview 1.4.0" } }`
-
-Notice that, when mixing different statement types, the applies_to inline syntax requires JSON-like nesting for product-specific applicability.
-
-::::
-
-::::{tab-item} Markdown
-```markdown
-- {applies_to}`{ stack: "preview 9.1", product: { edot_python: "preview 1.4.0" } }`
-```
-
-Notice that, when mixing different statement types, the applies_to inline syntax requires JSON-like nesting for product-specific applicability.
-
-::::
-
-:::::
-
-::::::
