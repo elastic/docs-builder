@@ -81,7 +81,7 @@ The `{applies_to}` directive must be preceded by a heading directly.
 
 ### Inline annotations
 
-You can place inline applies annotations anywhere using the following syntax:
+You can add inline applies annotations to any line using the following syntax:
 
 ```markdown
 This can live inline {applies_to}`section: <life-cycle> [version]`
