@@ -26,6 +26,8 @@
 
 ::::::{dropdown} Product-specific applicability with version information
 
+This example shows how to use directly a key from the second level of the `applies_to` data structure, like `edot_python:`.
+
 :::::{tab-set}
 
 ::::{tab-item} Output

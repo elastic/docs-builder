@@ -10,10 +10,7 @@
   * `eck`: Applies to [Elastic Cloud on Kubernetes](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s) deployments.
   * `self`: Applies to [self-managed](https://www.elastic.co/docs/deploy-manage/deploy/self-managed) deployments.
   * `ess`: Applies to [Elastic Cloud Hosted](https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted) deployments.
-
-The `products` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters:
-
-* `product`: Applies to a specific product that uses a unique versioning scheme (e.g. not `stack`, `ece`, `eck`).
+* `product`: Applies to a specific product that uses a unique versioning scheme (for example, not `stack`, `ece`, `eck`).
   * `apm_agent_dotnet`: Applies to the [Elastic APM .NET agent](https://www.elastic.co/docs/reference/apm/agents/dotnet).
   * `apm_agent_go`: Applies to the [Elastic APM Go agent](https://www.elastic.co/docs/reference/apm/agents/go).
   * `apm_agent_java`: Applies to the [Elastic APM Java agent](https://www.elastic.co/docs/reference/apm/agents/java).
@@ -34,6 +31,6 @@ The `products` key and its subkeys are used to indicate feature availability and
   * `edot_php`: Applies to the [Elastic Distribution of OpenTelemetry PHP](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/php/) (EDOT PHP).
   * `edot_python`: Applies to the [Elastic Distribution of OpenTelemetry Python](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/python/) (EDOT Python).
 
-:::{important}
-A key without any value doesn't show any badge in the output.
+:::{note}
+The `products` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters.
 :::
