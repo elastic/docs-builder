@@ -8,7 +8,7 @@ To support this, source files use a tagging system to indicate:
 * When a feature changes state relative to the base version.
 
 This is what the `applies_to` metadata is for. It can be used at the [page](#syntax),
-[section](#section-annotations), or [inline](#inline-annotations) level to specify applicability with precision.
+[section](#section-level), or [inline](#inline-level) level to specify applicability with precision.
 
 :::{note}
 For detailed guidance, refer to [](/contribute/cumulative-docs/index.md).
