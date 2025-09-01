@@ -1,4 +1,5 @@
 import { AskAiAnswer } from './AskAi/AskAiAnswer'
+import { AskAiSuggestions } from './AskAi/AskAiSuggestions'
 import { SearchResults } from './Search/SearchResults'
 import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
 import {
@@ -11,7 +12,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { AskAiSuggestions } from "./AskAi/AskAiSuggestions";
 
 export const SearchOrAskAiModal = () => {
     const searchTerm = useSearchTerm()
@@ -52,13 +52,17 @@ export const SearchOrAskAiModal = () => {
                 `}
             >
                 <SearchResults />
-                {askAiTerm ? <AskAiAnswer /> : <AskAiSuggestions
-                    suggestions={[
-                        { question: 'What is an index template?' },
-                        { question: 'What is semantic search?' },
-                        { question: 'How do I create an index?' },
-                    ]}
-                />}
+                {askAiTerm ? (
+                    <AskAiAnswer />
+                ) : (
+                    <AskAiSuggestions
+                        suggestions={[
+                            { question: 'What is an index template?' },
+                            { question: 'What is semantic search?' },
+                            { question: 'How do I create an index?' },
+                        ]}
+                    />
+                )}
             </div>
             <EuiHorizontalRule margin="m" />
             <div
