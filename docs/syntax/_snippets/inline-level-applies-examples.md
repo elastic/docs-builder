@@ -34,7 +34,6 @@ This example shows how to use directly a key from the second level of the `appli
 
 - {applies_to}`edot_python: preview 1.7.0`
 - {applies_to}`apm_agent_java: beta 1.0.0`
-- {applies_to}`elasticsearch: ga 9.1.0`
 
 ::::
 
@@ -42,7 +41,6 @@ This example shows how to use directly a key from the second level of the `appli
 ```markdown
 - {applies_to}`edot_python: preview 1.7.0`
 - {applies_to}`apm_agent_java: beta 1.0.0`
-- {applies_to}`elasticsearch: ga 9.1.0`
 ```
 ::::
 
