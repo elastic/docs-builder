@@ -7,8 +7,9 @@ import {
     EuiSpacer,
     EuiBetaBadge,
     EuiText,
-    EuiHorizontalRule, useEuiOverflowScroll
-} from "@elastic/eui";
+    EuiHorizontalRule,
+    useEuiOverflowScroll,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 
@@ -50,7 +51,7 @@ export const SearchOrAskAiModal = () => {
                     ${useEuiOverflowScroll('y')}
                 `}
             >
-            <SearchResults />
+                <SearchResults />
                 {askAiTerm ? <AskAiAnswer /> : <Suggestions />}
             </div>
             <EuiHorizontalRule margin="m" />

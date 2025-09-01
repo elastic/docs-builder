@@ -11,8 +11,9 @@ import {
     EuiButtonIcon,
     EuiToolTip,
     useEuiTheme,
-    EuiCallOut, EuiIcon
-} from "@elastic/eui";
+    EuiCallOut,
+    EuiIcon,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 import { useEffect, useRef, useState, useMemo } from 'react'
