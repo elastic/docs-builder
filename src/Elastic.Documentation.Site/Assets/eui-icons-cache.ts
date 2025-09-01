@@ -16,6 +16,8 @@ import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
 import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user'
 import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
+import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumbUp'
+import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 
 appendIconComponentCache({
@@ -37,4 +39,6 @@ appendIconComponentCache({
     faceSad: EuiIconFaceSad,
     refresh: EuiIconRefresh,
     error: EuiIconError,
+    thumbUp: EuiIconThumbUp,
+    thumbDown: EuiIconThumbDown,
 })

@@ -59,7 +59,8 @@ export const SearchOrAskAiModal = () => {
                         suggestions={[
                             { question: 'What is an index template?' },
                             { question: 'What is semantic search?' },
-                            { question: 'How do I create an index?' },
+                            { question: 'How do I create an elasticsearch index?' },
+                            { question: 'How do I set up an ingest pipeline?' },
                         ]}
                     />
                 )}

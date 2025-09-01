@@ -117,7 +117,7 @@ export const AskAiAnswer = () => {
                                     <EuiToolTip content="This answer was helpful">
                                         <EuiButtonIcon
                                             aria-label="This answer was helpful"
-                                            iconType="faceHappy"
+                                            iconType="thumbUp"
                                             color="success"
                                         />
                                     </EuiToolTip>
@@ -126,7 +126,7 @@ export const AskAiAnswer = () => {
                                     <EuiToolTip content="This answer was not helpful">
                                         <EuiButtonIcon
                                             aria-label="This answer was not helpful"
-                                            iconType="faceSad"
+                                            iconType="thumbDown"
                                             color="danger"
                                         />
                                     </EuiToolTip>
