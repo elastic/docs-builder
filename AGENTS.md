@@ -94,7 +94,7 @@ The repository is self-documenting:
 
 - `/docs/` contains comprehensive documentation
 
-You MUST update the documentation when making changes.
+You MUST update the documentation when there are changes in the markdown syntax or rendering behaviour.
 
 ## Useful file locations
 
