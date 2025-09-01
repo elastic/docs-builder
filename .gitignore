@@ -397,3 +397,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Add LLM/AI related files
+AGENTS.md
+.github/copilot-instructions.md
+.github/instructions/**.instructions.md
+CLAUDE.md
+GEMINI.md
+.cursor
