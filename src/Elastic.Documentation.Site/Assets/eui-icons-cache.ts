@@ -13,11 +13,11 @@ import { icon as EuiIconNewChat } from '@elastic/eui/es/components/icon/assets/n
 import { icon as EuiIconRefresh } from '@elastic/eui/es/components/icon/assets/refresh'
 import { icon as EuiIconSearch } from '@elastic/eui/es/components/icon/assets/search'
 import { icon as EuiIconSparkles } from '@elastic/eui/es/components/icon/assets/sparkles'
+import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
+import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumbUp'
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
 import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user'
 import { icon as EuiIconWrench } from '@elastic/eui/es/components/icon/assets/wrench'
-import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumbUp'
-import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumbDown'
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon'
 
 appendIconComponentCache({
