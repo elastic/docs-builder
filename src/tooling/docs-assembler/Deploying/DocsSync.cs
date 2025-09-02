@@ -52,9 +52,15 @@ public record SkipRequest : SyncRequest
 
 public record SyncPlan
 {
+	/// The total number of source files that were located in the build output
 	[JsonPropertyName("total_source_files")]
 	public required int TotalSourceFiles { get; init; }
 
+	/// The total number of remote files that were located in the remote location
+	[JsonPropertyName("total_remote_files")]
+	public required int TotalRemoteFiles { get; init; }
+
+	/// The total number of sync requests that were generated (sum of <see cref="AddRequests"/>, <see cref="UpdateRequests"/>, <see cref="DeleteRequests"/>)
 	[JsonPropertyName("total_sync_requests")]
 	public required int TotalSyncRequests { get; init; }
 
