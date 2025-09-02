@@ -66,6 +66,8 @@ public class DocsSyncTests
 
 		// Assert
 
+		plan.TotalRemoteFiles.Should().Be(3);
+
 		plan.TotalSourceFiles.Should().Be(5);
 		plan.TotalSyncRequests.Should().Be(6); //including skip on server
 
@@ -231,6 +233,7 @@ public class DocsSyncTests
 		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
+			TotalRemoteFiles = 0,
 			TotalSourceFiles = 5,
 			TotalSyncRequests = 6,
 			AddRequests = [

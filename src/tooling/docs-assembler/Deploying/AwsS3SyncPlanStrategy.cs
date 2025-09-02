@@ -158,6 +158,7 @@ public class AwsS3SyncPlanStrategy(
 
 		return new SyncPlan
 		{
+			TotalRemoteFiles = remoteObjects.Count,
 			TotalSourceFiles = localObjects.Length,
 			DeleteRequests = deleteRequests.ToList(),
 			AddRequests = addRequests.ToList(),
@@ -176,15 +177,20 @@ public class AwsS3SyncPlanStrategy(
 			return new(false, 1.0f, deleteThreshold);
 		}
 
-		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalSyncRequests;
-		// if the total sync requests are less than 100, we enforce a higher ratio of 0.8
+		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalRemoteFiles;
+		if (plan.TotalRemoteFiles == 0)
+		{
+			_logger.LogInformation("No files discovered in S3, assuming a clean bucket resetting delete threshold to `0.0' as our plan should not have ANY deletions");
+			deleteThreshold = 0.0f;
+		}
+		// if the total remote files are less than or equal to 100, we enforce a higher ratio of 0.8
 		// this allows newer assembled documentation to be in a higher state of flux
-		if (plan.TotalSyncRequests <= 100)
+		if (plan.TotalRemoteFiles <= 100)
 			deleteThreshold = Math.Max(deleteThreshold, 0.8f);
 
-		// if the total sync requests are less than 1000, we enforce a higher ratio of 0.5
+		// if the total remote files are less than or equal to 1000, we enforce a higher ratio of 0.5
 		// this allows newer assembled documentation to be in a higher state of flux
-		else if (plan.TotalSyncRequests <= 1000)
+		else if (plan.TotalRemoteFiles <= 1000)
 			deleteThreshold = Math.Max(deleteThreshold, 0.5f);
 
 		if (deleteRatio > deleteThreshold)

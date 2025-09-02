@@ -25,12 +25,13 @@ internal sealed class DeployCommands(
 	ICoreService githubActionsService
 )
 {
+	private readonly ILogger<Program> _logger = logFactory.CreateLogger<Program>();
+
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	private void AssignOutputLogger()
 	{
-		var log = logFactory.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
+		ConsoleApp.Log = msg => _logger.LogInformation(msg);
+		ConsoleApp.LogError = msg => _logger.LogError(msg);
 	}
 
 	/// <summary> Creates a sync plan </summary>
@@ -57,20 +58,17 @@ internal sealed class DeployCommands(
 		var s3Client = new AmazonS3Client();
 		IDocsSyncPlanStrategy planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
 		var plan = await planner.Plan(ctx);
-		ConsoleApp.Log("Total files to sync: " + plan.TotalSyncRequests);
-		ConsoleApp.Log("Total files to delete: " + plan.DeleteRequests.Count);
-		ConsoleApp.Log("Total files to add: " + plan.AddRequests.Count);
-		ConsoleApp.Log("Total files to update: " + plan.UpdateRequests.Count);
-		ConsoleApp.Log("Total files to skip: " + plan.SkipRequests.Count);
-		if (plan.TotalSyncRequests == 0)
-		{
-			collector.EmitError(@out, $"Plan has no files to sync so no plan will be written.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
-		}
+		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
+		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
+		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
+		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
+		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);
+		_logger.LogInformation("Total local source files: {TotalSourceFiles}", plan.TotalSourceFiles);
+		_logger.LogInformation("Total remote source files: {TotalSourceFiles}", plan.TotalRemoteFiles);
 		var validationResult = planner.Validate(plan, deleteThreshold);
 		if (!validationResult.Valid)
 		{
+			await githubActionsService.SetOutputAsync("plan-valid", "false");
 			collector.EmitError(@out, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalSyncRequests:N0} files while plan has {plan.DeleteRequests:N0} deletions");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
@@ -85,6 +83,7 @@ internal sealed class DeployCommands(
 			ConsoleApp.Log("Plan written to " + @out);
 		}
 		await collector.StopAsync(ctx);
+		await githubActionsService.SetOutputAsync("plan-valid", collector.Errors == 0 ? "true" : "false");
 		return collector.Errors;
 	}
 
@@ -121,6 +120,19 @@ internal sealed class DeployCommands(
 		}
 		var planJson = await File.ReadAllTextAsync(planFile, ctx);
 		var plan = SyncPlan.Deserialize(planJson);
+		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
+		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
+		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
+		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
+		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);
+		_logger.LogInformation("Total local source files: {TotalSourceFiles}", plan.TotalSourceFiles);
+		_logger.LogInformation("Total remote source files: {TotalSourceFiles}", plan.TotalRemoteFiles);
+		if (plan.TotalSyncRequests == 0)
+		{
+			_logger.LogInformation("Plan has no files to sync, skipping incremental synchronization");
+			await collector.StopAsync(ctx);
+			return collector.Errors;
+		}
 		await applier.Apply(plan, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
