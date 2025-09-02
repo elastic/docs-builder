@@ -12,6 +12,7 @@ import {
     EuiToolTip,
     useEuiTheme,
     EuiCallOut,
+    EuiIcon,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
@@ -69,6 +70,7 @@ export const AskAiAnswer = () => {
             hasShadow={false}
             hasBorder={false}
             css={css`
+                flex-grow: 1;
                 .euiMarkdownFormat {
                     font-size: ${euiTheme.size.base};
                 }
@@ -77,15 +79,26 @@ export const AskAiAnswer = () => {
                 }
             `}
         >
+            <div
+                css={css`
+                    display: flex;
+                    gap: ${euiTheme.size.s};
+                    align-items: center;
+                `}
+            >
+                <EuiIcon type="sparkles" color="subdued" size="s" />
+                <EuiText size="xs">Ask Elastic Docs AI Assistant</EuiText>
+            </div>
+            <EuiSpacer size="s" />
             <EuiPanel
                 panelRef={scrollRef}
                 paddingSize="m"
                 hasShadow={false}
                 hasBorder={false}
                 css={css`
-                    max-height: 50vh;
-                    overflow-y: scroll;
-                    background-color: ${euiTheme.colors.backgroundBaseSubdued};
+                    //max-height: 50vh;
+                    //overflow-y: scroll;
+                    background-color: ${euiTheme.colors.backgroundLightText};
                 `}
             >
                 <EuiMarkdownFormat>
@@ -104,7 +117,7 @@ export const AskAiAnswer = () => {
                                     <EuiToolTip content="This answer was helpful">
                                         <EuiButtonIcon
                                             aria-label="This answer was helpful"
-                                            iconType="faceHappy"
+                                            iconType="thumbUp"
                                             color="success"
                                         />
                                     </EuiToolTip>
@@ -113,7 +126,7 @@ export const AskAiAnswer = () => {
                                     <EuiToolTip content="This answer was not helpful">
                                         <EuiButtonIcon
                                             aria-label="This answer was not helpful"
-                                            iconType="faceSad"
+                                            iconType="thumbDown"
                                             color="danger"
                                         />
                                     </EuiToolTip>
@@ -142,7 +155,7 @@ export const AskAiAnswer = () => {
                             ).length > 0 && <EuiSpacer size="s" />}
                             <EuiFlexGroup
                                 alignItems="center"
-                                gutterSize="xs"
+                                gutterSize="s"
                                 responsive={false}
                             >
                                 <EuiFlexItem grow={false}>

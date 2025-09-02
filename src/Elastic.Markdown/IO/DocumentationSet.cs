@@ -78,7 +78,9 @@ public interface IPositionalNavigation
 		{
 			if (parent is null)
 				continue;
-			parents.Add(parent);
+			if (parents.All(i => i.Url != parent.Url))
+				parents.Add(parent);
+
 			parent = parent.Parent;
 		} while (parent != null);
 

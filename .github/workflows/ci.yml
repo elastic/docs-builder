@@ -20,7 +20,7 @@ jobs:
   validate-assembler:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -44,7 +44,7 @@ jobs:
       run: 
         working-directory: src/Elastic.Documentation.Site
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v4
         with:
@@ -78,7 +78,7 @@ jobs:
          - macos-latest
          - windows-latest
     steps:          
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -94,12 +94,24 @@ jobs:
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
+        if: ${{ matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
         run: dotnet run --project build -c release -- publishbinaries
+        
+      - name: Publish Containers
+        if: ${{ matrix.os == 'ubuntu-latest' }} 
+        env:
+          DOCKER_NO_PUBLISH: true
+        run: dotnet run --project build -c release -- publishcontainers
+        
+      - name: Run Container
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: dotnet run --project build -c release -- runlocalcontainer
+        
 
   integration:
     runs-on: docs-builder-latest-16
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap

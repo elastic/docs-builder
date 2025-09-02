@@ -52,7 +52,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
       - name: Bootstrap Action Workspace
@@ -67,7 +67,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Containers
-        run: ./build.sh publishcontainers\
+        run: ./build.sh publishcontainers
         
   build-lambda:
     needs: 
@@ -133,7 +133,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -146,7 +146,7 @@ jobs:
         shell: bash
         
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip
