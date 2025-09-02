@@ -63,7 +63,7 @@ describe('AskAiAnswer Component', () => {
                 {
                     id: 'some-id-1',
                     timestamp: 0,
-                    type: 'ai_message',
+                    type: 'ai_message_chunk',
                     data: {
                         content:
                             'Elasticsearch is a distributed search engine...',
@@ -134,7 +134,7 @@ describe('AskAiAnswer Component', () => {
                 {
                     id: 'some-id-1',
                     timestamp: 1,
-                    type: 'ai_message',
+                    type: 'ai_message_chunk',
                     data: {
                         content: 'Here is your answer about Elasticsearch.',
                     },
@@ -188,7 +188,7 @@ describe('AskAiAnswer Component', () => {
                 {
                     id: 'some-id-1',
                     timestamp: 12345,
-                    type: 'ai_message',
+                    type: 'ai_message_chunk',
                     data: { content: 'Here is your answer.' },
                 },
             ]

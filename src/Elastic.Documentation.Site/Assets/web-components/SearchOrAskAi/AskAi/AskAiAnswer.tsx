@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from 'uuid'
 // Helper function to accumulate AI message content
 const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
     return messages
-        .filter((m) => m.type === 'ai_message' || m.type === 'ai_message_chunk')
+        .filter((m) => m.type === 'ai_message_chunk')
         .map((m) => m.data.content)
         .join('')
 }
