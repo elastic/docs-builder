@@ -10,6 +10,7 @@ using Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Tooling.Diagnostics;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -62,9 +63,11 @@ public class DocsSyncTests
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
 		// Act
-		var plan = await planStrategy.Plan(ctx: Cancel.None);
+		var plan = await planStrategy.Plan(null, Cancel.None);
 
 		// Assert
+
+		plan.TotalRemoteFiles.Should().Be(3);
 
 		plan.TotalSourceFiles.Should().Be(5);
 		plan.TotalSyncRequests.Should().Be(6); //including skip on server
@@ -106,7 +109,7 @@ public class DocsSyncTests
 		bool valid
 	)
 	{
-		var (planStrategy, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles);
+		var (validator, _, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, deleteThreshold);
 
 		// Assert
 
@@ -116,7 +119,7 @@ public class DocsSyncTests
 		plan.AddRequests.Count.Should().Be(totalFilesToAdd);
 		plan.DeleteRequests.Count.Should().Be(totalFilesToRemove);
 
-		var validationResult = planStrategy.Validate(plan, deleteThreshold);
+		var validationResult = validator.Validate(plan);
 		if (plan.TotalSyncRequests <= 100)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.8f));
 		else if (plan.TotalSyncRequests <= 1000)
@@ -144,7 +147,7 @@ public class DocsSyncTests
 		bool valid
 	)
 	{
-		var (planStrategy, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, "different-etag");
+		var (validator, _, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, deleteThreshold, "different-etag");
 
 		// Assert
 
@@ -154,7 +157,7 @@ public class DocsSyncTests
 		plan.UpdateRequests.Count.Should().Be(totalFilesToUpdate);
 		plan.DeleteRequests.Count.Should().Be(totalFilesToRemove);
 
-		var validationResult = planStrategy.Validate(plan, deleteThreshold);
+		var validationResult = validator.Validate(plan);
 		if (plan.TotalSyncRequests <= 100)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.8f));
 		else if (plan.TotalSyncRequests <= 1000)
@@ -163,8 +166,8 @@ public class DocsSyncTests
 		validationResult.Valid.Should().Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
 
-	private static async Task<(AwsS3SyncPlanStrategy planStrategy, SyncPlan plan)> SetupS3SyncContextSetup(
-		int localFiles, int remoteFiles, string etag = "etag")
+	private static async Task<(DocsSyncPlanValidator validator, AwsS3SyncPlanStrategy planStrategy, SyncPlan plan)> SetupS3SyncContextSetup(
+		int localFiles, int remoteFiles, float? deleteThreshold = null, string etag = "etag")
 	{
 		// Arrange
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
@@ -202,8 +205,9 @@ public class DocsSyncTests
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context, mockEtagCalculator);
 
 		// Act
-		var plan = await planStrategy.Plan(ctx: Cancel.None);
-		return (planStrategy, plan);
+		var plan = await planStrategy.Plan(deleteThreshold, Cancel.None);
+		var validator = new DocsSyncPlanValidator(new LoggerFactory());
+		return (validator, planStrategy, plan);
 	}
 
 	[Fact]
@@ -231,6 +235,8 @@ public class DocsSyncTests
 		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
+			DeleteThresholdDefault = null,
+			TotalRemoteFiles = 0,
 			TotalSourceFiles = 5,
 			TotalSyncRequests = 6,
 			AddRequests = [

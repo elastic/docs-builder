@@ -448,7 +448,7 @@ jobs:
   comment:
     if: >
       startsWith(github.event_name, 'pull_request')
-      && inputs.disable-comments != 'true'
+      && inputs.disable-comments != true
       && needs.build.outputs.deployment_result
       && needs.check.outputs.any_modified
     runs-on: ubuntu-latest
@@ -537,7 +537,7 @@ jobs:
               });
             }
       - name: Comment on docs changes about versioning requirements
-        if: inputs.enable-cumulative-comment == 'true'
+        if: inputs.enable-cumulative-comment == true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
