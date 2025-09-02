@@ -44,7 +44,7 @@ internal sealed class DeployCommands(
 		string environment,
 		string s3BucketName,
 		string @out = "",
-		float deleteThreshold = 0.2f,
+		float? deleteThreshold = null,
 		Cancel ctx = default
 	)
 	{
@@ -56,8 +56,8 @@ internal sealed class DeployCommands(
 		var fs = new FileSystem();
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var s3Client = new AmazonS3Client();
-		IDocsSyncPlanStrategy planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
-		var plan = await planner.Plan(ctx);
+		var planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
+		var plan = await planner.Plan(deleteThreshold, ctx);
 		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
 		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
 		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
@@ -65,11 +65,12 @@ internal sealed class DeployCommands(
 		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);
 		_logger.LogInformation("Total local source files: {TotalSourceFiles}", plan.TotalSourceFiles);
 		_logger.LogInformation("Total remote source files: {TotalSourceFiles}", plan.TotalRemoteFiles);
-		var validationResult = planner.Validate(plan, deleteThreshold);
+		var validator = new DocsSyncPlanValidator(logFactory);
+		var validationResult = validator.Validate(plan);
 		if (!validationResult.Valid)
 		{
 			await githubActionsService.SetOutputAsync("plan-valid", "false");
-			collector.EmitError(@out, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalSyncRequests:N0} files while plan has {plan.DeleteRequests:N0} deletions");
+			collector.EmitError(@out, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalRemoteFiles:N0} remote files while plan has {plan.DeleteRequests:N0} deletions");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
@@ -92,11 +93,7 @@ internal sealed class DeployCommands(
 	/// <param name="s3BucketName">The S3 bucket name to deploy to</param>
 	/// <param name="planFile">The path to the plan file to apply</param>
 	/// <param name="ctx"></param>
-	public async Task<int> Apply(
-		string environment,
-		string s3BucketName,
-		string planFile,
-		Cancel ctx = default)
+	public async Task<int> Apply(string environment, string s3BucketName, string planFile, Cancel ctx = default)
 	{
 		AssignOutputLogger();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
@@ -111,7 +108,6 @@ internal sealed class DeployCommands(
 			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
 			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
 		});
-		IDocsSyncApplyStrategy applier = new AwsS3SyncApplyStrategy(logFactory, s3Client, transferUtility, s3BucketName, assembleContext, collector);
 		if (!File.Exists(planFile))
 		{
 			collector.EmitError(planFile, "Plan file does not exist.");
@@ -133,6 +129,15 @@ internal sealed class DeployCommands(
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
+		var validator = new DocsSyncPlanValidator(logFactory);
+		var validationResult = validator.Validate(plan);
+		if (!validationResult.Valid)
+		{
+			collector.EmitError(planFile, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalRemoteFiles:N0} remote files while plan has {plan.DeleteRequests:N0} deletions");
+			await collector.StopAsync(ctx);
+			return collector.Errors;
+		}
+		var applier = new AwsS3SyncApplyStrategy(logFactory, s3Client, transferUtility, s3BucketName, assembleContext, collector);
 		await applier.Apply(plan, ctx);
 		await collector.StopAsync(ctx);
 		return collector.Errors;
