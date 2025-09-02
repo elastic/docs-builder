@@ -17,7 +17,6 @@ export const SearchOrAskAiModal = () => {
     const searchTerm = useSearchTerm()
     const askAiTerm = useAskAiTerm()
     const { setSearchTerm, submitAskAiTerm } = useSearchActions()
-
     return (
         <div
             css={css`

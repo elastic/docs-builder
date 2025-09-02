@@ -14,7 +14,8 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useEffect, Suspense, lazy } from 'react'
+import { useEffect, Suspense, lazy, useState } from 'react'
+import { useSyncSearchParams } from "./useSyncURLSearchParams";
 
 // Lazy load the modal component
 const SearchOrAskAiModal = lazy(() =>
@@ -25,9 +26,12 @@ const SearchOrAskAiModal = lazy(() =>
 
 export const SearchOrAskAiButton = () => {
     const searchTerm = useSearchTerm()
-    const { clearSearchTerm } = useSearchActions()
+    const { clearSearchTerm } =
+        useSearchActions()
     const isModalOpen = useModalIsOpen()
     const { openModal, closeModal, toggleModal } = useModalActions()
+    
+    useSyncSearchParams();
 
     const positionCss = css`
         position: absolute;
@@ -61,7 +65,6 @@ export const SearchOrAskAiButton = () => {
             window.removeEventListener('keydown', handleKeydown)
         }
     }, [])
-
     return (
         <>
             <EuiButton
