@@ -2,6 +2,7 @@
 import '../../eui-icons-cache'
 import { useModalActions, useModalIsOpen } from './modal.store'
 import { useSearchActions, useSearchTerm } from './search.store'
+import { useSyncSearchParams } from './useSyncURLSearchParams'
 import {
     EuiButton,
     EuiPortal,
@@ -28,6 +29,8 @@ export const SearchOrAskAiButton = () => {
     const { clearSearchTerm } = useSearchActions()
     const isModalOpen = useModalIsOpen()
     const { openModal, closeModal, toggleModal } = useModalActions()
+
+    useSyncSearchParams()
 
     const positionCss = css`
         position: absolute;
@@ -61,7 +64,6 @@ export const SearchOrAskAiButton = () => {
             window.removeEventListener('keydown', handleKeydown)
         }
     }, [])
-
     return (
         <>
             <EuiButton
