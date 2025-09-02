@@ -9,9 +9,8 @@ namespace Documentation.Assembler.Deploying;
 
 public interface IDocsSyncPlanStrategy
 {
-	Task<SyncPlan> Plan(Cancel ctx = default);
+	Task<SyncPlan> Plan(float? deleteThreshold = null, Cancel ctx = default);
 
-	PlanValidationResult Validate(SyncPlan plan, float deleteThreshold);
 }
 public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
 
@@ -52,6 +51,10 @@ public record SkipRequest : SyncRequest
 
 public record SyncPlan
 {
+	/// The user-specified delete threshold
+	[JsonPropertyName("deletion_threshold_default")]
+	public required float? DeleteThresholdDefault { get; init; }
+
 	/// The total number of source files that were located in the build output
 	[JsonPropertyName("total_source_files")]
 	public required int TotalSourceFiles { get; init; }
