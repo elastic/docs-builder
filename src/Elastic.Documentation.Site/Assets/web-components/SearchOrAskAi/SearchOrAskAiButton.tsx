@@ -13,6 +13,7 @@ import {
     EuiLoadingSpinner,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { useQuery } from '@tanstack/react-query'
 import * as React from 'react'
 import { useEffect, Suspense, lazy } from 'react'
 
@@ -28,6 +29,16 @@ export const SearchOrAskAiButton = () => {
     const { clearSearchTerm } = useSearchActions()
     const isModalOpen = useModalIsOpen()
     const { openModal, closeModal, toggleModal } = useModalActions()
+
+    const { data: isApiAvailable } = useQuery({
+        queryKey: ['api-health'],
+        queryFn: async () => {
+            const response = await fetch('/docs/_api/v1/', { method: 'HEAD' })
+            return response.ok
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: false,
+    })
 
     const positionCss = css`
         position: absolute;
@@ -61,6 +72,10 @@ export const SearchOrAskAiButton = () => {
             window.removeEventListener('keydown', handleKeydown)
         }
     }, [])
+
+    if (!isApiAvailable) {
+        return null
+    }
 
     return (
         <>
