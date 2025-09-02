@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useSearchActions, useSearchTerm } from "./search.store";
-import { useModalActions } from "./modal.store";
+import { useModalActions } from './modal.store'
+import { useSearchActions, useSearchTerm } from './search.store'
+import { useEffect, useState } from 'react'
 
 export const useSyncSearchParams = () => {
     const searchTerm = useSearchTerm()
@@ -38,4 +38,4 @@ export const useSyncSearchParams = () => {
             openModal()
         }
     }, [])
-};
+}

@@ -2,6 +2,7 @@
 import '../../eui-icons-cache'
 import { useModalActions, useModalIsOpen } from './modal.store'
 import { useSearchActions, useSearchTerm } from './search.store'
+import { useSyncSearchParams } from './useSyncURLSearchParams'
 import {
     EuiButton,
     EuiPortal,
@@ -15,7 +16,6 @@ import {
 import { css } from '@emotion/react'
 import * as React from 'react'
 import { useEffect, Suspense, lazy } from 'react'
-import { useSyncSearchParams } from "./useSyncURLSearchParams";
 
 // Lazy load the modal component
 const SearchOrAskAiModal = lazy(() =>
@@ -26,12 +26,11 @@ const SearchOrAskAiModal = lazy(() =>
 
 export const SearchOrAskAiButton = () => {
     const searchTerm = useSearchTerm()
-    const { clearSearchTerm } =
-        useSearchActions()
+    const { clearSearchTerm } = useSearchActions()
     const isModalOpen = useModalIsOpen()
     const { openModal, closeModal, toggleModal } = useModalActions()
-    
-    useSyncSearchParams();
+
+    useSyncSearchParams()
 
     const positionCss = css`
         position: absolute;
