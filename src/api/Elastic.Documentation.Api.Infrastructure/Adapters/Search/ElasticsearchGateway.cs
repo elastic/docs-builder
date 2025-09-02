@@ -82,15 +82,18 @@ public class ElasticsearchGateway : ISearchGateway
 				.Query(q => q
 					.Bool(b => b
 						.Should(
-							// Tier 1: Exact/Prefix matches (highest boost)
 							sh => sh.Prefix(p => p
 								.Field("title.keyword")
 								.Value(searchQuery)
 								.CaseInsensitive(true)
 								.Boost(300.0f)
 							),
-
-							// Tier 2: Semantic search (combined into one clause)
+							sh => sh.Match(m => m
+								.Field(f => f.Title)
+								.Query(searchQuery)
+								.Fuzziness("AUTO")
+								.Boost(250.0f)
+							),
 							sh => sh.DisMax(dm => dm
 								.Queries(
 									dq => dq.Semantic(sem => sem
@@ -104,8 +107,6 @@ public class ElasticsearchGateway : ISearchGateway
 								)
 								.Boost(200.0f)
 							),
-
-							// Tier 3: Standard text matching
 							sh => sh.DisMax(dm => dm
 								.Queries(
 									dq => dq.MatchBoolPrefix(m => m
@@ -124,20 +125,10 @@ public class ElasticsearchGateway : ISearchGateway
 								)
 								.Boost(100.0f)
 							),
-
-							// Tier 4: Parent matching
 							sh => sh.Match(m => m
 								.Field("parents.title")
 								.Query(searchQuery)
 								.Boost(75.0f)
-							),
-
-							// Tier 5: Fuzzy fallback
-							sh => sh.Match(m => m
-								.Field(f => f.Title)
-								.Query(searchQuery)
-								.Fuzziness(1) // Reduced from 2
-								.Boost(25.0f)
 							)
 						)
 						.MustNot(mn => mn.Terms(t => t
