@@ -14,7 +14,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useEffect, Suspense, lazy, useState } from 'react'
+import { useEffect, Suspense, lazy } from 'react'
 import { useSyncSearchParams } from "./useSyncURLSearchParams";
 
 // Lazy load the modal component
