@@ -10,6 +10,7 @@ import {
     useEuiTheme,
     EuiIcon,
     EuiPagination,
+    EuiHorizontalRule,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
@@ -70,14 +71,15 @@ export const SearchResults = () => {
                             <SearchResultListItem item={result} />
                         ))}
                     </ul>
+                    <EuiSpacer size="m" />
                     <div
                         css={css`
                             display: flex;
-                            justify-content: flex-end;
+                            justify-content: center;
                         `}
                     >
                         <EuiPagination
-                            aria-label="Many pages example"
+                            aria-label="Search results pages"
                             pageCount={Math.min(data.pageCount, 10)}
                             activePage={activePage}
                             onPageClick={(activePage) =>
@@ -87,6 +89,7 @@ export const SearchResults = () => {
                     </div>
                 </>
             )}
+            <EuiHorizontalRule margin="m" />
         </div>
     )
 }
@@ -99,7 +102,11 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
     const searchTerm = useSearchTerm()
     const highlightSearchTerms = useMemo(
-        () => searchTerm.toLowerCase().split(' '),
+        () =>
+            searchTerm
+                .toLowerCase()
+                .split(' ')
+                .filter((i) => i.length > 1),
         [searchTerm]
     )
 
