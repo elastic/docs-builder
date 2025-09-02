@@ -68,7 +68,10 @@ export const SearchResults = () => {
                 <>
                     <ul>
                         {data.results.map((result) => (
-                            <SearchResultListItem item={result} key={result.url} />
+                            <SearchResultListItem
+                                item={result}
+                                key={result.url}
+                            />
                         ))}
                     </ul>
                     <EuiSpacer size="m" />
