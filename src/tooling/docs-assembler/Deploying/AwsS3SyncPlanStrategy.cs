@@ -92,7 +92,7 @@ public class AwsS3SyncPlanStrategy(
 
 	public async Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default)
 	{
-		var remoteObjects = await ListObjects(ctx);
+		var (readToCompletion, remoteObjects) = await ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)
 			.Where(f => !IsSymlink(f.FullName))
 			.ToArray();
@@ -156,6 +156,7 @@ public class AwsS3SyncPlanStrategy(
 
 		return new SyncPlan
 		{
+			RemoteListingCompleted = readToCompletion,
 			DeleteThresholdDefault = deleteThreshold,
 			TotalRemoteFiles = remoteObjects.Count,
 			TotalSourceFiles = localObjects.Length,
@@ -167,24 +168,29 @@ public class AwsS3SyncPlanStrategy(
 		};
 	}
 
-	private async Task<Dictionary<string, S3Object>> ListObjects(Cancel ctx = default)
+	private async Task<(bool readToCompletion, Dictionary<string, S3Object> objects)> ListObjects(Cancel ctx = default)
 	{
 		var listBucketRequest = new ListObjectsV2Request
 		{
 			BucketName = bucketName,
-			MaxKeys = 1000,
+			MaxKeys = 1000
 		};
 		var objects = new List<S3Object>();
+		var readToCompletion = true;
 		ListObjectsV2Response response;
 		do
 		{
 			response = await s3Client.ListObjectsV2Async(listBucketRequest, ctx);
 			if (response is null or { S3Objects: null })
+			{
+				context.Collector.EmitGlobalError("Failed to list objects in S3 to completion");
+				readToCompletion = false;
 				break;
+			}
 			objects.AddRange(response.S3Objects);
 			listBucketRequest.ContinuationToken = response.NextContinuationToken;
 		} while (response.IsTruncated == true);
 
-		return objects.ToDictionary(o => o.Key);
+		return (readToCompletion, objects.ToDictionary(o => o.Key));
 	}
 }

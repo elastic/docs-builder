@@ -40,6 +40,7 @@ internal sealed class DeployCommands(
 	/// <param name="out"> The file to write the plan to</param>
 	/// <param name="deleteThreshold"> The percentage of deletions allowed in the plan as percentage of total files to sync</param>
 	/// <param name="ctx"></param>
+	[Command("plan")]
 	public async Task<int> Plan(
 		string environment,
 		string s3BucketName,
@@ -58,7 +59,7 @@ internal sealed class DeployCommands(
 		var s3Client = new AmazonS3Client();
 		var planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
 		var plan = await planner.Plan(deleteThreshold, ctx);
-		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
+		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
 		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
 		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
@@ -70,7 +71,7 @@ internal sealed class DeployCommands(
 		if (!validationResult.Valid)
 		{
 			await githubActionsService.SetOutputAsync("plan-valid", "false");
-			collector.EmitError(@out, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalRemoteFiles:N0} remote files while plan has {plan.DeleteRequests:N0} deletions");
+			collector.EmitError(@out, $"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}
@@ -93,6 +94,7 @@ internal sealed class DeployCommands(
 	/// <param name="s3BucketName">The S3 bucket name to deploy to</param>
 	/// <param name="planFile">The path to the plan file to apply</param>
 	/// <param name="ctx"></param>
+	[Command("apply")]
 	public async Task<int> Apply(string environment, string s3BucketName, string planFile, Cancel ctx = default)
 	{
 		AssignOutputLogger();
@@ -116,6 +118,7 @@ internal sealed class DeployCommands(
 		}
 		var planJson = await File.ReadAllTextAsync(planFile, ctx);
 		var plan = SyncPlan.Deserialize(planJson);
+		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
 		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
 		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
@@ -133,7 +136,7 @@ internal sealed class DeployCommands(
 		var validationResult = validator.Validate(plan);
 		if (!validationResult.Valid)
 		{
-			collector.EmitError(planFile, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalRemoteFiles:N0} remote files while plan has {plan.DeleteRequests:N0} deletions");
+			collector.EmitError(planFile, $"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}");
 			await collector.StopAsync(ctx);
 			return collector.Errors;
 		}

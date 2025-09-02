@@ -16,6 +16,12 @@ public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 			_logger.LogInformation("Using user-specified delete threshold of {Threshold}", plan.DeleteThresholdDefault);
 
 		var deleteThreshold = plan.DeleteThresholdDefault ?? 0.2f;
+		if (!plan.RemoteListingCompleted)
+		{
+			_logger.LogError("Remote files were not read to completion, cannot validate deployment plan");
+			return new(false, 1.0f, deleteThreshold);
+		}
+
 		if (plan.TotalSourceFiles == 0)
 		{
 			_logger.LogError("No files to sync");

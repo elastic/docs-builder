@@ -55,6 +55,10 @@ public record SyncPlan
 	[JsonPropertyName("deletion_threshold_default")]
 	public required float? DeleteThresholdDefault { get; init; }
 
+	/// The user-specified delete threshold
+	[JsonPropertyName("remote_listing_completed")]
+	public required bool RemoteListingCompleted { get; init; }
+
 	/// The total number of source files that were located in the build output
 	[JsonPropertyName("total_source_files")]
 	public required int TotalSourceFiles { get; init; }
