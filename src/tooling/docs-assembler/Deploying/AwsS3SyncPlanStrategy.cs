@@ -82,8 +82,6 @@ public class AwsS3SyncPlanStrategy(
 )
 	: IDocsSyncPlanStrategy
 {
-	private readonly ILogger<AwsS3SyncPlanStrategy> _logger = logFactory.CreateLogger<AwsS3SyncPlanStrategy>();
-
 	private readonly IS3EtagCalculator _s3EtagCalculator = calculator ?? new S3EtagCalculator(logFactory, context.ReadFileSystem);
 
 	private bool IsSymlink(string path)
@@ -92,7 +90,7 @@ public class AwsS3SyncPlanStrategy(
 		return fileInfo.LinkTarget != null;
 	}
 
-	public async Task<SyncPlan> Plan(float? deleteThreshold = null, Cancel ctx = default)
+	public async Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default)
 	{
 		var remoteObjects = await ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)

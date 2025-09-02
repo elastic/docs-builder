@@ -9,7 +9,7 @@ namespace Documentation.Assembler.Deploying;
 
 public interface IDocsSyncPlanStrategy
 {
-	Task<SyncPlan> Plan(float? deleteThreshold = null, Cancel ctx = default);
+	Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default);
 
 }
 public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
