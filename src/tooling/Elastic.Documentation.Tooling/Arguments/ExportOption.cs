@@ -4,6 +4,7 @@
 
 using ConsoleAppFramework;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Exporters;
 using Elastic.Markdown.Exporters;
 using Microsoft.Extensions.Logging;
@@ -59,6 +60,7 @@ public static class ExporterExtensions
 
 	public static IReadOnlyCollection<IMarkdownExporter> CreateMarkdownExporters(
 		this IReadOnlySet<Exporter> exportOptions,
+		PublishEnvironment environment,
 		ILoggerFactory logFactory,
 		IDocumentationConfigurationContext context
 	)
@@ -71,7 +73,7 @@ public static class ExporterExtensions
 		if (exportOptions.Contains(Elasticsearch))
 			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints));
 		if (exportOptions.Contains(SemanticElasticsearch))
-			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(logFactory, context.Collector, context.Endpoints));
+			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(environment, logFactory, context.Collector, context.Endpoints));
 		return markdownExporters;
 	}
 }
