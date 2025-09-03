@@ -36,7 +36,7 @@ public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 		}
 		// if the total remote files are less than or equal to 100, we enforce a higher ratio of 0.8
 		// this allows newer assembled documentation to be in a higher state of flux
-		if (plan.TotalRemoteFiles <= 100)
+		else if (plan.TotalRemoteFiles <= 100)
 		{
 			_logger.LogInformation("Plan has less than 100 total remote files ensuring delete threshold is at minimum 0.8");
 			deleteThreshold = Math.Max(deleteThreshold, 0.8f);

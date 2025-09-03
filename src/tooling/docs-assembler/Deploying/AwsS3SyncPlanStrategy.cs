@@ -176,6 +176,13 @@ public class AwsS3SyncPlanStrategy(
 			MaxKeys = 1000
 		};
 		var objects = new List<S3Object>();
+		var bucketExists = await S3BucketExists(ctx);
+		if (!bucketExists)
+		{
+			context.Collector.EmitGlobalError("Bucket does not exist, cannot list objects");
+			return (false, objects.ToDictionary(o => o.Key));
+		}
+
 		var readToCompletion = true;
 		ListObjectsV2Response response;
 		do
@@ -183,8 +190,11 @@ public class AwsS3SyncPlanStrategy(
 			response = await s3Client.ListObjectsV2Async(listBucketRequest, ctx);
 			if (response is null or { S3Objects: null })
 			{
-				context.Collector.EmitGlobalError("Failed to list objects in S3 to completion");
-				readToCompletion = false;
+				if (response?.IsTruncated == true)
+				{
+					context.Collector.EmitGlobalError("Failed to list objects in S3 to completion");
+					readToCompletion = false;
+				}
 				break;
 			}
 			objects.AddRange(response.S3Objects);
@@ -192,5 +202,22 @@ public class AwsS3SyncPlanStrategy(
 		} while (response.IsTruncated == true);
 
 		return (readToCompletion, objects.ToDictionary(o => o.Key));
+	}
+
+	private async Task<bool> S3BucketExists(Cancel ctx)
+	{
+		//https://docs.aws.amazon.com/code-library/latest/ug/s3_example_s3_Scenario_DoesBucketExist_section.html
+		try
+		{
+			_ = await s3Client.GetBucketAclAsync(new GetBucketAclRequest
+			{
+				BucketName = bucketName
+			}, ctx);
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
 	}
 }
