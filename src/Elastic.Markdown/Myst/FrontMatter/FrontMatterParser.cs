@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;

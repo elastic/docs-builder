@@ -1,0 +1,187 @@
+products:
+  apm:
+    display: 'APM'
+    versioning: 'stack'
+  apm-agent:
+    display: 'APM Agent'
+    versioning: 'stack'
+  apm-agent-android:
+    display: 'APM Agent for Android'
+    versioning: 'apm_agent_android'
+  apm-agent-dotnet:
+    display: 'APM Agent for .NET'
+    versioning: 'apm_agent_dotnet'
+  apm-agent-go:
+    display: 'APM Agent for Go'
+    versioning: 'apm_agent_go'
+  apm-agent-java:
+    display: 'APM Agent for Java'
+    versioning: 'apm_agent_java'
+  apm-agent-node:
+    display: 'APM Agent for Node'
+    versioning: 'apm_agent_node'
+  apm-agent-php:
+    display: 'APM Agent for PHP'
+    versioning: 'apm_agent_php'
+  apm-agent-python:
+    display: 'APM Agent for Python'
+    versioning: 'apm_agent_python'
+  apm-agent-ruby:
+    display: 'APM Agent for Ruby'
+    versioning: 'apm_agent_ruby'
+  apm-agent-rum-js:
+    display: 'APM RUM JavaScript agent'
+    versioning: 'apm_agent_rum'
+  auditbeat:
+    display: 'Auditbeat'
+    versioning: 'stack'
+  beats:
+    display: 'Beats'
+    versioning: 'stack'
+  cloud-control-ecctl:
+    display: 'Elastic Cloud Control ECCTL'
+    versioning: 'stack'
+  cloud-enterprise:
+    display: 'Elastic Cloud Enterprise'
+    versioning: 'stack'
+  cloud-hosted:
+    display: 'Elastic Cloud Hosted'
+    versioning: 'stack'
+  cloud-kubernetes:
+    display: 'Elastic Cloud Kubernetes'
+    versioning: 'stack'
+  cloud-serverless:
+    display: 'Elastic Cloud Serverless'
+    versioning: 'stack'
+  cloud-terraform:
+    display: 'Elastic Cloud Terraform'
+    versioning: 'stack'
+  curator:
+    display: 'Elasticsearch Curator'
+    versioning: 'curator'
+  ecctl:
+    display: 'Elastic Cloud Control ECCTL'
+    versioning: 'ecctl'
+  ece:
+    display: 'Elastic Cloud Enterprise'
+    versioning: 'ece'
+  ech:
+    display: 'Elastic Cloud Hosted'
+    versioning: 'all'
+  eck:
+    display: 'Elastic Cloud on Kubernetes'
+    versioning: 'eck'
+  ecs:
+    display: 'Elastic Common Schema (ECS)'
+    versioning: 'stack'
+  ecs-logging:
+    display: 'ECS Logging'
+    versioning: 'stack'
+  edot-cf:
+    display: 'EDOT Cloud Forwarder'
+    versioning: 'stack'
+  edot-sdk:
+    display: 'Elastic Distribution of OpenTelemetry SDK'
+    versioning: 'stack'
+  edot-collector:
+    display: 'Elastic Distribution of OpenTelemetry Collector'
+    versioning: 'stack'
+  edot-ios:
+    display: 'Elastic Distribution of OpenTelemetry iOS'
+    versioning: 'edot_ios'
+  edot-android:
+    display: 'Elastic Distribution of OpenTelemetry Android'
+    versioning: 'edot_android'
+  edot-dotnet:
+    display: 'Elastic Distribution of OpenTelemetry .NET'
+    versioning: 'edot_dotnet'
+  edot-java:
+    display: 'Elastic Distribution of OpenTelemetry Java'
+    versioning: 'edot_java'
+  edot-node:
+    display: 'Elastic Distribution of OpenTelemetry Node'
+    versioning: 'edot_node'
+  edot-php:
+    display: 'Elastic Distribution of OpenTelemetry PHP'
+    versioning: 'edot_php'
+  edot-python:
+    display: 'Elastic Distribution of OpenTelemetry Python'
+    versioning: 'edot_python'
+  edot-cf-aws:
+    display: 'EDOT Cloud Forwarder for AWS'
+    versioning: 'edot_cf_aws'
+  elastic-agent:
+    display: 'Elastic Agent'
+    versioning: 'stack'
+  elastic-serverless-forwarder:
+    display: 'Elastic Serverless Forwarder'
+    versioning: 'stack'
+  elastic-stack:
+    display: 'Elastic Stack'
+    versioning: 'stack'
+  elasticsearch:
+    display: 'Elasticsearch'
+    versioning: 'stack'
+  elasticsearch-client:
+    display: 'Elasticsearch Client'
+    versioning: 'stack'
+  ess:
+    display: 'Elasticsearch Service'
+    versioning: 'all'
+  filebeat:
+    display: 'Filebeat'
+    versioning: 'stack'
+  fleet:
+    display: 'Fleet'
+    versioning: 'stack'
+  heartbeat:
+    display: 'Heartbeat'
+    versioning: 'stack'
+  integrations:
+    display: 'Integrations'
+    versioning: 'stack'
+  kibana:
+    display: 'Kibana'
+    versioning: 'stack'
+  logstash:
+    display: 'Logstash'
+    versioning: 'stack'
+  machine-learning:
+    display: 'Machine Learning'
+    versioning: 'stack'
+  metricbeat:
+    display: 'Metricbeat'
+    versioning: 'stack'
+  observability:
+    display: 'Elastic Observability'
+    versioning: 'stack'
+  packetbeat:
+    display: 'Packetbeat'
+    versioning: 'stack'
+  painless:
+    display: 'Elasticsearch Painless scripting language'
+    versioning: 'stack'
+  search-ui:
+    display: 'Search UI'
+    versioning: 'stack'
+  security:
+    display: 'Elastic Security'
+    versioning: 'stack'
+  self:
+    display: 'Elastic Stack'
+    versioning: 'stack'
+  serverless:
+    display: 'Elastic Serverless'
+    versioning: 'all'
+  serverless-elasticsearch:
+    display: 'Elasticsearch'
+    versioning: 'all'
+  serverless-observability:
+    display: 'Elastic Observability'
+    versioning: 'all'
+  serverless-security:
+    display: 'Elastic Security'
+    versioning: 'all'
+  winlogbeat:
+    display: 'Winlogbeat'
+    versioning: 'stack'

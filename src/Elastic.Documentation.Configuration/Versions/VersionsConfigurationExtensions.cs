@@ -12,15 +12,17 @@ public static class VersionsConfigurationExtensions
 {
 	public static VersionsConfiguration CreateVersionConfiguration(this ConfigurationFileProvider provider)
 	{
-		var path = provider.VersionFile;
+		var versionFilePath = provider.VersionFile;
+		var productsFilePath = provider.ProductsFile;
 
 		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.Build();
 
-		var dto = deserializer.Deserialize<VersionsConfigDto>(path.OpenText());
+		var versionsDto = deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
+		var productsDto = deserializer.Deserialize<ProductConfigDto>(productsFilePath.OpenText());
 
-		var versions = dto.VersioningSystems.ToDictionary(
+		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
 			kvp => new VersioningSystem
 			{
@@ -28,7 +30,15 @@ public static class VersionsConfigurationExtensions
 				Base = ToSemVersion(kvp.Value.Base),
 				Current = ToSemVersion(kvp.Value.Current)
 			});
-		var config = new VersionsConfiguration { VersioningSystems = versions };
+		var products = productsDto.Products.ToDictionary(
+			kvp => kvp.Key,
+			kvp => new Product
+			{
+				Id = kvp.Key,
+				DisplayName = kvp.Value.Display,
+				VersionSystem = ToVersioningSystemId(kvp.Value.Versioning)
+			});
+		var config = new VersionsConfiguration { Products = products, VersioningSystems = versions };
 		return config;
 	}
 
@@ -65,4 +75,14 @@ internal sealed record VersioningSystemDto
 {
 	public string Base { get; set; } = string.Empty;
 	public string Current { get; set; } = string.Empty;
+}
+
+internal sealed record ProductConfigDto
+{
+	public Dictionary<string, ProductDto> Products { get; set; } = [];
+}
+internal sealed record ProductDto
+{
+	public string Display { get; set; } = string.Empty;
+	public string Versioning { get; set; } = string.Empty;
 }

@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -88,7 +88,7 @@ public class HtmlWriter(
 
 		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
 		{
-			if (Products.AllById.TryGetValue(p, out var product))
+			if (Product.AllById(DocumentationSet.Context.VersionsConfiguration).TryGetValue(p.Id, out var product))
 				return product;
 			throw new ArgumentException($"Invalid product id: {p}");
 		});
@@ -112,7 +112,6 @@ public class HtmlWriter(
 			fullNavigationRenderResult.Id,
 			fullNavigationRenderResult
 		);
-
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{

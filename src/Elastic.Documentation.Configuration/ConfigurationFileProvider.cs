@@ -34,6 +34,7 @@ public partial class ConfigurationFileProvider
 		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
 
 		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
+		ProductsFile = CreateTemporaryConfigurationFile("products.yml");
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
@@ -49,6 +50,8 @@ public partial class ConfigurationFileProvider
 	public IFileInfo NavigationFile { get; private set; }
 
 	public IFileInfo VersionFile { get; }
+
+	public IFileInfo ProductsFile { get; }
 
 	public IFileInfo AssemblerFile { get; }
 
