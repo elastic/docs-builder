@@ -35,6 +35,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 	//https://mystmd.org/guide/directives#directive-include
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		Literal |= PropBool("literal");
 		Language = Prop("lang", "language", "code");
 		Caption = Prop("caption");

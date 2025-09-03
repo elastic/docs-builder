@@ -33,6 +33,10 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		CrossReferenceName = Prop("name");
 		DropdownOpen = TryPropBool("open");
 		if (DropdownOpen.HasValue)

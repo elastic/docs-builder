@@ -15,7 +15,14 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 	public int Index { get; set; }
 	public string? GetGroupKey() => Prop("group");
 
-	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
+		Index = FindIndex();
+	}
 
 	private int _index = -1;
 
@@ -46,6 +53,10 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		if (string.IsNullOrWhiteSpace(Arguments))
 			this.EmitError("{tab-item} requires an argument to name the tab.");
 

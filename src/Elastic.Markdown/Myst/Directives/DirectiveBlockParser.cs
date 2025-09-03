@@ -201,12 +201,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
-		var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
+		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);
 		if (tokens.Length < 1)
 			return base.TryContinue(processor, block);
 
 		var name = tokens[0];
-		var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
+		var data = tokens.Length > 1 ? tokens[1] : string.Empty;
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;

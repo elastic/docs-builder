@@ -16,6 +16,10 @@ public class ImageCarouselBlock(DirectiveBlockParser parser, ParserContext conte
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		// Call the DirectiveBlock's FinalizeAndValidate
+		// for setup common to all the directive blocks
+		base.FinalizeAndValidate(context);
+
 		// Parse options
 		Id = Prop("id");
 		MaxHeight = Prop("max-height");
