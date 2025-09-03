@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Text.Json;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
@@ -32,7 +33,7 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
+	public async Task BuildAllAsync(PublishEnvironment environment, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
@@ -40,7 +41,7 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
