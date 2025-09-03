@@ -14,20 +14,21 @@ This is Elastic's distributed documentation tooling system built on .NET 9, cons
 
 ### Development
 ```bash
-# Build the project
+# Ensure no compilation failures -- run this to confirm the absence of build errors.
 dotnet build
 
-# Simulates a full release -- run this to confirm the absence of build errors
-dotnet run --project build -c release
-
-# Runs all tests
-dotnet test
-
 # Run docs-builder locally
-./build.sh run -- serve
+dotnet run --project src/tooling/docs-builder 
 
-# Clean build artifacts
-dotnet clean
+# Run all the unit tests which complete fast.
+./build.sh unit-test
+
+# Clean all the build artifacts located in .artifacts folder
+./build.sh clean
+
+# Produce native binaries -- only call this if a change touches serialization and you are committing on behalf of the developer.
+ ./build.sh publishbinaries
+
 ```
 
 ### Linting and Code Quality
