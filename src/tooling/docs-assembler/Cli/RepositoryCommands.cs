@@ -16,6 +16,7 @@ using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
@@ -180,7 +181,8 @@ internal sealed class RepositoryCommands(
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageChecker();
-		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
+
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, ProductVersionMapper.CreateHistoryVersionMapping(assembleContext.VersionsConfiguration, assembleSources.HistoryMappings));
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);

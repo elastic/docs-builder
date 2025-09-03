@@ -41,7 +41,7 @@
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
-			ViewModelSerializerContext.Default.VersionDrownDownItemViewModelArray),
+			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

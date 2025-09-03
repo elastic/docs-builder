@@ -83,8 +83,7 @@ public class HtmlWriter(
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
-
-		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+		var legacyPages = LegacyUrlMapper.MapLegacyUrl(DocumentationSet.Name, markdown.YamlFrontMatter?.MappedPages);
 
 		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
 		{
@@ -141,10 +140,10 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			CurrentVersion = legacyPages?.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
+			CurrentVersion = legacyPages?.Count > 0 ? legacyPages.ElementAt(0).Version : $"{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Minor}+",
 			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
-			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
+			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration
 		});
