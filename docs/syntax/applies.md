@@ -7,7 +7,7 @@ To support this, source files use a tagging system to indicate:
 * Which Elastic products and deployment models the content applies to.
 * When a feature changes state relative to the base version.
 
-This is what the `applies_to` metadata is for. It can be used at the [page](#syntax),
+This is what the `applies_to` metadata is for. It can be used at the [page](#page-level),
 [section](#section-level), or [inline](#inline-level) level to specify applicability with precision.
 
 :::{note}
