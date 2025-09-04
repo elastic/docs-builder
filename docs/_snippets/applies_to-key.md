@@ -32,5 +32,5 @@
   * `edot_python`: Applies to the [Elastic Distribution of OpenTelemetry Python](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/python/) (EDOT Python).
 
 :::{note}
-The `products` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters.
+The `product` key and its subkeys are used to indicate feature availability and applicability. The similarly named [`products` frontmatter field](/syntax/frontmatter.md#products) is used to drive elastic.co search filters.
 :::
