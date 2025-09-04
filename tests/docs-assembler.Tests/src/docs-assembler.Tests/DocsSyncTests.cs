@@ -235,6 +235,7 @@ public class DocsSyncTests
 		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
+			RemoteListingCompleted = true,
 			DeleteThresholdDefault = null,
 			TotalRemoteFiles = 0,
 			TotalSourceFiles = 5,

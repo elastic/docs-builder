@@ -183,7 +183,8 @@ internal sealed class RepositoryCommands(
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.HistoryMappings);
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
-		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
+
+		await builder.BuildAllAsync(assembleContext.Environment, assembleSources.AssembleSets, exporters, ctx);
 
 		if (exporters.Contains(Exporter.LinkMetadata))
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);

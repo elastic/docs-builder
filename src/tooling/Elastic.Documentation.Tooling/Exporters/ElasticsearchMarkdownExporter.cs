@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Channels;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
@@ -36,7 +37,7 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 	protected override CatalogIndexChannel<DocumentationDocument> NewChannel(CatalogIndexChannelOptions<DocumentationDocument> options) => new(options);
 }
 
-public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
+public class ElasticsearchMarkdownSemanticExporter(PublishEnvironment environment, ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
 	: ElasticsearchMarkdownExporterBase<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
 		(logFactory, collector, endpoints)
 {
@@ -45,8 +46,8 @@ public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, ID
 	{
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
 		GetMappingSettings = (_, _) => CreateMappingSetting(),
-		IndexFormat = "semantic-documentation-{0:yyyy.MM.dd.HHmmss}",
-		ActiveSearchAlias = "semantic-documentation",
+		IndexFormat = $"semantic-docs-{environment.Name}-{{0:yyyy.MM.dd.HHmmss}}",
+		ActiveSearchAlias = $"semantic-docs-{environment.Name}",
 		IndexNumThreads = IndexNumThreads,
 		InferenceCreateTimeout = TimeSpan.FromMinutes(4)
 	};
