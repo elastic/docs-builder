@@ -23,9 +23,9 @@ serverless: unavailable
 ````markdown
 #### Cloud organization level security [cloud-organization-level]
 ```{applies_to}
-deployment:
-ess: ga
 serverless: ga
+deployment:
+  ess: ga
 ```
 
 [...]
