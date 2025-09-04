@@ -80,10 +80,13 @@ toc:
       - toc: kibana://release-notes
         path_prefix: release-notes/kibana
 
-      # Fleet and Elastic Agent
-      # https://github.com/elastic/docs-content/blob/main/release-notes/fleet-elastic-agent/toc.yml
-      - toc: docs-content://release-notes/fleet-elastic-agent
-        path_prefix: release-notes/fleet
+      # Elastic Agent
+      - toc: elastic-agent://release-notes
+        path_prefix: release-notes/elastic-agent
+
+      # Fleet Server
+      - toc: fleet-server://release-notes
+        path_prefix: release-notes/fleet-server
 
       # Logstash
       # https://github.com/elastic/logstash/blob/main/docs/release-notes/toc.yml
@@ -107,7 +110,7 @@ toc:
       # https://github.com/elastic/cloud/blob/master/docs/docset.yml
       - toc: cloud://release-notes/cloud-hosted
         path_prefix: release-notes/cloud-hosted
-        
+
       # Cloud Enterprise
       # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-enterprise/toc.yml
       - toc: cloud://release-notes/cloud-enterprise
@@ -131,7 +134,7 @@ toc:
           # EDOT iOS / Swift
           # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-ios://release-notes
-            path_prefix: release-notes/edot/sdks/ios         
+            path_prefix: release-notes/edot/sdks/ios
           # EDOT Java
           # https://github.com/elastic/elastic-otel-java/blob/main/docs/release-notes/toc.yml
           - toc: elastic-otel-java://release-notes
@@ -308,7 +311,7 @@ toc:
           # https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch-plugins/toc.yml
           - toc: elasticsearch://reference/elasticsearch-plugins
             path_prefix: reference/elasticsearch/plugins
-          
+
       # Security
       # https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
       - toc: docs-content://reference/security

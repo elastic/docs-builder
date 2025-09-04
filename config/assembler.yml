@@ -19,7 +19,7 @@ environments:
       cookies_win: x
     feature_flags:
       SEARCH_OR_ASK_AI: true
-  edge: 
+  edge:
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
     content_source: edge
@@ -92,12 +92,14 @@ references:
   ecs-logging-python:
   ecs-logging-ruby:
   ecs-logging:
+  elastic-agent:
   elastic-otel-dotnet:
   elastic-otel-java:
   elastic-otel-node:
   elastic-otel-php:
   elastic-otel-python:
   elastic-serverless-forwarder:
+  fleet-server:
   integration-docs:
     private: true
   integrations:
