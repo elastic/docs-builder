@@ -33,7 +33,7 @@ deployment:
 #### Orchestrator level security [orchestrator-level]
 ```{applies_to}
 deployment:
-ece: ga
+  ece: ga
 ```
 
 [...]
