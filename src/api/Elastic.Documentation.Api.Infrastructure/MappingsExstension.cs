@@ -15,7 +15,7 @@ public static class MappingsExtension
 {
 	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
 	{
-		_ = group.MapMethods("/", [HttpMethods.Head], () => Results.Empty);
+		_ = group.MapGet("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapSearchEndpoint(group);
 	}
