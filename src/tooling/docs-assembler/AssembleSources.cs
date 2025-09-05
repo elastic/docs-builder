@@ -42,7 +42,7 @@ public class AssembleSources
 
 	public FrozenDictionary<Uri, NavigationTocMapping> NavigationTocMappings { get; }
 
-	public FrozenDictionary<string, IReadOnlyCollection<string>> HistoryMappings { get; }
+	public FrozenDictionary<string, IReadOnlyCollection<string>> LegacyUrlMappings { get; }
 
 	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
 
@@ -59,7 +59,26 @@ public class AssembleSources
 		Cancel ctx
 	)
 	{
-		var sources = new AssembleSources(logFactory, context, checkouts, configurationContext, availableExporters);
+		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
+		var navigationTocMappings = GetTocMappings(context);
+		var legacyUrlMappings = GetLegacyUrlMappings(context);
+		var uriResolver = new PublishEnvironmentUriResolver(navigationTocMappings, context.Environment);
+
+		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
+		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
+
+		var sources = new AssembleSources(
+			logFactory,
+			context,
+			checkouts,
+			configurationContext,
+			navigationTocMappings,
+			legacyUrlMappings,
+			uriResolver,
+			crossLinkResolver,
+			availableExporters
+		);
 		foreach (var (_, set) in sources.AssembleSets)
 			await set.DocumentationSet.ResolveDirectoryTree(ctx);
 		return sources;
@@ -70,21 +89,21 @@ public class AssembleSources
 		AssembleContext assembleContext,
 		Checkout[] checkouts,
 		IConfigurationContext configurationContext,
+		FrozenDictionary<Uri, NavigationTocMapping> navigationTocMappings,
+		FrozenDictionary<string, IReadOnlyCollection<string>> legacyUrlMappings,
+		PublishEnvironmentUriResolver uriResolver,
+		ICrossLinkResolver crossLinkResolver,
 		IReadOnlySet<Exporter> availableExporters
 	)
 	{
+		NavigationTocMappings = navigationTocMappings;
+		LegacyUrlMappings = legacyUrlMappings;
+		UriResolver = uriResolver;
 		AssembleContext = assembleContext;
-		NavigationTocMappings = GetTocMappings(assembleContext);
-		HistoryMappings = GetLegacyUrlMappings(assembleContext);
-		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
-
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, assembleContext.Configuration, assembleContext.Environment, linkIndexProvider);
-		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, assembleContext.Environment);
-
-		var crossLinkResolver = new CrossLinkResolver(crossLinkFetcher, UriResolver);
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, TreeCollector, configurationContext, availableExporters))
+			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, TreeCollector, configurationContext,
+				availableExporters))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 

@@ -34,6 +34,9 @@ public interface INavigationItem
 	bool Hidden { get; }
 
 	int NavigationIndex { get; set; }
+
+	/// Gets whether this navigation item is a cross-link to another repository.
+	bool IsCrossLink { get; }
 }
 
 /// Represents a leaf node in the navigation tree with associated model data.

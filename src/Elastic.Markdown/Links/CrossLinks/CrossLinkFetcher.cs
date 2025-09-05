@@ -19,46 +19,43 @@ public record FetchedCrossLinks
 
 	public required HashSet<string> DeclaredRepositories { get; init; }
 
-	public required bool FromConfiguration { get; init; }
-
 	public required FrozenDictionary<string, LinkRegistryEntry> LinkIndexEntries { get; init; }
 
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
 		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
-		FromConfiguration = false,
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary()
 	};
 }
 
 public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : IDisposable
 {
-	private readonly ILogger _logger = logFactory.CreateLogger(nameof(CrossLinkFetcher));
+	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
 	private readonly HttpClient _client = new();
 	private LinkRegistry? _linkIndex;
 
 	public static RepositoryLinks Deserialize(string json) =>
 		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositoryLinks)!;
 
-	public abstract Task<FetchedCrossLinks> Fetch(Cancel ctx);
+	public abstract Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx);
 
-	public async Task<LinkRegistry> FetchLinkIndex(Cancel ctx)
+	public async Task<LinkRegistry> FetchLinkRegistry(Cancel ctx)
 	{
 		if (_linkIndex is not null)
 		{
-			_logger.LogTrace("Using cached link index");
+			Logger.LogTrace("Using cached link index registry (link-index.json)");
 			return _linkIndex;
 		}
 
-		_logger.LogInformation("Getting link index");
+		Logger.LogInformation("Fetching link index registry (link-index.json)");
 		_linkIndex = await linkIndexProvider.GetRegistry(ctx);
 		return _linkIndex;
 	}
 
 	protected async Task<LinkRegistryEntry> GetLinkIndexEntry(string repository, Cancel ctx)
 	{
-		var linkIndex = await FetchLinkIndex(ctx);
+		var linkIndex = await FetchLinkRegistry(ctx);
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 		return GetNextContentSourceLinkIndexEntry(repositoryLinks, repository);
@@ -74,9 +71,9 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		return linkIndexEntry;
 	}
 
-	protected async Task<RepositoryLinks> Fetch(string repository, string[] keys, Cancel ctx)
+	protected async Task<RepositoryLinks> FetchCrossLinks(string repository, string[] keys, Cancel ctx)
 	{
-		var linkIndex = await FetchLinkIndex(ctx);
+		var linkIndex = await FetchLinkRegistry(ctx);
 		if (!linkIndex.Repositories.TryGetValue(repository, out var repositoryLinks))
 			throw new Exception($"Repository {repository} not found in link index");
 
@@ -91,12 +88,15 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	protected async Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx)
 	{
+		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkRegistryEntry.Path}";
 		var linkReference = await TryGetCachedLinkReference(repository, linkRegistryEntry);
 		if (linkReference is not null)
+		{
+			Logger.LogInformation("Using locally cached links.json for '{Repository}': {Url}", repository, url);
 			return linkReference;
+		}
 
-		var url = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkRegistryEntry.Path}";
-		_logger.LogInformation("Fetching links.json for '{Repository}': {Url}", repository, url);
+		Logger.LogInformation("Fetching links.json for '{Repository}': {Url}", repository, url);
 		var json = await _client.GetStringAsync(url, ctx);
 		linkReference = Deserialize(json);
 		WriteLinksJsonCachedFile(repository, linkRegistryEntry, json);
@@ -116,7 +116,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		}
 		catch (Exception e)
 		{
-			_logger.LogError(e, "Failed to write cached link reference {CachedPath}", cachedPath);
+			Logger.LogError(e, "Failed to write cached link reference {CachedPath}", cachedPath);
 		}
 	}
 
@@ -140,7 +140,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 			}
 			catch (Exception e)
 			{
-				_logger.LogError(e, "Failed to read cached link reference {CachedPath}", cachedPath);
+				Logger.LogError(e, "Failed to read cached link reference {CachedPath}", cachedPath);
 				return null;
 			}
 		}
