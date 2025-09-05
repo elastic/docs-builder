@@ -1,0 +1,19 @@
+name: "Deploy API Lambda (prod)"
+
+on:
+  workflow_dispatch:
+    inputs: 
+      ref:
+        description: 'The git tag of the release to deploy, e.g. 3.0.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  
+jobs: 
+  deploy:
+    uses: ./.github/workflows/deploy-api-lambda.yml
+    with:
+      environment: prod
+      ref: refs/tags/${{ github.event.inputs.ref }}
