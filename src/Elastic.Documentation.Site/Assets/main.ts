@@ -2,7 +2,7 @@ import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import './markdown/applies-to'
-import { openDetailsWithAnchor } from './open-details-with-anchor'
+import { initOpenDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
@@ -31,7 +31,7 @@ document.addEventListener('htmx:load', function (event) {
         initNav()
     }
     initSmoothScroll()
-    openDetailsWithAnchor()
+    initOpenDetailsWithAnchor()
     initImageCarousel()
 
     const urlParams = new URLSearchParams(window.location.search)
