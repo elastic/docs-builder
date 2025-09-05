@@ -1,0 +1,16 @@
+name: "Deploy API Lambda (staging)"
+
+on:
+  release: 
+    types:
+      - published
+
+permissions:
+  contents: read
+  
+jobs: 
+  deploy:
+    uses: ./.github/workflows/deploy-api-lambda.yml
+    with:
+      environment: staging
+      ref: refs/tags/${{ github.event.release.tag_name }}

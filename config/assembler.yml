@@ -17,6 +17,8 @@ environments:
       auth: nPocPUG0wiH68jsVeyRSxA
       preview: env-507
       cookies_win: x
+    feature_flags:
+      SEARCH_OR_ASK_AI: true
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs

@@ -82,8 +82,6 @@ public class AwsS3SyncPlanStrategy(
 )
 	: IDocsSyncPlanStrategy
 {
-	private readonly ILogger<AwsS3SyncPlanStrategy> _logger = logFactory.CreateLogger<AwsS3SyncPlanStrategy>();
-
 	private readonly IS3EtagCalculator _s3EtagCalculator = calculator ?? new S3EtagCalculator(logFactory, context.ReadFileSystem);
 
 	private bool IsSymlink(string path)
@@ -92,9 +90,9 @@ public class AwsS3SyncPlanStrategy(
 		return fileInfo.LinkTarget != null;
 	}
 
-	public async Task<SyncPlan> Plan(Cancel ctx = default)
+	public async Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default)
 	{
-		var remoteObjects = await ListObjects(ctx);
+		var (readToCompletion, remoteObjects) = await ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)
 			.Where(f => !IsSymlink(f.FullName))
 			.ToArray();
@@ -158,6 +156,9 @@ public class AwsS3SyncPlanStrategy(
 
 		return new SyncPlan
 		{
+			RemoteListingCompleted = readToCompletion,
+			DeleteThresholdDefault = deleteThreshold,
+			TotalRemoteFiles = remoteObjects.Count,
 			TotalSourceFiles = localObjects.Length,
 			DeleteRequests = deleteRequests.ToList(),
 			AddRequests = addRequests.ToList(),
@@ -167,53 +168,56 @@ public class AwsS3SyncPlanStrategy(
 		};
 	}
 
-	/// <inheritdoc />
-	public PlanValidationResult Validate(SyncPlan plan, float deleteThreshold)
-	{
-		if (plan.TotalSourceFiles == 0)
-		{
-			_logger.LogError("No files to sync");
-			return new(false, 1.0f, deleteThreshold);
-		}
-
-		var deleteRatio = (float)plan.DeleteRequests.Count / plan.TotalSyncRequests;
-		// if the total sync requests are less than 100, we enforce a higher ratio of 0.8
-		// this allows newer assembled documentation to be in a higher state of flux
-		if (plan.TotalSyncRequests <= 100)
-			deleteThreshold = Math.Max(deleteThreshold, 0.8f);
-
-		// if the total sync requests are less than 1000, we enforce a higher ratio of 0.5
-		// this allows newer assembled documentation to be in a higher state of flux
-		else if (plan.TotalSyncRequests <= 1000)
-			deleteThreshold = Math.Max(deleteThreshold, 0.5f);
-
-		if (deleteRatio > deleteThreshold)
-		{
-			_logger.LogError("Delete ratio is {Ratio} which is greater than the threshold of {Threshold}", deleteRatio, deleteThreshold);
-			return new(false, deleteRatio, deleteThreshold);
-		}
-
-		return new(true, deleteRatio, deleteThreshold);
-	}
-
-	private async Task<Dictionary<string, S3Object>> ListObjects(Cancel ctx = default)
+	private async Task<(bool readToCompletion, Dictionary<string, S3Object> objects)> ListObjects(Cancel ctx = default)
 	{
 		var listBucketRequest = new ListObjectsV2Request
 		{
 			BucketName = bucketName,
-			MaxKeys = 1000,
+			MaxKeys = 1000
 		};
 		var objects = new List<S3Object>();
+		var bucketExists = await S3BucketExists(ctx);
+		if (!bucketExists)
+		{
+			context.Collector.EmitGlobalError("Bucket does not exist, cannot list objects");
+			return (false, objects.ToDictionary(o => o.Key));
+		}
+
+		var readToCompletion = true;
 		ListObjectsV2Response response;
 		do
 		{
 			response = await s3Client.ListObjectsV2Async(listBucketRequest, ctx);
 			if (response is null or { S3Objects: null })
+			{
+				if (response?.IsTruncated == true)
+				{
+					context.Collector.EmitGlobalError("Failed to list objects in S3 to completion");
+					readToCompletion = false;
+				}
 				break;
+			}
 			objects.AddRange(response.S3Objects);
 			listBucketRequest.ContinuationToken = response.NextContinuationToken;
 		} while (response.IsTruncated == true);
 
-		return objects.ToDictionary(o => o.Key);
+		return (readToCompletion, objects.ToDictionary(o => o.Key));
+	}
+
+	private async Task<bool> S3BucketExists(Cancel ctx)
+	{
+		//https://docs.aws.amazon.com/code-library/latest/ug/s3_example_s3_Scenario_DoesBucketExist_section.html
+		try
+		{
+			_ = await s3Client.GetBucketAclAsync(new GetBucketAclRequest
+			{
+				BucketName = bucketName
+			}, ctx);
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
 	}
 }

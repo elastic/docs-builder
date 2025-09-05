@@ -68,7 +68,10 @@ export const SearchResults = () => {
                 <>
                     <ul>
                         {data.results.map((result) => (
-                            <SearchResultListItem item={result} />
+                            <SearchResultListItem
+                                item={result}
+                                key={result.url}
+                            />
                         ))}
                     </ul>
                     <EuiSpacer size="m" />
@@ -118,7 +121,7 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
         highlightSearchTerms.push('.net')
     }
     return (
-        <li key={result.url}>
+        <li>
             <div
                 tabIndex={0}
                 css={css`
