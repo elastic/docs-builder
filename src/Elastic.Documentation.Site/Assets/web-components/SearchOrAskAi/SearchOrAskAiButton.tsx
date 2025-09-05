@@ -33,7 +33,7 @@ export const SearchOrAskAiButton = () => {
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
-            const response = await fetch('/docs/_api/v1/', { method: 'HEAD' })
+            const response = await fetch('/docs/_api/v1/')
             return response.ok
         },
         staleTime: 5 * 60 * 1000, // 5 minutes
