@@ -11,5 +11,8 @@ permissions:
 jobs: 
   deploy:
     uses: ./.github/workflows/deploy-api-lambda.yml
+    permissions: 
+      id-token: write
+      contents: read
     with:
       environment: edge
