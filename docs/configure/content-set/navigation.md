@@ -49,6 +49,11 @@ Optional key. Defaults to `false`. When enabled turns soft line endings in the m
 
 ### `external_hosts`
 
+% Or remove this section altogether?
+```{applies_to}
+product: deprecated 0.11.0
+```
+
 All links to external hosts must be declared in this section of `docset.yml`.
 
 Example:
@@ -89,6 +94,17 @@ exclude:
   - '_*.md'
 ```
 
+### `products`
+
+Products that are covered in all pages in the doc set.
+
+:::{include} /_snippets/products-list.md
+:::
+
+`products` can also be defined in the [page level frontmatter](/syntax/frontmatter.md#products).
+If you define `products` in a page's Markdown file and the `docset.yml` file also includes `products`, docs-builder will combine the two lists.
+You can _not_ override doc set level `products` at the page level.
+
 ### `toc`
 
 Defines the table of contents (navigation) for the content set. A minimal toc is:
@@ -107,7 +123,7 @@ The TOC in principle follows the directory structure on disk.
   - folder: subsection
 ```
 
-If a folder does not explicitly define `children` all markdown files within that folder are included automatically 
+If a folder does not explicitly define `children` all markdown files within that folder are included automatically
 
 If a folder does define `children` all markdown files within that folder have to be included. `docs-builder` will error if it detects dangling documentation files.
 
@@ -122,8 +138,8 @@ If a folder does define `children` all markdown files within that folder have to
 
 #### Virtual grouping
 
-A `file` element may include children to create a virtual grouping that 
-does not match the directory structure. 
+A `file` element may include children to create a virtual grouping that
+does not match the directory structure.
 
 ```yaml
   ...
@@ -137,7 +153,7 @@ A `file` may only select siblings and more deeply nested files as its children. 
 
 #### Hidden files
 
-A hidden file can be declared in the TOC. 
+A hidden file can be declared in the TOC.
 ```yaml
   - hidden: developer-pages.md
 ```
@@ -176,6 +192,6 @@ See [Attributes](./attributes.md) to learn more.
 
 As a rule, each `docset.yml` file can only be included once in the assembler. This prevents us from accidentally duplicating pages in the docs. However, there are times when you want to split content sets and include them partially in different areas of the TOC. That's what `toc.yml` files are for. These files split one documentation set into multiple “sub-TOCs,” each mapped to a different navigation node.
 
-A `toc.yml` file may only declare a nested [TOC](#toc), other options are ignored. 
+A `toc.yml` file may only declare a nested [TOC](#toc), other options are ignored.
 
 A `toc.yml` may not link to further nested `toc.yml` files. Doing so will result in an error
