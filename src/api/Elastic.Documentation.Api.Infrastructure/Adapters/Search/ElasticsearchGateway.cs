@@ -67,7 +67,125 @@ public class ElasticsearchGateway : ISearchGateway
 	}
 
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> SearchAsync(string query, int pageNumber, int pageSize, Cancel ctx = default) =>
-		await ExactSearchAsync(query, pageNumber, pageSize, ctx);
+		await HybridSearchWithRrfAsync(query, pageNumber, pageSize, ctx);
+
+	public async Task<(int TotalHits, List<SearchResultItem> Results)> HybridSearchWithRrfAsync(string query, int pageNumber, int pageSize, Cancel ctx = default)
+	{
+		_logger.LogInformation("Starting RRF hybrid search for '{Query}' with pageNumber={PageNumber}, pageSize={PageSize}", query, pageNumber, pageSize);
+
+		var searchQuery = query.Replace("dotnet", "net", StringComparison.InvariantCultureIgnoreCase);
+
+		try
+		{
+			var response = await _client.SearchAsync<DocumentDto>(s => s
+				.Indices(_elasticsearchOptions.IndexName)
+				.Retriever(r => r
+					.Rrf(rrf => rrf
+						.Retrievers(
+							// Lexical/Traditional search retriever
+							ret => ret.Standard(std => std
+								.Query(q => q
+									.Bool(b => b
+										.Should(
+											// Tier 1: Exact/Prefix matches (highest priority)
+											sh => sh.Prefix(p => p
+												.Field("title.keyword")
+												.Value(searchQuery)
+												.CaseInsensitive(true)
+												.Boost(10.0f) // Highest importance - exact prefix matches
+											),
+											// Tier 2: Title matching with AND operator
+											sh => sh.Match(m => m
+												.Field(f => f.Title)
+												.Query(searchQuery)
+												.Operator(Operator.And)
+												.Boost(8.0f) // High importance - all terms must match
+											),
+											// Tier 3: Match bool prefix for partial matches
+											sh => sh.MatchBoolPrefix(m => m
+												.Field(f => f.Title)
+												.Query(searchQuery)
+												.Boost(6.0f) // Medium-high importance - partial matches
+											),
+											// Tier 4: Abstract matching
+											sh => sh.Match(m => m
+												.Field(f => f.Abstract)
+												.Query(searchQuery)
+												.Boost(4.0f) // Medium importance - content matching
+											),
+											// Tier 5: Parent matching
+											sh => sh.Match(m => m
+												.Field("parents.title")
+												.Query(searchQuery)
+												.Boost(2.0f) // Lower importance - parent context
+											),
+											// Tier 6: Fuzzy fallback
+											sh => sh.Match(m => m
+												.Field(f => f.Title)
+												.Query(searchQuery)
+												.Fuzziness(1)
+												.Boost(1.0f) // Lowest importance - fuzzy fallback
+											)
+										)
+										.MustNot(mn => mn.Terms(t => t
+											.Field("url.keyword")
+											.Terms(factory => factory.Value("/docs", "/docs/", "/docs/404", "/docs/404/"))
+										))
+										.MinimumShouldMatch(1)
+									)
+								)
+							),
+							// Semantic search retriever
+							ret => ret.Standard(std => std
+								.Query(q => q
+									.Bool(b => b
+										.Should(
+											// Title semantic search
+											sh => sh.Semantic(sem => sem
+												.Field("title.semantic_text")
+												.Query(searchQuery)
+												.Boost(5.0f) // Higher importance - title semantic matching
+											),
+											// Abstract semantic search
+											sh => sh.Semantic(sem => sem
+												.Field("abstract")
+												.Query(searchQuery)
+												.Boost(3.0f) // Medium importance - content semantic matching
+											)
+										)
+										.MustNot(mn => mn.Terms(t => t
+											.Field("url.keyword")
+											.Terms(factory => factory.Value("/docs", "/docs/", "/docs/404", "/docs/404/"))
+										))
+										.MinimumShouldMatch(1)
+									)
+								)
+							)
+						)
+						.RankConstant(60) // Controls how much weight is given to document ranking
+					)
+				)
+				.From((pageNumber - 1) * pageSize)
+				.Size(pageSize), ctx);
+
+			if (!response.IsValidResponse)
+			{
+				_logger.LogWarning("Elasticsearch RRF search response was not valid. Reason: {Reason}",
+					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
+			}
+			else
+			{
+				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", query, response.Total);
+			}
+
+			return ProcessSearchResponse(response);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Error occurred during Elasticsearch RRF search for '{Query}'", query);
+			throw;
+		}
+	}
 
 	public async Task<(int TotalHits, List<SearchResultItem> Results)> ExactSearchAsync(string query, int pageNumber, int pageSize, Cancel ctx = default)
 	{
