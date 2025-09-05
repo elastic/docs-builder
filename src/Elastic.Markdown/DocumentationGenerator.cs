@@ -99,6 +99,36 @@ public class DocumentationGenerator
 		_logger.LogInformation("Resolving tree");
 		await DocumentationSet.Tree.Resolve(ctx);
 		_logger.LogInformation("Resolved tree");
+		ReportDuplicateTitles(DocumentationSet.Tree.ResolvedMarkdownFiles);
+	}
+
+	private void ReportDuplicateTitles(List<MarkdownFile> files)
+	{
+		// Create a dictionary where keys are the titles
+		// and values are files with that title
+		var titleMap = new Dictionary<string, List<MarkdownFile>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var file in files)
+		{
+			if (string.IsNullOrWhiteSpace(file.Title))
+				continue;
+			// If there is no entry for this title, create it and
+			// initialize it to an empty list
+			if (!titleMap.TryGetValue(file.Title, out var list))
+				titleMap[file.Title] = [];
+			titleMap[file.Title].Add(file);
+		}
+		// Go through all the titles and if a title has multiple files, report it
+		foreach (var kv in titleMap)
+		{
+			var documentFiles = kv.Value;
+			if (documentFiles.Count > 1)
+			{
+				var fileList = string.Join(", ", documentFiles.Select(f => f.RelativePath));
+				foreach (var documentFile in documentFiles)
+					Context.Collector.EmitHint(documentFile.RelativePath,
+						$"Duplicate titles found. The title '{kv.Key}' is used in files: {{{fileList}}}");
+			}
+		}
 	}
 
 	public async Task<GenerationResult> GenerateAll(Cancel ctx)

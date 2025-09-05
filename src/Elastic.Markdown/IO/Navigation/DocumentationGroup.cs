@@ -46,6 +46,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	private readonly IRootNavigationItem<MarkdownFile, INavigationItem>? _root;
 
+	public List<MarkdownFile> ResolvedMarkdownFiles { get; set; }
+
 	protected virtual IRootNavigationItem<MarkdownFile, INavigationItem> DefaultNavigation =>
 		_root ?? throw new InvalidOperationException("root navigation's model is not of type MarkdownFile");
 
@@ -70,6 +72,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		// We'll need to address this more structurally
 		// ReSharper disable VirtualMemberCallInConstructor
 		_root = toplevelTree;
+		ResolvedMarkdownFiles = [];
 		toplevelTree ??= DefaultNavigation;
 		if (parent?.Depth == 0)
 			toplevelTree = DefaultNavigation;
@@ -225,10 +228,22 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
-		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
+		// First add the index file
+		ResolvedMarkdownFiles.Add(Index);
+		// Then add all the files in this group
+		ResolvedMarkdownFiles.AddRange(FilesInOrder);
+		// Then add all files in subgroups, breadth first
+		var treeGroups = new Queue<DocumentationGroup>(GroupsInOrder);
+		while (treeGroups.Count > 0)
+		{
+			var group = treeGroups.Dequeue();
+			ResolvedMarkdownFiles.Add(group.Index);
+			ResolvedMarkdownFiles.AddRange(group.FilesInOrder);
+			foreach (var subgroup in group.GroupsInOrder)
+				treeGroups.Enqueue(subgroup);
+		}
 
-		_ = await Index.MinimalParseAsync(ctx);
+		await Parallel.ForEachAsync(ResolvedMarkdownFiles, ctx, async (file, token) => await file.MinimalParseAsync(token));
 
 		_resolved = true;
 	}
