@@ -75,6 +75,24 @@ public class ElasticsearchGateway : ISearchGateway
 
 		var searchQuery = query.Replace("dotnet", "net", StringComparison.InvariantCultureIgnoreCase);
 
+		var lexicalSearchRetriever =
+			((Query)new PrefixQuery(Infer.Field<DocumentDto>(f => f.Title.Suffix("keyword")), searchQuery) { Boost = 10.0f, CaseInsensitive = true }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Operator = Operator.And, Boost = 8.0f }
+				|| new MatchBoolPrefixQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Boost = 6.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Abstract), searchQuery) { Boost = 4.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Parents.First().Title), searchQuery) { Boost = 2.0f }
+				|| new MatchQuery(Infer.Field<DocumentDto>(f => f.Title), searchQuery) { Fuzziness = 1, Boost = 1.0f }
+			)
+				&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")), new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
+			;
+		var semanticSearchRetriever =
+				((Query)new SemanticQuery("title.semantic_text", searchQuery) { Boost = 5.0f }
+				 || new SemanticQuery("abstract", searchQuery) { Boost = 3.0f }
+				)
+				&& !(Query)new TermsQuery(Infer.Field<DocumentDto>(f => f.Url.Suffix("keyword")),
+					new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
+			;
+
 		try
 		{
 			var response = await _client.SearchAsync<DocumentDto>(s => s
@@ -83,84 +101,9 @@ public class ElasticsearchGateway : ISearchGateway
 					.Rrf(rrf => rrf
 						.Retrievers(
 							// Lexical/Traditional search retriever
-							ret => ret.Standard(std => std
-								.Query(q => q
-									.Bool(b => b
-										.Should(
-											// Tier 1: Exact/Prefix matches (highest priority)
-											sh => sh.Prefix(p => p
-												.Field("title.keyword")
-												.Value(searchQuery)
-												.CaseInsensitive(true)
-												.Boost(10.0f) // Highest importance - exact prefix matches
-											),
-											// Tier 2: Title matching with AND operator
-											sh => sh.Match(m => m
-												.Field(f => f.Title)
-												.Query(searchQuery)
-												.Operator(Operator.And)
-												.Boost(8.0f) // High importance - all terms must match
-											),
-											// Tier 3: Match bool prefix for partial matches
-											sh => sh.MatchBoolPrefix(m => m
-												.Field(f => f.Title)
-												.Query(searchQuery)
-												.Boost(6.0f) // Medium-high importance - partial matches
-											),
-											// Tier 4: Abstract matching
-											sh => sh.Match(m => m
-												.Field(f => f.Abstract)
-												.Query(searchQuery)
-												.Boost(4.0f) // Medium importance - content matching
-											),
-											// Tier 5: Parent matching
-											sh => sh.Match(m => m
-												.Field("parents.title")
-												.Query(searchQuery)
-												.Boost(2.0f) // Lower importance - parent context
-											),
-											// Tier 6: Fuzzy fallback
-											sh => sh.Match(m => m
-												.Field(f => f.Title)
-												.Query(searchQuery)
-												.Fuzziness(1)
-												.Boost(1.0f) // Lowest importance - fuzzy fallback
-											)
-										)
-										.MustNot(mn => mn.Terms(t => t
-											.Field("url.keyword")
-											.Terms(factory => factory.Value("/docs", "/docs/", "/docs/404", "/docs/404/"))
-										))
-										.MinimumShouldMatch(1)
-									)
-								)
-							),
+							ret => ret.Standard(std => std.Query(lexicalSearchRetriever)),
 							// Semantic search retriever
-							ret => ret.Standard(std => std
-								.Query(q => q
-									.Bool(b => b
-										.Should(
-											// Title semantic search
-											sh => sh.Semantic(sem => sem
-												.Field("title.semantic_text")
-												.Query(searchQuery)
-												.Boost(5.0f) // Higher importance - title semantic matching
-											),
-											// Abstract semantic search
-											sh => sh.Semantic(sem => sem
-												.Field("abstract")
-												.Query(searchQuery)
-												.Boost(3.0f) // Medium importance - content semantic matching
-											)
-										)
-										.MustNot(mn => mn.Terms(t => t
-											.Field("url.keyword")
-											.Terms(factory => factory.Value("/docs", "/docs/", "/docs/404", "/docs/404/"))
-										))
-										.MinimumShouldMatch(1)
-									)
-								)
-							)
+							ret => ret.Standard(std => std.Query(semanticSearchRetriever))
 						)
 						.RankConstant(60) // Controls how much weight is given to document ranking
 					)
