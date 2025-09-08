@@ -70,7 +70,7 @@
   ],
   "dependencies": {
     "@elastic/eui": "106.4.0",
-    "@elastic/highlightjs-esql": "1.1.0",
+    "@elastic/highlightjs-esql": "1.2.0",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
     "@microsoft/fetch-event-source": "2.0.1",
