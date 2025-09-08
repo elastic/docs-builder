@@ -117,9 +117,7 @@ public class ElasticsearchGateway : ISearchGateway
 					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 			}
 			else
-			{
 				_logger.LogInformation("RRF search completed for '{Query}'. Total hits: {TotalHits}", query, response.Total);
-			}
 
 			return ProcessSearchResponse(response);
 		}
