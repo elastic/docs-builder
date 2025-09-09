@@ -123,7 +123,7 @@ The TOC in principle follows the directory structure on disk.
   - folder: subsection
 ```
 
-If a folder does not explicitly define `children` all markdown files within that folder are included automatically
+If a folder does not explicitly define `children` all Markdown files within that folder are included automatically
 
 If a folder does define `children` all markdown files within that folder have to be included. `docs-builder` will error if it detects dangling documentation files.
 

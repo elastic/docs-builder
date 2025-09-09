@@ -52,7 +52,7 @@ If you define `products` in a page's Markdown file and the `docset.yml` file als
 You can _not_ override doc set level `products` at the page level.
 
 :::{tip}
-`products` is distinct from `applies_to`, which is used to indicate feature availability and applicability.
+The purpose of the `products` field is different from `applies_to`: the former provides metadata to search engines, while the latter indicates feature availability and applicability.
 
 % Is this true?
 For example, while a page might contain content that is _applicable_ to Elastic Cloud Serverless projects,
