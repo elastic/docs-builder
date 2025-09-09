@@ -148,7 +148,7 @@ public record GlobalNavigationFile : ITableOfContentsScope
 		_context.Collector.EmitWarning(NavigationFile, message);
 
 	public void EmitError(string message) =>
-		_context.Collector.EmitWarning(NavigationFile, message);
+		_context.Collector.EmitError(NavigationFile, message);
 
 	private IReadOnlyCollection<TocReference> Deserialize(string key)
 	{

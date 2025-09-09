@@ -32,6 +32,8 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public int NavigationIndex { get; set; }
 
+	public bool IsCrossLink => false; // Documentation groups are never cross-links
+
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
 	private IReadOnlyCollection<DocumentationGroup> GroupsInOrder { get; }
@@ -119,7 +121,25 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 		foreach (var tocItem in lookups.TableOfContents)
 		{
-			if (tocItem is FileReference file)
+			if (tocItem is CrossLinkReference crossLink)
+			{
+				// Validate that cross-link has a title
+				if (string.IsNullOrWhiteSpace(crossLink.Title))
+				{
+					context.EmitError(context.ConfigurationPath,
+						$"Cross-link entries must have a 'title' specified. Cross-link: {crossLink.CrossLinkUri}");
+					continue;
+				}
+
+				if (!lookups.CrossLinkResolver.TryResolve(msg => context.EmitError(context.ConfigurationPath, msg), crossLink.CrossLinkUri, out var resolvedUrl))
+					continue; // the crosslink resolver will emit an error already
+
+				// Create a special navigation item for cross-repository links
+				var crossLinkItem = new CrossLinkNavigationItem(crossLink.CrossLinkUri, resolvedUrl, crossLink.Title, this, crossLink.Hidden);
+				AddToNavigationItems(crossLinkItem, ref fileIndex);
+
+			}
+			else if (tocItem is FileReference file)
 			{
 				if (!lookups.FlatMappedFiles.TryGetValue(file.RelativePath, out var d))
 				{

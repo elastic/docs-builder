@@ -36,7 +36,7 @@ internal sealed class ContentSourceCommands(
 		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fs, fs, null, null);
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
-		var links = await fetcher.FetchLinkIndex(ctx);
+		var links = await fetcher.FetchLinkRegistry(ctx);
 		var repositories = context.Configuration.AvailableRepositories;
 
 		var reportPath = context.ConfigurationFileProvider.AssemblerFile;
