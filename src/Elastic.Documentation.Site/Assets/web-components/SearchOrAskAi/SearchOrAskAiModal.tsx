@@ -8,8 +8,8 @@ import {
     EuiBetaBadge,
     EuiText,
     EuiHorizontalRule,
-    useEuiOverflowScroll,
-} from '@elastic/eui'
+    useEuiOverflowScroll, EuiLink
+} from "@elastic/eui";
 import { css } from '@emotion/react'
 import * as React from 'react'
 
@@ -89,7 +89,7 @@ export const SearchOrAskAiModal = () => {
                 />
 
                 <EuiText color="subdued" size="xs">
-                    This feature is in beta. Got feedback? We'd love to hear it!
+                    This feature is in beta. <EuiLink target="_blank" rel="noopener noreferrer"  href="https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml">Got feedback? We'd love to hear it!</EuiLink>
                 </EuiText>
             </div>
         </div>
