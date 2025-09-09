@@ -52,8 +52,17 @@ jobs:
 
       - name: Upload Lambda function
         run: |
-          aws lambda update-function-code \
+          NEW_VERSION=$(aws lambda update-function-code \
             --function-name "elastic-docs-v3-${ENVIRONMENT}-api" \
-            --zip-file "fileb://${ZIP_FILE}"
+            --zip-file "fileb://${ZIP_FILE}" \
+            --publish \
+            --query 'Version' \
+            --output text)
+
+          aws lambda update-alias \
+          --function-name "elastic-docs-v3-${ENVIRONMENT}-api" \
+          --name live \
+          --function-version $NEW_VERSION
+          
         env:
           ENVIRONMENT: ${{ inputs.environment }}
