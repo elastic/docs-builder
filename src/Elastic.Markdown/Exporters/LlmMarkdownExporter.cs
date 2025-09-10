@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.Helpers;
 using Markdig.Syntax;

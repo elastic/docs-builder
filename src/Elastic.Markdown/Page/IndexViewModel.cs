@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;

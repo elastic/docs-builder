@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Configuration.Versions;

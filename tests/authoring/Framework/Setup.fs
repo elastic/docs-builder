@@ -13,6 +13,7 @@ open System.Threading.Tasks
 open Elastic.Documentation
 open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.Versions
+open Elastic.Documentation.Configuration.Products
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
