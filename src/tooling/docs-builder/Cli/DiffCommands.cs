@@ -56,6 +56,7 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
+		var sourceDirectory = buildContext.DocumentationSourceDirectory;
 		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
@@ -77,31 +78,33 @@ internal sealed class DiffCommands(
 		if (changed.Length != 0)
 			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
 
-		var missingRedirects = changed
-			.Where(c =>
-				c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed
-				&& !redirects.ContainsKey(c is RenamedGitChange renamed ? renamed.OldFilePath : c.FilePath)
-			)
-			.ToArray();
-
-		if (missingRedirects.Length != 0)
+		var deletedAndRenamed = changed.Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed).ToArray();
+		var missingCount = 0;
+		foreach (var change in deletedAndRenamed)
 		{
-			var relativeRedirectFile = Path.GetRelativePath(root.FullName, redirectFile.Source.FullName);
-			_log.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingRedirects.Length, relativeRedirectFile);
+			var lookupPath = change is RenamedGitChange renamed ? renamed.OldFilePath : change.FilePath;
+			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Combine(root.FullName, lookupPath));
+			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Combine(root.FullName, lookupPath));
+			if (redirects.ContainsKey(docSetRelativePath))
+				continue;
+			if (redirects.ContainsKey(rootRelativePath))
+			{
+				collector.EmitHint(redirectFile.Source,
+					$"Redirect contains path relative to root '{rootRelativePath}' but should be relative to the documentation set '{docSetRelativePath}'");
+				continue;
+			}
+			missingCount++;
+
+			if (change is RenamedGitChange rename)
+				collector.EmitError(redirectFile.Source, $"Missing '{docSetRelativePath}' in redirects.yml. '{rename.OldFilePath}' was renamed to '{rename.NewFilePath}' but it has no redirect configuration set.");
+			else if (change.ChangeType is GitChangeType.Deleted)
+				collector.EmitError(redirectFile.Source, $"Missing '{docSetRelativePath}' in redirects.yml. '{change.FilePath}' was deleted but it has no redirect targets. This will lead to broken links.");
 		}
 
-		foreach (var notFound in missingRedirects)
+		if (missingCount != 0)
 		{
-			if (notFound is RenamedGitChange renamed)
-			{
-				collector.EmitError(redirectFile.Source,
-					$"File '{renamed.OldFilePath}' was renamed to '{renamed.NewFilePath}' but it has no redirect configuration set.");
-			}
-			else if (notFound.ChangeType is GitChangeType.Deleted)
-			{
-				collector.EmitError(redirectFile.Source,
-					$"File '{notFound.FilePath}' was deleted but it has no redirect targets. This will lead to broken links.");
-			}
+			var relativeRedirectFile = Path.GetRelativePath(root.FullName, redirectFile.Source.FullName);
+			_log.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingCount, relativeRedirectFile);
 		}
 
 		await collector.StopAsync(ctx);
