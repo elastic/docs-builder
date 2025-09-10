@@ -183,7 +183,7 @@ internal sealed class RepositoryCommands(
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageChecker();
 
-		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, ProductVersionMapper.CreateHistoryVersionMapping(assembleContext.VersionsConfiguration, assembleSources.HistoryMappings));
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, ProductVersionMapper.CreateHistoryVersionMapping(assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings));
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
