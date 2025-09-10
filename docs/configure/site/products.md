@@ -1,6 +1,6 @@
 # `products.yml`
 
-The [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) file specifies metadata regarding the projects in the organization leveraging v3.
+The [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) file specifies metadata regarding the projects in the organization that use the V3 docs system.
 
 ```yml
 products:
