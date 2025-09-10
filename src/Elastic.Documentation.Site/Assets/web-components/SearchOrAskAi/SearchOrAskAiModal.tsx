@@ -84,13 +84,13 @@ export const SearchOrAskAiModal = () => {
                         block-size: 2em;
                         display: flex;
                     `}
-                    label="Beta"
+                    label="Alpha"
                     color="accent"
-                    tooltipContent="This feature is in beta. It's only enabled if you are in Elastic's Global VPN."
+                    tooltipContent="This feature is in private preview and is only enabled if you are in Elastic's Global VPN."
                 />
 
                 <EuiText color="subdued" size="xs">
-                    This feature is in beta.{' '}
+                    This feature is in private preview (alpha).{' '}
                     <EuiLink
                         target="_blank"
                         rel="noopener noreferrer"
