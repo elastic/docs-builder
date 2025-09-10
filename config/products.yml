@@ -37,10 +37,10 @@ products:
     versioning: 'apm_agent_rum'
   apm-k8s-attacher:
     display: 'APM Attacher for Kubernetes'
-    versioning: 'apm_k8s_attacher'
+    versioning: 'apm_attacher'
   apm-aws-lambda:
     display: 'APM AWS Lambda extension'
-    versioning: 'apm_aws_lambda'
+    versioning: 'apm_lambda'
   apm-server:
     display: 'APM Server'
     versioning: 'stack'
@@ -88,7 +88,7 @@ products:
     versioning: 'ecs_logging_go_zap'
   ecs-logging-go-zerolog:
     display: 'Elastic Common Schema (ECS) support for zerolog'
-    versioning: 'ecs-logging-go-zerolog'
+    versioning: 'ecs_logging_go_zerolog'
   ecs-logging-java:
     display: 'ECS-based logging for Java applications'
     versioning: 'ecs_logging_java'
