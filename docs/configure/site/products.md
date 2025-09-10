@@ -4,10 +4,10 @@ The [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/pr
 
 ```yml
 products:
-  apm-agent-dotnet:
+  apm_agent_dotnet:
     display: 'APM Agent for .NET'
     versioning: 'apm_agent_dotnet'
-  edot-collector:
+  edot_collector:
     display: 'Elastic Distribution of OpenTelemetry Collector'
     versioning: 'stack'
 #...
@@ -26,10 +26,10 @@ products:
 
 The following substitutions are available:
 
-| Substitution | Result |
-| --- |---|
-| `{{ product.apm-agent-dotnet }}` |{{ product.apm-agent-dotnet }}   |
-| `{{ .apm-agent-ios }}` | {{ .apm-agent-ios }} |
+| Substitution                    | Result |
+|---------------------------------|---|
+| `{{ product.apm_agent_dotnet }}` |{{ product.apm_agent_dotnet }}  |
+| `{{ .apm_agent_ios }}`           | {{ .apm_agent_ios }} |
 
 ## See also
 

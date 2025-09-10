@@ -8,40 +8,40 @@ stack: &stack [ '8.19', '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', 
 
 mappings:
   en/apm/agent/android/:
-    product: apm-agent-android
+    product: apm_agent_android
     legacy_versions: [ '1.2.0' , '0.x' ]
   en/apm/agent/dotnet/:
-    product: apm-agent-dotnet
+    product: apm_agent_dotnet
     legacy_versions: [ '1.33.0' ]
   en/apm/agent/go/:
-    product: apm-agent-go
+    product: apm_agent_go
     legacy_versions: [ '2.7.1', '1.x', '0.5' ]
   en/apm/agent/java/:
-    product: apm-agent-java
+    product: apm_agent_java
     legacy_versions: ['1.54.0', '0.7', '0.6']
   en/apm/agent/nodejs/:
-    product: apm-agent-node
+    product: apm_agent_node
     legacy_versions: [ '4.x', '3.x', '2.x', '1.x' ]
   en/apm/agent/php/:
-    product: apm-agent-php
+    product: apm_agent_php
     legacy_versions: [ '1.15.1', '1.x' ]
   en/apm/agent/python/:
-    product: apm-agent-python
+    product: apm_agent_python
     legacy_versions: [ '6.24.0', '5.x', '4.x', '3.x', '2.x', '1.x' ]
   en/apm/agent/ruby/:
-    product: apm-agent-ruby
+    product: apm_agent_ruby
     legacy_versions: [ '4.8.0', '3.x', '2.x', '1.x' ]
   en/apm/agent/rum-js/:
-    product: apm-agent-rum-js
+    product: apm_agent_rum_js
     legacy_versions: [ '5.17.0', '4.x', '3.x', '2.x', '1.x', '0.x' ]
   en/apm/agent/swift/:
-    product: apm-agent-ios
+    product: apm_agent_ios
     legacy_versions: [ '1.2.1', '0.x' ]
   en/apm/attacher/:
-    product: apm-k8s-attacher
+    product: apm_k8s_attacher
     legacy_versions: [ '1.1.3' ]
   en/apm/lambda/:
-    product: apm-aws-lambda
+    product: apm_aws_lambda
     legacy_versions: [ '1.5.8' ]
   en/beats/auditbeat/:
     product: auditbeat
@@ -80,61 +80,61 @@ mappings:
     product: winlogbeat
     legacy_versions: *stack
   en/cloud-heroku/:
-    product: cloud-hosted
+    product: cloud_hosted
     legacy_versions: []
   en/cloud-on-k8s/:
-    product: cloud-kubernetes
+    product: cloud_kubernetes
     legacy_versions: [ '3.0+', '2.16', '2.15', '2.14', '2.13', '2.12', '2.11', '2.10', '2.9', '2.8', '2.7', '2.6', '2.5', '2.4', '2.3', '2.2', '2.1', '2.0', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
   en/cloud/:
-    product: cloud-hosted
+    product: cloud_hosted
     legacy_versions: []
   en/cloud-enterprise/:
-    product: cloud-enterprise
+    product: cloud_enterprise
     legacy_versions: [ '4.0', '3.8', '3.7', '3.6', '3.5', '3.4', '3.3', '3.2', '3.1', '3.0', '2.13', '2.12', '2.11', '2.10', '2.9', '2.8', '2.7', '2.6', '2.5', '2.4', '2.3', '2.2', '2.1', '2.0', '1.1', '1.0' ]
   en/ecctl/:
-    product: cloud-control-ecctl
+    product: cloud_control_ecctl
     legacy_versions: [ '1.14+', '1.13', '1.12', '1.11', '1.10', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
   en/ecs-logging/:
-    product: ecs-logging
+    product: ecs_logging
     legacy_versions: []
   en/ecs-logging/dotnet/:
-    product: ecs-dotnet
+    product: ecs_dotnet
     legacy_versions: []
   en/ecs-logging/go-logrus/:
-    product: ecs-logging-go-logrus
+    product: ecs_logging_go_logrus
     legacy_versions: []
   en/ecs-logging/go-zap/:
-    product: ecs-logging-go-zap
+    product: ecs_logging_go_zap
     legacy_versions: []
   en/ecs-logging/go-zerolog/:
-    product: ecs-logging-go-zerolog
+    product: ecs_logging_go_zerolog
     legacy_versions: []
   en/ecs-logging/java/:
-    product: ecs-logging-java
+    product: ecs_logging_java
     legacy_versions: ['0.x']
   en/ecs-logging/nodejs/:
-    product: ecs-logging-nodejs
+    product: ecs_logging_nodejs
     legacy_versions: []
   en/ecs-logging/overview/:
-    product: ecs-logging
+    product: ecs_logging
     legacy_versions: []
   en/ecs-logging/php/:
-    product: ecs-logging-php
+    product: ecs_logging_php
     legacy_versions: []
   en/ecs-logging/python/:
-    product: ecs-logging-python
+    product: ecs_logging_python
     legacy_versions: [ '2.2.0' ]
   en/ecs-logging/ruby/:
-    product: ecs-logging-ruby
+    product: ecs_logging_ruby
     legacy_versions: []
   en/ecs/:
     product: ecs
     legacy_versions: [ '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', '8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '1.12', '1.11', '1.10', '1.9', '1.8', '1.7', '1.6', '1.5', '1.4', '1.3', '1.2', '1.1', '1.0' ]
   en/elastic-stack-glossary/:
-    product: elastic-stack
+    product: elastic_stack
     legacy_versions: []
   en/elastic-stack/:
-    product: elastic-stack
+    product: elastic_stack
     legacy_versions: *stack
   en/elasticsearch/client/curator/:
     product: curator
@@ -179,10 +179,10 @@ mappings:
     product: elasticsearch
     legacy_versions: *stack
   en/esf/:
-    product: elastic-serverless-forwarder
+    product: elastic_serverless_forwarder
     legacy_versions: ['1.20.1']
   en/fleet/:
-    product: elastic-agent
+    product: elastic_agent
     legacy_versions: *stack
   en/ingest-overview/:
     product: elasticsearch
@@ -215,7 +215,7 @@ mappings:
     product: elasticsearch
     legacy_versions: []
   en/search-ui/:
-    product: search-ui
+    product: search_ui
     legacy_versions: ['1.24.1', '1.24.0']
   en/security/:
     product: security
