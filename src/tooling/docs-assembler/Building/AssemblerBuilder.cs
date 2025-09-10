@@ -7,7 +7,7 @@ using System.Text.Json;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Tooling.Arguments;

@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 
@@ -15,7 +17,8 @@ public static class TestHelpers
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
 		VersionsConfiguration? versionsConfiguration = null,
-		ConfigurationFileProvider? configurationFileProvider = null
+		ConfigurationFileProvider? configurationFileProvider = null,
+		ProductsConfiguration? productsConfiguration = null
 	)
 	{
 		configurationFileProvider ??= new ConfigurationFileProvider(fileSystem);
@@ -32,6 +35,9 @@ public static class TestHelpers
 					}
 				}
 			},
+		};
+		productsConfiguration ??= new ProductsConfiguration
+		{
 			Products = new Dictionary<string, Product>
 			{
 				{
@@ -39,10 +45,10 @@ public static class TestHelpers
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
-						VersionSystem = VersioningSystemId.Stack
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
 					}
 				}
-			}
+			}.ToFrozenDictionary()
 		};
 		return new ConfigurationContext
 		{
@@ -51,7 +57,9 @@ public static class TestHelpers
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
 			ConfigurationFileProvider = configurationFileProvider,
-			VersionsConfiguration = versionsConfiguration
+			VersionsConfiguration = versionsConfiguration,
+			ProductsConfiguration = productsConfiguration,
+			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
 }

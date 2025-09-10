@@ -379,7 +379,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, _set.Context.VersionsConfiguration, [.. _set.Context.VersionsConfiguration.Products.Keys]);
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, _set.Context.ProductsConfiguration);
 		}
 		catch (InvalidProductException e)
 		{

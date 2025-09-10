@@ -5,8 +5,11 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using NetEscapades.EnumGenerators;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -22,6 +25,10 @@ public partial class ConfigurationFileProvider
 {
 	private readonly IFileSystem _fileSystem;
 	private readonly string _assemblyName;
+
+	internal IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
+		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.Build();
 
 	public ConfigurationSource ConfigurationSource { get; private set; } = ConfigurationSource.Embedded;
 	public string? GitReference { get; }

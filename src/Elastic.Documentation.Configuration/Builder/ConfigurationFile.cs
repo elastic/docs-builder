@@ -63,7 +63,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig)
+	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -149,10 +149,10 @@ public record ConfigurationFile : ITableOfContentsScope
 								break;
 							}
 
-							if (!Product.AllById(versionsConfig).ContainsKey(productId.Value))
-								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Product.All(versionsConfig).Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
+							if (!productsConfig.Products.TryGetValue(productId.Value, out var productToAdd))
+								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(productsConfig.Products.Select(p => p.Value.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
 							else
-								_ = Products.Add(versionsConfig.Products[productId.Value]);
+								_ = Products.Add(productToAdd);
 						}
 						break;
 					case "features":
@@ -177,10 +177,10 @@ public record ConfigurationFile : ITableOfContentsScope
 				_substitutions[key] = system.Base;
 			}
 
-			foreach (var (id, product) in versionsConfig.Products)
+			foreach (var product in productsConfig.Products.Values)
 			{
-				_substitutions[$"product.{id}"] = product.DisplayName;
-				_substitutions[$".{id}"] = product.DisplayName;
+				_substitutions[$"product.{product.Id}"] = product.DisplayName;
+				_substitutions[$".{product.Id}"] = product.DisplayName;
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");

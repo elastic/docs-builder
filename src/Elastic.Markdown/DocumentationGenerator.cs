@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Site.FileProviders;

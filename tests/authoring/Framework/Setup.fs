@@ -6,12 +6,14 @@ namespace authoring
 
 
 open System
+open System.Collections.Frozen
 open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open Elastic.Documentation
 open Elastic.Documentation.Configuration
+open Elastic.Documentation.Configuration.LegacyUrlMappings
 open Elastic.Documentation.Configuration.Versions
 open Elastic.Documentation.Configuration.Products
 open Elastic.Markdown
@@ -210,19 +212,19 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
-        let products = Dictionary<string, Product>()
-        products.Add("elasticsearch", Product(
-            Id = "elasticsearch",
+        let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
+        let productDict = Dictionary<string, Product>()
+        productDict.Add("elasticsearch", Product(Id = "elasticsearch",
             DisplayName = "Elasticsearch",
-            VersionSystem = VersioningSystemId.ElasticsearchProject)
-            )
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ElasticsearchProject]))
         
-        let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems, Products = products)
         let configurationFileProvider = ConfigurationFileProvider(fileSystem)
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
-            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default)
+            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
+            ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
+            LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = [])
         )
         let context = BuildContext(
             collector,

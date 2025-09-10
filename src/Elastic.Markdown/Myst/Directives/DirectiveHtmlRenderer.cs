@@ -316,7 +316,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.VersionsConfiguration, [.. block.Context.Build.VersionsConfiguration.Products.Keys]);
+			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
 		}
 		catch (YamlException e)
 		{

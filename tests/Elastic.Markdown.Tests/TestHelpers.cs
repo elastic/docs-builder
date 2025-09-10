@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 
@@ -12,7 +14,7 @@ namespace Elastic.Markdown.Tests;
 
 public static class TestHelpers
 {
-	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null)
+	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
@@ -27,6 +29,9 @@ public static class TestHelpers
 					}
 				}
 			},
+		};
+		productsConfiguration ??= new ProductsConfiguration
+		{
 			Products = new Dictionary<string, Product>
 			{
 				{
@@ -34,7 +39,7 @@ public static class TestHelpers
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
-						VersionSystem = VersioningSystemId.Stack
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
 					}
 				},
 				{
@@ -42,7 +47,7 @@ public static class TestHelpers
 					{
 						Id = "apm",
 						DisplayName = "APM",
-						VersionSystem = VersioningSystemId.Stack
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
 					}
 				},
 				{
@@ -50,10 +55,10 @@ public static class TestHelpers
 					{
 						Id = "apm-agent",
 						DisplayName = "APM Agent",
-						VersionSystem = VersioningSystemId.Stack
+						VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
 					}
 				}
-			}
+			}.ToFrozenDictionary()
 		};
 		return new ConfigurationContext
 		{
@@ -62,7 +67,9 @@ public static class TestHelpers
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
 			ConfigurationFileProvider = new ConfigurationFileProvider(fileSystem),
-			VersionsConfiguration = versionsConfiguration
+			VersionsConfiguration = versionsConfiguration,
+			ProductsConfiguration = productsConfiguration,
+			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
 }

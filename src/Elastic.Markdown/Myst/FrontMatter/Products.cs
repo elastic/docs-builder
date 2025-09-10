@@ -11,7 +11,7 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public class ProductConverter(VersionsConfiguration versions) : IYamlTypeConverter
+public class ProductConverter(ProductsConfiguration products) : IYamlTypeConverter
 {
 	public bool Accepts(Type type) => type == typeof(Product);
 
@@ -20,7 +20,7 @@ public class ProductConverter(VersionsConfiguration versions) : IYamlTypeConvert
 		if (parser.Current is Scalar)
 		{
 			var value = parser.Consume<Scalar>().Value;
-			throw new InvalidProductException($"Invalid YAML format. Products must be specified as a mapping with an 'id' field. Found scalar value: '{value}'. Example format:\nproducts:\n  - id: apm", versions);
+			throw new InvalidProductException($"Invalid YAML format. Products must be specified as a mapping with an 'id' field. Found scalar value: '{value}'. Example format:\nproducts:\n  - id: apm", products);
 		}
 
 		_ = parser.Consume<MappingStart>();
@@ -38,19 +38,19 @@ public class ProductConverter(VersionsConfiguration versions) : IYamlTypeConvert
 		_ = parser.Consume<MappingEnd>();
 
 		if (string.IsNullOrWhiteSpace(productId))
-			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", versions);
+			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", products);
 
-		if (Product.AllById(versions).TryGetValue(productId, out var product))
+		if (products.Products.TryGetValue(productId, out var product))
 			return product;
 
-		throw new InvalidProductException(productId, versions);
+		throw new InvalidProductException(productId, products);
 	}
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
-public class InvalidProductException(string invalidValue, VersionsConfiguration versions)
+public class InvalidProductException(string invalidValue, ProductsConfiguration products)
 	: Exception(
 		$"Invalid products frontmatter value: \"{invalidValue}\"." +
-		(!string.IsNullOrWhiteSpace(invalidValue) ? " " + new Suggestion(Product.All(versions).Select(p => p.Id).ToHashSet(), invalidValue).GetSuggestionQuestion() : "") +
+		(!string.IsNullOrWhiteSpace(invalidValue) ? " " + new Suggestion(products.Products.Select(p => p.Value.Id).ToHashSet(), invalidValue).GetSuggestionQuestion() : "") +
 		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");

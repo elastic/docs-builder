@@ -2,20 +2,23 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
+
+public record ProductsConfiguration
+{
+	public required FrozenDictionary<string, Product> Products { get; init; }
+}
 
 [YamlSerializable]
 public record Product
 {
 	public required string Id { get; init; }
 	public required string DisplayName { get; init; }
-	public VersioningSystemId? VersionSystem { get; init; }
-
-	public static IReadOnlyCollection<Product> All(VersionsConfiguration versions) => [.. versions.Products.Values];
-	public static IReadOnlyDictionary<string, Product> AllById(VersionsConfiguration versions) => versions.Products;
+	public VersioningSystem? VersioningSystem { get; init; }
 }
 
 public sealed class ProductEqualityComparer : IEqualityComparer<Product>, IComparer<Product>
@@ -35,6 +38,6 @@ public sealed class ProductEqualityComparer : IEqualityComparer<Product>, ICompa
 		if (idComparison != 0)
 			return idComparison;
 		var displayNameComparison = string.Compare(x.DisplayName, y.DisplayName, StringComparison.OrdinalIgnoreCase);
-		return displayNameComparison != 0 ? displayNameComparison : Nullable.Compare(x.VersionSystem, y.VersionSystem);
+		return displayNameComparison != 0 ? displayNameComparison : x.VersioningSystem?.Current.CompareTo(y.VersioningSystem?.Current) ?? 0;
 	}
 }

@@ -4,9 +4,9 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -84,13 +84,13 @@ public class HtmlWriter(
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
-		var legacyPages = LegacyUrlMapper.MapLegacyUrl(DocumentationSet.Name, markdown.YamlFrontMatter?.MappedPages);
+		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
+		var configProducts = DocumentationSet.Context.ProductsConfiguration.Products.Select(p =>
 		{
-			if (Product.AllById(DocumentationSet.Context.VersionsConfiguration).TryGetValue(p.Id, out var product))
+			if (DocumentationSet.Context.ProductsConfiguration.Products.TryGetValue(p.Value.Id, out var product))
 				return product;
-			throw new ArgumentException($"Invalid product id: {p}");
+			throw new ArgumentException($"Invalid product id: {p.Value.Id}");
 		});
 
 		var frontMatterProducts = markdown.YamlFrontMatter?.Products ?? [];
@@ -112,6 +112,10 @@ public class HtmlWriter(
 			fullNavigationRenderResult.Id,
 			fullNavigationRenderResult
 		);
+
+		var currentBaseVersion = legacyPages is { Count: > 0 }
+			? $"{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Major}.{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Minor}+"
+			: $"{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Minor}+";
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
@@ -141,7 +145,7 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			CurrentVersion = legacyPages?.Count > 0 ? legacyPages.ElementAt(0).Version : $"{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Minor}+",
+			CurrentVersion = currentBaseVersion,
 			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),

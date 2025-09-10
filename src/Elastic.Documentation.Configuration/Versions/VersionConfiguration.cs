@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
-using Elastic.Documentation.Configuration.Products;
 using NetEscapades.EnumGenerators;
 using YamlDotNet.Serialization;
 
@@ -12,7 +11,6 @@ namespace Elastic.Documentation.Configuration.Versions;
 [YamlSerializable]
 public record VersionsConfiguration
 {
-	public required IReadOnlyDictionary<string, Product> Products { get; init; }
 	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
 	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
 	{

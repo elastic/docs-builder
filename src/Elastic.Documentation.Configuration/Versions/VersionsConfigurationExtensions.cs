@@ -2,11 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Serialization;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
-
 namespace Elastic.Documentation.Configuration.Versions;
 
 public static class VersionsConfigurationExtensions
@@ -14,14 +9,8 @@ public static class VersionsConfigurationExtensions
 	public static VersionsConfiguration CreateVersionConfiguration(this ConfigurationFileProvider provider)
 	{
 		var versionFilePath = provider.VersionFile;
-		var productsFilePath = provider.ProductsFile;
 
-		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.Build();
-
-		var versionsDto = deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
-		var productsDto = deserializer.Deserialize<ProductConfigDto>(productsFilePath.OpenText());
+		var versionsDto = provider.Deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
 
 		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
@@ -31,19 +20,12 @@ public static class VersionsConfigurationExtensions
 				Base = ToSemVersion(kvp.Value.Base),
 				Current = ToSemVersion(kvp.Value.Current)
 			});
-		var products = productsDto.Products.ToDictionary(
-			kvp => kvp.Key,
-			kvp => new Product
-			{
-				Id = kvp.Key,
-				DisplayName = kvp.Value.Display,
-				VersionSystem = ToVersioningSystemId(kvp.Value.Versioning)
-			});
-		var config = new VersionsConfiguration { Products = products, VersioningSystems = versions };
+		var config = new VersionsConfiguration { VersioningSystems = versions };
+
 		return config;
 	}
 
-	private static VersioningSystemId ToVersioningSystemId(string id)
+	internal static VersioningSystemId ToVersioningSystemId(string id)
 	{
 		if (!VersioningSystemIdExtensions.TryParse(id, out var versioningSystemId, true, true))
 			throw new InvalidOperationException($"Could not parse versioning system id {id}");
@@ -78,12 +60,3 @@ internal sealed record VersioningSystemDto
 	public string Current { get; set; } = string.Empty;
 }
 
-internal sealed record ProductConfigDto
-{
-	public Dictionary<string, ProductDto> Products { get; set; } = [];
-}
-internal sealed record ProductDto
-{
-	public string Display { get; set; } = string.Empty;
-	public string Versioning { get; set; } = string.Empty;
-}
