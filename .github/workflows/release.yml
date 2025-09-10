@@ -75,8 +75,19 @@ jobs:
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
+      
+  deploy-api-lambda-staging:
+    needs: 
+      - release-drafter
+    uses: ./.github/workflows/deploy-api-lambda.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: staging
+      ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
 
-  release-lambda:
+  deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
     runs-on: ubuntu-latest
@@ -99,7 +110,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+      - uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -163,8 +174,9 @@ jobs:
   publish-release:
     needs:
       - release
-      - release-lambda
       - release-drafter
+      - deploy-api-lambda-staging
+      - deploy-link-index-updater-lambda-prod
     runs-on: ubuntu-latest
     permissions: 
       contents: write

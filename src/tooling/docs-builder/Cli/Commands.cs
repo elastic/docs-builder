@@ -15,6 +15,7 @@ using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;
@@ -147,8 +148,12 @@ internal sealed class Commands(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 
+		var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, context.Configuration);
+		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+		var crossLinkResolver = new CrossLinkResolver(crossLinks);
+
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logFactory);
+		var set = new DocumentationSet(context, logFactory, crossLinkResolver);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
@@ -223,7 +228,8 @@ internal sealed class Commands(
 		var fileSystem = new FileSystem();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, null).StartAsync(ctx);
 		var context = new BuildContext(collector, fileSystem, fileSystem, configurationContext, ExportOptions.MetadataOnly, path, null);
-		var set = new DocumentationSet(context, logFactory);
+
+		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 
 		var moveCommand = new Move(logFactory, fileSystem, fileSystem, set);
 		var result = await moveCommand.Execute(source, target, dryRun ?? false, ctx);

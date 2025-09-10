@@ -10,21 +10,32 @@ namespace Elastic.Markdown.Links.CrossLinks;
 
 public interface ICrossLinkResolver
 {
-	Task<FetchedCrossLinks> FetchLinks(Cancel ctx);
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 	IUriEnvironmentResolver UriResolver { get; }
 }
 
-public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
+public class NoopCrossLinkResolver : ICrossLinkResolver
 {
-	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
-	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
+	public static NoopCrossLinkResolver Instance { get; } = new();
 
-	public async Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
+	/// <inheritdoc />
+	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
 	{
-		_crossLinks = await fetcher.Fetch(ctx);
-		return _crossLinks;
+		resolvedUri = null;
+		return false;
 	}
+
+	/// <inheritdoc />
+	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
+
+	private NoopCrossLinkResolver() { }
+
+}
+
+public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
+{
+	private FetchedCrossLinks _crossLinks = crossLinks;
+	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
@@ -50,8 +61,21 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 	{
 		resolvedUri = null;
 
+		// First, check if the repository is in the declared repositories list, even if it's not in the link references
+		var isDeclaredRepo = fetchedCrossLinks.DeclaredRepositories.Contains(crossLinkUri.Scheme);
+
 		if (!fetchedCrossLinks.LinkReferences.TryGetValue(crossLinkUri.Scheme, out var sourceLinkReference))
 		{
+			// If it's a declared repository, we might be in a development environment or failed to fetch it,
+			// so let's generate a synthesized URL to avoid blocking development
+			if (isDeclaredRepo)
+			{
+				// Create a synthesized URL for development purposes
+				var path = ToTargetUrlPath((crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/'));
+				resolvedUri = uriResolver.Resolve(crossLinkUri, path);
+				return true;
+			}
+
 			errorEmitter($"'{crossLinkUri.Scheme}' was not found in the cross link index");
 			return false;
 		}
@@ -65,6 +89,15 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 
 		if (sourceLinkReference.Links.TryGetValue(originalLookupPath, out var directLinkMetadata))
 			return ResolveDirectLink(errorEmitter, uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata, out resolvedUri);
+
+		// For development docs or known repositories, allow links even if they don't exist in the link index
+		if (isDeclaredRepo)
+		{
+			// Create a synthesized URL for development purposes
+			var path = ToTargetUrlPath(originalLookupPath);
+			resolvedUri = uriResolver.Resolve(crossLinkUri, path);
+			return true;
+		}
 
 
 		var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{crossLinkUri.Scheme}/main/links.json";
@@ -199,7 +232,7 @@ public class CrossLinkResolver(CrossLinkFetcher fetcher, IUriEnvironmentResolver
 		return true;
 	}
 
-	private static string ToTargetUrlPath(string lookupPath)
+	public static string ToTargetUrlPath(string lookupPath)
 	{
 		//https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/cloud-account/change-your-password
 		var path = lookupPath.Replace(".md", "");
