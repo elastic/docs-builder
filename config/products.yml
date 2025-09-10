@@ -2,46 +2,46 @@ products:
   apm:
     display: 'APM'
     versioning: 'stack'
-  apm_agent:
+  apm-agent:
     display: 'APM Agent'
     versioning: 'stack'
-  apm_agent_android:
+  apm-agent-android:
     display: 'APM Agent for Android'
     versioning: 'apm_agent_android'
-  apm_agent_dotnet:
+  apm-agent-dotnet:
     display: 'APM Agent for .NET'
     versioning: 'apm_agent_dotnet'
-  apm_agent_go:
+  apm-agent-go:
     display: 'APM Agent for Go'
     versioning: 'apm_agent_go'
-  apm_agent_ios:
+  apm-agent-ios:
     display: 'APM Agent for iOS'
     versioning: 'apm_agent_ios'
-  apm_agent_java:
+  apm-agent-java:
     display: 'APM Agent for Java'
     versioning: 'apm_agent_java'
-  apm_agent_node:
+  apm-agent-node:
     display: 'APM Agent for Node'
     versioning: 'apm_agent_node'
-  apm_agent_php:
+  apm-agent-php:
     display: 'APM Agent for PHP'
     versioning: 'apm_agent_php'
-  apm_agent_python:
+  apm-agent-python:
     display: 'APM Agent for Python'
     versioning: 'apm_agent_python'
-  apm_agent_ruby:
+  apm-agent-ruby:
     display: 'APM Agent for Ruby'
     versioning: 'apm_agent_ruby'
-  apm_agent_rum_js:
+  apm-agent-rum-js:
     display: 'APM RUM JavaScript agent'
     versioning: 'apm_agent_rum'
-  apm_k8s_attacher:
+  apm-k8s-attacher:
     display: 'APM Attacher for Kubernetes'
     versioning: 'apm_attacher'
-  apm_aws_lambda:
+  apm-aws-lambda:
     display: 'APM AWS Lambda extension'
     versioning: 'apm_lambda'
-  apm_server:
+  apm-server:
     display: 'APM Server'
     versioning: 'stack'
   auditbeat:
@@ -50,22 +50,22 @@ products:
   beats:
     display: 'Beats'
     versioning: 'stack'
-  cloud_control_ecctl:
+  cloud-control-ecctl:
     display: 'Elastic Cloud Control ECCTL'
     versioning: 'ecctl'
-  cloud_enterprise:
+  cloud-enterprise:
     display: 'Elastic Cloud Enterprise'
     versioning: 'ece'
-  cloud_hosted:
+  cloud-hosted:
     display: 'Elastic Cloud Hosted'
     versioning: 'ech'
-  cloud_kubernetes:
+  cloud-kubernetes:
     display: 'Elastic Cloud Kubernetes'
     versioning: 'eck'
-  cloud_serverless:
+  cloud-serverless:
     display: 'Elastic Cloud Serverless'
     versioning: 'serverless'
-  cloud_terraform:
+  cloud-terraform:
     display: 'Elastic Cloud Terraform'
     versioning: 'stack'
   curator:
@@ -74,85 +74,85 @@ products:
   ecs:
     display: 'Elastic Common Schema (ECS)'
     versioning: 'stack'
-  ecs_logging:
+  ecs-logging:
     display: 'ECS Logging'
     versioning: 'stack'
-  ecs_dotnet:
+  ecs-dotnet:
     display: 'Elastic Common Schema support for .NET'
     versioning: 'ecs_logging_dotnet'
-  ecs_logging_go_logrus:
+  ecs-logging-go-logrus:
     display: 'Elastic Common Schema (ECS) support for Logrus'
     versioning: 'ecs_logging_go_logrus'
-  ecs_logging_go_zap:
+  ecs-logging-go-zap:
     display: 'Elastic Common Schema (ECS) support for uber_go/zap logger'
     versioning: 'ecs_logging_go_zap'
-  ecs_logging_go_zerolog:
+  ecs-logging-go-zerolog:
     display: 'Elastic Common Schema (ECS) support for zerolog'
     versioning: 'ecs_logging_go_zerolog'
-  ecs_logging_java:
+  ecs-logging-java:
     display: 'ECS_based logging for Java applications'
     versioning: 'ecs_logging_java'
-  ecs_logging_nodejs:
+  ecs-logging-nodejs:
     display: 'Elastic Common Schema (ECS) support for Node js'
     versioning: 'ecs_logging_nodejs'
-  ecs_logging_php:
+  ecs-logging-php:
     display: 'ECS Logging for PHP'
     versioning: 'ecs_logging_php'
-  ecs_logging_python:
+  ecs-logging-python:
     display: 'Elastic Common Schema (ECS) support for Python'
     versioning: 'ecs_logging_python'
-  ecs_logging_ruby:
+  ecs-logging-ruby:
     display: 'Elastic Common Schema (ECS) support for Ruby'
     versioning: 'ecs_logging_ruby'
-  edot_cf:
+  edot-cf:
     display: 'EDOT Cloud Forwarder'
     versioning: 'stack'
-  edot_sdk:
+  edot-sdk:
     display: 'Elastic Distribution of OpenTelemetry SDK'
     versioning: 'stack'
-  edot_collector:
+  edot-collector:
     display: 'Elastic Distribution of OpenTelemetry Collector'
     versioning: 'stack'
-  edot_ios:
+  edot-ios:
     display: 'Elastic Distribution of OpenTelemetry iOS'
     versioning: 'edot_ios'
-  edot_android:
+  edot-android:
     display: 'Elastic Distribution of OpenTelemetry Android'
     versioning: 'edot_android'
-  edot_dotnet:
+  edot-dotnet:
     display: 'Elastic Distribution of OpenTelemetry .NET'
     versioning: 'edot_dotnet'
-  edot_java:
+  edot-java:
     display: 'Elastic Distribution of OpenTelemetry Java'
     versioning: 'edot_java'
-  edot_node:
+  edot-node:
     display: 'Elastic Distribution of OpenTelemetry Node'
     versioning: 'edot_node'
-  edot_php:
+  edot-php:
     display: 'Elastic Distribution of OpenTelemetry PHP'
     versioning: 'edot_php'
-  edot_python:
+  edot-python:
     display: 'Elastic Distribution of OpenTelemetry Python'
     versioning: 'edot_python'
-  edot_cf_aws:
+  edot-cf-aws:
     display: 'EDOT Cloud Forwarder for AWS'
     versioning: 'edot_cf_aws'
   eland:
     display: 'Eland'
     versioning: 'stack'
-  elastic_agent:
+  elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
-  elastic_serverless_forwarder:
+  elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
-  elastic_stack:
+  elastic-stack:
     display: 'Elastic Stack'
     versioning: 'stack'
   elasticsearch:
     display: 'Elasticsearch'
     versioning: 'stack'
-  elasticsearch_client:
+  elasticsearch-client:
     display: 'Elasticsearch Client'
     versioning: 'stack'
   ess:
@@ -176,7 +176,7 @@ products:
   logstash:
     display: 'Logstash'
     versioning: 'stack'
-  machine_learning:
+  machine-learning:
     display: 'Machine Learning'
     versioning: 'stack'
   metricbeat:
@@ -191,7 +191,7 @@ products:
   painless:
     display: 'Elasticsearch Painless scripting language'
     versioning: 'stack'
-  search_ui:
+  search-ui:
     display: 'Search UI'
     versioning: 'stack'
   security:
@@ -203,13 +203,13 @@ products:
   serverless:
     display: 'Elastic Serverless'
     versioning: 'all'
-  serverless_elasticsearch:
+  serverless-elasticsearch:
     display: 'Elasticsearch'
     versioning: 'all'
-  serverless_observability:
+  serverless-observability:
     display: 'Elastic Observability'
     versioning: 'all'
-  serverless_security:
+  serverless-security:
     display: 'Elastic Security'
     versioning: 'all'
   winlogbeat:
