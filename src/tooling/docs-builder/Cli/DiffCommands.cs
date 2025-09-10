@@ -56,7 +56,6 @@ internal sealed class DiffCommands(
 			return collector.Errors;
 		}
 
-		var sourceDirectory = buildContext.DocumentationSourceDirectory;
 		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
@@ -89,7 +88,7 @@ internal sealed class DiffCommands(
 				continue;
 			if (redirects.ContainsKey(rootRelativePath))
 			{
-				collector.EmitHint(redirectFile.Source,
+				collector.EmitWarning(redirectFile.Source,
 					$"Redirect contains path relative to root '{rootRelativePath}' but should be relative to the documentation set '{docSetRelativePath}'");
 				continue;
 			}
