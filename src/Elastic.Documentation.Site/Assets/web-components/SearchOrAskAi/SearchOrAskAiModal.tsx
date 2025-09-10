@@ -9,6 +9,7 @@ import {
     EuiText,
     EuiHorizontalRule,
     useEuiOverflowScroll,
+    EuiLink,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
@@ -85,11 +86,18 @@ export const SearchOrAskAiModal = () => {
                     `}
                     label="Beta"
                     color="accent"
-                    tooltipContent="This feature is in beta. Got feedback? We'd love to hear it!"
+                    tooltipContent="This feature is in beta. It's only enabled if you are in Elastic's Global VPN."
                 />
 
                 <EuiText color="subdued" size="xs">
-                    This feature is in beta. Got feedback? We'd love to hear it!
+                    This feature is in beta.{' '}
+                    <EuiLink
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml"
+                    >
+                        Got feedback? We'd love to hear it!
+                    </EuiLink>
                 </EuiText>
             </div>
         </div>

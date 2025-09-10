@@ -367,6 +367,7 @@ jobs:
           env.MATCH == 'true'
           && (
             !cancelled()
+            && github.repository != 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true' 
             && (
               steps.deployment.outputs.result
@@ -377,12 +378,31 @@ jobs:
             )
           )
         uses: elastic/docs-builder/actions/validate-inbound-local@main
+        
+      - name: 'Validate inbound links'
+        if: >
+          env.MATCH == 'true'
+          && (
+            !cancelled()
+            && github.repository == 'elastic/docs-builder'
+            && steps.docs-build.outputs.skip != 'true' 
+            && (
+              steps.deployment.outputs.result
+              || (
+                needs.check.outputs.any_modified == 'true' 
+                && github.event_name == 'merge_group'
+              )
+            )
+          )
+        run: |
+          dotnet run --project src/tooling/docs-builder -- inbound-links validate-link-reference
 
       - name: 'Validate local path prefixes against those claimed by global navigation.yml'
         if: >
           env.MATCH == 'true'
           && (
             !cancelled() 
+            && github.repository != 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true'
             && (
               steps.deployment.outputs.result 
@@ -393,6 +413,24 @@ jobs:
             )
           )
         uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
+        
+      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
+        if: >
+          env.MATCH == 'true'
+          && (
+            !cancelled() 
+            && github.repository == 'elastic/docs-builder'
+            && steps.docs-build.outputs.skip != 'true'
+            && (
+              steps.deployment.outputs.result 
+              || (
+                needs.check.outputs.any_modified == 'true' 
+                && github.event_name == 'merge_group'
+              )
+            )
+          )
+        run: |
+          dotnet run --project src/tooling/docs-builder -- path-prefixes validate-link-reference
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
