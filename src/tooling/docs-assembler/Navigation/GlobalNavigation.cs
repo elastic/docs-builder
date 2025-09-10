@@ -81,6 +81,11 @@ public record GlobalNavigation : IPositionalNavigation
 						fileNavigationItem.Model.NavigationRoot = topLevelNavigation;
 					_ = allNavigationItems.Add(fileNavigationItem);
 					break;
+				case CrossLinkNavigationItem crossLinkNavigationItem:
+					if (parent is not null)
+						crossLinkNavigationItem.Parent = parent;
+					_ = allNavigationItems.Add(crossLinkNavigationItem);
+					break;
 				case DocumentationGroup documentationGroup:
 					if (parent is not null)
 						documentationGroup.Parent = parent;
@@ -90,7 +95,7 @@ public record GlobalNavigation : IPositionalNavigation
 					UpdateParent(allNavigationItems, documentationGroup.NavigationItems, documentationGroup, topLevelNavigation);
 					break;
 				default:
-					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");
+					_navigationFile.EmitError($"{nameof(GlobalNavigation)}.{nameof(UpdateParent)}: Unhandled navigation item type: {item.GetType()}");
 					break;
 			}
 		}
@@ -112,8 +117,12 @@ public record GlobalNavigation : IPositionalNavigation
 					documentationGroup.NavigationIndex = groupIndex;
 					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
 					break;
+				case CrossLinkNavigationItem crossLinkNavigationItem:
+					var crossLinkIndex = Interlocked.Increment(ref navigationIndex);
+					crossLinkNavigationItem.NavigationIndex = crossLinkIndex;
+					break;
 				default:
-					_navigationFile.EmitError($"Unhandled navigation item type: {item.GetType()}");
+					_navigationFile.EmitError($"{nameof(GlobalNavigation)}.{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
 					break;
 			}
 		}

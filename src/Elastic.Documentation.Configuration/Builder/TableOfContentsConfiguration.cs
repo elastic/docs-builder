@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;
 
@@ -129,6 +130,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 	private IEnumerable<ITocItem>? ReadChild(YamlStreamReader reader, YamlMappingNode tocEntry, string parentPath)
 	{
 		string? file = null;
+		string? crossLink = null;
+		string? title = null;
 		string? folder = null;
 		string[]? detectionRules = null;
 		TableOfContentsConfiguration? toc = null;
@@ -148,6 +151,19 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 					hiddenFile = key == "hidden";
 					file = ReadFile(reader, entry, parentPath);
 					break;
+				case "title":
+					title = reader.ReadString(entry);
+					break;
+				case "crosslink":
+					hiddenFile = false;
+					crossLink = reader.ReadString(entry);
+					// Validate crosslink URI early
+					if (!CrossLinkValidator.IsValidCrossLink(crossLink, out var errorMessage))
+					{
+						reader.EmitError(errorMessage!, tocEntry);
+						crossLink = null; // Reset to prevent further processing
+					}
+					break;
 				case "folder":
 					folder = ReadFolder(reader, entry, parentPath);
 					parentPath += $"{Path.DirectorySeparatorChar}{folder}";
@@ -163,6 +179,22 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 					children = ReadChildren(reader, entry, parentPath);
 					break;
 			}
+		}
+
+		// Validate that crosslink entries have titles
+		if (crossLink is not null && string.IsNullOrWhiteSpace(title))
+		{
+			reader.EmitError($"Cross-link entries must have a 'title' specified. Cross-link: {crossLink}", tocEntry);
+			return null;
+		}
+
+		// Validate that standalone titles (without content) are not allowed
+		if (!string.IsNullOrWhiteSpace(title) &&
+			file is null && crossLink is null && folder is null && toc is null &&
+			(detectionRules is null || detectionRules.Length == 0))
+		{
+			reader.EmitError($"Table of contents entries with only a 'title' are not allowed. Entry must specify content (file, crosslink, folder, or toc). Title: '{title}'", tocEntry);
+			return null;
 		}
 
 		if (toc is not null)
@@ -197,6 +229,14 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 
 			var path = $"{parentPath}{Path.DirectorySeparatorChar}{file}".TrimStart(Path.DirectorySeparatorChar);
 			return [new FileReference(this, path, hiddenFile, children ?? [])];
+		}
+
+		if (crossLink is not null)
+		{
+			if (Uri.TryCreate(crossLink, UriKind.Absolute, out var crossUri) && CrossLinkValidator.IsCrossLink(crossUri))
+				return [new CrossLinkReference(this, crossUri, title, hiddenFile, children ?? [])];
+			else
+				reader.EmitError($"Cross-link '{crossLink}' is not a valid absolute URI format", tocEntry);
 		}
 
 		if (folder is not null)

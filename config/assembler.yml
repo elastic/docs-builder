@@ -7,6 +7,8 @@ environments:
     google_tag_manager:
       enabled: true
       id: GTM-KNJMG2M
+    feature_flags:
+      SEARCH_OR_ASK_AI: true
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
@@ -17,6 +19,8 @@ environments:
       auth: nPocPUG0wiH68jsVeyRSxA
       preview: env-507
       cookies_win: x
+    feature_flags:
+      SEARCH_OR_ASK_AI: true
   edge: 
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
