@@ -86,7 +86,7 @@ export const SearchOrAskAiModal = () => {
                     `}
                     label="Beta"
                     color="accent"
-                    tooltipContent="This feature is in beta. Got feedback? We'd love to hear it!"
+                    tooltipContent="This feature is in beta. It's only enabled if you are in Elastic's Global VPN."
                 />
 
                 <EuiText color="subdued" size="xs">
