@@ -24,12 +24,20 @@ products:
 
 ## Substitutions
 
-The following substitutions are available:
+Writing `{{ product.<product-id> }}` renders the friendly name of the product in the documentation. For example:
 
 | Substitution                    | Result |
 |---------------------------------|---|
 | `{{ product.apm_agent_dotnet }}` |{{ product.apm_agent_dotnet }}  |
-| `{{ .apm_agent_ios }}`           | {{ .apm_agent_ios }} |
+| `{{ product.edot_collector }}`           | {{ product.edot_collector }} |
+
+You can also use the shorthand notation `{{ .<product_id> }}`. For example:
+
+| Substitution                    | Result |
+|---------------------------------|---|
+| `{{ .apm_agent_dotnet }}` |{{ .apm_agent_dotnet }}  |
+| `{{ .edot_collector }}`           | {{ .edot_collector }} |
+
 
 ## See also
 
