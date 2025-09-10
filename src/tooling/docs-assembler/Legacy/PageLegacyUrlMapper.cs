@@ -30,7 +30,7 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 
 		if (LegacyUrlMappings.Mappings.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)) is not { } legacyMappingMatch)
 		{
-			return [new LegacyPageMapping(LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic-stack", StringComparison.InvariantCultureIgnoreCase)).Product, mappedPages.FirstOrDefault() ?? string.Empty, DefaultVersion, false)];
+			return [new LegacyPageMapping(LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic_stack", StringComparison.InvariantCultureIgnoreCase)).Product, mappedPages.FirstOrDefault() ?? string.Empty, DefaultVersion, false)];
 		}
 
 		var allVersions = new List<LegacyPageMapping>();
