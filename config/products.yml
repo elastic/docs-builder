@@ -14,6 +14,9 @@ products:
   apm-agent-go:
     display: 'APM Agent for Go'
     versioning: 'apm_agent_go'
+  apm-agent-ios:
+    display: 'APM Agent for iOS'
+    versioning: 'apm_agent_ios'
   apm-agent-java:
     display: 'APM Agent for Java'
     versioning: 'apm_agent_java'
@@ -32,6 +35,15 @@ products:
   apm-agent-rum-js:
     display: 'APM RUM JavaScript agent'
     versioning: 'apm_agent_rum'
+  apm-k8s-attacher:
+    display: 'APM Attacher for Kubernetes'
+    versioning: 'apm_k8s_attacher'
+  apm-aws-lambda:
+    display: 'APM AWS Lambda extension'
+    versioning: 'apm_aws_lambda'
+  apm-server:
+    display: 'APM Server'
+    versioning: 'stack'
   auditbeat:
     display: 'Auditbeat'
     versioning: 'stack'
@@ -40,43 +52,58 @@ products:
     versioning: 'stack'
   cloud-control-ecctl:
     display: 'Elastic Cloud Control ECCTL'
-    versioning: 'stack'
+    versioning: 'ecctl'
   cloud-enterprise:
     display: 'Elastic Cloud Enterprise'
-    versioning: 'stack'
+    versioning: 'ece'
   cloud-hosted:
     display: 'Elastic Cloud Hosted'
-    versioning: 'stack'
+    versioning: 'ech'
   cloud-kubernetes:
     display: 'Elastic Cloud Kubernetes'
-    versioning: 'stack'
+    versioning: 'eck'
   cloud-serverless:
     display: 'Elastic Cloud Serverless'
-    versioning: 'stack'
+    versioning: 'serverless'
   cloud-terraform:
     display: 'Elastic Cloud Terraform'
     versioning: 'stack'
   curator:
     display: 'Elasticsearch Curator'
     versioning: 'curator'
-  ecctl:
-    display: 'Elastic Cloud Control ECCTL'
-    versioning: 'ecctl'
-  ece:
-    display: 'Elastic Cloud Enterprise'
-    versioning: 'ece'
-  ech:
-    display: 'Elastic Cloud Hosted'
-    versioning: 'all'
-  eck:
-    display: 'Elastic Cloud on Kubernetes'
-    versioning: 'eck'
   ecs:
     display: 'Elastic Common Schema (ECS)'
     versioning: 'stack'
   ecs-logging:
     display: 'ECS Logging'
     versioning: 'stack'
+  ecs-dotnet:
+    display: 'Elastic Common Schema support for .NET'
+    versioning: 'ecs_logging_dotnet'
+  ecs-logging-go-logrus:
+    display: 'Elastic Common Schema (ECS) support for Logrus'
+    versioning: 'ecs_logging_go_logrus'
+  ecs-logging-go-zap:
+    display: 'Elastic Common Schema (ECS) support for uber-go/zap logger'
+    versioning: 'ecs_logging_go_zap'
+  ecs-logging-go-zerolog:
+    display: 'Elastic Common Schema (ECS) support for zerolog'
+    versioning: 'ecs-logging-go-zerolog'
+  ecs-logging-java:
+    display: 'ECS-based logging for Java applications'
+    versioning: 'ecs_logging_java'
+  ecs-logging-nodejs:
+    display: 'Elastic Common Schema (ECS) support for Node js'
+    versioning: 'ecs_logging_nodejs'
+  ecs-logging-php:
+    display: 'ECS Logging for PHP'
+    versioning: 'ecs_logging_php'
+  ecs-logging-python:
+    display: 'Elastic Common Schema (ECS) support for Python'
+    versioning: 'ecs_logging_python'
+  ecs-logging-ruby:
+    display: 'Elastic Common Schema (ECS) support for Ruby'
+    versioning: 'ecs_logging_ruby'
   edot-cf:
     display: 'EDOT Cloud Forwarder'
     versioning: 'stack'
@@ -110,12 +137,15 @@ products:
   edot-cf-aws:
     display: 'EDOT Cloud Forwarder for AWS'
     versioning: 'edot_cf_aws'
+  eland:
+    display: 'Eland'
+    versioning: 'stack'
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
-    versioning: 'stack'
+    versioning: 'esf'
   elastic-stack:
     display: 'Elastic Stack'
     versioning: 'stack'
