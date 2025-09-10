@@ -88,7 +88,7 @@ internal sealed class DiffCommands(
 				continue;
 			if (redirects.ContainsKey(rootRelativePath))
 			{
-				collector.EmitWarning(redirectFile.Source,
+				collector.EmitError(redirectFile.Source,
 					$"Redirect contains path relative to root '{rootRelativePath}' but should be relative to the documentation set '{docSetRelativePath}'");
 				continue;
 			}
