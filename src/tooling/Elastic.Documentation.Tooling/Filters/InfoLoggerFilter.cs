@@ -14,7 +14,7 @@ public class InfoLoggerFilter(ConsoleAppFilter next, ILogger<InfoLoggerFilter> l
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
 	{
 		logger.LogInformation("Configuration source: {ConfigurationSource}", fileProvider.ConfigurationSource.ToStringFast(true));
-		if (fileProvider.ConfigurationSource == ConfigurationSource.Checkout)
+		if (fileProvider.ConfigurationSource == ConfigurationSource.Init)
 			logger.LogInformation("Configuration source git reference: {ConfigurationSourceGitReference}", fileProvider.GitReference);
 		var assemblyVersion = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 			.FirstOrDefault()?.InformationalVersion;

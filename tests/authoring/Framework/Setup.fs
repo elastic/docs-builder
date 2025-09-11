@@ -210,7 +210,7 @@ type Setup =
             )
         )
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
-        let configurationFileProvider = ConfigurationFileProvider(fileSystem)
+        let configurationFileProvider = ConfigurationFileProvider(new TestLoggerFactory(), fileSystem)
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,

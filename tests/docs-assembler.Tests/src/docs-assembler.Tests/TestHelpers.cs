@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Tests;
 
@@ -17,7 +18,7 @@ public static class TestHelpers
 		ConfigurationFileProvider? configurationFileProvider = null
 	)
 	{
-		configurationFileProvider ??= new ConfigurationFileProvider(fileSystem);
+		configurationFileProvider ??= new ConfigurationFileProvider(NullLoggerFactory.Instance, fileSystem);
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
