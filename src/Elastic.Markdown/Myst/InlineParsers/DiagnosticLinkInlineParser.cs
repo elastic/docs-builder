@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
@@ -248,9 +247,23 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (string.IsNullOrWhiteSpace(url))
 			return;
 
+
 		var pathOnDisk = Path.GetFullPath(Path.Combine(includeFrom, url.TrimStart('/')));
 		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
-			processor.EmitError(link, $"`{url}` does not exist. resolved to `{pathOnDisk}");
+		{
+			if (context.Configuration.Redirects is not null && context.Configuration.Redirects.TryGetValue(url.TrimStart('/'), out var redirect))
+			{
+				var name = redirect.To ??
+					(redirect.Many is not null
+					 ? $"one of: {string.Join(", ", redirect.Many.Select(m => m.To))}"
+					 : "unknown"
+					);
+				processor.EmitWarning(link, $"Local file `{url}` has a redirect, please update this reference to: {name}");
+			}
+			else
+				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}");
+
+		}
 	}
 
 	private static void ProcessLinkText(InlineProcessor processor, LinkInline link, MarkdownFile? markdown, string? anchor, string url, IFileInfo file)
