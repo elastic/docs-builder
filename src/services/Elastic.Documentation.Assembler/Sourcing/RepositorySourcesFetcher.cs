@@ -204,7 +204,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 				return new Checkout
 				{
 					Directory = checkoutFolder,
-					HeadReference = gitRef,
+					HeadReference = git.GetCurrentCommit(),
 					Repository = repository,
 				};
 			}
@@ -225,7 +225,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 		return new Checkout
 		{
 			Directory = checkoutFolder,
-			HeadReference = gitRef,
+			HeadReference = git.GetCurrentCommit(),
 			Repository = repository,
 		};
 	}

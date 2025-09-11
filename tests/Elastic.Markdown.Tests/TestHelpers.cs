@@ -33,7 +33,7 @@ public static class TestHelpers
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(fileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(TestContext.Current.TestOutputHelper), fileSystem),
 			VersionsConfiguration = versionsConfiguration
 		};
 	}

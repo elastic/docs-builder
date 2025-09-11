@@ -12,9 +12,11 @@ public static class GlobalCommandLine
 		ref string[] args,
 		ref LogLevel defaultLogLevel,
 		out bool skipPrivateRepositories,
+		out ConfigurationSource? configurationSource,
 		out bool isHelpOrVersion
 	)
 	{
+		configurationSource = null;
 		skipPrivateRepositories = false;
 		isHelpOrVersion = false;
 		var newArgs = new List<string>();
@@ -24,6 +26,12 @@ public static class GlobalCommandLine
 			{
 				if (args.Length > i + 1)
 					defaultLogLevel = GetLogLevel(args[i + 1]);
+				i++;
+			}
+			else if (args[i] == "--config-source")
+			{
+				if (args.Length > i + 1 && ConfigurationSourceExtensions.TryParse(args[i + 1], out var cs, true, true))
+					configurationSource = cs;
 				i++;
 			}
 			else if (args[i] == "--skip-private-repositories")

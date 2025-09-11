@@ -25,14 +25,16 @@ public static class AppDefaultsExtensions
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider> configure) where TBuilder : IHostApplicationBuilder =>
 		builder.AddDocumentationServiceDefaults(ref args, null, configure);
 
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, LogLevel? defaultLogLevel = null, Action<IServiceCollection, ConfigurationFileProvider>? configure = null) where TBuilder : IHostApplicationBuilder
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, LogLevel? defaultLogLevel = null, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+		where TBuilder : IHostApplicationBuilder
 	{
 		var logLevel = defaultLogLevel ?? LogLevel.Information;
-		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories, out var isHelpOrVersion);
+		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories, out var configurationSource, out var isHelpOrVersion);
 
 		var services = builder.Services;
+		_ = builder.Services.AddElasticDocumentationLogging(logLevel);
 		_ = services
-			.AddConfigurationFileProvider(skipPrivateRepositories, (s, p) =>
+			.AddConfigurationFileProvider(skipPrivateRepositories, configurationSource, (s, p) =>
 			{
 				_ = s.AddSingleton(p.CreateVersionConfiguration());
 				configure?.Invoke(s, p);

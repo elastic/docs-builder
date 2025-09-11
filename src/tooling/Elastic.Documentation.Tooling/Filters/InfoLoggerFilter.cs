@@ -28,7 +28,7 @@ public class InfoLoggerFilter(
 			return;
 		}
 		logger.LogInformation("Configuration source: {ConfigurationSource}", fileProvider.ConfigurationSource.ToStringFast(true));
-		if (fileProvider.ConfigurationSource == ConfigurationSource.Checkout)
+		if (fileProvider.ConfigurationSource == ConfigurationSource.Init)
 			logger.LogInformation("Configuration source git reference: {ConfigurationSourceGitReference}", fileProvider.GitReference);
 		logger.LogInformation("Version: {Version}", assemblyVersion);
 		await Next.InvokeAsync(context, cancellationToken);
