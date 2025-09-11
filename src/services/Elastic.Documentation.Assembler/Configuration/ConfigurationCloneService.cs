@@ -18,9 +18,19 @@ public class ConfigurationCloneService(ILoggerFactory logFactory, AssemblyConfig
 
 	public async Task<bool> InitConfigurationToApplicationData(IDiagnosticsCollector collector, string? gitRef, Cancel ctx)
 	{
+
 		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "config-clone");
 		var checkoutFolder = fs.DirectoryInfo.New(cachedPath);
 		var cloner = new RepositorySourcer(logFactory, checkoutFolder, fs, collector);
+		if (gitRef is not null && gitRef.Length != 32)
+		{
+			collector.EmitError("", "gitRef must be be 32 characters long");
+			// deleting the cached path because its not in the state we want
+			_logger.LogInformation("Deleting cached config folder");
+			fs.Directory.Delete(cachedPath, true);
+			return false;
+		}
+
 
 		// relies on the embedded configuration, but we don't expect this to change
 		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
@@ -28,15 +38,26 @@ public class ConfigurationCloneService(ILoggerFactory logFactory, AssemblyConfig
 		{
 			SparsePaths = ["config"]
 		};
-		if (string.IsNullOrEmpty(gitRef))
-			gitRef = "main";
+		var gitReference = gitRef;
+		if (string.IsNullOrEmpty(gitReference))
+			gitReference = "main";
 
-		_logger.LogInformation("Cloning configuration ({GitReference})", gitRef);
-		var checkout = cloner.CloneRef(repository, gitRef, appendRepositoryName: false);
+		_logger.LogInformation("Cloning configuration ({GitReference})", gitReference);
+		var checkout = cloner.CloneRef(repository, gitReference, appendRepositoryName: false);
 		_logger.LogInformation("Cloned configuration ({GitReference}) to {ConfigurationFolder}", checkout.HeadReference, checkout.Directory.FullName);
+
+		if (gitRef is not null && !checkout.HeadReference.StartsWith(gitRef, StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitError("", $"Checkout of {checkout.HeadReference} does start with requested gitRef {gitRef}.");
+			// deleting the cached path because it's not in the state we want
+			_logger.LogInformation("Deleting cached config folder");
+			fs.Directory.Delete(cachedPath, true);
+			return false;
+		}
 
 		var gitRefInformationFile = Path.Combine(cachedPath, "config", "git-ref.txt");
 		await fs.File.WriteAllTextAsync(gitRefInformationFile, checkout.HeadReference, ctx);
+
 		return collector.Errors == 0;
 	}
 }
