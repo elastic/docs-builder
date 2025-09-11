@@ -34,10 +34,7 @@ public partial class ConfigurationFileProvider
 
 		ConfigurationSource = configurationSource ?? (
 			fileSystem.Directory.Exists(LocalConfigurationDirectory)
-				? ConfigurationSource.Local
-				: fileSystem.Directory.Exists(LocalConfigurationDirectory)
-					? ConfigurationSource.Init
-					: ConfigurationSource.Embedded
+				? ConfigurationSource.Local : ConfigurationSource.Embedded
 			);
 
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
