@@ -258,7 +258,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 					 ? $"one of: {string.Join(", ", redirect.Many.Select(m => m.To))}"
 					 : "unknown"
 					);
-				processor.EmitError(link, $"Local file `{url}` has a redirect, please update this reference to: {name}");
+				processor.EmitWarning(link, $"Local file `{url}` has a redirect, please update this reference to: {name}");
 			}
 			else
 				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}");
