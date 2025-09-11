@@ -14,7 +14,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 {
 	private readonly string[] _knownKeys =
 	[
-		"stack", "deployment", "product", "ece", "eck", "ess", "ecctl",
+		"stack", "deployment", "serverless", "product", // Applicability categories
+		"ece", "eck", "ess", "self", // Deployment options
+		"elasticsearch", "observability", "security", // Serverless flavors
 		.. productKeys
 	];
 
