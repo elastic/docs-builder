@@ -221,7 +221,7 @@ mappings:
     product: security
     legacy_versions: *stack
   en/serverless/:
-    product: serverless
+    product: cloud_serverless
     legacy_versions: []
   en/starting-with-the-elasticsearch-platform-and-its-solutions/:
     product: elasticsearch

@@ -200,17 +200,14 @@ products:
   self:
     display: 'Self-managed Elastic'
     versioning: 'stack'
-  serverless:
-    display: 'Elastic Serverless'
-    versioning: 'all'
   serverless_elasticsearch:
-    display: 'Elasticsearch'
+    display: 'Elasticsearch Serverless'
     versioning: 'all'
   serverless_observability:
-    display: 'Elastic Observability'
+    display: 'Elastic Observability Serverless'
     versioning: 'all'
   serverless_security:
-    display: 'Elastic Security'
+    display: 'Elastic Security Serverless'
     versioning: 'all'
   winlogbeat:
     display: 'Winlogbeat'
