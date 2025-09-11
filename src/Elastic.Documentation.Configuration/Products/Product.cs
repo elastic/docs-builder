@@ -21,23 +21,3 @@ public record Product
 	public VersioningSystem? VersioningSystem { get; init; }
 }
 
-public sealed class ProductEqualityComparer : IEqualityComparer<Product>, IComparer<Product>
-{
-	public bool Equals(Product? x, Product? y) => x?.Id == y?.Id;
-	public int GetHashCode(Product obj) => obj.Id.GetHashCode();
-
-	public int Compare(Product? x, Product? y)
-	{
-		if (ReferenceEquals(x, y))
-			return 0;
-		if (y is null)
-			return 1;
-		if (x is null)
-			return -1;
-		var idComparison = string.Compare(x.Id, y.Id, StringComparison.OrdinalIgnoreCase);
-		if (idComparison != 0)
-			return idComparison;
-		var displayNameComparison = string.Compare(x.DisplayName, y.DisplayName, StringComparison.OrdinalIgnoreCase);
-		return displayNameComparison != 0 ? displayNameComparison : x.VersioningSystem?.Current.CompareTo(y.VersioningSystem?.Current) ?? 0;
-	}
-}

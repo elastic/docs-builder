@@ -37,7 +37,7 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
-	public HashSet<Product> Products { get; } = new(new ProductEqualityComparer());
+	public HashSet<Product> Products { get; } = [];
 
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 
