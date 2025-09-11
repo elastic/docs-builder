@@ -198,7 +198,7 @@ products:
     display: 'Elastic Security'
     versioning: 'stack'
   self:
-    display: 'Elastic Stack'
+    display: 'Self-managed Elastic'
     versioning: 'stack'
   serverless:
     display: 'Elastic Serverless'
