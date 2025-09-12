@@ -350,11 +350,6 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/ios
               - toc: apm-agent-dotnet://reference
                 path_prefix: reference/opentelemetry/edot-sdks/dotnet
-          - toc: opentelemetry://reference/edot-cloud-forwarder
-            path_prefix: reference/opentelemetry/edot-cloud-forwarder
-            children:
-              - toc: edot-cloud-forwarder-aws://reference
-                path_prefix: reference/opentelemetry/edot-cloud-forwarder/aws
 
       # Ingestion tools
       # https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml
