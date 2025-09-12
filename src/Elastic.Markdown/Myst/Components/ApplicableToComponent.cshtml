@@ -16,7 +16,7 @@
 				}
 				@if (item.RenderData.ShowVersion)
 				{
-					@if (item.RenderData.ShowVersion && item.RenderData.Version != item.RenderData.BadgeText)
+					@if (item.RenderData.Version != item.RenderData.BadgeText)
 					{
 						<span class="applicable-version applicable-version-@item.RenderData.LifecycleClass">
 							@item.Applicability.Version
