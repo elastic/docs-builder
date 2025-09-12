@@ -114,7 +114,9 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
-		var structuredBreadcrumbsJson = CreateStructuredBreadcrumbsData(markdown, parents);
+		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, parents);
+		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
+
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
@@ -150,7 +152,7 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
-			StructuredBreadcrumbsJson = structuredBreadcrumbsJson
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
 		});
 
 		return new RenderResult
@@ -162,7 +164,7 @@ public class HtmlWriter(
 
 	}
 
-	private string CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] parents)
+	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] parents)
 	{
 		List<BreadcrumbListItem> breadcrumbItems = [];
 		var position = 1;
@@ -185,8 +187,7 @@ public class HtmlWriter(
 		{
 			ItemListElement = breadcrumbItems
 		};
-		var structuredBreadcrumbsJson = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
-		return structuredBreadcrumbsJson.Trim();
+		return breadcrumbsList;
 	}
 
 	public async Task<MarkdownDocument> WriteAsync(IDirectoryInfo outBaseDir, IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
