@@ -168,7 +168,7 @@ public class HtmlWriter(
 		var position = 1;
 		var crumbs = parents.Reverse().DistinctBy(i => i.Url).ToList();
 		// Add parents
-		breadcrumbItems.AddRange(crumbs.Select((parent) => new BreadcrumbListItem
+		breadcrumbItems.AddRange(crumbs.Select(parent => new BreadcrumbListItem
 		{
 			Position = position++,
 			Name = parent.NavigationTitle,
@@ -178,7 +178,7 @@ public class HtmlWriter(
 		breadcrumbItems.Add(new BreadcrumbListItem
 		{
 			Position = position,
-			Name = markdown.Title ?? "[TITLE NOT SET]",
+			Name = markdown.Title ?? markdown.NavigationTitle,
 			Item = null,
 		});
 		var breadcrumbsList = new BreadcrumbsList
