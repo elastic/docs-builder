@@ -507,6 +507,32 @@ product: ga
 	</span>
 </p>
 """
+        
+type ``product preview`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+product: preview 1.3.0
+```
+"""
+
+    [<Fact>]
+    let ``renders product preview`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="Available in technical preview on  version 1.3.0 and later unless otherwise specified.
+
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
+		<span class="applicable-name"></span>
+		<span class="applicable-meta applicable-meta-preview">
+			<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
+			<span class="applicable-version applicable-version-preview">
+				1.3.0
+			</span>
+		</span>
+	</span>
+</p>
+"""
+        
 
 // Test complex mixed scenarios
 type ``complex mixed scenario`` () =
