@@ -91,4 +91,4 @@ versioning_systems:
     current: 1.7.0
   edot_cf_aws:
     base: 0.1
-    current: 0.1.6
+    current: 0.2.0
