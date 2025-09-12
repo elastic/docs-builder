@@ -43,7 +43,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
 			return null;
 
-		var keys = dictionary.Keys.OfType<string>().Select(x => x.Replace('-', '_')).ToArray();
+		var keys = dictionary.Keys.OfType<string>().Select(x => x.Replace('_', '-')).ToArray();
 		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
 		if (oldStyleKeys.Count > 0)
 			diagnostics.Add((Severity.Warning, $"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}"));

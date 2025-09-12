@@ -39,7 +39,7 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 		if (string.IsNullOrWhiteSpace(productId))
 			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", products);
 
-		if (products.Products.TryGetValue(productId.Replace('-', '_'), out var product))
+		if (products.Products.TryGetValue(productId.Replace('_', '-'), out var product))
 			return product;
 
 		throw new InvalidProductException(productId, products);

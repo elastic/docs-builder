@@ -149,7 +149,7 @@ public record ConfigurationFile : ITableOfContentsScope
 								break;
 							}
 
-							if (!productsConfig.Products.TryGetValue(productId.Value.Replace('-', '_'), out var productToAdd))
+							if (!productsConfig.Products.TryGetValue(productId.Value.Replace('_', '-'), out var productToAdd))
 								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(productsConfig.Products.Select(p => p.Value.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
 							else
 								_ = Products.Add(productToAdd);
