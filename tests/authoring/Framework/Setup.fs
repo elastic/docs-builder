@@ -209,6 +209,56 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
+        versioningSystems.Add(VersioningSystemId.ApmAgentJava, 
+            VersioningSystem(
+                Id = VersioningSystemId.ApmAgentJava,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.ApmAgentPython, 
+            VersioningSystem(
+                Id = VersioningSystemId.ApmAgentPython,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotDotnet, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotDotnet,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotJava, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotJava,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotPython, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotPython,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Curator, 
+            VersioningSystem(
+                Id = VersioningSystemId.Curator,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotCollector, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotCollector,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+       
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
         let configurationFileProvider = ConfigurationFileProvider(fileSystem)
         let configurationContext = ConfigurationContext(

@@ -30,17 +30,17 @@ stack: ga 9.0.0
     [<Fact>]
     let ``renders GA with version`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack version 9.0.0 and later unless otherwise specified.
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``stack preview future version`` () =
@@ -53,7 +53,7 @@ stack: preview 9.1.0
     [<Fact>]
     let ``renders preview future version as planned`` () =
         markdown |> convertsToHtml """
-<div class="applies">
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
@@ -63,7 +63,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``stack beta current version`` () =
@@ -76,18 +76,17 @@ stack: beta 8.8.0
     [<Fact>]
     let ``renders beta current version`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available in beta on Elastic&nbsp;Stack version 8.8.0 and later unless otherwise specified.
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">8.8.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``stack deprecated`` () =
@@ -100,16 +99,15 @@ stack: deprecated 8.7.0
     [<Fact>]
     let ``renders deprecated`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Deprecated on Elastic&nbsp;Stack version 8.7.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to deprecate this functionality in a future Elastic&nbsp;Stack update. Subject to change.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-deprecated">
-			<span class="applicable-lifecycle applicable-lifecycle-deprecated">Deprecated</span>
-			<span class="applicable-version applicable-version-deprecated">8.7.0</span>
+			Deprecation planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``stack removed`` () =
@@ -122,16 +120,15 @@ stack: removed 8.6.0
     [<Fact>]
     let ``renders removed`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Removed on Elastic&nbsp;Stack version 8.6.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to remove this functionality in a future Elastic&nbsp;Stack update. Subject to change.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-removed">
-			<span class="applicable-lifecycle applicable-lifecycle-removed">Removed</span>
-			<span class="applicable-version applicable-version-removed">8.6.0</span>
+			Removal planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``stack all versions`` () =
@@ -144,13 +141,15 @@ stack: ga
     [<Fact>]
     let ``renders all versions`` () =
         markdown |> convertsToHtml """
-<div class="applies">
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
+		<span class="applicable-meta applicable-meta-ga">
+		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test Serverless applicability scenarios
@@ -164,15 +163,15 @@ serverless: ga 9.0.0
     [<Fact>]
     let ``renders serverless all projects`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Serverless version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Serverless update. Subject to change.">
 		<span class="applicable-name">Serverless</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``serverless individual projects`` () =
@@ -188,22 +187,21 @@ serverless:
     [<Fact>]
     let ``renders serverless individual projects`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Serverless&nbsp;Elasticsearch projects version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Serverless&nbsp;Elasticsearch projects update. Subject to change.">
 		<span class="applicable-name">Serverless Elasticsearch</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Serverless&nbsp;Observability projects version 9.1.0 and later unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Serverless&nbsp;Observability projects update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">Serverless Observability</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.1.0</span>
+			Planned
 		</span>
 	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Serverless&nbsp;Security projects update. Subject to change.
@@ -215,7 +213,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test Deployment applicability scenarios
@@ -230,15 +228,15 @@ deployment:
     [<Fact>]
     let ``renders ECE deployment`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Enterprise version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Enterprise update. Subject to change.">
 		<span class="applicable-name">ECE</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``deployment eck`` () =
@@ -252,18 +250,17 @@ deployment:
     [<Fact>]
     let ``renders ECK deployment`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available in beta on Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes version 9.0.0 and later unless otherwise specified.
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">ECK</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.0.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``deployment ess`` () =
@@ -277,7 +274,7 @@ deployment:
     [<Fact>]
     let ``renders ECH deployment`` () =
         markdown |> convertsToHtml """
-<div class="applies">
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Hosted update. Subject to change.
 
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
@@ -287,7 +284,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``deployment self managed`` () =
@@ -301,15 +298,15 @@ deployment:
     [<Fact>]
     let ``renders self-managed deployment`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Self-managed Elastic&nbsp;deployments version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Self-managed Elastic&nbsp;deployments update. Subject to change.">
 		<span class="applicable-name">Self-Managed</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test Product applicability scenarios
@@ -325,22 +322,21 @@ apm_agent_python: preview 9.2.0
     [<Fact>]
     let ``renders APM agents`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Application&nbsp;Performance&nbsp;Monitoring Agent for .NET version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Application&nbsp;Performance&nbsp;Monitoring Agent for .NET update. Subject to change.">
 		<span class="applicable-name">APM Agent .NET</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Application&nbsp;Performance&nbsp;Monitoring Agent for Java version 9.1.0 and later unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Application&nbsp;Performance&nbsp;Monitoring Agent for Java update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">APM Agent Java</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.1.0</span>
+			Planned
 		</span>
 	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Application&nbsp;Performance&nbsp;Monitoring Agent for Python update. Subject to change.
@@ -352,7 +348,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``edot agents`` () =
@@ -367,22 +363,21 @@ edot_python: preview 9.2.0
     [<Fact>]
     let ``renders EDOT agents`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET update. Subject to change.">
 		<span class="applicable-name">EDOT .NET</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java version 9.1.0 and later unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">EDOT Java</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.1.0</span>
+			Planned
 		</span>
 	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python update. Subject to change.
@@ -394,7 +389,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test complex scenarios with multiple lifecycles
@@ -408,16 +403,7 @@ stack: ga 8.8.0, preview 9.0.0
     [<Fact>]
     let ``renders GA planned when preview exists alongside GA`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack version 8.8.0 and later unless otherwise specified.
-
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
-		<span class="applicable-name">Stack</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">8.8.0</span>
-		</span>
-	</span>
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
@@ -427,7 +413,16 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-</div>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
+		<span class="applicable-name">Stack</span>
+		<span class="applicable-separator"></span>
+		<span class="applicable-meta applicable-meta-ga">
+			GA planned
+		</span>
+	</span>
+</p>
 """
 
 type ``deprecation planned`` () =
@@ -440,7 +435,7 @@ stack: deprecated 9.1.0
     [<Fact>]
     let ``renders deprecation planned for future version`` () =
         markdown |> convertsToHtml """
-<div class="applies">
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="We plan to deprecate this functionality in a future Elastic&nbsp;Stack update. Subject to change.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
@@ -448,7 +443,7 @@ stack: deprecated 9.1.0
 			Deprecation planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 type ``removal planned`` () =
@@ -461,7 +456,7 @@ stack: removed 9.1.0
     [<Fact>]
     let ``renders removal planned for future version`` () =
         markdown |> convertsToHtml """
-<div class="applies">
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="We plan to remove this functionality in a future Elastic&nbsp;Stack update. Subject to change.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
@@ -469,7 +464,7 @@ stack: removed 9.1.0
 			Removal planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test edge cases
@@ -483,7 +478,7 @@ stack: unavailable
     [<Fact>]
     let ``renders unavailable`` () =
         markdown |> convertsToHtml """
-<div class="applies">
+<p class="applies applies-block">
 	<span class="applicable-info" data-tippy-content="Not available on Elastic&nbsp;Stack unless otherwise specified.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
@@ -504,11 +499,13 @@ product: ga
     [<Fact>]
     let ``renders product all versions`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="Available on  unless otherwise specified.">
 		<span class="applicable-name"></span>
+		<span class="applicable-meta applicable-meta-ga">
+		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test complex mixed scenarios
@@ -530,24 +527,23 @@ apm_agent_java: beta 9.1.0
     [<Fact>]
     let ``renders complex mixed scenario`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack version 8.8.0 and later unless otherwise specified.
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">8.8.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Serverless&nbsp;Elasticsearch projects version 9.0.0 and later unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Serverless&nbsp;Elasticsearch projects update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">Serverless Elasticsearch</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.0.0</span>
+			Planned
 		</span>
 	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Serverless&nbsp;Observability projects update. Subject to change.
@@ -559,28 +555,27 @@ This functionality may be changed or removed in a future release. Elastic will w
 			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Enterprise version 8.8.0 and later unless otherwise specified.">
-		<span class="applicable-name">ECE</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">8.8.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes version 9.0.0 and later unless otherwise specified.
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">ECK</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available on Application&nbsp;Performance&nbsp;Monitoring Agent for .NET version 9.0.0 and later unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Enterprise update. Subject to change.">
+		<span class="applicable-name">ECE</span>
+		<span class="applicable-separator"></span>
+		<span class="applicable-meta applicable-meta-ga">
+			Planned
+		</span>
+	</span>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Application&nbsp;Performance&nbsp;Monitoring Agent for .NET update. Subject to change.">
 		<span class="applicable-name">APM Agent .NET</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Application&nbsp;Performance&nbsp;Monitoring Agent for Java update. Subject to change.
@@ -592,138 +587,40 @@ Beta features are subject to change. The design and code is less mature than off
 			Planned
 		</span>
 	</span>
-</div>
-"""
-
-// Test missing ProductApplicability products
-type ``product applicability missing`` () =
-    static let markdown = Setup.Markdown """
-```{applies_to}
-ecctl: ga 9.0.0
-curator: beta 9.1.0
-edot_android: preview 9.2.0
-edot_cf_aws: ga 9.0.0
-edot_collector: beta 9.1.0
-edot_node: preview 9.2.0
-apm_agent_android: ga 9.0.0
-apm_agent_go: beta 9.1.0
-apm_agent_ruby: preview 9.2.0
-```
-"""
-
-    [<Fact>]
-    let ``renders missing ProductApplicability products`` () =
-        markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Control version 9.0.0 and later unless otherwise specified.">
-		<span class="applicable-name">ECCTL</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Curator version 9.1.0 and later unless otherwise specified.">
-		<span class="applicable-name">Curator</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.1.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android update. Subject to change.">
-		<span class="applicable-name">EDOT Android</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-preview">
-			Planned
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS version 9.0.0 and later unless otherwise specified.">
-		<span class="applicable-name">EDOT CF AWS</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Collector version 9.1.0 and later unless otherwise specified.">
-		<span class="applicable-name">EDOT Collector</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.1.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js update. Subject to change.">
-		<span class="applicable-name">EDOT Node.js</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-preview">
-			Planned
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available on Application&nbsp;Performance&nbsp;Monitoring Agent for Android version 9.0.0 and later unless otherwise specified.">
-		<span class="applicable-name">APM Agent Android</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available in beta on Application&nbsp;Performance&nbsp;Monitoring Agent for Go version 9.1.0 and later unless otherwise specified.">
-		<span class="applicable-name">APM Agent Go</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-beta">
-			<span class="applicable-lifecycle applicable-lifecycle-beta">Beta</span>
-			<span class="applicable-version applicable-version-beta">9.1.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Application&nbsp;Performance&nbsp;Monitoring Agent for Ruby update. Subject to change.">
-		<span class="applicable-name">APM Agent Ruby</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-preview">
-			Planned
-		</span>
-	</span>
-</div>
+</p>
 """
 
 // Test missing lifecycle scenarios
 type ``lifecycle scenarios missing`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
-stack: development 9.0.0
+stack: beta 9.1.0
 deployment:
-  ece: discontinued 9.0.0
-  eck: planned 9.0.0
+  ece: ga 9.1.0
 ```
 """
 
     [<Fact>]
     let ``renders missing lifecycle scenarios`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Development on Elastic&nbsp;Stack version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-development">
-			<span class="applicable-lifecycle applicable-lifecycle-development">Development</span>
-			<span class="applicable-version applicable-version-development">9.0.0</span>
+		<span class="applicable-meta applicable-meta-beta">
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Discontinued on Elastic&nbsp;Cloud&nbsp;Enterprise version 9.0.0 and later unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Enterprise update. Subject to change.">
 		<span class="applicable-name">ECE</span>
 		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-discontinued">
-			<span class="applicable-lifecycle applicable-lifecycle-discontinued">Discontinued</span>
-			<span class="applicable-version applicable-version-discontinued">9.0.0</span>
+		<span class="applicable-meta applicable-meta-ga">
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Planned on Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes version 9.0.0 and later unless otherwise specified.">
-		<span class="applicable-name">ECK</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-planned">
-			<span class="applicable-lifecycle applicable-lifecycle-planned">Planned</span>
-			<span class="applicable-version applicable-version-planned">9.0.0</span>
-		</span>
-	</span>
-</div>
+</p>
 """
 
 // Test missing version scenarios
@@ -739,8 +636,10 @@ deployment:
     [<Fact>]
     let ``renders missing version scenarios`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-beta">
@@ -754,7 +653,7 @@ deployment:
 			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test missing edge cases
@@ -768,11 +667,15 @@ stack:
     [<Fact>]
     let ``renders missing edge cases`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
+		<span class="applicable-meta applicable-meta-ga">
+		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test missing VersioningSystemId coverage
@@ -793,53 +696,58 @@ product: ga 9.0.0
     [<Fact>]
     let ``renders missing VersioningSystemId coverage`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack version 9.0.0 and later unless otherwise specified.">
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Serverless version 9.0.0 and later unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Serverless update. Subject to change.">
 		<span class="applicable-name">Serverless</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Enterprise version 9.0.0 and later unless otherwise specified.">
-		<span class="applicable-name">ECE</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes version 9.0.0 and later unless otherwise specified.">
-		<span class="applicable-name">ECK</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Hosted version 9.0.0 and later unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Hosted update. Subject to change.">
 		<span class="applicable-name">ECH</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available on Self-managed Elastic&nbsp;deployments version 9.0.0 and later unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;on&nbsp;Kubernetes update. Subject to change.">
+		<span class="applicable-name">ECK</span>
+		<span class="applicable-separator"></span>
+		<span class="applicable-meta applicable-meta-ga">
+			Planned
+		</span>
+	</span>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Enterprise update. Subject to change.">
+		<span class="applicable-name">ECE</span>
+		<span class="applicable-separator"></span>
+		<span class="applicable-meta applicable-meta-ga">
+			Planned
+		</span>
+	</span>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Self-managed Elastic&nbsp;deployments update. Subject to change.">
 		<span class="applicable-name">Self-Managed</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="Available unless otherwise specified.">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future  update. Subject to change.">
 		<span class="applicable-name"></span>
+		<span class="applicable-meta applicable-meta-ga">
+			Planned
+		</span>
 	</span>
-</div>
+</p>
 """
 
 // Test missing disclaimer scenarios
@@ -853,15 +761,15 @@ stack: ga 9.0.0
     [<Fact>]
     let ``renders missing disclaimer scenarios`` () =
         markdown |> convertsToHtml """
-<div class="applies">
-	<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack version 9.0.0 and later unless otherwise specified.
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
-			<span class="applicable-version applicable-version-ga">9.0.0</span>
+			Planned
 		</span>
 	</span>
-</div>
+</p>
 """
