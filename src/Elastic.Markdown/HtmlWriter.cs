@@ -114,6 +114,7 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
+		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
 		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);

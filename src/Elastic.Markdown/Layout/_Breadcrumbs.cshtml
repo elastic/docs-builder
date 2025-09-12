@@ -4,8 +4,6 @@
 		Model.Features.PrimaryNavEnabled
 			? Model.Breadcrumbs
 			: Model.Breadcrumbs.Skip(1);
-
-	//TODO should we even distinctby
 	var crumbs = targets.ToList();
 }
 
