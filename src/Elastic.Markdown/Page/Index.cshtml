@@ -50,6 +50,9 @@
 			<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
 			<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+			<script type="application/ld+json">
+	    	@(new HtmlString(Model.StructuredBreadcrumbsJson))
+	    	</script>
 		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{

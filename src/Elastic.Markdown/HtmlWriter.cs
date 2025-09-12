@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Legacy;
@@ -113,6 +114,7 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
+		var structuredBreadcrumbsJson = CreateStructuredBreadcrumbsData(markdown, parents);
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
@@ -147,7 +149,8 @@ public class HtmlWriter(
 			LegacyPages = legacyPages?.Skip(1).ToArray(),
 			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
 			Products = allProducts,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJson
 		});
 
 		return new RenderResult
@@ -157,6 +160,33 @@ public class HtmlWriter(
 			NavigationFileName = navigationFileName
 		};
 
+	}
+
+	private string CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] parents)
+	{
+		List<BreadcrumbListItem> breadcrumbItems = [];
+		var position = 1;
+		var crumbs = parents.Reverse().DistinctBy(i => i.Url).ToList();
+		// Add parents
+		breadcrumbItems.AddRange(crumbs.Select((parent) => new BreadcrumbListItem
+		{
+			Position = position++,
+			Name = parent.NavigationTitle,
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+		}));
+		// Add current page
+		breadcrumbItems.Add(new BreadcrumbListItem
+		{
+			Position = position,
+			Name = markdown.Title ?? "[TITLE NOT SET]",
+			Item = null,
+		});
+		var breadcrumbsList = new BreadcrumbsList
+		{
+			ItemListElement = breadcrumbItems
+		};
+		var structuredBreadcrumbsJson = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
+		return structuredBreadcrumbsJson.Trim();
 	}
 
 	public async Task<MarkdownDocument> WriteAsync(IDirectoryInfo outBaseDir, IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
@@ -203,5 +233,4 @@ public record RenderResult
 	public required string Html { get; init; }
 	public required string FullNavigationPartialHtml { get; init; }
 	public required string NavigationFileName { get; init; }
-
 }
