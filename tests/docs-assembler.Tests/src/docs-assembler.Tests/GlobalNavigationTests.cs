@@ -235,7 +235,7 @@ public class GlobalNavigationPathProviderTests
 			"/docs/"
 		]);
 
-		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/introduction.md");
+		var getStartedIntro = positionalNavigation.MarkdownNavigationLookup.GetValueOrDefault("docs-content://get-started/index.md");
 		getStartedIntro.Should().NotBeNull();
 		parentGroup = getStartedIntro.Parent as DocumentationGroup;
 		_ = AssertHasParents(parentGroup, positionalNavigation, getStartedIntro);
