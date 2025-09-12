@@ -6,6 +6,8 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -29,6 +31,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public VersionsConfiguration VersionsConfiguration { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }
+
+	public ProductsConfiguration ProductsConfiguration { get; }
+	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
 	public IFileInfo ConfigurationPath { get; }
 
@@ -82,6 +87,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		AvailableExporters = availableExporters;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
+		ProductsConfiguration = configurationContext.ProductsConfiguration;
+		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 		Endpoints = configurationContext.Endpoints;
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
@@ -100,7 +107,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-		Configuration = new ConfigurationFile(this, VersionsConfiguration);
+		Configuration = new ConfigurationFile(this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{
 			Enabled = false

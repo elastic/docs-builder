@@ -18,13 +18,9 @@ public record AssemblyConfiguration
 	{
 		var input = new StringReader(yaml);
 
-		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-			.IgnoreUnmatchedProperties()
-			.Build();
-
 		try
 		{
-			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
+			var config = ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfiguration>(input);
 			foreach (var (name, r) in config.ReferenceRepositories)
 			{
 				var repository = RepositoryDefaults(r, name);

@@ -36,11 +36,13 @@ To use the variables in your files, surround them in curly brackets (`{{variable
 
 Here are some variable substitutions:
 
-| Variable              | Defined in   |
-|-----------------------|--------------|
-| {{frontmatter_key}}   | Front Matter |
-| {{a-key-with-dashes}} | Front Matter |
-| {{a-global-variable}} | `docset.yml` |
+| Variable              | Defined in     |
+|-----------------------|----------------|
+| {{frontmatter_key}}   | Front Matter   |
+| {{a-key-with-dashes}} | Front Matter   |
+| {{a-global-variable}} | `docset.yml`   |
+| {{product.kibana}}    | `products.yml` |
+| {{.kibana}}           | `products.yml` |
 
 ## Mutations
 
@@ -217,3 +219,20 @@ With mutations: {subs=true}`version {{version.stack | M.M}}`
 :::{note}
 Regular inline code (without the `{subs}` role) will not process substitutions and will display the variable placeholders as-is.
 :::
+
+## Products
+
+Product substitutions use `products.yml` to determine what will be displayed. Use the product's key to get its display name.
+
+```yaml 
+# products.yml
+
+id:
+  display: {value}
+  ...
+# example:
+  apm-agent-dotnet:
+    display: 'APM Agent for .NET'
+```
+
+A shorthand format is also available. Using `{{.id}}` is equivalent to `{{product.id}}`.

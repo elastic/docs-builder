@@ -76,6 +76,7 @@ toc:
           - file: navigation.md
           - file: versions.md
           - file: legacy-url-mappings.md
+          - file: products.md
       - folder: content-set
         children:
           - file: index.md
