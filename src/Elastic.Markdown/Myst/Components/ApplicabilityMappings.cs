@@ -39,7 +39,7 @@ public static class ApplicabilityMappings
 		["edot-ios"] = new ApplicabilityDefinition("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos),
 		["edot-java"] = new ApplicabilityDefinition("EDOT Java", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java", VersioningSystemId.EdotJava),
 		["edot-node"] = new ApplicabilityDefinition("EDOT Node.js", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js", VersioningSystemId.EdotNode),
-		["edot-php"] = new ApplicabilityDefinition("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.ApmAgentPhp),
+		["edot-php"] = new ApplicabilityDefinition("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.EdotPhp),
 		["edot-python"] = new ApplicabilityDefinition("EDOT Python", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python", VersioningSystemId.EdotPython),
 
 		// APM Agents
