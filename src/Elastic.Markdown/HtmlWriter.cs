@@ -114,7 +114,8 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
-		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, parents);
+		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
+		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
 
 
@@ -128,12 +129,11 @@ public class HtmlWriter(
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
 			PageTocItems = [.. markdown.PageTableOfContent.Values],
-			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			CurrentNavigationItem = current,
 			PreviousDocument = previous,
 			NextDocument = next,
-			Parents = parents,
+			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			NavigationFileName = navigationFileName,
 			UrlPathPrefix = markdown.UrlPathPrefix,
@@ -164,11 +164,10 @@ public class HtmlWriter(
 
 	}
 
-	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] parents)
+	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] crumbs)
 	{
 		List<BreadcrumbListItem> breadcrumbItems = [];
 		var position = 1;
-		var crumbs = parents.Reverse().DistinctBy(i => i.Url).ToList();
 		// Add parents
 		breadcrumbItems.AddRange(crumbs.Select(parent => new BreadcrumbListItem
 		{

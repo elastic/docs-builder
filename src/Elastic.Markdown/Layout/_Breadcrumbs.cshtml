@@ -2,11 +2,11 @@
 @{
 	var targets =
 		Model.Features.PrimaryNavEnabled
-			? Model.Parents.Reverse()
-			: Model.Parents.Reverse().Skip(1);
+			? Model.Breadcrumbs
+			: Model.Breadcrumbs.Skip(1);
 
 	//TODO should we even distinctby
-	var crumbs = targets.DistinctBy(p => p.Url).ToList();
+	var crumbs = targets.ToList();
 }
 
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
