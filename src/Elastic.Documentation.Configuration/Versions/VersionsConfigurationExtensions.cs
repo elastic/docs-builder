@@ -10,7 +10,7 @@ public static class VersionsConfigurationExtensions
 	{
 		var versionFilePath = provider.VersionFile;
 
-		var versionsDto = provider.Deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
+		var versionsDto = ConfigurationFileProvider.Deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
 
 		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),

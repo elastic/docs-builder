@@ -13,7 +13,7 @@ public static class ProductExtensions
 	{
 		var productsFilePath = provider.ProductsFile;
 
-		var productsDto = provider.Deserializer.Deserialize<ProductConfigDto>(productsFilePath.OpenText());
+		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(productsFilePath.OpenText());
 
 		var products = productsDto.Products.ToDictionary(
 			kvp => kvp.Key,

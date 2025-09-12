@@ -13,7 +13,7 @@ public static class LegacyUrlMappingExtensions
 	{
 		var legacyUrlMappingsFilePath = provider.LegacyUrlMappingsFile;
 
-		var legacyUrlMappingsDto = provider.Deserializer.Deserialize<LegacyUrlMappingConfigDto>(legacyUrlMappingsFilePath.OpenText());
+		var legacyUrlMappingsDto = ConfigurationFileProvider.Deserializer.Deserialize<LegacyUrlMappingConfigDto>(legacyUrlMappingsFilePath.OpenText());
 
 		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(kvp =>
 			new LegacyUrlMapping

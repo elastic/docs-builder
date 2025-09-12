@@ -26,7 +26,7 @@ public partial class ConfigurationFileProvider
 	private readonly IFileSystem _fileSystem;
 	private readonly string _assemblyName;
 
-	internal IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
+	internal static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
 		.Build();
 
