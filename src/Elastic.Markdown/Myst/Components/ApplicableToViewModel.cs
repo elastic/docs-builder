@@ -22,7 +22,7 @@ public class ApplicableToViewModel
 		// Process Stack
 		if (AppliesTo.Stack is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("stack");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("stack");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Stack, productDef, versioningSystem));
 		}
@@ -32,7 +32,7 @@ public class ApplicableToViewModel
 		{
 			if (AppliesTo.Serverless.AllProjects is not null)
 			{
-				var productDef = ApplicabilityMappings.GetProductDefinition("serverless");
+				var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless");
 				var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 				items.AddRange(ProcessApplicabilityCollection(AppliesTo.Serverless.AllProjects, productDef, versioningSystem));
 			}
@@ -51,7 +51,7 @@ public class ApplicableToViewModel
 		// Process Generic Product
 		if (AppliesTo.Product is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("product");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("product");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Product, productDef, versioningSystem));
 		}
@@ -65,21 +65,21 @@ public class ApplicableToViewModel
 
 		if (serverless.Elasticsearch is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("serverless-elasticsearch");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless-elasticsearch");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(serverless.Elasticsearch, productDef, versioningSystem));
 		}
 
 		if (serverless.Observability is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("serverless-observability");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless-observability");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(serverless.Observability, productDef, versioningSystem));
 		}
 
 		if (serverless.Security is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("serverless-security");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless-security");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(serverless.Security, productDef, versioningSystem));
 		}
@@ -93,28 +93,28 @@ public class ApplicableToViewModel
 
 		if (deployment.Ess is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("ech");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("ech");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(deployment.Ess, productDef, versioningSystem));
 		}
 
 		if (deployment.Eck is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("eck");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("eck");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(deployment.Eck, productDef, versioningSystem));
 		}
 
 		if (deployment.Ece is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("ece");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("ece");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(deployment.Ece, productDef, versioningSystem));
 		}
 
 		if (deployment.Self is not null)
 		{
-			var productDef = ApplicabilityMappings.GetProductDefinition("self");
+			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("self");
 			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
 			items.AddRange(ProcessApplicabilityCollection(deployment.Self, productDef, versioningSystem));
 		}
@@ -157,7 +157,7 @@ public class ApplicableToViewModel
 		if (collection is null)
 			return;
 
-		var applicabilityDefinition = ApplicabilityMappings.GetProductDefinition(productKey);
+		var applicabilityDefinition = ApplicabilityMappings.GetApplicabilityDefinition(productKey);
 		var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
 		items.AddRange(ProcessApplicabilityCollection(collection, applicabilityDefinition, versioningSystem));
 	}

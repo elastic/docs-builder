@@ -58,7 +58,7 @@ public static class ApplicabilityMappings
 		["product"] = new ApplicabilityDefinition("", "", VersioningSystemId.All)
 	};
 
-	public static ApplicabilityDefinition GetProductDefinition(string productKey) => Mappings.TryGetValue(productKey, out var definition)
+	public static ApplicabilityDefinition GetApplicabilityDefinition(string key) => Mappings.TryGetValue(key, out var definition)
 			? definition
-			: throw new ArgumentException($"Unknown product key: {productKey}");
+			: throw new ArgumentException($"Unknown product key: {key}");
 }
