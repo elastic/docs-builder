@@ -179,8 +179,11 @@ public record ConfigurationFile : ITableOfContentsScope
 
 			foreach (var product in productsConfig.Products.Values)
 			{
+				var alternativeProductId = product.Id.Replace('-', '_');
 				_substitutions[$"product.{product.Id}"] = product.DisplayName;
 				_substitutions[$".{product.Id}"] = product.DisplayName;
+				_substitutions[$"product.{alternativeProductId}"] = product.DisplayName;
+				_substitutions[$".{alternativeProductId}"] = product.DisplayName;
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");
