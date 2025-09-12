@@ -24,14 +24,13 @@ public class IndexViewModel
 	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }
-	public required DocumentationGroup Tree { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
 
 	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? PreviousDocument { get; init; }
 	public required INavigationItem? NextDocument { get; init; }
-	public required INavigationItem[] Parents { get; init; }
+	public required INavigationItem[] Breadcrumbs { get; init; }
 
 	public required string NavigationHtml { get; init; }
 
@@ -57,6 +56,9 @@ public class IndexViewModel
 	public required HashSet<Product> Products { get; init; }
 
 	public required VersionsConfiguration VersionsConfig { get; init; }
+
+	// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb#json-ld
+	public required string StructuredBreadcrumbsJson { get; init; }
 }
 
 public class VersionDrownDownItemViewModel

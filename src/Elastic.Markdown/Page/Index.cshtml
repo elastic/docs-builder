@@ -24,7 +24,6 @@
 		CurrentNavigationItem = Model.CurrentNavigationItem,
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
-		Parents = Model.Parents,
 		NavigationHtml = Model.NavigationHtml,
 		NavigationFileName = Model.NavigationFileName,
 		UrlPathPrefix = Model.UrlPathPrefix,
@@ -37,7 +36,7 @@
 		Features = Model.Features,
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
-		LegacyPages = Model.LegacyPages,
+		Breadcrumbs = Model.Breadcrumbs,
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
@@ -50,6 +49,9 @@
 			<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
 			<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+			<script type="application/ld+json">
+	    	@(new HtmlString(Model.StructuredBreadcrumbsJson))
+	    	</script>
 		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{

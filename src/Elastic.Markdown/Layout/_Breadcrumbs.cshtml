@@ -2,54 +2,27 @@
 @{
 	var targets =
 		Model.Features.PrimaryNavEnabled
-			? Model.Parents.Reverse()
-			: Model.Parents.Reverse().Skip(1);
-
-	//TODO should we even distinctby
-	var parents = targets.DistinctBy(p => p.Url).ToList();
-	var firstCrumb = parents.FirstOrDefault();
-	var crumbs = parents.Skip(1).TakeLast(2).ToList();
+			? Model.Breadcrumbs
+			: Model.Breadcrumbs.Skip(1);
+	var crumbs = targets.ToList();
 }
 
-<ol id="breadcrumbs" class="block items-center w-full py-6" itemscope="" itemtype="https://schema.org/BreadcrumbList">
-	@if (firstCrumb != null)
-	{
-		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-			<a
-				hx-disable="true"
-				itemprop="item"
-				href="@firstCrumb.Url"
-				@Htmx.GetHxAttributes( Model.CurrentNavigationItem?.NavigationRoot.Id == firstCrumb.NavigationRoot.Id)
-			>
-				<span itemprop="name" class="hover:text-black">@firstCrumb.NavigationTitle</span>
-			</a>
-			<meta itemprop="position" content="1">
-		</li>
-	}
-	@if (crumbs.Count > 0 && parents.Count > 3)
-	{
-		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-			<span class="px-1">/</span>
-			…
-		</li>
-	}
-	
+<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
-	    var item = crumbs[i];
-		<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-			<span class="px-1">/</span>
+		var item = crumbs[i];
+		<li class="text-ink-light text-sm leading-[1.2em]">
 			<a
-				itemprop="item" 
+				itemprop="item"
 				href="@item.Url"
 				@Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)
 			>
-				<span itemprop="name" class="hover:text-black">@item.NavigationTitle</span>
+				<span class="hover:text-black">@item.NavigationTitle</span>
 			</a>
-			<meta itemprop="position" content="@(i+2)">
+			@if (i < crumbs.Count - 1)
+			{
+				<span class="px-1">/</span>
+			}
 		</li>
 	}
-	<li class="inline text-ink-light text-sm leading-[1.2em]" itemprop="itemListElement" itemscope="" itemtype="https://schema.org/ListItem">
-		<span class="px-1">/</span>
-	</li>
 </ol>
