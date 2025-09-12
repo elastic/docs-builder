@@ -217,6 +217,12 @@ type Setup =
         productDict.Add("elasticsearch", Product(Id = "elasticsearch",
             DisplayName = "Elasticsearch",
             VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ElasticsearchProject]))
+        productDict.Add("apm_agent_dotnet", Product(Id = "apm_agent_dotnet",
+            DisplayName = "APM Agent for .NET",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ApmAgentDotnet]))
+        productDict.Add("ecctl", Product(Id = "ecctl",
+            DisplayName = "Elastic Cloud Control ECCTL",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.Ecctl]))
         
         let configurationFileProvider = ConfigurationFileProvider(fileSystem)
         let configurationContext = ConfigurationContext(

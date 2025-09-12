@@ -50,7 +50,7 @@ products:
   beats:
     display: 'Beats'
     versioning: 'stack'
-  cloud_control_ecctl:
+  ecctl:
     display: 'Elastic Cloud Control ECCTL'
     versioning: 'ecctl'
   cloud_enterprise:
