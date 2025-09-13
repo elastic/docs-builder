@@ -49,11 +49,20 @@ internal sealed class RepositoryCommands(
 	public async Task<int> CloneConfigurationFolder(string? gitRef = null, Cancel ctx = default)
 	{
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
-
 		var fs = new FileSystem();
 		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "config-clone");
 		var checkoutFolder = fs.DirectoryInfo.New(cachedPath);
 		var cloner = new RepositorySourcer(logFactory, checkoutFolder, fs, collector);
+		if (gitRef is not null && gitRef.Length != 32)
+		{
+			collector.EmitError("", "gitRef must be be 32 characters long");
+			await collector.StopAsync(ctx);
+			// deleting the cached path because its not in the state we want
+			_log.LogInformation("Deleting cached config folder");
+			fs.Directory.Delete(cachedPath, true);
+			return 1;
+		}
+
 
 		// relies on the embedded configuration, but we don't expect this to change
 		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
@@ -61,12 +70,23 @@ internal sealed class RepositoryCommands(
 		{
 			SparsePaths = ["config"]
 		};
-		if (string.IsNullOrEmpty(gitRef))
-			gitRef = "main";
+		var gitReference = gitRef;
+		if (string.IsNullOrEmpty(gitReference))
+			gitReference = "main";
 
-		_log.LogInformation("Cloning configuration ({GitReference})", gitRef);
-		var checkout = cloner.CloneRef(repository, gitRef, appendRepositoryName: false);
+		_log.LogInformation("Cloning configuration ({GitReference})", gitReference);
+		var checkout = cloner.CloneRef(repository, gitReference, appendRepositoryName: false);
 		_log.LogInformation("Cloned configuration ({GitReference}) to {ConfigurationFolder}", checkout.HeadReference, checkout.Directory.FullName);
+
+		if (gitRef is not null && !checkout.HeadReference.StartsWith(gitRef))
+		{
+			collector.EmitError("", $"Checkout of {checkout.HeadReference} does start with requested gitRef {gitRef}.");
+			await collector.StopAsync(ctx);
+			// deleting the cached path because its not in the state we want
+			_log.LogInformation("Deleting cached config folder");
+			fs.Directory.Delete(cachedPath, true);
+			return 1;
+		}
 
 		var gitRefInformationFile = Path.Combine(cachedPath, "config", "git-ref.txt");
 		await fs.File.WriteAllTextAsync(gitRefInformationFile, checkout.HeadReference, ctx);
