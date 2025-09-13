@@ -12,11 +12,11 @@ namespace Elastic.Markdown.Myst.Components;
 public class ApplicabilityRenderer
 {
 	public record ApplicabilityRenderData(
-		string BadgeText,
+		string BadgeLifecycleText,
 		string Version,
 		string TooltipText,
 		string LifecycleClass,
-		bool ShowLifecycle,
+		bool ShowLifecycleName,
 		bool ShowVersion
 	);
 
@@ -31,22 +31,17 @@ public class ApplicabilityRenderer
 		var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
 
 		var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, realVersion, lifecycleFull);
-		var badgeText = BuildBadgeText(applicability, applicabilityDefinition, versioningSystem, realVersion, allApplications);
-		var badgeTextChanged = badgeText != applicabilityDefinition.Key;
+		var badgeLifecycleText = BuildBadgeLifecycleText(applicability, versioningSystem, realVersion, allApplications);
 
-		var showLifecycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && !badgeTextChanged;
-		var showVersion = applicability.Version is not null and not AllVersions;
-
-		var version = showVersion && versioningSystem.Current >= applicability.Version!
-			? applicability.Version!.ToString()
-			: badgeText;
-
+		var showLifecycle = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable && string.IsNullOrEmpty(badgeLifecycleText);
+		var showVersion = applicability.Version is not null and not AllVersions && versioningSystem.Current >= applicability.Version;
+		var version = applicability.Version?.ToString() ?? "";
 		return new ApplicabilityRenderData(
-			BadgeText: badgeText,
+			BadgeLifecycleText: badgeLifecycleText,
 			Version: version,
 			TooltipText: tooltipText,
 			LifecycleClass: lifecycleClass,
-			ShowLifecycle: showLifecycle,
+			ShowLifecycleName: showLifecycle,
 			ShowVersion: showVersion
 		);
 	}
@@ -104,15 +99,13 @@ public class ApplicabilityRenderer
 		_ => null
 	};
 
-	private static string BuildBadgeText(
+	private static string BuildBadgeLifecycleText(
 		Applicability applicability,
-		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
 		VersioningSystem versioningSystem,
 		SemVersion? realVersion,
 		AppliesCollection allApplications)
 	{
-		var badgeText = applicabilityDefinition.Key;
-
+		var badgeText = "";
 		if (realVersion is not null && realVersion > versioningSystem.Current)
 		{
 			badgeText = applicability.Lifecycle switch
@@ -126,6 +119,7 @@ public class ApplicabilityRenderer
 				ProductLifecycle.Deprecated => "Deprecation planned",
 				ProductLifecycle.Removed => "Removal planned",
 				ProductLifecycle.Planned => "Planned",
+				ProductLifecycle.Unavailable => "Unavailable",
 				_ => badgeText
 			};
 		}

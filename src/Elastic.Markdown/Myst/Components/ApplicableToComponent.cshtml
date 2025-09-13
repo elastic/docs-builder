@@ -5,27 +5,24 @@
 		<span class="applicable-info" data-tippy-content="@(new HtmlString(item.RenderData.TooltipText))">
 			<span class="applicable-name">@item.Key</span>
 			
-			@if (!string.IsNullOrEmpty(item.Key) && (item.RenderData.ShowLifecycle || item.RenderData.ShowVersion))
+			@if (!string.IsNullOrEmpty(item.Key) && (item.RenderData.ShowLifecycleName || item.RenderData.ShowVersion || !string.IsNullOrEmpty(item.RenderData.BadgeLifecycleText)))
 			{
 				<span class="applicable-separator"></span>
 			}
 			<span class="applicable-meta applicable-meta-@item.RenderData.LifecycleClass">
-				@if (item.RenderData.ShowLifecycle)
+				@if (item.RenderData.ShowLifecycleName)
 				{
 					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.Applicability.GetLifeCycleName()</span>
 				}
 				@if (item.RenderData.ShowVersion)
 				{
-					@if (item.RenderData.Version != item.RenderData.BadgeText)
-					{
-						<span class="applicable-version applicable-version-@item.RenderData.LifecycleClass">
-							@item.Applicability.Version
-						</span>
-					}
-					else
-					{
-						@item.RenderData.BadgeText
-					}
+					<span class="applicable-version applicable-version-@item.RenderData.LifecycleClass">
+						@item.RenderData.Version
+					</span>
+				}
+				else
+				{
+					@item.RenderData.BadgeLifecycleText
 				}
 			</span>
 		</span>
