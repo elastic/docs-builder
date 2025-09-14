@@ -22,9 +22,9 @@ public class ApplicableToViewModel
 		// Process Stack
 		if (AppliesTo.Stack is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("stack");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Stack, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.Stack;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Stack, applicabilityDef, versioningSystem));
 		}
 
 		// Process Serverless
@@ -32,9 +32,9 @@ public class ApplicableToViewModel
 		{
 			if (AppliesTo.Serverless.AllProjects is not null)
 			{
-				var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless");
-				var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-				items.AddRange(ProcessApplicabilityCollection(AppliesTo.Serverless.AllProjects, productDef, versioningSystem));
+				var applicabilityDef = ApplicabilityMappings.Serverless;
+				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+				items.AddRange(ProcessApplicabilityCollection(AppliesTo.Serverless.AllProjects, applicabilityDef, versioningSystem));
 			}
 			else
 				items.AddRange(ProcessServerlessProjects(AppliesTo.Serverless));
@@ -51,9 +51,9 @@ public class ApplicableToViewModel
 		// Process Generic Product
 		if (AppliesTo.Product is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("product");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Product, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.Product;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Product, applicabilityDef, versioningSystem));
 		}
 
 		return items;
@@ -65,23 +65,23 @@ public class ApplicableToViewModel
 
 		if (serverless.Elasticsearch is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless-elasticsearch");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(serverless.Elasticsearch, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.ServerlessElasticsearch;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(serverless.Elasticsearch, applicabilityDef, versioningSystem));
 		}
 
 		if (serverless.Observability is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless-observability");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(serverless.Observability, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.ServerlessObservability;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(serverless.Observability, applicabilityDef, versioningSystem));
 		}
 
 		if (serverless.Security is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("serverless-security");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(serverless.Security, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.ServerlessSecurity;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(serverless.Security, applicabilityDef, versioningSystem));
 		}
 
 		return items;
@@ -93,30 +93,30 @@ public class ApplicableToViewModel
 
 		if (deployment.Ess is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("ech");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Ess, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.Ech;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(deployment.Ess, applicabilityDef, versioningSystem));
 		}
 
 		if (deployment.Eck is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("eck");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Eck, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.Eck;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(deployment.Eck, applicabilityDef, versioningSystem));
 		}
 
 		if (deployment.Ece is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("ece");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Ece, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.Ece;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(deployment.Ece, applicabilityDef, versioningSystem));
 		}
 
 		if (deployment.Self is not null)
 		{
-			var productDef = ApplicabilityMappings.GetApplicabilityDefinition("self");
-			var versioningSystem = VersionsConfig.GetVersioningSystem(productDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Self, productDef, versioningSystem));
+			var applicabilityDef = ApplicabilityMappings.Self;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
+			items.AddRange(ProcessApplicabilityCollection(deployment.Self, applicabilityDef, versioningSystem));
 		}
 
 		return items;
@@ -126,38 +126,37 @@ public class ApplicableToViewModel
 	{
 		var items = new List<ApplicabilityItem>();
 
-		// Process each product applicability property explicitly (AOT-compatible)
-		ProcessProductIfNotNull(productApplicability.Ecctl, "ecctl", items);
-		ProcessProductIfNotNull(productApplicability.Curator, "curator", items);
-		ProcessProductIfNotNull(productApplicability.EdotAndroid, "edot-android", items);
-		ProcessProductIfNotNull(productApplicability.EdotCfAws, "edot-cf-aws", items);
-		ProcessProductIfNotNull(productApplicability.EdotCollector, "edot-collector", items);
-		ProcessProductIfNotNull(productApplicability.EdotDotnet, "edot-dotnet", items);
-		ProcessProductIfNotNull(productApplicability.EdotIos, "edot-ios", items);
-		ProcessProductIfNotNull(productApplicability.EdotJava, "edot-java", items);
-		ProcessProductIfNotNull(productApplicability.EdotNode, "edot-node", items);
-		ProcessProductIfNotNull(productApplicability.EdotPhp, "edot-php", items);
-		ProcessProductIfNotNull(productApplicability.EdotPython, "edot-python", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentAndroid, "apm-agent-android", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentDotnet, "apm-agent-dotnet", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentGo, "apm-agent-go", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentIos, "apm-agent-ios", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentJava, "apm-agent-java", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentNode, "apm-agent-node", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentPhp, "apm-agent-php", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentPython, "apm-agent-python", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentRuby, "apm-agent-ruby", items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentRum, "apm-agent-rum", items);
+		// Process each product applicability property explicitly (AOT-compatible) using strongly-typed definitions
+		ProcessProductIfNotNull(productApplicability.Ecctl, ApplicabilityMappings.Ecctl, items);
+		ProcessProductIfNotNull(productApplicability.Curator, ApplicabilityMappings.Curator, items);
+		ProcessProductIfNotNull(productApplicability.EdotAndroid, ApplicabilityMappings.EdotAndroid, items);
+		ProcessProductIfNotNull(productApplicability.EdotCfAws, ApplicabilityMappings.EdotCfAws, items);
+		ProcessProductIfNotNull(productApplicability.EdotCollector, ApplicabilityMappings.EdotCollector, items);
+		ProcessProductIfNotNull(productApplicability.EdotDotnet, ApplicabilityMappings.EdotDotnet, items);
+		ProcessProductIfNotNull(productApplicability.EdotIos, ApplicabilityMappings.EdotIos, items);
+		ProcessProductIfNotNull(productApplicability.EdotJava, ApplicabilityMappings.EdotJava, items);
+		ProcessProductIfNotNull(productApplicability.EdotNode, ApplicabilityMappings.EdotNode, items);
+		ProcessProductIfNotNull(productApplicability.EdotPhp, ApplicabilityMappings.EdotPhp, items);
+		ProcessProductIfNotNull(productApplicability.EdotPython, ApplicabilityMappings.EdotPython, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentAndroid, ApplicabilityMappings.ApmAgentAndroid, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentDotnet, ApplicabilityMappings.ApmAgentDotnet, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentGo, ApplicabilityMappings.ApmAgentGo, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentIos, ApplicabilityMappings.ApmAgentIos, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentJava, ApplicabilityMappings.ApmAgentJava, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentNode, ApplicabilityMappings.ApmAgentNode, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentPhp, ApplicabilityMappings.ApmAgentPhp, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentPython, ApplicabilityMappings.ApmAgentPython, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentRuby, ApplicabilityMappings.ApmAgentRuby, items);
+		ProcessProductIfNotNull(productApplicability.ApmAgentRum, ApplicabilityMappings.ApmAgentRum, items);
 
 		return items;
 	}
 
-	private void ProcessProductIfNotNull(AppliesCollection? collection, string productKey, List<ApplicabilityItem> items)
+	private void ProcessProductIfNotNull(AppliesCollection? collection, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition, List<ApplicabilityItem> items)
 	{
 		if (collection is null)
 			return;
 
-		var applicabilityDefinition = ApplicabilityMappings.GetApplicabilityDefinition(productKey);
 		var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
 		items.AddRange(ProcessApplicabilityCollection(collection, applicabilityDefinition, versioningSystem));
 	}
