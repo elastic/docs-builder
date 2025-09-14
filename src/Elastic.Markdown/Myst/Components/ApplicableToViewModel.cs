@@ -15,150 +15,102 @@ public class ApplicableToViewModel
 	public required ApplicableTo AppliesTo { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
+	// Dictionary mapping property selectors to their applicability definitions
+	private static readonly Dictionary<Func<DeploymentApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> DeploymentMappings = new()
+	{
+		[d => d.Ess] = ApplicabilityMappings.Ech,
+		[d => d.Eck] = ApplicabilityMappings.Eck,
+		[d => d.Ece] = ApplicabilityMappings.Ece,
+		[d => d.Self] = ApplicabilityMappings.Self
+	};
+
+	private static readonly Dictionary<Func<ServerlessProjectApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> ServerlessMappings = new()
+	{
+		[s => s.Elasticsearch] = ApplicabilityMappings.ServerlessElasticsearch,
+		[s => s.Observability] = ApplicabilityMappings.ServerlessObservability,
+		[s => s.Security] = ApplicabilityMappings.ServerlessSecurity
+	};
+
+	private static readonly Dictionary<Func<ProductApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> ProductMappings = new()
+	{
+		[p => p.Ecctl] = ApplicabilityMappings.Ecctl,
+		[p => p.Curator] = ApplicabilityMappings.Curator,
+		[p => p.EdotAndroid] = ApplicabilityMappings.EdotAndroid,
+		[p => p.EdotCfAws] = ApplicabilityMappings.EdotCfAws,
+		[p => p.EdotCollector] = ApplicabilityMappings.EdotCollector,
+		[p => p.EdotDotnet] = ApplicabilityMappings.EdotDotnet,
+		[p => p.EdotIos] = ApplicabilityMappings.EdotIos,
+		[p => p.EdotJava] = ApplicabilityMappings.EdotJava,
+		[p => p.EdotNode] = ApplicabilityMappings.EdotNode,
+		[p => p.EdotPhp] = ApplicabilityMappings.EdotPhp,
+		[p => p.EdotPython] = ApplicabilityMappings.EdotPython,
+		[p => p.ApmAgentAndroid] = ApplicabilityMappings.ApmAgentAndroid,
+		[p => p.ApmAgentDotnet] = ApplicabilityMappings.ApmAgentDotnet,
+		[p => p.ApmAgentGo] = ApplicabilityMappings.ApmAgentGo,
+		[p => p.ApmAgentIos] = ApplicabilityMappings.ApmAgentIos,
+		[p => p.ApmAgentJava] = ApplicabilityMappings.ApmAgentJava,
+		[p => p.ApmAgentNode] = ApplicabilityMappings.ApmAgentNode,
+		[p => p.ApmAgentPhp] = ApplicabilityMappings.ApmAgentPhp,
+		[p => p.ApmAgentPython] = ApplicabilityMappings.ApmAgentPython,
+		[p => p.ApmAgentRuby] = ApplicabilityMappings.ApmAgentRuby,
+		[p => p.ApmAgentRum] = ApplicabilityMappings.ApmAgentRum
+	};
+
 	public IEnumerable<ApplicabilityItem> GetApplicabilityItems()
 	{
 		var items = new List<ApplicabilityItem>();
 
 		// Process Stack
 		if (AppliesTo.Stack is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.Stack;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Stack, applicabilityDef, versioningSystem));
-		}
+			items.AddRange(ProcessSingleCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
 
 		// Process Serverless
 		if (AppliesTo.Serverless is not null)
 		{
-			if (AppliesTo.Serverless.AllProjects is not null)
-			{
-				var applicabilityDef = ApplicabilityMappings.Serverless;
-				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-				items.AddRange(ProcessApplicabilityCollection(AppliesTo.Serverless.AllProjects, applicabilityDef, versioningSystem));
-			}
-			else
-				items.AddRange(ProcessServerlessProjects(AppliesTo.Serverless));
+			items.AddRange(AppliesTo.Serverless.AllProjects is not null
+				? ProcessSingleCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+				: ProcessMappedCollections(AppliesTo.Serverless, ServerlessMappings));
 		}
 
 		// Process Deployment
 		if (AppliesTo.Deployment is not null)
-			items.AddRange(ProcessDeploymentTypes(AppliesTo.Deployment));
+			items.AddRange(ProcessMappedCollections(AppliesTo.Deployment, DeploymentMappings));
 
 		// Process Product Applicability
 		if (AppliesTo.ProductApplicability is not null)
-			items.AddRange(ProcessProductApplicability(AppliesTo.ProductApplicability));
+			items.AddRange(ProcessMappedCollections(AppliesTo.ProductApplicability, ProductMappings));
 
 		// Process Generic Product
 		if (AppliesTo.Product is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.Product;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(AppliesTo.Product, applicabilityDef, versioningSystem));
-		}
+			items.AddRange(ProcessSingleCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
 		return items;
 	}
 
-	private IEnumerable<ApplicabilityItem> ProcessServerlessProjects(ServerlessProjectApplicability serverless)
+	/// <summary>
+	/// Processes a single collection with its corresponding applicability definition
+	/// </summary>
+	private IEnumerable<ApplicabilityItem> ProcessSingleCollection(AppliesCollection collection, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition)
 	{
-		var items = new List<ApplicabilityItem>();
-
-		if (serverless.Elasticsearch is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.ServerlessElasticsearch;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(serverless.Elasticsearch, applicabilityDef, versioningSystem));
-		}
-
-		if (serverless.Observability is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.ServerlessObservability;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(serverless.Observability, applicabilityDef, versioningSystem));
-		}
-
-		if (serverless.Security is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.ServerlessSecurity;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(serverless.Security, applicabilityDef, versioningSystem));
-		}
-
-		return items;
-	}
-
-	private IEnumerable<ApplicabilityItem> ProcessDeploymentTypes(DeploymentApplicability deployment)
-	{
-		var items = new List<ApplicabilityItem>();
-
-		if (deployment.Ess is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.Ech;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Ess, applicabilityDef, versioningSystem));
-		}
-
-		if (deployment.Eck is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.Eck;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Eck, applicabilityDef, versioningSystem));
-		}
-
-		if (deployment.Ece is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.Ece;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Ece, applicabilityDef, versioningSystem));
-		}
-
-		if (deployment.Self is not null)
-		{
-			var applicabilityDef = ApplicabilityMappings.Self;
-			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDef.VersioningSystemId);
-			items.AddRange(ProcessApplicabilityCollection(deployment.Self, applicabilityDef, versioningSystem));
-		}
-
-		return items;
-	}
-
-	private IEnumerable<ApplicabilityItem> ProcessProductApplicability(ProductApplicability productApplicability)
-	{
-		var items = new List<ApplicabilityItem>();
-
-		// Process each product applicability property explicitly (AOT-compatible) using strongly-typed definitions
-		ProcessProductIfNotNull(productApplicability.Ecctl, ApplicabilityMappings.Ecctl, items);
-		ProcessProductIfNotNull(productApplicability.Curator, ApplicabilityMappings.Curator, items);
-		ProcessProductIfNotNull(productApplicability.EdotAndroid, ApplicabilityMappings.EdotAndroid, items);
-		ProcessProductIfNotNull(productApplicability.EdotCfAws, ApplicabilityMappings.EdotCfAws, items);
-		ProcessProductIfNotNull(productApplicability.EdotCollector, ApplicabilityMappings.EdotCollector, items);
-		ProcessProductIfNotNull(productApplicability.EdotDotnet, ApplicabilityMappings.EdotDotnet, items);
-		ProcessProductIfNotNull(productApplicability.EdotIos, ApplicabilityMappings.EdotIos, items);
-		ProcessProductIfNotNull(productApplicability.EdotJava, ApplicabilityMappings.EdotJava, items);
-		ProcessProductIfNotNull(productApplicability.EdotNode, ApplicabilityMappings.EdotNode, items);
-		ProcessProductIfNotNull(productApplicability.EdotPhp, ApplicabilityMappings.EdotPhp, items);
-		ProcessProductIfNotNull(productApplicability.EdotPython, ApplicabilityMappings.EdotPython, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentAndroid, ApplicabilityMappings.ApmAgentAndroid, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentDotnet, ApplicabilityMappings.ApmAgentDotnet, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentGo, ApplicabilityMappings.ApmAgentGo, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentIos, ApplicabilityMappings.ApmAgentIos, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentJava, ApplicabilityMappings.ApmAgentJava, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentNode, ApplicabilityMappings.ApmAgentNode, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentPhp, ApplicabilityMappings.ApmAgentPhp, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentPython, ApplicabilityMappings.ApmAgentPython, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentRuby, ApplicabilityMappings.ApmAgentRuby, items);
-		ProcessProductIfNotNull(productApplicability.ApmAgentRum, ApplicabilityMappings.ApmAgentRum, items);
-
-		return items;
-	}
-
-	private void ProcessProductIfNotNull(AppliesCollection? collection, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition, List<ApplicabilityItem> items)
-	{
-		if (collection is null)
-			return;
-
 		var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
-		items.AddRange(ProcessApplicabilityCollection(collection, applicabilityDefinition, versioningSystem));
+		return ProcessApplicabilityCollection(collection, applicabilityDefinition, versioningSystem);
+	}
+
+	/// <summary>
+	/// Processes multiple collections using a mapping dictionary to eliminate repetitive code
+	/// </summary>
+	private IEnumerable<ApplicabilityItem> ProcessMappedCollections<T>(T source, Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
+	{
+		var items = new List<ApplicabilityItem>();
+
+		foreach (var (propertySelector, applicabilityDefinition) in mappings)
+		{
+			var collection = propertySelector(source);
+			if (collection is not null)
+				items.AddRange(ProcessSingleCollection(collection, applicabilityDefinition));
+		}
+
+		return items;
 	}
 
 	private IEnumerable<ApplicabilityItem> ProcessApplicabilityCollection(
