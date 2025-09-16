@@ -112,7 +112,9 @@ public enum VersioningSystemId
 	[Display(Name = "edot_collector")]
 	EdotCollector,
 	[Display(Name = "search_ui")]
-	SearchUI
+	SearchUI,
+	[Display(Name = "cloud_terraform")]
+	CloudTerraform,
 }
 
 [YamlSerializable]
