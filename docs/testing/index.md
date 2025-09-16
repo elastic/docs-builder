@@ -33,11 +33,13 @@ The files in this directory are used for testing purposes. Do not edit these fil
       ```
 
 ```console
-PUT metricbeat-2016.05.30/_doc/1?refresh
+PUT metricbeat-2016.05.30/_doc/1?refresh <1>
 {"system.cpu.idle.pct": 0.908}
-PUT metricbeat-2016.05.31/_doc/1?refresh
+PUT metricbeat-2016.05.31/_doc/1?refresh <2>
 {"system.cpu.idle.pct": 0.105}
 ```
+1. test 1
+2. test 2
 
 ```console
 POST _reindex

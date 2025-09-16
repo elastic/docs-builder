@@ -29,4 +29,21 @@ public class CodeViewModel
 		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
 		return new HtmlString(result);
 	}
+
+	public HtmlString RenderConsoleCallouts(int lineNumber)
+	{
+		if (EnhancedCodeBlock?.CallOuts == null)
+			return HtmlString.Empty;
+
+		var callouts = EnhancedCodeBlock.CallOuts.Where(c => c.Line == lineNumber);
+		if (!callouts.Any())
+			return HtmlString.Empty;
+
+		var html = new System.Text.StringBuilder();
+		foreach (var callout in callouts)
+		{
+			_ = html.Append($"<span class=\"code-callout\" data-index=\"{callout.Index}\"></span>");
+		}
+		return new HtmlString(html.ToString());
+	}
 }

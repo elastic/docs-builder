@@ -13,7 +13,7 @@
 		{
 			@foreach (var segment in Model.ApiSegments)
 			{
-				<code class="language-apiheader">@segment.Header</code>
+				<code class="language-apiheader">@segment.Header@(Model.RenderConsoleCallouts(segment.LineNumber))</code>
 				@if (segment.ContentLines.Count > 0)
 				{
 					<code class="language-json">@string.Join("\n", segment.ContentLines)</code>

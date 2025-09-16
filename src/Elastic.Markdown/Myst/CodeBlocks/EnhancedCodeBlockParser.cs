@@ -329,14 +329,17 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			// Check if this line is an HTTP verb (API call header)
 			if (IsHttpVerb(lineText))
 			{
-				// If we have a current segment with content, save it
 				if (!string.IsNullOrEmpty(currentSegment.Header) || currentSegment.ContentLines.Count > 0)
 					codeBlock.ApiSegments.Add(currentSegment);
 
-				// Start a new segment
+				// Process callouts before creating the segment to capture them on the original line
+				if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
+					ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
+
 				currentSegment = new ApiSegment
 				{
-					Header = lineText
+					Header = lineText,
+					LineNumber = originatingLine
 				};
 
 				// Clear this line from the content since it's now a header
@@ -345,14 +348,12 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			}
 			else
 			{
-				// This is content for the current segment
 				if (!string.IsNullOrEmpty(lineText.Trim()))
 					currentSegment.ContentLines.Add(lineText);
-			}
 
-			// Process callouts if enabled
-			if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
-				ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
+				if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
+					ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
+			}
 		}
 
 		// Add the last segment if it has content
@@ -413,12 +414,38 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				return acc;
 			});
 
-			foreach (var callout in callouts.Values)
+			// Console code blocks use ApiSegments for rendering, so we need to update headers directly
+			// Note: console language gets converted to "json" for syntax highlighting
+			if ((codeBlock.Language == "json" || codeBlock.Language == "console") && codeBlock.ApiSegments.Count > 0)
 			{
-				var line = lines.Lines[callout.Line - 1];
-				var newSpan = line.Slice.AsSpan()[..callout.SliceStart];
-				var s = new StringSlice(newSpan.ToString());
-				lines.Lines[callout.Line - 1] = new StringLine(ref s);
+				foreach (var callout in callouts.Values)
+				{
+					foreach (var segment in codeBlock.ApiSegments)
+					{
+						var calloutPattern = $"<{callout.Index}>";
+						if (segment.Header.Contains(calloutPattern))
+						{
+							segment.Header = segment.Header.Replace(calloutPattern, "").Trim();
+							break;
+						}
+					}
+				}
+			}
+			else
+			{
+				foreach (var callout in callouts.Values)
+				{
+					var line = lines.Lines[callout.Line - 1];
+					var span = line.Slice.AsSpan();
+
+					// Skip callouts on cleared lines to avoid ArgumentOutOfRangeException
+					if (span.Length == 0 || callout.SliceStart >= span.Length)
+						continue;
+
+					var newSpan = span[..callout.SliceStart];
+					var s = new StringSlice(newSpan.ToString());
+					lines.Lines[callout.Line - 1] = new StringLine(ref s);
+				}
 			}
 		}
 	}
