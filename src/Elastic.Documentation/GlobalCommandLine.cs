@@ -8,8 +8,9 @@ namespace Elastic.Documentation;
 
 public static class GlobalCommandLine
 {
-	public static void Process(ref string[] args, ref LogLevel defaultLogLevel, out bool skipPrivateRepositories)
+	public static void Process(ref string[] args, ref LogLevel defaultLogLevel, out bool skipPrivateRepositories, out ConfigurationSource? configurationSource)
 	{
+		configurationSource = null;
 		skipPrivateRepositories = false;
 		var newArgs = new List<string>();
 		for (var i = 0; i < args.Length; i++)
@@ -18,6 +19,12 @@ public static class GlobalCommandLine
 			{
 				if (args.Length > i + 1)
 					defaultLogLevel = GetLogLevel(args[i + 1]);
+				i++;
+			}
+			else if (args[i] == "--config-source")
+			{
+				if (args.Length > i + 1 && ConfigurationSourceExtensions.TryParse(args[i + 1], out var cs, true, true))
+					configurationSource = cs;
 				i++;
 			}
 			else if (args[i] == "--skip-private-repositories")

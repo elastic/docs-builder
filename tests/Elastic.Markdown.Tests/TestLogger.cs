@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Tests;
 
-public class TestLogger(ITestOutputHelper output) : ILogger
+public class TestLogger(ITestOutputHelper? output) : ILogger
 {
 	private sealed class NullScope : IDisposable
 	{
@@ -18,17 +18,17 @@ public class TestLogger(ITestOutputHelper output) : ILogger
 	public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Trace;
 
 	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-		output.WriteLine(formatter(state, exception));
+		output?.WriteLine(formatter(state, exception));
 }
 
-public class TestLoggerProvider(ITestOutputHelper output) : ILoggerProvider
+public class TestLoggerProvider(ITestOutputHelper? output) : ILoggerProvider
 {
 	public void Dispose() => GC.SuppressFinalize(this);
 
 	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
 }
 
-public class TestLoggerFactory(ITestOutputHelper output) : ILoggerFactory
+public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
 {
 	public void Dispose() => GC.SuppressFinalize(this);
 
