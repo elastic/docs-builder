@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Myst.CodeBlocks;
 
 public class CodeViewModel
 {
-	public required string? ApiCallHeader { get; init; }
+	public required List<ApiSegment> ApiSegments { get; init; }
 	public required string? Caption { get; init; }
 	public required string Language { get; init; }
 	public required string? CrossReferenceName { get; init; }

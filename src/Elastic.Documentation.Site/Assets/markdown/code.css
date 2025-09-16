@@ -19,8 +19,16 @@
 			code:last-child {
 				@apply rounded-b-sm;
 			}
-			code.language-apiheader {
-				@apply border-b-grey-80 border-b-1;
+			code.language-apiheader + code.language-json {
+				@apply pt-0! -mt-3;
+			}
+			
+			code.language-json + code.language-apiheader {
+				@apply border-t-grey-90 border-t-1;
+			}
+			
+			code.language-apiheader + code.language-apiheader {
+				@apply border-t-grey-90 border-t-1;
 			}
 		}
 
