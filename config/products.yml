@@ -93,7 +93,7 @@ products:
     display: 'Elastic Common Schema (ECS) support for Java applications'
     versioning: 'ecs_logging_java'
   ecs-logging-nodejs:
-    display: 'Elastic Common Schema (ECS) support for Node js'
+    display: 'Elastic Common Schema (ECS) support for Node.js'
     versioning: 'ecs_logging_nodejs'
   ecs-logging-php:
     display: 'Elastic Common Schema (ECS) support for PHP'
@@ -168,7 +168,7 @@ products:
     display: 'Heartbeat'
     versioning: 'stack'
   integrations:
-    display: 'Integrations'
+    display: 'Elastic integrations'
     versioning: 'stack'
   kibana:
     display: 'Kibana'
@@ -189,7 +189,7 @@ products:
     display: 'Packetbeat'
     versioning: 'stack'
   painless:
-    display: 'Elasticsearch Painless scripting language'
+    display: 'Painless'
     versioning: 'stack'
   search-ui:
     display: 'Search UI'
