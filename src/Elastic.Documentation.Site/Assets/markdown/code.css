@@ -20,13 +20,13 @@
 				@apply rounded-b-sm;
 			}
 			code.language-apiheader + code.language-json {
-				@apply pt-0! -mt-3;
+				@apply -mt-3 pt-0!;
 			}
-			
+
 			code.language-json + code.language-apiheader {
 				@apply border-t-grey-90 border-t-1;
 			}
-			
+
 			code.language-apiheader + code.language-apiheader {
 				@apply border-t-grey-90 border-t-1;
 			}
