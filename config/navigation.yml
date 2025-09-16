@@ -333,7 +333,23 @@ toc:
       # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
       - toc: opentelemetry://reference
         path_prefix: reference/opentelemetry
-        # Children include all EDOT distribution docs.
+        children:
+          - toc: elastic-agent://reference/edot-collector
+            path_prefix: reference/edot-collector
+          - toc: apm-agent-android://reference/edot-android
+            path_prefix: reference/opentelemetry/edot-sdks/android
+          - toc: elastic-otel-dotnet://reference/edot-dotnet
+            path_prefix: reference/opentelemetry/edot-sdks/dotnet
+          - toc: apm-agent-ios://reference/edot-ios
+            path_prefix: reference/opentelemetry/edot-sdks/ios
+          - toc: elastic-otel-java://reference/edot-java
+            path_prefix: reference/opentelemetry/edot-sdks/java
+          - toc: elastic-otel-node://reference/edot-node
+            path_prefix: reference/opentelemetry/edot-sdks/node
+          - toc: elastic-otel-php://reference/edot-php
+            path_prefix: reference/opentelemetry/edot-sdks/php
+          - toc: elastic-otel-python://reference/edot-python
+            path_prefix: reference/opentelemetry/edot-sdks/python
 
       # Ingestion tools
       # https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml

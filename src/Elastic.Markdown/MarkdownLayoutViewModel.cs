@@ -17,9 +17,7 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 	public required bool HideEditThisPage { get; init; }
 	public required string? ReportIssueUrl { get; init; }
 
-	public required INavigationItem[] Parents { get; init; }
-
-	public required LegacyPageMapping[]? LegacyPages { get; init; }
+	public required INavigationItem[] Breadcrumbs { get; init; }
 
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 
