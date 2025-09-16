@@ -335,9 +335,9 @@ toc:
         path_prefix: reference/opentelemetry
         children:
           - toc: elastic-agent://reference/edot-collector
-            path_prefix: reference/opentelemetry/edot-collector
+            path_prefix: reference/edot-collector
           - toc: elastic-otel-java://reference/edot-java
-            path_prefix: reference/opentelemetry/edot-sdks/java
+            path_prefix: reference/edot-sdks/java
           - toc: elastic-otel-python://reference/edot-python
             path_prefix: reference/edot-sdks/python
           - toc: elastic-otel-node://reference/edot-node
