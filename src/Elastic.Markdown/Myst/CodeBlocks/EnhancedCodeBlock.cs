@@ -15,6 +15,7 @@ public class ApiSegment
 	public string Header { get; set; } = "";
 	public List<string> ContentLines { get; set; } = [];
 	public int LineNumber { get; set; }
+	public List<(string Content, int LineNumber)> ContentLinesWithNumbers { get; set; } = [];
 }
 
 public class EnhancedCodeBlock(BlockParser parser, ParserContext context)

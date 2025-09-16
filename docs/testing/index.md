@@ -64,3 +64,31 @@ POST _reindex
 GET metricbeat-2016.05.30-1/_doc/1
 GET metricbeat-2016.05.31-1/_doc/1
 ```
+
+```console
+PUT my-index-000001
+{
+  "mappings": {
+    "enabled": false <1>
+  }
+}
+
+PUT my-index-000001/_doc/session_1
+{
+  "user_id": "kimchy",
+  "session_data": {
+    "arbitrary_object": {
+      "some_array": [ "foo", "bar", { "baz": 2 } ]
+    }
+  },
+  "last_updated": "2015-12-06T18:20:22"
+}
+
+GET my-index-000001/_doc/session_1 <2>
+
+GET my-index-000001/_mapping <3>
+```
+
+1. The entire mapping is disabled.
+2. The document can be retrieved.
+3. Checking the mapping reveals that no fields have been added.

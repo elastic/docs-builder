@@ -349,7 +349,10 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 			else
 			{
 				if (!string.IsNullOrEmpty(lineText.Trim()))
+				{
 					currentSegment.ContentLines.Add(lineText);
+					currentSegment.ContentLinesWithNumbers.Add((lineText, originatingLine));
+				}
 
 				if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
 					ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
