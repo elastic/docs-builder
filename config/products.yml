@@ -51,7 +51,7 @@ products:
     display: 'Beats'
     versioning: 'stack'
   cloud-control-ecctl:
-    display: 'Elastic Cloud Control ECCTL'
+    display: 'Elastic Cloud Control'
     versioning: 'ecctl'
   cloud-enterprise:
     display: 'Elastic Cloud Enterprise'
@@ -60,14 +60,14 @@ products:
     display: 'Elastic Cloud Hosted'
     versioning: 'ech'
   cloud-kubernetes:
-    display: 'Elastic Cloud Kubernetes'
+    display: 'Elastic Cloud on Kubernetes'
     versioning: 'eck'
   cloud-serverless:
     display: 'Elastic Cloud Serverless'
     versioning: 'serverless'
   cloud-terraform:
-    display: 'Elastic Cloud Terraform'
-    versioning: 'stack'
+    display: 'Elastic Cloud Terraform Provider'
+    versioning: 'cloud_terraform'
   curator:
     display: 'Elasticsearch Curator'
     versioning: 'curator'
@@ -78,7 +78,7 @@ products:
     display: 'ECS Logging'
     versioning: 'stack'
   ecs-dotnet:
-    display: 'Elastic Common Schema support for .NET'
+    display: 'Elastic Common Schema (ECS) support for .NET'
     versioning: 'ecs_logging_dotnet'
   ecs-logging-go-logrus:
     display: 'Elastic Common Schema (ECS) support for Logrus'
@@ -90,13 +90,13 @@ products:
     display: 'Elastic Common Schema (ECS) support for zerolog'
     versioning: 'ecs_logging_go_zerolog'
   ecs-logging-java:
-    display: 'ECS_based logging for Java applications'
+    display: 'Elastic Common Schema (ECS) support for Java applications'
     versioning: 'ecs_logging_java'
   ecs-logging-nodejs:
     display: 'Elastic Common Schema (ECS) support for Node js'
     versioning: 'ecs_logging_nodejs'
   ecs-logging-php:
-    display: 'ECS Logging for PHP'
+    display: 'Elastic Common Schema (ECS) support for PHP'
     versioning: 'ecs_logging_php'
   ecs-logging-python:
     display: 'Elastic Common Schema (ECS) support for Python'
