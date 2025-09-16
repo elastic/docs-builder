@@ -156,7 +156,7 @@ products:
     display: 'Elasticsearch Client'
     versioning: 'stack'
   ess:
-    display: 'Elasticsearch Service'
+    display: 'Elastic Cloud Hosted'
     versioning: 'all'
   filebeat:
     display: 'Filebeat'
