@@ -351,7 +351,7 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/android
               - toc: apm-agent-ios://reference
                 path_prefix: reference/opentelemetry/edot-sdks/ios
-              - toc: apm-agent-dotnet://reference
+              - toc: elastic-otel-dotnet://reference
                 path_prefix: reference/opentelemetry/edot-sdks/dotnet
 
       # Ingestion tools
