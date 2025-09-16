@@ -272,7 +272,7 @@ POST /api/users <2>
 			EnhancedCodeBlock = Block
 		};
 
-		var calloutHtml = viewModel.RenderConsoleCallouts(Block.ApiSegments[0].LineNumber);
+		var calloutHtml = viewModel.RenderLineWithCallouts(Block.ApiSegments[0].Header, Block.ApiSegments[0].LineNumber);
 		calloutHtml.Value.Should().Contain("code-callout");
 		calloutHtml.Value.Should().Contain("data-index=\"1\"");
 	}

@@ -30,56 +30,51 @@ public class CodeViewModel
 		return new HtmlString(result);
 	}
 
-	public HtmlString RenderConsoleCallouts(int lineNumber)
+	public HtmlString RenderLineWithCallouts(string content, int lineNumber)
 	{
 		if (EnhancedCodeBlock?.CallOuts == null)
-			return HtmlString.Empty;
+			return new HtmlString(content);
 
 		var callouts = EnhancedCodeBlock.CallOuts.Where(c => c.Line == lineNumber);
 		if (!callouts.Any())
-			return HtmlString.Empty;
+			return new HtmlString(content);
 
+		var line = content;
 		var html = new System.Text.StringBuilder();
+
+		// Remove callout markers from the line
+		foreach (var callout in callouts)
+		{
+			var calloutPattern = $"<{callout.Index}>";
+			line = line.Replace(calloutPattern, "");
+		}
+		line = line.TrimEnd();
+
+		_ = html.Append(line);
+
+		// Add callout HTML after the line
 		foreach (var callout in callouts)
 		{
 			_ = html.Append($"<span class=\"code-callout\" data-index=\"{callout.Index}\"></span>");
 		}
+
 		return new HtmlString(html.ToString());
 	}
 
 	public HtmlString RenderContentLinesWithCallouts(List<(string Content, int LineNumber)> contentLinesWithNumbers)
 	{
-		if (EnhancedCodeBlock?.CallOuts == null || contentLinesWithNumbers.Count == 0)
-			return new HtmlString(string.Join("\n", contentLinesWithNumbers.Select(c => c.Content)));
+		if (contentLinesWithNumbers.Count == 0)
+			return HtmlString.Empty;
 
 		var html = new System.Text.StringBuilder();
 		for (var i = 0; i < contentLinesWithNumbers.Count; i++)
 		{
 			var (content, lineNumber) = contentLinesWithNumbers[i];
-			var line = content;
-
-			// Find callouts for this line
-			var callouts = EnhancedCodeBlock.CallOuts.Where(c => c.Line == lineNumber);
-			if (callouts.Any())
-			{
-				// Remove callout markers from the line
-				foreach (var callout in callouts)
-				{
-					var calloutPattern = $"<{callout.Index}>";
-					line = line.Replace(calloutPattern, "");
-				}
-				line = line.TrimEnd();
-			}
 
 			if (i > 0)
 				_ = html.Append('\n');
-			_ = html.Append(line);
 
-			// Add callout HTML after the line
-			foreach (var callout in callouts)
-			{
-				_ = html.Append($"<span class=\"code-callout\" data-index=\"{callout.Index}\"></span>");
-			}
+			_ = html.Append(RenderLineWithCallouts(content, lineNumber));
 		}
 		return new HtmlString(html.ToString());
 	}
