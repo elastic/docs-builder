@@ -183,3 +183,99 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Product 'id' field is required."));
 	}
 }
+
+public class MappedPagesValidUrl(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void NoErrors()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+	}
+}
+
+public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "https://www.elastic.co/docs/get-started/deployment-options"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void HasErrors()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"https://www.elastic.co/docs/get-started/deployment-options\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."));
+	}
+}
+
+public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html"
+	  - "https://www.elastic.co/docs/invalid-url"
+	  - "https://www.elastic.co/guide/en/kibana/current/index.html"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void HasErrorsForInvalidUrl()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"https://www.elastic.co/docs/invalid-url\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
+	}
+}
+
+public class MappedPagesEmptyUrl(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - ""
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void NoErrorsForEmptyUrl()
+	{
+		// Empty URLs are ignored, no validation error should occur
+		Collector.Diagnostics.Should().BeEmpty();
+	}
+}
+
+public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "https://github.com/elastic/docs-builder"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void HasErrorsForExternalUrl()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"https://github.com/elastic/docs-builder\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
+	}
+}
