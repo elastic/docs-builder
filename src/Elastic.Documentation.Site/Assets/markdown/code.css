@@ -24,11 +24,11 @@
 			}
 
 			code.language-json + code.language-apiheader {
-				@apply border-dotted border-t-grey-100 border-t-1;
+				@apply border-t-grey-100 border-t-1 border-dotted;
 			}
-			
+
 			code.language-apiheader + code.language-apiheader {
-				@apply border-dotted border-t-grey-100 border-t-1;
+				@apply border-t-grey-100 border-t-1 border-dotted;
 			}
 		}
 
