@@ -92,3 +92,9 @@ GET my-index-000001/_mapping <3>
 1. The entire mapping is disabled.
 2. The document can be retrieved.
 3. Checking the mapping reveals that no fields have been added.
+
+```javascript
+const foo = "bar"; <1>
+```
+
+1. This is a JavaScript code block.

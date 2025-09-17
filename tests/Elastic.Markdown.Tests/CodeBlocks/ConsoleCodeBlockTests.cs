@@ -345,3 +345,4 @@ GET my-index-000001/_mapping <3>
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
+
