@@ -34,8 +34,10 @@ To successfully implement a redirect:
 
 3. Fix all existing links to the moved or removed file within the repository where you're adding the redirect, by updating them to the new correct target, or by removing them if necessary. This is a best practice to keep our content healthy, and mandatory for your PR to pass CI checks.
 
-4. Create a PR with all of the changes made through the previous steps. CI checks run to validate the newly added redirect and the docs build. 
-In case of validation errors related the redirect, double check that your changes comply with all steps of this procedure. If the errors persist, reach out to the docs-engineering team.
+4. Create a PR with all of the changes made through the previous steps. 
+
+CI checks run to validate the newly added redirect and the docs build. 
+In case of validation errors related the redirect, double check that your changes comply with all steps of this procedure. If the errors persist, ask @elastic/docs-engineering for assistance in your PR.
 
 ## Validation
 
