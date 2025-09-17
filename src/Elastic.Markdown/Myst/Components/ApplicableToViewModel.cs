@@ -121,7 +121,6 @@ public class ApplicableToViewModel
 			return new ApplicabilityItem(
 				Key: applicabilityDefinition.Key,
 				PrimaryApplicability: applicability,
-				AllApplicabilities: [applicability],
 				RenderData: renderData,
 				ApplicabilityDefinition: applicabilityDefinition
 			);
@@ -154,7 +153,6 @@ public class ApplicableToViewModel
 				return new ApplicabilityItem(
 					Key: firstItem.Key,
 					PrimaryApplicability: primaryApplicability,
-					AllApplicabilities: allApplicabilities,
 					RenderData: combinedRenderData,
 					ApplicabilityDefinition: applicabilityDefinition
 				);
