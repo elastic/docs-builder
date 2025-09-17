@@ -58,8 +58,7 @@ jobs:
         ## https://semgrep.dev/blog/2025/security-advisory-npm-packages-using-secret-scanning-tools-to-steal-credentials/
       - name: Check shai-hulud attack
         run: |
-          find . -type f -name "*.js" -exec sha256sum {} \; | grep "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09"
-          if [ $? -eq 0 ]; then
+          if find . -type f -name "*.js" -exec sha256sum {} \; | grep -q "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09"; then
             echo "Vulnerable version of serialize-javascript found in:"
             find . -type f -name "*.js" -exec sha256sum {} \; | grep "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09" | awk '{print $2}'
             exit 1
