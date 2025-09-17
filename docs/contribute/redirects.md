@@ -25,7 +25,7 @@ To successfully implement a redirect:
    - It is at the same location as the `docset.yml` file. Depending on the repository, this is generally at the root or within the `/docs` folder of the repository.
 
    :::{note}
-   It is possible that there is no `redirects.yml` file yet in some repositories. If that's the case, create it next to the repo's `docset.yml` file. Refer to [](#file-location).
+   Some repositories might not yet have a `redirects.yml` file. In this case, create one next to the repo's `docset.yml` file. Refer to [](#file-location).
    :::
 
 2. Edit the file. Refer to [](#syntax) to get details on the expected syntax.
