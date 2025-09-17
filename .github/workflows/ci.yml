@@ -60,7 +60,8 @@ jobs:
         run: |
           find . -type f -name "*.js" -exec sha256sum {} \; | grep "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09"
           if [ $? -eq 0 ]; then
-            echo "Vulnerable version of serialize-javascript found"
+            echo "Vulnerable version of serialize-javascript found in:"
+            find . -type f -name "*.js" -exec sha256sum {} \; | grep "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09" | awk '{print $2}'
             exit 1
           fi
       - name: Lint
