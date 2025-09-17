@@ -37,7 +37,7 @@ To successfully implement a redirect:
 4. Create a PR with all of the changes made through the previous steps. 
 
 CI checks run to validate the newly added redirect and the docs build. 
-In case of validation errors related the redirect, double check that your changes comply with all steps of this procedure. If the errors persist, ask @elastic/docs-engineering for assistance in your PR.
+In case of validation errors related the redirect, double check that your changes comply with all steps of this procedure. If the errors persist after a writer reviewed the PR, ask @elastic/docs-engineering for assistance.
 
 ## Validation
 
