@@ -8,6 +8,22 @@ namespace Elastic.Markdown.Myst.Components;
 
 public record ApplicabilityItem(
 	string Key,
-	Applicability Applicability,
-	ApplicabilityRenderer.ApplicabilityRenderData RenderData
-);
+	Applicability PrimaryApplicability,
+	IReadOnlyList<Applicability> AllApplicabilities,
+	ApplicabilityRenderer.ApplicabilityRenderData RenderData,
+	ApplicabilityMappings.ApplicabilityDefinition ApplicabilityDefinition
+)
+{
+	public ApplicabilityItem(string key, Applicability applicability, ApplicabilityRenderer.ApplicabilityRenderData renderData)
+		: this(key, applicability, [applicability], renderData, GetDefaultDefinition(key)) { }
+
+	public Applicability Applicability => PrimaryApplicability;
+
+	private static ApplicabilityMappings.ApplicabilityDefinition GetDefaultDefinition(string key) =>
+		key switch
+		{
+			"Stack" => ApplicabilityMappings.Stack,
+			"Serverless" => ApplicabilityMappings.Serverless,
+			_ => ApplicabilityMappings.Product
+		};
+}

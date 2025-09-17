@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 
@@ -15,7 +16,6 @@ public class ApplicableToViewModel
 	public required ApplicableTo AppliesTo { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
-	// Dictionary mapping property selectors to their applicability definitions
 	private static readonly Dictionary<Func<DeploymentApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> DeploymentMappings = new()
 	{
 		[d => d.Ess] = ApplicabilityMappings.Ech,
@@ -56,15 +56,14 @@ public class ApplicableToViewModel
 		[p => p.ApmAgentRum] = ApplicabilityMappings.ApmAgentRum
 	};
 
+
 	public IEnumerable<ApplicabilityItem> GetApplicabilityItems()
 	{
 		var items = new List<ApplicabilityItem>();
 
-		// Process Stack
 		if (AppliesTo.Stack is not null)
 			items.AddRange(ProcessSingleCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
 
-		// Process Serverless
 		if (AppliesTo.Serverless is not null)
 		{
 			items.AddRange(AppliesTo.Serverless.AllProjects is not null
@@ -72,24 +71,18 @@ public class ApplicableToViewModel
 				: ProcessMappedCollections(AppliesTo.Serverless, ServerlessMappings));
 		}
 
-		// Process Deployment
 		if (AppliesTo.Deployment is not null)
 			items.AddRange(ProcessMappedCollections(AppliesTo.Deployment, DeploymentMappings));
 
-		// Process Product Applicability
 		if (AppliesTo.ProductApplicability is not null)
 			items.AddRange(ProcessMappedCollections(AppliesTo.ProductApplicability, ProductMappings));
 
-		// Process Generic Product
 		if (AppliesTo.Product is not null)
 			items.AddRange(ProcessSingleCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
-		return items;
+		return CombineItemsByKey(items);
 	}
 
-	/// <summary>
-	/// Processes a single collection with its corresponding applicability definition
-	/// </summary>
 	private IEnumerable<ApplicabilityItem> ProcessSingleCollection(AppliesCollection collection, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition)
 	{
 		var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
@@ -97,7 +90,7 @@ public class ApplicableToViewModel
 	}
 
 	/// <summary>
-	/// Processes multiple collections using a mapping dictionary to eliminate repetitive code
+	/// Uses mapping dictionary to eliminate repetitive code when processing multiple collections
 	/// </summary>
 	private IEnumerable<ApplicabilityItem> ProcessMappedCollections<T>(T source, Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
 	{
@@ -127,9 +120,88 @@ public class ApplicableToViewModel
 
 			return new ApplicabilityItem(
 				Key: applicabilityDefinition.Key,
-				Applicability: applicability,
-				RenderData: renderData
+				PrimaryApplicability: applicability,
+				AllApplicabilities: [applicability],
+				RenderData: renderData,
+				ApplicabilityDefinition: applicabilityDefinition
 			);
 		});
+
+	/// <summary>
+	/// Combines multiple applicability items with the same key into a single item with combined tooltip
+	/// </summary>
+	private IEnumerable<ApplicabilityItem> CombineItemsByKey(List<ApplicabilityItem> items) => items
+			.GroupBy(item => item.Key)
+			.Select(group =>
+			{
+				if (group.Count() == 1)
+					return group.First();
+
+				var firstItem = group.First();
+				var allApplicabilities = group.Select(g => g.Applicability).ToList();
+				var applicabilityDefinition = firstItem.ApplicabilityDefinition;
+				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
+
+				var combinedRenderData = _applicabilityRenderer.RenderCombinedApplicability(
+					allApplicabilities,
+					applicabilityDefinition,
+					versioningSystem,
+					new AppliesCollection(allApplicabilities.ToArray()));
+
+				// Select the closest version to current as the primary display
+				var primaryApplicability = GetPrimaryApplicability(allApplicabilities, versioningSystem);
+
+				return new ApplicabilityItem(
+					Key: firstItem.Key,
+					PrimaryApplicability: primaryApplicability,
+					AllApplicabilities: allApplicabilities,
+					RenderData: combinedRenderData,
+					ApplicabilityDefinition: applicabilityDefinition
+				);
+			});
+
+
+	/// <summary>
+	/// Selects the most relevant applicability for display: available versions first (highest version), then closest future version
+	/// </summary>
+	private static Applicability GetPrimaryApplicability(List<Applicability> applicabilities, VersioningSystem versioningSystem)
+	{
+		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
+		{
+			[ProductLifecycle.GenerallyAvailable] = 0,
+			[ProductLifecycle.Beta] = 1,
+			[ProductLifecycle.TechnicalPreview] = 2,
+			[ProductLifecycle.Planned] = 3,
+			[ProductLifecycle.Deprecated] = 4,
+			[ProductLifecycle.Removed] = 5,
+			[ProductLifecycle.Unavailable] = 6
+		};
+
+		var availableApplicabilities = applicabilities
+			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current)
+			.ToList();
+
+		if (availableApplicabilities.Count != 0)
+		{
+			return availableApplicabilities
+				.OrderByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
+				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.First();
+		}
+
+		var futureApplicabilities = applicabilities
+			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > versioningSystem.Current)
+			.ToList();
+
+		if (futureApplicabilities.Count != 0)
+		{
+			return futureApplicabilities
+				.OrderBy(a => a.Version!.CompareTo(versioningSystem.Current))
+				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.First();
+		}
+
+		return applicabilities.First();
+	}
 
 }

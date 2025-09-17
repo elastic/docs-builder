@@ -46,6 +46,93 @@ public class ApplicabilityRenderer
 		);
 	}
 
+	public ApplicabilityRenderData RenderCombinedApplicability(
+		IEnumerable<Applicability> applicabilities,
+		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
+		VersioningSystem versioningSystem,
+		AppliesCollection allApplications)
+	{
+		var applicabilityList = applicabilities.ToList();
+		var primaryApplicability = GetPrimaryApplicability(applicabilityList, versioningSystem);
+
+		var primaryRenderData = RenderApplicability(primaryApplicability, applicabilityDefinition, versioningSystem, allApplications);
+		var combinedTooltip = BuildCombinedTooltipText(applicabilityList, applicabilityDefinition, versioningSystem);
+
+		return primaryRenderData with { TooltipText = combinedTooltip };
+	}
+
+	private static Applicability GetPrimaryApplicability(List<Applicability> applicabilities, VersioningSystem versioningSystem)
+	{
+		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
+		{
+			[ProductLifecycle.GenerallyAvailable] = 0,
+			[ProductLifecycle.Beta] = 1,
+			[ProductLifecycle.TechnicalPreview] = 2,
+			[ProductLifecycle.Planned] = 3,
+			[ProductLifecycle.Deprecated] = 4,
+			[ProductLifecycle.Removed] = 5,
+			[ProductLifecycle.Unavailable] = 6
+		};
+
+		var availableApplicabilities = applicabilities
+			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current)
+			.ToList();
+
+		if (availableApplicabilities.Count != 0)
+		{
+			return availableApplicabilities
+				.OrderByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
+				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.First();
+		}
+
+		var futureApplicabilities = applicabilities
+			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > versioningSystem.Current)
+			.ToList();
+
+		if (futureApplicabilities.Count != 0)
+		{
+			return futureApplicabilities
+				.OrderBy(a => a.Version!.CompareTo(versioningSystem.Current))
+				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
+				.First();
+		}
+
+		return applicabilities.First();
+	}
+
+	private static string BuildCombinedTooltipText(
+		List<Applicability> applicabilities,
+		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
+		VersioningSystem versioningSystem)
+	{
+		var tooltipParts = new List<string>();
+
+		// Order by the same logic as primary selection: available first (by version desc), then future (by version asc)
+		var orderedApplicabilities = applicabilities
+			.OrderByDescending(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current ? 1 : 0)
+			.ThenByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
+			.ThenBy(a => a.Version ?? new SemVersion(0, 0, 0));
+
+		foreach (var applicability in orderedApplicabilities)
+		{
+			var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
+			var lifecycleFull = GetLifecycleFullText(applicability.Lifecycle);
+			var heading = CreateApplicabilityHeading(applicability, applicabilityDefinition, realVersion);
+			var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, realVersion, lifecycleFull);
+			tooltipParts.Add($"{heading}\n{tooltipText}");
+		}
+
+		return string.Join("\n\n", tooltipParts);
+	}
+
+	private static string CreateApplicabilityHeading(Applicability applicability, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition, SemVersion? realVersion)
+	{
+		var lifecycleName = applicability.GetLifeCycleName();
+		var versionText = realVersion is not null ? $" {realVersion}" : "";
+		return $"{applicabilityDefinition.DisplayName} {lifecycleName}{versionText}:";
+	}
+
 	private static string GetLifecycleFullText(ProductLifecycle lifecycle) => lifecycle switch
 	{
 		ProductLifecycle.GenerallyAvailable => "Available",
