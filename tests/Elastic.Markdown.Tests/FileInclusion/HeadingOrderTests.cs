@@ -222,3 +222,186 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 		actualOrder.Should().Equal(expectedOrder);
 	}
 }
+public class IncludeWithStepperOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+## Getting Started
+### Prerequisites 
+
+:::::{stepper}
+
+::::{step} Install dependencies
+First step in the process.
+::::
+
+::::{step} Configure settings
+Second step in the process.
+::::
+
+:::::
+
+## Main Process
+
+:::{include} _snippets/process-steps.md
+:::
+
+## Final Steps
+### Cleanup
+### Verification
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=markdown
+		var inclusion = """
+:::::{stepper}
+
+::::{step} Execute process
+Main execution step from snippet.
+::::
+
+::::{step} Monitor progress
+Monitoring step from snippet.
+::::
+
+:::::
+
+### Additional notes
+### Troubleshooting
+""";
+		fileSystem.AddFile(@"docs/_snippets/process-steps.md", inclusion);
+	}
+
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void TableOfContentsRespectsOrderWithStepperAndInclude()
+	{
+		// Get the table of contents from the file - use values to get them in order
+		var toc = File.PageTableOfContent.Values.ToList();
+
+		// The headings should appear in document order:
+		// 1. Getting Started
+		// 2. Prerequisites
+		// 3. Install dependencies (stepper step)
+		// 4. Configure settings (stepper step)
+		// 5. Main Process
+		// 6. Execute process (stepper step from included snippet)
+		// 7. Monitor progress (stepper step from included snippet)
+		// 8. Additional notes (from included snippet)
+		// 9. Troubleshooting (from included snippet)
+		// 10. Final Steps
+		// 11. Cleanup
+		// 12. Verification
+
+		toc.Should().HaveCount(12);
+
+		// Check the order is correct
+		var expectedOrder = new[]
+		{
+			"Getting Started",
+			"Prerequisites",
+			"Install dependencies",
+			"Configure settings",
+			"Main Process",
+			"Execute process",
+			"Monitor progress",
+			"Additional notes",
+			"Troubleshooting",
+			"Final Steps",
+			"Cleanup",
+			"Verification"
+		};
+
+		var actualOrder = toc.Select(t => t.Heading).ToArray();
+		actualOrder.Should().Equal(expectedOrder);
+	}
+}
+
+public class StepperBeforeIncludeOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+:::::{stepper}
+
+::::{step} Initial setup
+Starting with stepper at the beginning.
+::::
+
+::::{step} Configuration
+Configuration step.
+::::
+
+:::::
+
+## Middle Section
+
+:::{include} _snippets/middle-content.md
+:::
+
+## Final Section
+### Conclusion
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=markdown
+		var inclusion = """
+### Included heading one
+### Included heading two
+
+:::::{stepper}
+
+::::{step} Included step one
+Step from included content.
+::::
+
+::::{step} Included step two
+Another step from included content.
+::::
+
+:::::
+""";
+		fileSystem.AddFile(@"docs/_snippets/middle-content.md", inclusion);
+	}
+
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void TableOfContentsRespectsOrderWithStepperBeforeInclude()
+	{
+		// Get the table of contents from the file - use values to get them in order
+		var toc = File.PageTableOfContent.Values.ToList();
+
+		// The headings should appear in document order:
+		// 1. Initial setup (stepper step)
+		// 2. Configuration (stepper step)
+		// 3. Middle Section
+		// 4. Included heading one (from included snippet)
+		// 5. Included heading two (from included snippet)
+		// 6. Included step one (stepper step from included snippet)
+		// 7. Included step two (stepper step from included snippet)
+		// 8. Final Section
+		// 9. Conclusion
+
+		toc.Should().HaveCount(9);
+
+		// Check the order is correct
+		var expectedOrder = new[]
+		{
+			"Initial setup",
+			"Configuration",
+			"Middle Section",
+			"Included heading one",
+			"Included heading two",
+			"Included step one",
+			"Included step two",
+			"Final Section",
+			"Conclusion"
+		};
+
+		var actualOrder = toc.Select(t => t.Heading).ToArray();
+		actualOrder.Should().Equal(expectedOrder);
+	}
+}
