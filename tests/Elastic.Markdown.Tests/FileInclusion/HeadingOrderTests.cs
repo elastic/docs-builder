@@ -44,10 +44,9 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 	[Fact]
 	public void TableOfContentsRespectsOrder()
 	{
-		// Get the table of contents from the file
-		var toc = File.PageTableOfContent;
-		var headings = toc.Select(kvp => kvp.Value.Heading).ToList();
-
+		// Get the table of contents from the file - use values to get them in order
+		var toc = File.PageTableOfContent.Values.ToList();
+		
 		// The headings should appear in document order:
 		// 1. Check status, stop, and restart SLM
 		// 2. Get SLM status
@@ -58,7 +57,7 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 		// 7. Stop ILM (from included snippet)
 		// 8. Start ILM (from included snippet)
 
-		headings.Should().HaveCount(8);
+		toc.Should().HaveCount(8);
 
 		// Check the order is correct
 		var expectedOrder = new[]
@@ -73,6 +72,7 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 			"Start ILM"
 		};
 
-		headings.Should().ContainInOrder(expectedOrder);
+		var actualOrder = toc.Select(t => t.Heading).ToArray();
+		actualOrder.Should().Equal(expectedOrder);
 	}
 }
