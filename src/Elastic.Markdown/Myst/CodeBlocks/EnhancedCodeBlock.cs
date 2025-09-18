@@ -10,6 +10,14 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
+public class ApiSegment
+{
+	public string Header { get; set; } = "";
+	public List<string> ContentLines { get; set; } = [];
+	public int LineNumber { get; set; }
+	public List<(string Content, int LineNumber)> ContentLinesWithNumbers { get; set; } = [];
+}
+
 public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 	: FencedCodeBlock(parser), IBlockExtension
 {
@@ -31,5 +39,5 @@ public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
 
 	public string? Caption { get; set; }
 
-	public string? ApiCallHeader { get; set; }
+	public List<ApiSegment> ApiSegments { get; set; } = [];
 }
