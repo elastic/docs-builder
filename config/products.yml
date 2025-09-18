@@ -21,7 +21,7 @@ products:
     display: 'APM Agent for Java'
     versioning: 'apm_agent_java'
   apm-agent-node:
-    display: 'APM Agent for Node'
+    display: 'APM Agent for Node.js'
     versioning: 'apm_agent_node'
   apm-agent-php:
     display: 'APM Agent for PHP'
