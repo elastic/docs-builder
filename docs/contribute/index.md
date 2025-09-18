@@ -42,6 +42,10 @@ In Docs V3, a single branch is published per repository. This branch is set to `
 * For **documentation** problems: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml) *or* [Fix it myself](locally.md). You can open sensitive issues in our [internal repo](https://github.com/elastic/docs-content-internal/issues/new/choose).
 * For **build tool (docs-builder)** problems: [Open a bug report](https://github.com/elastic/docs-builder/issues/new?template=bug-report.yaml)
 
+:::{note}
+When you create a new issue in the docs-builder repository, our [automated duplicate detection system](duplicate-detection.md) will help identify if similar issues already exist.
+:::
+
 ## Request an enhancement or documentation for a new feature
 
 * Make the **documentation** better: [Open a docs issue](https://github.com/elastic/docs-content/issues/new?template=internal-request.yaml). Elastic employees can open sensitive issues in our [internal repo](https://github.com/elastic/docs-content-internal/issues/new/choose).
