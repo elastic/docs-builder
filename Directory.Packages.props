@@ -17,12 +17,12 @@
     <PackageVersion Include="Amazon.Lambda.S3Events" Version="3.1.0" />
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
-    <PackageVersion Include="Aspire.Hosting" Version="9.4.0" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="9.4.0" />
+    <PackageVersion Include="Aspire.Hosting" Version="9.4.2" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="9.4.2" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
-    <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
+    <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.4.1" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.1.4" />
     <PackageVersion Include="FakeItEasy" Version="8.3.0" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.14.0" />
@@ -79,7 +79,7 @@
   </ItemGroup>
   <!-- Test packages -->
   <ItemGroup>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.4.0" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.4.2" />
     <PackageVersion Include="AngleSharp.Diffing" Version="1.0.0" />
     <PackageVersion Include="DiffPlex" Version="1.7.2" />
     <PackageVersion Include="FluentAssertions" Version="7.2.0" />
