@@ -128,7 +128,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			CrossReferenceName = string.Empty,// block.CrossReferenceName,
 			Language = block.Language,
 			Caption = block.Caption,
-			ApiCallHeader = block.ApiCallHeader,
+			ApiSegments = block.ApiSegments,
 			EnhancedCodeBlock = block
 		});
 

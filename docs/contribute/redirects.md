@@ -16,6 +16,29 @@ For API redirects, consult with the documentation engineering team on Slack (#el
 
 For elastic.co/guide redirects, open a [web team request](http://ela.st/web-request).
 
+## Add a redirect
+
+To successfully implement a redirect:
+
+1. Locate and open the `redirects.yml` file to edit.
+   - Each docs repository powered by Docs V3 can have its own `redirects.yml` file. You must only edit the one in the repository that you're moving or removing files from.
+   - It is at the same location as the `docset.yml` file. Depending on the repository, this is generally at the root or within the `/docs` folder of the repository.
+
+   :::{note}
+   Some repositories might not yet have a `redirects.yml` file. In this case, create one next to the repo's `docset.yml` file. Refer to [](#file-location).
+   :::
+
+2. Edit the file. Refer to [](#syntax) to get details on the expected syntax.
+   - All paths must be relative to the `redirects.yml` file.
+   - You may need to adjust the syntax based on how you'd like to treat anchors within redirected files. Find examples in [](#syntax).
+
+3. Fix all existing links to the moved or removed file within the repository where you're adding the redirect, by updating them to the new correct target, or by removing them if necessary. This is a best practice to keep our content healthy, and mandatory for your PR to pass CI checks.
+
+4. Create a PR with all of the changes made through the previous steps. 
+
+CI checks run to validate the newly added redirect and the docs build. 
+If you get validation errors about the redirect, double check that your changes follow all the steps in this procedure. If the errors persist after a writer reviewed the PR, ask @elastic/docs-engineering for assistance.
+
 ## Validation
 
 Running `docs-builder diff validate` will give you feedback on whether all necessary redirect rules are in place after your changes. It will also run on pull requests.
