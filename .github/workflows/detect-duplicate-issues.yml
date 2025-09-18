@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   issues: write
+  models: read
 
 jobs:
   detect-duplicates:
