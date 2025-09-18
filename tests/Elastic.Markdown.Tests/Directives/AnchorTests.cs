@@ -51,7 +51,7 @@ Some content
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(1);
 
 	[Fact]
-	public void ErrorMessageIsCorrect() => 
+	public void ErrorMessageIsCorrect() =>
 		Collector.Diagnostics.First().Message.Should().Be("Anchor directive requires an ID argument");
 }
 

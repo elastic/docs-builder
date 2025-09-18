@@ -240,7 +240,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = AnchorView.Create(new AnchorViewModel
 		{
 			DirectiveBlock = block,
-			AnchorId = block.AnchorId ?? "unknown"
+			AnchorId = block.AnchorId
 		});
 		RenderRazorSlice(slice, renderer);
 	}

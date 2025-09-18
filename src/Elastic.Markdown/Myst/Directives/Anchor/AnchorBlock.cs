@@ -12,18 +12,21 @@ public class AnchorBlock(DirectiveBlockParser parser, ParserContext context) : D
 {
 	public override string Directive => "anchor";
 
-	public string? AnchorId { get; private set; }
+	public string AnchorId { get; private set; } = string.Empty;
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		// The anchor ID comes from the arguments (the text after {anchor})
-		AnchorId = Arguments?.Trim().Slugify();
+		var rawId = Arguments?.Trim();
 
-		if (string.IsNullOrEmpty(AnchorId))
+		if (string.IsNullOrEmpty(rawId))
 		{
 			context.EmitError("Anchor directive requires an ID argument");
+			AnchorId = "invalid-anchor"; // Set a fallback ID to prevent null
 			return;
 		}
+
+		AnchorId = rawId.Slugify();
 
 		// Set the cross-reference name for linking
 		CrossReferenceName = AnchorId;
