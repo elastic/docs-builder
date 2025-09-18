@@ -267,10 +267,6 @@ project:
 
 ### Console code blocks
 
-:::{note}
-This feature is still being developed.
-:::
-
 We document a lot of API endpoints at Elastic. For these endpoints, we support `console` as a language. The term console relates to the dev console in kibana which users can link to directly from these code snippets.
 
 In a console code block, the first line is highlighted as a dev console string and the remainder as json:
@@ -301,6 +297,54 @@ GET /mydocuments/_search
     "query": {
         "match_all" {}
     }
+}
+```
+````
+
+:::
+
+::::
+
+Console code blocks now support multiple API calls within a single code block. When you have multiple console commands, they are displayed as separate sections within the same block with proper visual separation:
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```console
+GET /mydocuments/_search
+{
+    "from": 1,
+    "query": {
+        "match_all" {}
+    }
+}
+
+POST /mydocuments/_doc
+{
+    "title": "New Document",
+    "content": "This is a sample document"
+}
+```
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```console
+GET /mydocuments/_search
+{
+    "from": 1,
+    "query": {
+        "match_all" {}
+    }
+}
+
+POST /mydocuments/_doc
+{
+    "title": "New Document",
+    "content": "This is a sample document"
 }
 ```
 ````
