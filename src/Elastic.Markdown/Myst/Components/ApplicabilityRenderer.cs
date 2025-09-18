@@ -53,7 +53,7 @@ public class ApplicabilityRenderer
 		AppliesCollection allApplications)
 	{
 		var applicabilityList = applicabilities.ToList();
-		var primaryApplicability = GetPrimaryApplicability(applicabilityList, versioningSystem);
+		var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(applicabilityList, versioningSystem);
 
 		var primaryRenderData = RenderApplicability(primaryApplicability, applicabilityDefinition, versioningSystem, allApplications);
 		var combinedTooltip = BuildCombinedTooltipText(applicabilityList, applicabilityDefinition, versioningSystem);
@@ -61,45 +61,6 @@ public class ApplicabilityRenderer
 		return primaryRenderData with { TooltipText = combinedTooltip };
 	}
 
-	private static Applicability GetPrimaryApplicability(List<Applicability> applicabilities, VersioningSystem versioningSystem)
-	{
-		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
-		{
-			[ProductLifecycle.GenerallyAvailable] = 0,
-			[ProductLifecycle.Beta] = 1,
-			[ProductLifecycle.TechnicalPreview] = 2,
-			[ProductLifecycle.Planned] = 3,
-			[ProductLifecycle.Deprecated] = 4,
-			[ProductLifecycle.Removed] = 5,
-			[ProductLifecycle.Unavailable] = 6
-		};
-
-		var availableApplicabilities = applicabilities
-			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current)
-			.ToList();
-
-		if (availableApplicabilities.Count != 0)
-		{
-			return availableApplicabilities
-				.OrderByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
-				.First();
-		}
-
-		var futureApplicabilities = applicabilities
-			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > versioningSystem.Current)
-			.ToList();
-
-		if (futureApplicabilities.Count != 0)
-		{
-			return futureApplicabilities
-				.OrderBy(a => a.Version!.CompareTo(versioningSystem.Current))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
-				.First();
-		}
-
-		return applicabilities.First();
-	}
 
 	private static string BuildCombinedTooltipText(
 		List<Applicability> applicabilities,

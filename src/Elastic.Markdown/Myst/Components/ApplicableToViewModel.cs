@@ -148,7 +148,7 @@ public class ApplicableToViewModel
 					new AppliesCollection(allApplicabilities.ToArray()));
 
 				// Select the closest version to current as the primary display
-				var primaryApplicability = GetPrimaryApplicability(allApplicabilities, versioningSystem);
+				var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem);
 
 				return new ApplicabilityItem(
 					Key: firstItem.Key,
@@ -159,47 +159,5 @@ public class ApplicableToViewModel
 			});
 
 
-	/// <summary>
-	/// Selects the most relevant applicability for display: available versions first (highest version), then closest future version
-	/// </summary>
-	private static Applicability GetPrimaryApplicability(List<Applicability> applicabilities, VersioningSystem versioningSystem)
-	{
-		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
-		{
-			[ProductLifecycle.GenerallyAvailable] = 0,
-			[ProductLifecycle.Beta] = 1,
-			[ProductLifecycle.TechnicalPreview] = 2,
-			[ProductLifecycle.Planned] = 3,
-			[ProductLifecycle.Deprecated] = 4,
-			[ProductLifecycle.Removed] = 5,
-			[ProductLifecycle.Unavailable] = 6
-		};
-
-		var availableApplicabilities = applicabilities
-			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current)
-			.ToList();
-
-		if (availableApplicabilities.Count != 0)
-		{
-			return availableApplicabilities
-				.OrderByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
-				.First();
-		}
-
-		var futureApplicabilities = applicabilities
-			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > versioningSystem.Current)
-			.ToList();
-
-		if (futureApplicabilities.Count != 0)
-		{
-			return futureApplicabilities
-				.OrderBy(a => a.Version!.CompareTo(versioningSystem.Current))
-				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
-				.First();
-		}
-
-		return applicabilities.First();
-	}
 
 }
