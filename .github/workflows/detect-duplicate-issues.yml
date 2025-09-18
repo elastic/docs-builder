@@ -68,45 +68,84 @@ jobs:
             console.log('Analyzing ' + openIssues.length + ' existing issues for potential duplicates');
             
             try {
-              // Step 1: Send all issue titles and numbers to get top 5 candidates
-              let titlePrompt = 'Analyze this NEW ISSUE against all EXISTING ISSUES and identify the top 5 most similar ones:\n\n';
+              // Helper function to safely escape content for prompts
+              function sanitizeContent(content) {
+                if (!content) return 'No description provided';
+                return content.replace(/[`'"\\]/g, ' ').slice(0, 500); // Limit length and escape problematic chars
+              }
+              
+              // Helper function to retry AI calls with exponential backoff
+              async function retryApiCall(apiCallFn, maxRetries = 2) {
+                for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                  try {
+                    const response = await apiCallFn();
+                    if (response.ok) return response;
+                    
+                    if (attempt < maxRetries) {
+                      const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s delays
+                      console.log('API call failed, retrying in ' + delay + 'ms (attempt ' + (attempt + 1) + '/' + (maxRetries + 1) + ')');
+                      await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                      return response; // Return the failed response on final attempt
+                    }
+                  } catch (error) {
+                    if (attempt === maxRetries) throw error;
+                    const delay = Math.pow(2, attempt) * 1000;
+                    console.log('API call error, retrying in ' + delay + 'ms: ' + error.message);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                }
+              }
+              
+              // Limit the number of issues to analyze to prevent token overflow
+              const maxIssuesForAnalysis = Math.min(openIssues.length, 50); // Limit to 50 issues max
+              const issuesToAnalyze = openIssues.slice(0, maxIssuesForAnalysis);
+              
+              if (issuesToAnalyze.length < openIssues.length) {
+                console.log('Limiting analysis to ' + maxIssuesForAnalysis + ' most recent issues (out of ' + openIssues.length + ' total)');
+              }
+              
+              // Step 1: Send issue titles and numbers to get top 5 candidates
+              let titlePrompt = 'Analyze this NEW ISSUE against EXISTING ISSUES and identify the top 5 most similar ones:\n\n';
               titlePrompt += 'NEW ISSUE:\n';
-              titlePrompt += 'Title: ' + newIssue.title + '\n';
-              titlePrompt += 'Body: ' + (newIssue.body || 'No description provided') + '\n\n';
+              titlePrompt += 'Title: ' + sanitizeContent(newIssue.title) + '\n';
+              titlePrompt += 'Body: ' + sanitizeContent(newIssue.body) + '\n\n';
               titlePrompt += 'EXISTING ISSUES:\n';
               
-              openIssues.forEach((issue, index) => {
-                titlePrompt += (index + 1) + '. Issue #' + issue.number + ' - ' + issue.title + '\n';
+              issuesToAnalyze.forEach((issue, index) => {
+                titlePrompt += (index + 1) + '. Issue #' + issue.number + ' - ' + sanitizeContent(issue.title) + '\n';
               });
               
               titlePrompt += '\nRespond with a JSON object containing the top 5 most similar issues. Format: {"similar_issues": [{"rank": 1, "issue_number": 123, "similarity": "high|medium"}, ...]}';
               
-              const titleResponse = await fetch('https://models.inference.ai.azure.com/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': 'Bearer ' + github.token,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  messages: [
-                    {
-                      role: 'system',
-                      content: 'You are an expert at analyzing GitHub issues to detect duplicates. Compare issue titles and descriptions to identify the most similar ones. Respond only with valid JSON containing the top 5 most similar issues ranked by relevance. Use "high" for likely duplicates and "medium" for related issues.'
-                    },
-                    {
-                      role: 'user',
-                      content: titlePrompt
-                    }
-                  ],
-                  model: 'gpt-4o-mini',
-                  temperature: 0.1,
-                  max_tokens: 200
+              const titleResponse = await retryApiCall(() => 
+                fetch('https://models.inference.ai.azure.com/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': 'Bearer ' + github.token,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messages: [
+                      {
+                        role: 'system',
+                        content: 'You are an expert at analyzing GitHub issues to detect duplicates. Compare issue titles and descriptions to identify the most similar ones. Respond only with valid JSON containing the top 5 most similar issues ranked by relevance. Use "high" for likely duplicates and "medium" for related issues.'
+                      },
+                      {
+                        role: 'user',
+                        content: titlePrompt
+                      }
+                    ],
+                    model: 'gpt-4o-mini',
+                    temperature: 0.1,
+                    max_tokens: 200
+                  })
                 })
-              });
+              );
               
               if (!titleResponse.ok) {
                 const errorText = await titleResponse.text();
-                console.log('First AI call failed: ' + titleResponse.status + ' - ' + errorText);
+                console.log('First AI call failed after retries: ' + titleResponse.status + ' - ' + errorText);
                 return;
               }
               
@@ -161,40 +200,42 @@ jobs:
               // Step 3: Detailed analysis with full issue bodies
               let detailPrompt = 'Perform detailed comparison of this NEW ISSUE against the TOP CANDIDATE ISSUES:\n\n';
               detailPrompt += 'NEW ISSUE:\n';
-              detailPrompt += 'Title: ' + newIssue.title + '\n';
-              detailPrompt += 'Body: ' + (newIssue.body || 'No description provided') + '\n\n';
+              detailPrompt += 'Title: ' + sanitizeContent(newIssue.title) + '\n';
+              detailPrompt += 'Body: ' + sanitizeContent(newIssue.body) + '\n\n';
               detailPrompt += 'CANDIDATE ISSUES FOR DETAILED ANALYSIS:\n';
               
               candidateIssues.forEach((candidate, index) => {
                 detailPrompt += (index + 1) + '. Issue #' + candidate.issue.number + '\n';
-                detailPrompt += '   Title: ' + candidate.issue.title + '\n';
-                detailPrompt += '   Body: ' + (candidate.issue.body || 'No description provided') + '\n\n';
+                detailPrompt += '   Title: ' + sanitizeContent(candidate.issue.title) + '\n';
+                detailPrompt += '   Body: ' + sanitizeContent(candidate.issue.body) + '\n\n';
               });
               
               detailPrompt += 'Respond with JSON format: {"duplicates": [{"issue_number": 123, "classification": "DUPLICATE|SIMILAR|DIFFERENT", "reason": "brief explanation"}]}';
               
-              const detailResponse = await fetch('https://models.inference.ai.azure.com/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': 'Bearer ' + github.token,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  messages: [
-                    {
-                      role: 'system',
-                      content: 'You are an expert at analyzing GitHub issues for duplicates. Compare the full content and determine: DUPLICATE (same core problem), SIMILAR (related but different aspects), or DIFFERENT (unrelated). Respond only with valid JSON.'
-                    },
-                    {
-                      role: 'user',
-                      content: detailPrompt
-                    }
-                  ],
-                  model: 'gpt-4o-mini',
-                  temperature: 0.1,
-                  max_tokens: 300
+              const detailResponse = await retryApiCall(() =>
+                fetch('https://models.inference.ai.azure.com/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': 'Bearer ' + github.token,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messages: [
+                      {
+                        role: 'system',
+                        content: 'You are an expert at analyzing GitHub issues for duplicates. Compare the full content and determine: DUPLICATE (same core problem), SIMILAR (related but different aspects), or DIFFERENT (unrelated). Respond only with valid JSON.'
+                      },
+                      {
+                        role: 'user',
+                        content: detailPrompt
+                      }
+                    ],
+                    model: 'gpt-4o-mini',
+                    temperature: 0.1,
+                    max_tokens: 300
+                  })
                 })
-              });
+              );
               
               if (detailResponse.ok) {
                 const detailResult = await detailResponse.json();
@@ -238,7 +279,7 @@ jobs:
                 }
               } else {
                 const errorText = await detailResponse.text();
-                console.log('Detailed analysis failed: ' + detailResponse.status + ' - ' + errorText);
+                console.log('Detailed analysis failed after retries: ' + detailResponse.status + ' - ' + errorText);
               }
               
             } catch (error) {
