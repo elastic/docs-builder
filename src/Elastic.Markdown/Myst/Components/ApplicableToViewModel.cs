@@ -148,7 +148,7 @@ public class ApplicableToViewModel
 					new AppliesCollection(allApplicabilities.ToArray()));
 
 				// Select the closest version to current as the primary display
-				var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem);
+				var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem.Current);
 
 				return new ApplicabilityItem(
 					Key: firstItem.Key,

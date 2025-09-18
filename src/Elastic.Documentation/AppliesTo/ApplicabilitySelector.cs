@@ -2,11 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
-using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Versions;
-
-namespace Elastic.Markdown.Myst.Components;
+namespace Elastic.Documentation.AppliesTo;
 
 /// <summary>
 /// Utility class for selecting the most relevant applicability from a collection of applicabilities.
@@ -17,9 +13,9 @@ public static class ApplicabilitySelector
 	/// Selects the most relevant applicability for display: available versions first (highest version), then closest future version
 	/// </summary>
 	/// <param name="applicabilities">The collection of applicabilities to select from</param>
-	/// <param name="versioningSystem">The versioning system to use for comparison</param>
+	/// <param name="currentVersion">The current version to use for comparison</param>
 	/// <returns>The most relevant applicability for display</returns>
-	public static Applicability GetPrimaryApplicability(IEnumerable<Applicability> applicabilities, VersioningSystem versioningSystem)
+	public static Applicability GetPrimaryApplicability(IEnumerable<Applicability> applicabilities, SemVersion currentVersion)
 	{
 		var applicabilityList = applicabilities.ToList();
 		var lifecycleOrder = new Dictionary<ProductLifecycle, int>
@@ -34,7 +30,7 @@ public static class ApplicabilitySelector
 		};
 
 		var availableApplicabilities = applicabilityList
-			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current)
+			.Where(a => a.Version is null || a.Version is AllVersions || a.Version <= currentVersion)
 			.ToList();
 
 		if (availableApplicabilities.Count != 0)
@@ -46,13 +42,13 @@ public static class ApplicabilitySelector
 		}
 
 		var futureApplicabilities = applicabilityList
-			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > versioningSystem.Current)
+			.Where(a => a.Version is not null && a.Version is not AllVersions && a.Version > currentVersion)
 			.ToList();
 
 		if (futureApplicabilities.Count != 0)
 		{
 			return futureApplicabilities
-				.OrderBy(a => a.Version!.CompareTo(versioningSystem.Current))
+				.OrderBy(a => a.Version!.CompareTo(currentVersion))
 				.ThenBy(a => lifecycleOrder.GetValueOrDefault(a.Lifecycle, 999))
 				.First();
 		}

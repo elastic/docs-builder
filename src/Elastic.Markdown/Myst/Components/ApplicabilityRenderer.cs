@@ -53,7 +53,7 @@ public class ApplicabilityRenderer
 		AppliesCollection allApplications)
 	{
 		var applicabilityList = applicabilities.ToList();
-		var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(applicabilityList, versioningSystem);
+		var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(applicabilityList, versioningSystem.Current);
 
 		var primaryRenderData = RenderApplicability(primaryApplicability, applicabilityDefinition, versioningSystem, allApplications);
 		var combinedTooltip = BuildCombinedTooltipText(applicabilityList, applicabilityDefinition, versioningSystem);
