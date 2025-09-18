@@ -59,19 +59,82 @@ jobs:
             // Use GitHub Models to find potential duplicates
             const duplicates = [];
             
+            // Pre-filter issues using lightweight text similarity to reduce AI API calls
+            const newTitle = newIssue.title.toLowerCase();
+            const newBody = (newIssue.body || '').toLowerCase();
+            const newTitleWords = newTitle.split(/\s+/).filter(w => w.length > 3);
+            
+            const candidateIssues = [];
+            
+            // First pass: quick text similarity to identify candidates
             for (const issue of openIssues) {
+              const existingTitle = issue.title.toLowerCase();
+              const existingBody = (issue.body || '').toLowerCase();
+              
+              // Calculate title word overlap
+              const titleOverlap = newTitleWords.filter(word => existingTitle.includes(word)).length;
+              const titleSimilarity = newTitleWords.length > 0 ? titleOverlap / newTitleWords.length : 0;
+              
+              // Calculate body keyword overlap for additional context
+              const bodyHasKeywords = newTitleWords.some(word => existingBody.includes(word));
+              
+              // Include if there's significant title similarity or body keywords match
+              if (titleSimilarity > 0.3 || bodyHasKeywords) {
+                candidateIssues.push({
+                  issue,
+                  titleSimilarity,
+                  quickMatch: titleSimilarity > 0.6 // High confidence for potential duplicates
+                });
+              }
+            }
+            
+            console.log('Pre-filtered to ' + candidateIssues.length + ' candidate issues from ' + openIssues.length + ' total issues');
+            
+            // Sort candidates by similarity score (highest first) and limit to top 20 for AI analysis
+            candidateIssues.sort((a, b) => b.titleSimilarity - a.titleSimilarity);
+            const topCandidates = candidateIssues.slice(0, 20);
+            
+            if (topCandidates.length === 0) {
+              console.log('No candidate issues found after pre-filtering');
+              return;
+            }
+            
+            // Process high-confidence matches first (may not need AI)
+            for (const candidate of topCandidates) {
+              if (candidate.quickMatch) {
+                duplicates.push({
+                  issue: candidate.issue,
+                  similarity: 'medium'
+                });
+                console.log('Found similar issue (pre-filter): #' + candidate.issue.number + ' - ' + candidate.issue.title);
+              }
+            }
+            
+            // Use AI for remaining candidates if we haven't found enough duplicates
+            const remainingCandidates = topCandidates.filter(c => !c.quickMatch);
+            
+            if (remainingCandidates.length > 0 && duplicates.length < 3) {
+              // Batch process up to 10 issues in a single AI call for efficiency
+              const batchSize = Math.min(10, remainingCandidates.length);
+              const batch = remainingCandidates.slice(0, batchSize);
+              
               try {
-                // Create the comparison prompt
-                const promptContent = 'Compare these two issues and determine if they describe the same problem or feature request:\n\n' +
-                  'NEW ISSUE:\n' +
-                  'Title: ' + newIssue.title + '\n' +
-                  'Body: ' + (newIssue.body || 'No description provided') + '\n\n' +
-                  'EXISTING ISSUE:\n' +
-                  'Title: ' + issue.title + '\n' +
-                  'Body: ' + (issue.body || 'No description provided') + '\n\n' +
-                  'Are these issues duplicates?';
+                // Create a single prompt that compares the new issue against multiple existing issues
+                let promptContent = 'Compare this NEW ISSUE against the following EXISTING ISSUES and identify which ones are duplicates or similar:\n\n';
+                promptContent += 'NEW ISSUE:\n';
+                promptContent += 'Title: ' + newIssue.title + '\n';
+                promptContent += 'Body: ' + (newIssue.body || 'No description provided') + '\n\n';
+                promptContent += 'EXISTING ISSUES TO COMPARE:\n';
                 
-                // Call GitHub Models API to compare issues
+                batch.forEach((candidate, index) => {
+                  promptContent += (index + 1) + '. Issue #' + candidate.issue.number + '\n';
+                  promptContent += '   Title: ' + candidate.issue.title + '\n';
+                  promptContent += '   Body: ' + (candidate.issue.body || 'No description provided') + '\n\n';
+                });
+                
+                promptContent += 'For each existing issue, respond with the issue number followed by: DUPLICATE, SIMILAR, or DIFFERENT. Example: "1: DUPLICATE, 2: DIFFERENT, 3: SIMILAR"';
+                
+                // Call GitHub Models API with batch comparison
                 const response = await fetch('https://models.inference.ai.azure.com/chat/completions', {
                   method: 'POST',
                   headers: {
@@ -82,7 +145,7 @@ jobs:
                     messages: [
                       {
                         role: 'system',
-                        content: 'You are an expert at analyzing GitHub issues to detect duplicates. Compare two issues and determine if they are likely duplicates. Respond with only "DUPLICATE" if they are very likely duplicates describing the same core problem, "SIMILAR" if they are related but address different aspects, or "DIFFERENT" if they are unrelated. Focus on the core problem being reported, not just keywords.'
+                        content: 'You are an expert at analyzing GitHub issues to detect duplicates. Compare issues and determine if they are likely duplicates. For each comparison, respond with: DUPLICATE (same core problem), SIMILAR (related but different aspects), or DIFFERENT (unrelated). Focus on the core problem being reported.'
                       },
                       {
                         role: 'user',
@@ -91,47 +154,42 @@ jobs:
                     ],
                     model: 'gpt-4o-mini',
                     temperature: 0.1,
-                    max_tokens: 20
+                    max_tokens: 100
                   })
                 });
                 
                 if (response.ok) {
                   const result = await response.json();
-                  const analysis = result.choices[0]?.message?.content?.trim().toUpperCase();
+                  const analysis = result.choices[0]?.message?.content?.trim();
+                  console.log('AI batch analysis result: ' + analysis);
                   
-                  if (analysis === 'DUPLICATE' || analysis === 'SIMILAR') {
-                    duplicates.push({
-                      issue,
-                      similarity: analysis === 'DUPLICATE' ? 'high' : 'medium'
-                    });
-                    console.log('Found ' + analysis.toLowerCase() + ' issue: #' + issue.number + ' - ' + issue.title);
+                  // Parse the batch response
+                  const lines = analysis.split(/[,\n]/).map(l => l.trim());
+                  for (const line of lines) {
+                    const match = line.match(/(\d+):\s*(DUPLICATE|SIMILAR|DIFFERENT)/i);
+                    if (match) {
+                      const issueIndex = parseInt(match[1]) - 1;
+                      const classification = match[2].toUpperCase();
+                      
+                      if (issueIndex >= 0 && issueIndex < batch.length && (classification === 'DUPLICATE' || classification === 'SIMILAR')) {
+                        const candidate = batch[issueIndex];
+                        duplicates.push({
+                          issue: candidate.issue,
+                          similarity: classification === 'DUPLICATE' ? 'high' : 'medium'
+                        });
+                        console.log('Found ' + classification.toLowerCase() + ' issue: #' + candidate.issue.number + ' - ' + candidate.issue.title);
+                      }
+                    }
                   }
                 } else {
                   const errorText = await response.text();
-                  console.log('GitHub Models API failed for issue #' + issue.number + ': ' + response.status + ' - ' + errorText);
-                  // Fallback: basic text similarity for critical keywords
-                  const newTitle = newIssue.title.toLowerCase();
-                  const existingTitle = issue.title.toLowerCase();
-                  
-                  // Simple keyword overlap check as fallback
-                  const titleWords = newTitle.split(/\s+/).filter(w => w.length > 3);
-                  const titleOverlap = titleWords.filter(word => existingTitle.includes(word)).length;
-                  
-                  if (titleWords.length > 0 && titleOverlap / titleWords.length > 0.6) {
-                    duplicates.push({
-                      issue,
-                      similarity: 'medium'
-                    });
-                    console.log('Found similar issue (fallback): #' + issue.number + ' - ' + issue.title);
-                  }
+                  console.log('GitHub Models API failed: ' + response.status + ' - ' + errorText);
+                  console.log('Falling back to pre-filter results only');
                 }
               } catch (error) {
-                console.log('Error analyzing issue #' + issue.number + ': ' + error.message);
-                // Continue with next issue rather than failing completely
+                console.log('Error in batch AI analysis: ' + error.message);
+                console.log('Falling back to pre-filter results only');
               }
-              
-              // Add a small delay to avoid rate limiting
-              await new Promise(resolve => setTimeout(resolve, 200));
             }
             
             // Post comment if duplicates found
