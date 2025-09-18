@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Anchor;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -89,6 +90,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{tab-item}") > 0)
 			return new TabItemBlock(this, context);
+
+		if (info.IndexOf("{anchor}") > 0)
+			return new AnchorBlock(this, context);
 
 		if (info.IndexOf("{dropdown}") > 0)
 			return new DropdownBlock(this, context);

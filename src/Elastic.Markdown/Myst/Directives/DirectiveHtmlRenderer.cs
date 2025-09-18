@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.Anchor;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
@@ -54,6 +55,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ImageCarouselBlock carouselBlock:
 				WriteImageCarousel(renderer, carouselBlock);
+				return;
+			case AnchorBlock anchorBlock:
+				WriteAnchor(renderer, anchorBlock);
 				return;
 			case DropdownBlock dropdownBlock:
 				WriteDropdown(renderer, dropdownBlock);
@@ -227,6 +231,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Classes = block.Classes,
 			Title = block.Title,
 			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAnchor(HtmlRenderer renderer, AnchorBlock block)
+	{
+		var slice = AnchorView.Create(new AnchorViewModel
+		{
+			DirectiveBlock = block,
+			AnchorId = block.AnchorId ?? "unknown"
 		});
 		RenderRazorSlice(slice, renderer);
 	}
