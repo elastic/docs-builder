@@ -12,13 +12,13 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 
 public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-## Check status, stop, and restart SLM
-### Get SLM status 
-### Stop SLM 
-### Start SLM
-## Check status, stop, and restart ILM
+## One
+### Two
+### Three
+### Four
+## Five
 
-:::{include} _snippets/ilm-status.md
+:::{include} _snippets/test.md
 :::
 """
 )
@@ -27,11 +27,11 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 	{
 		// language=markdown
 		var inclusion = """
-### Get ILM status
-### Stop ILM 
-### Start ILM
+### Six
+### Seven
+### Eight
 """;
-		fileSystem.AddFile(@"docs/_snippets/ilm-status.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -39,7 +39,7 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 
 	[Fact]
 	public void IncludesSnippetAfterMainContent() =>
-		Html.Should().Contain("Get SLM status").And.Contain("Get ILM status");
+		Html.Should().Contain("Two").And.Contain("Six");
 
 	[Fact]
 	public void TableOfContentsRespectsOrder()
@@ -48,28 +48,28 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 		var toc = File.PageTableOfContent.Values.ToList();
 
 		// The headings should appear in document order:
-		// 1. Check status, stop, and restart SLM
-		// 2. Get SLM status
-		// 3. Stop SLM
-		// 4. Start SLM
-		// 5. Check status, stop, and restart ILM
-		// 6. Get ILM status (from included snippet)
-		// 7. Stop ILM (from included snippet)
-		// 8. Start ILM (from included snippet)
+		// 1. One
+		// 2. Two
+		// 3. Three
+		// 4. Four
+		// 5. Five
+		// 6. Six (from included snippet)
+		// 7. Seven (from included snippet)
+		// 8. Eight (from included snippet)
 
 		toc.Should().HaveCount(8);
 
 		// Check the order is correct
 		var expectedOrder = new[]
 		{
-			"Check status, stop, and restart SLM",
-			"Get SLM status",
-			"Stop SLM",
-			"Start SLM",
-			"Check status, stop, and restart ILM",
-			"Get ILM status",
-			"Stop ILM",
-			"Start ILM"
+			"One",
+			"Two",
+			"Three",
+			"Four",
+			"Five",
+			"Six",
+			"Seven",
+			"Eight"
 		};
 
 		var actualOrder = toc.Select(t => t.Heading).ToArray();
@@ -79,18 +79,18 @@ public class IncludeHeadingOrderTests(ITestOutputHelper output) : DirectiveTest<
 
 public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-:::{include} _snippets/intro-status.md
+:::{include} _snippets/test.md
 :::
 
-## Check status, stop, and restart SLM
-### Get SLM status 
-### Stop SLM 
-### Start SLM
+## Four
+### Five
+### Six
+### Seven
 
-## Check status, stop, and restart ILM
-### Get ILM status
-### Stop ILM 
-### Start ILM
+## Eight
+### Nine
+### Ten
+### Eleven
 """
 )
 {
@@ -98,11 +98,11 @@ public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : Directi
 	{
 		// language=markdown
 		var inclusion = """
-## Introduction
-### Overview of lifecycle management
-### Prerequisites
+## One
+### Two
+### Three
 """;
-		fileSystem.AddFile(@"docs/_snippets/intro-status.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -115,34 +115,34 @@ public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : Directi
 		var toc = File.PageTableOfContent.Values.ToList();
 
 		// The headings should appear in document order:
-		// 1. Introduction (from included snippet at top)
-		// 2. Overview of lifecycle management (from included snippet)
-		// 3. Prerequisites (from included snippet)
-		// 4. Check status, stop, and restart SLM
-		// 5. Get SLM status
-		// 6. Stop SLM
-		// 7. Start SLM
-		// 8. Check status, stop, and restart ILM
-		// 9. Get ILM status
-		// 10. Stop ILM
-		// 11. Start ILM
+		// 1. One (from included snippet at top)
+		// 2. Two (from included snippet)
+		// 3. Three (from included snippet)
+		// 4. Four
+		// 5. Five
+		// 6. Six
+		// 7. Seven
+		// 8. Eight
+		// 9. Nine
+		// 10. Ten
+		// 11. Eleven
 
 		toc.Should().HaveCount(11);
 
 		// Check the order is correct
 		var expectedOrder = new[]
 		{
-			"Introduction",
-			"Overview of lifecycle management",
-			"Prerequisites",
-			"Check status, stop, and restart SLM",
-			"Get SLM status",
-			"Stop SLM",
-			"Start SLM",
-			"Check status, stop, and restart ILM",
-			"Get ILM status",
-			"Stop ILM",
-			"Start ILM"
+			"One",
+			"Two",
+			"Three",
+			"Four",
+			"Five",
+			"Six",
+			"Seven",
+			"Eight",
+			"Nine",
+			"Ten",
+			"Eleven"
 		};
 
 		var actualOrder = toc.Select(t => t.Heading).ToArray();
@@ -152,18 +152,18 @@ public class IncludeBeforeHeadingsOrderTests(ITestOutputHelper output) : Directi
 
 public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-## Check status, stop, and restart SLM
-### Get SLM status 
-### Stop SLM 
-### Start SLM
+## One
+### Two
+### Three
+### Four
 
-:::{include} _snippets/troubleshooting.md
+:::{include} _snippets/test.md
 :::
 
-## Check status, stop, and restart ILM
-### Get ILM status
-### Stop ILM 
-### Start ILM
+## Seven
+### Eight
+### Nine
+### Ten
 """
 )
 {
@@ -171,11 +171,10 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 	{
 		// language=markdown
 		var inclusion = """
-## Common troubleshooting steps
-### Check service health
-### Review logs
+## Five
+### Six
 """;
-		fileSystem.AddFile(@"docs/_snippets/troubleshooting.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -188,34 +187,32 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 		var toc = File.PageTableOfContent.Values.ToList();
 
 		// The headings should appear in document order:
-		// 1. Check status, stop, and restart SLM
-		// 2. Get SLM status
-		// 3. Stop SLM
-		// 4. Start SLM
-		// 5. Common troubleshooting steps (from included snippet in middle)
-		// 6. Check service health (from included snippet)
-		// 7. Review logs (from included snippet)
-		// 8. Check status, stop, and restart ILM
-		// 9. Get ILM status
-		// 10. Stop ILM
-		// 11. Start ILM
+		// 1. One
+		// 2. Two
+		// 3. Three
+		// 4. Four
+		// 5. Five (from included snippet in middle)
+		// 6. Six (from included snippet)
+		// 7. Seven
+		// 8. Eight
+		// 9. Nine
+		// 10. Ten
 
-		toc.Should().HaveCount(11);
+		toc.Should().HaveCount(10);
 
 		// Check the order is correct
 		var expectedOrder = new[]
 		{
-			"Check status, stop, and restart SLM",
-			"Get SLM status",
-			"Stop SLM",
-			"Start SLM",
-			"Common troubleshooting steps",
-			"Check service health",
-			"Review logs",
-			"Check status, stop, and restart ILM",
-			"Get ILM status",
-			"Stop ILM",
-			"Start ILM"
+			"One",
+			"Two",
+			"Three",
+			"Four",
+			"Five",
+			"Six",
+			"Seven",
+			"Eight",
+			"Nine",
+			"Ten"
 		};
 
 		var actualOrder = toc.Select(t => t.Heading).ToArray();
@@ -224,29 +221,29 @@ public class IncludeInMiddleOfHeadingsOrderTests(ITestOutputHelper output) : Dir
 }
 public class IncludeWithStepperOrderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
-## Getting Started
-### Prerequisites 
+## One
+### Two
 
 :::::{stepper}
 
-::::{step} Install dependencies
-First step in the process.
+::::{step} Three
+Content for step three.
 ::::
 
-::::{step} Configure settings
-Second step in the process.
+::::{step} Four
+Content for step four.
 ::::
 
 :::::
 
-## Main Process
+## Five
 
-:::{include} _snippets/process-steps.md
+:::{include} _snippets/test.md
 :::
 
-## Final Steps
-### Cleanup
-### Verification
+## Ten
+### Eleven
+### Twelve
 """
 )
 {
@@ -256,20 +253,20 @@ Second step in the process.
 		var inclusion = """
 :::::{stepper}
 
-::::{step} Execute process
-Main execution step from snippet.
+::::{step} Six
+Content for step six.
 ::::
 
-::::{step} Monitor progress
-Monitoring step from snippet.
+::::{step} Seven
+Content for step seven.
 ::::
 
 :::::
 
-### Additional notes
-### Troubleshooting
+### Eight
+### Nine
 """;
-		fileSystem.AddFile(@"docs/_snippets/process-steps.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -282,36 +279,36 @@ Monitoring step from snippet.
 		var toc = File.PageTableOfContent.Values.ToList();
 
 		// The headings should appear in document order:
-		// 1. Getting Started
-		// 2. Prerequisites
-		// 3. Install dependencies (stepper step)
-		// 4. Configure settings (stepper step)
-		// 5. Main Process
-		// 6. Execute process (stepper step from included snippet)
-		// 7. Monitor progress (stepper step from included snippet)
-		// 8. Additional notes (from included snippet)
-		// 9. Troubleshooting (from included snippet)
-		// 10. Final Steps
-		// 11. Cleanup
-		// 12. Verification
+		// 1. One
+		// 2. Two
+		// 3. Three (stepper step)
+		// 4. Four (stepper step)
+		// 5. Five
+		// 6. Six (stepper step from included snippet)
+		// 7. Seven (stepper step from included snippet)
+		// 8. Eight (from included snippet)
+		// 9. Nine (from included snippet)
+		// 10. Ten
+		// 11. Eleven
+		// 12. Twelve
 
 		toc.Should().HaveCount(12);
 
 		// Check the order is correct
 		var expectedOrder = new[]
 		{
-			"Getting Started",
-			"Prerequisites",
-			"Install dependencies",
-			"Configure settings",
-			"Main Process",
-			"Execute process",
-			"Monitor progress",
-			"Additional notes",
-			"Troubleshooting",
-			"Final Steps",
-			"Cleanup",
-			"Verification"
+			"One",
+			"Two",
+			"Three",
+			"Four",
+			"Five",
+			"Six",
+			"Seven",
+			"Eight",
+			"Nine",
+			"Ten",
+			"Eleven",
+			"Twelve"
 		};
 
 		var actualOrder = toc.Select(t => t.Heading).ToArray();
@@ -323,23 +320,23 @@ public class StepperBeforeIncludeOrderTests(ITestOutputHelper output) : Directiv
 """
 :::::{stepper}
 
-::::{step} Initial setup
+::::{step} One
 Starting with stepper at the beginning.
 ::::
 
-::::{step} Configuration
+::::{step} Two
 Configuration step.
 ::::
 
 :::::
 
-## Middle Section
+## Three
 
-:::{include} _snippets/middle-content.md
+:::{include} _snippets/test.md
 :::
 
-## Final Section
-### Conclusion
+## Eight
+### Nine
 """
 )
 {
@@ -347,22 +344,22 @@ Configuration step.
 	{
 		// language=markdown
 		var inclusion = """
-### Included heading one
-### Included heading two
+### Four
+### Five
 
 :::::{stepper}
 
-::::{step} Included step one
+::::{step} Six
 Step from included content.
 ::::
 
-::::{step} Included step two
+::::{step} Seven
 Another step from included content.
 ::::
 
 :::::
 """;
-		fileSystem.AddFile(@"docs/_snippets/middle-content.md", inclusion);
+		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
 	[Fact]
@@ -375,30 +372,30 @@ Another step from included content.
 		var toc = File.PageTableOfContent.Values.ToList();
 
 		// The headings should appear in document order:
-		// 1. Initial setup (stepper step)
-		// 2. Configuration (stepper step)
-		// 3. Middle Section
-		// 4. Included heading one (from included snippet)
-		// 5. Included heading two (from included snippet)
-		// 6. Included step one (stepper step from included snippet)
-		// 7. Included step two (stepper step from included snippet)
-		// 8. Final Section
-		// 9. Conclusion
+		// 1. One (stepper step)
+		// 2. Two (stepper step)
+		// 3. Three
+		// 4. Four (from included snippet)
+		// 5. Five (from included snippet)
+		// 6. Six (stepper step from included snippet)
+		// 7. Seven (stepper step from included snippet)
+		// 8. Eight
+		// 9. Nine
 
 		toc.Should().HaveCount(9);
 
 		// Check the order is correct
 		var expectedOrder = new[]
 		{
-			"Initial setup",
-			"Configuration",
-			"Middle Section",
-			"Included heading one",
-			"Included heading two",
-			"Included step one",
-			"Included step two",
-			"Final Section",
-			"Conclusion"
+			"One",
+			"Two",
+			"Three",
+			"Four",
+			"Five",
+			"Six",
+			"Seven",
+			"Eight",
+			"Nine"
 		};
 
 		var actualOrder = toc.Select(t => t.Heading).ToArray();
