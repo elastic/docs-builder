@@ -279,3 +279,60 @@ public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(ou
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"https://github.com/elastic/docs-builder\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
 	}
 }
+
+public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "https://www.elastic.co/guide/[invalid-characters]"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void HasErrorsForMalformedUri()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"https://www.elastic.co/guide/[invalid-characters]\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
+	}
+}
+
+public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "https://www.elastic.co/guide/invalid uri with spaces"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact]
+	public void HasErrorsForInvalidScheme()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"https://www.elastic.co/guide/invalid uri with spaces\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
+	}
+}
+
+public class MappedPagesNotAbsoluteUri(ITestOutputHelper output) : DirectiveTest(output,
+	"""
+	---
+	mapped_pages:
+	  - "not-a-uri-at-all"
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Fact] 
+	public void HasErrorsForNotAbsoluteUri()
+	{
+		Collector.Diagnostics.Should().HaveCount(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""));
+	}
+}

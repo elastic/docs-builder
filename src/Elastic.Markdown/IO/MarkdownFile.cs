@@ -364,7 +364,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		{
 			foreach (var url in fm.MappedPages)
 			{
-				if (!string.IsNullOrEmpty(url) && !url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase))
+				if (!string.IsNullOrEmpty(url) && (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase) || !Uri.IsWellFormedUriString(url, UriKind.Absolute)))
 				{
 					Collector.EmitError(FilePath, $"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide.");
 				}
