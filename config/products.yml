@@ -9,7 +9,7 @@ products:
     display: 'APM Agent for Android'
     versioning: 'apm_agent_android'
   apm-agent-dotnet:
-    display: 'APM Agent for .NET'
+    display: 'APM .NET Agent'
     versioning: 'apm_agent_dotnet'
   apm-agent-go:
     display: 'APM Agent for Go'
