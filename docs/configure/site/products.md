@@ -5,7 +5,7 @@ The [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/pr
 ```yml
 products:
   apm_agent_dotnet:
-    display: 'APM Agent for .NET'
+    display: 'APM .NET Agent'
     versioning: 'apm_agent_dotnet'
   edot_collector:
     display: 'Elastic Distribution of OpenTelemetry Collector'
