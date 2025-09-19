@@ -232,7 +232,7 @@ id:
   ...
 # example:
   apm-agent-dotnet:
-    display: 'APM Agent for .NET'
+    display: 'APM .NET Agent'
 ```
 
 A shorthand format is also available. Using `{{.id}}` is equivalent to `{{product.id}}`.
