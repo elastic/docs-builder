@@ -30,6 +30,7 @@ environments:
     feature_flags:
       LAZY_LOAD_NAVIGATION: true
       SEARCH_OR_ASK_AI: true
+      STAGING_ELASTIC_NAV: true
   dev:
     uri: http://localhost:4000
     content_source: current
