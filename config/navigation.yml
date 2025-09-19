@@ -328,11 +328,6 @@ toc:
         path_prefix: reference/kibana
         # Children include the entire AsciiDoc book
         # (minus pages moved to docs-content)
-        children:
-          # Canvas function reference
-          # https://github.com/elastic/docs-content/blob/main/reference/canvas/toc.yml
-          - toc: docs-content://reference/canvas
-            path_prefix: reference/canvas
 
       # Cloud
       # https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
@@ -376,6 +371,28 @@ toc:
       - toc: docs-content://reference/ingestion-tools
         path_prefix: reference/ingestion-tools
         children:
+          # Elastic Distributions of OpenTelemetry (EDOT)
+          # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
+          - toc: opentelemetry://reference
+            path_prefix: reference/opentelemetry
+            children:
+              - toc: elastic-agent://reference/edot-collector
+                path_prefix: reference/edot-collector
+              - toc: apm-agent-android://reference/edot-android
+                path_prefix: reference/opentelemetry/edot-sdks/android
+              - toc: elastic-otel-dotnet://reference/edot-dotnet
+                path_prefix: reference/opentelemetry/edot-sdks/dotnet
+              - toc: apm-agent-ios://reference/edot-ios
+                path_prefix: reference/opentelemetry/edot-sdks/ios
+              - toc: elastic-otel-java://reference/edot-java
+                path_prefix: reference/opentelemetry/edot-sdks/java
+              - toc: elastic-otel-node://reference/edot-node
+                path_prefix: reference/opentelemetry/edot-sdks/node
+              - toc: elastic-otel-php://reference/edot-php
+                path_prefix: reference/opentelemetry/edot-sdks/php
+              - toc: elastic-otel-python://reference/edot-python
+                path_prefix: reference/opentelemetry/edot-sdks/python
+
           # Fleet and Elastic Agent
           # https://github.com/elastic/docs-content/blob/main/reference/fleet/toc.yml
           - toc: docs-content://reference/fleet
@@ -501,28 +518,6 @@ toc:
           - toc: integration-docs://reference
             path_prefix: reference/integrations
             # Children include the entire AsciiDoc book
-
-      # Elastic Distributions of OpenTelemetry (EDOT)
-      # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
-      - toc: opentelemetry://reference
-        path_prefix: reference/opentelemetry
-        children:
-          - toc: elastic-agent://reference/edot-collector
-            path_prefix: reference/edot-collector
-          - toc: apm-agent-android://reference/edot-android
-            path_prefix: reference/opentelemetry/edot-sdks/android
-          - toc: elastic-otel-dotnet://reference/edot-dotnet
-            path_prefix: reference/opentelemetry/edot-sdks/dotnet
-          - toc: apm-agent-ios://reference/edot-ios
-            path_prefix: reference/opentelemetry/edot-sdks/ios
-          - toc: elastic-otel-java://reference/edot-java
-            path_prefix: reference/opentelemetry/edot-sdks/java
-          - toc: elastic-otel-node://reference/edot-node
-            path_prefix: reference/opentelemetry/edot-sdks/node
-          - toc: elastic-otel-php://reference/edot-php
-            path_prefix: reference/opentelemetry/edot-sdks/php
-          - toc: elastic-otel-python://reference/edot-python
-            path_prefix: reference/opentelemetry/edot-sdks/python
 
       # Query languages
       # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
