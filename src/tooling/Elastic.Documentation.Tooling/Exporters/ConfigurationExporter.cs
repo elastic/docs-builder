@@ -54,6 +54,10 @@ public class ConfigurationExporter(
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", versionsConfig.Name, configFolder.FullName);
 		fs.File.Copy(versionsConfig.FullName, Path.Combine(configFolder.FullName, versionsConfig.Name), true);
 
+		var productsConfig = configurationFileProvider.ProductsFile;
+		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", productsConfig.Name, configFolder.FullName);
+		fs.File.Copy(productsConfig.FullName, Path.Combine(configFolder.FullName, productsConfig.Name), true);
+
 		return default;
 	}
 }

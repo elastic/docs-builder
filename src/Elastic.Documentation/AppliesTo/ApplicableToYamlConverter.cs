@@ -10,16 +10,14 @@ using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
-public class ApplicableToYamlConverter : IYamlTypeConverter
+public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) : IYamlTypeConverter
 {
-	private static readonly string[] KnownKeys =
+	private readonly string[] _knownKeys =
 	[
-		"stack", "deployment", "serverless", "product",
-		"ece", "eck", "ess", "self",
-		"elasticsearch", "observability", "security",
-		"ecctl", "curator",
-		"apm_agent_android","apm_agent_dotnet", "apm_agent_go", "apm_agent_ios", "apm_agent_java", "apm_agent_node", "apm_agent_php", "apm_agent_python", "apm_agent_ruby", "apm_agent_rum",
-		"edot_ios", "edot_android", "edot_dotnet", "edot_java", "edot_node", "edot_php", "edot_python", "edot_cf_aws"
+		"stack", "deployment", "serverless", "product", // Applicability categories
+		"ece", "eck", "ess", "self", // Deployment options
+		"elasticsearch", "observability", "security", // Serverless flavors
+		.. productKeys
 	];
 
 	public bool Accepts(Type type) => type == typeof(ApplicableTo);
@@ -45,11 +43,11 @@ public class ApplicableToYamlConverter : IYamlTypeConverter
 		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
 			return null;
 
-		var keys = dictionary.Keys.OfType<string>().ToArray();
+		var keys = dictionary.Keys.OfType<string>().Select(x => x.Replace('_', '-')).ToArray();
 		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
 		if (oldStyleKeys.Count > 0)
 			diagnostics.Add((Severity.Warning, $"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}"));
-		var unknownKeys = keys.Except(KnownKeys).Except(oldStyleKeys).ToList();
+		var unknownKeys = keys.Except(_knownKeys).Except(oldStyleKeys).ToList();
 		if (unknownKeys.Count > 0)
 			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
 

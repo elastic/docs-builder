@@ -69,6 +69,30 @@ public enum VersioningSystemId
 	ApmAgentRuby,
 	[Display(Name = "apm_agent_rum")]
 	ApmAgentRum,
+	[Display(Name = "apm_attacher")]
+	ApmAttacher,
+	[Display(Name = "apm_lambda")]
+	ApmLambda,
+	[Display(Name = "ecs_logging_dotnet")]
+	EcsLoggingDotnet,
+	[Display(Name = "ecs_logging_go_logrus")]
+	EcsLoggingGoLogrus,
+	[Display(Name = "ecs_logging_go_zap")]
+	EcsLoggingGoZap,
+	[Display(Name = "ecs_logging_go_zerolog")]
+	EcsLoggingGoZerolog,
+	[Display(Name = "ecs_logging_java")]
+	EcsLoggingJava,
+	[Display(Name = "ecs_logging_nodejs")]
+	EcsLoggingNodeJs,
+	[Display(Name = "ecs_logging_php")]
+	EcsLoggingPhp,
+	[Display(Name = "ecs_logging_python")]
+	EcsLoggingPython,
+	[Display(Name = "ecs_logging_ruby")]
+	EcsLoggingRuby,
+	[Display(Name = "esf")]
+	Esf,
 	[Display(Name = "edot_ios")]
 	EdotIos,
 	[Display(Name = "edot_android")]
@@ -86,7 +110,11 @@ public enum VersioningSystemId
 	[Display(Name = "edot_cf_aws")]
 	EdotCfAws,
 	[Display(Name = "edot_collector")]
-	EdotCollector
+	EdotCollector,
+	[Display(Name = "search_ui")]
+	SearchUI,
+	[Display(Name = "cloud_terraform")]
+	CloudTerraform,
 }
 
 [YamlSerializable]

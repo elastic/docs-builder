@@ -65,6 +65,7 @@ public class AssemblerConfigurationTests
 	public void ReadsConfigurationFiles()
 	{
 		Context.ConfigurationFileProvider.VersionFile.Name.Should().Be("versions.yml");
+		Context.ConfigurationFileProvider.ProductsFile.Name.Should().Be("products.yml");
 		Context.ConfigurationFileProvider.NavigationFile.Name.Should().Be("navigation.yml");
 		Context.ConfigurationFileProvider.AssemblerFile.Name.Should().Be("assembler.yml");
 		Context.ConfigurationFileProvider.LegacyUrlMappingsFile.Name.Should().Be("legacy-url-mappings.yml");
