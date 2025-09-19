@@ -73,7 +73,8 @@ public class ApplicabilityRenderer
 		var orderedApplicabilities = applicabilities
 			.OrderByDescending(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current ? 1 : 0)
 			.ThenByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
-			.ThenBy(a => a.Version ?? new SemVersion(0, 0, 0));
+			.ThenBy(a => a.Version ?? new SemVersion(0, 0, 0))
+			.ToList();
 
 		foreach (var applicability in orderedApplicabilities)
 		{
@@ -81,7 +82,8 @@ public class ApplicabilityRenderer
 			var lifecycleFull = GetLifecycleFullText(applicability.Lifecycle);
 			var heading = CreateApplicabilityHeading(applicability, applicabilityDefinition, realVersion);
 			var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, realVersion, lifecycleFull);
-			tooltipParts.Add($"{heading}\n{tooltipText}");
+			// language=html
+			tooltipParts.Add($"<div>{heading}{tooltipText}</div>");
 		}
 
 		return string.Join("\n\n", tooltipParts);
@@ -91,7 +93,8 @@ public class ApplicabilityRenderer
 	{
 		var lifecycleName = applicability.GetLifeCycleName();
 		var versionText = realVersion is not null ? $" {realVersion}" : "";
-		return $"{applicabilityDefinition.DisplayName} {lifecycleName}{versionText}:";
+		// language=html
+		return $"""<strong>{applicabilityDefinition.DisplayName} {lifecycleName}{versionText}:</strong>""";
 	}
 
 	private static string GetLifecycleFullText(ProductLifecycle lifecycle) => lifecycle switch
