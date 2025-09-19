@@ -8,6 +8,10 @@ namespace Elastic.Markdown.Myst.Components;
 
 public record ApplicabilityItem(
 	string Key,
-	Applicability Applicability,
-	ApplicabilityRenderer.ApplicabilityRenderData RenderData
-);
+	Applicability PrimaryApplicability,
+	ApplicabilityRenderer.ApplicabilityRenderData RenderData,
+	ApplicabilityMappings.ApplicabilityDefinition ApplicabilityDefinition
+)
+{
+	public Applicability Applicability => PrimaryApplicability;
+}

@@ -46,6 +46,57 @@ public class ApplicabilityRenderer
 		);
 	}
 
+	public ApplicabilityRenderData RenderCombinedApplicability(
+		IEnumerable<Applicability> applicabilities,
+		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
+		VersioningSystem versioningSystem,
+		AppliesCollection allApplications)
+	{
+		var applicabilityList = applicabilities.ToList();
+		var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(applicabilityList, versioningSystem.Current);
+
+		var primaryRenderData = RenderApplicability(primaryApplicability, applicabilityDefinition, versioningSystem, allApplications);
+		var combinedTooltip = BuildCombinedTooltipText(applicabilityList, applicabilityDefinition, versioningSystem);
+
+		return primaryRenderData with { TooltipText = combinedTooltip };
+	}
+
+
+	private static string BuildCombinedTooltipText(
+		List<Applicability> applicabilities,
+		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
+		VersioningSystem versioningSystem)
+	{
+		var tooltipParts = new List<string>();
+
+		// Order by the same logic as primary selection: available first (by version desc), then future (by version asc)
+		var orderedApplicabilities = applicabilities
+			.OrderByDescending(a => a.Version is null || a.Version is AllVersions || a.Version <= versioningSystem.Current ? 1 : 0)
+			.ThenByDescending(a => a.Version ?? new SemVersion(0, 0, 0))
+			.ThenBy(a => a.Version ?? new SemVersion(0, 0, 0))
+			.ToList();
+
+		foreach (var applicability in orderedApplicabilities)
+		{
+			var realVersion = TryGetRealVersion(applicability, out var v) ? v : null;
+			var lifecycleFull = GetLifecycleFullText(applicability.Lifecycle);
+			var heading = CreateApplicabilityHeading(applicability, applicabilityDefinition, realVersion);
+			var tooltipText = BuildTooltipText(applicability, applicabilityDefinition, versioningSystem, realVersion, lifecycleFull);
+			// language=html
+			tooltipParts.Add($"<div>{heading}{tooltipText}</div>");
+		}
+
+		return string.Join("\n\n", tooltipParts);
+	}
+
+	private static string CreateApplicabilityHeading(Applicability applicability, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition, SemVersion? realVersion)
+	{
+		var lifecycleName = applicability.GetLifeCycleName();
+		var versionText = realVersion is not null ? $" {realVersion}" : "";
+		// language=html
+		return $"""<strong>{applicabilityDefinition.DisplayName} {lifecycleName}{versionText}:</strong>""";
+	}
+
 	private static string GetLifecycleFullText(ProductLifecycle lifecycle) => lifecycle switch
 	{
 		ProductLifecycle.GenerallyAvailable => "Available",

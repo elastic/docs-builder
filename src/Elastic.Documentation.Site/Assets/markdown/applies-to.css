@@ -46,3 +46,22 @@
 		}
 	}
 }
+
+.tippy-box[data-theme~='applies-to'] {
+	/*background-color: tomato;*/
+	/*color: yellow;*/
+	.tippy-content {
+		white-space: normal;
+		
+		strong {
+			display: block;
+			margin-bottom: calc(var(--spacing) * 1);
+		}
+	}
+	
+	.tippy-content > div:not(:last-child) {
+		border-bottom: 1px dotted var(--color-grey-50);
+		padding-bottom: calc(var(--spacing) * 3);
+		margin-bottom: calc(var(--spacing) * 3);
+	}
+}

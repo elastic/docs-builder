@@ -12,7 +12,7 @@
 			<span class="applicable-meta applicable-meta-@item.RenderData.LifecycleClass">
 				@if (item.RenderData.ShowLifecycleName)
 				{
-					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.Applicability.GetLifeCycleName()</span>
+					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.PrimaryApplicability.GetLifeCycleName()</span>
 				}
 				@if (item.RenderData.ShowVersion)
 				{

@@ -54,4 +54,5 @@ public static class ApplicabilityMappings
 
 	// Generic product
 	public static readonly ApplicabilityDefinition Product = new("", "", VersioningSystemId.All);
+
 }
