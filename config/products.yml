@@ -33,7 +33,7 @@ products:
     display: 'APM Agent for Ruby'
     versioning: 'apm_agent_ruby'
   apm-agent-rum-js:
-    display: 'APM RUM JavaScript agent'
+    display: 'APM RUM JavaScript Agent'
     versioning: 'apm_agent_rum'
   apm-k8s-attacher:
     display: 'APM Attacher for Kubernetes'
