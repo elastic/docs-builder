@@ -12,7 +12,7 @@ products:
     display: 'APM .NET Agent'
     versioning: 'apm_agent_dotnet'
   apm-agent-go:
-    display: 'APM Agent for Go'
+    display: 'APM Go Agent'
     versioning: 'apm_agent_go'
   apm-agent-ios:
     display: 'APM Agent for iOS'
