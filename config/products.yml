@@ -18,19 +18,19 @@ products:
     display: 'APM Agent for iOS'
     versioning: 'apm_agent_ios'
   apm-agent-java:
-    display: 'APM Agent for Java'
+    display: 'APM Java Agent'
     versioning: 'apm_agent_java'
   apm-agent-node:
-    display: 'APM Agent for Node.js'
+    display: 'APM Node.js Agent'
     versioning: 'apm_agent_node'
   apm-agent-php:
-    display: 'APM Agent for PHP'
+    display: 'APM PHP Agent'
     versioning: 'apm_agent_php'
   apm-agent-python:
-    display: 'APM Agent for Python'
+    display: 'APM Python Agent'
     versioning: 'apm_agent_python'
   apm-agent-ruby:
-    display: 'APM Agent for Ruby'
+    display: 'APM Ruby Agent'
     versioning: 'apm_agent_ruby'
   apm-agent-rum-js:
     display: 'APM RUM JavaScript Agent'
