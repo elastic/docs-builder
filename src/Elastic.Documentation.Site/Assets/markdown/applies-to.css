@@ -11,7 +11,7 @@
 		.applicable-info {
 			@apply border-grey-20 inline-grid cursor-default grid-cols-[auto_1fr_auto] rounded-full border-[1px] bg-white pt-1.5 pr-3 pb-1.5 pl-3;
 		}
-		
+
 		.applicable-meta {
 			@apply inline-flex gap-1.5;
 		}
@@ -49,26 +49,26 @@
 			font-size: 0.65em;
 		}
 	}
-	
+
 	.applicable-ellipsis {
-	  @apply inline-flex gap-0.5 items-center rounded-md bg-grey-20 py-1 px-0.5 h-full;
+		@apply bg-grey-20 inline-flex h-full items-center gap-0.5 rounded-md px-0.5 py-1;
 	}
-	
+
 	.applicable-ellipsis__dot {
-		@apply size-1 rounded-full bg-grey-50;
+		@apply bg-grey-50 size-1 rounded-full;
 	}
 }
 
 .tippy-box[data-theme~='applies-to'] {
 	.tippy-content {
 		white-space: normal;
-		
+
 		strong {
 			display: block;
 			margin-bottom: calc(var(--spacing) * 1);
 		}
 	}
-	
+
 	.tippy-content > div:not(:last-child) {
 		border-bottom: 1px dotted var(--color-grey-50);
 		padding-bottom: calc(var(--spacing) * 3);
