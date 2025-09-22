@@ -17,7 +17,8 @@ public class ApplicabilityRenderer
 		string TooltipText,
 		string LifecycleClass,
 		bool ShowLifecycleName,
-		bool ShowVersion
+		bool ShowVersion,
+		bool HasMultipleLifecycles = false
 	);
 
 	public ApplicabilityRenderData RenderApplicability(
@@ -58,7 +59,14 @@ public class ApplicabilityRenderer
 		var primaryRenderData = RenderApplicability(primaryApplicability, applicabilityDefinition, versioningSystem, allApplications);
 		var combinedTooltip = BuildCombinedTooltipText(applicabilityList, applicabilityDefinition, versioningSystem);
 
-		return primaryRenderData with { TooltipText = combinedTooltip };
+		// Check if there are multiple different lifecycles
+		var hasMultipleLifecycles = applicabilityList.Select(a => a.Lifecycle).Distinct().Count() > 1;
+
+		return primaryRenderData with
+		{
+			TooltipText = combinedTooltip,
+			HasMultipleLifecycles = hasMultipleLifecycles
+		};
 	}
 
 
@@ -89,7 +97,8 @@ public class ApplicabilityRenderer
 		return string.Join("\n\n", tooltipParts);
 	}
 
-	private static string CreateApplicabilityHeading(Applicability applicability, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition, SemVersion? realVersion)
+	private static string CreateApplicabilityHeading(Applicability applicability, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
+		SemVersion? realVersion)
 	{
 		var lifecycleName = applicability.GetLifeCycleName();
 		var versionText = realVersion is not null ? $" {realVersion}" : "";
@@ -127,8 +136,10 @@ public class ApplicabilityRenderer
 						or ProductLifecycle.TechnicalPreview
 						or ProductLifecycle.Planned =>
 						$"We plan to add this functionality in a future {applicabilityDefinition.DisplayName} update. Subject to change.",
-					ProductLifecycle.Deprecated => $"We plan to deprecate this functionality in a future {applicabilityDefinition.DisplayName} update. Subject to change.",
-					ProductLifecycle.Removed => $"We plan to remove this functionality in a future {applicabilityDefinition.DisplayName} update. Subject to change.",
+					ProductLifecycle.Deprecated =>
+						$"We plan to deprecate this functionality in a future {applicabilityDefinition.DisplayName} update. Subject to change.",
+					ProductLifecycle.Removed =>
+						$"We plan to remove this functionality in a future {applicabilityDefinition.DisplayName} update. Subject to change.",
 					_ => tooltipText
 				}
 			: $"{lifecycleFull} on {applicabilityDefinition.DisplayName} unless otherwise specified.";
@@ -142,8 +153,10 @@ public class ApplicabilityRenderer
 
 	private static string? GetDisclaimer(ProductLifecycle lifecycle, VersioningSystemId versioningSystemId) => lifecycle switch
 	{
-		ProductLifecycle.Beta => "Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.",
-		ProductLifecycle.TechnicalPreview => "This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
+		ProductLifecycle.Beta =>
+			"Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.",
+		ProductLifecycle.TechnicalPreview =>
+			"This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.",
 		ProductLifecycle.GenerallyAvailable => versioningSystemId is VersioningSystemId.Stack
 			? "If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page."
 			: null,

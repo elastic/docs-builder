@@ -24,6 +24,14 @@
 				{
 					@item.RenderData.BadgeLifecycleText
 				}
+				@if (item.RenderData.HasMultipleLifecycles)
+				{
+					<span class="applicable-ellipsis">
+						<span class="applicable-ellipsis__dot"></span>
+						<span class="applicable-ellipsis__dot"></span>
+						<span class="applicable-ellipsis__dot"></span>
+					</span>
+				}
 			</span>
 		</span>
 }
