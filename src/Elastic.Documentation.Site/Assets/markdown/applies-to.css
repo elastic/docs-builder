@@ -60,8 +60,6 @@
 }
 
 .tippy-box[data-theme~='applies-to'] {
-	/*background-color: tomato;*/
-	/*color: yellow;*/
 	.tippy-content {
 		white-space: normal;
 		
