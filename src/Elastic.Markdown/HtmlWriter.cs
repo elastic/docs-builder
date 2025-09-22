@@ -151,8 +151,8 @@ public class HtmlWriter(
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = currentBaseVersion,
 			AllVersionsUrl = allVersionsUrl,
-			LegacyPages = legacyPages?.Skip(1).ToArray(),
-			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
+			LegacyPages = legacyPages?.ToArray(),
+			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = allProducts,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
