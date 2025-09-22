@@ -12,7 +12,7 @@ mappings:
     legacy_versions: [ '0.x' ]
   en/apm/agent/dotnet/:
     product: apm-agent-dotnet
-    legacy_versions: [ '1.33.0' ]
+    legacy_versions: []
   en/apm/agent/go/:
     product: apm-agent-go
     legacy_versions: [ '1.x', '0.5' ]
@@ -216,7 +216,7 @@ mappings:
     legacy_versions: []
   en/search-ui/:
     product: search-ui
-    legacy_versions: ['1.24.1', '1.24.0']
+    legacy_versions: []
   en/security/:
     product: security
     legacy_versions: *stack
