@@ -42,7 +42,7 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 		var legacyPageService = new LegacyPageService(logFactory);
 		serviceInvoker.AddCommand(legacyPageService, path, static (s, _, path, _) =>
 		{
-			var result = s.PathExists(path);
+			var result = s.PathExists(path, logResult: true);
 			return Task.FromResult(result);
 		});
 		return await serviceInvoker.InvokeAsync(ctx);

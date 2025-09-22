@@ -17,11 +17,12 @@ public class LegacyPageService(ILoggerFactory logFactory) : IService
 	private const string ResourceName = $"{RootNamespace}.{FileName}";
 	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", RootNamespace, FileName);
 
-	public bool PathExists(string path)
+	public bool PathExists(string path, bool logResult = false)
 	{
 		_bloomFilter ??= LoadBloomFilter();
 		var exists = _bloomFilter.Check(path);
-		_logger.LogInformation("Path {Path} {Exists} in bloom filter", path, exists ? "exists" : "not exists");
+		if (logResult)
+			_logger.LogInformation("Path {Path} {Exists} in bloom filter", path, exists ? "exists" : "not exists");
 		return exists;
 	}
 
