@@ -109,7 +109,7 @@ products:
     versioning: 'stack'
   edot-sdk:
     display: 'Elastic Distribution of OpenTelemetry SDK'
-    versioning: 'stack'
+    versioning: 'all'
   edot-collector:
     display: 'Elastic Distribution of OpenTelemetry Collector'
     versioning: 'stack'
