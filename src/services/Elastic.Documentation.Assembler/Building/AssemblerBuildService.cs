@@ -97,7 +97,7 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
-		return strict.Value ? collector.Errors + collector.Warnings > 0 : collector.Errors > 0;
+		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 
 }

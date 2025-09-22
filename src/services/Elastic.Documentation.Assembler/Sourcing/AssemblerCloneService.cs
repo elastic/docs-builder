@@ -31,6 +31,6 @@ public class AssemblerCloneService(
 
 		_ = await cloner.CloneAll(fetchLatest ?? false, assumeCloned ?? false, ctx);
 
-		return strict.Value ? collector.Errors + collector.Warnings > 0 : collector.Errors > 0;
+		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 }
