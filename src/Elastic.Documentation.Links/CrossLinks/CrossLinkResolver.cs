@@ -4,9 +4,8 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using Elastic.Documentation.Links;
 
-namespace Elastic.Markdown.Links.CrossLinks;
+namespace Elastic.Documentation.Links.CrossLinks;
 
 public interface ICrossLinkResolver
 {
@@ -81,7 +80,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		}
 
 		var originalLookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
-		if (string.IsNullOrEmpty(originalLookupPath) && crossLinkUri.Host.EndsWith(".md"))
+		if (string.IsNullOrEmpty(originalLookupPath) && crossLinkUri.Host.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
 			originalLookupPath = crossLinkUri.Host;
 
 		if (sourceLinkReference.Redirects is not null && sourceLinkReference.Redirects.TryGetValue(originalLookupPath, out var redirectRule))
@@ -236,7 +235,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	{
 		//https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/cloud-account/change-your-password
 		var path = lookupPath.Replace(".md", "");
-		if (path.EndsWith("/index"))
+		if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 			path = path[..^6];
 		if (path == "index")
 			path = string.Empty;

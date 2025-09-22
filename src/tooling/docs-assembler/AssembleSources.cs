@@ -8,12 +8,14 @@ using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
+using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.RepresentationModel;
 

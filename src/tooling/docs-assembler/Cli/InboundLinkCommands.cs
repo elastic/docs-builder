@@ -7,8 +7,8 @@ using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
-using Elastic.Markdown.Links.InboundLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;

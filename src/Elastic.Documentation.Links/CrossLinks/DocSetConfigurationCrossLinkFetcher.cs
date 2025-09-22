@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Links.CrossLinks;
+namespace Elastic.Documentation.Links.CrossLinks;
 
 /// Fetches cross-links from all the declared repositories in the docset.yml configuration see <see cref="ConfigurationFile"/>
 public class DocSetConfigurationCrossLinkFetcher(ILoggerFactory logFactory, ConfigurationFile configuration, ILinkIndexReader? linkIndexProvider = null)

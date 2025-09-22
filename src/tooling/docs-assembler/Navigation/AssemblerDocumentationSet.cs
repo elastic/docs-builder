@@ -4,11 +4,12 @@
 
 using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Navigation;

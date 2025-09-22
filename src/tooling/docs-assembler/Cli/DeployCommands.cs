@@ -10,6 +10,7 @@ using Amazon.S3;
 using Amazon.S3.Transfer;
 using ConsoleAppFramework;
 using Documentation.Assembler.Deploying;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Serialization;

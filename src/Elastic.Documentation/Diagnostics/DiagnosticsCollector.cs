@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Microsoft.Extensions.Hosting;
 
@@ -71,6 +72,18 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 				foreach (var output in outputs)
 					output.Write(item);
 			}
+		}
+	}
+
+	public async Task WaitForDrain()
+	{
+		var start = DateTime.UtcNow;
+		while (Channel.Reader.TryPeek(out _))
+		{
+			await Task.Delay(10);
+			var now = DateTime.UtcNow;
+			if (now - start > TimeSpan.FromSeconds(2))
+				throw new Exception("Could not iterate over all diagnostic messages in a timely fashion");
 		}
 	}
 

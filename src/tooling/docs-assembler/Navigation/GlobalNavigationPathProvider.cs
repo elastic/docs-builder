@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Documentation.Assembler.Extensions;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Markdown;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;

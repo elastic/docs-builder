@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
-namespace Documentation.Assembler;
+namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext
 {
@@ -37,7 +37,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		AssemblyConfiguration configuration,
 		IConfigurationContext configurationContext,
 		string environment,
-		DiagnosticsCollector collector,
+		IDiagnosticsCollector collector,
 		IFileSystem readFileSystem,
 		IFileSystem writeFileSystem,
 		string? checkoutDirectory,

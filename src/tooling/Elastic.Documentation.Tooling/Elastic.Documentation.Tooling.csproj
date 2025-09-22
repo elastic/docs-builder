@@ -21,4 +21,9 @@
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Providers\Assembler\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>

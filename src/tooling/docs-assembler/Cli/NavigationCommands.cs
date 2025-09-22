@@ -8,6 +8,7 @@ using ConsoleAppFramework;
 using Documentation.Assembler.Links;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Tooling.Diagnostics.Console;

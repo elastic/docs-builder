@@ -23,6 +23,7 @@
     <PackageVersion Include="AWSSDK.Core" Version="4.0.0.2" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.0.1" />
+    <PackageVersion Include="GitHub.Actions.Core" Version="9.0.0" />
     <PackageVersion Include="KubernetesClient" Version="17.0.14" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.1.4" />

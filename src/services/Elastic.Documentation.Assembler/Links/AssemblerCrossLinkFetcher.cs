@@ -6,10 +6,10 @@ using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Assembler.Building;
+namespace Elastic.Documentation.Assembler.Links;
 
 /// fetches all the cross-links for all repositories defined in assembler.yml configuration <see cref="AssemblyConfiguration"/>
 public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment, ILinkIndexReader linkIndexProvider)

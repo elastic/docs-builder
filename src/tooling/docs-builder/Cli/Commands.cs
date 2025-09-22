@@ -10,12 +10,12 @@ using Documentation.Builder.Http;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Cli;

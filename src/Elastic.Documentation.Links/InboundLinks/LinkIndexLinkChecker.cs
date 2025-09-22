@@ -5,11 +5,10 @@
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Links.InboundLinks;
+namespace Elastic.Documentation.Links.InboundLinks;
 
 public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 {

@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.TableOfContents;

@@ -11,7 +11,7 @@ open System.Runtime.InteropServices
 open System.Linq
 open Elastic.Documentation.Configuration.Builder
 open Elastic.Documentation.Links
-open Elastic.Markdown.Links.CrossLinks
+open Elastic.Documentation.Links.CrossLinks
 
 type TestCrossLinkResolver (config: ConfigurationFile) =
 

@@ -5,12 +5,13 @@
 using System.Collections.Immutable;
 using Documentation.Assembler.Building;
 using Documentation.Assembler.Navigation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Links.InboundLinks;
+using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Links.InboundLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Links;

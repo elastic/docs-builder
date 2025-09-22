@@ -5,11 +5,10 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Markdown.Links.InboundLinks;
+namespace Elastic.Documentation.Links.InboundLinks;
 
 /// fetches cross-links for all the repositories defined in the publicized link-index.json file using the <see cref="ContentSource.Next"/> content source
 public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(logFactory, linkIndexProvider)

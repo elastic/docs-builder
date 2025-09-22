@@ -6,14 +6,15 @@ using System.Collections.Frozen;
 using System.Text.Json;
 using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Tooling.Arguments;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Building;

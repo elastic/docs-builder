@@ -8,6 +8,7 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Elastic.Documentation.Assembler;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Deploying;
