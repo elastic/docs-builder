@@ -58,8 +58,8 @@ sources:
       token: '{{ requiredEnv "GITHUB_TOKEN" }}'
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
-        kind: regex
-        pattern: "v9.(\\d*).(\\d*)$"
+        kind: semver
+        pattern: ">=9.0.0 <10.0.0"
 
   latest-edot-dotnet-version:
     name: Get latest release version for the elastic-otel-dotnet
