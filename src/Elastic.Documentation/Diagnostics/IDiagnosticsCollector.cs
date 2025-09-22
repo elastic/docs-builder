@@ -14,6 +14,7 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 	int Errors { get; }
 	int Hints { get; }
 
+	DiagnosticsChannel Channel { get; }
 	ConcurrentBag<string> CrossLinks { get; }
 	HashSet<string> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
@@ -42,5 +43,18 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 
 	/// Emit a hint not associated with a file
 	void EmitGlobalHint(string message) => EmitHint(string.Empty, message);
+
+	async Task WaitForDrain()
+	{
+		var start = DateTime.UtcNow;
+		while (Channel.Reader.TryPeek(out _))
+		{
+			await Task.Delay(10);
+			var now = DateTime.UtcNow;
+			if (now - start > TimeSpan.FromSeconds(2))
+				throw new Exception("Could not iterate over all diagnostic messages in a timely fashion");
+		}
+	}
+
 
 }

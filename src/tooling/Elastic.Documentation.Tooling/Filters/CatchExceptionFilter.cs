@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Tooling.Filters;
 
-public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger)
+#pragma warning disable CS9113 // Parameter is unread.
+public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger, IDiagnosticsCollector collector)
+#pragma warning restore CS9113 // Parameter is unread.
 	: ConsoleAppFilter(next)
 {
 	private bool _cancelKeyPressed;
@@ -18,6 +21,7 @@ public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExc
 			logger.LogInformation("Received CTRL+C cancelling");
 			_cancelKeyPressed = true;
 		};
+		var error = false;
 		try
 		{
 			await Next.InvokeAsync(context, cancellationToken);
@@ -29,9 +33,14 @@ public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExc
 				logger.LogInformation("Cancellation requested, exiting.");
 				return;
 			}
-
-			throw;
-
+			error = true;
+			_ = collector.StartAsync(cancellationToken);
+			collector.EmitGlobalError($"Global unhandled exception: {ex.Message}", ex);
+			await collector.StopAsync(cancellationToken);
+		}
+		finally
+		{
+			Environment.ExitCode = error ? 1 : 0;
 		}
 	}
 }

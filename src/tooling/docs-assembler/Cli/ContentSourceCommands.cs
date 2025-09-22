@@ -8,15 +8,15 @@ using ConsoleAppFramework;
 using Elastic.Documentation.Assembler.Repository;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Tooling;
-using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
 internal sealed class ContentSourceCommands(
 	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService
@@ -25,7 +25,7 @@ internal sealed class ContentSourceCommands(
 	[Command("validate")]
 	public async Task<int> Validate(Cancel ctx = default)
 	{
-		await using var serviceInvoker = new ServiceInvoker(new ConsoleDiagnosticsCollector(logFactory, githubActionsService) { NoHints = true });
+		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = new FileSystem();
 		var service = new RepositoryPublishValidationService(logFactory, configuration, configurationContext, fs);
@@ -41,7 +41,7 @@ internal sealed class ContentSourceCommands(
 	[Command("match")]
 	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, Cancel ctx = default)
 	{
-		await using var serviceInvoker = new ServiceInvoker(new ConsoleDiagnosticsCollector(logFactory, githubActionsService) { NoHints = true });
+		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = new FileSystem();
 		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);

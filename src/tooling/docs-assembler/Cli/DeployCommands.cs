@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Text.Json;
 using Actions.Core.Services;
@@ -28,13 +27,6 @@ internal sealed class DeployCommands(
 {
 	private readonly ILogger<Program> _logger = logFactory.CreateLogger<Program>();
 
-	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
-	private void AssignOutputLogger()
-	{
-		ConsoleApp.Log = msg => _logger.LogInformation(msg);
-		ConsoleApp.LogError = msg => _logger.LogError(msg);
-	}
-
 	/// <summary> Creates a sync plan </summary>
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="s3BucketName">The S3 bucket name to deploy to</param>
@@ -50,7 +42,6 @@ internal sealed class DeployCommands(
 		Cancel ctx = default
 	)
 	{
-		AssignOutputLogger();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
@@ -98,7 +89,6 @@ internal sealed class DeployCommands(
 	[Command("apply")]
 	public async Task<int> Apply(string environment, string s3BucketName, string planFile, Cancel ctx = default)
 	{
-		AssignOutputLogger();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
@@ -157,7 +147,6 @@ internal sealed class DeployCommands(
 		string redirectsFile = ".artifacts/assembly/redirects.json",
 		Cancel ctx = default)
 	{
-		AssignOutputLogger();
 		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 		{
 			NoHints = true
