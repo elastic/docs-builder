@@ -1,0 +1,38 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation.Assembler.Exporters;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Markdown.Exporters;
+using Microsoft.Extensions.Logging;
+
+namespace Elastic.Documentation.Assembler.Building;
+
+public static class ExporterExtensions
+{
+
+	public static IReadOnlyCollection<IMarkdownExporter> CreateMarkdownExporters(
+		this IReadOnlySet<Exporter> exportOptions,
+		ILoggerFactory logFactory,
+		IDocumentationConfigurationContext context,
+		PublishEnvironment? environment = null
+	)
+	{
+		var markdownExporters = new List<IMarkdownExporter>(3);
+		if (exportOptions.Contains(Exporter.LLMText))
+			markdownExporters.Add(new LlmMarkdownExporter());
+		if (exportOptions.Contains(Exporter.Configuration))
+			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
+		if (exportOptions.Contains(Exporter.Elasticsearch))
+			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints));
+		if (exportOptions.Contains(Exporter.SemanticElasticsearch))
+		{
+			if (environment is null)
+				throw new ArgumentNullException(nameof(environment), "A publish environment is required when using the semantic elasticsearch exporter");
+			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(environment, logFactory, context.Collector, context.Endpoints));
+		}
+		return markdownExporters;
+	}
+}

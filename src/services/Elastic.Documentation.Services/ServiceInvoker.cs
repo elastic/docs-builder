@@ -14,43 +14,34 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 	{
 		public required string ServiceName { get; init; }
 		public required bool Strict { get; init; }
-		public required Func<Cancel, Task> Command { get; init; }
+		public required Func<Cancel, Task<bool>> Command { get; init; }
 	}
 	private readonly List<InvokeState> _tasks = [];
 
-	public void AddCommand<TService, TState>(TService service, TState state, Func<TService, TState, IDiagnosticsCollector, Cancel, Task> invoke)
+	public void AddCommand<TService, TState>(TService service, TState state, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
 		where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
 			Strict = false,
-			Command = async ctx => await invoke(service, state, collector, ctx)
+			Command = async ctx => await invoke(service, collector, state, ctx)
 		});
 
-	public void AddCommandStrict<TService, TState>(TService service, TState state, Func<TService, TState, IDiagnosticsCollector, Cancel, Task> invoke)
+	public void AddCommand<TService, TState>(TService service, TState state, bool strict, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
 		where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
-			Strict = true,
-			Command = async ctx => await invoke(service, state, collector, ctx)
+			Strict = strict,
+			Command = async ctx => await invoke(service, collector, state, ctx)
 		});
 
-	public void AddCommand<TService>(TService service, Func<TService, IDiagnosticsCollector, Cancel, Task> invoke)
+	public void AddCommand<TService>(TService service, Func<TService, IDiagnosticsCollector, Cancel, Task<bool>> invoke)
 		where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
 			Strict = false,
-			Command = async ctx => await invoke(service, collector, ctx)
-		});
-
-	public void AddCommandStrict<TService>(TService service, Func<TService, IDiagnosticsCollector, Cancel, Task> invoke)
-		where TService : IService =>
-		_tasks.Add(new InvokeState
-		{
-			ServiceName = service.GetType().Name,
-			Strict = true,
 			Command = async ctx => await invoke(service, collector, ctx)
 		});
 
@@ -61,8 +52,12 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 		{
 			try
 			{
-				await task.Command(ctx).ConfigureAwait(false);
+				var success = await task.Command(ctx).ConfigureAwait(false);
 				await collector.WaitForDrain();
+				if (!success && task.Strict && collector.Errors + collector.Warnings == 0)
+					collector.EmitGlobalError($"Service {task.ServiceName} registered as strict but returned false without emitting errors or warnings ");
+				if (!success && !task.Strict && collector.Errors == 0)
+					collector.EmitGlobalError($"Service {task.ServiceName} but returned false without emitting errors");
 			}
 			catch (Exception ex)
 			{

@@ -9,6 +9,7 @@ using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Refactor;

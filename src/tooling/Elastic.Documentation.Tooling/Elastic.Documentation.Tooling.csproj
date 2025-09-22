@@ -13,17 +13,11 @@
     <PackageReference Include="Errata" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
     <PackageReference Include="Proc"  />
-    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Providers\Assembler\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

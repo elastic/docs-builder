@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Tooling.ExternalCommands;
+using Elastic.Documentation.ExternalCommands;
 
 namespace Documentation.Builder.Tracking;
 

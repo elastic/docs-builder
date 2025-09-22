@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Elastic.Documentation.Assembler.Repository;
+using Elastic.Documentation.Assembler.ContentSources;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
+// TODO This copy is scheduled for deletion soon
 internal sealed class ContentSourceCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -46,7 +47,7 @@ internal sealed class ContentSourceCommands(
 		var fs = new FileSystem();
 		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);
 		serviceInvoker.AddCommand(service, (repository, branchOrTag),
-			static async (s, state, collector, _) => await s.ShouldBuild(collector, state.repository, state.branchOrTag)
+			static async (s, collector, state, _) => await s.ShouldBuild(collector, state.repository, state.branchOrTag)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

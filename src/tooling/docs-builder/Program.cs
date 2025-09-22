@@ -5,14 +5,21 @@
 using System.Diagnostics.CodeAnalysis;
 using ConsoleAppFramework;
 using Documentation.Builder.Cli;
+using Documentation.Builder.Commands;
+using Documentation.Builder.Commands.Assembler;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling;
 using Elastic.Documentation.Tooling.Filters;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder()
-	.AddDocumentationServiceDefaults(ref args)
+	.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	{
+		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+	})
 	.AddDocumentationToolingDefaults();
 
 var app = builder.ToConsoleAppBuilder((s) =>
@@ -31,6 +38,17 @@ app.UseFilter<CheckForUpdatesFilter>();
 app.Add<Commands>();
 app.Add<InboundLinkCommands>("inbound-links");
 app.Add<DiffCommands>("diff");
+
+
+//assembler commands
+
+app.Add<ContentSourceCommands>("assembler content-source");
+app.Add<DeployCommands>("assembler deploy");
+app.Add<BloomFilterCommands>("assembler bloom-filter");
+app.Add<NavigationCommands>("assembler navigation");
+app.Add<ConfigurationCommands>("assembler config");
+app.Add<AssemblerCommands>("assembler");
+app.Add<AssembleCommands>("assemble");
 
 await app.RunAsync(args).ConfigureAwait(false);
 

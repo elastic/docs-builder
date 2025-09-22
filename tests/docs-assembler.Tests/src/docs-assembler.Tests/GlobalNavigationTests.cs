@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Documentation.Assembler.Navigation;
-using Documentation.Assembler.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
+using Elastic.Documentation.Assembler.Navigation;
+using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -82,9 +83,9 @@ public class GlobalNavigationPathProviderTests
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var assembleContext = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 
-		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(assembleContext);
+		var pathPrefixes = GlobalNavigationFile.GetAllPathPrefixes(context.Collector, context.ConfigurationFileProvider, context.Configuration);
 
 		pathPrefixes.Should().NotBeEmpty();
 		pathPrefixes.Should().Contain(new Uri("eland://reference/elasticsearch/clients/eland/"));
@@ -97,7 +98,7 @@ public class GlobalNavigationPathProviderTests
 
 		var assembleSources = await Setup();
 
-		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
+		var navigationFile = new GlobalNavigationFile(Context.Collector, Context.ConfigurationFileProvider, Context.Configuration, assembleSources.TocConfigurationMapping);
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, Context);
 
 		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
@@ -123,7 +124,7 @@ public class GlobalNavigationPathProviderTests
 
 		assembleSources.NavigationTocMappings.Should().NotBeEmpty().And.ContainKey(new Uri("detection-rules://"));
 
-		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
+		var navigationFile = new GlobalNavigationFile(Context.Collector, Context.ConfigurationFileProvider, Context.Configuration, assembleSources.TocConfigurationMapping);
 		var referenceToc = navigationFile.TableOfContents.FirstOrDefault(t => t.Source == expectedRoot);
 		referenceToc.Should().NotBeNull();
 		referenceToc.TocReferences.Should().NotContainKey(clients);
@@ -208,7 +209,7 @@ public class GlobalNavigationPathProviderTests
 		kibanaConfigMapping.TableOfContentsConfiguration.Should().NotBeNull();
 		assembleSources.TocConfigurationMapping[kibanaExtendMoniker].Should().NotBeNull();
 
-		var navigationFile = new GlobalNavigationFile(Context, assembleSources);
+		var navigationFile = new GlobalNavigationFile(Context.Collector, Context.ConfigurationFileProvider, Context.Configuration, assembleSources.TocConfigurationMapping);
 		navigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
 		navigationFile.TableOfContents.Count.Should().BeLessThan(20);
 
@@ -280,9 +281,9 @@ public class GlobalNavigationPathProviderTests
 		var assembleSources = await AssembleSources.AssembleAsync(
 			NullLoggerFactory.Instance, assembleContext, checkouts, configurationContext, ExportOptions.Default, TestContext.Current.CancellationToken
 		);
-		var globalNavigationFile = new GlobalNavigationFile(assembleContext, assembleSources);
 
-		globalNavigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
+		var navigationFile = new GlobalNavigationFile(Context.Collector, Context.ConfigurationFileProvider, Context.Configuration, assembleSources.TocConfigurationMapping);
+		navigationFile.TableOfContents.Should().NotBeNull().And.NotBeEmpty();
 
 		var uriResolver = assembleSources.UriResolver;
 

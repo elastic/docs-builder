@@ -2,17 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Links.InboundLinks;
 
-public class LinkIndexLinkChecker(ILoggerFactory logFactory)
+public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem) : IService
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<LinkIndexLinkChecker>();
+	private readonly ILogger _logger = logFactory.CreateLogger<LinkIndexService>();
 	private readonly ILinkIndexReader _linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 	private sealed record RepositoryFilter
 	{
@@ -22,17 +24,24 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 		public static RepositoryFilter None => new();
 	}
 
-	public async Task CheckAll(IDiagnosticsCollector collector, Cancel ctx)
+	public async Task<bool> CheckAll(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var crossLinks = await fetcher.FetchCrossLinks(ctx);
 		var resolver = new CrossLinkResolver(crossLinks);
 
-		ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None);
+		return ValidateCrossLinks(collector, crossLinks, resolver, RepositoryFilter.None);
 	}
 
-	public async Task CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
+	public async Task<bool> CheckRepository(IDiagnosticsCollector collector, string? toRepository, string? fromRepository, Cancel ctx)
 	{
+		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		if (fromRepository == null && toRepository == null)
+		{
+			fromRepository ??= GitCheckoutInformation.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
+			if (fromRepository == null)
+				throw new Exception("Unable to determine repository name");
+		}
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var crossLinks = await fetcher.FetchCrossLinks(ctx);
 		var resolver = new CrossLinkResolver(crossLinks);
@@ -42,27 +51,47 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 			LinksFrom = fromRepository
 		};
 
-		ValidateCrossLinks(collector, crossLinks, resolver, filter);
+		return ValidateCrossLinks(collector, crossLinks, resolver, filter);
 	}
 
-	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string localLinksJson, Cancel ctx)
+	public async Task<bool> CheckWithLocalLinksJson(IDiagnosticsCollector collector, string? file = null, string? path = null, Cancel ctx = default)
 	{
+		file ??= ".artifacts/docs/html/links.json";
+		var root = !string.IsNullOrEmpty(path) ? fileSystem.DirectoryInfo.New(path) : fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var repository = GitCheckoutInformation.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
+						?? throw new Exception("Unable to determine repository name");
+
+		var localLinksJson = fileSystem.FileInfo.New(Path.Combine(root.FullName, file));
+
+		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+		if (runningOnCi && !localLinksJson.Exists)
+		{
+			_logger.LogInformation("Running on CI after a build that produced no {File}, skipping the validation", localLinksJson.FullName);
+			return true;
+		}
+		if (runningOnCi && !Paths.TryFindDocsFolderFromRoot(fileSystem, root, out _, out _))
+		{
+			_logger.LogInformation("Running on CI, {Directory} has no documentation, skipping the validation", root.FullName);
+			return true;
+		}
+
+		if (!fileSystem.File.Exists(localLinksJson.FullName))
+		{
+			collector.EmitError(localLinksJson.FullName, "Unable to find local links");
+			return false;
+		}
+
+
+		_logger.LogInformation("Validating {File} in {Directory}", file, root.FullName);
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var crossLinks = await fetcher.FetchCrossLinks(ctx);
 		var resolver = new CrossLinkResolver(crossLinks);
-		if (string.IsNullOrEmpty(repository))
-			throw new ArgumentNullException(nameof(repository));
-		if (string.IsNullOrEmpty(localLinksJson))
-			throw new ArgumentNullException(nameof(repository));
 
 		_logger.LogInformation("Checking '{Repository}' with local '{LocalLinksJson}'", repository, localLinksJson);
 
-		if (!Path.IsPathRooted(localLinksJson))
-			localLinksJson = Path.Combine(Paths.WorkingDirectoryRoot.FullName, localLinksJson);
-
 		try
 		{
-			var json = await File.ReadAllTextAsync(localLinksJson, ctx);
+			var json = await fileSystem.File.ReadAllTextAsync(localLinksJson.FullName, ctx);
 			var localLinkReference = RepositoryLinks.Deserialize(json);
 			crossLinks = resolver.UpdateLinkReference(repository, localLinkReference);
 		}
@@ -78,10 +107,10 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 			LinksTo = repository
 		};
 
-		ValidateCrossLinks(collector, crossLinks, resolver, filter);
+		return ValidateCrossLinks(collector, crossLinks, resolver, filter);
 	}
 
-	private void ValidateCrossLinks(
+	private bool ValidateCrossLinks(
 		IDiagnosticsCollector collector,
 		FetchedCrossLinks crossLinks,
 		CrossLinkResolver resolver,
@@ -126,6 +155,7 @@ public class LinkIndexLinkChecker(ILoggerFactory logFactory)
 				}, uri, out _);
 			}
 		}
-		// non-strict for now
+
+		return collector.Errors == 0;
 	}
 }
