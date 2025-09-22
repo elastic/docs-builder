@@ -8,7 +8,7 @@ stack: &stack [ '8.19', '8.18', '8.17', '8.16', '8.15', '8.14', '8.13', '8.12', 
 
 mappings:
   en/apm/agent/android/:
-    product: apm-agent-android
+    product: edot-android
     legacy_versions: [ '0.x' ]
   en/apm/agent/dotnet/:
     product: apm-agent-dotnet
@@ -35,7 +35,7 @@ mappings:
     product: apm-agent-rum-js
     legacy_versions: [ '4.x', '3.x', '2.x', '1.x', '0.x' ]
   en/apm/agent/swift/:
-    product: apm-agent-ios
+    product: edot-ios
     legacy_versions: [ '1.2.1', '0.x' ]
   en/apm/attacher/:
     product: apm-k8s-attacher

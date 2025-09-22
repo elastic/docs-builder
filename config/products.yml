@@ -5,18 +5,12 @@ products:
   apm-agent:
     display: 'APM Agent'
     versioning: 'all'
-  apm-agent-android:
-    display: 'APM Agent for Android'
-    versioning: 'apm_agent_android'
   apm-agent-dotnet:
     display: 'APM .NET Agent'
     versioning: 'apm_agent_dotnet'
   apm-agent-go:
     display: 'APM Go Agent'
     versioning: 'apm_agent_go'
-  apm-agent-ios:
-    display: 'APM Agent for iOS'
-    versioning: 'apm_agent_ios'
   apm-agent-java:
     display: 'APM Java Agent'
     versioning: 'apm_agent_java'
