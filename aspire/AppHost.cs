@@ -114,7 +114,7 @@ async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool skip
 		.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 		.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
 		.WithHttpEndpoint(port: 4000, isProxied: false)
-		.WithArgs(["serve-static", .. globalArguments])
+		.WithArgs(["assembler serve", .. globalArguments])
 		.WithHttpHealthCheck("/", 200)
 		.WaitForCompletion(buildAll)
 		.WithParentRelationship(cloneAll);
