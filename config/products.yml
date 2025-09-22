@@ -78,31 +78,31 @@ products:
     display: 'ECS Logging'
     versioning: 'stack'
   ecs-dotnet:
-    display: 'Elastic Common Schema (ECS) support for .NET'
+    display: 'ECS Logging .NET'
     versioning: 'ecs_logging_dotnet'
   ecs-logging-go-logrus:
-    display: 'Elastic Common Schema (ECS) support for Logrus'
+    display: 'ECS Logging Go (Logrus)'
     versioning: 'ecs_logging_go_logrus'
   ecs-logging-go-zap:
-    display: 'Elastic Common Schema (ECS) support for uber_go/zap logger'
+    display: 'ECS Logging Go (Zap)'
     versioning: 'ecs_logging_go_zap'
   ecs-logging-go-zerolog:
-    display: 'Elastic Common Schema (ECS) support for zerolog'
+    display: 'ECS Logging Go (Zerolog)'
     versioning: 'ecs_logging_go_zerolog'
   ecs-logging-java:
-    display: 'Elastic Common Schema (ECS) support for Java applications'
+    display: 'ECS Logging Java'
     versioning: 'ecs_logging_java'
   ecs-logging-nodejs:
-    display: 'Elastic Common Schema (ECS) support for Node.js'
+    display: 'ECS Logging Node.js'
     versioning: 'ecs_logging_nodejs'
   ecs-logging-php:
-    display: 'Elastic Common Schema (ECS) support for PHP'
+    display: 'ECS Logging PHP'
     versioning: 'ecs_logging_php'
   ecs-logging-python:
-    display: 'Elastic Common Schema (ECS) support for Python'
+    display: 'ECS Logging Python'
     versioning: 'ecs_logging_python'
   ecs-logging-ruby:
-    display: 'Elastic Common Schema (ECS) support for Ruby'
+    display: 'ECS Logging Ruby'
     versioning: 'ecs_logging_ruby'
   edot-cf:
     display: 'EDOT Cloud Forwarder'
