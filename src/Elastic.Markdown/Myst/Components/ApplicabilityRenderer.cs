@@ -65,7 +65,8 @@ public class ApplicabilityRenderer
 		return primaryRenderData with
 		{
 			TooltipText = combinedTooltip,
-			HasMultipleLifecycles = hasMultipleLifecycles
+			HasMultipleLifecycles = hasMultipleLifecycles,
+			ShowLifecycleName = primaryRenderData.ShowLifecycleName || (string.IsNullOrEmpty(primaryRenderData.BadgeLifecycleText) && hasMultipleLifecycles)
 		};
 	}
 
