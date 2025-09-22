@@ -38,6 +38,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["search-or-ask-ai"] = value;
 	}
 
+	public bool StagingElasticNavEnabled
+	{
+		get => IsEnabled("staging-elastic-nav");
+		set => _featureFlags["staging-elastic-nav"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

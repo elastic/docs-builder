@@ -164,19 +164,19 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		else
 			codeBlockArgs = codeArgs;
 
+		// Process console blocks with multiple API segments
+		if (language == "console")
+		{
+			ProcessConsoleCodeBlock(lines, codeBlock, codeBlockArgs, context);
+			return;
+		}
+
 		var callOutIndex = 0;
 		var originatingLine = 0;
 		for (var index = 0; index < lines.Lines.Length; index++)
 		{
 			originatingLine++;
 			var line = lines.Lines[index];
-			if (index == 0 && language == "console")
-			{
-				codeBlock.ApiCallHeader = line.ToString();
-				var s = new StringSlice("");
-				lines.Lines[index] = new StringLine(ref s);
-				continue;
-			}
 
 			var span = line.Slice.AsSpan();
 			if (codeBlockArgs.UseSubstitutions)
@@ -200,58 +200,11 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				continue;
 
 			if (codeBlockArgs.UseCallouts)
-			{
-				List<CallOut> callOuts = [];
-				var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
-				if (hasClassicCallout)
-				{
-					var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
-					callOuts.AddRange(
-						EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
-					);
-				}
-
-				// only support magic callouts for smaller line lengths
-				if (callOuts.Count == 0 && span.Length < 200)
-				{
-					var matchInline = CallOutParser.MathInlineAnnotation().EnumerateMatches(span);
-					callOuts.AddRange(
-						EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
-					);
-				}
-
-				codeBlock.CallOuts.AddRange(callOuts);
-			}
+				ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
 		}
 
-		//update string slices to ignore call outs
-		if (codeBlock.CallOuts.Count > 0)
-		{
-			var callouts = codeBlock.CallOuts.Aggregate(new Dictionary<int, CallOut>(), (acc, curr) =>
-			{
-				if (acc.TryAdd(curr.Line, curr))
-					return acc;
-				if (acc[curr.Line].SliceStart > curr.SliceStart)
-					acc[curr.Line] = curr;
-				return acc;
-			});
-
-			foreach (var callout in callouts.Values)
-			{
-				var line = lines.Lines[callout.Line - 1];
-				var newSpan = line.Slice.AsSpan()[..callout.SliceStart];
-				var s = new StringSlice(newSpan.ToString());
-				lines.Lines[callout.Line - 1] = new StringLine(ref s);
-			}
-		}
-
-		var inlineAnnotations = codeBlock.CallOuts.Count(c => c.InlineCodeAnnotation);
-		var classicAnnotations = codeBlock.CallOuts.Count - inlineAnnotations;
-		if (inlineAnnotations > 0 && classicAnnotations > 0)
-			codeBlock.EmitError("Both inline and classic callouts are not supported");
-
-		if (inlineAnnotations > 0)
-			codeBlock.InlineAnnotations = true;
+		ProcessCalloutPostProcessing(lines, codeBlock);
+		ProcessInlineAnnotations(codeBlock);
 	}
 
 	private static List<CallOut> EnumerateAnnotations(Regex.ValueMatchEnumerator matches,
@@ -334,5 +287,180 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		}
 
 		return callOuts;
+	}
+
+	private static void ProcessConsoleCodeBlock(
+		StringLineGroup lines,
+		EnhancedCodeBlock codeBlock,
+		CodeBlockArguments codeBlockArgs,
+		ParserContext context)
+	{
+		var currentSegment = new ApiSegment();
+		var callOutIndex = 0;
+		var originatingLine = 0;
+
+		for (var index = 0; index < lines.Lines.Length; index++)
+		{
+			originatingLine++;
+			var line = lines.Lines[index];
+			var lineText = line.ToString();
+			var span = line.Slice.AsSpan();
+
+			// Apply substitutions if enabled
+			if (codeBlockArgs.UseSubstitutions)
+			{
+				if (span.ReplaceSubstitutions(context.YamlFrontMatter?.Properties, context.Build.Collector, out var frontMatterReplacement))
+				{
+					var s = new StringSlice(frontMatterReplacement);
+					lines.Lines[index] = new StringLine(ref s);
+					span = lines.Lines[index].Slice.AsSpan();
+					lineText = frontMatterReplacement;
+				}
+
+				if (span.ReplaceSubstitutions(context.Substitutions, context.Build.Collector, out var globalReplacement))
+				{
+					var s = new StringSlice(globalReplacement);
+					lines.Lines[index] = new StringLine(ref s);
+					span = lines.Lines[index].Slice.AsSpan();
+					lineText = globalReplacement;
+				}
+			}
+
+			// Check if this line is an HTTP verb (API call header)
+			if (IsHttpVerb(lineText))
+			{
+				if (!string.IsNullOrEmpty(currentSegment.Header) || currentSegment.ContentLines.Count > 0)
+					codeBlock.ApiSegments.Add(currentSegment);
+
+				// Process callouts before creating the segment to capture them on the original line
+				if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
+					ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
+
+				currentSegment = new ApiSegment
+				{
+					Header = lineText,
+					LineNumber = originatingLine
+				};
+
+				// Clear this line from the content since it's now a header
+				var s = new StringSlice("");
+				lines.Lines[index] = new StringLine(ref s);
+			}
+			else
+			{
+				if (!string.IsNullOrEmpty(lineText.Trim()))
+				{
+					currentSegment.ContentLines.Add(lineText);
+					currentSegment.ContentLinesWithNumbers.Add((lineText, originatingLine));
+				}
+
+				if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
+					ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
+			}
+		}
+
+		// Add the last segment if it has content
+		if (!string.IsNullOrEmpty(currentSegment.Header) || currentSegment.ContentLines.Count > 0)
+			codeBlock.ApiSegments.Add(currentSegment);
+
+		ProcessCalloutPostProcessing(lines, codeBlock);
+		ProcessInlineAnnotations(codeBlock);
+	}
+
+	private static bool IsHttpVerb(string line)
+	{
+		var trimmed = line.Trim();
+		return trimmed.StartsWith("GET ", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("POST ", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("PUT ", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("DELETE ", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("PATCH ", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("HEAD ", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("OPTIONS ", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static void ProcessCalloutsForLine(ReadOnlySpan<char> span, EnhancedCodeBlock codeBlock, ref int callOutIndex, int originatingLine)
+	{
+		List<CallOut> callOuts = [];
+		var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
+		if (hasClassicCallout)
+		{
+			var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
+			callOuts.AddRange(
+				EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
+			);
+		}
+
+		// only support magic callouts for smaller line lengths
+		if (callOuts.Count == 0 && span.Length < 200)
+		{
+			var matchInline = CallOutParser.MathInlineAnnotation().EnumerateMatches(span);
+			callOuts.AddRange(
+				EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
+			);
+		}
+
+		codeBlock.CallOuts.AddRange(callOuts);
+	}
+
+	private static void ProcessCalloutPostProcessing(StringLineGroup lines, EnhancedCodeBlock codeBlock)
+	{
+		//update string slices to ignore call outs
+		if (codeBlock.CallOuts.Count > 0)
+		{
+			var callouts = codeBlock.CallOuts.Aggregate(new Dictionary<int, CallOut>(), (acc, curr) =>
+			{
+				if (acc.TryAdd(curr.Line, curr))
+					return acc;
+				if (acc[curr.Line].SliceStart > curr.SliceStart)
+					acc[curr.Line] = curr;
+				return acc;
+			});
+
+			// Console code blocks use ApiSegments for rendering, so we need to update headers directly
+			// Note: console language gets converted to "json" for syntax highlighting
+			if ((codeBlock.Language == "json" || codeBlock.Language == "console") && codeBlock.ApiSegments.Count > 0)
+			{
+				foreach (var callout in callouts.Values)
+				{
+					foreach (var segment in codeBlock.ApiSegments)
+					{
+						var calloutPattern = $"<{callout.Index}>";
+						if (segment.Header.Contains(calloutPattern))
+						{
+							segment.Header = segment.Header.Replace(calloutPattern, "").Trim();
+							break;
+						}
+					}
+				}
+			}
+			else
+			{
+				foreach (var callout in callouts.Values)
+				{
+					var line = lines.Lines[callout.Line - 1];
+					var span = line.Slice.AsSpan();
+
+					// Skip callouts on cleared lines to avoid ArgumentOutOfRangeException
+					if (span.Length == 0 || callout.SliceStart >= span.Length)
+						continue;
+
+					var newSpan = span[..callout.SliceStart];
+					var s = new StringSlice(newSpan.ToString());
+					lines.Lines[callout.Line - 1] = new StringLine(ref s);
+				}
+			}
+		}
+	}
+
+	private static void ProcessInlineAnnotations(EnhancedCodeBlock codeBlock)
+	{
+		var inlineAnnotations = codeBlock.CallOuts.Count(c => c.InlineCodeAnnotation);
+		var classicAnnotations = codeBlock.CallOuts.Count - inlineAnnotations;
+		if (inlineAnnotations > 0 && classicAnnotations > 0)
+			codeBlock.EmitError("Both inline and classic callouts are not supported");
+
+		if (inlineAnnotations > 0)
+			codeBlock.InlineAnnotations = true;
 	}
 }
