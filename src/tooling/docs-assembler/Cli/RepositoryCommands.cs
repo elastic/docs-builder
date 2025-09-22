@@ -293,7 +293,7 @@ internal sealed class RepositoryCommands(
 			return; // No llms.txt file to enhance
 
 		var existingContent = await File.ReadAllTextAsync(llmsTxtPath, ctx);
-		var navigationSections = enhancer.GenerateNavigationSections(navigation);
+		var navigationSections = await enhancer.GenerateNavigationSectionsAsync(navigation);
 
 		// Append the navigation sections to the existing boilerplate
 		var enhancedContent = existingContent + Environment.NewLine + navigationSections;

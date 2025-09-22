@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Documentation.Assembler;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 
@@ -14,7 +16,7 @@ namespace Documentation.Assembler.Navigation;
 /// </summary>
 public class LlmsNavigationEnhancer
 {
-	public string GenerateNavigationSections(GlobalNavigation navigation)
+	public async Task<string> GenerateNavigationSectionsAsync(GlobalNavigation navigation)
 	{
 		var content = new StringBuilder();
 
@@ -39,8 +41,8 @@ public class LlmsNavigationEnhancer
 				foreach (var child in firstLevelChildren)
 				{
 					var title = child.NavigationTitle;
-					var url = ConvertToMarkdownUrl(child.Url);
-					var description = GetDescription(child);
+					var url = ConvertToAbsoluteMarkdownUrl(child.Url);
+					var description = await GetDescriptionAsync(child);
 
 					_ = !string.IsNullOrEmpty(description)
 						? content.AppendLine($"* [{title}]({url}): {description}")
@@ -87,35 +89,62 @@ public class LlmsNavigationEnhancer
 		return children;
 	}
 
-	private static string ConvertToMarkdownUrl(string url)
+	private static string ConvertToAbsoluteMarkdownUrl(string url)
 	{
 		// Convert HTML URLs to .md URLs for LLM consumption
-		// e.g., "/docs/solutions/search/" -> "/solutions/search.md"
+		// e.g., "/docs/solutions/search/" -> "https://www.elastic.co/docs/solutions/search.md"
 		var cleanUrl = url.TrimStart('/');
 
-		// Remove "docs/" prefix if present
-		if (cleanUrl.StartsWith("docs/"))
-			cleanUrl = cleanUrl.Substring(5);
+		// Remove "docs/" prefix if present for the markdown filename
+		var markdownPath = cleanUrl;
+		if (markdownPath.StartsWith("docs/"))
+			markdownPath = markdownPath.Substring(5);
 
 		// Convert directory URLs to .md files
-		if (cleanUrl.EndsWith('/'))
-			cleanUrl = cleanUrl.TrimEnd('/') + ".md";
-		else if (!cleanUrl.EndsWith(".md"))
-			cleanUrl += ".md";
+		if (markdownPath.EndsWith('/'))
+			markdownPath = markdownPath.TrimEnd('/') + ".md";
+		else if (!markdownPath.EndsWith(".md"))
+			markdownPath += ".md";
 
-		return "/" + cleanUrl;
+		// Make absolute URL using the canonical base URL (always https://www.elastic.co for production)
+		var baseUrl = "https://www.elastic.co";
+		return $"{baseUrl}/docs/{markdownPath}";
 	}
 
-	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
+	private static async Task<string?> GetDescriptionAsync(INavigationItem navigationItem)
 	{
-		// For file navigation items, extract from frontmatter
-		FileNavigationItem fileItem when fileItem.Model is MarkdownFile markdownFile
-			=> markdownFile.YamlFrontMatter?.Description,
+		var descriptionGenerator = new DescriptionGenerator();
 
-		// For documentation groups, try to get from index file
-		DocumentationGroup group when group.Index is MarkdownFile indexFile
-			=> indexFile.YamlFrontMatter?.Description,
+		return navigationItem switch
+		{
+			// For file navigation items, extract from frontmatter or generate
+			FileNavigationItem fileItem when fileItem.Model is MarkdownFile markdownFile =>
+				await GetDescriptionFromMarkdownFileAsync(markdownFile, descriptionGenerator),
 
-		_ => null
-	};
+			// For documentation groups, try to get from index file
+			DocumentationGroup group when group.Index is MarkdownFile indexFile =>
+				await GetDescriptionFromMarkdownFileAsync(indexFile, descriptionGenerator),
+
+			_ => null
+		};
+	}
+
+	private static async Task<string?> GetDescriptionFromMarkdownFileAsync(MarkdownFile markdownFile, DescriptionGenerator descriptionGenerator)
+	{
+		// First try frontmatter description
+		if (!string.IsNullOrEmpty(markdownFile.YamlFrontMatter?.Description))
+			return markdownFile.YamlFrontMatter.Description;
+
+		// Fallback to generating description from content
+		try
+		{
+			var document = await markdownFile.MinimalParseAsync(default);
+			return descriptionGenerator.GenerateDescription(document);
+		}
+		catch
+		{
+			// If parsing fails, return null (no description)
+			return null;
+		}
+	}
 }
