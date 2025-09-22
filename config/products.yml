@@ -4,7 +4,7 @@ products:
     versioning: 'stack'
   apm-agent:
     display: 'APM Agent'
-    versioning: 'stack'
+    versioning: 'all'
   apm-agent-android:
     display: 'APM Agent for Android'
     versioning: 'apm_agent_android'
