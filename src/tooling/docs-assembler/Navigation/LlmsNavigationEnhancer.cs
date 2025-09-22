@@ -1,0 +1,121 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text;
+using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.Navigation;
+
+namespace Documentation.Assembler.Navigation;
+
+/// <summary>
+/// Generates enhanced navigation sections for the llms.txt file
+/// </summary>
+public class LlmsNavigationEnhancer
+{
+	public string GenerateNavigationSections(GlobalNavigation navigation)
+	{
+		var content = new StringBuilder();
+
+		// Get top-level navigation items (excluding hidden ones)
+		var topLevelItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToList();
+
+		foreach (var topLevelItem in topLevelItems)
+		{
+			if (topLevelItem is not DocumentationGroup group)
+				continue;
+
+			// Create H2 section for the category
+			var categoryTitle = GetCategoryDisplayName(group.NavigationTitle);
+			_ = content.AppendLine($"## {categoryTitle}");
+			_ = content.AppendLine();
+
+			// Get first-level children
+			var firstLevelChildren = GetFirstLevelChildren(group);
+
+			if (firstLevelChildren.Count > 0)
+			{
+				foreach (var child in firstLevelChildren)
+				{
+					var title = child.NavigationTitle;
+					var url = ConvertToMarkdownUrl(child.Url);
+					var description = GetDescription(child);
+
+					_ = !string.IsNullOrEmpty(description)
+						? content.AppendLine($"* [{title}]({url}): {description}")
+						: content.AppendLine($"* [{title}]({url})");
+				}
+				_ = content.AppendLine();
+			}
+		}
+
+		return content.ToString();
+	}
+
+	private static string GetCategoryDisplayName(string navigationTitle) =>
+		// Convert navigation titles to display names
+		navigationTitle switch
+		{
+			"Get started" => "Get started",
+			"Solutions" => "Solutions",
+			"Manage data" => "Manage data",
+			"Explore and analyze" => "Explore and analyze",
+			"Deploy and manage" => "Deploy and manage",
+			"Manage your Cloud account and preferences" => "Manage your Cloud account",
+			"Troubleshoot" => "Troubleshoot",
+			"Extend and contribute" => "Extend and contribute",
+			"Release notes" => "Release notes",
+			"Reference" => "Reference",
+			_ => navigationTitle
+		};
+
+	private static List<INavigationItem> GetFirstLevelChildren(DocumentationGroup group)
+	{
+		var children = new List<INavigationItem>();
+
+		foreach (var item in group.NavigationItems)
+		{
+			// Only include non-hidden items
+			if (item.Hidden)
+				continue;
+
+			// Add the item to our list
+			children.Add(item);
+		}
+
+		return children;
+	}
+
+	private static string ConvertToMarkdownUrl(string url)
+	{
+		// Convert HTML URLs to .md URLs for LLM consumption
+		// e.g., "/docs/solutions/search/" -> "/solutions/search.md"
+		var cleanUrl = url.TrimStart('/');
+
+		// Remove "docs/" prefix if present
+		if (cleanUrl.StartsWith("docs/"))
+			cleanUrl = cleanUrl.Substring(5);
+
+		// Convert directory URLs to .md files
+		if (cleanUrl.EndsWith('/'))
+			cleanUrl = cleanUrl.TrimEnd('/') + ".md";
+		else if (!cleanUrl.EndsWith(".md"))
+			cleanUrl += ".md";
+
+		return "/" + cleanUrl;
+	}
+
+	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
+	{
+		// For file navigation items, extract from frontmatter
+		FileNavigationItem fileItem when fileItem.Model is MarkdownFile markdownFile
+			=> markdownFile.YamlFrontMatter?.Description,
+
+		// For documentation groups, try to get from index file
+		DocumentationGroup group when group.Index is MarkdownFile indexFile
+			=> indexFile.YamlFrontMatter?.Description,
+
+		_ => null
+	};
+}

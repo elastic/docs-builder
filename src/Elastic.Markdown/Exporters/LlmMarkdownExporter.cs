@@ -73,7 +73,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var outputFile = GetLlmOutputFile(fileContext);
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
-		
+
 		string content;
 		if (IsRootIndexFile(fileContext))
 		{
@@ -85,7 +85,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			// Regular markdown files get metadata + content
 			content = CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 		}
-		
+
 		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
 			outputFile.FullName,
 			content,
@@ -107,7 +107,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var fileName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
 		if (fileName != "index")
 			return false;
-		
+
 		var root = fileContext.BuildContext.OutputDirectory;
 		return defaultOutputFile.Directory!.FullName == root.FullName;
 	}

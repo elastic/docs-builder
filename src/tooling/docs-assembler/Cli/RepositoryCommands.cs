@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Net.Mime;
+using System.Text;
 using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -200,6 +201,12 @@ internal sealed class RepositoryCommands(
 			sitemapBuilder.Generate();
 		}
 
+		if (exporters.Contains(Exporter.LLMText))
+		{
+			var llmsEnhancer = new LlmsNavigationEnhancer();
+			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, ctx);
+		}
+
 		await collector.StopAsync(ctx);
 
 		_log.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
@@ -276,5 +283,21 @@ internal sealed class RepositoryCommands(
 		await collector.StopAsync(ctx);
 
 		return collector.Errors > 0 ? 1 : 0;
+	}
+
+	private static async Task EnhanceLlmsTxtFile(AssembleContext context, GlobalNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
+	{
+		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
+
+		if (!File.Exists(llmsTxtPath))
+			return; // No llms.txt file to enhance
+
+		var existingContent = await File.ReadAllTextAsync(llmsTxtPath, ctx);
+		var navigationSections = enhancer.GenerateNavigationSections(navigation);
+
+		// Append the navigation sections to the existing boilerplate
+		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
+
+		await File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
 	}
 }
