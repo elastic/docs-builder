@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Builder.Http;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -35,6 +36,7 @@ internal sealed class AssembleCommands(
 	///					html, es, config, links, state, llm, redirect, metadata, none.
 	///					Defaults to (html, config, links, state, redirect) or 'default'.
 	/// </param>
+	/// <param name="serve"> Serve the documentation on port 4000 after succesful build</param>
 	/// <param name="ctx"></param>
 	[Command("")]
 	public async Task<int> CloneAll(
@@ -44,6 +46,7 @@ internal sealed class AssembleCommands(
 		bool? assumeCloned = null,
 		bool? metadataOnly = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
+		bool serve = false,
 		Cancel ctx = default
 	)
 	{
@@ -59,8 +62,17 @@ internal sealed class AssembleCommands(
 		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, exporters, fs), strict ?? false,
 			static async (s, collector, state, ctx) => await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.exporters, state.fs, ctx)
 		);
+		var result = await serviceInvoker.InvokeAsync(ctx);
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		if (serve && result == 0)
+		{
+			var host = new StaticWebHost(4000, null);
+			await host.RunAsync(ctx);
+			await host.StopAsync(ctx);
+		}
+
+		return result;
+
 	}
 }
 
@@ -126,4 +138,16 @@ internal sealed class AssemblerCommands(
 
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
+
+	/// <summary> Serve the output of an assembler build</summary>
+	/// <param name="port">Port to serve the documentation.</param>
+	/// <param name="ctx"></param>
+	[Command("serve")]
+	public async Task ServeAssemblerBuild(int port = 4000, string? path = null, Cancel ctx = default)
+	{
+		var host = new StaticWebHost(port, path);
+		await host.RunAsync(ctx);
+		await host.StopAsync(ctx);
+	}
+
 }

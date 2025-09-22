@@ -7,7 +7,7 @@ using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 
-namespace Documentation.Builder.Cli;
+namespace Documentation.Builder.Filters;
 
 internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {

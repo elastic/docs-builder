@@ -6,9 +6,9 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ExternalCommands;
 
-namespace Documentation.Builder.Tracking;
+namespace Elastic.Documentation.Refactor.Tracking;
 
-public class LocalGitRepositoryTracker(DiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
+public class LocalGitRepositoryTracker(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
 	private string LookupPath { get; } = lookupPath.Trim('\\', '/');
 

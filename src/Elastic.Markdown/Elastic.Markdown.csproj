@@ -17,6 +17,7 @@
   
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
@@ -40,10 +41,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Myst\Roles\Icons\svgs\*.svg" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Links\" />
   </ItemGroup>
 
 </Project>

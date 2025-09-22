@@ -2,69 +2,50 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using Actions.Core.Services;
-using ConsoleAppFramework;
-using Documentation.Builder.Tracking;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Builder.Cli;
+namespace Elastic.Documentation.Refactor.Tracking;
 
-internal sealed class DiffCommands(
+public class LocalChangeTrackingService(
 	ILoggerFactory logFactory,
-	ICoreService githubActionsService,
 	IConfigurationContext configurationContext
-)
+) : IService
 {
-	private readonly ILogger<Program> _log = logFactory.CreateLogger<Program>();
+	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
-	/// <summary>
-	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
-	/// </summary>
-	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
-	/// <param name="ctx"></param>
-	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
-	[Command("validate")]
-	public async Task<int> ValidateRedirects(string? path = null, Cancel ctx = default)
+	public async Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, FileSystem fs, Cancel ctx)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
-
-		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService).StartAsync(ctx);
-
-		var fs = new FileSystem();
 
 		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)
 		{
-			await collector.StopAsync(ctx);
-			return 0;
+			collector.EmitError(redirectFile.Source, "File does not exist");
+			return false;
 		}
 
 		var redirects = redirectFile.Redirects;
-
 		if (redirects is null)
 		{
 			collector.EmitError(redirectFile.Source, "It was not possible to parse the redirects file.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
+			return false;
 		}
 
 		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
 			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
+			return false;
 		}
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
-		_log.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
+		_logger.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
 		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(relativePath) : new LocalGitRepositoryTracker(collector, root, relativePath);
 		var changed = tracker.GetChangedFiles()
 			.Where(c =>
@@ -75,7 +56,7 @@ internal sealed class DiffCommands(
 			.ToArray();
 
 		if (changed.Length != 0)
-			_log.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
+			_logger.LogInformation("Found {Count} changes to files related to documentation in the current branch.", changed.Length);
 
 		var deletedAndRenamed = changed.Where(c => c.ChangeType is GitChangeType.Deleted or GitChangeType.Renamed).ToArray();
 		var missingCount = 0;
@@ -103,10 +84,10 @@ internal sealed class DiffCommands(
 		if (missingCount != 0)
 		{
 			var relativeRedirectFile = Path.GetRelativePath(root.FullName, redirectFile.Source.FullName);
-			_log.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingCount, relativeRedirectFile);
+			_logger.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingCount, relativeRedirectFile);
 		}
 
 		await collector.StopAsync(ctx);
-		return collector.Errors;
+		return collector.Errors == 0;
 	}
 }

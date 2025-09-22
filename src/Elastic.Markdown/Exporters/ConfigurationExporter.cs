@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Markdown.Exporters;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Assembler.Exporters;
+namespace Elastic.Markdown.Exporters;
 
 public class ConfigurationExporter(
 	ILoggerFactory logFactory,

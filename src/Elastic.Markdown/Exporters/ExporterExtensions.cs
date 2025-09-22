@@ -2,17 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Assembler.Exporters;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Markdown.Exporters;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Assembler.Building;
+namespace Elastic.Markdown.Exporters;
 
 public static class ExporterExtensions
 {
-
 	public static IReadOnlyCollection<IMarkdownExporter> CreateMarkdownExporters(
 		this IReadOnlySet<Exporter> exportOptions,
 		ILoggerFactory logFactory,
@@ -36,3 +34,4 @@ public static class ExporterExtensions
 		return markdownExporters;
 	}
 }
+

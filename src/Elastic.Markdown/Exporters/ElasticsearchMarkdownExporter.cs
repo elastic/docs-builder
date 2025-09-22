@@ -12,14 +12,13 @@ using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Catalog;
 using Elastic.Ingest.Elasticsearch.Semantic;
-using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Assembler.Exporters;
+namespace Elastic.Markdown.Exporters;
 
 public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
 	: ElasticsearchMarkdownExporterBase<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
@@ -287,3 +286,4 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		return await _channel.RefreshAsync(ctx);
 	}
 }
+
