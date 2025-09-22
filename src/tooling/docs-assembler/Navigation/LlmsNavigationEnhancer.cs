@@ -5,7 +5,6 @@
 using System.Text;
 using Documentation.Assembler;
 using Elastic.Documentation.Site.Navigation;
-using Elastic.Markdown;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 
@@ -16,7 +15,7 @@ namespace Documentation.Assembler.Navigation;
 /// </summary>
 public class LlmsNavigationEnhancer
 {
-	public async Task<string> GenerateNavigationSectionsAsync(GlobalNavigation navigation)
+	public string GenerateNavigationSections(GlobalNavigation navigation)
 	{
 		var content = new StringBuilder();
 
@@ -42,7 +41,7 @@ public class LlmsNavigationEnhancer
 				{
 					var title = child.NavigationTitle;
 					var url = ConvertToAbsoluteMarkdownUrl(child.Url);
-					var description = await GetDescriptionAsync(child);
+					var description = GetDescription(child);
 
 					_ = !string.IsNullOrEmpty(description)
 						? content.AppendLine($"* [{title}]({url}): {description}")
@@ -111,40 +110,16 @@ public class LlmsNavigationEnhancer
 		return $"{baseUrl}/docs/{markdownPath}";
 	}
 
-	private static async Task<string?> GetDescriptionAsync(INavigationItem navigationItem)
+	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
 	{
-		var descriptionGenerator = new DescriptionGenerator();
+		// For file navigation items, extract from frontmatter
+		FileNavigationItem fileItem when fileItem.Model is MarkdownFile markdownFile
+			=> markdownFile.YamlFrontMatter?.Description,
 
-		return navigationItem switch
-		{
-			// For file navigation items, extract from frontmatter or generate
-			FileNavigationItem fileItem when fileItem.Model is MarkdownFile markdownFile =>
-				await GetDescriptionFromMarkdownFileAsync(markdownFile, descriptionGenerator),
+		// For documentation groups, try to get from index file
+		DocumentationGroup group when group.Index is MarkdownFile indexFile
+			=> indexFile.YamlFrontMatter?.Description,
 
-			// For documentation groups, try to get from index file
-			DocumentationGroup group when group.Index is MarkdownFile indexFile =>
-				await GetDescriptionFromMarkdownFileAsync(indexFile, descriptionGenerator),
-
-			_ => null
-		};
-	}
-
-	private static async Task<string?> GetDescriptionFromMarkdownFileAsync(MarkdownFile markdownFile, DescriptionGenerator descriptionGenerator)
-	{
-		// First try frontmatter description
-		if (!string.IsNullOrEmpty(markdownFile.YamlFrontMatter?.Description))
-			return markdownFile.YamlFrontMatter.Description;
-
-		// Fallback to generating description from content
-		try
-		{
-			var document = await markdownFile.MinimalParseAsync(default);
-			return descriptionGenerator.GenerateDescription(document);
-		}
-		catch
-		{
-			// If parsing fails, return null (no description)
-			return null;
-		}
-	}
+		_ => null
+	};
 }
