@@ -13,6 +13,8 @@ using Microsoft.Extensions.Logging.Console;
 
 namespace Elastic.Documentation.ServiceDefaults;
 
+public record CliInvocation(bool IsHelpOrVersion);
+
 public static class AppDefaultsExtensions
 {
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
@@ -26,7 +28,7 @@ public static class AppDefaultsExtensions
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, LogLevel? defaultLogLevel = null, Action<IServiceCollection, ConfigurationFileProvider>? configure = null) where TBuilder : IHostApplicationBuilder
 	{
 		var logLevel = defaultLogLevel ?? LogLevel.Information;
-		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories);
+		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories, out var isHelpOrVersion);
 
 		var services = builder.Services;
 		_ = services
@@ -36,6 +38,7 @@ public static class AppDefaultsExtensions
 				configure?.Invoke(s, p);
 			});
 		_ = builder.Services.AddElasticDocumentationLogging(logLevel);
+		_ = services.AddSingleton(new CliInvocation(isHelpOrVersion));
 
 		return builder.AddServiceDefaults();
 	}

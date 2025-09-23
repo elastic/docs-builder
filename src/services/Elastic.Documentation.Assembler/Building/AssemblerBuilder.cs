@@ -13,6 +13,7 @@ using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
@@ -40,8 +41,7 @@ public class AssemblerBuilder(
 
 		var redirects = new Dictionary<string, string>();
 
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment);
-
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 

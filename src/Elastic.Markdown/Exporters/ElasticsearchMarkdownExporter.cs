@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Channels;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
@@ -20,7 +19,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Exporters;
 
-public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
+public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, string indexNamespace, DocumentationEndpoints endpoints)
 	: ElasticsearchMarkdownExporterBase<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
 		(logFactory, collector, endpoints)
 {
@@ -28,15 +27,16 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 	protected override CatalogIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
 	{
 		GetMapping = () => CreateMapping(null),
-		IndexFormat = "documentation{0:yyyy.MM.dd.HHmmss}",
-		ActiveSearchAlias = "documentation"
+		GetMappingSettings = () => CreateMappingSetting(),
+		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
+		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 	};
 
 	/// <inheritdoc />
 	protected override CatalogIndexChannel<DocumentationDocument> NewChannel(CatalogIndexChannelOptions<DocumentationDocument> options) => new(options);
 }
 
-public class ElasticsearchMarkdownSemanticExporter(PublishEnvironment environment, ILoggerFactory logFactory, IDiagnosticsCollector collector, DocumentationEndpoints endpoints)
+public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, string indexNamespace, DocumentationEndpoints endpoints)
 	: ElasticsearchMarkdownExporterBase<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
 		(logFactory, collector, endpoints)
 {
@@ -45,20 +45,23 @@ public class ElasticsearchMarkdownSemanticExporter(PublishEnvironment environmen
 	{
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
 		GetMappingSettings = (_, _) => CreateMappingSetting(),
-		IndexFormat = $"semantic-docs-{environment.Name}-{{0:yyyy.MM.dd.HHmmss}}",
-		ActiveSearchAlias = $"semantic-docs-{environment.Name}",
-		IndexNumThreads = IndexNumThreads,
-		InferenceCreateTimeout = TimeSpan.FromMinutes(4)
+		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
+		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
+		IndexNumThreads = Endpoint.IndexNumThreads,
+		SearchNumThreads = Endpoint.SearchNumThreads,
+		InferenceCreateTimeout = TimeSpan.FromMinutes(Endpoint.BootstrapTimeout ?? 4)
 	};
 
 	/// <inheritdoc />
 	protected override SemanticIndexChannel<DocumentationDocument> NewChannel(SemanticIndexChannelOptions<DocumentationDocument> options) => new(options);
 }
 
+
 public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChannel>(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	DocumentationEndpoints endpoints)
+	DocumentationEndpoints endpoints
+)
 	: IMarkdownExporter, IDisposable
 	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
@@ -69,7 +72,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 	protected abstract TChannelOptions NewOptions(DistributedTransport transport);
 	protected abstract TChannel NewChannel(TChannelOptions options);
 
-	protected int IndexNumThreads => 8;
+	protected ElasticsearchEndpoint Endpoint { get; } = endpoints.Elasticsearch;
 
 	protected static string CreateMappingSetting() =>
 		// language=json
@@ -97,7 +100,6 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		""";
 
 	protected static string CreateMapping(string? inferenceId) =>
-		// langugage=json
 		$$"""
 		  {
 		    "properties": {
@@ -131,7 +133,6 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		  """;
 
 	private static string AbstractMapping() =>
-		// langugage=json
 		"""
 		, "abstract": {
 			"type": "text"
@@ -139,7 +140,6 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		""";
 
 	private static string InferenceMapping(string inferenceId) =>
-		// langugage=json
 		$"""
 		 	"type": "semantic_text",
 		 	"inference_id": "{inferenceId}"
@@ -159,12 +159,26 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 			return;
 
 		var es = endpoints.Elasticsearch;
+
 		var configuration = new ElasticsearchConfiguration(es.Uri)
 		{
 			Authentication = es.ApiKey is { } apiKey
 				? new ApiKey(apiKey)
-				: es.Username is { } username && es.Password is { } password
+				: es is { Username: { } username, Password: { } password }
 					? new BasicAuthentication(username, password)
+					: null,
+			EnableHttpCompression = true,
+			DebugMode = Endpoint.DebugMode,
+			CertificateFingerprint = Endpoint.CertificateFingerprint,
+			ProxyAddress = Endpoint.ProxyAddress,
+			ProxyPassword = Endpoint.ProxyPassword,
+			ProxyUsername = Endpoint.ProxyUsername,
+			ServerCertificateValidationCallback = Endpoint.DisableSslVerification
+				? CertificateValidations.AllowAll
+				: Endpoint.Certificate is { } cert
+					? Endpoint.CertificateIsNotRoot
+						? CertificateValidations.AuthorityPartOfChain(cert)
+						: CertificateValidations.AuthorityIsRoot(cert)
 					: null
 		};
 
@@ -173,14 +187,20 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		//The max num threads per allocated node, from testing its best to limit our max concurrency
 		//producing to this number as well
 		var options = NewOptions(transport);
+		var i = 0;
 		options.BufferOptions = new BufferOptions
 		{
-			OutboundBufferMaxSize = 100,
-			ExportMaxConcurrency = IndexNumThreads,
-			ExportMaxRetries = 3
+			OutboundBufferMaxSize = Endpoint.BufferSize,
+			ExportMaxConcurrency = Endpoint.IndexNumThreads,
+			ExportMaxRetries = Endpoint.MaxRetries,
 		};
 		options.SerializerContext = SourceGenerationContext.Default;
-		options.ExportBufferCallback = () => _logger.LogInformation("Exported buffer to Elasticsearch");
+		options.ExportBufferCallback = () =>
+		{
+			var count = Interlocked.Increment(ref i);
+			_logger.LogInformation("Exported {Count} documents to Elasticsearch index {Format}",
+				count * Endpoint.BufferSize, options.IndexFormat);
+		};
 		options.ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document");
 		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
 		_channel = NewChannel(options);
@@ -206,7 +226,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		_logger.LogInformation("Applying aliases to {Index}", _channel.IndexName);
 		var swapped = await _channel.ApplyAliasesAsync(ctx);
 		if (!swapped)
-			collector.EmitGlobalError($"{nameof(ElasticsearchMarkdownExporter)} failed to apply aliases to index {_channel.IndexName}");
+			collector.EmitGlobalError($"${nameof(ElasticsearchMarkdownExporter)} failed to apply aliases to index {_channel.IndexName}");
 	}
 
 	public void Dispose()

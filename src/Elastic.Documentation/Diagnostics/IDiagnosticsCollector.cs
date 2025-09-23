@@ -14,6 +14,8 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 	int Errors { get; }
 	int Hints { get; }
 
+	bool NoHints { get; set; }
+
 	DiagnosticsChannel Channel { get; }
 	ConcurrentBag<string> CrossLinks { get; }
 	HashSet<string> OffendingFiles { get; }

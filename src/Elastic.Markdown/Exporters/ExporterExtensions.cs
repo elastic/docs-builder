@@ -15,7 +15,7 @@ public static class ExporterExtensions
 		this IReadOnlySet<Exporter> exportOptions,
 		ILoggerFactory logFactory,
 		IDocumentationConfigurationContext context,
-		PublishEnvironment? environment = null
+		string indexNamespace
 	)
 	{
 		var markdownExporters = new List<IMarkdownExporter>(3);
@@ -24,13 +24,9 @@ public static class ExporterExtensions
 		if (exportOptions.Contains(Exporter.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Exporter.Elasticsearch))
-			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints));
-		if (exportOptions.Contains(Exporter.SemanticElasticsearch))
-		{
-			if (environment is null)
-				throw new ArgumentNullException(nameof(environment), "A publish environment is required when using the semantic elasticsearch exporter");
-			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(environment, logFactory, context.Collector, context.Endpoints));
-		}
+			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(logFactory, context.Collector, indexNamespace, context.Endpoints));
+		if (exportOptions.Contains(Exporter.ElasticsearchNoSemantic))
+			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, indexNamespace, context.Endpoints));
 		return markdownExporters;
 	}
 }

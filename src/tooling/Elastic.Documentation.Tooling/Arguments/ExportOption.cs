@@ -23,7 +23,6 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"llmtext" => LLMText,
 				"es" => Elasticsearch,
 				"elasticsearch" => Elasticsearch,
-				"semantic" => SemanticElasticsearch,
 				"html" => Html,
 				"config" => Exporter.Configuration,
 				"links" => LinkMetadata,

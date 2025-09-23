@@ -13,7 +13,7 @@ using static Elastic.Documentation.Aspire.ResourceNames;
 // ReSharper disable NotAccessedVariable
 
 var logLevel = LogLevel.Information;
-GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories);
+GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories, out _);
 var globalArguments = new List<string>();
 if (skipPrivateRepositories)
 	globalArguments.Add("--skip-private-repositories");
