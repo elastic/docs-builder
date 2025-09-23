@@ -74,17 +74,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		string content;
-		if (IsRootIndexFile(fileContext))
-		{
-			// Use template for root llms.txt file
-			content = LlmsTxtTemplate;
-		}
-		else
-		{
-			// Regular markdown files get metadata + content
-			content = CreateLlmContentWithMetadata(fileContext, llmMarkdown);
-		}
+		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 
 		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
 			outputFile.FullName,
