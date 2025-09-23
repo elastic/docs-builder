@@ -20,7 +20,7 @@ public class LlmsNavigationEnhancer
 		var content = new StringBuilder();
 
 		// Get top-level navigation items (excluding hidden ones)
-		var topLevelItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToList();
+		var topLevelItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToArray();
 
 		foreach (var topLevelItem in topLevelItems)
 		{
