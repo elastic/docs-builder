@@ -11,10 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
 
-internal sealed class ServeCommand(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
-)
+internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationContext configurationContext)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ServeCommand>();
 

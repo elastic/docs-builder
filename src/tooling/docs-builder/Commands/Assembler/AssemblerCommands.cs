@@ -148,6 +148,9 @@ internal sealed class AssemblerCommands(
 		var host = new StaticWebHost(port, path);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
+		// since this command does not use ServiceInvoker, we stop the collector manually.
+		// this should be an exception to the regular command pattern.
+		await collector.StopAsync(ctx);
 	}
 
 }
