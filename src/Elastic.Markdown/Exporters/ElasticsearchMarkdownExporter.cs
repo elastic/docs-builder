@@ -187,6 +187,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		//The max num threads per allocated node, from testing its best to limit our max concurrency
 		//producing to this number as well
 		var options = NewOptions(transport);
+		var i = 0;
 		options.BufferOptions = new BufferOptions
 		{
 			OutboundBufferMaxSize = Endpoint.BufferSize,
@@ -194,7 +195,12 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 			ExportMaxRetries = Endpoint.MaxRetries,
 		};
 		options.SerializerContext = SourceGenerationContext.Default;
-		options.ExportBufferCallback = () => _logger.LogInformation("Exported buffer to Elasticsearch");
+		options.ExportBufferCallback = () =>
+		{
+			var count = Interlocked.Increment(ref i);
+			_logger.LogInformation("Exported {Count} documents to Elasticsearch index {Format}",
+				count * Endpoint.BufferSize, options.IndexFormat);
+		};
 		options.ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document");
 		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
 		_channel = NewChannel(options);
