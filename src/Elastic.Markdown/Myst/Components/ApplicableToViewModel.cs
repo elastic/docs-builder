@@ -37,6 +37,7 @@ public class ApplicableToViewModel
 		[p => p.Curator] = ApplicabilityMappings.Curator,
 		[p => p.EdotAndroid] = ApplicabilityMappings.EdotAndroid,
 		[p => p.EdotCfAws] = ApplicabilityMappings.EdotCfAws,
+		[p => p.EdotCfAzure] = ApplicabilityMappings.EdotCfAzure,
 		[p => p.EdotCollector] = ApplicabilityMappings.EdotCollector,
 		[p => p.EdotDotnet] = ApplicabilityMappings.EdotDotnet,
 		[p => p.EdotIos] = ApplicabilityMappings.EdotIos,
