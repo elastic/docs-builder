@@ -59,7 +59,7 @@ sources:
       username: '{{ requiredEnv "GITHUB_ACTOR" }}'
       versionfilter:
         kind: semver
-        pattern: ">=9.0.0 <10.0.0"
+        pattern: "^9.0.0"
 
   latest-edot-dotnet-version:
     name: Get latest release version for the elastic-otel-dotnet
@@ -312,7 +312,7 @@ targets:
     kind: yaml
     spec:
       file: config/versions.yml
-      key: versioning_systems.edot_collector.current
+      key: $.versioning_systems.edot_collector.current
 
   update-docs-docset-dotnet:
     name: 'Update config/versions.yml edot-dotnet {{ source "latest-edot-dotnet-version" }}'

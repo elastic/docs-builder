@@ -223,6 +223,7 @@ applies_to:
     edot_php:
     edot_python:
     edot_cf_aws:
+    edot_cf_azure:
 ---
 ```
 :::::
