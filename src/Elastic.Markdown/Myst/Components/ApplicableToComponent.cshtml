@@ -12,7 +12,7 @@
 			<span class="applicable-meta applicable-meta-@item.RenderData.LifecycleClass">
 				@if (item.RenderData.ShowLifecycleName)
 				{
-					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.Applicability.GetLifeCycleName()</span>
+					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.PrimaryApplicability.GetLifeCycleName()</span>
 				}
 				@if (item.RenderData.ShowVersion)
 				{
@@ -23,6 +23,14 @@
 				else
 				{
 					@item.RenderData.BadgeLifecycleText
+				}
+				@if (item.RenderData.HasMultipleLifecycles)
+				{
+					<span class="applicable-ellipsis">
+						<span class="applicable-ellipsis__dot"></span>
+						<span class="applicable-ellipsis__dot"></span>
+						<span class="applicable-ellipsis__dot"></span>
+					</span>
 				}
 			</span>
 		</span>

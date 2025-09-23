@@ -98,7 +98,7 @@ public record AssemblyConfiguration
 			{
 				var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 				repository.Origin = !string.IsNullOrEmpty(token)
-					? $"https://oath2:{token}@github.com/elastic/{name}.git"
+					? $"https://oauth2:{token}@github.com/elastic/{name}.git"
 					: $"https://github.com/elastic/{name}.git";
 			}
 			else

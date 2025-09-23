@@ -12,6 +12,54 @@ using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Elastic.Documentation.Tooling.Diagnostics.Console;
 
+public class CustomDiagnosticsFormatter : DiagnosticFormatter
+{
+	/// override to ensure exceptions and multiline errors get printed nicely
+	public override Markup Format(Errata.Diagnostic diagnostic)
+	{
+		var builder = new StringBuilder();
+		var message = diagnostic.Message.EscapeMarkup();
+		if (message.Contains("Exception:"))
+			diagnostic.Category = "Exception";
+
+		if (diagnostic.Category != null)
+		{
+			_ = builder.Append("[b]")
+				.Append(diagnostic.Category.EscapeMarkup())
+				.Append("[/]");
+		}
+
+		if (diagnostic.Code != null)
+		{
+			if (diagnostic.Category != null)
+				_ = builder.Append(' ');
+
+			_ = builder.Append("[[");
+			_ = builder.Append(diagnostic.Code.EscapeMarkup());
+			_ = builder.Append("]]");
+		}
+
+		if (!string.IsNullOrWhiteSpace(diagnostic.Category)
+			|| !string.IsNullOrWhiteSpace(diagnostic.Code))
+			_ = builder.Append("[white]: [/]");
+
+		var i = 0;
+		foreach (var line in diagnostic.Message.EscapeMarkup().Split('\n'))
+		{
+			_ = i == 0
+				? builder.Append("[white]")
+					.Append(line)
+					.Append("[/]")
+				: builder.AppendLine("[white]")
+					.Append(line)
+					.Append("[/]");
+			i++;
+		}
+
+		return new Markup(builder.ToString(), new Style(diagnostic.Color));
+	}
+}
+
 public class ErrataFileSourceRepository : ISourceRepository
 {
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
@@ -81,6 +129,7 @@ public class ErrataFileSourceRepository : ISourceRepository
 				DisplayHintsOnly(report, hints);
 			return;
 		}
+
 		DisplayErrorAndWarningSummary(report, totalErrorCount, limited);
 	}
 
@@ -90,7 +139,10 @@ public class ErrataFileSourceRepository : ISourceRepository
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 		// Render the report
-		report.Render(AnsiConsole.Console);
+		report.Render(AnsiConsole.Console, new ReportSettings
+		{
+			Formatter = new CustomDiagnosticsFormatter()
+		});
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
@@ -107,7 +159,10 @@ public class ErrataFileSourceRepository : ISourceRepository
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 		// Render the report
-		report.Render(AnsiConsole.Console);
+		report.Render(AnsiConsole.Console, new ReportSettings
+		{
+			Formatter = new CustomDiagnosticsFormatter()
+		});
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();

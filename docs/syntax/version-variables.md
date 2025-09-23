@@ -104,6 +104,7 @@ This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder
 * `edot_php`
 * `edot_python`
 * `edot_cf_aws`
+* `edot_cf_azure`
 * `edot_collector`
 
 The following are available but should not be used. These map to serverless projects and have a fixed high version number.
