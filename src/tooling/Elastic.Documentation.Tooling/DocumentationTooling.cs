@@ -9,6 +9,7 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,9 +34,12 @@ public static class DocumentationTooling
 			{
 				var logFactory = sp.GetRequiredService<ILoggerFactory>();
 				var githubActionsService = sp.GetRequiredService<ICoreService>();
+				var isHelp = sp.GetRequiredService<CliInvocation>();
+				if (isHelp.IsHelpOrVersion)
+					return new DiagnosticsCollector([]);
 				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
 				{
-					NoHints = true
+					NoHints = false
 				};
 			})
 			.AddSingleton(sp =>
