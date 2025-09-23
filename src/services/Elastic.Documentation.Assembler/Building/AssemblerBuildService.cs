@@ -11,7 +11,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Legacy;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -27,8 +26,17 @@ public class AssemblerBuildService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<AssemblerBuildService>();
 
-	public async Task<bool> BuildAll(IDiagnosticsCollector collector, bool? strict, string? environment, bool? metadataOnly, IReadOnlySet<Exporter>? exporters, FileSystem fs, Cancel ctx)
+	public async Task<bool> BuildAll(
+		IDiagnosticsCollector collector,
+		bool? strict, string? environment,
+		bool? metadataOnly,
+		bool? showHints,
+		IReadOnlySet<Exporter>? exporters,
+		FileSystem fs,
+		Cancel ctx
+	)
 	{
+		collector.NoHints = !showHints.GetValueOrDefault(false);
 		strict ??= false;
 		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
 		// ensure we never generate a documentation state for assembler builds

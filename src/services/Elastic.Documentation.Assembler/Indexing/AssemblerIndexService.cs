@@ -133,6 +133,6 @@ public class AssemblerIndexService(
 
 		var exporters = new HashSet<Exporter> { noSemantic.GetValueOrDefault(false) ? ElasticsearchNoSemantic : Elasticsearch };
 
-		return await BuildAll(collector, strict: false, environment, metadataOnly: true, exporters, fileSystem, ctx);
+		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, fileSystem, ctx);
 	}
 }

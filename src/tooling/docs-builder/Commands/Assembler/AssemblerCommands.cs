@@ -32,6 +32,7 @@ internal sealed class AssembleCommands(
 	/// <param name="fetchLatest"> If true, fetch the latest commit of the branch instead of the link registry entry ref</param>
 	/// <param name="assumeCloned"> If true, assume the repository folder already exists on disk assume it's cloned already, primarily used for testing</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="showHints"> Show hints from all documentation sets during assembler build</param>
 	/// <param name="exporters"> Set available exporters:
 	///					html, es, config, links, state, llm, redirect, metadata, none.
 	///					Defaults to (html, config, links, state, redirect) or 'default'.
@@ -39,12 +40,13 @@ internal sealed class AssembleCommands(
 	/// <param name="serve"> Serve the documentation on port 4000 after succesful build</param>
 	/// <param name="ctx"></param>
 	[Command("")]
-	public async Task<int> CloneAll(
+	public async Task<int> CloneAndBuild(
 		bool? strict = null,
 		string? environment = null,
 		bool? fetchLatest = null,
 		bool? assumeCloned = null,
 		bool? metadataOnly = null,
+		bool? showHints = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
 		bool serve = false,
 		Cancel ctx = default
@@ -59,8 +61,9 @@ internal sealed class AssembleCommands(
 
 		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
 		var fs = new FileSystem();
-		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, exporters, fs), strict ?? false,
-			static async (s, collector, state, ctx) => await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.exporters, state.fs, ctx)
+		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, fs), strict ?? false,
+			static async (s, collector, state, ctx) =>
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.fs, ctx)
 		);
 		var result = await serviceInvoker.InvokeAsync(ctx);
 
@@ -114,6 +117,7 @@ internal sealed class AssemblerCommands(
 	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
+	/// <param name="showHints"> Show hints from all documentation sets during assembler build</param>
 	/// <param name="exporters"> Set available exporters:
 	///					html, es, config, links, state, llm, redirect, metadata, none.
 	///					Defaults to (html, config, links, state, redirect) or 'default'.
@@ -124,6 +128,7 @@ internal sealed class AssemblerCommands(
 		bool? strict = null,
 		string? environment = null,
 		bool? metadataOnly = null,
+		bool? showHints = null,
 		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
 		Cancel ctx = default
 	)
@@ -132,8 +137,9 @@ internal sealed class AssemblerCommands(
 
 		var fs = new FileSystem();
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(service, (strict, environment, metadataOnly, exporters, fs), strict ?? false,
-			static async (s, collector, state, ctx) => await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.exporters, state.fs, ctx)
+		serviceInvoker.AddCommand(service, (strict, environment, metadataOnly, showHints, exporters, fs), strict ?? false,
+			static async (s, collector, state, ctx) =>
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.fs, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

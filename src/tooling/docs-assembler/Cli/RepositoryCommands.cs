@@ -90,7 +90,8 @@ internal sealed class RepositoryCommands(
 		var fs = new FileSystem();
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service, (strict, environment, metadataOnly, exporters, fs), strict ?? false,
-			static async (s, collector, state, ctx) => await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.exporters, state.fs, ctx)
+			static async (s, collector, state, ctx) =>
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, false, state.exporters, state.fs, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

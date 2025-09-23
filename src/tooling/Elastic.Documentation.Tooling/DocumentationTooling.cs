@@ -37,10 +37,7 @@ public static class DocumentationTooling
 				var isHelp = sp.GetRequiredService<CliInvocation>();
 				if (isHelp.IsHelpOrVersion)
 					return new DiagnosticsCollector([]);
-				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
-				{
-					NoHints = false
-				};
+				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})
 			.AddSingleton(sp =>
 			{
