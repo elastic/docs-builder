@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.Text;
 using Actions.Core.Services;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -93,6 +94,13 @@ public class AssemblerBuildService(
 			sitemapBuilder.Generate();
 		}
 
+		if (exporters.Contains(Exporter.LLMText))
+		{
+			_logger.LogInformation("Enhancing llms.txt with navigation structure");
+			var llmsEnhancer = new LlmsNavigationEnhancer();
+			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, ctx);
+		}
+
 		await collector.StopAsync(ctx);
 
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
@@ -100,4 +108,21 @@ public class AssemblerBuildService(
 		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 
+	private static async Task EnhanceLlmsTxtFile(AssembleContext context, GlobalNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
+	{
+		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
+
+		var readFs = context.ReadFileSystem;
+		if (!readFs.File.Exists(llmsTxtPath))
+			return; // No llms.txt file to enhance
+
+		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
+		var navigationSections = enhancer.GenerateNavigationSections(navigation);
+
+		// Append the navigation sections to the existing boilerplate
+		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
+
+		var writeFs = context.WriteFileSystem;
+		await writeFs.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
+	}
 }

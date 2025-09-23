@@ -3,16 +3,17 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
-using Documentation.Assembler;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
-namespace Documentation.Assembler.Navigation;
+namespace Elastic.Documentation.Assembler.Navigation;
 
 /// <summary>
 /// Generates enhanced navigation sections for the llms.txt file
@@ -33,7 +34,7 @@ public class LlmsNavigationEnhancer
 
 			// Create H2 section for the category - use H1 title if available, fallback to navigation title
 			var categoryTitle = GetBestTitle(group);
-			_ = content.AppendLine($"## {categoryTitle}");
+			_ = content.AppendLine(CultureInfo.InvariantCulture, $"## {categoryTitle}");
 			_ = content.AppendLine();
 
 			// Get first-level children
@@ -48,8 +49,8 @@ public class LlmsNavigationEnhancer
 					var description = GetDescription(child);
 
 					_ = !string.IsNullOrEmpty(description)
-						? content.AppendLine($"* [{title}]({url}): {description}")
-						: content.AppendLine($"* [{title}]({url})");
+						? content.AppendLine(CultureInfo.InvariantCulture, $"* [{title}]({url}): {description}")
+						: content.AppendLine(CultureInfo.InvariantCulture, $"* [{title}]({url})");
 				}
 				_ = content.AppendLine();
 			}

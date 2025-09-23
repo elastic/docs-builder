@@ -3,23 +3,17 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Net.Mime;
-using System.Text;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
-using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Configuration;
-using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Tooling.Arguments;
-using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -119,22 +113,4 @@ internal sealed class RepositoryCommands(
 		return 0;
 	}
 
-	private static async Task EnhanceLlmsTxtFile(AssembleContext context, GlobalNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
-	{
-		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
-
-		var readFs = context.ReadFileSystem;
-		if (!readFs.File.Exists(llmsTxtPath))
-			return; // No llms.txt file to enhance
-
-		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
-		var navigationSections = enhancer.GenerateNavigationSections(navigation);
-
-		// Append the navigation sections to the existing boilerplate
-		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
-
-		var writeFs = context.WriteFileSystem;
-		await writeFs.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
-
-	}
 }
