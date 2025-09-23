@@ -5,9 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
-using Elastic.Documentation.Assembler.Indexing;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
@@ -26,7 +24,7 @@ internal sealed class IndexCommand(
 	/// Index a single documentation set to Elasticsearch, calls `docs-builder --exporters elasticsearch`. Exposes more options
 	/// </summary>
 	/// <param name="endpoint">Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
-	/// <param name="environment">The --environment used to clone ends up being part of the index name</param>
+	/// <param name="path">path to the documentation folder, defaults to pwd.</param>
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
@@ -50,7 +48,7 @@ internal sealed class IndexCommand(
 	[Command("")]
 	public async Task<int> Index(
 		[Argument] string? endpoint = null,
-		string? environment = null,
+		string? path = null,
 		string? apiKey = null,
 		string? username = null,
 		string? password = null,
@@ -87,9 +85,9 @@ internal sealed class IndexCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new FileSystem();
 		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService);
-		var state = (fs,
+		var state = (fs, path,
 				// endpoint options
-				endpoint, environment, apiKey, username, password,
+				endpoint, apiKey, username, password,
 				// inference options
 				noSemantic, indexNumThreads, searchNumThreads, bootstrapTimeout,
 				// channel and connection options
@@ -100,9 +98,9 @@ internal sealed class IndexCommand(
 				disableSslVerification, certificateFingerprint, certificatePath, certificateNotRoot
 			);
 		serviceInvoker.AddCommand(service, state,
-			static async (s, collector, state, ctx) => await s.Index(collector, state.fs,
+			static async (s, collector, state, ctx) => await s.Index(collector, state.fs, state.path,
 				// endpoint options
-				state.endpoint, state.environment, state.apiKey, state.username, state.password,
+				state.endpoint, state.apiKey, state.username, state.password,
 				// inference options
 				state.noSemantic, state.searchNumThreads, state.indexNumThreads, state.bootstrapTimeout,
 				// channel and connection options

@@ -27,6 +27,7 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 	protected override CatalogIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
 	{
 		GetMapping = () => CreateMapping(null),
+		GetMappingSettings = () => CreateMappingSetting(),
 		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 	};

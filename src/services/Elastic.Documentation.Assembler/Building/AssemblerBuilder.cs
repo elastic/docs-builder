@@ -42,7 +42,6 @@ public class AssemblerBuilder(
 		var redirects = new Dictionary<string, string>();
 
 		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
-
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
