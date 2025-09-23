@@ -8,9 +8,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Tooling.Filters;
 
-#pragma warning disable CS9113 // Parameter is unread.
+
 public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger, IDiagnosticsCollector collector)
-#pragma warning restore CS9113 // Parameter is unread.
 	: ConsoleAppFilter(next)
 {
 	private bool _cancelKeyPressed;
