@@ -10,6 +10,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 
 namespace Documentation.Assembler.Navigation;
 
@@ -43,7 +44,7 @@ public class LlmsNavigationEnhancer
 				foreach (var child in firstLevelChildren)
 				{
 					var title = child.NavigationTitle;
-					var url = ConvertToAbsoluteMarkdownUrl(child.Url);
+					var url = LlmRenderingHelpers.ConvertToAbsoluteMarkdownUrl(child.Url);
 					var description = GetDescription(child);
 
 					_ = !string.IsNullOrEmpty(description)
@@ -77,27 +78,6 @@ public class LlmsNavigationEnhancer
 	private static IEnumerable<INavigationItem> GetFirstLevelChildren(DocumentationGroup group) =>
 		group.NavigationItems.Where(i => !i.Hidden);
 
-	private static string ConvertToAbsoluteMarkdownUrl(string url)
-	{
-		// Convert HTML URLs to .md URLs for LLM consumption
-		// e.g., "/docs/solutions/search/" -> "https://www.elastic.co/docs/solutions/search.md"
-		var cleanUrl = url.TrimStart('/');
-
-		// Remove "docs/" prefix if present for the markdown filename
-		var markdownPath = cleanUrl;
-		if (markdownPath.StartsWith("docs/", StringComparison.Ordinal))
-			markdownPath = markdownPath.Substring(5);
-
-		// Convert directory URLs to .md files
-		if (markdownPath.EndsWith('/'))
-			markdownPath = markdownPath.TrimEnd('/') + ".md";
-		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal))
-			markdownPath += ".md";
-
-		// Make absolute URL using the canonical base URL (always https://www.elastic.co for production)
-		var baseUrl = "https://www.elastic.co";
-		return $"{baseUrl}/docs/{markdownPath}";
-	}
 
 	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
 	{
