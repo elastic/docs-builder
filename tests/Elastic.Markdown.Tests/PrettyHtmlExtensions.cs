@@ -45,6 +45,7 @@ public static class PrettyHtmlExtensions
 		element.Children
 			.ForEach(c =>
 			{
+				// ReSharper disable once AccessToDisposedClosure
 				c.ToHtml(sw, formatter);
 			});
 		return sw.ToString().TrimStart('\n');

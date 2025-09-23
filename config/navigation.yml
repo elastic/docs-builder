@@ -82,10 +82,13 @@ toc:
       - toc: kibana://release-notes
         path_prefix: release-notes/kibana
 
-      # Fleet and Elastic Agent
-      # https://github.com/elastic/docs-content/blob/main/release-notes/fleet-elastic-agent/toc.yml
-      - toc: docs-content://release-notes/fleet-elastic-agent
-        path_prefix: release-notes/fleet
+      # Elastic Agent
+      - toc: elastic-agent://release-notes
+        path_prefix: release-notes/elastic-agent
+
+      # Fleet Server
+      - toc: fleet-server://release-notes
+        path_prefix: release-notes/fleet-server
 
       # Logstash
       # https://github.com/elastic/logstash/blob/main/docs/release-notes/toc.yml
@@ -109,7 +112,7 @@ toc:
       # https://github.com/elastic/cloud/blob/master/docs/docset.yml
       - toc: cloud://release-notes/cloud-hosted
         path_prefix: release-notes/cloud-hosted
-        
+
       # Cloud Enterprise
       # https://github.com/elastic/cloud/blob/master/docs/release-notes/cloud-enterprise/toc.yml
       - toc: cloud://release-notes/cloud-enterprise
@@ -133,7 +136,7 @@ toc:
           # EDOT iOS / Swift
           # https://github.com/elastic/apm-agent-ios/blob/main/docs/release-notes/toc.yml
           - toc: apm-agent-ios://release-notes
-            path_prefix: release-notes/edot/sdks/ios         
+            path_prefix: release-notes/edot/sdks/ios
           # EDOT Java
           # https://github.com/elastic/elastic-otel-java/blob/main/docs/release-notes/toc.yml
           - toc: elastic-otel-java://release-notes
@@ -310,7 +313,7 @@ toc:
           # https://github.com/elastic/elasticsearch/blob/main/docs/reference/elasticsearch-plugins/toc.yml
           - toc: elasticsearch://reference/elasticsearch-plugins
             path_prefix: reference/elasticsearch/plugins
-          
+
       # Security
       # https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
       - toc: docs-content://reference/security
@@ -332,7 +335,23 @@ toc:
       # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
       - toc: opentelemetry://reference
         path_prefix: reference/opentelemetry
-        # Children include all EDOT distribution docs.
+        children:
+          - toc: elastic-agent://reference/edot-collector
+            path_prefix: reference/edot-collector
+          - toc: apm-agent-android://reference/edot-android
+            path_prefix: reference/opentelemetry/edot-sdks/android
+          - toc: elastic-otel-dotnet://reference/edot-dotnet
+            path_prefix: reference/opentelemetry/edot-sdks/dotnet
+          - toc: apm-agent-ios://reference/edot-ios
+            path_prefix: reference/opentelemetry/edot-sdks/ios
+          - toc: elastic-otel-java://reference/edot-java
+            path_prefix: reference/opentelemetry/edot-sdks/java
+          - toc: elastic-otel-node://reference/edot-node
+            path_prefix: reference/opentelemetry/edot-sdks/node
+          - toc: elastic-otel-php://reference/edot-php
+            path_prefix: reference/opentelemetry/edot-sdks/php
+          - toc: elastic-otel-python://reference/edot-python
+            path_prefix: reference/opentelemetry/edot-sdks/python
 
       # Ingestion tools
       # https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml

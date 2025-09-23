@@ -8,16 +8,13 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Documentation.State;
 using Elastic.Markdown.Exporters;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Links.CrossLinks;
-using Elastic.Markdown.Myst.Renderers;
-using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 
@@ -51,7 +48,7 @@ public class DocumentationGenerator
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
-	public ICrossLinkResolver Resolver { get; }
+	public ICrossLinkResolver CrossLinkResolver { get; }
 	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
 
 	public DocumentationGenerator(
@@ -73,7 +70,7 @@ public class DocumentationGenerator
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;
-		Resolver = docSet.LinkResolver;
+		CrossLinkResolver = docSet.CrossLinkResolver;
 		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
 			positionalNavigation);
 		_documentationFileExporter =
@@ -100,7 +97,7 @@ public class DocumentationGenerator
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		_logger.LogInformation("Resolving tree");
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
 		_logger.LogInformation("Resolved tree");
 	}
 
@@ -122,9 +119,6 @@ public class DocumentationGenerator
 
 		if (CompilationNotNeeded(generationState, out var offendingFiles, out var outputSeenChanges))
 			return result;
-
-		_logger.LogInformation($"Fetching external links");
-		_ = await Resolver.FetchLinks(ctx);
 
 		await ResolveDirectoryTree(ctx);
 
@@ -265,7 +259,8 @@ public class DocumentationGenerator
 						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
 						Document = document,
 						SourceFile = markdown,
-						DefaultOutputFile = outputFile
+						DefaultOutputFile = outputFile,
+						DocumentationSet = DocumentationSet
 					}, ctx);
 				}
 			}

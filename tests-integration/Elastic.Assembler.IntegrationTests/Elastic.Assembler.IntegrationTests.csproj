@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
-    <ProjectReference Include="..\..\src\tooling\docs-assembler\docs-assembler.csproj"/>
-    <ProjectReference Include="..\..\src\tooling\docs-builder\docs-builder.csproj"/>
-    <ProjectReference Include="..\Elastic.Documentation.Aspire\Elastic.Documentation.Aspire.csproj"/>
+    <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
+    <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-assembler\docs-assembler.csproj"/>
+    <ProjectReference Include="$(SolutionRoot)\src\tooling\docs-builder\docs-builder.csproj"/>
+    <ProjectReference Include="$(SolutionRoot)\aspire\aspire.csproj" />
   </ItemGroup>
 
   <ItemGroup>

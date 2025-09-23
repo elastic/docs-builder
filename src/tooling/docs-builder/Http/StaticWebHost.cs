@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -17,9 +19,15 @@ public class StaticWebHost
 {
 	public WebApplication WebApplication { get; }
 
-	public StaticWebHost(int port)
+	public StaticWebHost(int port, string? path)
 	{
-		var contentRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var contentRoot = path ?? Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var fs = new FileSystem();
+		var dir = fs.DirectoryInfo.New(contentRoot);
+		if (!dir.Exists)
+			throw new Exception($"Can not serve empty directory: {contentRoot}");
+		if (!dir.IsSubPathOf(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)))
+			throw new Exception($"Can not serve directory outside of: {Paths.WorkingDirectoryRoot.FullName}");
 
 		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 		{

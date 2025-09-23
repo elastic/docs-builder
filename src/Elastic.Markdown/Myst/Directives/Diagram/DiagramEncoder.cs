@@ -59,9 +59,7 @@ public static class DiagramEncoder
 
 #if NET6_0_OR_GREATER
 		using (var zlibStream = level.HasValue ? new ZLibStream(memStream, level.Value, true) : new ZLibStream(memStream, CompressionMode.Compress, true))
-		{
 			zlibStream.Write(data);
-		}
 #else
 		// Reference: https://yal.cc/cs-deflatestream-zlib/#code
 

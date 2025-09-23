@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -44,7 +45,6 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 	{
 		{ "bibliography", 5 },
 		{ "blockquote", 6 },
-		{ "csv-table", 9 },
 		{ "iframe", 14 },
 		{ "list-table", 17 },
 		{ "myst", 22 },
@@ -65,7 +65,8 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "danger", 3 },
 		{ "error", 3 },
 		{ "hint", 3 },
-		{ "seealso", 3 }
+		{ "seealso", 3 },
+		{ "csv-table", 33 }
 	}.ToFrozenDictionary();
 
 	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
@@ -121,6 +122,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{settings}") > 0)
 			return new SettingsBlock(this, context);
+
+		if (info.IndexOf("{csv-include}") > 0)
+			return new CsvIncludeBlock(this, context);
 
 		foreach (var admonition in _admonitions)
 		{

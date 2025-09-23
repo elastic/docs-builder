@@ -10,16 +10,19 @@ namespace Elastic.Documentation.Configuration.Builder;
 
 public record RedirectFile
 {
-	public Dictionary<string, LinkRedirect>? Redirects { get; set; }
-	private IFileInfo Source { get; init; }
-	private IDocumentationSetContext Context { get; init; }
+	public Dictionary<string, LinkRedirect>? Redirects { get; }
+	public IFileInfo Source { get; }
+	private IDocumentationSetContext Context { get; }
 
-	public RedirectFile(IFileInfo source, IDocumentationSetContext context)
+	public RedirectFile(IDocumentationSetContext context, IFileInfo? source = null)
 	{
-		Source = source;
+		var docsetConfigurationPath = context.ConfigurationPath;
+		var redirectFileName = docsetConfigurationPath.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
+		var redirectFileInfo = docsetConfigurationPath.FileSystem.FileInfo.New(Path.Combine(docsetConfigurationPath.Directory!.FullName, redirectFileName));
+		Source = source ?? redirectFileInfo;
 		Context = context;
 
-		if (!source.Exists)
+		if (!Source.Exists)
 			return;
 
 		var reader = new YamlStreamReader(Source, Context.Collector);

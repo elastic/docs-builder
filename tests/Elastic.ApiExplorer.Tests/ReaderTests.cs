@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;

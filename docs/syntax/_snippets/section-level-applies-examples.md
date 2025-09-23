@@ -1,40 +1,41 @@
-* The whole page is generally applicable to {{stack}} 9.0 and to {{serverless-short}}, but one specific section isn’t applicable to {{serverless-short}} (and there is no alternative for it):
+:::::{dropdown} Applicable to Stack and Serverless, minus a section
 
-    ````md
-    --- 
-    applies_to:
-      stack: ga
-      serverless: ga
-    ---
+````markdown
+--- 
+applies_to:
+stack: ga
+serverless: ga
+---
 
-    # Spaces
+# Spaces
 
-    [...]
+[...]
 
-    ## Configure a space-level landing page [space-landing-page]
-    ```{applies_to}
-    serverless: unavailable
-    ```
-    ````
-    % I think we wanted to not specify stack here
+#### Configure a space-level landing page [space-landing-page]
+```{applies_to}
+serverless: unavailable
+```
+````
+:::::
 
-* The whole page is generally applicable to all deployment types, but one specific paragraph only applies to {{ech}} and {{serverless-short}}, and another paragraph only applies to {{ece}}:
+:::::{dropdown} Applicable to all deployment types, but some paragraphs are specific to other deployment types
 
-  ````md
-  ## Cloud organization level security [cloud-organization-level]
-  ```{applies_to}
-  deployment:
-    ess: ga
-  serverless: ga
-  ```
+````markdown
+#### Cloud organization level security [cloud-organization-level]
+```{applies_to}
+serverless: ga
+deployment:
+  ess: ga
+```
 
-  [...]
+[...]
 
-  ## Orchestrator level security [orchestrator-level]
-  ```{applies_to}
-  deployment:
-    ece: ga
-  ```
+#### Orchestrator level security [orchestrator-level]
+```{applies_to}
+deployment:
+  ece: ga
+```
 
-  [...]
-  ````
+[...]
+````
+:::::

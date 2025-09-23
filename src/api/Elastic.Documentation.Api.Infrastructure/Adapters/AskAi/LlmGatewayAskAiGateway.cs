@@ -40,7 +40,7 @@ public record LlmGatewayRequest(
 	public static LlmGatewayRequest CreateFromRequest(AskAiRequest request) =>
 		new(
 			UserContext: new UserContext("elastic-docs-v3@invalid"),
-			PlatformContext: new PlatformContext("support_portal", "support_assistant", []),
+			PlatformContext: new PlatformContext("docs_site", "docs_assistant", []),
 			Input:
 			[
 				new ChatInput("user", AskAiRequest.SystemPrompt),

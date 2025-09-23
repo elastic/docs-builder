@@ -282,9 +282,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 
 		// Render table body with aligned columns
 		foreach (var row in table.Skip(1).Cast<TableRow>())
-		{
 			RenderTableRowCells(renderer, row, columnWidths);
-		}
 	}
 
 	/// <summary>

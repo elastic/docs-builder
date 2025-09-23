@@ -2,17 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.LegacyDocs.Tests;
 
-public class LegacyPageCheckerTests
+public class LegacyPageServiceTests
 {
 	[Fact]
 	public void TestVersions()
 	{
-		var legacyPageChecker = new LegacyPageChecker();
+		var legacyPageChecker = new LegacyPageService(NullLoggerFactory.Instance);
 		var expected = new Dictionary<string, bool>
 		{
 			["8.0"] = false,

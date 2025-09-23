@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Serialization;
@@ -178,6 +177,9 @@ public record ProductApplicability
 
 	[YamlMember(Alias = "edot_cf_aws")]
 	public AppliesCollection? EdotCfAws { get; set; }
+
+	[YamlMember(Alias = "edot_cf_azure")]
+	public AppliesCollection? EdotCfAzure { get; set; }
 
 	[YamlMember(Alias = "edot_collector")]
 	public AppliesCollection? EdotCollector { get; set; }

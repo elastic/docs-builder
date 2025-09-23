@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -133,7 +131,6 @@ $"""
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
-		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
 
 		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();

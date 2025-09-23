@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Microsoft.Extensions.Hosting;
 
@@ -11,7 +12,7 @@ namespace Elastic.Documentation.Diagnostics;
 public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
 	: IDiagnosticsCollector
 {
-	private DiagnosticsChannel Channel { get; } = new();
+	public DiagnosticsChannel Channel { get; } = new();
 
 	private int _errors;
 	private int _warnings;

@@ -5,19 +5,18 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Links;
-using Elastic.Markdown.Links.CrossLinks;
+using Elastic.Documentation.Links.CrossLinks;
 using Xunit.Internal;
 
 namespace Elastic.Markdown.Tests;
 
 public class TestCrossLinkResolver : ICrossLinkResolver
 {
-	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
-	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
-	private Dictionary<string, RepositoryLinks> LinkReferences { get; } = [];
-	private HashSet<string> DeclaredRepositories { get; } = [];
+	private readonly FetchedCrossLinks _crossLinks;
 
-	public Task<FetchedCrossLinks> FetchLinks(Cancel ctx)
+	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
+
+	public TestCrossLinkResolver()
 	{
 		// language=json
 		var json = """
@@ -45,26 +44,26 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           	}
 		           """;
 		var reference = CrossLinkFetcher.Deserialize(json);
-		LinkReferences.Add("docs-content", reference);
-		LinkReferences.Add("kibana", reference);
-		DeclaredRepositories.AddRange(["docs-content", "kibana", "elasticsearch"]);
+		var linkReferences = new Dictionary<string, RepositoryLinks>();
+		var declaredRepositories = new HashSet<string>();
+		linkReferences.Add("docs-content", reference);
+		linkReferences.Add("kibana", reference);
+		declaredRepositories.AddRange(["docs-content", "kibana"]);
 
-		var indexEntries = LinkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
+		var indexEntries = linkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
 		{
 			Repository = e.Key,
-			Path = $"elastic/asciidocalypse/{e.Key}/links.json",
+			Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
 			Branch = "main",
 			ETag = Guid.NewGuid().ToString(),
 			GitReference = Guid.NewGuid().ToString()
 		});
 		_crossLinks = new FetchedCrossLinks
 		{
-			DeclaredRepositories = DeclaredRepositories,
-			LinkReferences = LinkReferences.ToFrozenDictionary(),
-			FromConfiguration = true,
+			DeclaredRepositories = declaredRepositories,
+			LinkReferences = linkReferences.ToFrozenDictionary(),
 			LinkIndexEntries = indexEntries.ToFrozenDictionary()
 		};
-		return Task.FromResult(_crossLinks);
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>

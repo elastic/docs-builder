@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
-using System.Linq;
 using System.Text.Json;
 using Elastic.Documentation;
 
@@ -39,9 +37,7 @@ public static class SubstitutionMutationHelper
 	{
 		var result = value;
 		foreach (var mutation in mutations)
-		{
 			result = ApplySingleMutation(result, mutation);
-		}
 		return result;
 	}
 
@@ -58,9 +54,7 @@ public static class SubstitutionMutationHelper
 		{
 			var trimmedMutation = mutationStr.Trim();
 			if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
-			{
 				result = ApplySingleMutation(result, mutation);
-			}
 		}
 		return result;
 	}

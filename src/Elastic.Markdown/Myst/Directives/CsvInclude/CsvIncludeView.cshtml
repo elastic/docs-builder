@@ -1,0 +1,46 @@
+@using Elastic.Markdown.Myst.Directives.CsvInclude
+@inherits RazorSlice<CsvIncludeViewModel>
+
+@{
+    var csvBlock = (CsvIncludeBlock)Model.DirectiveBlock;
+    if (!csvBlock.Found)
+    {
+        return;
+    }
+    
+    var csvRows = Model.GetCsvRows().ToList();
+    if (!csvRows.Any())
+    {
+        return;
+    }
+}
+
+<div class="table-wrapper">
+    @if (!string.IsNullOrEmpty(csvBlock.Caption))
+    {
+        <caption>@csvBlock.Caption</caption>
+    }
+    
+    <table>
+        <thead>
+            <tr>
+                @for (var i = 0; i < csvRows[0].Length; i++)
+                {
+                    <th>@csvRows[0][i]</th>
+                }
+            </tr>
+        </thead>
+        
+        <tbody>
+            @for (var rowIndex = 1; rowIndex < csvRows.Count; rowIndex++)
+            {
+                <tr>
+                    @for (var i = 0; i < csvRows[rowIndex].Length; i++)
+                    {
+                        <td>@csvRows[rowIndex][i]</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

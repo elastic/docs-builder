@@ -96,6 +96,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - file: csv-include.md
       - hidden: diagrams.md
       - file: dropdowns.md
       - file: definition-lists.md
@@ -128,6 +129,9 @@ toc:
       - file: req.md
       - folder: nested
       - file: cross-links.md
+        children:
+          - title: "Getting Started Guide"
+            crosslink: docs-content://get-started/introduction.md
       - file: custom-highlighters.md
       - hidden: archive.md
       - hidden: landing-page.md

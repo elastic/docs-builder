@@ -20,7 +20,7 @@ jobs:
   validate-assembler:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -44,9 +44,9 @@ jobs:
       run: 
         working-directory: src/Elastic.Documentation.Site
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           cache: npm
           cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
@@ -55,6 +55,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+        ## https://semgrep.dev/blog/2025/security-advisory-npm-packages-using-secret-scanning-tools-to-steal-credentials/
+      - name: Check shai-hulud attack
+        run: |
+          if find . -type f -name "*.js" -exec sha256sum {} \; | grep -q "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09"; then
+            echo "Vulnerable version of serialize-javascript found in:"
+            find . -type f -name "*.js" -exec sha256sum {} \; | grep "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09" | awk '{print $2}'
+            exit 1
+          fi
       - name: Lint
         run: npm run lint
       
@@ -78,7 +86,7 @@ jobs:
          - macos-latest
          - windows-latest
     steps:          
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -94,19 +102,24 @@ jobs:
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
+        if: ${{ matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
         run: dotnet run --project build -c release -- publishbinaries
+        
+      - name: Publish Containers
+        if: ${{ matrix.os == 'ubuntu-latest' }} 
+        env:
+          DOCKER_NO_PUBLISH: true
+        run: dotnet run --project build -c release -- publishcontainers
+        
+      - name: Run Container
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: dotnet run --project build -c release -- runlocalcontainer
+        
 
   integration:
-    if: false
-    runs-on: ubuntu-latest
+    runs-on: docs-builder-latest-16
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          tool-cache: false
-          dotnet: true
+      - uses: actions/checkout@v5
 
       - name: Bootstrap Action Workspace
         id: bootstrap

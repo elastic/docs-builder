@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0"/>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>72f50f33-6fb9-4d08-bff3-39568fe370b3</UserSecretsId>
+    <IsTestProject>false</IsTestProject>
+    <RootNamespace>Elastic.Documentation.Aspire</RootNamespace>
+    <NoWarn>IDE0350</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConsoleAppFramework" />
+    <PackageReference Include="Aspire.Hosting.AppHost"/>
+    <PackageReference Include="Elastic.Aspire.Hosting.Elasticsearch"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj" />
+    <ProjectReference Include="..\src\tooling\docs-assembler\docs-assembler.csproj"/>
+    <ProjectReference Include="..\src\tooling\docs-builder\docs-builder.csproj"/>
+    
+    <ProjectReference Include="..\src\tooling\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"  IsAspireProjectResource="false" />
+    <ProjectReference Include="..\src\Elastic.Documentation\Elastic.Documentation.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
+
+</Project>

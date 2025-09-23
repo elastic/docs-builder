@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
 using FluentAssertions;

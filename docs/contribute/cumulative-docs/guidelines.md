@@ -115,22 +115,37 @@ You generally do not need to tag:
 
 ### Versions
 
-Always put the newest version first when listing multiple versions. As a result, the lifecycles should be in reverse order of product development progression, too.
+When listing multiple versions, author the newest version first whenever possible. This keeps files consistent and easier to maintain.
+Regardless of the source file, the build system automatically builds badge lifecycles in reverse chronological order.
+This means that badges will always appear to users from newest to oldest, which is the reverse of the product development timeline.
 
-% TO DO: Add example / image
-% <image>
+For example:
 
-% Reference: https://elastic.github.io/docs-builder/versions/#defaults-and-hierarchy
-% Needs work...
+{applies_to}`stack: preview 9.0.5, beta 9.1, ga 9.2`
+
 ### Keys
 
-Always list [keys](/contribute/cumulative-docs/reference.md#key) in the same order for consistency. The order of keys should reflect organizational priorities. For example, use the following order:
-* **Serverless/Elastic Stack**: Serverless, Stack
-* **Deployment types**: Elastic Cloud Serverless, Elastic Cloud Hosted, Elastic Cloud on Kubernetes, Elastic Cloud Enterprise, Self-managed
-* **Monitoring for Java applications**: Elastic Distribution of OpenTelemetry (EDOT) Java, APM Java agent
+The build system automatically orders multiple [keys](/contribute/cumulative-docs/reference.md#key) in a consistent pattern. This reduces authoring overhead and makes content easier for users to scan.
 
-% TO DO: Add example / image
-% <image>
+:::{important}
+Key ordering only occurs if all keys are declared in the same directive. Keys declared seperately, for example: ``` {applies_to}`stack: ga` {applies_to}`serverless: preview` ```, will not be reordered by docs-builder.
+:::
+
+Keys are ordered as follows:
+
+1. **Stack/Serverless**: Stack, Serverless
+2. **Deployment types**: ECH (Elastic Cloud Hosted), ECK (Elastic Cloud on Kubernetes), ECE (Elastic Cloud Enterprise), Self-Managed
+3. **ProductApplicability**: ECCTL, Curator, EDOT items (alphabetically), APM Agent items (alphabetically)
+
+For example:
+
+```{applies_to}
+deployment:
+  ece: ga
+  self: ga
+stack: ga
+serverless: ga
+```
 
 ## Product and deployment model applicability [products-and-deployment-models]
 
@@ -163,11 +178,11 @@ Here are some common scenarios you might come across:
   % ([example](/contribute/cumulative-docs/example-scenarios.md#))
 * A whole page is generally applicable to Elastic Stack 9.0 and to Serverless,
   but one specific section isn’t applicable to Serverless.
-  ([example](/contribute/cumulative-docs/example-scenarios.md#not-one-section))
+  ([example](/contribute/cumulative-docs/example-scenarios.md#page-section-varies-product))
 * The whole page is generally applicable to all deployment types,
   but one specific paragraph only applies to Elastic Cloud Hosted and Serverless,
   and another paragraph only applies to Elastic Cloud Enterprise.
-  ([example](/contribute/cumulative-docs/example-scenarios.md#one-section))
+  ([example](/contribute/cumulative-docs/example-scenarios.md#page-section-varies-deployment))
 * Likewise, when the difference is specific to just one paragraph or list item, the same rules apply.
   Just the syntax slightly differs so that it stays inline.
   % TO DO: Add example
@@ -185,7 +200,7 @@ Here are some common scenarios you might come across:
 % Source: https://github.com/elastic/kibana/pull/229485/files#r2231876006
 * **Do _not_ use version numbers in prose**.
   Avoid using version numbers in prose adjacent to `applies_to` badge to prevent
-  confusion when the badge is rended with `Planned` ahead of a release.
+  confusion when the badge is rendered with `Planned` ahead of a release.
 * **Cumulative documentation is not meant to replace release notes.**
   * For example, if a feature becomes available in {{serverless-short}} and
     doesn’t have a particular lifecycle state to call out (preview, beta, deprecated…),

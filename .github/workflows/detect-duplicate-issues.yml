@@ -1,0 +1,328 @@
+---
+name: Detect Duplicate Issues
+
+on:
+  issues:
+    types:
+      - opened
+
+permissions:
+  contents: read
+  issues: write
+  models: read
+
+jobs:
+  detect-duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect potential duplicate issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+            
+            // Get the newly created issue
+            const { data: newIssue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber,
+            });
+            
+            // Skip if the issue is a pull request
+            if (newIssue.pull_request) {
+              console.log('Skipping pull request');
+              return;
+            }
+            
+            console.log('Analyzing issue #' + issueNumber + ': "' + newIssue.title + '"');
+            
+            // Get existing open issues (excluding the current one)
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            
+            // Filter out pull requests and the current issue
+            const openIssues = existingIssues.filter(issue => 
+              !issue.pull_request && issue.number !== issueNumber
+            );
+            
+            console.log('Found ' + openIssues.length + ' existing open issues to compare against');
+            
+            if (openIssues.length === 0) {
+              console.log('No existing issues to compare against');
+              return;
+            }
+            
+            // Use GitHub Models to find potential duplicates
+            const duplicates = [];
+            
+            if (openIssues.length === 0) {
+              console.log('No existing issues to compare against');
+              return;
+            }
+            
+            console.log('Analyzing ' + openIssues.length + ' existing issues for potential duplicates');
+            
+            try {
+              // Helper function to safely escape content for prompts
+              function sanitizeContent(content) {
+                if (!content) return 'No description provided';
+                return content.replace(/[`'"\\]/g, ' ').slice(0, 500); // Limit length and escape problematic chars
+              }
+              
+              // Helper function to retry AI calls with exponential backoff
+              async function retryApiCall(apiCallFn, maxRetries = 2) {
+                for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                  try {
+                    const response = await apiCallFn();
+                    if (response.ok) return response;
+                    
+                    if (attempt < maxRetries) {
+                      const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s delays
+                      console.log('API call failed, retrying in ' + delay + 'ms (attempt ' + (attempt + 1) + '/' + (maxRetries + 1) + ')');
+                      await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                      return response; // Return the failed response on final attempt
+                    }
+                  } catch (error) {
+                    if (attempt === maxRetries) throw error;
+                    const delay = Math.pow(2, attempt) * 1000;
+                    console.log('API call error, retrying in ' + delay + 'ms: ' + error.message);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                }
+              }
+              
+              // Limit the number of issues to analyze to prevent token overflow
+              const maxIssuesForAnalysis = Math.min(openIssues.length, 50); // Limit to 50 issues max
+              const issuesToAnalyze = openIssues.slice(0, maxIssuesForAnalysis);
+              
+              if (issuesToAnalyze.length < openIssues.length) {
+                console.log('Limiting analysis to ' + maxIssuesForAnalysis + ' most recent issues (out of ' + openIssues.length + ' total)');
+              }
+              
+              // Step 1: Send issue titles and numbers to get top 5 candidates
+              let titlePrompt = 'Analyze this NEW ISSUE against EXISTING ISSUES and identify the top 5 most similar ones:\n\n';
+              titlePrompt += 'NEW ISSUE:\n';
+              titlePrompt += 'Title: ' + sanitizeContent(newIssue.title) + '\n';
+              titlePrompt += 'Body: ' + sanitizeContent(newIssue.body) + '\n\n';
+              titlePrompt += 'EXISTING ISSUES:\n';
+              
+              issuesToAnalyze.forEach((issue, index) => {
+                titlePrompt += (index + 1) + '. Issue #' + issue.number + ' - ' + sanitizeContent(issue.title) + '\n';
+              });
+              
+              titlePrompt += '\nRespond with a JSON object containing the top 5 most similar issues. Format: {"similar_issues": [{"rank": 1, "issue_number": 123, "similarity": "high|medium"}, ...]}';
+              
+              const titleResponse = await retryApiCall(() => 
+                fetch('https://models.inference.ai.azure.com/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': 'Bearer ' + github.token,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messages: [
+                      {
+                        role: 'system',
+                        content: 'You are an expert at analyzing GitHub issues to detect duplicates. Compare issue titles and descriptions to identify the most similar ones. Respond only with valid JSON containing the top 5 most similar issues ranked by relevance. Use "high" for likely duplicates and "medium" for related issues.'
+                      },
+                      {
+                        role: 'user',
+                        content: titlePrompt
+                      }
+                    ],
+                    model: 'gpt-4o-mini',
+                    temperature: 0.1,
+                    max_tokens: 200
+                  })
+                })
+              );
+              
+              if (!titleResponse.ok) {
+                const errorText = await titleResponse.text();
+                console.log('First AI call failed after retries: ' + titleResponse.status + ' - ' + errorText);
+                return;
+              }
+              
+              const titleResult = await titleResponse.json();
+              const titleAnalysis = titleResult.choices[0]?.message?.content?.trim();
+              console.log('AI title analysis result: ' + titleAnalysis);
+              
+              // Parse JSON response to get top 5 candidates
+              let candidateIssueNumbers = [];
+              try {
+                const jsonMatch = titleAnalysis.match(/\{.*\}/s);
+                if (jsonMatch) {
+                  const jsonData = JSON.parse(jsonMatch[0]);
+                  candidateIssueNumbers = jsonData.similar_issues || [];
+                }
+              } catch (parseError) {
+                console.log('Failed to parse JSON response, falling back to number extraction');
+                // Fallback: extract issue numbers from response
+                const numberMatches = titleAnalysis.match(/#(\d+)/g);
+                if (numberMatches) {
+                  candidateIssueNumbers = numberMatches.slice(0, 5).map(match => ({
+                    issue_number: parseInt(match.replace('#', '')),
+                    similarity: 'medium'
+                  }));
+                }
+              }
+              
+              if (candidateIssueNumbers.length === 0) {
+                console.log('No candidate issues identified in first pass');
+                return;
+              }
+              
+              console.log('Found ' + candidateIssueNumbers.length + ' candidate issues from title analysis');
+              
+              // Step 2: Get full details for top candidates and do detailed analysis
+              const candidateIssues = [];
+              for (const candidate of candidateIssueNumbers) {
+                const issue = openIssues.find(i => i.number === candidate.issue_number);
+                if (issue) {
+                  candidateIssues.push({
+                    issue,
+                    initialSimilarity: candidate.similarity
+                  });
+                }
+              }
+              
+              if (candidateIssues.length === 0) {
+                console.log('No valid candidate issues found');
+                return;
+              }
+              
+              // Step 3: Detailed analysis with full issue bodies
+              let detailPrompt = 'Perform detailed comparison of this NEW ISSUE against the TOP CANDIDATE ISSUES:\n\n';
+              detailPrompt += 'NEW ISSUE:\n';
+              detailPrompt += 'Title: ' + sanitizeContent(newIssue.title) + '\n';
+              detailPrompt += 'Body: ' + sanitizeContent(newIssue.body) + '\n\n';
+              detailPrompt += 'CANDIDATE ISSUES FOR DETAILED ANALYSIS:\n';
+              
+              candidateIssues.forEach((candidate, index) => {
+                detailPrompt += (index + 1) + '. Issue #' + candidate.issue.number + '\n';
+                detailPrompt += '   Title: ' + sanitizeContent(candidate.issue.title) + '\n';
+                detailPrompt += '   Body: ' + sanitizeContent(candidate.issue.body) + '\n\n';
+              });
+              
+              detailPrompt += 'Respond with JSON format: {"duplicates": [{"issue_number": 123, "classification": "DUPLICATE|SIMILAR|DIFFERENT", "reason": "brief explanation"}]}';
+              
+              const detailResponse = await retryApiCall(() =>
+                fetch('https://models.inference.ai.azure.com/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': 'Bearer ' + github.token,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messages: [
+                      {
+                        role: 'system',
+                        content: 'You are an expert at analyzing GitHub issues for duplicates. Compare the full content and determine: DUPLICATE (same core problem), SIMILAR (related but different aspects), or DIFFERENT (unrelated). Respond only with valid JSON.'
+                      },
+                      {
+                        role: 'user',
+                        content: detailPrompt
+                      }
+                    ],
+                    model: 'gpt-4o-mini',
+                    temperature: 0.1,
+                    max_tokens: 300
+                  })
+                })
+              );
+              
+              if (detailResponse.ok) {
+                const detailResult = await detailResponse.json();
+                const detailAnalysis = detailResult.choices[0]?.message?.content?.trim();
+                console.log('AI detailed analysis result: ' + detailAnalysis);
+                
+                // Parse detailed analysis JSON
+                try {
+                  const jsonMatch = detailAnalysis.match(/\{.*\}/s);
+                  if (jsonMatch) {
+                    const jsonData = JSON.parse(jsonMatch[0]);
+                    const results = jsonData.duplicates || [];
+                    
+                    for (const result of results) {
+                      if (result.classification === 'DUPLICATE' || result.classification === 'SIMILAR') {
+                        const issue = candidateIssues.find(c => c.issue.number === result.issue_number)?.issue;
+                        if (issue) {
+                          duplicates.push({
+                            issue,
+                            similarity: result.classification === 'DUPLICATE' ? 'high' : 'medium'
+                          });
+                          console.log('Found ' + result.classification.toLowerCase() + ' issue: #' + issue.number + ' - ' + issue.title);
+                        }
+                      }
+                    }
+                  }
+                } catch (parseError) {
+                  console.log('Failed to parse detailed analysis JSON, using fallback');
+                  // Fallback: look for DUPLICATE/SIMILAR mentions
+                  candidateIssues.forEach(candidate => {
+                    const issueRef = '#' + candidate.issue.number;
+                    if (detailAnalysis.includes(issueRef) && 
+                        (detailAnalysis.includes('DUPLICATE') || detailAnalysis.includes('SIMILAR'))) {
+                      duplicates.push({
+                        issue: candidate.issue,
+                        similarity: detailAnalysis.includes('DUPLICATE') ? 'high' : 'medium'
+                      });
+                      console.log('Found similar issue (fallback): #' + candidate.issue.number + ' - ' + candidate.issue.title);
+                    }
+                  });
+                }
+              } else {
+                const errorText = await detailResponse.text();
+                console.log('Detailed analysis failed after retries: ' + detailResponse.status + ' - ' + errorText);
+              }
+              
+            } catch (error) {
+              console.log('Error in AI analysis: ' + error.message);
+            }
+            
+            // Post comment if duplicates found
+            if (duplicates.length > 0) {
+              const highPriority = duplicates.filter(d => d.similarity === 'high');
+              const mediumPriority = duplicates.filter(d => d.similarity === 'medium');
+              
+              let commentBody = '👋 **Potential duplicate issues detected**\n\n';
+              commentBody += 'This issue appears to be similar to existing open issues:\n\n';
+              
+              if (highPriority.length > 0) {
+                commentBody += '### 🚨 Likely Duplicates\n';
+                for (const { issue } of highPriority) {
+                  commentBody += '- #' + issue.number + ' - [' + issue.title + '](' + issue.html_url + ')\n';
+                }
+                commentBody += '\n';
+              }
+              
+              if (mediumPriority.length > 0) {
+                commentBody += '### 🔍 Similar Issues\n';
+                for (const { issue } of mediumPriority) {
+                  commentBody += '- #' + issue.number + ' - [' + issue.title + '](' + issue.html_url + ')\n';
+                }
+                commentBody += '\n';
+              }
+              
+              commentBody += 'Please review these issues to see if your issue is already covered. ';
+              commentBody += 'If this is indeed a duplicate, consider closing this issue and contributing to the existing discussion.\n\n';
+              commentBody += '---\n';
+              commentBody += '*This comment was automatically generated using AI to help identify potential duplicates.*';
+              
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: commentBody,
+              });
+              
+              console.log('Posted comment with ' + duplicates.length + ' potential duplicate(s)');
+            } else {
+              console.log('No potential duplicates found');
+            }

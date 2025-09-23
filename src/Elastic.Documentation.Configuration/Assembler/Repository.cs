@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections;
 using System.Runtime.Serialization;
 using YamlDotNet.Serialization;
 
@@ -35,6 +34,10 @@ public record Repository
 
 	[YamlMember(Alias = "skip")]
 	public bool Skip { get; set; }
+
+	/// <summary> Allows you to override the path to the repository, but only during local builds. </summary>
+	[YamlMember(Alias = "path")]
+	public string? Path { get; set; }
 
 	[YamlMember(Alias = "current")]
 	public string GitReferenceCurrent { get; set; } = "main";

@@ -73,36 +73,59 @@ let private publishZip _ =
             ]
     zip "docs-builder"
     zip "docs-assembler"
+    
+let private prNumber () =
+    match Environment.environVarOrNone "GITHUB_REF_NAME" with
+    | None -> None 
+    | Some s when s.EndsWith "/merge"  -> Some (s.Split('/') |> Seq.head)
+    | _ -> None
+
+let private imageTags () = 
+    let pr = prNumber()
+    let exitCode = exec {
+        validExitCode (fun _ -> true)
+        exit_code_of "git" "describe" "--tags" "--exact-match" "HEAD"
+    }
+    match (exitCode, pr) with
+    | 0, _ -> "edge;latest"
+    | _, None -> "edge"
+    | _, Some pr -> $"ci-%s{pr}"
+    
+let private runLocalContainer _ =
+    let tag =
+        match imageTags() with
+        | ci when ci.StartsWith("ci-") -> ci
+        | _ -> "edge"
+    let image = $"elastic/docs-builder:%s{tag}"
+    exec { run "docker" ["docker"; "run"; image; "--help"] }
 
 let private publishContainers _ =
 
     let createImage project =
-        let imageTag =
+        let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
+        let pr = prNumber()
+        let baseImageTag =
             match project with
-            | "docs-builder" -> "jammy-chiseled-aot"
-            | _ -> "jammy-chiseled-aot"
-        let labels =
-            let exitCode = exec {
-                validExitCode (fun _ -> true)
-                exit_code_of "git" "describe" "--tags" "--exact-match" "HEAD"
-            }
-            match exitCode with | 0 -> "edge;latest" | _ -> "edge"
+            | _ -> "9.0-noble-chiseled-aot"
+        let labels = imageTags()
         let args =
             ["publish"; $"src/tooling/%s{project}/%s{project}.csproj"]
             @ [
                 "/t:PublishContainer";
                 "-p"; "DebugType=none";
-                "-p"; $"ContainerBaseImage=mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-%s{imageTag}";
+                "-p"; $"ContainerBaseImage=mcr.microsoft.com/dotnet/nightly/runtime-deps:%s{baseImageTag}";
                 "-p"; $"ContainerImageTags=\"%s{labels};%s{Software.Version.Normalize()}\""
                 "-p"; $"ContainerRepository=elastic/%s{project}"
             ]
+            
+        let noPublish = Environment.environVarOrNone "DOCKER_NO_PUBLISH"
         let registry =
-            match Environment.environVarOrNone "GITHUB_ACTIONS" with
-            | None -> []
-            | Some _ -> [
-                "-p"; "ContainerRegistry=ghcr.io"
-                "-p"; "ContainerUser=1001:1001";
-            ]
+            match (ci, pr, noPublish) with
+            | Some _, None, None -> [
+                    "-p"; "ContainerRegistry=ghcr.io"
+                    "-p"; "ContainerUser=1001:1001";
+                ]
+            | _ -> []
         exec { run "dotnet" (args @ registry) }
     createImage "docs-builder"
     createImage "docs-assembler"
@@ -163,6 +186,7 @@ let Setup (parsed:ParseResults<Build>) =
         | PristineCheck -> Build.Step pristineCheck
         | PublishBinaries -> Build.Step publishBinaries
         | PublishContainers -> Build.Step publishContainers
+        | RunLocalContainer -> Build.Step runLocalContainer
         | PublishZip -> Build.Step publishZip
         | ValidateLicenses -> Build.Step validateLicenses
 

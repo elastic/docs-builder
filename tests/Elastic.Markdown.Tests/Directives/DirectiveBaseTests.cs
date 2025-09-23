@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using FluentAssertions;
@@ -85,7 +83,6 @@ $"""
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		await Set.LinkResolver.FetchLinks(TestContext.Current.CancellationToken);
 		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";

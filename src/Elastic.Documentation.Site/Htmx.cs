@@ -2,10 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Reflection;
 using System.Text;
-using System.Text.Encodings.Web;
-using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Site;
 

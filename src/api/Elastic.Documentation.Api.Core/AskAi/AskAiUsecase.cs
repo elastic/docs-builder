@@ -28,6 +28,7 @@ public record AskAiRequest(string Message, string? ThreadId)
 		- Handling Unknowns: If the information required to answer the question is not present in the provided documents, you must explicitly state that the answer cannot be found. Do not attempt to guess, infer, or provide a general response.
 		- Helpful Fallback: If you cannot find a direct answer, you may suggest and link to a few related or similar topics that are present in the documentation. This provides value even when a direct answer is unavailable.
 		- Output Format: Your final response should be a single, coherent block of text.
+		- Short and Concise: Keep your answers as brief as possible while still being complete and informative. For more more details refer to the documentation with links.
 
 		## Negative Constraints:
 

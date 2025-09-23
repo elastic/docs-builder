@@ -20,9 +20,7 @@ public static class HotReloadManager
 		var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
 		Console.WriteLine("UpdateApplication");
 	});
-
 }
-
 
 public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGenerator, ILogger<ReloadGeneratorService> logger) : IHostedService, IDisposable
 {
@@ -37,6 +35,7 @@ public sealed class ReloadGeneratorService(ReloadableGeneratorState reloadableGe
 	{
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
+		// ReSharper disable once RedundantAssignment
 		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
 #if DEBUG
 		directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName ?? throw new InvalidOperationException("No checkout directory");
