@@ -112,7 +112,7 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
 
 		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray());
 		_ = await generator.GenerateAll(ctx);
