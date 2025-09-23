@@ -2,8 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+using System.Linq;
 using System.Text;
 using Documentation.Assembler;
+using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
@@ -96,13 +99,13 @@ public class LlmsNavigationEnhancer
 
 		// Remove "docs/" prefix if present for the markdown filename
 		var markdownPath = cleanUrl;
-		if (markdownPath.StartsWith("docs/"))
+		if (markdownPath.StartsWith("docs/", StringComparison.Ordinal))
 			markdownPath = markdownPath.Substring(5);
 
 		// Convert directory URLs to .md files
 		if (markdownPath.EndsWith('/'))
 			markdownPath = markdownPath.TrimEnd('/') + ".md";
-		else if (!markdownPath.EndsWith(".md"))
+		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal))
 			markdownPath += ".md";
 
 		// Make absolute URL using the canonical base URL (always https://www.elastic.co for production)

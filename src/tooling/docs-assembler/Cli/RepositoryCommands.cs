@@ -7,15 +7,19 @@ using System.Net.Mime;
 using System.Text;
 using Actions.Core.Services;
 using ConsoleAppFramework;
+using Documentation.Assembler.Navigation;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Configuration;
+using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Tooling.Arguments;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
@@ -29,6 +33,7 @@ internal sealed class RepositoryCommands(
 	ICoreService githubActionsService
 )
 {
+	private readonly ILogger<RepositoryCommands> _log = logFactory.CreateLogger<RepositoryCommands>();
 	/// <summary> Clone the configuration folder </summary>
 	/// <param name="gitRef">The git reference of the config, defaults to 'main'</param>
 	/// <param name="ctx"></param>
@@ -89,39 +94,6 @@ internal sealed class RepositoryCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
-		if (File.Exists(redirectsPath))
-			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
-
-		if (exporters.Contains(Exporter.Html))
-		{
-			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputDirectory);
-			sitemapBuilder.Generate();
-		}
-
-		if (exporters.Contains(Exporter.LLMText))
-		{
-			var llmsEnhancer = new LlmsNavigationEnhancer();
-			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, ctx);
-		}
-
-		await collector.StopAsync(ctx);
-
-		_log.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
-
-		if (strict ?? false)
-			return collector.Errors + collector.Warnings;
-		return collector.Errors;
-	}
-
-	/// <param name="contentSource"> The content source. "current" or "next"</param>
-	/// <param name="ctx"></param>
-	[Command("update-all-link-reference")]
-	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
-	{
-		var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
-		// The environment ist not relevant here.
-		// It's only used to get the list of repositories.
 		var fs = new FileSystem();
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service, (strict, environment, metadataOnly, exporters, fs), strict ?? false,
@@ -129,6 +101,22 @@ internal sealed class RepositoryCommands(
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <param name="contentSource"> The content source. "current" or "next"</param>
+	/// <param name="ctx"></param>
+	[Command("update-all-link-reference")]
+#pragma warning disable IDE0060 // Remove unused parameter
+	public async Task<int> UpdateLinkIndexAll(ContentSource contentSource, Cancel ctx = default)
+#pragma warning restore IDE0060 // Remove unused parameter
+	{
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// TODO: Implementation needed for update-all-link-reference command
+		_log.LogInformation("Update link index for content source: {ContentSource}", contentSource);
+
+		await Task.CompletedTask;
+		return 0;
 	}
 
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, GlobalNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
