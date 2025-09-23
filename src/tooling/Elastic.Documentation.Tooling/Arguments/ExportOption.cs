@@ -3,11 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
-using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Tooling.Exporters;
-using Elastic.Markdown.Exporters;
-using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Tooling.Arguments;
@@ -52,32 +47,5 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 		foreach (var option in defaultSet)
 			_ = set.Add(option);
 		return null;
-	}
-}
-
-public static class ExporterExtensions
-{
-
-	public static IReadOnlyCollection<IMarkdownExporter> CreateMarkdownExporters(
-		this IReadOnlySet<Exporter> exportOptions,
-		ILoggerFactory logFactory,
-		IDocumentationConfigurationContext context,
-		PublishEnvironment? environment = null
-	)
-	{
-		var markdownExporters = new List<IMarkdownExporter>(3);
-		if (exportOptions.Contains(LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter());
-		if (exportOptions.Contains(Exporter.Configuration))
-			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
-		if (exportOptions.Contains(Elasticsearch))
-			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints));
-		if (exportOptions.Contains(SemanticElasticsearch))
-		{
-			if (environment is null)
-				throw new ArgumentNullException(nameof(environment), "A publish environment is required when using the semantic elasticsearch exporter");
-			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(environment, logFactory, context.Collector, context.Endpoints));
-		}
-		return markdownExporters;
 	}
 }

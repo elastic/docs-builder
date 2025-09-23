@@ -147,6 +147,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "diff-validate", "diff-valid
 		actions\diff-validate\action.yml = actions\diff-validate\action.yml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{7AACA67B-3C56-4C7C-9891-558589FC52DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Assembler", "src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj", "{094433A4-504F-4E12-959F-CCB1965C1C9A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Services", "src\services\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj", "{E6EA955D-D0A7-4749-9586-0F7256EF5C5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Links", "src\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj", "{153FC4AD-F5B0-4100-990E-0987C86DBF01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Isolated", "src\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj", "{AABD3EF7-8C86-4981-B1D2-B1F786F33069}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -256,6 +266,22 @@ Global
 		{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{094433A4-504F-4E12-959F-CCB1965C1C9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{094433A4-504F-4E12-959F-CCB1965C1C9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{094433A4-504F-4E12-959F-CCB1965C1C9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{094433A4-504F-4E12-959F-CCB1965C1C9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6EA955D-D0A7-4749-9586-0F7256EF5C5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6EA955D-D0A7-4749-9586-0F7256EF5C5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6EA955D-D0A7-4749-9586-0F7256EF5C5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6EA955D-D0A7-4749-9586-0F7256EF5C5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{153FC4AD-F5B0-4100-990E-0987C86DBF01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{153FC4AD-F5B0-4100-990E-0987C86DBF01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{153FC4AD-F5B0-4100-990E-0987C86DBF01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{153FC4AD-F5B0-4100-990E-0987C86DBF01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
@@ -293,5 +319,10 @@ Global
 		{AE3FC78E-167F-4B6E-88EC-84743EB748B7} = {B042CC78-5060-4091-B95A-79C71BA3908A}
 		{C6A121C5-DEB1-4FCE-9140-AF144EA98EEE} = {B042CC78-5060-4091-B95A-79C71BA3908A}
 		{E7C7A02B-9AB4-455A-9A64-3D326ED1A95A} = {245023D2-D3CA-47B9-831D-DAB91A2FFDC7}
+		{7AACA67B-3C56-4C7C-9891-558589FC52DB} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{094433A4-504F-4E12-959F-CCB1965C1C9A} = {7AACA67B-3C56-4C7C-9891-558589FC52DB}
+		{E6EA955D-D0A7-4749-9586-0F7256EF5C5E} = {7AACA67B-3C56-4C7C-9891-558589FC52DB}
+		{153FC4AD-F5B0-4100-990E-0987C86DBF01} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
+		{AABD3EF7-8C86-4981-B1D2-B1F786F33069} = {7AACA67B-3C56-4C7C-9891-558589FC52DB}
 	EndGlobalSection
 EndGlobal

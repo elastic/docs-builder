@@ -137,26 +137,23 @@ This is an inline {applies_to}`stack: preview 9.0, ga 9.1` element.
         ))
 
     [<Fact>]
-    let ``validate HTML: generates link and alt attr`` () =
+    let ``validate HTML: generates single combined badge`` () =
         markdown |> convertsToHtml """
 <p>This is an inline
 	<span class="applies applies-inline">
-		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+		<span class="applicable-info" data-tippy-content="Elastic&nbsp;Stack GA 9.1.0:
+We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
-			<span class="applicable-name">Stack</span>
-			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-ga">
-				GA planned
-			</span>
-		</span>
-		<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.
+
+Elastic&nbsp;Stack Preview 9.0.0:
+We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
 This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
 			<span class="applicable-name">Stack</span>
 			<span class="applicable-separator"></span>
-			<span class="applicable-meta applicable-meta-preview">
-				Planned
+			<span class="applicable-meta applicable-meta-ga">
+				GA planned
 			</span>
 		</span>
 	</span>

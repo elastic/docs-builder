@@ -16,9 +16,17 @@ public static class Paths
 	private static DirectoryInfo DetermineWorkingDirectoryRoot()
 	{
 		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
-		while (directory != null &&
-			   (directory.GetFiles("*.sln").Length == 0 || directory.GetDirectories(".git").Length == 0))
+		while (directory != null)
+		{
+			if (directory.GetFiles("*.sln").Length > 0)
+				break;
+			if (directory.GetDirectories(".git").Length > 0)
+				break;
+			// support for git worktrees
+			if (directory.GetFiles(".git").Length > 0)
+				break;
 			directory = directory.Parent;
+		}
 		return directory ?? new DirectoryInfo(Directory.GetCurrentDirectory());
 	}
 
@@ -27,12 +35,20 @@ public static class Paths
 		IDirectoryInfo? sourceRoot = null;
 		var directory = sourceDirectory;
 		while (directory != null && directory.GetDirectories(".git").Length == 0)
+		{
+			if (directory.GetDirectories(".git").Length > 0)
+				break;
+			// support for git worktrees
+			if (directory.GetFiles(".git").Length > 0)
+				break;
+
 			directory = directory.Parent;
+		}
 		sourceRoot ??= directory;
 		return sourceRoot;
 	}
 
-	/// Used in debug to locate static folder so we can change js/css files while the server is running
+	/// Used in debug to locate static folder, so we can change js/css files while the server is running
 	public static DirectoryInfo? GetSolutionDirectory()
 	{
 		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
