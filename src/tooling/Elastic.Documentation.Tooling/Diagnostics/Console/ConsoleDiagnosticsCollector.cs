@@ -11,8 +11,7 @@ using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 namespace Elastic.Documentation.Tooling.Diagnostics.Console;
 
 public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService? githubActions = null)
-	: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)]
-	)
+	: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)])
 {
 	private readonly List<Diagnostic> _errors = [];
 	private readonly List<Diagnostic> _warnings = [];
