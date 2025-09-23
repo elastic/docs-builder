@@ -123,6 +123,18 @@ public class LlmsNavigationEnhancer
 		DocumentationGroup group when group.Index is MarkdownFile indexFile
 			=> indexFile.YamlFrontMatter?.Description,
 
-		_ => null
+		// For table of contents trees (inherits from DocumentationGroup, but handled explicitly)
+		TableOfContentsTree tocTree when tocTree.Index is MarkdownFile indexFile
+			=> indexFile.YamlFrontMatter?.Description,
+
+		// Cross-repository links don't have descriptions in frontmatter
+		CrossLinkNavigationItem => null,
+
+		// API-related navigation items (these don't have markdown frontmatter)
+		// Check by namespace to avoid direct assembly references
+		INavigationItem item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
+
+		// Throw exception for any unhandled navigation item types
+		_ => throw new InvalidOperationException($"Unhandled navigation item type: {navigationItem.GetType().FullName}")
 	};
 }
