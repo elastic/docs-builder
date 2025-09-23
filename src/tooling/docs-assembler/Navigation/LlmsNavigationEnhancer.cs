@@ -32,8 +32,7 @@ public class LlmsNavigationEnhancer
 				continue;
 
 			// Create H2 section for the category
-			var categoryTitle = GetCategoryDisplayName(group.NavigationTitle);
-			_ = content.AppendLine($"## {categoryTitle}");
+			_ = content.AppendLine($"## {group.NavigationTitle}");
 			_ = content.AppendLine();
 
 			// Get first-level children
@@ -58,22 +57,6 @@ public class LlmsNavigationEnhancer
 		return content.ToString();
 	}
 
-	private static string GetCategoryDisplayName(string navigationTitle) =>
-		// Convert navigation titles to display names
-		navigationTitle switch
-		{
-			"Get started" => "Get started",
-			"Solutions" => "Solutions",
-			"Manage data" => "Manage data",
-			"Explore and analyze" => "Explore and analyze",
-			"Deploy and manage" => "Deploy and manage",
-			"Manage your Cloud account and preferences" => "Manage your Cloud account",
-			"Troubleshoot" => "Troubleshoot",
-			"Extend and contribute" => "Extend and contribute",
-			"Release notes" => "Release notes",
-			"Reference" => "Reference",
-			_ => navigationTitle
-		};
 
 	private static IEnumerable<INavigationItem> GetFirstLevelChildren(DocumentationGroup group) =>
 		group.NavigationItems.Where(i => !i.Hidden);
