@@ -329,7 +329,7 @@ public class MappedPagesNotAbsoluteUri(ITestOutputHelper output) : DirectiveTest
 	"""
 )
 {
-	[Fact] 
+	[Fact]
 	public void HasErrorsForNotAbsoluteUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
