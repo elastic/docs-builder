@@ -38,7 +38,7 @@ public class LlmsNavigationEnhancer
 			// Get first-level children
 			var firstLevelChildren = GetFirstLevelChildren(group);
 
-			if (firstLevelChildren.Count > 0)
+			if (firstLevelChildren.Any())
 			{
 				foreach (var child in firstLevelChildren)
 				{
@@ -74,22 +74,8 @@ public class LlmsNavigationEnhancer
 			_ => navigationTitle
 		};
 
-	private static List<INavigationItem> GetFirstLevelChildren(DocumentationGroup group)
-	{
-		var children = new List<INavigationItem>();
-
-		foreach (var item in group.NavigationItems)
-		{
-			// Only include non-hidden items
-			if (item.Hidden)
-				continue;
-
-			// Add the item to our list
-			children.Add(item);
-		}
-
-		return children;
-	}
+	private static IEnumerable<INavigationItem> GetFirstLevelChildren(DocumentationGroup group) =>
+		group.NavigationItems.Where(i => !i.Hidden);
 
 	private static string ConvertToAbsoluteMarkdownUrl(string url)
 	{
