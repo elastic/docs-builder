@@ -31,8 +31,9 @@ public class LlmsNavigationEnhancer
 			if (topLevelItem is not DocumentationGroup group)
 				continue;
 
-			// Create H2 section for the category
-			_ = content.AppendLine($"## {group.NavigationTitle}");
+			// Create H2 section for the category - use H1 title if available, fallback to navigation title
+			var categoryTitle = GetBestTitle(group);
+			_ = content.AppendLine($"## {categoryTitle}");
 			_ = content.AppendLine();
 
 			// Get first-level children
@@ -42,7 +43,7 @@ public class LlmsNavigationEnhancer
 			{
 				foreach (var child in firstLevelChildren)
 				{
-					var title = child.NavigationTitle;
+					var title = GetBestTitle(child);
 					var url = LlmRenderingHelpers.ConvertToAbsoluteMarkdownUrl(child.Url);
 					var description = GetDescription(child);
 
@@ -61,6 +62,26 @@ public class LlmsNavigationEnhancer
 	private static IEnumerable<INavigationItem> GetFirstLevelChildren(DocumentationGroup group) =>
 		group.NavigationItems.Where(i => !i.Hidden);
 
+	/// <summary>
+	/// Gets the best title for a navigation item, preferring H1 content over navigation title
+	/// </summary>
+	private static string GetBestTitle(INavigationItem navigationItem) => navigationItem switch
+	{
+		// For file navigation items, prefer the H1 title from the markdown content
+		FileNavigationItem fileItem when !string.IsNullOrEmpty(fileItem.Model.Title)
+			=> fileItem.Model.Title,
+		FileNavigationItem fileItem
+			=> fileItem.NavigationTitle,
+
+		// For documentation groups, prefer the H1 title from the index file
+		DocumentationGroup group when !string.IsNullOrEmpty(group.Index?.Title)
+			=> group.Index.Title,
+		DocumentationGroup group
+			=> group.NavigationTitle,
+
+		// For other navigation item types, use the navigation title
+		_ => navigationItem.NavigationTitle
+	};
 
 	private static string? GetDescription(INavigationItem navigationItem) => navigationItem switch
 	{
