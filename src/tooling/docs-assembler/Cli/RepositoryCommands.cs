@@ -289,15 +289,18 @@ internal sealed class RepositoryCommands(
 	{
 		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
 
-		if (!File.Exists(llmsTxtPath))
+		var readFs = context.ReadFileSystem;
+		if (!readFs.File.Exists(llmsTxtPath))
 			return; // No llms.txt file to enhance
 
-		var existingContent = await File.ReadAllTextAsync(llmsTxtPath, ctx);
+		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
 		var navigationSections = enhancer.GenerateNavigationSections(navigation);
 
 		// Append the navigation sections to the existing boilerplate
 		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
 
-		await File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
+		var writeFs = context.WriteFileSystem;
+		await writeFs.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
+
 	}
 }
