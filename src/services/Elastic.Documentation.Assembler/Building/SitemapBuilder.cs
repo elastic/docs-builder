@@ -31,7 +31,7 @@ public class SitemapBuilder(
 
 		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
-		var currentDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture);
+		var currentDate = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
 		var root = new XElement(
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
