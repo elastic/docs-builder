@@ -268,22 +268,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
 	{
 		// Parse the applies_to definition to get the ApplicableTo object
-		ApplicableTo? appliesTo = null;
-		try
-		{
-			appliesTo = ApplicableToParser.ParseApplicableTo(block.AppliesToDefinition);
-			if (appliesTo?.Diagnostics is not null)
-			{
-				foreach (var (severity, message) in appliesTo.Diagnostics)
-					block.Emit(severity, message);
-				appliesTo.Diagnostics = null;
-			}
-		}
-		catch (Exception e)
-		{
-			block.EmitError($"Unable to parse applies_to definition: {block.AppliesToDefinition}", e);
-		}
-
+		var appliesTo = ApplicableToParser.ParseApplicableTo(block.AppliesToDefinition);
 		var slice = AppliesItemView.Create(new AppliesItemViewModel
 		{
 			DirectiveBlock = block,

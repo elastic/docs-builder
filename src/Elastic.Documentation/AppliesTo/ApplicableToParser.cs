@@ -29,23 +29,20 @@ public static class ApplicableToParser
 	/// <returns>The parsed ApplicableTo object, or null if parsing failed</returns>
 	public static ApplicableTo? ParseApplicableTo(string yaml)
 	{
-		// Check cache first
 		if (ParsedCache.TryGetValue(yaml, out var cached))
 			return cached;
 
-		// Parse and cache the result
 		ApplicableTo? parsed = null;
 		try
 		{
 			parsed = Deserializer.Deserialize<ApplicableTo>(yaml);
+			_ = ParsedCache.TryAdd(yaml, parsed);
 		}
-		catch
+		catch (Exception ex)
 		{
-			// If parsing fails, cache null to avoid retrying
+			System.Diagnostics.Debug.WriteLine($"Failed to parse ApplicableTo YAML: {yaml}. Error: {ex.Message}");
 		}
 
-		// Cache the result (including null for failed parses)
-		_ = ParsedCache.TryAdd(yaml, parsed);
 		return parsed;
 	}
 
