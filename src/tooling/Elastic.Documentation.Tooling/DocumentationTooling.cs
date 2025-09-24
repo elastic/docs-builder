@@ -34,8 +34,8 @@ public static class DocumentationTooling
 			{
 				var logFactory = sp.GetRequiredService<ILoggerFactory>();
 				var githubActionsService = sp.GetRequiredService<ICoreService>();
-				var isHelp = sp.GetRequiredService<CliInvocation>();
-				if (isHelp.IsHelpOrVersion)
+				var globalArgs = sp.GetRequiredService<GlobalCliArgs>();
+				if (globalArgs.IsHelpOrVersion)
 					return new DiagnosticsCollector([]);
 				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})
@@ -101,8 +101,6 @@ public static class DocumentationTooling
 		}
 		return null;
 	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static Uri ResolveServiceEndpoint(ServiceEndpointResolver resolver, Func<string> fallback)

@@ -39,7 +39,8 @@ public class SingleCommitOptimizedGitRepository(IDiagnosticsCollector collector,
 	public bool IsInitialized() => Directory.Exists(Path.Combine(WorkingDirectory.FullName, ".git"));
 	public void Pull(string branch) => ExecIn(EnvironmentVars, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
 	public void Fetch(string reference) => ExecIn(EnvironmentVars, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
-	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", .. folders]);
+	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
+
 	public void DisableSparseCheckout() => ExecIn(EnvironmentVars, "git", "sparse-checkout", "disable");
 	public void Checkout(string reference) => ExecIn(EnvironmentVars, "git", "checkout", "--force", reference);
 

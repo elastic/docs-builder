@@ -6,40 +6,70 @@ using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
 using Microsoft.Extensions.DependencyInjection;
-using NetEscapades.EnumGenerators;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Configuration;
-
-[EnumExtensions]
-public enum ConfigurationSource
-{
-	Local,
-	Checkout,
-	Embedded
-}
 
 public partial class ConfigurationFileProvider
 {
 	private readonly IFileSystem _fileSystem;
 	private readonly string _assemblyName;
+	private readonly ILogger<ConfigurationFileProvider> _logger;
 
-	public ConfigurationSource ConfigurationSource { get; private set; } = ConfigurationSource.Embedded;
+	public ConfigurationSource ConfigurationSource { get; }
 	public string? GitReference { get; }
 
-	public ConfigurationFileProvider(IFileSystem fileSystem, bool skipPrivateRepositories = false)
+	public ConfigurationFileProvider(
+		ILoggerFactory logFactory,
+		IFileSystem fileSystem,
+		bool skipPrivateRepositories = false,
+		ConfigurationSource? configurationSource = null
+	)
 	{
+		_logger = logFactory.CreateLogger<ConfigurationFileProvider>();
 		_fileSystem = fileSystem;
 		_assemblyName = typeof(ConfigurationFileProvider).Assembly.GetName().Name!;
 		SkipPrivateRepositories = skipPrivateRepositories;
 		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
 
+		ConfigurationSource = configurationSource ?? (
+			fileSystem.Directory.Exists(LocalConfigurationDirectory)
+				? ConfigurationSource.Local : ConfigurationSource.Embedded
+			);
+
+		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
+			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
+
+		if (ConfigurationSource == ConfigurationSource.Remote && !fileSystem.Directory.Exists(AppDataConfigurationDirectory))
+			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)} directory {AppDataConfigurationDirectory} does not exist.");
+
+		var path = GetAppDataPath("git-ref.txt");
+		if (_fileSystem.File.Exists(path))
+			GitReference = _fileSystem.File.ReadAllText(path);
+		else if (ConfigurationSource == ConfigurationSource.Remote)
+			throw new Exception($"Can not read git-ref.txt in directory {LocalConfigurationDirectory}");
+
+		if (ConfigurationSource == ConfigurationSource.Remote)
+		{
+			_logger.LogInformation("{ConfigurationSource}: git ref '{GitReference}', in {Directory}",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)}", GitReference, AppDataConfigurationDirectory);
+		}
+
+		if (ConfigurationSource == ConfigurationSource.Local)
+		{
+			_logger.LogInformation("{ConfigurationSource}: located {Directory}",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}", LocalConfigurationDirectory);
+		}
+		if (ConfigurationSource == ConfigurationSource.Embedded)
+		{
+			_logger.LogInformation("{ConfigurationSource} using embedded in binary configuration",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Embedded)}");
+		}
+
 		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
-		var path = GetAppDataPath("git-ref.txt");
-		if (ConfigurationSource == ConfigurationSource.Checkout && _fileSystem.File.Exists(path))
-			GitReference = _fileSystem.File.ReadAllText(path);
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -65,6 +95,8 @@ public partial class ConfigurationFileProvider
 		var tempFile = Path.Combine(TemporaryDirectory.FullName, "navigation.filtered.yml");
 		if (_fileSystem.File.Exists(tempFile))
 			return NavigationFile;
+
+		_logger.LogInformation("Filtering navigation file to remove private repositories");
 
 		// This routine removes `toc: `'s linking to private repositories and reindents any later lines if needed.
 		// This will make any public children in the nav move up one place.
@@ -139,19 +171,22 @@ public partial class ConfigurationFileProvider
 	private StreamReader GetLocalOrEmbedded(string fileName)
 	{
 		var localPath = GetLocalPath(fileName);
-		var appDataPath = GetAppDataPath(fileName);
-		if (_fileSystem.File.Exists(localPath))
+		if (ConfigurationSource == ConfigurationSource.Local && _fileSystem.File.Exists(localPath))
 		{
-			ConfigurationSource = ConfigurationSource.Local;
 			var reader = _fileSystem.File.OpenText(localPath);
 			return reader;
 		}
-		if (_fileSystem.File.Exists(appDataPath))
+		if (ConfigurationSource == ConfigurationSource.Local)
+			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
+
+		var appDataPath = GetAppDataPath(fileName);
+		if (ConfigurationSource == ConfigurationSource.Remote && _fileSystem.File.Exists(appDataPath))
 		{
-			ConfigurationSource = ConfigurationSource.Checkout;
 			var reader = _fileSystem.File.OpenText(appDataPath);
 			return reader;
 		}
+		if (ConfigurationSource == ConfigurationSource.Remote)
+			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
 		return GetEmbeddedStream(fileName);
 	}
 
@@ -163,24 +198,26 @@ public partial class ConfigurationFileProvider
 		return reader;
 	}
 
-	private static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
-	private static string LocalConfigurationDirectory { get; } = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
+	public static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
+	public static string LocalConfigurationDirectory { get; } = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
 
 	private static string GetLocalPath(string file) => Path.Combine(LocalConfigurationDirectory, file);
 	private static string GetAppDataPath(string file) => Path.Combine(AppDataConfigurationDirectory, file);
+
 	[GeneratedRegex(@"^\s+-?\s?toc:\s?")]
 	private static partial Regex TocPrefixRegex();
 }
 
 public static class ConfigurationFileProviderServiceCollectionExtensions
 {
-	public static IServiceCollection AddConfigurationFileProvider(
-		this IServiceCollection services,
+	public static IServiceCollection AddConfigurationFileProvider(this IServiceCollection services,
 		bool skipPrivateRepositories,
-		Action<IServiceCollection, ConfigurationFileProvider> configure
-	)
+		ConfigurationSource? configurationSource,
+		Action<IServiceCollection, ConfigurationFileProvider> configure)
 	{
-		var provider = new ConfigurationFileProvider(new FileSystem(), skipPrivateRepositories);
+		using var sp = services.BuildServiceProvider();
+		var logFactory = sp.GetRequiredService<ILoggerFactory>();
+		var provider = new ConfigurationFileProvider(logFactory, new FileSystem(), skipPrivateRepositories, configurationSource);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;
