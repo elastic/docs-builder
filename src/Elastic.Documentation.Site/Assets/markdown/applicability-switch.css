@@ -1,14 +1,14 @@
 @layer components {
 	.applies-switch {
 		@apply relative mt-4 flex flex-wrap overflow-hidden;
-		
+
 		.applicable-info {
 			@apply border-none bg-transparent;
 		}
 
 		.applicable-name,
 		.applicable-meta {
-			@apply text-sm!
+			@apply text-sm!;
 		}
 
 		.applies-switch-label {
@@ -30,7 +30,9 @@
 			@apply border-grey-20 z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
 		}
 
-		.applies-switch-input:checked + .applies-switch-label + .applies-switch-content {
+		.applies-switch-input:checked
+			+ .applies-switch-label
+			+ .applies-switch-content {
 			@apply block;
 		}
 

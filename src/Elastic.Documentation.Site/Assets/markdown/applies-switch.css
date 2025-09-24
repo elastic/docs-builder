@@ -1,7 +1,7 @@
 @layer components {
 	.applies-switch {
 		@apply relative mt-4 flex flex-wrap overflow-hidden;
-		
+
 		.applies-switch-label {
 			@apply text-ink-light border-grey-20 z-20 -mb-[1px] flex cursor-pointer items-center border-1 px-3 py-2;
 			&:not(:nth-of-type(1)) {
@@ -21,7 +21,9 @@
 			@apply border-grey-20 z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
 		}
 
-		.applies-switch-input:checked + .applies-switch-label + .applies-switch-content {
+		.applies-switch-input:checked
+			+ .applies-switch-label
+			+ .applies-switch-content {
 			@apply block;
 		}
 
