@@ -18,13 +18,13 @@ mappings:
     legacy_versions: [ '1.x', '0.5' ]
   en/apm/agent/java/:
     product: apm-agent-java
-    legacy_versions: [ '1.54.0', '0.7', '0.6']
+    legacy_versions: [ '0.7', '0.6']
   en/apm/agent/nodejs/:
     product: apm-agent-node
-    legacy_versions: [ '4.x', '3.x', '2.x', '1.x' ]
+    legacy_versions: [ '3.x', '2.x', '1.x' ]
   en/apm/agent/php/:
     product: apm-agent-php
-    legacy_versions: [ '1.x' ]
+    legacy_versions: []
   en/apm/agent/python/:
     product: apm-agent-python
     legacy_versions: [ '5.x', '4.x', '3.x', '2.x', '1.x' ]
@@ -36,7 +36,7 @@ mappings:
     legacy_versions: [ '4.x', '3.x', '2.x', '1.x', '0.x' ]
   en/apm/agent/swift/:
     product: edot-ios
-    legacy_versions: [ '1.2.1', '0.x' ]
+    legacy_versions: [ '0.x' ]
   en/apm/attacher/:
     product: apm-k8s-attacher
     legacy_versions: []
@@ -123,7 +123,7 @@ mappings:
     legacy_versions: []
   en/ecs-logging/python/:
     product: ecs-logging-python
-    legacy_versions: [ '2.2.0' ]
+    legacy_versions: []
   en/ecs-logging/ruby/:
     product: ecs-logging-ruby
     legacy_versions: []

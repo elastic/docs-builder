@@ -131,6 +131,9 @@ products:
   edot-cf-aws:
     display: 'EDOT Cloud Forwarder for AWS'
     versioning: 'edot_cf_aws'
+  edot-cf-azure:
+    display: 'EDOT Cloud Forwarder for Azure'
+    versioning: 'edot_cf_azure'
   eland:
     display: 'Eland'
     versioning: 'stack'

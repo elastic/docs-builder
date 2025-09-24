@@ -4,7 +4,6 @@
 
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Legacy;
 
 namespace Elastic.Documentation.LegacyDocs;
 
@@ -31,7 +30,7 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 
 		if (LegacyUrlMappings.Mappings.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)) is not { } legacyMappingMatch)
 		{
-			return [new LegacyPageMapping(LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic-stack", StringComparison.InvariantCultureIgnoreCase)).Product, mappedPages.FirstOrDefault() ?? string.Empty, DefaultVersion, false)];
+			return [new LegacyPageMapping(LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic-stack", StringComparison.OrdinalIgnoreCase)).Product, mappedPages.FirstOrDefault() ?? string.Empty, DefaultVersion, false)];
 		}
 
 		var allVersions = new List<LegacyPageMapping>();

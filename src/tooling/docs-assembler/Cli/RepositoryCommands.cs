@@ -6,9 +6,13 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler.Building;
+using Elastic.Documentation.Assembler.Configuration;
+using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Services;
 using Elastic.Documentation.Tooling.Arguments;
 using Microsoft.Extensions.Logging;
 
