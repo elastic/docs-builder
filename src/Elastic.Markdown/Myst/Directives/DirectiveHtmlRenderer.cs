@@ -268,7 +268,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
 	{
 		// Parse the applies_to definition to get the ApplicableTo object
-		var appliesTo = ParseApplicableTo(block.AppliesToDefinition, block);
+		var appliesTo = ApplicableToParser.ParseApplicableTo(block.AppliesToDefinition);
 		var slice = AppliesItemView.Create(new AppliesItemViewModel
 		{
 			DirectiveBlock = block,
@@ -283,25 +283,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer);
 	}
 
-	private static ApplicableTo? ParseApplicableTo(string yaml, DirectiveBlock block)
-	{
-		try
-		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
-			if (applicableTo.Diagnostics is null)
-				return applicableTo;
-			foreach (var (severity, message) in applicableTo.Diagnostics)
-				block.Emit(severity, message);
-			applicableTo.Diagnostics = null;
-			return applicableTo;
-		}
-		catch (Exception e)
-		{
-			block.EmitError($"Unable to parse applies_to definition: {yaml}", e);
-		}
-
-		return null;
-	}
 
 	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
 	{

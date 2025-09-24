@@ -69,18 +69,11 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 	{
 		// Parse the YAML to get the ApplicableTo object, then use its hash
 		// This ensures both simple syntax and YAML objects produce consistent sync keys
-		try
+		var applicableTo = ApplicableToParser.ParseApplicableTo(appliesToDefinition);
+		if (applicableTo != null)
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition);
-			if (applicableTo != null)
-			{
-				// Use the object's hash for a consistent, unique identifier
-				return $"applies-{Math.Abs(applicableTo.GetHashCode())}";
-			}
-		}
-		catch
-		{
-			// If parsing fails, fall back to the original definition
+			// Use the object's hash for a consistent, unique identifier
+			return $"applies-{Math.Abs(applicableTo.GetHashCode())}";
 		}
 
 		// Fallback to original definition if parsing fails

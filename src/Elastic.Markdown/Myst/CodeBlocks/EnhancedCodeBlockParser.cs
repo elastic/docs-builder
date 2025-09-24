@@ -121,14 +121,13 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	private static void ProcessAppliesToDirective(AppliesToDirective appliesToDirective, StringLineGroup lines)
 	{
 		var yaml = lines.ToSlice().AsSpan().ToString();
-
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			var applicableTo = ApplicableToParser.ParseApplicableTo(yaml);
 			appliesToDirective.AppliesTo = applicableTo;
-			if (appliesToDirective.AppliesTo.Diagnostics is null)
+			if (applicableTo?.Diagnostics is null)
 				return;
-			foreach (var (severity, message) in appliesToDirective.AppliesTo.Diagnostics)
+			foreach (var (severity, message) in applicableTo.Diagnostics)
 				appliesToDirective.Emit(severity, message);
 			applicableTo.Diagnostics = null;
 		}
