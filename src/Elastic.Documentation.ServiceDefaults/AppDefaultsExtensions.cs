@@ -13,8 +13,6 @@ using Microsoft.Extensions.Logging.Console;
 
 namespace Elastic.Documentation.ServiceDefaults;
 
-public record CliInvocation(bool IsHelpOrVersion);
-
 public static class AppDefaultsExtensions
 {
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
@@ -22,25 +20,21 @@ public static class AppDefaultsExtensions
 		var args = Array.Empty<string>();
 		return builder.AddDocumentationServiceDefaults(ref args);
 	}
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider> configure) where TBuilder : IHostApplicationBuilder =>
-		builder.AddDocumentationServiceDefaults(ref args, null, configure);
-
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, LogLevel? defaultLogLevel = null, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 		where TBuilder : IHostApplicationBuilder
 	{
-		var logLevel = defaultLogLevel ?? LogLevel.Information;
-		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories, out var configurationSource, out var isHelpOrVersion);
+		GlobalCli.Process(ref args, out var globalArgs);
 
 		var services = builder.Services;
-		_ = builder.Services.AddElasticDocumentationLogging(logLevel);
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);
 		_ = services
-			.AddConfigurationFileProvider(skipPrivateRepositories, configurationSource, (s, p) =>
+			.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, (s, p) =>
 			{
 				_ = s.AddSingleton(p.CreateVersionConfiguration());
 				configure?.Invoke(s, p);
 			});
-		_ = builder.Services.AddElasticDocumentationLogging(logLevel);
-		_ = services.AddSingleton(new CliInvocation(isHelpOrVersion));
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);
+		_ = services.AddSingleton(globalArgs);
 
 		return builder.AddServiceDefaults();
 	}

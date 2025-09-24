@@ -4,12 +4,12 @@
 
 using System.Diagnostics.CodeAnalysis;
 using ConsoleAppFramework;
-using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Filters;
 
-internal sealed class ReplaceLogFilter(ConsoleAppFilter next, ILogger<Program> logger, CliInvocation cli)
+internal sealed class ReplaceLogFilter(ConsoleAppFilter next, ILogger<Program> logger, GlobalCliArgs cli)
 	: ConsoleAppFilter(next)
 {
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]

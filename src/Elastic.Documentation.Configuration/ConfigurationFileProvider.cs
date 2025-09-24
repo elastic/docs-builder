@@ -40,25 +40,25 @@ public partial class ConfigurationFileProvider
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
 			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
 
-		if (ConfigurationSource == ConfigurationSource.Init && !fileSystem.Directory.Exists(AppDataConfigurationDirectory))
-			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Init)} directory {AppDataConfigurationDirectory} does not exist.");
+		if (ConfigurationSource == ConfigurationSource.Remote && !fileSystem.Directory.Exists(AppDataConfigurationDirectory))
+			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)} directory {AppDataConfigurationDirectory} does not exist.");
 
 		var path = GetAppDataPath("git-ref.txt");
 		if (_fileSystem.File.Exists(path))
 			GitReference = _fileSystem.File.ReadAllText(path);
-		else if (ConfigurationSource == ConfigurationSource.Init)
+		else if (ConfigurationSource == ConfigurationSource.Remote)
 			throw new Exception($"Can not read git-ref.txt in directory {LocalConfigurationDirectory}");
 
-		if (ConfigurationSource == ConfigurationSource.Init)
+		if (ConfigurationSource == ConfigurationSource.Remote)
 		{
 			_logger.LogInformation("{ConfigurationSource}: git ref '{GitReference}', in {Directory}",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Init)}", GitReference, AppDataConfigurationDirectory);
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)}", GitReference, AppDataConfigurationDirectory);
 		}
 
 		if (ConfigurationSource == ConfigurationSource.Local)
 		{
 			_logger.LogInformation("{ConfigurationSource}: located {Directory}",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}", AppDataConfigurationDirectory);
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}", LocalConfigurationDirectory);
 		}
 		if (ConfigurationSource == ConfigurationSource.Embedded)
 		{
@@ -180,12 +180,12 @@ public partial class ConfigurationFileProvider
 			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
 
 		var appDataPath = GetAppDataPath(fileName);
-		if (ConfigurationSource == ConfigurationSource.Init && _fileSystem.File.Exists(appDataPath))
+		if (ConfigurationSource == ConfigurationSource.Remote && _fileSystem.File.Exists(appDataPath))
 		{
 			var reader = _fileSystem.File.OpenText(appDataPath);
 			return reader;
 		}
-		if (ConfigurationSource == ConfigurationSource.Init)
+		if (ConfigurationSource == ConfigurationSource.Remote)
 			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
 		return GetEmbeddedStream(fileName);
 	}
@@ -198,8 +198,8 @@ public partial class ConfigurationFileProvider
 		return reader;
 	}
 
-	private static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
-	private static string LocalConfigurationDirectory { get; } = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
+	public static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
+	public static string LocalConfigurationDirectory { get; } = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
 
 	private static string GetLocalPath(string file) => Path.Combine(LocalConfigurationDirectory, file);
 	private static string GetAppDataPath(string file) => Path.Combine(AppDataConfigurationDirectory, file);
@@ -212,7 +212,7 @@ public static class ConfigurationFileProviderServiceCollectionExtensions
 {
 	public static IServiceCollection AddConfigurationFileProvider(this IServiceCollection services,
 		bool skipPrivateRepositories,
-		Documentation.ConfigurationSource? configurationSource,
+		ConfigurationSource? configurationSource,
 		Action<IServiceCollection, ConfigurationFileProvider> configure)
 	{
 		using var sp = services.BuildServiceProvider();

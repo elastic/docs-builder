@@ -10,6 +10,6 @@ namespace Elastic.Documentation;
 public enum ConfigurationSource
 {
 	Local,
-	Init,
+	Remote,
 	Embedded
 }

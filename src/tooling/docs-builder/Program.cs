@@ -26,7 +26,6 @@ var app = builder.ToConsoleAppBuilder((s) =>
 	return ConsoleApp.Create();
 });
 
-
 app.UseFilter<ReplaceLogFilter>();
 app.UseFilter<InfoLoggerFilter>();
 app.UseFilter<StopwatchFilter>();
