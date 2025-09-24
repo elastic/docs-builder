@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Tests;
 
@@ -23,7 +25,7 @@ public class PublicOnlyAssemblerConfigurationTests
 			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		var configurationFileProvider = new ConfigurationFileProvider(FileSystem, skipPrivateRepositories: true);
+		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);

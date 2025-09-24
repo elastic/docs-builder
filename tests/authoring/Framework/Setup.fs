@@ -274,7 +274,7 @@ type Setup =
             DisplayName = "Elastic Cloud Control ECCTL",
             VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.Ecctl]))
         
-        let configurationFileProvider = ConfigurationFileProvider(fileSystem)
+        let configurationFileProvider = ConfigurationFileProvider(new TestLoggerFactory(), fileSystem)
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,

@@ -22,17 +22,15 @@ public static class AppDefaultsExtensions
 		var args = Array.Empty<string>();
 		return builder.AddDocumentationServiceDefaults(ref args);
 	}
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider> configure) where TBuilder : IHostApplicationBuilder =>
-		builder.AddDocumentationServiceDefaults(ref args, null, configure);
-
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, LogLevel? defaultLogLevel = null, Action<IServiceCollection, ConfigurationFileProvider>? configure = null) where TBuilder : IHostApplicationBuilder
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+		where TBuilder : IHostApplicationBuilder
 	{
-		var logLevel = defaultLogLevel ?? LogLevel.Information;
-		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories);
+		GlobalCli.Process(ref args, out var globalArgs);
 
 		var services = builder.Services;
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);
 		_ = services
-			.AddConfigurationFileProvider(skipPrivateRepositories, (s, p) =>
+			.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, (s, p) =>
 			{
 				var versionConfiguration = p.CreateVersionConfiguration();
 				var products = p.CreateProducts(versionConfiguration);
@@ -41,7 +39,8 @@ public static class AppDefaultsExtensions
 				_ = s.AddSingleton(versionConfiguration);
 				configure?.Invoke(s, p);
 			});
-		_ = builder.Services.AddElasticDocumentationLogging(logLevel);
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);
+		_ = services.AddSingleton(globalArgs);
 
 		return builder.AddServiceDefaults();
 	}

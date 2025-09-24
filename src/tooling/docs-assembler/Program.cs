@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Assembler.Cli;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling;
@@ -46,14 +47,17 @@ if (!string.IsNullOrEmpty(command))
 
 await app.RunAsync(args);
 
-internal sealed class ReplaceLogFilter(ConsoleAppFilter next, ILogger<Program> logger)
+internal sealed class ReplaceLogFilter(ConsoleAppFilter next, ILogger<Program> logger, GlobalCliArgs cli)
 	: ConsoleAppFilter(next)
 {
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	public override Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
 	{
-		ConsoleApp.Log = msg => logger.LogInformation(msg);
-		ConsoleApp.LogError = msg => logger.LogError(msg);
+		if (!cli.IsHelpOrVersion)
+		{
+			ConsoleApp.Log = msg => logger.LogInformation(msg);
+			ConsoleApp.LogError = msg => logger.LogError(msg);
+		}
 
 		return Next.InvokeAsync(context, cancellationToken);
 	}

@@ -11,7 +11,7 @@ public enum Exporter
 	Html,
 	LLMText,
 	Elasticsearch,
-	SemanticElasticsearch,
+	ElasticsearchNoSemantic,
 	Configuration,
 	DocumentationState,
 	LinkMetadata,

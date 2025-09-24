@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using ConsoleAppFramework;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Tooling.Filters;
 
-public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger)
+
+public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger, IDiagnosticsCollector collector)
 	: ConsoleAppFilter(next)
 {
 	private bool _cancelKeyPressed;
@@ -29,9 +31,10 @@ public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExc
 				logger.LogInformation("Cancellation requested, exiting.");
 				return;
 			}
-
-			throw;
-
+			_ = collector.StartAsync(cancellationToken);
+			collector.EmitGlobalError($"Global unhandled exception: {ex.Message}", ex);
+			await collector.StopAsync(cancellationToken);
+			Environment.ExitCode = 1;
 		}
 	}
 }

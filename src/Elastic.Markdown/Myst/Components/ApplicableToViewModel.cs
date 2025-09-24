@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 
@@ -15,7 +16,6 @@ public class ApplicableToViewModel
 	public required ApplicableTo AppliesTo { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
-	// Dictionary mapping property selectors to their applicability definitions
 	private static readonly Dictionary<Func<DeploymentApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> DeploymentMappings = new()
 	{
 		[d => d.Ess] = ApplicabilityMappings.Ech,
@@ -37,6 +37,7 @@ public class ApplicableToViewModel
 		[p => p.Curator] = ApplicabilityMappings.Curator,
 		[p => p.EdotAndroid] = ApplicabilityMappings.EdotAndroid,
 		[p => p.EdotCfAws] = ApplicabilityMappings.EdotCfAws,
+		[p => p.EdotCfAzure] = ApplicabilityMappings.EdotCfAzure,
 		[p => p.EdotCollector] = ApplicabilityMappings.EdotCollector,
 		[p => p.EdotDotnet] = ApplicabilityMappings.EdotDotnet,
 		[p => p.EdotIos] = ApplicabilityMappings.EdotIos,
@@ -56,15 +57,14 @@ public class ApplicableToViewModel
 		[p => p.ApmAgentRum] = ApplicabilityMappings.ApmAgentRum
 	};
 
+
 	public IEnumerable<ApplicabilityItem> GetApplicabilityItems()
 	{
 		var items = new List<ApplicabilityItem>();
 
-		// Process Stack
 		if (AppliesTo.Stack is not null)
 			items.AddRange(ProcessSingleCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
 
-		// Process Serverless
 		if (AppliesTo.Serverless is not null)
 		{
 			items.AddRange(AppliesTo.Serverless.AllProjects is not null
@@ -72,24 +72,18 @@ public class ApplicableToViewModel
 				: ProcessMappedCollections(AppliesTo.Serverless, ServerlessMappings));
 		}
 
-		// Process Deployment
 		if (AppliesTo.Deployment is not null)
 			items.AddRange(ProcessMappedCollections(AppliesTo.Deployment, DeploymentMappings));
 
-		// Process Product Applicability
 		if (AppliesTo.ProductApplicability is not null)
 			items.AddRange(ProcessMappedCollections(AppliesTo.ProductApplicability, ProductMappings));
 
-		// Process Generic Product
 		if (AppliesTo.Product is not null)
 			items.AddRange(ProcessSingleCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
-		return items;
+		return CombineItemsByKey(items);
 	}
 
-	/// <summary>
-	/// Processes a single collection with its corresponding applicability definition
-	/// </summary>
 	private IEnumerable<ApplicabilityItem> ProcessSingleCollection(AppliesCollection collection, ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition)
 	{
 		var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
@@ -97,7 +91,7 @@ public class ApplicableToViewModel
 	}
 
 	/// <summary>
-	/// Processes multiple collections using a mapping dictionary to eliminate repetitive code
+	/// Uses mapping dictionary to eliminate repetitive code when processing multiple collections
 	/// </summary>
 	private IEnumerable<ApplicabilityItem> ProcessMappedCollections<T>(T source, Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
 	{
@@ -127,10 +121,45 @@ public class ApplicableToViewModel
 
 			return new ApplicabilityItem(
 				Key: applicabilityDefinition.Key,
-				Applicability: applicability,
-				RenderData: renderData
+				PrimaryApplicability: applicability,
+				RenderData: renderData,
+				ApplicabilityDefinition: applicabilityDefinition
 			);
 		});
+
+	/// <summary>
+	/// Combines multiple applicability items with the same key into a single item with combined tooltip
+	/// </summary>
+	private IEnumerable<ApplicabilityItem> CombineItemsByKey(List<ApplicabilityItem> items) => items
+			.GroupBy(item => item.Key)
+			.Select(group =>
+			{
+				if (group.Count() == 1)
+					return group.First();
+
+				var firstItem = group.First();
+				var allApplicabilities = group.Select(g => g.Applicability).ToList();
+				var applicabilityDefinition = firstItem.ApplicabilityDefinition;
+				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
+
+				var combinedRenderData = _applicabilityRenderer.RenderCombinedApplicability(
+					allApplicabilities,
+					applicabilityDefinition,
+					versioningSystem,
+					new AppliesCollection(allApplicabilities.ToArray()));
+
+				// Select the closest version to current as the primary display
+				var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem.Current);
+
+				return new ApplicabilityItem(
+					Key: firstItem.Key,
+					PrimaryApplicability: primaryApplicability,
+					RenderData: combinedRenderData,
+					ApplicabilityDefinition: applicabilityDefinition
+				);
+			});
+
+
 
 }
 

@@ -106,6 +106,7 @@ This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder
 * `edot_php`
 * `edot_python`
 * `edot_cf_aws`
+* `edot_cf_azure`
 * `edot_collector`
 * `apm_attacher`
 * `apm_lambda`

@@ -226,7 +226,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{ "edot_node", a => productAvailability.EdotNode = a },
 			{ "edot_php", a => productAvailability.EdotPhp = a },
 			{ "edot_python", a => productAvailability.EdotPython = a },
-			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a }
+			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },
+			{ "edot_cf_azure", a => productAvailability.EdotCfAzure = a }
 		};
 
 		foreach (var (key, action) in mapping)
