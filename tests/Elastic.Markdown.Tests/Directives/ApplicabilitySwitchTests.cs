@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using FluentAssertions;
 
@@ -223,4 +224,5 @@ Content for removed version
 			key1.Should().MatchRegex(@"^applies-\d+$", "Sync key should be in format 'applies-{hash}'");
 		}
 	}
+
 }
