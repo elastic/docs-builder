@@ -6,6 +6,7 @@ import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
+import { initAppliesSwitch } from './applies-switch'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -21,6 +22,7 @@ document.addEventListener('htmx:load', function (event) {
     initHighlight()
     initCopyButton()
     initTabs()
+    initAppliesSwitch()
 
     // We do this so that the navigation is not initialized twice
     if (isLazyLoadNavigationEnabled) {

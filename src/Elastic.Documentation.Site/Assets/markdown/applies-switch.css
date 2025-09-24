@@ -1,0 +1,52 @@
+@layer components {
+	.applies-switch {
+		@apply relative mt-4 flex flex-wrap overflow-hidden;
+		
+		.applicable-info {
+			@apply border-none bg-transparent;
+		}
+
+		.applicable-name,
+		.applicable-meta {
+			@apply text-sm!
+		}
+
+		.applies-switch-label {
+			@apply text-ink-light border-grey-20 z-20 -mb-[1px] flex cursor-pointer items-center border-1 px-6 py-2;
+			&:not(:nth-of-type(1)) {
+				margin-left: -1px;
+			}
+
+			&:hover {
+				@apply bg-grey-10 border-b-1 border-b-black text-black;
+			}
+		}
+
+		.applies-switch-input {
+			@apply absolute opacity-0;
+		}
+
+		.applies-switch-content {
+			@apply border-grey-20 z-0 order-99 hidden w-full border-1 px-6 pt-2 pb-6;
+		}
+
+		.applies-switch-input:checked + .applies-switch-label + .applies-switch-content {
+			@apply block;
+		}
+
+		.applies-switch-input:checked + .applies-switch-label,
+		.applies-switch-label:active {
+			@apply border-b-blue-elastic text-blue-elastic border-b-1;
+		}
+
+		.applies-switch-input:focus-visible + .applies-switch-label {
+			outline: var(--outline-size) var(--outline-style)
+				var(--outline-color);
+			outline-offset: var(--outline-offset, var(--outline-size));
+		}
+
+		.applies-switch-fallback {
+			@apply text-sm font-medium;
+		}
+	}
+}

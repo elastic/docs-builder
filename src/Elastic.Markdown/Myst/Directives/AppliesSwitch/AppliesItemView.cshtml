@@ -1,0 +1,35 @@
+@using Elastic.Markdown.Myst.Components
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.AppliesSwitch.AppliesItemViewModel>
+
+@{
+	var id = $"applies-switch-item-{Model.AppliesSwitchIndex}-{Model.Index}";
+}
+
+<input class="applies-switch-input" checked="@(Model.Index == 0 ? "checked" : "")" id="@id" name="applies-switch-set-@Model.AppliesSwitchIndex" type="radio" tabindex="0">
+<label class="applies-switch-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.AppliesSwitchGroupKey" for="@id">
+	@try
+	{
+		@if (Model.AppliesTo is not null)
+		{
+			<span class="applies applies-inline">
+				@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+				{
+					AppliesTo = Model.AppliesTo,
+					Inline = true,
+					VersionsConfig = Model.BuildContext.VersionsConfiguration
+				}))
+			</span>
+		}
+		else
+		{
+			<span class="applies-switch-fallback">@Model.AppliesToDefinition</span>
+		}
+	}
+	catch
+	{
+		<span class="applies-switch-fallback">@Model.AppliesToDefinition</span>
+	}
+</label>
+<div class="applies-switch-content" tabindex="0">
+	@Model.RenderBlock()
+</div>
