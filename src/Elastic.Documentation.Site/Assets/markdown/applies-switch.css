@@ -12,6 +12,10 @@
 				@apply bg-grey-10 border-b-1 border-b-black text-black;
 			}
 		}
+		
+		.applicable-info {
+			@apply cursor-pointer!;
+		}
 
 		.applies-switch-input {
 			@apply absolute opacity-0;
