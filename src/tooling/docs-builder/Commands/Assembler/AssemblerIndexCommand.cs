@@ -25,7 +25,7 @@ internal sealed class AssemblerIndexCommand(
 	/// <summary>
 	/// Index documentation to Elasticsearch, calls `docs-builder assembler build --exporters elasticsearch`. Exposes more options
 	/// </summary>
-	/// <param name="endpoint">Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
+	/// <param name="endpoint">-es, Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
 	/// <param name="environment">The --environment used to clone ends up being part of the index name</param>
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
@@ -49,7 +49,7 @@ internal sealed class AssemblerIndexCommand(
 	/// <returns></returns>
 	[Command("")]
 	public async Task<int> Index(
-		[Argument] string? endpoint = null,
+		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,
 		string? username = null,
