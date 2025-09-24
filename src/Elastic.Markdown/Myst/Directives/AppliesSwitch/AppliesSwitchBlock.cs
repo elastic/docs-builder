@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Linq;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 
@@ -66,34 +67,23 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 
 	public static string GenerateSyncKey(string appliesToDefinition)
 	{
-		// Generate a consistent sync key from the applies_to definition
-		// This ensures items with the same applies_to definition sync together
-		// Normalize order by sorting comma-separated values
-		var normalized = NormalizeAppliesToDefinition(appliesToDefinition);
-		return normalized.Slugify().Replace(".", "-");
-	}
+		// Parse the YAML to get the ApplicableTo object, then use its hash
+		// This ensures both simple syntax and YAML objects produce consistent sync keys
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition);
+			if (applicableTo != null)
+			{
+				// Use the object's hash for a consistent, unique identifier
+				return $"applies-{Math.Abs(applicableTo.GetHashCode())}";
+			}
+		}
+		catch
+		{
+			// If parsing fails, fall back to the original definition
+		}
 
-	private static string NormalizeAppliesToDefinition(string appliesToDefinition)
-	{
-		// Find the colon to separate the key from the values
-		var colonIndex = appliesToDefinition.IndexOf(':');
-		if (colonIndex == -1)
-			return appliesToDefinition;
-
-		var key = appliesToDefinition.Substring(0, colonIndex).Trim();
-		var valuesPart = appliesToDefinition.Substring(colonIndex + 1).Trim();
-
-		// Split by comma and sort the values to ensure consistent ordering
-		// e.g., "stack: preview 9.0, ga 9.1" becomes "stack: ga 9.1, preview 9.0"
-		var values = valuesPart.Split(',')
-			.Select(v => v.Trim())
-			.Where(v => !string.IsNullOrEmpty(v))
-			.OrderBy(v => v)
-			.ToArray();
-
-		if (values.Length <= 1)
-			return appliesToDefinition;
-
-		return $"{key}: {string.Join(", ", values)}";
+		// Fallback to original definition if parsing fails
+		return appliesToDefinition.Slugify().Replace(".", "-");
 	}
 }

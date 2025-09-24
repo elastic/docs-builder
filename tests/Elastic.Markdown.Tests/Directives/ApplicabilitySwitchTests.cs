@@ -167,9 +167,18 @@ Content for removed version
 		var switchBlock = Document.OfType<AppliesSwitchBlock>().First();
 		var items = switchBlock.OfType<AppliesItemBlock>().ToArray();
 		items.Should().HaveCount(3);
-		items[0].SyncKey.Should().Be("stack-ga-8-11");
-		items[1].SyncKey.Should().Be("stack-preview-9-1");
-		items[2].SyncKey.Should().Be("stack-removed");
+
+		// Verify all sync keys have the expected hash-based format
+		foreach (var item in items)
+		{
+			item.SyncKey.Should().StartWith("applies-", "Sync key should start with 'applies-' prefix");
+			item.SyncKey.Should().MatchRegex(@"^applies-\d+$", "Sync key should be in format 'applies-{hash}'");
+		}
+
+		// Verify that different applies_to definitions produce different sync keys
+		items[0].SyncKey.Should().NotBe(items[1].SyncKey, "Different applies_to definitions should produce different sync keys");
+		items[1].SyncKey.Should().NotBe(items[2].SyncKey, "Different applies_to definitions should produce different sync keys");
+		items[0].SyncKey.Should().NotBe(items[2].SyncKey, "Different applies_to definitions should produce different sync keys");
 	}
 
 	[Fact]
@@ -188,6 +197,30 @@ Content for removed version
 			var key1 = AppliesItemBlock.GenerateSyncKey(definition1);
 			var key2 = AppliesItemBlock.GenerateSyncKey(definition2);
 			key1.Should().Be(key2, $"Sync keys should be the same for '{definition1}' and '{definition2}'");
+		}
+	}
+
+	[Fact]
+	public void GeneratesConsistentSyncKeysForYamlObjects()
+	{
+		// Test that YAML object syntax and simple syntax produce the same sync key
+		var testCases = new[]
+		{
+			("stack: ga 9.1", "stack: ga 9.1"), // Same format should produce same key
+			("{ ece: all, ess: all }", "deployment: { ece: all, ess: all }"), // YAML object vs deployment object
+			("{ stack: ga 9.1 }", "stack: ga 9.1"), // YAML object vs simple syntax
+			("{ deployment: { ece: ga 9.0, ess: ga 9.1 } }", "deployment: { ece: ga 9.0, ess: ga 9.1 }"), // Nested YAML objects
+		};
+
+		foreach (var (yamlObject, equivalentSyntax) in testCases)
+		{
+			var key1 = AppliesItemBlock.GenerateSyncKey(yamlObject);
+			var key2 = AppliesItemBlock.GenerateSyncKey(equivalentSyntax);
+			key1.Should().Be(key2, $"Sync keys should be the same for YAML object '{yamlObject}' and equivalent syntax '{equivalentSyntax}'");
+
+			// Also verify the key has the expected format
+			key1.Should().StartWith("applies-", "Sync key should start with 'applies-' prefix");
+			key1.Should().MatchRegex(@"^applies-\d+$", "Sync key should be in format 'applies-{hash}'");
 		}
 	}
 }
