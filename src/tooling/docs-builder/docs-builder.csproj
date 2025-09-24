@@ -25,10 +25,12 @@
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
     <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
-    
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
     
     <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
