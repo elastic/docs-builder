@@ -23,7 +23,7 @@ internal sealed class IndexCommand(
 	/// <summary>
 	/// Index a single documentation set to Elasticsearch, calls `docs-builder --exporters elasticsearch`. Exposes more options
 	/// </summary>
-	/// <param name="endpoint">Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
+	/// <param name="endpoint">-es, Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
 	/// <param name="path">path to the documentation folder, defaults to pwd.</param>
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
@@ -47,7 +47,7 @@ internal sealed class IndexCommand(
 	/// <returns></returns>
 	[Command("")]
 	public async Task<int> Index(
-		[Argument] string? endpoint = null,
+		string? endpoint = null,
 		string? path = null,
 		string? apiKey = null,
 		string? username = null,
