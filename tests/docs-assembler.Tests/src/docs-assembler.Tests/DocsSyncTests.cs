@@ -6,15 +6,14 @@ using System.IO.Abstractions.TestingHelpers;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
-using Documentation.Assembler.Deploying;
+using Elastic.Documentation.Assembler;
+using Elastic.Documentation.Assembler.Deploying.Synchronization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Tooling.Diagnostics;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Documentation.Assembler.Tests;
 

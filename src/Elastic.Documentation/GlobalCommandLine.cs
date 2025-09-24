@@ -8,9 +8,15 @@ namespace Elastic.Documentation;
 
 public static class GlobalCommandLine
 {
-	public static void Process(ref string[] args, ref LogLevel defaultLogLevel, out bool skipPrivateRepositories)
+	public static void Process(
+		ref string[] args,
+		ref LogLevel defaultLogLevel,
+		out bool skipPrivateRepositories,
+		out bool isHelpOrVersion
+	)
 	{
 		skipPrivateRepositories = false;
+		isHelpOrVersion = false;
 		var newArgs = new List<string>();
 		for (var i = 0; i < args.Length; i++)
 		{
@@ -22,8 +28,11 @@ public static class GlobalCommandLine
 			}
 			else if (args[i] == "--skip-private-repositories")
 				skipPrivateRepositories = true;
-			else if (args[i] == "--inject")
-				skipPrivateRepositories = true;
+			else if (args[i] is "--help" or "--version")
+			{
+				isHelpOrVersion = true;
+				newArgs.Add(args[i]);
+			}
 			else
 				newArgs.Add(args[i]);
 		}
