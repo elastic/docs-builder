@@ -27,8 +27,8 @@ public class LocalChangeTrackingService(
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)
 		{
-			collector.EmitError(redirectFile.Source, "File does not exist");
-			return Task.FromResult(false);
+			_logger.LogInformation("Redirect file {RedirectFile} does not exist, no redirects to validate.", redirectFile.Source);
+			return Task.FromResult(true);
 		}
 
 		var redirects = redirectFile.Redirects;
