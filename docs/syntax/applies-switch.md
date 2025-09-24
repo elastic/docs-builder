@@ -49,7 +49,7 @@ This is useful when content applies to multiple deployment types or versions sim
 ::::{applies-switch}
 
 :::{applies-item} { ece:, ess: }
-Content for ECE and ECH bla
+Content for ECE and ECH
 :::
 
 :::{applies-item} serverless:
@@ -65,7 +65,7 @@ Content for Serverless
 ::::{applies-switch}
 
 :::{applies-item} { ece:, ess: }
-Content for ECE and ECH bla
+Content for ECE and ECH
 :::
 
 :::{applies-item} serverless:
