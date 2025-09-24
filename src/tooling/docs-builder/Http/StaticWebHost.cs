@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+#if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
+#endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
@@ -35,8 +37,9 @@ public class StaticWebHost
 		});
 
 		_ = builder.AddDocumentationServiceDefaults();
-
+#if DEBUG
 		builder.Services.AddElasticDocsApiUsecases("dev");
+#endif
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
@@ -63,7 +66,9 @@ public class StaticWebHost
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 
 		var apiV1 = WebApplication.MapGroup("/docs/_api/v1");
+#if DEBUG
 		apiV1.MapElasticDocsApiEndpoints();
+#endif
 
 	}
 

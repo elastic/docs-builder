@@ -6,10 +6,11 @@ using System.Reflection;
 using ConsoleAppFramework;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.ServiceDefaults;
 
 namespace Documentation.Builder.Filters;
 
-internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
+internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs cli) : ConsoleAppFilter(next)
 {
 	private readonly FileInfo _stateFile = new(Path.Combine(Paths.ApplicationData.FullName, "docs-build-check.state"));
 
@@ -17,6 +18,8 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next) : ConsoleAppF
 	{
 		await Next.InvokeAsync(context, ctx);
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
+			return;
+		if (cli.IsHelpOrVersion)
 			return;
 
 		var latestVersionUrl = await GetLatestVersion(ctx);

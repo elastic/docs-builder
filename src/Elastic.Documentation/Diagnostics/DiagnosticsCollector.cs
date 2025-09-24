@@ -29,7 +29,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public ConcurrentBag<string> CrossLinks { get; } = [];
 
-	public bool NoHints { get; init; }
+	public bool NoHints { get; set; }
 
 	public DiagnosticsCollector StartAsync(Cancel ctx)
 	{

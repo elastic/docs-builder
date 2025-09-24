@@ -9,6 +9,7 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,10 +34,10 @@ public static class DocumentationTooling
 			{
 				var logFactory = sp.GetRequiredService<ILoggerFactory>();
 				var githubActionsService = sp.GetRequiredService<ICoreService>();
-				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
-				{
-					NoHints = true
-				};
+				var globalArgs = sp.GetRequiredService<GlobalCliArgs>();
+				if (globalArgs.IsHelpOrVersion)
+					return new DiagnosticsCollector([]);
+				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})
 			.AddSingleton(sp =>
 			{
@@ -100,8 +101,6 @@ public static class DocumentationTooling
 		}
 		return null;
 	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static Uri ResolveServiceEndpoint(ServiceEndpointResolver resolver, Func<string> fallback)

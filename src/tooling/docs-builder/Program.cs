@@ -26,7 +26,6 @@ var app = builder.ToConsoleAppBuilder((s) =>
 	return ConsoleApp.Create();
 });
 
-
 app.UseFilter<ReplaceLogFilter>();
 app.UseFilter<InfoLoggerFilter>();
 app.UseFilter<StopwatchFilter>();
@@ -38,7 +37,7 @@ app.Add<InboundLinkCommands>("inbound-links");
 app.Add<DiffCommands>("diff");
 app.Add<MoveCommand>("mv");
 app.Add<ServeCommand>("serve");
-
+app.Add<IndexCommand>("index");
 
 //assembler commands
 
@@ -47,6 +46,7 @@ app.Add<DeployCommands>("assembler deploy");
 app.Add<BloomFilterCommands>("assembler bloom-filter");
 app.Add<NavigationCommands>("assembler navigation");
 app.Add<ConfigurationCommands>("assembler config");
+app.Add<AssemblerIndexCommand>("assembler index");
 app.Add<AssemblerCommands>("assembler");
 app.Add<AssembleCommands>("assemble");
 

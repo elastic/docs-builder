@@ -29,15 +29,17 @@ internal sealed class RepositoryCommands(
 {
 	/// <summary> Clone the configuration folder </summary>
 	/// <param name="gitRef">The git reference of the config, defaults to 'main'</param>
+	/// <param name="local">Save the remote configuration locally in the pwd so later commands can pick it up as local</param>
 	/// <param name="ctx"></param>
 	[Command("init-config")]
-	public async Task<int> CloneConfigurationFolder(string? gitRef = null, Cancel ctx = default)
+	public async Task<int> CloneConfigurationFolder(string? gitRef = null, bool local = false, Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = new FileSystem();
 		var service = new ConfigurationCloneService(logFactory, assemblyConfiguration, fs);
-		serviceInvoker.AddCommand(service, gitRef, static async (s, collector, gitRef, ctx) => await s.InitConfigurationToApplicationData(collector, gitRef, ctx));
+		serviceInvoker.AddCommand(service, (gitRef, local), static async (s, collector, state, ctx) =>
+			await s.InitConfigurationToApplicationData(collector, state.gitRef, state.local, ctx));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
@@ -90,7 +92,8 @@ internal sealed class RepositoryCommands(
 		var fs = new FileSystem();
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service, (strict, environment, metadataOnly, exporters, fs), strict ?? false,
-			static async (s, collector, state, ctx) => await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.exporters, state.fs, ctx)
+			static async (s, collector, state, ctx) =>
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, false, state.exporters, state.fs, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
