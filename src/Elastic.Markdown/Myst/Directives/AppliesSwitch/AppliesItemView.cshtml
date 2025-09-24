@@ -11,7 +11,7 @@
 	{
 		@if (Model.AppliesTo is not null)
 		{
-			<span class="applies applies-inline">
+			<span class="applies applies-item">
 				@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
 				{
 					AppliesTo = Model.AppliesTo,
