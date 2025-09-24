@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
-using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using Elastic.Documentation.AppliesTo;
 
-namespace Elastic.Documentation.AppliesTo;
+namespace Elastic.Markdown.Myst;
 
 /// <summary>
 /// Service for parsing ApplicableTo objects from YAML with memoization for performance.
@@ -15,11 +13,6 @@ namespace Elastic.Documentation.AppliesTo;
 public static class ApplicableToParser
 {
 	private static readonly ConcurrentDictionary<string, ApplicableTo?> ParsedCache = new();
-	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
-		.IgnoreUnmatchedProperties()
-		.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
-		.WithTypeConverter(new ApplicableToYamlConverter())
-		.Build();
 
 	/// <summary>
 	/// Parses an ApplicableTo object from YAML string with memoization.
@@ -35,7 +28,7 @@ public static class ApplicableToParser
 		ApplicableTo? parsed = null;
 		try
 		{
-			parsed = Deserializer.Deserialize<ApplicableTo>(yaml);
+			parsed = YamlSerialization.Deserialize<ApplicableTo>(yaml);
 			_ = ParsedCache.TryAdd(yaml, parsed);
 		}
 		catch (Exception ex)
@@ -45,5 +38,4 @@ public static class ApplicableToParser
 
 		return parsed;
 	}
-
 }
