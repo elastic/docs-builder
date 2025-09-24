@@ -38,9 +38,6 @@ public static class ApplicableToParser
 		try
 		{
 			parsed = Deserializer.Deserialize<ApplicableTo>(yaml);
-			// Clear diagnostics to avoid memory leaks
-			if (parsed != null)
-				parsed.Diagnostics = null;
 		}
 		catch
 		{
