@@ -40,10 +40,16 @@ public partial class ConfigurationFileProvider
 		SkipPrivateRepositories = skipPrivateRepositories;
 		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
 
-		ConfigurationSource = configurationSource ?? (
-			fileSystem.Directory.Exists(LocalConfigurationDirectory)
-				? ConfigurationSource.Local : ConfigurationSource.Embedded
-			);
+		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
+		// ConfigurationSource = configurationSource ?? (
+		// 	fileSystem.Directory.Exists(LocalConfigurationDirectory)
+		// 		? ConfigurationSource.Local : ConfigurationSource.Embedded
+		// 	);
+
+
+		// Using Embedded as default for now
+		ConfigurationSource = configurationSource ?? ConfigurationSource.Embedded;
+
 
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
 			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
