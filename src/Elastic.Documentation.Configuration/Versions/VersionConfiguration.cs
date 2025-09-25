@@ -35,6 +35,8 @@ public enum VersioningSystemId
 	Eck,
 	[Display(Name = "ess")]
 	Ess,
+	[Display(Name = "ecs")]
+	Ecs,
 	[Display(Name = "self")]
 	Self,
 	[Display(Name = "ecctl")]
@@ -49,73 +51,73 @@ public enum VersioningSystemId
 	ObservabilityProject,
 	[Display(Name = "security")]
 	SecurityProject,
-	[Display(Name = "apm_agent_android")]
+	[Display(Name = "apm-agent-android")]
 	ApmAgentAndroid,
-	[Display(Name = "apm_agent_ios")]
+	[Display(Name = "apm-agent-ios")]
 	ApmAgentIos,
-	[Display(Name = "apm_agent_dotnet")]
+	[Display(Name = "apm-agent-dotnet")]
 	ApmAgentDotnet,
-	[Display(Name = "apm_agent_go")]
+	[Display(Name = "apm-agent-go")]
 	ApmAgentGo,
-	[Display(Name = "apm_agent_java")]
+	[Display(Name = "apm-agent-java")]
 	ApmAgentJava,
-	[Display(Name = "apm_agent_node")]
+	[Display(Name = "apm-agent-node")]
 	ApmAgentNode,
-	[Display(Name = "apm_agent_php")]
+	[Display(Name = "apm-agent-php")]
 	ApmAgentPhp,
-	[Display(Name = "apm_agent_python")]
+	[Display(Name = "apm-agent-python")]
 	ApmAgentPython,
-	[Display(Name = "apm_agent_ruby")]
+	[Display(Name = "apm-agent-ruby")]
 	ApmAgentRuby,
-	[Display(Name = "apm_agent_rum")]
+	[Display(Name = "apm-agent-rum")]
 	ApmAgentRum,
-	[Display(Name = "apm_attacher")]
+	[Display(Name = "apm-attacher")]
 	ApmAttacher,
-	[Display(Name = "apm_lambda")]
+	[Display(Name = "apm-lambda")]
 	ApmLambda,
-	[Display(Name = "ecs_logging_dotnet")]
+	[Display(Name = "ecs-logging-dotnet")]
 	EcsLoggingDotnet,
-	[Display(Name = "ecs_logging_go_logrus")]
+	[Display(Name = "ecs-logging-go-logrus")]
 	EcsLoggingGoLogrus,
-	[Display(Name = "ecs_logging_go_zap")]
+	[Display(Name = "ecs-logging-go-zap")]
 	EcsLoggingGoZap,
-	[Display(Name = "ecs_logging_go_zerolog")]
+	[Display(Name = "ecs-logging-go-zerolog")]
 	EcsLoggingGoZerolog,
-	[Display(Name = "ecs_logging_java")]
+	[Display(Name = "ecs-logging-java")]
 	EcsLoggingJava,
-	[Display(Name = "ecs_logging_nodejs")]
+	[Display(Name = "ecs-logging-nodejs")]
 	EcsLoggingNodeJs,
-	[Display(Name = "ecs_logging_php")]
+	[Display(Name = "ecs-logging-php")]
 	EcsLoggingPhp,
-	[Display(Name = "ecs_logging_python")]
+	[Display(Name = "ecs-logging-python")]
 	EcsLoggingPython,
-	[Display(Name = "ecs_logging_ruby")]
+	[Display(Name = "ecs-logging-ruby")]
 	EcsLoggingRuby,
 	[Display(Name = "esf")]
 	Esf,
-	[Display(Name = "edot_ios")]
+	[Display(Name = "edot-ios")]
 	EdotIos,
-	[Display(Name = "edot_android")]
+	[Display(Name = "edot-android")]
 	EdotAndroid,
-	[Display(Name = "edot_dotnet")]
+	[Display(Name = "edot-dotnet")]
 	EdotDotnet,
-	[Display(Name = "edot_java")]
+	[Display(Name = "edot-java")]
 	EdotJava,
-	[Display(Name = "edot_node")]
+	[Display(Name = "edot-node")]
 	EdotNode,
-	[Display(Name = "edot_php")]
+	[Display(Name = "edot-php")]
 	EdotPhp,
-	[Display(Name = "edot_python")]
+	[Display(Name = "edot-python")]
 	EdotPython,
-	[Display(Name = "edot_cf_aws")]
+	[Display(Name = "edot-cf-aws")]
 	EdotCfAws,
-	[Display(Name = "edot_cf_azure")]
+	[Display(Name = "edot-cf-azure")]
 	EdotCfAzure,
-	[Display(Name = "edot_collector")]
+	[Display(Name = "edot-collector")]
 	EdotCollector,
-	[Display(Name = "search_ui")]
+	[Display(Name = "search-ui")]
 	SearchUI,
-	[Display(Name = "cloud_terraform")]
+	[Display(Name = "cloud-terraform")]
 	CloudTerraform,
 }
 

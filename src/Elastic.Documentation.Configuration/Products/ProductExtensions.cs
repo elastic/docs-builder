@@ -21,7 +21,7 @@ public static class ProductExtensions
 			{
 				Id = kvp.Key,
 				DisplayName = kvp.Value.Display,
-				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning))
+				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning ?? kvp.Key))
 			});
 
 		return new ProductsConfiguration
@@ -40,5 +40,5 @@ internal sealed record ProductConfigDto
 internal sealed record ProductDto
 {
 	public string Display { get; set; } = string.Empty;
-	public string Versioning { get; set; } = string.Empty;
+	public string? Versioning { get; set; }
 }

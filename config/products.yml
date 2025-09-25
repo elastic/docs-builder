@@ -7,7 +7,6 @@ products:
     versioning: 'all'
   apm-agent-dotnet:
     display: 'APM .NET Agent'
-    versioning: 'apm-agent-dotnet'
   apm-agent-go:
     display: 'APM Go Agent'
     versioning: 'apm-agent-go'

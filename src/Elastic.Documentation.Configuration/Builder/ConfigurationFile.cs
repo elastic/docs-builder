@@ -170,11 +170,11 @@ public record ConfigurationFile : ITableOfContentsScope
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
 			{
 				var name = id.ToStringFast(true);
-				var key = $"version.{name}";
-				_substitutions[key] = system.Current;
-
-				key = $"version.{name}.base";
-				_substitutions[key] = system.Base;
+				var alternativeName = name.Replace('-', '_');
+				_substitutions[$"version.{name}"] = system.Current;
+				_substitutions[$"version.{alternativeName}"] = system.Current;
+				_substitutions[$"version.{name}.base"] = system.Base;
+				_substitutions[$"version.{alternativeName}.base"] = system.Base;
 			}
 
 			foreach (var product in productsConfig.Products.Values)
