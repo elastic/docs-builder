@@ -111,23 +111,22 @@ Other content for 9.1 version
 
 ```markdown
 ::::{applies-switch}
-:::{applies-item} { "ece": "ga 3.0" }
-Other content for ECE 3.0 version
+:::{applies-item} { "stack": "preview 9.0" }
+Content for 9.0 version
 :::
-:::{applies-item} { "ece": "ga 4.0" }
-Other content for ECE 4.0 version
+:::{applies-item} { "stack": "ga 9.1" }
+Content for 9.1 version
 :::
 ::::
 
 ::::{applies-switch}
-:::{applies-item} ece: ga 3.0
+:::{applies-item} stack: preview 9.0
 Other content for 9.0 version
 :::
-:::{applies-item} ece: ga 3.1
+:::{applies-item} stack: ga 9.1
 Other content for 9.1 version
 :::
 ::::
-
 ```
 :::::
 ::::::
