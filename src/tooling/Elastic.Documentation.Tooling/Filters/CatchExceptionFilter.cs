@@ -20,7 +20,6 @@ public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExc
 			logger.LogInformation("Received CTRL+C cancelling");
 			_cancelKeyPressed = true;
 		};
-		var error = false;
 		try
 		{
 			await Next.InvokeAsync(context, cancellationToken);
@@ -32,14 +31,10 @@ public sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExc
 				logger.LogInformation("Cancellation requested, exiting.");
 				return;
 			}
-			error = true;
 			_ = collector.StartAsync(cancellationToken);
 			collector.EmitGlobalError($"Global unhandled exception: {ex.Message}", ex);
 			await collector.StopAsync(cancellationToken);
-		}
-		finally
-		{
-			Environment.ExitCode = error ? 1 : 0;
+			Environment.ExitCode = 1;
 		}
 	}
 }

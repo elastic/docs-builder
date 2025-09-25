@@ -112,7 +112,11 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
+
+		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
+		await Task.WhenAll(tasks);
+
 
 		var generator = new DocumentationGenerator(set, logFactory, null, null, markdownExporters.ToArray());
 		_ = await generator.GenerateAll(ctx);
@@ -123,7 +127,10 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
 
-		await collector.StopAsync(ctx);
+		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
+		await Task.WhenAll(tasks);
+		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
+
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
 	}
 }

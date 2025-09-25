@@ -32,7 +32,7 @@ internal sealed class DiffCommands(
 		var fs = new FileSystem();
 
 		serviceInvoker.AddCommand(service, (path, fs),
-				async static (s, collector, state, ctx) => await s.ValidateRedirects(collector, state.path, state.fs, ctx)
+				async static (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}

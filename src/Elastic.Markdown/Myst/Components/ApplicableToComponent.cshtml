@@ -2,7 +2,7 @@
 
 @foreach (var item in Model.GetApplicabilityItems())
 {
-		<span class="applicable-info" data-tippy-content="@(new HtmlString(item.RenderData.TooltipText))">
+		<span class="applicable-info" data-tippy-content="@(new HtmlString(Model.ShowTooltip ? item.RenderData.TooltipText : string.Empty))">
 			<span class="applicable-name">@item.Key</span>
 			
 			@if (!string.IsNullOrEmpty(item.Key) && (item.RenderData.ShowLifecycleName || item.RenderData.ShowVersion || !string.IsNullOrEmpty(item.RenderData.BadgeLifecycleText)))

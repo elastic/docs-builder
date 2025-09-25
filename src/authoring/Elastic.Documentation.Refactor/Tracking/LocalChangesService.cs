@@ -19,7 +19,7 @@ public class LocalChangeTrackingService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
-	public async Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, FileSystem fs, Cancel ctx)
+	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, FileSystem fs)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 
@@ -27,22 +27,22 @@ public class LocalChangeTrackingService(
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)
 		{
-			collector.EmitError(redirectFile.Source, "File does not exist");
-			return false;
+			_logger.LogInformation("Redirect file {RedirectFile} does not exist, no redirects to validate.", redirectFile.Source);
+			return Task.FromResult(true);
 		}
 
 		var redirects = redirectFile.Redirects;
 		if (redirects is null)
 		{
 			collector.EmitError(redirectFile.Source, "It was not possible to parse the redirects file.");
-			return false;
+			return Task.FromResult(false);
 		}
 
 		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
 			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
-			return false;
+			return Task.FromResult(false);
 		}
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
 		_logger.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
@@ -87,7 +87,6 @@ public class LocalChangeTrackingService(
 			_logger.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingCount, relativeRedirectFile);
 		}
 
-		await collector.StopAsync(ctx);
-		return collector.Errors == 0;
+		return Task.FromResult(collector.Errors == 0);
 	}
 }

@@ -7,6 +7,7 @@
 @import './markdown/typography.css';
 @import './markdown/list.css';
 @import './markdown/tabs.css';
+@import './markdown/applies-switch.css';
 @import './markdown/code.css';
 @import './markdown/icons.css';
 @import './markdown/kbd.css';
