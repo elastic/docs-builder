@@ -557,7 +557,7 @@ _Work in progress._
 
 ## Functionality is added to multiple patch versions [multiple-patch]
 
-Sometimes, features and enhancements slip through into patch versions. In that case, the same functionality might be added for the first time to multiple patch versions at the same time.
+Sometimes, features and enhancements slip through into patch versions, and the same functionality might be added for the first time to multiple patch versions at the same time. In that case, use two `applies_to` badges so that users can see clearly the versions in which the functionality is introduced.
 
 For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beats/filebeat/filebeat-input-httpjson) page, the `terminate` helper function was added to a 9.0.x and 9.1.x patch version at the same time.
 
@@ -572,7 +572,7 @@ For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beat
 ```markdown
 * `terminate`: exits the template without falling back to the default value
   and without causing an error. It takes a single string argument that is
-  logged in debug logging. {applies_to}`stack: ga 9.1.2, ga 9.0.6`
+  logged in debug logging. {applies_to}`stack: ga 9.1.2` {applies_to}`stack: ga 9.0.6`
 ```
 ::::
 :::::
