@@ -4,10 +4,10 @@ The [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/pr
 
 ```yml
 products:
-  apm_agent_dotnet:
+  apm-agent-dotnet:
     display: 'APM .NET Agent'
-    versioning: 'apm_agent_dotnet'
-  edot_collector:
+    versioning: 'apm-agent-dotnet'
+  edot-collector:
     display: 'Elastic Distribution of OpenTelemetry Collector'
     versioning: 'stack'
 #...
@@ -28,16 +28,20 @@ Writing `{{ product.<product-id> }}` renders the friendly name of the product in
 
 | Substitution                    | Result |
 |---------------------------------|---|
-| `{{ product.apm_agent_dotnet }}` |{{ product.apm_agent_dotnet }}  |
-| `{{ product.edot_collector }}`           | {{ product.edot_collector }} |
+| `{{ product.apm-agent-dotnet }}` |{{ product.apm-agent-dotnet }}  |
+| `{{ product.edot-collector }}`           | {{ product.edot-collector }} |
 
 You can also use the shorthand notation `{{ .<product_id> }}`. For example:
 
 | Substitution                    | Result |
 |---------------------------------|---|
-| `{{ .apm_agent_dotnet }}` |{{ .apm_agent_dotnet }}  |
-| `{{ .edot_collector }}`           | {{ .edot_collector }} |
+| `{{ .apm-agent-dotnet }}` |{{ .apm-agent-dotnet }}  |
+| `{{ .edot-collector }}`           | {{ .edot-collector }} |
 
+
+:::{note}
+While the recommended separator is a hyphen (`-`) to promote cohesion, underscores (`_`) are also supported, and internally read as hyphens.
+:::
 
 ## See also
 
