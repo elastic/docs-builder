@@ -93,6 +93,7 @@ toc:
       - file: headings.md
       - file: admonitions.md
       - file: applies.md
+      - file: applies-switch.md
       - file: automated_settings.md
       - file: code.md
       - file: comments.md

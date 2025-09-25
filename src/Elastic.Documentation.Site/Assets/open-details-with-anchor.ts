@@ -1,6 +1,6 @@
 import { UAParser } from 'ua-parser-js'
 
-const { getBrowser } = new UAParser()
+const { browser } = UAParser()
 
 // This is a fix for anchors in details elements in non-Chrome browsers.
 export function openDetailsWithAnchor() {
@@ -9,7 +9,6 @@ export function openDetailsWithAnchor() {
         if (target) {
             const closestDetails = target.closest('details')
             if (closestDetails) {
-                const browser = getBrowser()
                 if (browser.name !== 'Chrome') {
                     closestDetails.open = true
                     target.scrollIntoView({
