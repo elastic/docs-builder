@@ -9,25 +9,18 @@ products:
     display: 'APM .NET Agent'
   apm-agent-go:
     display: 'APM Go Agent'
-    versioning: 'apm-agent-go'
   apm-agent-java:
     display: 'APM Java Agent'
-    versioning: 'apm-agent-java'
   apm-agent-node:
     display: 'APM Node.js Agent'
-    versioning: 'apm-agent-node'
   apm-agent-php:
     display: 'APM PHP Agent'
-    versioning: 'apm-agent-php'
   apm-agent-python:
     display: 'APM Python Agent'
-    versioning: 'apm-agent-python'
   apm-agent-ruby:
     display: 'APM Ruby Agent'
-    versioning: 'apm-agent-ruby'
   apm-agent-rum-js:
     display: 'APM RUM JavaScript Agent'
-    versioning: 'apm-agent-rum'
   apm-k8s-attacher:
     display: 'APM Attacher for Kubernetes'
     versioning: 'apm-attacher'
@@ -63,10 +56,8 @@ products:
     versioning: 'cloud-terraform'
   curator:
     display: 'Elasticsearch Curator'
-    versioning: 'curator'
   ecs:
     display: 'Elastic Common Schema (ECS)'
-    versioning: 'ecs'
   ecs-logging:
     display: 'ECS Logging'
     versioning: 'stack'
@@ -75,28 +66,20 @@ products:
     versioning: 'ecs-logging-dotnet'
   ecs-logging-go-logrus:
     display: 'ECS Logging Go (Logrus)'
-    versioning: 'ecs-logging-go-logrus'
   ecs-logging-go-zap:
     display: 'ECS Logging Go (Zap)'
-    versioning: 'ecs-logging-go-zap'
   ecs-logging-go-zerolog:
     display: 'ECS Logging Go (Zerolog)'
-    versioning: 'ecs-logging-go-zerolog'
   ecs-logging-java:
     display: 'ECS Logging Java'
-    versioning: 'ecs-logging-java'
   ecs-logging-nodejs:
     display: 'ECS Logging Node.js'
-    versioning: 'ecs-logging-nodejs'
   ecs-logging-php:
     display: 'ECS Logging PHP'
-    versioning: 'ecs-logging-php'
   ecs-logging-python:
     display: 'ECS Logging Python'
-    versioning: 'ecs-logging-python'
   ecs-logging-ruby:
     display: 'ECS Logging Ruby'
-    versioning: 'ecs-logging-ruby'
   edot-cf:
     display: 'EDOT Cloud Forwarder'
     versioning: 'stack'
@@ -108,31 +91,22 @@ products:
     versioning: 'stack'
   edot-ios:
     display: 'Elastic Distribution of OpenTelemetry iOS'
-    versioning: 'edot-ios'
   edot-android:
     display: 'Elastic Distribution of OpenTelemetry Android'
-    versioning: 'edot-android'
   edot-dotnet:
     display: 'Elastic Distribution of OpenTelemetry .NET'
-    versioning: 'edot-dotnet'
   edot-java:
     display: 'Elastic Distribution of OpenTelemetry Java'
-    versioning: 'edot-java'
   edot-node:
     display: 'Elastic Distribution of OpenTelemetry Node'
-    versioning: 'edot-node'
   edot-php:
     display: 'Elastic Distribution of OpenTelemetry PHP'
-    versioning: 'edot-php'
   edot-python:
     display: 'Elastic Distribution of OpenTelemetry Python'
-    versioning: 'edot-python'
   edot-cf-aws:
     display: 'EDOT Cloud Forwarder for AWS'
-    versioning: 'edot-cf-aws'
   edot-cf-azure:
     display: 'EDOT Cloud Forwarder for Azure'
-    versioning: 'edot-cf-azure'
   eland:
     display: 'Eland'
     versioning: 'stack'

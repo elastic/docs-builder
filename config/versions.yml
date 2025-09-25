@@ -60,7 +60,7 @@ versioning_systems:
   apm-agent-ruby:
     base: 4.0
     current: 4.8.0
-  apm-agent-rum:
+  apm-agent-rum-js:
     base: 5.0
     current: 5.17.0
   apm-attacher:

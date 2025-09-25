@@ -151,8 +151,8 @@ public record ProductApplicability
 	[YamlMember(Alias = "apm-agent-ruby")]
 	public AppliesCollection? ApmAgentRuby { get; set; }
 
-	[YamlMember(Alias = "apm-agent-rum")]
-	public AppliesCollection? ApmAgentRum { get; set; }
+	[YamlMember(Alias = "apm-agent-rum-js")]
+	public AppliesCollection? ApmAgentRumJs { get; set; }
 
 	[YamlMember(Alias = "edot-ios")]
 	public AppliesCollection? EdotIos { get; set; }

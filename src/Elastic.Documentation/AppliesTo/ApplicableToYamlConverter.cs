@@ -218,7 +218,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{ "apm_agent_php", a => productAvailability.ApmAgentPhp = a },
 			{ "apm_agent_python", a => productAvailability.ApmAgentPython = a },
 			{ "apm_agent_ruby", a => productAvailability.ApmAgentRuby = a },
-			{ "apm_agent_rum", a => productAvailability.ApmAgentRum = a },
+			{ "apm_agent_rum_js", a => productAvailability.ApmAgentRumJs = a },
 			{ "edot_ios", a => productAvailability.EdotIos = a },
 			{ "edot_android", a => productAvailability.EdotAndroid = a },
 			{ "edot_dotnet", a => productAvailability.EdotDotnet = a },

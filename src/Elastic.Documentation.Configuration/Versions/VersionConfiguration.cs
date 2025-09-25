@@ -69,8 +69,8 @@ public enum VersioningSystemId
 	ApmAgentPython,
 	[Display(Name = "apm-agent-ruby")]
 	ApmAgentRuby,
-	[Display(Name = "apm-agent-rum")]
-	ApmAgentRum,
+	[Display(Name = "apm-agent-rum-js")]
+	ApmAgentRumJs,
 	[Display(Name = "apm-attacher")]
 	ApmAttacher,
 	[Display(Name = "apm-lambda")]
