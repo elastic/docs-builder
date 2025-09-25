@@ -4,6 +4,8 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using Microsoft.Extensions.Logging;
+using YamlDotNet.RepresentationModel;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -15,8 +17,6 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO.Navigation;
-using Microsoft.Extensions.Logging;
-using YamlDotNet.RepresentationModel;
 
 namespace Elastic.Documentation.Assembler;
 
