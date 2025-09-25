@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
@@ -69,6 +71,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case TabItemBlock tabItem:
 				WriteTabItem(renderer, tabItem);
+				return;
+			case AppliesSwitchBlock appliesSwitch:
+				WriteAppliesSwitch(renderer, appliesSwitch);
+				return;
+			case AppliesItemBlock appliesItem:
+				WriteAppliesItem(renderer, appliesItem);
 				return;
 			case LiteralIncludeBlock literalIncludeBlock:
 				WriteLiteralIncludeBlock(renderer, literalIncludeBlock);
@@ -249,6 +257,50 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			TabSetGroupKey = block.TabSetGroupKey
 		});
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAppliesSwitch(HtmlRenderer renderer, AppliesSwitchBlock block)
+	{
+		var slice = AppliesSwitchView.Create(new AppliesSwitchViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
+	{
+		// Parse the applies_to definition to get the ApplicableTo object
+		var appliesTo = ParseApplicableTo(block.AppliesToDefinition, block);
+		var slice = AppliesItemView.Create(new AppliesItemViewModel
+		{
+			DirectiveBlock = block,
+			Index = block.Index,
+			AppliesToDefinition = block.AppliesToDefinition,
+			AppliesTo = appliesTo,
+			AppliesSwitchIndex = block.AppliesSwitchIndex,
+			SyncKey = block.SyncKey,
+			AppliesSwitchGroupKey = block.AppliesSwitchGroupKey,
+			BuildContext = block.Build
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static ApplicableTo? ParseApplicableTo(string yaml, DirectiveBlock block)
+	{
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			if (applicableTo.Diagnostics is null)
+				return applicableTo;
+			foreach (var (severity, message) in applicableTo.Diagnostics)
+				block.Emit(severity, message);
+			applicableTo.Diagnostics = null;
+			return applicableTo;
+		}
+		catch (Exception e)
+		{
+			block.EmitError($"Unable to parse applies_to definition: {yaml}", e);
+		}
+
+		return null;
 	}
 
 	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
