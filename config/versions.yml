@@ -21,6 +21,9 @@ versioning_systems:
     base: 3.0
     current: 3.1.0
   ess: *all
+  ecs:
+    base: 9.0
+    current: 9.1.0
   self: *stack
   ecctl:
     base: 1.0

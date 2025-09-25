@@ -67,7 +67,7 @@ products:
     versioning: 'curator'
   ecs:
     display: 'Elastic Common Schema (ECS)'
-    versioning: 'stack'
+    versioning: 'ecs'
   ecs-logging:
     display: 'ECS Logging'
     versioning: 'stack'
