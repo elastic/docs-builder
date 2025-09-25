@@ -117,7 +117,9 @@ public class AssemblerBuildService(
 			return; // No llms.txt file to enhance
 
 		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
-		var navigationSections = enhancer.GenerateNavigationSections(navigation);
+		// Assembler always uses the production URL as canonical base URL
+		var canonicalBaseUrl = new Uri("https://www.elastic.co");
+		var navigationSections = enhancer.GenerateNavigationSections(navigation, canonicalBaseUrl);
 
 		// Append the navigation sections to the existing boilerplate
 		var enhancedContent = existingContent + Environment.NewLine + navigationSections;

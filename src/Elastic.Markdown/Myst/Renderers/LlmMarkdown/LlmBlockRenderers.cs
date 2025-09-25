@@ -43,15 +43,25 @@ public static class LlmRenderingHelpers
 	/// </summary>
 	public static string? MakeAbsoluteUrl(LlmMarkdownRenderer renderer, string? url)
 	{
+		if (renderer.BuildContext.CanonicalBaseUrl == null)
+			return url;
+
+		return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, url);
+	}
+
+	/// <summary>
+	/// Converts relative URLs to absolute URLs for LLM consumption
+	/// </summary>
+	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url)
+	{
 		if (
 			string.IsNullOrEmpty(url)
-			|| renderer.BuildContext.CanonicalBaseUrl == null
+			|| baseUri == null
 			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
 			|| !Uri.IsWellFormedUriString(url, UriKind.Relative))
 			return url;
 		try
 		{
-			var baseUri = renderer.BuildContext.CanonicalBaseUrl;
 			var absoluteUri = new Uri(baseUri, url);
 			return absoluteUri.ToString();
 		}
@@ -62,24 +72,28 @@ public static class LlmRenderingHelpers
 	}
 
 	/// <summary>
-	/// Converts documentation URLs to absolute markdown URLs specifically for LLM consumption.
-	/// Transforms HTML paths to .md file paths and ensures they're absolute URLs.
+	/// Converts documentation URLs to absolute markdown URLs for LLM consumption
 	/// </summary>
-	/// <param name="url">The documentation URL to convert (e.g., "/docs/solutions/search/")</param>
-	/// <param name="baseUrl">The base URL to use (defaults to "https://www.elastic.co")</param>
-	/// <returns>Absolute markdown URL (e.g., "https://www.elastic.co/docs/solutions/search.md")</returns>
-	public static string ConvertToAbsoluteMarkdownUrl(string url, string? baseUrl = null)
+	public static string MakeAbsoluteMarkdownUrl(Uri baseUri, string? url)
 	{
 		if (string.IsNullOrEmpty(url))
-			return url;
+			return string.Empty;
 
-		baseUrl ??= "https://www.elastic.co";
+		// Convert to .md URL for LLM consumption
+		var markdownUrl = ConvertToMarkdownUrl(url);
 
-		// Convert HTML URLs to .md URLs for LLM consumption
-		// e.g., "/docs/solutions/search/" -> "https://www.elastic.co/docs/solutions/search.md"
+		// Use the existing absolute URL logic
+		return MakeAbsoluteUrl(baseUri, markdownUrl) ?? markdownUrl;
+	}
+
+	/// <summary>
+	/// Converts documentation URL paths to .md file paths for LLM consumption
+	/// </summary>
+	private static string ConvertToMarkdownUrl(string url)
+	{
 		var cleanUrl = url.TrimStart('/');
 
-		// Remove "docs/" prefix if present for the markdown filename
+		// Remove "docs/" prefix if present for the markdown filename, then add it back
 		var markdownPath = cleanUrl;
 		if (markdownPath.StartsWith("docs/", StringComparison.Ordinal))
 			markdownPath = markdownPath.Substring(5);
@@ -90,9 +104,9 @@ public static class LlmRenderingHelpers
 		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal))
 			markdownPath += ".md";
 
-		// Make absolute URL using the canonical base URL
-		return $"{baseUrl.TrimEnd('/')}/docs/{markdownPath}";
+		return $"/docs/{markdownPath}";
 	}
+
 }
 
 /// <summary>

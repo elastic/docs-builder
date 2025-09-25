@@ -20,7 +20,7 @@ namespace Elastic.Documentation.Assembler.Navigation;
 /// </summary>
 public class LlmsNavigationEnhancer
 {
-	public string GenerateNavigationSections(GlobalNavigation navigation)
+	public string GenerateNavigationSections(GlobalNavigation navigation, Uri canonicalBaseUrl)
 	{
 		var content = new StringBuilder();
 
@@ -45,7 +45,7 @@ public class LlmsNavigationEnhancer
 				foreach (var child in firstLevelChildren)
 				{
 					var title = GetBestTitle(child);
-					var url = LlmRenderingHelpers.ConvertToAbsoluteMarkdownUrl(child.Url);
+					var url = LlmRenderingHelpers.MakeAbsoluteMarkdownUrl(canonicalBaseUrl, child.Url);
 					var description = GetDescription(child);
 
 					_ = !string.IsNullOrEmpty(description)
