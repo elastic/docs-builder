@@ -36,4 +36,5 @@ public static class YamlSerialization
 [YamlSerializable(typeof(Setting))]
 [YamlSerializable(typeof(AllowedValue))]
 [YamlSerializable(typeof(SettingMutability))]
+[YamlSerializable(typeof(ApplicableTo))]
 public partial class DocsBuilderYamlStaticContext;
