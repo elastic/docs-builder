@@ -77,13 +77,13 @@ This example shows how to use directly a key from the second level of the `appli
 
 ::::{tab-item} Output
 
-{applies_to}`stack: ga 9.1.2` {applies_to}`stack: ga 9.0.6`
+- {applies_to}`stack: ga 9.1.2` {applies_to}`stack: ga 9.0.6`
 
 ::::
 
 ::::{tab-item} Markdown
 ```markdown
-{applies_to}`stack: ga 9.1.2` {applies_to}`stack: ga 9.0.6`
+- {applies_to}`stack: ga 9.1.2` {applies_to}`stack: ga 9.0.6`
 ```
 ::::
 
