@@ -18,7 +18,7 @@ mappings:
   en/apm/agent/rum-js/: [ '5.17.0', '4.x', '3.x', '2.x', '1.x', '0.x' ]
   en/apm/agent/swift/: [ '1.2.1', '0.x' ]
   en/apm/attacher/: [ '1.1.3' ]
-  en/apm/lambda/: [ '1.5.8' ]
+  en/apm/lambda/: [ '1.6.0' ]
   en/beats/auditbeat/: *stack
   en/beats/devguide/: *stack
   en/beats/filebeat/: *stack
