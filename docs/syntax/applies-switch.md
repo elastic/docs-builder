@@ -79,15 +79,26 @@ Content for Serverless
 
 ## Automatic grouping
 
-Applies switches are automatically grouped together by default. This means all applies switches on a page will sync with each other - when you select a version in one switch, all other switches will automatically switch to the same version.
+All applies switches on a page automatically sync together. When you select an applies_to definition in one switch, all other switches will switch to the same applies_to definition.
 
-Items with the same applies_to definition will sync together across all switches on the page. For example, if you have `stack: preview 9.1` in multiple switches, selecting it in one will select it in all others.
+The format of the applies_to definition doesn't matter - `stack: preview 9.1`, `{ "stack": "preview 9.1" }`, and `{ stack: "preview 9.1" }` all identify the same content and will sync together.
 
-In the following example we have two applies switch sets that are automatically grouped together.
-Hence, both switch sets will be in sync.
+In the following example, both switch sets are automatically grouped and will stay in sync.
+
+::::::{tab-set}
+:::::{tab-item} Output
 
 ::::{applies-switch}
-:::{applies-item} stack: ga 9.0
+:::{applies-item} { "stack": "preview 9.0" }
+Content for 9.0 version
+:::
+:::{applies-item} { "stack": "ga 9.1" }
+Content for 9.1 version
+:::
+::::
+
+::::{applies-switch}
+:::{applies-item} stack: preview 9.0
 Other content for 9.0 version
 :::
 :::{applies-item} stack: ga 9.1
@@ -95,14 +106,31 @@ Other content for 9.1 version
 :::
 ::::
 
+:::::
+:::::{tab-item} Markdown
+
+```markdown
 ::::{applies-switch}
-:::{applies-item} stack: ga 9.0
+:::{applies-item} { "ece": "ga 3.0" }
+Other content for ECE 3.0 version
+:::
+:::{applies-item} { "ece": "ga 4.0" }
+Other content for ECE 4.0 version
+:::
+::::
+
+::::{applies-switch}
+:::{applies-item} ece: ga 3.0
 Other content for 9.0 version
 :::
-:::{applies-item} stack: ga 9.1
+:::{applies-item} ece: ga 3.1
 Other content for 9.1 version
 :::
 ::::
+
+```
+:::::
+::::::
 
 ## Supported `applies_to` definitions
 
