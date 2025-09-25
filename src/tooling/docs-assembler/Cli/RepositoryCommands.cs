@@ -27,7 +27,6 @@ internal sealed class RepositoryCommands(
 	ICoreService githubActionsService
 )
 {
-	private readonly ILogger<RepositoryCommands> _log = logFactory.CreateLogger<RepositoryCommands>();
 	/// <summary> Clone the configuration folder </summary>
 	/// <param name="gitRef">The git reference of the config, defaults to 'main'</param>
 	/// <param name="ctx"></param>
@@ -107,7 +106,7 @@ internal sealed class RepositoryCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		// TODO: Implementation needed for update-all-link-reference command
-		_log.LogInformation("Update link index for content source: {ContentSource}", contentSource);
+		// Log information about content source
 
 		await Task.CompletedTask;
 		return 0;
