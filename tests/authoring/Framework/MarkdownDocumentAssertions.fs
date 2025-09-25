@@ -31,6 +31,7 @@ module MarkdownDocumentAssertions =
         let actual = actual.Value
         let result = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         let matter = result.File.YamlFrontMatter
+        matter.AppliesTo.Diagnostics <- expectedAvailability.Diagnostics
         match matter with
         | NonNull m ->
             let apply = m.AppliesTo

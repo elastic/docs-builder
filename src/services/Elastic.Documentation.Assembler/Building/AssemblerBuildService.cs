@@ -82,7 +82,7 @@ public class AssemblerBuildService(
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);
-		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleSources.LegacyUrlMappings);
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 

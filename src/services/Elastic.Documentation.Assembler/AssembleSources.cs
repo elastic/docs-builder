@@ -10,6 +10,7 @@ using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
@@ -27,7 +28,7 @@ public class AssembleSources
 
 	public FrozenDictionary<Uri, NavigationTocMapping> NavigationTocMappings { get; }
 
-	public FrozenDictionary<string, IReadOnlyCollection<string>> LegacyUrlMappings { get; }
+	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
 	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
 
@@ -46,7 +47,6 @@ public class AssembleSources
 	{
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var navigationTocMappings = GetTocMappings(context);
-		var legacyUrlMappings = GetLegacyUrlMappings(context);
 		var uriResolver = new PublishEnvironmentUriResolver(navigationTocMappings, context.Environment);
 
 		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
@@ -59,7 +59,7 @@ public class AssembleSources
 			checkouts,
 			configurationContext,
 			navigationTocMappings,
-			legacyUrlMappings,
+			configurationContext.LegacyUrlMappings,
 			uriResolver,
 			crossLinkResolver,
 			availableExporters
@@ -75,7 +75,7 @@ public class AssembleSources
 		Checkout[] checkouts,
 		IConfigurationContext configurationContext,
 		FrozenDictionary<Uri, NavigationTocMapping> navigationTocMappings,
-		FrozenDictionary<string, IReadOnlyCollection<string>> legacyUrlMappings,
+		LegacyUrlMappingConfiguration legacyUrlMappings,
 		PublishEnvironmentUriResolver uriResolver,
 		ICrossLinkResolver crossLinkResolver,
 		IReadOnlySet<Exporter> availableExporters
@@ -129,44 +129,6 @@ public class AssembleSources
 			})
 			.ToFrozenDictionary();
 	}
-
-	private static FrozenDictionary<string, IReadOnlyCollection<string>> GetLegacyUrlMappings(AssembleContext context)
-	{
-		var dictionary = new Dictionary<string, IReadOnlyCollection<string>>();
-		var reader = new YamlStreamReader(context.ConfigurationFileProvider.LegacyUrlMappingsFile, context.Collector);
-		foreach (var entry in reader.Read())
-		{
-			switch (entry.Key)
-			{
-				case "mappings":
-					ReadHistoryMappings(dictionary, reader, entry);
-					break;
-			}
-		}
-
-		return dictionary.OrderByDescending(x => x.Key.Length).ToFrozenDictionary();
-
-		static void ReadHistoryMappings(IDictionary<string, IReadOnlyCollection<string>> dictionary, YamlStreamReader reader, YamlToplevelKey entry)
-		{
-			if (entry.Entry.Value is not YamlMappingNode mappings)
-			{
-				reader.EmitWarning($"It wasn't possible to read the mappings");
-				return;
-			}
-
-			foreach (var mapping in mappings)
-			{
-				var mappingKey = $"{((YamlScalarNode)mapping.Key).Value}";
-				var mappingValues = ((YamlSequenceNode)mapping.Value).Children.OfType<YamlScalarNode>().Where(x => x.Value is not null).Select(x => x.Value!)
-					.ToList();
-				if (dictionary.TryGetValue(mappingKey, out _))
-					reader.EmitWarning($"'{mappingKey}' is already mapped to '{mappingValues}'");
-				else
-					dictionary[mappingKey] = mappingValues;
-			}
-		}
-	}
-
 
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
 	{

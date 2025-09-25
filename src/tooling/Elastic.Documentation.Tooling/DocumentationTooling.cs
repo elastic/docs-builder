@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using Actions.Core.Extensions;
 using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ServiceDefaults;
@@ -72,11 +74,15 @@ public static class DocumentationTooling
 				var endpoints = sp.GetRequiredService<DocumentationEndpoints>();
 				var configurationFileProvider = sp.GetRequiredService<ConfigurationFileProvider>();
 				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
+				var products = sp.GetRequiredService<ProductsConfiguration>();
+				var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
 				return new ConfigurationContext
 				{
 					ConfigurationFileProvider = configurationFileProvider,
 					VersionsConfiguration = versionsConfiguration,
-					Endpoints = endpoints
+					Endpoints = endpoints,
+					ProductsConfiguration = products,
+					LegacyUrlMappings = legacyUrlMappings
 				};
 			});
 

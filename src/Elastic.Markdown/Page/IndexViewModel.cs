@@ -6,8 +6,9 @@ using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Legacy;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO;
@@ -26,7 +27,6 @@ public class IndexViewModel
 	public required string MarkdownHtml { get; init; }
 	public required IReadOnlyCollection<PageTocItem> PageTocItems { get; init; }
 	public required MarkdownFile CurrentDocument { get; init; }
-
 	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? PreviousDocument { get; init; }
 	public required INavigationItem? NextDocument { get; init; }
@@ -39,7 +39,7 @@ public class IndexViewModel
 
 	public required string? AllVersionsUrl { get; init; }
 	public required LegacyPageMapping[]? LegacyPages { get; init; }
-	public required VersionDrownDownItemViewModel[]? VersionDropdownItems { get; init; }
+	public required VersionDropDownItemViewModel[]? VersionDropdownItems { get; init; }
 	public required string? UrlPathPrefix { get; init; }
 	public required string? GithubEditUrl { get; init; }
 	public required string MarkdownUrl { get; init; }
@@ -61,7 +61,7 @@ public class IndexViewModel
 	public required string StructuredBreadcrumbsJson { get; init; }
 }
 
-public class VersionDrownDownItemViewModel
+public class VersionDropDownItemViewModel
 {
 	[JsonPropertyName("name")]
 	public required string Name { get; init; }
@@ -73,45 +73,49 @@ public class VersionDrownDownItemViewModel
 	public required bool IsDisabled { get; init; }
 
 	[JsonPropertyName("children")]
-	public required VersionDrownDownItemViewModel[]? Children { get; init; }
+	public required VersionDropDownItemViewModel[]? Children { get; init; }
 
 	// This logic currently only handles one level of children. Although the model supports multiple levels, it is not currently used.
-	public static VersionDrownDownItemViewModel[]? FromLegacyPageMappings(LegacyPageMapping[]? legacyPageMappings)
+	public static VersionDropDownItemViewModel[]? FromLegacyPageMappings(LegacyPageMapping[]? legacyPageMappings)
 	{
-		if (legacyPageMappings is null)
+		if (legacyPageMappings is null || legacyPageMappings.Length == 0)
 			return null;
 		var groupedVersions = GroupByMajorVersion(legacyPageMappings);
-		return groupedVersions.Select(m =>
+
+		List<VersionDropDownItemViewModel> versions = [];
+		foreach (var versionGroup in groupedVersions)
 		{
-			// If there is more than one version, we need to create a dropdown
-			if (m.Value.Count != 1)
+			if (versionGroup.Value.Count != 1)
 			{
-				return new VersionDrownDownItemViewModel
+				versions.Add(new VersionDropDownItemViewModel
 				{
-					Name = m.Key,
+					Name = versionGroup.Key,
 					Href = null,
 					IsDisabled = false,
-					Children = m.Value.Select(v => new VersionDrownDownItemViewModel
+					Children = versionGroup.Value.Select(v => new VersionDropDownItemViewModel
 					{
 						Name = v,
 						Href = legacyPageMappings.First(x => x.Version == v).ToString(),
 						IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
 						Children = null
 					}).ToArray()
-				};
+				});
 			}
-
-			var legacyPageMapping = legacyPageMappings.First(x => x.Version == m.Value.First());
-
-			// If there is only one version, we don't need to create a dropdown
-			return new VersionDrownDownItemViewModel
+			else
 			{
-				Name = legacyPageMapping.Version,
-				Href = legacyPageMapping.ToString(),
-				IsDisabled = !legacyPageMapping.Exists,
-				Children = null
-			};
-		}).ToArray();
+				var legacyPageMapping = legacyPageMappings.First(x => x.Version == versionGroup.Value.First());
+
+				versions.Add(new VersionDropDownItemViewModel
+				{
+					Name = legacyPageMapping.Version,
+					Href = legacyPageMapping.ToString(),
+					IsDisabled = !legacyPageMapping.Exists,
+					Children = null
+				});
+			}
+		}
+
+		return versions.ToArray();
 	}
 
 	// The legacy page mappings provide a list of versions.
@@ -132,5 +136,5 @@ public class VersionDrownDownItemViewModel
 		});
 }
 
-[JsonSerializable(typeof(VersionDrownDownItemViewModel[]))]
+[JsonSerializable(typeof(VersionDropDownItemViewModel[]))]
 public partial class ViewModelSerializerContext : JsonSerializerContext;
