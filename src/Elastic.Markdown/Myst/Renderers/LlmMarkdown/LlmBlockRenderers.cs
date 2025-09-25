@@ -39,13 +39,22 @@ public static class LlmRenderingHelpers
 	}
 
 	/// <summary>
-	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption
+	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption.
+	/// For documentation URLs, converts them to .md format for consistency with LLM-generated files.
 	/// </summary>
 	public static string? MakeAbsoluteUrl(LlmMarkdownRenderer renderer, string? url)
 	{
 		if (renderer.BuildContext.CanonicalBaseUrl == null)
 			return url;
 
+		// For documentation URLs (starting with /docs/), convert to .md format for LLM consistency
+		if (!string.IsNullOrEmpty(url) && url.StartsWith("/docs/", StringComparison.Ordinal))
+		{
+			var markdownUrl = ConvertToMarkdownUrl(url);
+			return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, markdownUrl);
+		}
+
+		// For other URLs (images, external links), use regular absolute URL conversion
 		return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, url);
 	}
 
