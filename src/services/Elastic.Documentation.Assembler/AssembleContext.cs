@@ -5,6 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 
@@ -26,6 +28,9 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 	/// <inheritdoc />
 	public DocumentationEndpoints Endpoints { get; }
+
+	public ProductsConfiguration ProductsConfiguration { get; }
+	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
 	public IDirectoryInfo CheckoutDirectory { get; }
 
@@ -52,6 +57,8 @@ public class AssembleContext : IDocumentationConfigurationContext
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		Endpoints = configurationContext.Endpoints;
+		ProductsConfiguration = configurationContext.ProductsConfiguration;
+		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
 			throw new Exception($"Could not find environment {environment}");

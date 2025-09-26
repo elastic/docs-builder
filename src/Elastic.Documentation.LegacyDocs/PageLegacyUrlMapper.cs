@@ -2,46 +2,47 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Documentation.LegacyDocs;
 
 public record PageLegacyUrlMapper : ILegacyUrlMapper
 {
-	private IReadOnlyDictionary<string, IReadOnlyCollection<string>> PreviousUrls { get; }
 	private LegacyPageService LegacyPageService { get; }
-	public PageLegacyUrlMapper(LegacyPageService legacyPageService, IReadOnlyDictionary<string, IReadOnlyCollection<string>> previousUrls)
+	private string DefaultVersion { get; }
+	private LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
+
+	public PageLegacyUrlMapper(LegacyPageService legacyPageService, VersionsConfiguration versions, LegacyUrlMappingConfiguration legacyUrlMappings)
 	{
-		PreviousUrls = previousUrls;
 		LegacyPageService = legacyPageService;
+		DefaultVersion = $"{versions.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{versions.VersioningSystems[VersioningSystemId.Stack].Base.Minor}";
+		LegacyUrlMappings = legacyUrlMappings;
 	}
+
 
 	public IReadOnlyCollection<LegacyPageMapping>? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
-		if (mappedPages is null)
+		if (mappedPages is null || mappedPages.Count == 0)
 			return null;
-
-		if (mappedPages.Count == 0)
-			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty, false)];
 
 		var mappedPage = mappedPages.First();
 
-		var versions = PreviousUrls.FirstOrDefault(kv =>
+		if (LegacyUrlMappings.Mappings.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)) is not { } legacyMappingMatch)
 		{
-			var (key, _) = kv;
-			return mappedPage.Contains(key, StringComparison.OrdinalIgnoreCase);
-		});
+			return [new LegacyPageMapping(LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic-stack", StringComparison.OrdinalIgnoreCase)).Product, mappedPages.FirstOrDefault() ?? string.Empty, DefaultVersion, false)];
+		}
 
-		if (versions.Value is null)
-			return [new LegacyPageMapping(mappedPages.FirstOrDefault() ?? string.Empty, string.Empty, false)];
-		return versions.Value
-			.Select(v =>
-				{
-					var legacyPageMapping = new LegacyPageMapping(mappedPage, v, true);
-					var path = Uri.TryCreate(legacyPageMapping.ToString(), UriKind.Absolute, out var uri) ? uri : null;
-					var exists = LegacyPageService.PathExists(path?.AbsolutePath!);
-					return legacyPageMapping with { Exists = exists };
-				}
-			).ToArray();
+		var allVersions = new List<LegacyPageMapping>();
+
+		allVersions.AddRange(legacyMappingMatch.LegacyVersions.Select(x =>
+		{
+			var mapping = new LegacyPageMapping(legacyMappingMatch.Product, mappedPage, x, false);
+			var path = Uri.TryCreate(mapping.ToString(), UriKind.Absolute, out var uri) ? uri : null;
+			var exists = path is not null && LegacyPageService.PathExists(path.AbsolutePath);
+			return mapping with { Exists = exists };
+		}));
+
+		return allVersions;
 	}
 }

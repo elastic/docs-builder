@@ -82,6 +82,8 @@ This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder
 * `ech`
 * `eck`
 * `ess`
+* `esf`
+* `search_ui`
 * `self`
 * `ecctl`
 * `curator`
@@ -106,6 +108,17 @@ This is dictated by the [`versions.yml`](https://github.com/elastic/docs-builder
 * `edot_cf_aws`
 * `edot_cf_azure`
 * `edot_collector`
+* `apm_attacher`
+* `apm_lambda`
+* `ecs_logging_dotnet`
+* `ecs_logging_go_logrus`
+* `ecs_logging_go_zap`
+* `ecs_logging_go_zerolog`
+* `ecs_logging_java`
+* `ecs_logging_nodejs`
+* `ecs_logging_php`
+* `ecs_logging_python`
+* `ecs_logging_ruby`
 
 The following are available but should not be used. These map to serverless projects and have a fixed high version number.
 
