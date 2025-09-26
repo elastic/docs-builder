@@ -34,7 +34,7 @@
 			}
 
 			.dropdown-title__summary-text {
-				@apply px-4 py-2;
+				@apply flex items-center px-4 py-2;
 			}
 
 			.applies-dropdown {
