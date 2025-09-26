@@ -557,7 +557,7 @@ _Work in progress._
 
 ## Functionality is added to multiple patch versions [multiple-patch]
 
-Sometimes, features and enhancements slip through into patch versions, and the same functionality might be added for the first time to multiple patch versions at the same time. In that case, use two `applies_to` badges so that users can see clearly the versions in which the functionality is introduced.
+Sometimes, features and enhancements slip through into patch versions, and the same functionality might be added for the first time to multiple patch versions at the same time. In that case, use two `applies_to` badges so that users can see clearly the versions in which the functionality is introduced. Order the `applies_to` badges starting with the latest version, and ending with the earliest version. (Automatic ordering for multiple badges is not currently supported.)
 
 For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beats/filebeat/filebeat-input-httpjson) page, the `terminate` helper function was added to a 9.0.x and 9.1.x patch version at the same time.
 
