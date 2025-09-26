@@ -48,7 +48,8 @@ public static class LlmRenderingHelpers
 			return url;
 
 		// For documentation URLs (starting with /docs/), convert to .md format for LLM consistency
-		if (!string.IsNullOrEmpty(url) && url.StartsWith("/docs/", StringComparison.Ordinal))
+		// BUT exclude image files which should keep their original extensions
+		if (!string.IsNullOrEmpty(url) && url.StartsWith("/docs/", StringComparison.Ordinal) && !IsImageFile(url))
 		{
 			var markdownUrl = ConvertToMarkdownUrl(url);
 			return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, markdownUrl);
@@ -107,10 +108,10 @@ public static class LlmRenderingHelpers
 		if (markdownPath.StartsWith("docs/", StringComparison.Ordinal))
 			markdownPath = markdownPath.Substring(5);
 
-		// Convert directory URLs to .md files, but don't convert image files
+		// Convert directory URLs to .md files
 		if (markdownPath.EndsWith('/'))
 			markdownPath = markdownPath.TrimEnd('/') + ".md";
-		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal) && !IsImageFile(markdownPath))
+		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal))
 			markdownPath += ".md";
 
 		return $"/docs/{markdownPath}";
