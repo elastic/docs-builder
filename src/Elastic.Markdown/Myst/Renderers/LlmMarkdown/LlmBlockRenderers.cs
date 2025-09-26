@@ -107,13 +107,22 @@ public static class LlmRenderingHelpers
 		if (markdownPath.StartsWith("docs/", StringComparison.Ordinal))
 			markdownPath = markdownPath.Substring(5);
 
-		// Convert directory URLs to .md files
+		// Convert directory URLs to .md files, but don't convert image files
 		if (markdownPath.EndsWith('/'))
 			markdownPath = markdownPath.TrimEnd('/') + ".md";
-		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal))
+		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal) && !IsImageFile(markdownPath))
 			markdownPath += ".md";
 
 		return $"/docs/{markdownPath}";
+	}
+
+	/// <summary>
+	/// Checks if a URL path points to an image file
+	/// </summary>
+	private static bool IsImageFile(string path)
+	{
+		var extension = Path.GetExtension(path).ToLowerInvariant();
+		return extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".svg" or ".webp" or ".bmp" or ".ico";
 	}
 
 }
