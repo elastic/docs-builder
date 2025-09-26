@@ -7,7 +7,7 @@
 		details.dropdown {
 			@apply border-grey-20 mt-4 block rounded-sm border-1 shadow-xs;
 			summary.dropdown-title {
-				@apply text-ink-dark flex cursor-pointer items-center justify-between px-4 py-2 font-sans font-bold;
+				@apply text-ink-dark flex cursor-pointer items-stretch justify-between font-sans font-bold;
 			}
 
 			&[open] .dropdown-title {
@@ -19,6 +19,36 @@
 
 			.dropdown-content {
 				@apply px-4 pb-4;
+			}
+			
+			.dropdown-title__container {
+				@apply flex items-stretch;
+			}
+			
+			.dropdown-title__separator {
+				@apply block w-[1px] bg-grey-20;
+			}
+			
+			.dropdown-title__icon {
+				@apply flex items-center justify-center px-4 py-2;
+			}
+			
+			.dropdown-title__summary-text {
+				@apply py-2 px-4;
+			}
+
+			.applies-dropdown {
+				@apply cursor-pointer font-normal p-2 px-4;
+				.applicable-info {
+					@apply cursor-pointer border-none bg-transparent p-0;
+					&:not(:last-child):after {
+						content: ',';
+					}
+				}
+				.applicable-name,
+				.applicable-meta {
+					@apply text-base;
+				}
 			}
 		}
 	}

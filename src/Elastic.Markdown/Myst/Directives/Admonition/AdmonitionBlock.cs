@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.Myst.Directives.Admonition;
@@ -31,6 +32,10 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 
 	public string Title { get; private set; }
 
+	public string? AppliesToDefinition { get; private set; }
+
+	public ApplicableTo? AppliesTo { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		CrossReferenceName = Prop("name");
@@ -38,10 +43,32 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 		if (DropdownOpen.HasValue)
 			Classes = "dropdown";
 
+		// Parse applies_to property if present
+		AppliesToDefinition = Prop("applies_to");
+		if (!string.IsNullOrEmpty(AppliesToDefinition))
+		{
+			AppliesToDefinition = AppliesToDefinition.ReplaceSubstitutions(context);
+			AppliesTo = ParseApplicableTo(AppliesToDefinition);
+		}
+
 		if (Admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
 			Title = Arguments;
 		else if (!string.IsNullOrEmpty(Arguments))
 			Title += $" {Arguments}";
 		Title = Title.ReplaceSubstitutions(context);
+	}
+
+	private ApplicableTo? ParseApplicableTo(string yaml)
+	{
+		try
+		{
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.ProductsConfiguration);
+			return applicableTo;
+		}
+		catch
+		{
+			// If parsing fails, return null
+			return null;
+		}
 	}
 }
