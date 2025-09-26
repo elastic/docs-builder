@@ -20,25 +20,25 @@
 			.dropdown-content {
 				@apply px-4 pb-4;
 			}
-			
+
 			.dropdown-title__container {
 				@apply flex items-stretch;
 			}
-			
+
 			.dropdown-title__separator {
-				@apply block w-[1px] bg-grey-20;
+				@apply bg-grey-20 block w-[1px];
 			}
-			
+
 			.dropdown-title__icon {
 				@apply flex items-center justify-center px-4 py-2;
 			}
-			
+
 			.dropdown-title__summary-text {
-				@apply py-2 px-4;
+				@apply px-4 py-2;
 			}
 
 			.applies-dropdown {
-				@apply cursor-pointer font-normal p-2 px-4 flex items-center gap-1;
+				@apply flex cursor-pointer items-center gap-1 p-2 px-4 font-normal;
 				.applicable-info {
 					@apply cursor-pointer border-none bg-transparent p-0;
 					&:not(:last-child):after {
