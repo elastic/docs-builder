@@ -44,12 +44,8 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 			Classes = "dropdown";
 
 		// Parse applies_to property if present
-		AppliesToDefinition = Prop("applies_to");
 		if (!string.IsNullOrEmpty(AppliesToDefinition))
-		{
-			AppliesToDefinition = AppliesToDefinition.ReplaceSubstitutions(context);
 			AppliesTo = ParseApplicableTo(AppliesToDefinition);
-		}
 
 		if (Admonition is "admonition" or "dropdown" && !string.IsNullOrEmpty(Arguments))
 			Title = Arguments;
