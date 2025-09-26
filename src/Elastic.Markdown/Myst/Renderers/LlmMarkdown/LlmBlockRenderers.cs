@@ -48,8 +48,8 @@ public static class LlmRenderingHelpers
 			return url;
 
 		// For documentation URLs (starting with /docs/), convert to .md format for LLM consistency
-		// BUT exclude image files which should keep their original extensions
-		if (!string.IsNullOrEmpty(url) && url.StartsWith("/docs/", StringComparison.Ordinal) && !IsImageFile(url))
+		// BUT exclude files with extensions (images, PDFs, etc.) which should keep their original extensions
+		if (!string.IsNullOrEmpty(url) && url.StartsWith("/docs/", StringComparison.Ordinal) && !HasFileExtension(url))
 		{
 			var markdownUrl = ConvertToMarkdownUrl(url);
 			return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, markdownUrl);
@@ -118,12 +118,30 @@ public static class LlmRenderingHelpers
 	}
 
 	/// <summary>
-	/// Checks if a URL path points to an image file
+	/// Checks if a URL path points to a file with an extension (not a documentation page)
 	/// </summary>
-	private static bool IsImageFile(string path)
+	private static bool HasFileExtension(string path)
 	{
-		var extension = Path.GetExtension(path).ToLowerInvariant();
-		return extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".svg" or ".webp" or ".bmp" or ".ico";
+		try
+		{
+			// Try to parse as URI to handle query parameters and fragments
+			if (Uri.TryCreate(path, UriKind.RelativeOrAbsolute, out var uri))
+			{
+				// Get the path component without query/fragment
+				var pathOnly = uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString.Split('?', '#')[0];
+				var ext = Path.GetExtension(pathOnly);
+				return !string.IsNullOrEmpty(ext);
+			}
+
+			// Fallback to direct path parsing
+			var extension = Path.GetExtension(path);
+			return !string.IsNullOrEmpty(extension);
+		}
+		catch
+		{
+			// If parsing fails, assume it's a documentation page
+			return false;
+		}
 	}
 
 }
