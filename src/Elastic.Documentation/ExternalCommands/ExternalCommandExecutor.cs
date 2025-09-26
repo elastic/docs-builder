@@ -50,6 +50,7 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 			}
 			catch (Exception ex)
 			{
+				collector.EmitWarning("", $"An exception occurred on attempt {i} to capture output of {binary}: {ex?.Message}");
 				if (ex is not null)
 					e = ex;
 			}
