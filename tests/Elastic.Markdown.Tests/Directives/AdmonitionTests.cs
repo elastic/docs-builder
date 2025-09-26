@@ -196,7 +196,7 @@ A regular paragraph.
 		// Output the full HTML for inspection
 		output.WriteLine("Generated HTML:");
 		output.WriteLine(html);
-		
+
 		html.Should().Contain("Nested Note");
 		html.Should().Contain("This is a nested note with colons: 10:30 AM");
 		// Verify the nested note was actually parsed as a directive, not just plain text
