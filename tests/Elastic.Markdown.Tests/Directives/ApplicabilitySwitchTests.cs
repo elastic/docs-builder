@@ -194,8 +194,8 @@ Content for removed version
 
 		foreach (var (definition1, definition2) in testCases)
 		{
-			var key1 = AppliesItemBlock.GenerateSyncKey(definition1);
-			var key2 = AppliesItemBlock.GenerateSyncKey(definition2);
+			var key1 = AppliesItemBlock.GenerateSyncKey(definition1, Block!.Build.ProductsConfiguration);
+			var key2 = AppliesItemBlock.GenerateSyncKey(definition2, Block!.Build.ProductsConfiguration);
 			key1.Should().Be(key2, $"Sync keys should be the same for '{definition1}' and '{definition2}'");
 		}
 	}
@@ -214,8 +214,8 @@ Content for removed version
 
 		foreach (var (yamlObject, equivalentSyntax) in testCases)
 		{
-			var key1 = AppliesItemBlock.GenerateSyncKey(yamlObject);
-			var key2 = AppliesItemBlock.GenerateSyncKey(equivalentSyntax);
+			var key1 = AppliesItemBlock.GenerateSyncKey(yamlObject, Block!.Build.ProductsConfiguration);
+			var key2 = AppliesItemBlock.GenerateSyncKey(equivalentSyntax, Block!.Build.ProductsConfiguration);
 			key1.Should().Be(key2, $"Sync keys should be the same for YAML object '{yamlObject}' and equivalent syntax '{equivalentSyntax}'");
 
 			// Also verify the key has the expected format

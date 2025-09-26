@@ -10,6 +10,7 @@ Configure the documentation site in these files:
 - [](./navigation.md) - global navigation index
 - [](./versions.md) - global versioning schemes
 - [](./legacy-url-mappings.md) - supported legacy version
+- [](./products.md) - company product metadata
 
 ## Redirects
 

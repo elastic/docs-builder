@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Linq;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 
@@ -61,17 +61,17 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 		AppliesSwitchGroupKey = appliesSwitch?.GetGroupKey();
 
 		// Auto-generate sync key from applies_to definition if not provided
-		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition);
+		SyncKey = Prop("sync") ?? GenerateSyncKey(AppliesToDefinition, Build.ProductsConfiguration);
 		Selected = PropBool("selected");
 	}
 
-	public static string GenerateSyncKey(string appliesToDefinition)
+	public static string GenerateSyncKey(string appliesToDefinition, ProductsConfiguration productsConfiguration)
 	{
 		// Parse the YAML to get the ApplicableTo object, then use its hash
 		// This ensures both simple syntax and YAML objects produce consistent sync keys
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(appliesToDefinition, productsConfiguration);
 			if (applicableTo != null)
 			{
 				// Use the object's hash for a consistent, unique identifier

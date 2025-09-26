@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.Helpers;
 using Markdig.Syntax;
 
@@ -151,11 +150,11 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		if (!string.IsNullOrEmpty(sourceFile.Url))
 			_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{sourceFile.Url}");
 
-		var configProducts = context.BuildContext.Configuration.Products.Select(p =>
+		var configProducts = context.BuildContext.ProductsConfiguration.Products.Select(p =>
 		{
-			if (Products.AllById.TryGetValue(p, out var product))
+			if (context.BuildContext.ProductsConfiguration.Products.TryGetValue(p.Value.Id, out var product))
 				return product;
-			throw new ArgumentException($"Invalid product id: {p}");
+			throw new ArgumentException($"Invalid product id: {p.Value.Id}");
 		});
 		var frontMatterProducts = sourceFile.YamlFrontMatter?.Products ?? [];
 		var allProducts = frontMatterProducts
@@ -165,8 +164,8 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		if (allProducts.Count > 0)
 		{
 			_ = metadata.AppendLine("products:");
-			foreach (var product in allProducts.Select(p => p.DisplayName).Order())
-				_ = metadata.AppendLine($"  - {product}");
+			foreach (var item in allProducts.Select(p => p.DisplayName).Order())
+				_ = metadata.AppendLine($"  - {item}");
 		}
 
 		_ = metadata.AppendLine("---");

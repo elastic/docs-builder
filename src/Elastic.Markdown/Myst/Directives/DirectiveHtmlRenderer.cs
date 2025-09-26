@@ -287,7 +287,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml);
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, block.Build.ProductsConfiguration);
 			if (applicableTo.Diagnostics is null)
 				return applicableTo;
 			foreach (var (severity, message) in applicableTo.Diagnostics)
@@ -368,7 +368,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml);
+			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
 		}
 		catch (YamlException e)
 		{
