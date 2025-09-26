@@ -220,7 +220,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
-			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null,
+			AppliesToDefinition = block.AppliesToDefinition,
+			AppliesTo = block.AppliesTo,
+			BuildContext = block.Build
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -234,7 +237,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			CrossReferenceName = block.CrossReferenceName,
 			Classes = block.Classes,
 			Title = block.Title,
-			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null
+			Open = block.DropdownOpen.GetValueOrDefault() ? "open" : null,
+			AppliesToDefinition = block.AppliesToDefinition,
+			AppliesTo = block.AppliesTo,
+			BuildContext = block.Build
 		});
 		RenderRazorSlice(slice, renderer);
 	}
