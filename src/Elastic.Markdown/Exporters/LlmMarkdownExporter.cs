@@ -16,6 +16,30 @@ namespace Elastic.Markdown.Exporters;
 /// </summary>
 public class LlmMarkdownExporter : IMarkdownExporter
 {
+	private const string LlmsTxtTemplate = """
+		# Elastic Documentation
+		
+		> Elastic provides an open source search, analytics, and AI platform, and out-of-the-box solutions for observability and security. The Search AI platform combines the power of search and generative AI to provide near real-time search and analysis with relevance to reduce your time to value.
+		>
+		>Elastic offers the following solutions or types of projects:
+		>
+		>* [Elasticsearch](https://www.elastic.co/docs/solutions/search.md): Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.  
+		>* [Elastic Observability](https://www.elastic.co/docs/solutions/observability.md): Gain comprehensive visibility into applications, infrastructure, and user experience through logs, metrics, traces, and other telemetry data, all in a single interface.
+		>* [Elastic Security](https://www.elastic.co/docs/solutions/security.md): Combine SIEM, endpoint security, and cloud security to provide comprehensive tools for threat detection and prevention, investigation, and response.
+		
+		The documentation is organized to guide you through your journey with Elastic, from learning the basics to deploying and managing complex solutions. Here is a detailed breakdown of the documentation structure:
+		
+		* [**Elastic fundamentals**](https://www.elastic.co/docs/get-started.md): Understand the basics about the deployment options, platform, and solutions, and features of the documentation.  
+		* [**Solutions and use cases**](https://www.elastic.co/docs/solutions.md): Learn use cases, evaluate, and implement Elastic's solutions: Observability, Search, and Security.  
+		* [**Manage data**](https://www.elastic.co/docs/manage-data.md): Learn about data store primitives, ingestion and enrichment, managing the data lifecycle, and migrating data.  
+		* [**Explore and analyze**](https://www.elastic.co/docs/explore-analyze.md): Get value from data through querying, visualization, machine learning, and alerting.  
+		* [**Deploy and manage**](https://www.elastic.co/docs/deploy-manage.md): Deploy and manage production-ready clusters. Covers deployment options and maintenance tasks.  
+		* [**Manage your Cloud account**](https://www.elastic.co/docs/cloud-account.md): A dedicated section for user-facing cloud account tasks like resetting passwords.  
+		* [**Troubleshoot**](https://www.elastic.co/docs/troubleshoot.md): Identify and resolve problems.  
+		* [**Extend and contribute**](https://www.elastic.co/docs/extend.md): How to contribute to or integrate with Elastic, from open source to plugins to integrations.  
+		* [**Release notes**](https://www.elastic.co/docs/release-notes.md): Contains release notes and changelogs for each new release.  
+		* [**Reference**](https://www.elastic.co/docs/reference.md): Reference material for core tasks and manuals for optional products.
+		""";
 
 	public ValueTask StartAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
@@ -48,10 +72,12 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var outputFile = GetLlmOutputFile(fileContext);
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
-		var contentWithMetadata = CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+
+		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+
 		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
 			outputFile.FullName,
-			contentWithMetadata,
+			content,
 			Encoding.UTF8,
 			ctx
 		);
@@ -63,6 +89,17 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		{
 			_ = renderer.Render(obj);
 		});
+
+	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
+	{
+		var defaultOutputFile = fileContext.DefaultOutputFile;
+		var fileName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
+		if (fileName != "index")
+			return false;
+
+		var root = fileContext.BuildContext.OutputDirectory;
+		return defaultOutputFile.Directory!.FullName == root.FullName;
+	}
 
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
 	{
