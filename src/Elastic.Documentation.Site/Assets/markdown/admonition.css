@@ -38,7 +38,7 @@
 
 		&.note {
 			@apply border-blue-elastic-40 bg-blue-elastic-10;
-			
+
 			.admonition-header {
 				@apply text-blue-elastic-110 bg-blue-elastic-20;
 
