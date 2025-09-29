@@ -236,3 +236,163 @@ A regular paragraph.
 		Block!.AppliesTo.Should().NotBeNull();
 	}
 }
+
+public class NoteAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{note}
+:applies_to: stack: ga
+This is a note with applies_to information
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("note");
+
+	[Fact]
+	public void SetsTitle() => Block!.Title.Should().Be("Note");
+
+	[Fact]
+	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
+
+	[Fact]
+	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
+
+	[Fact]
+	public void RendersAppliesToInHtml()
+	{
+		var html = Html;
+		html.Should().Contain("applies applies-admonition");
+		html.Should().Contain("admonition-title__separator");
+		html.Should().Contain("applicable-info");
+	}
+}
+
+public class WarningAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{warning}
+:applies_to: stack: ga
+This is a warning with applies_to information
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("warning");
+
+	[Fact]
+	public void SetsTitle() => Block!.Title.Should().Be("Warning");
+
+	[Fact]
+	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
+
+	[Fact]
+	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
+
+	[Fact]
+	public void RendersAppliesToInHtml()
+	{
+		var html = Html;
+		html.Should().Contain("applies applies-admonition");
+		html.Should().Contain("admonition-title__separator");
+		html.Should().Contain("applicable-info");
+	}
+}
+
+public class TipAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{tip}
+:applies_to: stack: ga
+This is a tip with applies_to information
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("tip");
+
+	[Fact]
+	public void SetsTitle() => Block!.Title.Should().Be("Tip");
+
+	[Fact]
+	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
+
+	[Fact]
+	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
+
+	[Fact]
+	public void RendersAppliesToInHtml()
+	{
+		var html = Html;
+		html.Should().Contain("applies applies-admonition");
+		html.Should().Contain("admonition-title__separator");
+		html.Should().Contain("applicable-info");
+	}
+}
+
+public class ImportantAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{important}
+:applies_to: stack: ga
+This is an important notice with applies_to information
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("important");
+
+	[Fact]
+	public void SetsTitle() => Block!.Title.Should().Be("Important");
+
+	[Fact]
+	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
+
+	[Fact]
+	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
+
+	[Fact]
+	public void RendersAppliesToInHtml()
+	{
+		var html = Html;
+		html.Should().Contain("applies applies-admonition");
+		html.Should().Contain("admonition-title__separator");
+		html.Should().Contain("applicable-info");
+	}
+}
+
+public class AdmonitionAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{admonition} Custom Admonition
+:applies_to: stack: ga
+This is a custom admonition with applies_to information
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("admonition");
+
+	[Fact]
+	public void SetsCustomTitle() => Block!.Title.Should().Be("Custom Admonition");
+
+	[Fact]
+	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
+
+	[Fact]
+	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
+
+	[Fact]
+	public void RendersAppliesToInHtml()
+	{
+		var html = Html;
+		html.Should().Contain("applies applies-admonition");
+		html.Should().Contain("admonition-title__separator");
+		html.Should().Contain("applicable-info");
+	}
+}

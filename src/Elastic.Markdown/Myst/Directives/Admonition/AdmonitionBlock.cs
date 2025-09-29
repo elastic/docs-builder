@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Myst.Directives.Admonition;
 
 public class DropdownBlock(DirectiveBlockParser parser, ParserContext context) : AdmonitionBlock(parser, "dropdown", context);
 
-public class AdmonitionBlock : DirectiveBlock, IBlockTitle
+public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 {
 	public AdmonitionBlock(DirectiveBlockParser parser, string admonition, ParserContext context) : base(parser, context)
 	{
@@ -65,6 +65,7 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle
 		catch
 		{
 			// If parsing fails, return null
+			// Note: Error handling is done in the YamlSerialization.Deserialize method
 			return null;
 		}
 	}

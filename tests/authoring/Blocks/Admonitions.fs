@@ -21,9 +21,6 @@ type ``admonition in list`` () =
 	        <li>List Item 1
 		        <div class="admonition note">
 			        <div class="admonition-title">
-				        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-					        <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
-				        </svg>
 				        <span>Note</span>
 			        </div>
 			        <div class="admonition-content">
@@ -33,6 +30,103 @@ type ``admonition in list`` () =
 	        </li>
         </ul>
         """
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+type ``admonition with applies_to`` () =
+    static let markdown = Setup.Markdown """
+:::{note}
+:applies_to: stack: ga
+This is a note with applies_to information.
+:::
+:::{warning}
+:applies_to: serverless: ga
+This is a warning with applies_to information.
+:::
+:::{tip}
+:applies_to: elasticsearch: preview
+This is a tip with applies_to information.
+:::
+:::{important}
+:applies_to: stack: ga, serverless: ga
+This is an important notice with applies_to information.
+:::
+:::{admonition} Custom Admonition
+:applies_to: stack: ga, serverless: ga, elasticsearch: preview
+This is a custom admonition with applies_to information.
+:::
+"""
+
+    [<Fact>]
+    let ``validate HTML`` () =
+        markdown |> convertsToHtml """
+<div class="admonition note">
+	<div class="admonition-title">
+		<span class="applies applies-admonition">
+			<span class="applicable-info" data-tippy-content="">
+				<span class="applicable-name">Stack</span>
+				<span class="applicable-meta applicable-meta-ga">
+				</span>
+			</span>
+		</span>
+		<span class="admonition-title__separator"></span>
+		<span>Note</span>
+	</div>
+	<div class="admonition-content">
+		<p>This is a note with applies_to information.</p>
+	</div>
+</div>
+<div class="admonition warning">
+	<div class="admonition-title">
+		<span class="applies applies-admonition">
+			<span class="applicable-info" data-tippy-content="">
+				<span class="applicable-name">Serverless</span>
+				<span class="applicable-meta applicable-meta-ga">
+				</span>
+			</span>
+		</span>
+		<span class="admonition-title__separator"></span>
+		<span>Warning</span>
+	</div>
+	<div class="admonition-content">
+		<p>This is a warning with applies_to information.</p>
+	</div>
+</div>
+<div class="admonition tip">
+	<div class="admonition-title">
+		<span class="applies applies-admonition">
+			<span class="applicable-info" data-tippy-content="">
+				<span class="applicable-name">Serverless Elasticsearch</span>
+				<span class="applicable-separator"></span>
+				<span class="applicable-meta applicable-meta-preview">
+					<span class="applicable-lifecycle applicable-lifecycle-preview">Preview</span>
+				</span>
+			</span>
+		</span>
+		<span class="admonition-title__separator"></span>
+		<span>Tip</span>
+	</div>
+	<div class="admonition-content">
+		<p>This is a tip with applies_to information.</p>
+	</div>
+</div>
+<div class="admonition important">
+	<div class="admonition-title">
+		<span>Important</span>
+	</div>
+	<div class="admonition-content">
+		<p>This is an important notice with applies_to information.</p>
+	</div>
+</div>
+<div class="admonition admonition plain">
+	<div class="admonition-title">
+		<span>Custom Admonition</span>
+	</div>
+	<div class="admonition-content">
+		<p>This is a custom admonition with applies_to information.</p>
+	</div>
+</div>"""
+
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
@@ -55,9 +149,6 @@ type ``nested admonition in list`` () =
         markdown |> convertsToHtml """
             <div class="admonition note">
 	            <div class="admonition-title">
-		            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-			            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
-		            </svg>
 		            <span>Note</span>
 	            </div>
 	            <div class="admonition-content">
@@ -65,9 +156,6 @@ type ``nested admonition in list`` () =
  			            <li>List Item 1
  				            <div class="admonition note">
  					            <div class="admonition-title">
- 						            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
- 							            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
- 						            </svg>
  						            <span>Note</span>
  					            </div>
  					            <div class="admonition-content">
@@ -114,9 +202,6 @@ type ``nested admonition in list 2`` () =
             </div>
             <div class="admonition note">
                 <div class="admonition-title">
- 	                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
- 		                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
- 	                </svg>
  	                <span>Note</span>
                 </div>
                 <div class="admonition-content">
@@ -124,9 +209,6 @@ type ``nested admonition in list 2`` () =
  		                <li>List Item 1
  			                <div class="admonition note">
  				                <div class="admonition-title">
- 					                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
- 						                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
- 					                </svg>
  					                <span>Note</span>
  				                </div>
  				                <div class="admonition-content">
@@ -172,9 +254,6 @@ type ``nested admonition in list 3`` () =
              </div>
              <div class="admonition note">
  	            <div class="admonition-title">
- 		            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
- 			            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
- 		            </svg>
  		            <span>Note</span>
  	            </div>
  	            <div class="admonition-content">
@@ -182,9 +261,6 @@ type ``nested admonition in list 3`` () =
  			            <li>List Item 1
  				            <div class="admonition note">
  					            <div class="admonition-title">
- 						            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
- 							            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
- 						            </svg>
  						            <span>Note</span>
  					            </div>
  					            <div class="admonition-content">
