@@ -45,7 +45,7 @@ public class LlmsNavigationEnhancer
 				foreach (var child in firstLevelChildren)
 				{
 					var title = GetBestTitle(child);
-					var url = LlmRenderingHelpers.MakeAbsoluteMarkdownUrl(canonicalBaseUrl, child.Url);
+					var url = LlmRenderingHelpers.MakeAbsoluteUrl(canonicalBaseUrl, child.Url);
 					var description = GetDescription(child);
 
 					_ = !string.IsNullOrEmpty(description)

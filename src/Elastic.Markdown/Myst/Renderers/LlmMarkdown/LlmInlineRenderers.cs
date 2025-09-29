@@ -32,7 +32,7 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			renderer.WriteChildren(obj);
 			renderer.Writer.Write("](");
 			var url = obj.GetDynamicUrl?.Invoke() ?? obj.Url;
-			var absoluteUrl = ProcessLinkUrl(renderer, obj, url);
+			var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
 			renderer.Writer.Write(absoluteUrl ?? string.Empty);
 		}
 		if (!string.IsNullOrEmpty(obj.Title))
@@ -44,41 +44,6 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 		renderer.Writer.Write(")");
 	}
 
-	/// <summary>
-	/// Processes link URLs with special handling for crosslinks to ensure they get .md treatment
-	/// </summary>
-	private static string? ProcessLinkUrl(LlmMarkdownRenderer renderer, LinkInline obj, string? url)
-	{
-		// Check if this is a crosslink (similar to HtmxLinkInlineRenderer)
-		var isCrossLink = (obj.GetData("isCrossLink") as bool?) == true;
-
-		// Also check if this is a resolved crosslink to Elastic docs by URL pattern
-		// This handles cases where crosslinks have been resolved but lost their metadata
-		var isElasticDocsUrl = !string.IsNullOrEmpty(url) &&
-							  url.StartsWith("https://www.elastic.co/docs/", StringComparison.Ordinal);
-
-		if ((isCrossLink || isElasticDocsUrl) && !string.IsNullOrEmpty(url))
-		{
-			// For crosslinks that resolve to documentation URLs, use MakeAbsoluteMarkdownUrl
-			// to ensure they get the .md treatment
-			if (url.Contains("/docs/", StringComparison.Ordinal))
-			{
-				// Extract the docs path from the resolved URL
-				var uri = Uri.TryCreate(url, UriKind.Absolute, out var parsedUri) ? parsedUri : null;
-				if (uri != null && renderer.BuildContext.CanonicalBaseUrl != null)
-				{
-					var path = uri.AbsolutePath;
-					if (path.StartsWith("/docs/", StringComparison.Ordinal))
-					{
-						return LlmRenderingHelpers.MakeAbsoluteMarkdownUrl(renderer.BuildContext.CanonicalBaseUrl, path);
-					}
-				}
-			}
-		}
-
-		// For regular links, use the standard absolute URL conversion
-		return LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
-	}
 
 }
 

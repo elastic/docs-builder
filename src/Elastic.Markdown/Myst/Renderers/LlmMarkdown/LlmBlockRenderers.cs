@@ -40,22 +40,25 @@ public static class LlmRenderingHelpers
 
 	/// <summary>
 	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption.
-	/// For documentation URLs, converts them to .md format for consistency with LLM-generated files.
+	/// Also converts localhost URLs to canonical URLs.
 	/// </summary>
 	public static string? MakeAbsoluteUrl(LlmMarkdownRenderer renderer, string? url)
 	{
 		if (renderer.BuildContext.CanonicalBaseUrl == null)
 			return url;
 
-		// For documentation URLs (starting with /docs/), convert to .md format for LLM consistency
-		// BUT exclude files with extensions (images, PDFs, etc.) which should keep their original extensions
-		if (!string.IsNullOrEmpty(url) && url.StartsWith("/docs/", StringComparison.Ordinal) && !HasFileExtension(url))
+		// Convert localhost URLs to canonical URLs for LLM consumption
+		if (!string.IsNullOrEmpty(url) && url.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase))
 		{
-			var markdownUrl = ConvertToMarkdownUrl(url);
-			return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, markdownUrl);
+			if (Uri.TryCreate(url, UriKind.Absolute, out var localhostUri) &&
+				localhostUri.AbsolutePath.StartsWith("/docs/", StringComparison.Ordinal))
+			{
+				// Replace localhost with canonical base URL
+				var canonicalUrl = new Uri(renderer.BuildContext.CanonicalBaseUrl, localhostUri.AbsolutePath);
+				return canonicalUrl.ToString();
+			}
 		}
 
-		// For other URLs (images, external links), use regular absolute URL conversion
 		return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, url);
 	}
 
@@ -81,68 +84,7 @@ public static class LlmRenderingHelpers
 		}
 	}
 
-	/// <summary>
-	/// Converts documentation URLs to absolute markdown URLs for LLM consumption
-	/// </summary>
-	public static string MakeAbsoluteMarkdownUrl(Uri baseUri, string? url)
-	{
-		if (string.IsNullOrEmpty(url))
-			return string.Empty;
 
-		// Convert to .md URL for LLM consumption
-		var markdownUrl = ConvertToMarkdownUrl(url);
-
-		// Use the existing absolute URL logic
-		return MakeAbsoluteUrl(baseUri, markdownUrl) ?? markdownUrl;
-	}
-
-	/// <summary>
-	/// Converts documentation URL paths to .md file paths for LLM consumption
-	/// </summary>
-	private static string ConvertToMarkdownUrl(string url)
-	{
-		var cleanUrl = url.TrimStart('/');
-
-		// Remove "docs/" prefix if present for the markdown filename, then add it back
-		var markdownPath = cleanUrl;
-		if (markdownPath.StartsWith("docs/", StringComparison.Ordinal))
-			markdownPath = markdownPath.Substring(5);
-
-		// Convert directory URLs to .md files
-		if (markdownPath.EndsWith('/'))
-			markdownPath = markdownPath.TrimEnd('/') + ".md";
-		else if (!markdownPath.EndsWith(".md", StringComparison.Ordinal))
-			markdownPath += ".md";
-
-		return $"/docs/{markdownPath}";
-	}
-
-	/// <summary>
-	/// Checks if a URL path points to a file with an extension (not a documentation page)
-	/// </summary>
-	private static bool HasFileExtension(string path)
-	{
-		try
-		{
-			// Try to parse as URI to handle query parameters and fragments
-			if (Uri.TryCreate(path, UriKind.RelativeOrAbsolute, out var uri))
-			{
-				// Get the path component without query/fragment
-				var pathOnly = uri.GetLeftPart(UriPartial.Path);
-				var ext = Path.GetExtension(pathOnly);
-				return !string.IsNullOrEmpty(ext);
-			}
-
-			// Fallback to direct path parsing
-			var extension = Path.GetExtension(path);
-			return !string.IsNullOrEmpty(extension);
-		}
-		catch
-		{
-			// If parsing fails, assume it's a documentation page
-			return false;
-		}
-	}
 
 }
 
