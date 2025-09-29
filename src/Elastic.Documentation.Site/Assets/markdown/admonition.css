@@ -12,17 +12,17 @@
 
 		.applies-admonition {
 			@apply flex items-center gap-1 font-normal;
-			mix-blend-mode: multiply;
 			.applicable-info {
-				@apply border-none bg-transparent p-0;
-				&:not(:last-child):after {
-					@apply text-sm;
-					content: ',';
-				}
+				/*@apply bg-white;*/
+				/*@apply border-none bg-transparent p-0;*/
+				/*&:not(:last-child):after {*/
+				/*	@apply text-sm;*/
+				/*	content: ',';*/
+				/*}*/
 			}
 			.applicable-name,
 			.applicable-meta {
-				@apply text-sm;
+				@apply text-xs;
 			}
 			.applicable-separator {
 				mix-blend-mode: multiply;
@@ -38,8 +38,13 @@
 
 		&.note {
 			@apply border-blue-elastic-40 bg-blue-elastic-10;
+			
 			.admonition-header {
 				@apply text-blue-elastic-110 bg-blue-elastic-20;
+
+				.applicable-info {
+					@apply border-blue-elastic-40;
+				}
 			}
 		}
 
@@ -47,6 +52,10 @@
 			@apply border-teal-40 bg-teal-10;
 			.admonition-header {
 				@apply text-teal-110 bg-teal-20;
+
+				.applicable-info {
+					@apply border-teal-40;
+				}
 			}
 		}
 
@@ -55,6 +64,9 @@
 
 			.admonition-header {
 				@apply text-yellow-110 bg-yellow-20;
+				.applicable-info {
+					@apply border-yellow-40;
+				}
 			}
 		}
 
@@ -63,6 +75,9 @@
 
 			.admonition-header {
 				@apply text-purple-110 bg-purple-20;
+				.applicable-info {
+					@apply border-purple-40;
+				}
 			}
 		}
 
@@ -71,6 +86,9 @@
 
 			.admonition-header {
 				@apply text-grey-110 bg-grey-20;
+				.applicable-info {
+					@apply border-grey-40;
+				}
 			}
 		}
 	}
