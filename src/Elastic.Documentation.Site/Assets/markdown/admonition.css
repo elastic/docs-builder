@@ -3,9 +3,29 @@
 		@apply mt-4 rounded-sm border-1 pb-4;
 
 		.admonition-title {
-			@apply flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
-			svg {
-				@apply size-6;
+			@apply flex items-center gap-3 rounded-t-sm px-4 py-2 font-bold;
+		}
+
+		.admonition-title__text {
+			@apply text-sm tracking-wider uppercase;
+		}
+
+		.applies-admonition {
+			@apply flex items-center gap-1 font-normal;
+			color: inherit;
+			.applicable-info {
+				@apply border-none bg-transparent p-0;
+				&:not(:last-child):after {
+					@apply text-sm;
+					content: ',';
+				}
+			}
+			.applicable-name,
+			.applicable-meta {
+				@apply text-sm;
+			}
+			.applicable-separator {
+				mix-blend-mode: multiply;
 			}
 		}
 		.admonition-content {

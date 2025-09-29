@@ -383,6 +383,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				break;
 		}
 
+		switch (obj)
+		{
+			case IBlockAppliesTo appliesBlock when !string.IsNullOrEmpty(appliesBlock.AppliesToDefinition):
+				renderer.Writer.Write($" applies-to=\"{appliesBlock.AppliesToDefinition}\"");
+				break;
+		}
+
 		renderer.WriteLine(">");
 		renderer.EnsureLine();
 
