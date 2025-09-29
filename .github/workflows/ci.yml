@@ -87,6 +87,11 @@ jobs:
          - windows-latest
     steps:          
       - uses: actions/checkout@v5
+      - name: 'Windows only, set TEMP to the same drive'
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          mkdir "D:\\Temp"
+          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
 
       - name: Bootstrap Action Workspace
         id: bootstrap
