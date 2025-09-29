@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
 using Elastic.Markdown.Myst.Roles.Kbd;
@@ -32,8 +33,23 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			renderer.WriteChildren(obj);
 			renderer.Writer.Write("](");
 			var url = obj.GetDynamicUrl?.Invoke() ?? obj.Url;
-			var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
-			renderer.Writer.Write(absoluteUrl ?? string.Empty);
+
+			// Check if this is an internal link to a markdown page
+			var isCrossLink = (obj.GetData("isCrossLink") as bool?) == true;
+			var hasTargetNavigationRoot = obj.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") != null;
+			var isInternalMarkdownLink = !isCrossLink && hasTargetNavigationRoot;
+
+			if (isInternalMarkdownLink)
+			{
+				// For internal markdown links, preserve the .md extension
+				renderer.Writer.Write(EnsureMarkdownExtension(url) ?? string.Empty);
+			}
+			else
+			{
+				// For external links and cross-links, make absolute
+				var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
+				renderer.Writer.Write(absoluteUrl ?? string.Empty);
+			}
 		}
 		if (!string.IsNullOrEmpty(obj.Title))
 		{
@@ -42,6 +58,25 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			renderer.Writer.Write("\"");
 		}
 		renderer.Writer.Write(")");
+	}
+
+	/// <summary>
+	/// Ensures the URL ends with .md extension for markdown links
+	/// </summary>
+	private static string? EnsureMarkdownExtension(string? url)
+	{
+		if (string.IsNullOrEmpty(url))
+			return url;
+
+		// If it already has .md extension, return as-is
+		if (url.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+			return url;
+
+		// Convert absolute paths to relative paths for markdown links
+		var processedUrl = url.StartsWith('/') ? url.TrimStart('/') : url;
+
+		// Add .md extension to internal markdown links
+		return processedUrl + ".md";
 	}
 }
 

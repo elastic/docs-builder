@@ -538,3 +538,27 @@ sub:
         markdown |> convertsToNewLLM """
 ## Hello, World!
 """
+
+type ``links`` () =
+    static let generator = Setup.Generate [
+        Index """
+This is a [link to another page](another-page.md).
+
+This is an [external link](https://example.com).
+
+This is a [cross-link](https://docs.elastic.co/some-page).
+"""
+        Markdown "another-page.md" """
+# Another Page
+
+This is another page for testing internal links.
+"""
+    ]
+
+    [<Fact>]
+    let ``internal markdown links preserve .md extension while external links become absolute`` () =
+        generator |> convertsToNewLLM """
+This is a [link to another page](another-page.md).
+This is an [external link](https://example.com).
+This is a [cross-link](https://docs.elastic.co/some-page).
+"""
