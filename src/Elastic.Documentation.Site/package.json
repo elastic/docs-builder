@@ -85,7 +85,7 @@
     "select-dom": "9.4.0",
     "tailwindcss": "4.1.13",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.4",
+    "ua-parser-js": "2.0.5",
     "uuid": "11.1.0",
     "zod": "4.1.5",
     "zustand": "5.0.8"
