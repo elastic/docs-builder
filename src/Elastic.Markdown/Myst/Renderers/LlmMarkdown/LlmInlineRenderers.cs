@@ -37,16 +37,24 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			// Check if this is an internal link to a markdown page
 			var isCrossLink = (obj.GetData("isCrossLink") as bool?) == true;
 			var hasTargetNavigationRoot = obj.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") != null;
+			var originalCrossLinkUrl = obj.GetData("originalCrossLinkUrl") as string;
 			var isInternalMarkdownLink = !isCrossLink && hasTargetNavigationRoot;
+			var isCrossLinkToMarkdown = isCrossLink && originalCrossLinkUrl != null && IsCrossLinkToMarkdown(originalCrossLinkUrl);
 
 			if (isInternalMarkdownLink)
 			{
 				// For internal markdown links, preserve the .md extension
 				renderer.Writer.Write(EnsureMarkdownExtension(url) ?? string.Empty);
 			}
+			else if (isCrossLinkToMarkdown)
+			{
+				// For cross-links to markdown files, extract relative path with .md extension
+				var markdownPath = ExtractMarkdownPath(originalCrossLinkUrl!);
+				renderer.Writer.Write(markdownPath ?? string.Empty);
+			}
 			else
 			{
-				// For external links and cross-links, make absolute
+				// For external links and non-markdown cross-links, make absolute
 				var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
 				renderer.Writer.Write(absoluteUrl ?? string.Empty);
 			}
@@ -77,6 +85,44 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 
 		// Add .md extension to internal markdown links
 		return processedUrl + ".md";
+	}
+
+	/// <summary>
+	/// Checks if a cross-link URL points to a markdown file
+	/// </summary>
+	private static bool IsCrossLinkToMarkdown(string originalCrossLinkUrl)
+	{
+		if (string.IsNullOrEmpty(originalCrossLinkUrl))
+			return false;
+
+		// Parse the cross-link URI to extract the path
+		if (Uri.TryCreate(originalCrossLinkUrl, UriKind.Absolute, out var uri))
+		{
+			var path = uri.AbsolutePath;
+			return path.EndsWith(".md", StringComparison.OrdinalIgnoreCase);
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// Extracts the relative markdown path from a cross-link URL
+	/// </summary>
+	private static string? ExtractMarkdownPath(string originalCrossLinkUrl)
+	{
+		if (string.IsNullOrEmpty(originalCrossLinkUrl))
+			return null;
+
+		// Parse the cross-link URI to extract the path
+		if (Uri.TryCreate(originalCrossLinkUrl, UriKind.Absolute, out var uri))
+		{
+			var path = uri.AbsolutePath;
+			if (path.StartsWith('/'))
+				path = path.TrimStart('/');
+			return path;
+		}
+
+		return null;
 	}
 }
 

@@ -546,7 +546,7 @@ This is a [link to another page](another-page.md).
 
 This is an [external link](https://example.com).
 
-This is a [cross-link](https://docs.elastic.co/some-page).
+This is a [cross-link](docs-content:/solutions/observability/apps/apm-server-binary.md).
 """
         Markdown "another-page.md" """
 # Another Page
@@ -560,5 +560,5 @@ This is another page for testing internal links.
         generator |> convertsToNewLLM """
 This is a [link to another page](another-page.md).
 This is an [external link](https://example.com).
-This is a [cross-link](https://docs.elastic.co/some-page).
+This is a [cross-link](solutions/observability/apps/apm-server-binary.md).
 """
