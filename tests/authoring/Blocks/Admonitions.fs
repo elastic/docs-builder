@@ -20,8 +20,8 @@ type ``admonition in list`` () =
         <ul>
 	        <li>List Item 1
 		        <div class="admonition note">
-			        <div class="admonition-title">
-				        <span>Note</span>
+			        <div class="admonition-header">
+				        <span class="admonition-title">Note</span>
 			        </div>
 			        <div class="admonition-content">
 				        <p>Hello, World!</p>
@@ -61,41 +61,46 @@ This is a custom admonition with applies_to information.
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
 <div class="admonition note">
-	<div class="admonition-title">
+	<div class="admonition-header">
+		<span class="admonition-title">Note</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="">
+			<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Stack unless otherwise specified.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
 				<span class="applicable-name">Stack</span>
 				<span class="applicable-meta applicable-meta-ga">
 				</span>
 			</span>
 		</span>
 		<span class="admonition-title__separator"></span>
-		<span>Note</span>
 	</div>
 	<div class="admonition-content">
 		<p>This is a note with applies_to information.</p>
 	</div>
 </div>
 <div class="admonition warning">
-	<div class="admonition-title">
+	<div class="admonition-header">
+		<span class="admonition-title">Warning</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="">
+			<span class="applicable-info" data-tippy-content="Available on Elastic&nbsp;Cloud&nbsp;Serverless unless otherwise specified.">
 				<span class="applicable-name">Serverless</span>
 				<span class="applicable-meta applicable-meta-ga">
 				</span>
 			</span>
 		</span>
 		<span class="admonition-title__separator"></span>
-		<span>Warning</span>
 	</div>
 	<div class="admonition-content">
 		<p>This is a warning with applies_to information.</p>
 	</div>
 </div>
 <div class="admonition tip">
-	<div class="admonition-title">
+	<div class="admonition-header">
+		<span class="admonition-title">Tip</span>
 		<span class="applies applies-admonition">
-			<span class="applicable-info" data-tippy-content="">
+			<span class="applicable-info" data-tippy-content="Available in technical preview on Serverless&nbsp;Elasticsearch projects unless otherwise specified.
+
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
 				<span class="applicable-name">Serverless Elasticsearch</span>
 				<span class="applicable-separator"></span>
 				<span class="applicable-meta applicable-meta-preview">
@@ -104,28 +109,28 @@ This is a custom admonition with applies_to information.
 			</span>
 		</span>
 		<span class="admonition-title__separator"></span>
-		<span>Tip</span>
 	</div>
 	<div class="admonition-content">
 		<p>This is a tip with applies_to information.</p>
 	</div>
 </div>
 <div class="admonition important">
-	<div class="admonition-title">
-		<span>Important</span>
+	<div class="admonition-header">
+		<span class="admonition-title">Important</span>
 	</div>
 	<div class="admonition-content">
 		<p>This is an important notice with applies_to information.</p>
 	</div>
 </div>
 <div class="admonition admonition plain">
-	<div class="admonition-title">
-		<span>Custom Admonition</span>
+	<div class="admonition-header">
+		<span class="admonition-title">Custom Admonition</span>
 	</div>
 	<div class="admonition-content">
 		<p>This is a custom admonition with applies_to information.</p>
 	</div>
-</div>"""
+</div>
+"""
 
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
@@ -147,31 +152,31 @@ type ``nested admonition in list`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-            <div class="admonition note">
-	            <div class="admonition-title">
-		            <span>Note</span>
-	            </div>
-	            <div class="admonition-content">
- 		            <ul>
- 			            <li>List Item 1
- 				            <div class="admonition note">
- 					            <div class="admonition-title">
- 						            <span>Note</span>
- 					            </div>
- 					            <div class="admonition-content">
- 						            <p>Hello, World!</p>
- 					            </div>
- 				            </div>
- 			            </li>
- 		            </ul>
-	            </div>
-            </div>
-            <div class="heading-wrapper" id="what">
-            	<h2>
-            		<a class="headerlink" href="#what">What</a>
- 	          </h2>
-            </div>
-            """
+<div class="admonition note">
+	<div class="admonition-header">
+		<span class="admonition-title">Note</span>
+	</div>
+	<div class="admonition-content">
+		<ul>
+			<li>List Item 1
+				<div class="admonition note">
+					<div class="admonition-header">
+						<span class="admonition-title">Note</span>
+					</div>
+					<div class="admonition-content">
+						<p>Hello, World!</p>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
+</div>
+<div class="heading-wrapper" id="what">
+	<h2>
+		<a class="headerlink" href="#what">What</a>
+	</h2>
+</div>"""
+
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
@@ -195,36 +200,36 @@ type ``nested admonition in list 2`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-            <div class="heading-wrapper" id="heading">
-                <h1>
- 	                <a class="headerlink" href="#heading">heading</a>
-                </h1>
-            </div>
-            <div class="admonition note">
-                <div class="admonition-title">
- 	                <span>Note</span>
-                </div>
-                <div class="admonition-content">
- 	                <ul>
- 		                <li>List Item 1
- 			                <div class="admonition note">
- 				                <div class="admonition-title">
- 					                <span>Note</span>
- 				                </div>
- 				                <div class="admonition-content">
- 					                <p>Hello, World!</p>
- 				                </div>
- 			                </div>
- 		                </li>
- 	                </ul>
-                </div>
-            </div>
-            <div class="heading-wrapper" id="what">
-            	<h2>
-            		<a class="headerlink" href="#what">What</a>
- 	          </h2>
-            </div>
-            """
+<div class="heading-wrapper" id="heading">
+	<h1>
+		<a class="headerlink" href="#heading">heading</a>
+	</h1>
+</div>
+<div class="admonition note">
+	<div class="admonition-header">
+		<span class="admonition-title">Note</span>
+	</div>
+	<div class="admonition-content">
+		<ul>
+			<li>List Item 1
+				<div class="admonition note">
+					<div class="admonition-header">
+						<span class="admonition-title">Note</span>
+					</div>
+					<div class="admonition-content">
+						<p>Hello, World!</p>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
+</div>
+<div class="heading-wrapper" id="what">
+	<h2>
+		<a class="headerlink" href="#what">What</a>
+	</h2>
+</div>
+"""
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
@@ -247,35 +252,35 @@ type ``nested admonition in list 3`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-             <div class="heading-wrapper" id="heading">
-            	<h1>
-            		<a class="headerlink" href="#heading">heading</a>
- 	            </h1>
-             </div>
-             <div class="admonition note">
- 	            <div class="admonition-title">
- 		            <span>Note</span>
- 	            </div>
- 	            <div class="admonition-content">
- 		            <ul>
- 			            <li>List Item 1
- 				            <div class="admonition note">
- 					            <div class="admonition-title">
- 						            <span>Note</span>
- 					            </div>
- 					            <div class="admonition-content">
- 						            <p>Hello, World!</p>
- 					            </div>
- 				            </div>
- 			            </li>
- 		            </ul>
-                    <div class="heading-wrapper" id="what">
-                     	<h2>
-                     		<a class="headerlink" href="#what">What</a>
- 			            </h2>
-                    </div>
-            	</div>
-            </div>
-            """
+<div class="heading-wrapper" id="heading">
+	<h1>
+		<a class="headerlink" href="#heading">heading</a>
+	</h1>
+</div>
+<div class="admonition note">
+	<div class="admonition-header">
+		<span class="admonition-title">Note</span>
+	</div>
+	<div class="admonition-content">
+		<ul>
+			<li>List Item 1
+				<div class="admonition note">
+					<div class="admonition-header">
+						<span class="admonition-title">Note</span>
+					</div>
+					<div class="admonition-content">
+						<p>Hello, World!</p>
+					</div>
+				</div>
+			</li>
+		</ul>
+		<div class="heading-wrapper" id="what">
+			<h2>
+				<a class="headerlink" href="#what">What</a>
+			</h2>
+		</div>
+	</div>
+</div>
+"""
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
