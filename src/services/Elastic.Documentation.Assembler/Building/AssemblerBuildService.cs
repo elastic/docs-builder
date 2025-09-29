@@ -126,7 +126,7 @@ public class AssemblerBuildService(
 
 		var existingContent = await readFs.File.ReadAllTextAsync(llmsTxtPath, ctx);
 		// Assembler always uses the production URL as canonical base URL
-		var canonicalBaseUrl = new Uri("https://www.elastic.co");
+		var canonicalBaseUrl = new Uri(context.Environment.Uri);
 		var navigationSections = enhancer.GenerateNavigationSections(navigation, canonicalBaseUrl);
 
 		// Append the navigation sections to the existing boilerplate
