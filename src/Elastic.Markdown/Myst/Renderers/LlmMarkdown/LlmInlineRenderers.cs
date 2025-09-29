@@ -39,7 +39,7 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			var hasTargetNavigationRoot = obj.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") != null;
 			var originalCrossLinkUrl = obj.GetData("originalCrossLinkUrl") as string;
 			var isInternalMarkdownLink = !isCrossLink && hasTargetNavigationRoot;
-			var isCrossLinkToMarkdown = isCrossLink && originalCrossLinkUrl != null && IsCrossLinkToMarkdown(originalCrossLinkUrl);
+			var isCrossLinkToMarkdown = isCrossLink && originalCrossLinkUrl is not null && IsCrossLinkToMarkdown(originalCrossLinkUrl);
 
 			if (isInternalMarkdownLink)
 			{
@@ -48,9 +48,10 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			}
 			else if (isCrossLinkToMarkdown)
 			{
-				// For cross-links to markdown files, extract relative path with .md extension
-				var markdownPath = ExtractMarkdownPath(originalCrossLinkUrl!);
-				renderer.Writer.Write(markdownPath ?? string.Empty);
+				// For cross-links to markdown files, use absolute URL with .md extension
+				var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
+				var urlWithMdExtension = EnsureMarkdownExtension(absoluteUrl);
+				renderer.Writer.Write(urlWithMdExtension ?? string.Empty);
 			}
 			else
 			{
@@ -103,26 +104,6 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 		}
 
 		return false;
-	}
-
-	/// <summary>
-	/// Extracts the relative markdown path from a cross-link URL
-	/// </summary>
-	private static string? ExtractMarkdownPath(string originalCrossLinkUrl)
-	{
-		if (string.IsNullOrEmpty(originalCrossLinkUrl))
-			return null;
-
-		// Parse the cross-link URI to extract the path
-		if (Uri.TryCreate(originalCrossLinkUrl, UriKind.Absolute, out var uri))
-		{
-			var path = uri.AbsolutePath;
-			if (path.StartsWith('/'))
-				path = path.TrimStart('/');
-			return path;
-		}
-
-		return null;
 	}
 }
 

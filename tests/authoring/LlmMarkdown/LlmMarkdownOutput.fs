@@ -560,5 +560,5 @@ This is another page for testing internal links.
         generator |> convertsToNewLLM """
 This is a [link to another page](another-page.md).
 This is an [external link](https://example.com).
-This is a [cross-link](solutions/observability/apps/apm-server-binary.md).
+This is a [cross-link](https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary.md).
 """
