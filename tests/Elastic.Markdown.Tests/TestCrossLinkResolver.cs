@@ -30,7 +30,9 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		           	  "url_path_prefix": "/elastic/docs-content/tree/main",
 		           	  "cross_links": [],
 		           	  "links": {
-		           		"index.md": {},
+		           		"index.md": {
+		           		  "title": "Kibana Guide"
+		           		},
 		           		"get-started/index.md": {
 		           		  "anchors": [
 		           			"elasticsearch-intro-elastic-stack",
@@ -68,4 +70,10 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	public bool TryGetLinkMetadata(Uri crossLinkUri, [NotNullWhen(true)] out LinkMetadata? linkMetadata)
+	{
+		var resolver = new CrossLinkResolver(_crossLinks, UriResolver);
+		return resolver.TryGetLinkMetadata(crossLinkUri, out linkMetadata);
+	}
 }

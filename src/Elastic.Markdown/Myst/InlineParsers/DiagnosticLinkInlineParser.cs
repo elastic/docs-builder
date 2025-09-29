@@ -184,6 +184,14 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				uri, out var resolvedUri)
 			 )
 			link.Url = resolvedUri.ToString();
+
+		// Handle empty link text by trying to get title from crosslink metadata
+		if (link.FirstChild == null && context.CrossLinkResolver.TryGetLinkMetadata(uri, out var linkMetadata))
+		{
+			var title = linkMetadata.Title;
+			if (!string.IsNullOrEmpty(title))
+				_ = link.AppendChild(new LiteralInline(title));
+		}
 	}
 
 	private static void ProcessInternalLink(LinkInline link, InlineProcessor processor, ParserContext context)
