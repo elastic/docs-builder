@@ -128,7 +128,7 @@ public static class LlmRenderingHelpers
 			if (Uri.TryCreate(path, UriKind.RelativeOrAbsolute, out var uri))
 			{
 				// Get the path component without query/fragment
-				var pathOnly = uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString.Split('?', '#')[0];
+				var pathOnly = uri.GetLeftPart(UriPartial.Path);
 				var ext = Path.GetExtension(pathOnly);
 				return !string.IsNullOrEmpty(ext);
 			}
