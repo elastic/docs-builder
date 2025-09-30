@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``relative links``
+module ``AuthoringTests``.``inline elements``.``relative links``
 
 open Xunit
 open authoring
@@ -54,5 +54,3 @@ Through various means $$$including-this-inline-syntax$$$
 
     [<Fact>]
     let ``has no errors`` () = generator |> hasNoErrors
-
-
