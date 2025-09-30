@@ -32,4 +32,3 @@ RUN arch=$TARGETARCH \
     && echo $TARGETOS-$arch > /tmp/rid
 
 RUN dotnet publish src/infra/docs-lambda-index-publisher -r linux-x64 -c Release
-
