@@ -7,7 +7,7 @@ navigation_title: CLI (docs-builder)
 `docs-builder` is the binary used to invoke various commands. 
 These commands can be roughly grouped into three main categories
 
-- [Isolated commands](#isolated-commands)
+- [Documentation Set commands](#documentation-set-commands)
 - [Link commands](#link-commands)
 - [Assembler commands](#assembler-commands)
 
@@ -22,9 +22,9 @@ The following options are available for all commands:
 :   Explicitly set the configuration source one of `local`, `remote` or `embedded`. Defaults to `local` if available 
     other wise `embedded`
 
-## Isolated Commands
+## Documentation Set Commands
 
-An isolated build means building a single documentation set. 
+Commands that operate over a single documentation set.
 
 A `Documentation Set` is defined as a folder containing a [docset.yml](../configure/content-set/index.md) file.
 
@@ -42,6 +42,6 @@ Inbound links, those going from other sources to the documentation set, are vali
 
 ## Assembler Commands
 
-Assembler builds bring together all isolated builds and turn them into the overall documentation that gets published.
+Assembler builds bring together all isolated documentation set builds and turn them into the overall documentation that gets published.
 
 [See available CLI commands for assembler](assembler/index.md)
