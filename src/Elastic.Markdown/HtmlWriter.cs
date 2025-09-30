@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -86,19 +87,7 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var configProducts = DocumentationSet.Context.ProductsConfiguration.Products.Select(p =>
-		{
-			if (DocumentationSet.Context.ProductsConfiguration.Products.TryGetValue(p.Value.Id, out var product))
-				return product;
-			throw new ArgumentException($"Invalid product id: {p.Value.Id}");
-		});
-
-		var frontMatterProducts = markdown.YamlFrontMatter?.Products ?? [];
-
-		var allProducts = frontMatterProducts
-			.Union(configProducts)
-			.Distinct()
-			.ToHashSet();
+		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
 
 		string? allVersionsUrl = null;
 
@@ -153,7 +142,7 @@ public class HtmlWriter(
 			AllVersionsUrl = allVersionsUrl,
 			LegacyPages = legacyPages?.ToArray(),
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
-			Products = allProducts,
+			Products = pageProducts,
 			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
 		});
@@ -228,6 +217,9 @@ public class HtmlWriter(
 			await writeFileSystem.File.WriteAllTextAsync(navFilePath, rendered.FullNavigationPartialHtml, ctx);
 		return document;
 	}
+
+	private static HashSet<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
+		frontMatterProducts?.ToHashSet() ?? [];
 
 }
 

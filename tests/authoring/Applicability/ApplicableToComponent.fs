@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``product availability``.``applicable to component``
+module ``AuthoringTests``.``product availability``.``applicable to component``
 
 open Elastic.Documentation.AppliesTo
 open Elastic.Markdown.Myst.Directives.AppliesTo

@@ -4,12 +4,23 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
+using Microsoft.Extensions.Logging;
 using ProcNet;
+using ProcNet.Std;
 
 namespace Elastic.Documentation.ExternalCommands;
 
-public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory)
+public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, TimeSpan? timeout = null)
 {
+	protected abstract ILogger Logger { get; }
+
+	private void Log(Action<ILogger> logAction)
+	{
+		if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
+			return;
+		logAction(Logger);
+	}
+
 	protected IDirectoryInfo WorkingDirectory => workingDirectory;
 	protected IDiagnosticsCollector Collector => collector;
 	protected void ExecIn(Dictionary<string, string> environmentVars, string binary, params string[] args)
@@ -17,7 +28,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		var arguments = new ExecArguments(binary, args)
 		{
 			WorkingDirectory = workingDirectory.FullName,
-			Environment = environmentVars
+			Environment = environmentVars,
+			Timeout = timeout
 		};
 		var result = Proc.Exec(arguments);
 		if (result != 0)
@@ -30,7 +42,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		{
 			Environment = environmentVars,
 			WorkingDirectory = workingDirectory.FullName,
-			ConsoleOutWriter = NoopConsoleWriter.Instance
+			ConsoleOutWriter = NoopConsoleWriter.Instance,
+			Timeout = timeout
 		};
 		var result = Proc.Start(arguments);
 		if (result.ExitCode != 0)
@@ -38,7 +51,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 	}
 
 	protected string[] CaptureMultiple(string binary, params string[] args) => CaptureMultiple(false, 10, binary, args);
-	protected string[] CaptureMultiple(bool muteExceptions, int attempts, string binary, params string[] args)
+	protected string[] CaptureMultiple(int attempts, string binary, params string[] args) => CaptureMultiple(false, attempts, binary, args);
+	private string[] CaptureMultiple(bool muteExceptions, int attempts, string binary, params string[] args)
 	{
 		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
 		Exception? e = null;
@@ -46,11 +60,11 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		{
 			try
 			{
-				return CaptureOutput();
+				return CaptureOutput(e, i, attempts);
 			}
 			catch (Exception ex)
 			{
-				collector.EmitWarning("", $"An exception occurred on attempt {i} to capture output of {binary}: {ex?.Message}");
+				collector.EmitGlobalWarning($"An exception occurred on attempt {i} to capture output of {binary}: {ex?.Message}");
 				if (ex is not null)
 					e = ex;
 			}
@@ -58,71 +72,53 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 
 		if (e is not null && !muteExceptions)
 			collector.EmitError("", "failure capturing stdout", e);
+		if (e is not null)
+			Log(l => l.LogError(e, "[{Binary} {Args}] failure capturing stdout executing in {WorkingDirectory}", binary, string.Join(" ", args), workingDirectory.FullName));
 
 		return [];
 
-		string[] CaptureOutput()
+		string[] CaptureOutput(Exception? previousException, int iteration, int max)
 		{
 			var arguments = new StartArguments(binary, args)
 			{
 				WorkingDirectory = workingDirectory.FullName,
 				Timeout = TimeSpan.FromSeconds(3),
 				WaitForExit = TimeSpan.FromSeconds(3),
-				ConsoleOutWriter = NoopConsoleWriter.Instance
+				ConsoleOutWriter = new ConsoleOutWriter()
 			};
 			var result = Proc.Start(arguments);
 
-			var output = (result.ExitCode, muteExceptions) switch
+			string[]? output;
+			switch (result.ExitCode, muteExceptions)
 			{
-				(0, _) or (not 0, true) => result.ConsoleOut.Select(x => x.Line).ToArray() ?? throw new Exception($"No output captured for {binary}: {workingDirectory}"),
-				(not 0, false) => throw new Exception($"Exit code is not 0. Received {result.ExitCode} from {binary}: {workingDirectory}")
-			};
+				case (0, _) or (not 0, true):
+					output = result.ConsoleOut.Select(x => x.Line).ToArray();
+					if (output.Length == 0)
+					{
+						Log(l => l.LogInformation("[{Binary} {Args}] captured no output. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
+							binary, string.Join(" ", args), iteration, max, workingDirectory.FullName)
+						);
+						throw new Exception($"No output captured executing in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}", previousException);
+					}
+					break;
+				case (not 0, false):
+					Log(l => l.LogInformation("[{Binary} {Args}] Exit code is not 0 but {ExitCode}. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
+						binary, string.Join(" ", args), result.ExitCode, iteration, max, workingDirectory.FullName)
+					);
+					throw new Exception($"Exit code not 0. Received {result.ExitCode} in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}", previousException);
+			}
+
 			return output;
 		}
 	}
 
-
+	protected string CaptureQuiet(string binary, params string[] args) => Capture(true, 10, binary, args);
 	protected string Capture(string binary, params string[] args) => Capture(false, 10, binary, args);
-	protected string Capture(bool muteExceptions, string binary, params string[] args) => Capture(muteExceptions, 10, binary, args);
-	protected string Capture(bool muteExceptions, int attempts, string binary, params string[] args)
+
+	private string Capture(bool muteExceptions, int attempts, string binary, params string[] args)
 	{
-		// Try 10 times to capture the output of the command, if it fails, we'll throw an exception on the last try
-		Exception? e = null;
-		for (var i = 1; i <= attempts; i++)
-		{
-			try
-			{
-				return CaptureOutput();
-			}
-			catch (Exception ex)
-			{
-				if (ex is not null)
-					e = ex;
-			}
-		}
-
-		if (e is not null && !muteExceptions)
-			collector.EmitError("", "failure capturing stdout", e);
-
-		return string.Empty;
-
-		string CaptureOutput()
-		{
-			var arguments = new StartArguments(binary, args)
-			{
-				WorkingDirectory = workingDirectory.FullName,
-				Timeout = TimeSpan.FromSeconds(3),
-				WaitForExit = TimeSpan.FromSeconds(3),
-				ConsoleOutWriter = NoopConsoleWriter.Instance,
-				OnlyPrintBinaryInExceptionMessage = false
-			};
-			var result = Proc.Start(arguments);
-			var line = (result.ExitCode, muteExceptions) switch
-			{
-				(0, _) or (not 0, true) => result.ConsoleOut.FirstOrDefault()?.Line ?? throw new Exception($"No output captured for {binary}: {workingDirectory}"),
-				(not 0, false) => throw new Exception($"Exit code is not 0. Received {result.ExitCode} from {binary}: {workingDirectory}")
-			};
-			return line;
-		}
+		var lines = CaptureMultiple(muteExceptions, attempts, binary, args);
+		return lines.FirstOrDefault() ??
+			(muteExceptions ? string.Empty : throw new Exception($"[{binary} {string.Join(" ", args)}] No output captured executing in : {workingDirectory}"));
 	}
 }
