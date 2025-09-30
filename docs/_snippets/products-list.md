@@ -10,7 +10,7 @@ You use the product ID in the source files, and docs-builder will use the full p
 a `product_name` `meta` tag in the generated HTML and YAML metadata in generated Markdown files,
 which are used to drive elastic.co search functionality.
 
-:::{dropdown} Valid products IDs
+:::{dropdown} Products ID to full product name mapping
 
 | Product ID                                  | Product name                                  |
 |---------------------------------------------|-----------------------------------------------|
