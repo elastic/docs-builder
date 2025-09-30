@@ -4,7 +4,7 @@ navigation_title: "serve"
 
 # assembler serve
 
-Serve the output of an assembler build
+Serve the output of an assembler build on `http://localhost:4000/`
 
 ## Usage
 

@@ -4,7 +4,7 @@ navigation_title: "deploy apply"
 
 # assembler deploy apply
 
-Applies a sync plan
+Applies an incremental synchronization plan created by [`docs-builder assembler deploy plan`](./assembler-deploy-plan).
 
 ## Usage
 

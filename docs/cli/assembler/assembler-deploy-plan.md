@@ -4,7 +4,7 @@ navigation_title: "deploy plan"
 
 # assembler deploy plan
 
-Creates a sync plan
+Creates an incremental synchronization plan by comparing the reote `--s3-bucket-name` with the local output of the build.
 
 ## Usage
 

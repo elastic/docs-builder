@@ -23,7 +23,7 @@ internal sealed class IsolatedBuildCommand(
 )
 {
 	/// <summary>
-	/// Converts a source Markdown folder or file to an output folder
+	/// Builds a source documentation set folder.
 	/// <para>global options:</para>
 	/// --log-level level
 	/// </summary>

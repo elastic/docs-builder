@@ -4,6 +4,8 @@ navigation_title: "content-source validate"
 
 # assembler content-source validate
 
+Validates that the configured content source branches are publishing succesfully to the `Links Service`.
+
 ## Usage
 
 ```

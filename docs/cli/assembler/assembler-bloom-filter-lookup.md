@@ -3,7 +3,7 @@ navigation_title: "bloom-filter lookup"
 ---
 # assembler bloom-filter lookup
 
-Lookup whether a path exists in the bloomfilter
+Test command to assert if an old V2 url matches with our bloom filter
 
 ## Usage
 

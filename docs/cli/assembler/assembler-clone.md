@@ -4,7 +4,9 @@ navigation_title: "clone"
 
 # assembler clone
 
-Clones all repositories
+Clones all repositories. Defaults to `$(pwd)/.artifacts/checkouts/{content_source}`. 
+
+The `content_source` is the `content_source` of the `--environment` option as configured in `assembly.yaml`
 
 ## Usage
 

@@ -1,6 +1,10 @@
 # diff validate
 
-Validates redirect updates in the current branch using the redirect file against changes reported by git.
+Gathers the local changes by inspecting the git log, stashed and unstashed changes. 
+
+It currently validates the following:
+
+* Ensures that renames and deletions are reflected in [redirects.yml](../../contribute/redirects.md)
 
 ## Usage
 
