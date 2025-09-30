@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``cross links redirects``
+module ``AuthoringTests``.``inline elements``.``cross links redirects``
 
 open Xunit
 open authoring
@@ -164,4 +164,3 @@ type ``Scenario 5: Deleting an entire page`` () =
         markdown |> convertsToHtml $"""
             <p><a href="{urlPrefix}/">Scenario 5</a></p>
         """
-

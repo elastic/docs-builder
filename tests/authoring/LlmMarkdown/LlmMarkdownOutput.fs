@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``llm markdown``.``output tests``
+module ``AuthoringTests``.``llm markdown``.``output tests``
 
 open Swensen.Unquote
 open Xunit

@@ -31,9 +31,10 @@ module MarkdownDocumentAssertions =
         let actual = actual.Value
         let result = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         let matter = result.File.YamlFrontMatter
-        matter.AppliesTo.Diagnostics <- expectedAvailability.Diagnostics
         match matter with
         | NonNull m ->
+            if expectedAvailability <> null then
+                m.AppliesTo.Diagnostics <- expectedAvailability.Diagnostics
             let apply = m.AppliesTo
             test <@ apply = expectedAvailability @>
         | _ -> failwithf "%s has no yamlfront matter" result.File.RelativePath

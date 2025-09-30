@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``product availability``.``yaml frontmatter``
+module ``AuthoringTests``.``product availability``.``yaml frontmatter``
 
 open Elastic.Documentation.AppliesTo
 open JetBrains.Annotations
