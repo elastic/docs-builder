@@ -4,66 +4,51 @@ navigation_title: Building Blocks
 
 # Building Blocks
 
-This section explains all the building blocks that are used to build the documentation.
+This section explains the core concepts and building blocks that make up the docs-builder architecture. Understanding these concepts will help you work effectively with distributed documentation and cross-repository linking.
 
-## Documentation Set
+## Core concepts
 
-A single folder containing the documentation of a single repository. At a minimum, this folder should contain:
+### [Documentation Set](documentation-set.md)
 
-* `docset.yml` file
-* `index.md` file
+The fundamental unit of documentation - a single folder containing the documentation for one repository. Each documentation set can be built, versioned, and maintained independently.
 
-See [docset.yml](../configure/content-set/index.md) for more configuration details.
+### [Assembled Documentation](assembled-documentation.md)
 
-## Assembled Documentation
+The product of combining multiple documentation sets into a unified documentation website with global navigation. This enables a seamless user experience across multiple repositories.
 
-The product of building many documentation sets and weaving them in to a global navigation producing the fully assembled documentation site.
+### [Distributed Documentation](distributed-documentation.md)
 
-See [site configuration](../configure/site/index.md) for more details on the actual configuration.
+The architectural approach that allows documentation sets to be built independently while maintaining link integrity across repositories. This enables teams to work autonomously without blocking each other.
 
-## Distributed documentation
+## Link management infrastructure
 
-The purpose of separating building documentation sets and assembling them is to allow for distributed builds.
+### [Link Service](link-service.md)
 
-Each build of documentation set produces a `links.json` (Link Index) file that contains all the linkable resources in the repository.
-This `links.json` file is then published to a central location (Link Service) everytime a repository successfully builds on its respective default integration branch.
+The central S3-backed service where Link Index files are published and stored. This enables distributed validation and build resilience.
 
-For example, [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json) represents all linkable resources in the Elasticsearch repository.
+### [Link Index](link-index.md)
 
-This allows us to:
+A JSON file (`links.json`) containing all linkable resources for a specific repository branch. Published to the Link Service after each successful build.
 
-* Validate outbound and inbound links ahead of time, even during local `docs-builder` builds.
-* Snapshot assembled builds: only building commits that produced a `links.json`
-  * Documentation errors in one repository won't affect all the others.
-  * Resilient to repositories having build failures on their integration branches, we fall back to the last known good commit.
+### [Link Registry](link-registry.md)
 
-## Link Service
+A catalog file listing all available Link Index files across all repositories and branches. Used by the assembler to coordinate builds and by documentation builds for validation.
 
-The central location where all the Link Index files are published. This is a simple S3 bucket fronted by CloudFront.
+## Cross-repository linking
 
-## Link Index
+### [Outbound Crosslinks](outbound-crosslinks.md)
 
-Each repository's branch will get in individual Link Index file in the `Link Serve` representing all linkable resources of that repository's branch.
-See, for example: [Elasticsearch's links.json](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/elasticsearch/main/links.json). 
-This file is used to resolve [Outbound Crosslinks](#outbound-crosslinks) and [Inbound Crosslinks](#inbound-crosslinks).
+Links from your documentation to other documentation sets. Validated against published Link Index files to ensure they're correct.
 
-## Link Registry
+### [Inbound Crosslinks](inbound-crosslinks.md)
 
-A [single file](https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/link-index.json) that contains all the [Link Index files](#link-index) for all the repositories. 
-This is file is published everytime [Link Index](#link-index) files are published to the Link Service. The update is handled by an AWS Lambda function that listens to SQS triggers by S3 events.
+Links from other documentation sets to yours. Validated to prevent breaking changes when you move or delete content.
 
-## Outbound Crosslinks
+## How it all works together
 
-Outbound crosslinks are links from the documentation set that's being built to others. If both repositories publish to the same `Link Service`, they can link to each other using the `<repository>://<path_to_md>` syntax.
-
-Read more about general link syntax in the [](../syntax/links.md) section.
-
-## Inbound Crosslinks
-
-Inbound crosslinks are links from other documentation sets to the one that's being built. 
-
-If both repositories publish to the same `Link Service`, they can link to each other using the `<repository>://<path_to_md>` syntax.
-
-Read more about general link syntax in the [](../syntax/links.md) section.
-
-Using our [Link Service](#link-service), we can validate if deletions or renames of files in the documentation set break other repositories ahead of time.
+1. Each repository builds its documentation set independently
+2. Successful builds publish a Link Index to the Link Service
+3. The Link Registry catalogs all available Link Index files
+4. Documentation builds validate crosslinks using these Link Index files
+5. The assembler combines documentation sets using the Link Registry
+6. Teams can work independently while maintaining link integrity across repositories

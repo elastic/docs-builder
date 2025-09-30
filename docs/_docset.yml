@@ -49,6 +49,14 @@ toc:
   - folder: building-blocks
     children:
       - file: index.md
+      - file: documentation-set.md
+      - file: assembled-documentation.md
+      - file: distributed-documentation.md
+      - file: link-service.md
+      - file: link-index.md
+      - file: link-registry.md
+      - file: outbound-crosslinks.md
+      - file: inbound-crosslinks.md
   - folder: configure
     children:
       - file: index.md
