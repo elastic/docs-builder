@@ -1,3 +1,7 @@
+---
+navigation_title: "serve"
+---
+
 # assembler serve
 
 Serve the output of an assembler build
@@ -5,7 +9,7 @@ Serve the output of an assembler build
 ## Usage
 
 ```
-assembler serve [options...] [-h|--help] [--version]
+docs-builder assembler serve [options...] [-h|--help] [--version]
 ```
 
 ## Options
@@ -13,5 +17,5 @@ assembler serve [options...] [-h|--help] [--version]
 `--port` `<int>`
 :   Port to serve the documentation. (Default:   4000)
 
-`--path` `<string?>`
-: (Default:   null)
+`--path` `<string>`
+: (optional)

@@ -5,10 +5,10 @@ Validates redirect updates in the current branch using the redirect file against
 ## Usage
 
 ```
-diff validate [options...] [-h|--help] [--version]
+docs-builder diff validate [options...] [-h|--help] [--version]
 ```
 
 ## Options
 
-`-p|--path <string?>`
-:   Defaults to the`{pwd}/docs` folder (Default:   null)
+`-p|--path <string>`
+:   Defaults to the`{pwd}/docs` folder (optional)

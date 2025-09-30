@@ -5,7 +5,7 @@ Converts a source Markdown folder or file to an output folder
 ## Usage
 
 ```
-[command] [options...] [-h|--help] [--version]
+docs-builder [command] [options...] [-h|--help] [--version]
 ```
 
 ## Global Options
@@ -14,32 +14,32 @@ Converts a source Markdown folder or file to an output folder
 
 ## Options
 
-`-p|--path <string?>`
-:   Defaults to the`{pwd}/docs` folder (Default:   null)
+`-p|--path <string>`
+:   Defaults to the`{pwd}/docs` folder (optional)
 
-`-o|--output <string?>`
-:   Defaults to `.artifacts/html` (Default:   null)
+`-o|--output <string>`
+:   Defaults to `.artifacts/html` (optional)
 
-`--path-prefix` `<string?>`
-:   Specifies the path prefix for urls (Default:   null)
+`--path-prefix` `<string>`
+:   Specifies the path prefix for urls (optional)
 
 `--force` `<bool?>`
-:   Force a full rebuild of the destination folder (Default:   null)
+:   Force a full rebuild of the destination folder (optional)
 
 `--strict` `<bool?>`
-:   Treat warnings as errors and fail the build on warnings (Default:   null)
+:   Treat warnings as errors and fail the build on warnings (optional)
 
 `--allow-indexing` `<bool?>`
-:   Allow indexing and following of HTML files (Default:   null)
+:   Allow indexing and following of HTML files (optional)
 
 `--metadata-only` `<bool?>`
-:   Only emit documentation metadata to output, ignored if 'exporters' is also set (Default:   null)
+:   Only emit documentation metadata to output, ignored if 'exporters' is also set (optional)
 
 `--exporters` `<IReadOnlySet<Exporter>?>`
-:   Set available exporters:   html, es, config, links, state, llm, redirect, metadata, none. Defaults to (html, config, links, state, redirect) or 'default'. (Default:   null)
+:   Set available exporters:   html, es, config, links, state, llm, redirect, metadata, none. Defaults to (html, config, links, state, redirect) or 'default'. (optional)
 
-`--canonical-base-url` `<string?>`
-:   The base URL for the canonical url tag (Default:   null)
+`--canonical-base-url` `<string>`
+:   The base URL for the canonical url tag (optional)
 
 ## Commands
 

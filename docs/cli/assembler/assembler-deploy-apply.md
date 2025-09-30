@@ -1,3 +1,7 @@
+---
+navigation_title: "deploy apply"
+---
+
 # assembler deploy apply
 
 Applies a sync plan
@@ -5,7 +9,7 @@ Applies a sync plan
 ## Usage
 
 ```
-assembler deploy apply [options...] [-h|--help] [--version]
+docs-builder assembler deploy apply [options...] [-h|--help] [--version]
 ```
 
 ## Options

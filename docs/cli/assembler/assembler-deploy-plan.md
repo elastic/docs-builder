@@ -1,3 +1,7 @@
+---
+navigation_title: "deploy plan"
+---
+
 # assembler deploy plan
 
 Creates a sync plan
@@ -5,7 +9,7 @@ Creates a sync plan
 ## Usage
 
 ```
-assembler deploy plan [options...] [-h|--help] [--version]
+docs-builder assembler deploy plan [options...] [-h|--help] [--version]
 ```
 
 ## Options
@@ -20,4 +24,4 @@ assembler deploy plan [options...] [-h|--help] [--version]
 :   The file to write the plan to (Default: "")
 
 `--delete-threshold` `<float?>`
-:   The percentage of deletions allowed in the plan as float (Default:   null)
+:   The percentage of deletions allowed in the plan as float (optional)

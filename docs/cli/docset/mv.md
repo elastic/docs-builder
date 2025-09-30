@@ -5,7 +5,7 @@ Move a file from one location to another and update all links in the documentati
 ## Usage
 
 ```
-mv [arguments...] [options...] [-h|--help] [--version]
+docs-builder mv [arguments...] [options...] [-h|--help] [--version]
 ```
 
 ## Arguments
@@ -19,7 +19,7 @@ mv [arguments...] [options...] [-h|--help] [--version]
 ## Options
 
 `--dry-run` `<bool?>`
-:   Dry run the move operation (Default:   null)
+:   Dry run the move operation (optional)
 
-`-p|--path <string?>`
-:   Defaults to the`{pwd}` folder (Default:   null)
+`-p|--path <string>`
+:   Defaults to the`{pwd}` folder (optional)

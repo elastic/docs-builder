@@ -1,3 +1,6 @@
+---
+navigation_title: "bloom-filter lookup"
+---
 # assembler bloom-filter lookup
 
 Lookup whether a path exists in the bloomfilter
@@ -5,7 +8,7 @@ Lookup whether a path exists in the bloomfilter
 ## Usage
 
 ```
-assembler bloom-filter lookup [options...] [-h|--help] [--version]
+docs-builder assembler bloom-filter lookup [options...] [-h|--help] [--version]
 ```
 
 ## Options
