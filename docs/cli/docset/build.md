@@ -1,4 +1,4 @@
-# generate (root command)
+# build
 
 Converts a source Markdown folder or file to an output folder
 

@@ -4,27 +4,44 @@ navigation_title: docs-builder CLI
 
 # Command line interface
 
-- assemble
-- assembler bloom-filter create
-- assembler bloom-filter lookup
-- assembler build
-- assembler clone
-- assembler config init
-- assembler content-source match
-- assembler content-source validate
-- assembler deploy apply
-- assembler deploy plan
-- assembler deploy update-redirects
-- assembler index
-- assembler navigation validate
-- assembler navigation validate-link-reference
-- assembler serve
-- diff validate
-- inbound-links validate
-- inbound-links validate-all
-- inbound-links validate-link-reference
-- index
-- mv
-- serve
+`docs-builder` is the binary used to invoke various commands. 
+These commands can be roughly grouped into three main categories
 
+- [Isolated commands](#isolated-commands)
+- [Link commands](#link-commands)
+- [Assembler commands](#assembler-commands)
 
+### Global options 
+
+The following options are available for all commands:
+
+`--log-level <level>`
+:   Change the log level one of ( `trace`, `debug`, `info`, `warn`, `error`, `critical`). Defaults to `info`
+
+`--config-source` or `-c`
+:   Explicitly set the configuration source one of `local`, `remote` or `embedded`. Defaults to `local` if available 
+    other wise `embedded`
+
+## Isolated Commands
+
+An isolated build means building a single documentation set. 
+
+A `Documentation Set` is defined as a folder containing a [docset.yml](../configure/content-set/index.md) file.
+
+These commands are typically what you interface with when you are working on the documentation of a single repository locally.
+
+[See available CLI commands for documentation sets](docset/index.md) 
+
+## Link Commands
+
+Outbound links, those going from the documentation set to other sources, are validated as part of the build process.
+
+Inbound links, those going from other sources to the documentation set, are validated using specialized commands.
+
+[See available CLI commands for inbound links](links/index.md) 
+
+## Assembler Commands
+
+Assembler builds bring together all isolated builds and turn them into the overall documentation that gets published.
+
+[See available CLI commands for assembler](assembler/index.md)
