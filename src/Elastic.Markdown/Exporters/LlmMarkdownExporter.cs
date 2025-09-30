@@ -92,15 +92,10 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
 	{
-		var defaultOutputFile = fileContext.DefaultOutputFile;
-		var fileName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
-		if (fileName != "index")
-			return false;
-
-		var root = fileContext.BuildContext.OutputDirectory;
-		return defaultOutputFile.Directory!.FullName == root.FullName;
+		var fs = fileContext.BuildContext.ReadFileSystem;
+		var expected = fs.FileInfo.New(Path.Combine(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
+		return fileContext.DefaultOutputFile.FullName == expected.FullName;
 	}
-
 	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
 	{
 		var source = fileContext.SourceFile.SourceFile;
