@@ -5,8 +5,11 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -16,7 +19,12 @@ public partial class ConfigurationFileProvider
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
+	internal static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
+		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.Build();
+
 	public ConfigurationSource ConfigurationSource { get; }
+
 	public string? GitReference { get; }
 
 	public ConfigurationFileProvider(
@@ -32,10 +40,16 @@ public partial class ConfigurationFileProvider
 		SkipPrivateRepositories = skipPrivateRepositories;
 		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
 
-		ConfigurationSource = configurationSource ?? (
-			fileSystem.Directory.Exists(LocalConfigurationDirectory)
-				? ConfigurationSource.Local : ConfigurationSource.Embedded
-			);
+		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
+		// ConfigurationSource = configurationSource ?? (
+		// 	fileSystem.Directory.Exists(LocalConfigurationDirectory)
+		// 		? ConfigurationSource.Local : ConfigurationSource.Embedded
+		// 	);
+
+
+		// Using Embedded as default for now
+		ConfigurationSource = configurationSource ?? ConfigurationSource.Embedded;
+
 
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
 			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
@@ -67,6 +81,7 @@ public partial class ConfigurationFileProvider
 		}
 
 		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
+		ProductsFile = CreateTemporaryConfigurationFile("products.yml");
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
@@ -79,6 +94,8 @@ public partial class ConfigurationFileProvider
 	public IFileInfo NavigationFile { get; private set; }
 
 	public IFileInfo VersionFile { get; }
+
+	public IFileInfo ProductsFile { get; }
 
 	public IFileInfo AssemblerFile { get; }
 

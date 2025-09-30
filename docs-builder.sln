@@ -121,6 +121,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{6FAB56
 		config\assembler.yml = config\assembler.yml
 		config\legacy-url-mappings.yml = config\legacy-url-mappings.yml
 		config\navigation.yml = config\navigation.yml
+		config\products.yml = config\products.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests-integration", "tests-integration", "{BCAD38D5-6C83-46E2-8398-4BE463931098}"

@@ -18,6 +18,11 @@ public interface IBlockTitle
 	string Title { get; }
 }
 
+public interface IBlockAppliesTo
+{
+	string? AppliesToDefinition { get; }
+}
+
 public interface IBlockExtension : IBlock
 {
 	BuildContext Build { get; }

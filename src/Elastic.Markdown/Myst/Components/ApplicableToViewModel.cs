@@ -13,6 +13,8 @@ public class ApplicableToViewModel
 	private readonly ApplicabilityRenderer _applicabilityRenderer = new();
 
 	public required bool Inline { get; init; }
+
+	public bool ShowTooltip { get; init; } = true;
 	public required ApplicableTo AppliesTo { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
@@ -54,7 +56,7 @@ public class ApplicableToViewModel
 		[p => p.ApmAgentPhp] = ApplicabilityMappings.ApmAgentPhp,
 		[p => p.ApmAgentPython] = ApplicabilityMappings.ApmAgentPython,
 		[p => p.ApmAgentRuby] = ApplicabilityMappings.ApmAgentRuby,
-		[p => p.ApmAgentRum] = ApplicabilityMappings.ApmAgentRum
+		[p => p.ApmAgentRumJs] = ApplicabilityMappings.ApmAgentRumJs
 	};
 
 
@@ -162,4 +164,3 @@ public class ApplicableToViewModel
 
 
 }
-

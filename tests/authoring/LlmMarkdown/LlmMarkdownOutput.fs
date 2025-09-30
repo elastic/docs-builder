@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``llm markdown``.``output tests``
+module ``AuthoringTests``.``llm markdown``.``output tests``
 
 open Swensen.Unquote
 open Xunit
@@ -187,6 +187,54 @@ Here is a list:
 </admonition>
 """
 
+type ``admonition directive with applies_to`` () =
+    static let markdown = Setup.Document """
+:::{note}
+:applies_to: stack: ga
+This is a note admonition with applies_to information.
+:::
+:::{warning}
+:applies_to: serverless: ga
+This is a warning admonition with applies_to information.
+:::
+:::{tip}
+:applies_to: elasticsearch: preview
+This is a tip admonition with applies_to information.
+:::
+:::{important}
+:applies_to: stack: ga, serverless: ga
+This is an important admonition with applies_to information.
+:::
+:::{admonition} Custom Admonition
+:applies_to: stack: ga, serverless: ga, elasticsearch: preview
+This is a custom admonition with applies_to information.
+:::
+"""
+
+    [<Fact>]
+    let ``renders correctly with applies_to information`` () =
+        markdown |> convertsToNewLLM """
+<note applies-to="stack: ga">
+  This is a note admonition with applies_to information.
+</note>
+
+<warning applies-to="serverless: ga">
+  This is a warning admonition with applies_to information.
+</warning>
+
+<tip applies-to="elasticsearch: preview">
+  This is a tip admonition with applies_to information.
+</tip>
+
+<important applies-to="stack: ga, serverless: ga">
+  This is an important admonition with applies_to information.
+</important>
+
+<admonition title="Custom Admonition" applies-to="stack: ga, serverless: ga, elasticsearch: preview">
+  This is a custom admonition with applies_to information.
+</admonition>
+"""
+
 type ``image directive`` () =
     static let markdown = Setup.Document """
 ```{image} /path/to/image.png
@@ -357,6 +405,22 @@ This is where the content for the dropdown goes.
     let ``rendered correctly`` () =
         markdown |> convertsToNewLLM """
 <dropdown title="Dropdown title">
+  This is where the content for the dropdown goes.
+</dropdown>
+"""
+        
+type ``dropdown with applies_to`` () =
+    static let markdown = Setup.Document """
+:::{dropdown} Dropdown title
+:applies_to: stack: 9.1.0
+This is where the content for the dropdown goes.
+:::
+"""
+
+    [<Fact>]
+    let ``rendered correctly`` () =
+        markdown |> convertsToNewLLM """
+<dropdown title="Dropdown title" applies-to="stack: 9.1.0">
   This is where the content for the dropdown goes.
 </dropdown>
 """

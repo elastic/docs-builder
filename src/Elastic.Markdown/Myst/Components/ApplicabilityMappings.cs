@@ -51,7 +51,7 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition ApmAgentPhp = new("APM Agent PHP", "Application&nbsp;Performance&nbsp;Monitoring Agent for PHP", VersioningSystemId.ApmAgentPhp);
 	public static readonly ApplicabilityDefinition ApmAgentPython = new("APM Agent Python", "Application&nbsp;Performance&nbsp;Monitoring Agent for Python", VersioningSystemId.ApmAgentPython);
 	public static readonly ApplicabilityDefinition ApmAgentRuby = new("APM Agent Ruby", "Application&nbsp;Performance&nbsp;Monitoring Agent for Ruby", VersioningSystemId.ApmAgentRuby);
-	public static readonly ApplicabilityDefinition ApmAgentRum = new("APM Agent RUM", "Application&nbsp;Performance&nbsp;Monitoring Agent for Real&nbsp;User&nbsp;Monitoring", VersioningSystemId.ApmAgentRum);
+	public static readonly ApplicabilityDefinition ApmAgentRumJs = new("APM Agent RUM", "Application&nbsp;Performance&nbsp;Monitoring Agent for Real&nbsp;User&nbsp;Monitoring", VersioningSystemId.ApmAgentRumJs);
 
 	// Generic product
 	public static readonly ApplicabilityDefinition Product = new("", "", VersioningSystemId.All);

@@ -2,25 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Serialization;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
-
 namespace Elastic.Documentation.Configuration.Versions;
 
 public static class VersionsConfigurationExtensions
 {
 	public static VersionsConfiguration CreateVersionConfiguration(this ConfigurationFileProvider provider)
 	{
-		var path = provider.VersionFile;
+		var versionFilePath = provider.VersionFile;
 
-		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.Build();
+		var versionsDto = ConfigurationFileProvider.Deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
 
-		var dto = deserializer.Deserialize<VersionsConfigDto>(path.OpenText());
-
-		var versions = dto.VersioningSystems.ToDictionary(
+		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
 			kvp => new VersioningSystem
 			{
@@ -29,10 +21,11 @@ public static class VersionsConfigurationExtensions
 				Current = ToSemVersion(kvp.Value.Current)
 			});
 		var config = new VersionsConfiguration { VersioningSystems = versions };
+
 		return config;
 	}
 
-	private static VersioningSystemId ToVersioningSystemId(string id)
+	internal static VersioningSystemId ToVersioningSystemId(string id)
 	{
 		if (!VersioningSystemIdExtensions.TryParse(id, out var versioningSystemId, true, true))
 			throw new InvalidOperationException($"Could not parse versioning system id {id}");
@@ -66,3 +59,4 @@ internal sealed record VersioningSystemDto
 	public string Base { get; set; } = string.Empty;
 	public string Current { get; set; } = string.Empty;
 }
+

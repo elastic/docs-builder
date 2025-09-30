@@ -1,3 +1,4 @@
+import { initAppliesSwitch } from './applies-switch'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
@@ -21,6 +22,7 @@ document.addEventListener('htmx:load', function (event) {
     initHighlight()
     initCopyButton()
     initTabs()
+    initAppliesSwitch()
 
     // We do this so that the navigation is not initialized twice
     if (isLazyLoadNavigationEnabled) {

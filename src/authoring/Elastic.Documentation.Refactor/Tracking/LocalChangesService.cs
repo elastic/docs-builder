@@ -27,8 +27,8 @@ public class LocalChangeTrackingService(
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)
 		{
-			collector.EmitError(redirectFile.Source, "File does not exist");
-			return Task.FromResult(false);
+			_logger.LogInformation("Redirect file {RedirectFile} does not exist, no redirects to validate.", redirectFile.Source);
+			return Task.FromResult(true);
 		}
 
 		var redirects = redirectFile.Redirects;
@@ -46,7 +46,9 @@ public class LocalChangeTrackingService(
 		}
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
 		_logger.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
-		IRepositoryTracker tracker = runningOnCi ? new IntegrationGitRepositoryTracker(relativePath) : new LocalGitRepositoryTracker(collector, root, relativePath);
+		IRepositoryTracker tracker = runningOnCi
+			? new IntegrationGitRepositoryTracker(relativePath)
+			: new LocalGitRepositoryTracker(logFactory, collector, root, relativePath);
 		var changed = tracker.GetChangedFiles()
 			.Where(c =>
 			{

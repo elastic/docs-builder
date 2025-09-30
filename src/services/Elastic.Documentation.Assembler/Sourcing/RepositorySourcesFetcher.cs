@@ -42,7 +42,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 				_logger.LogInformation("{RepositoryName}: Using local override path for {RepositoryName} at {Path}", repo.Name, repo.Name, repo.Path);
 				checkoutFolder = fs.DirectoryInfo.New(repo.Path);
 			}
-			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(context.Collector, checkoutFolder);
+			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(logFactory, context.Collector, checkoutFolder);
 			if (!checkoutFolder.Exists)
 			{
 				context.Collector.EmitError(checkoutFolder.FullName, $"'{repo.Name}' does not exist in link index checkout directory");
@@ -156,7 +156,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			_logger.LogInformation("{RepositoryName}: Using override path for {RepositoryName}@{Commit} at {CheckoutFolder}", repository.Name, repository.Name, gitRef, checkoutFolder.FullName);
 		}
 
-		IGitRepository git = new SingleCommitOptimizedGitRepository(collector, checkoutFolder);
+		IGitRepository git = new SingleCommitOptimizedGitRepository(logFactory, collector, checkoutFolder);
 
 		if (assumeCloned && checkoutFolder.Exists)
 		{

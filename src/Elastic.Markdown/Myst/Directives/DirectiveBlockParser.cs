@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -89,6 +90,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{tab-item}") > 0)
 			return new TabItemBlock(this, context);
+
+		if (info.IndexOf("{applies-switch}") > 0)
+			return new AppliesSwitchBlock(this, context);
+
+		if (info.IndexOf("{applies-item}") > 0)
+			return new AppliesItemBlock(this, context);
 
 		if (info.IndexOf("{dropdown}") > 0)
 			return new DropdownBlock(this, context);
@@ -201,12 +208,13 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
-		var tokens = line.ToString().Split(':', 3, RemoveEmptyEntries | TrimEntries);
+		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);
 		if (tokens.Length < 1)
 			return base.TryContinue(processor, block);
 
 		var name = tokens[0];
-		var data = tokens.Length > 1 ? string.Join(":", tokens[1..]) : string.Empty;
+		var data = tokens.Length > 1 ? tokens[1] : string.Empty;
+
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;

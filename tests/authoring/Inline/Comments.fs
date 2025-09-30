@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``comment block``
+module ``AuthoringTests``.``inline elements``.``comment block``
 
 open Xunit
 open authoring
@@ -17,4 +17,3 @@ not a comment
     [<Fact>]
     let ``validate HTML: commented line should not be emitted`` () =
         markdown |> convertsToHtml """<p>not a comment</p>"""
-
