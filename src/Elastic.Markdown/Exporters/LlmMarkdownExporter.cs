@@ -45,25 +45,27 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public ValueTask StopAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
-	public ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
+	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
 		var outputDirectory = Path.Combine(outputFolder.FullName, "docs");
 		var zipPath = Path.Combine(outputDirectory, "llm.zip");
-		using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+
+		// Create the llms.txt file with boilerplate content
+		var llmsTxt = Path.Combine(outputDirectory, "llms.txt");
+		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, LlmsTxtTemplate, ctx);
+
+		using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+		var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
+		_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
+
+		var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
+
+		foreach (var file in markdownFiles)
 		{
-			var llmsTxt = Path.Combine(outputDirectory, "llms.txt");
-			var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
-			_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
-
-			var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
-
-			foreach (var file in markdownFiles)
-			{
-				var relativePath = Path.GetRelativePath(outputDirectory, file);
-				_ = zip.CreateEntryFromFile(file, relativePath);
-			}
+			var relativePath = Path.GetRelativePath(outputDirectory, file);
+			_ = zip.CreateEntryFromFile(file, relativePath);
 		}
-		return ValueTask.FromResult(true);
+		return true;
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
