@@ -19,7 +19,8 @@ internal enum KvsOperation
 public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, ILoggerFactory logFactory, IDirectoryInfo workingDirectory)
 	: ExternalCommandExecutor(collector, workingDirectory)
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<AwsCloudFrontKeyValueStoreProxy>();
+	/// <inheritdoc />
+	protected override ILogger Logger { get; } = logFactory.CreateLogger<AwsCloudFrontKeyValueStoreProxy>();
 
 	public void UpdateRedirects(string kvsName, IReadOnlyDictionary<string, string> sourcedRedirects)
 	{
@@ -50,7 +51,7 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 
 	private string DescribeKeyValueStore(string kvsName)
 	{
-		_logger.LogInformation("Describing KeyValueStore");
+		Logger.LogInformation("Describing KeyValueStore");
 		try
 		{
 			var json = CaptureMultiple("aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
@@ -77,7 +78,7 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 
 	private string AcquireETag(string kvsArn)
 	{
-		_logger.LogInformation("Acquiring ETag for updates");
+		Logger.LogInformation("Acquiring ETag for updates");
 		try
 		{
 			var json = CaptureMultiple("aws", "cloudfront-keyvaluestore", "describe-key-value-store", "--kvs-arn", kvsArn);
@@ -103,7 +104,7 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 
 	private bool TryListAllKeys(string kvsArn, out HashSet<string> keys)
 	{
-		_logger.LogInformation("Acquiring existing redirects");
+		Logger.LogInformation("Acquiring existing redirects");
 		keys = [];
 		string[] baseArgs = ["cloudfront-keyvaluestore", "list-keys", "--kvs-arn", kvsArn, "--page-size", "50", "--max-items", "50"];
 		string? nextToken = null;
@@ -145,7 +146,7 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		KvsOperation operation)
 	{
 		const int batchSize = 50;
-		_logger.LogInformation("Processing {Count} items in batches of {BatchSize} for {Operation} update operation.", items.Count, batchSize, operation);
+		Logger.LogInformation("Processing {Count} items in batches of {BatchSize} for {Operation} update operation.", items.Count, batchSize, operation);
 		try
 		{
 			foreach (var batch in items.Chunk(batchSize))
@@ -158,7 +159,7 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 						AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem),
 					_ => string.Empty
 				};
-				var responseJson = CaptureMultiple(false, 1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
+				var responseJson = CaptureMultiple(1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
 					$"--{operation.ToString().ToLowerInvariant()}", payload);
 
 				var concatJson = string.Concat(responseJson);
