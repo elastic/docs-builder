@@ -46,6 +46,9 @@ toc:
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
+  - folder: building-blocks
+    children:
+      - file: index.md
   - folder: configure
     children:
       - file: index.md

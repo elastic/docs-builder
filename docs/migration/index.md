@@ -1,5 +1,5 @@
 ---
-navigation_title: Migration from Asciidoc
+navigation_title: Asciidoc Migration
 ---
 
 # Migration to docs-builder

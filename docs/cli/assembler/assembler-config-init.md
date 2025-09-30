@@ -10,7 +10,7 @@ By default, the configuration is placed in a special application folder as its m
 
 * OSX: `~/Library/Application Support/docs-builder` [NSApplicationSupportDirectory](https://developer.apple.com/documentation/foundation/filemanager/searchpathdirectory/applicationsupportdirectory)
 * Linux: `~/.config/docs-builder`
-* Windows: `%APPDATA%\docs-builder`
+* {icon}`logo_windows` Windows: `%APPDATA%\docs-builder`
 
 You can also use the `--local` option to save the configuration locally in the current working directory. This exposes a great way to assemble the full documentation locally in an empty directory.
 
