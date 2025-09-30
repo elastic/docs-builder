@@ -51,13 +51,6 @@ The products frontmatter is a list of products that the page relates to.
 If you define `products` in a page's Markdown file and the `docset.yml` file also includes `products`, docs-builder will combine the two lists.
 You can _not_ override doc set level `products` at the page level.
 
-:::{tip}
-The purpose of the `products` field is different from `applies_to`: the former provides metadata to elastic.co search engines, while the latter indicates feature availability and applicability.
-
-% Is this true?
-For example, while a page might contain content that is _applicable_ to Elastic Cloud Serverless projects,
-it might not be _about_ Elastic Cloud Serverless. In that case, you would include the `serverless` key in `applies_to`,
-but _not_ include the `cloud-serverless` ID in `products`:
 
 ```yaml
 products:
