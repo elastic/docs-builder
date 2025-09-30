@@ -39,19 +39,42 @@ public static class LlmRenderingHelpers
 	}
 
 	/// <summary>
-	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption
+	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption.
+	/// Also converts localhost URLs to canonical URLs.
 	/// </summary>
 	public static string? MakeAbsoluteUrl(LlmMarkdownRenderer renderer, string? url)
 	{
+		if (renderer.BuildContext.CanonicalBaseUrl == null)
+			return url;
+
+		// Convert localhost URLs to canonical URLs for LLM consumption
+		if (!string.IsNullOrEmpty(url) && url.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase))
+		{
+			if (Uri.TryCreate(url, UriKind.Absolute, out var localhostUri) &&
+				localhostUri.AbsolutePath.StartsWith("/docs/", StringComparison.Ordinal))
+			{
+				// Replace localhost with canonical base URL
+				var canonicalUrl = new Uri(renderer.BuildContext.CanonicalBaseUrl, localhostUri.AbsolutePath);
+				return canonicalUrl.ToString();
+			}
+		}
+
+		return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, url);
+	}
+
+	/// <summary>
+	/// Converts relative URLs to absolute URLs for LLM consumption
+	/// </summary>
+	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url)
+	{
 		if (
 			string.IsNullOrEmpty(url)
-			|| renderer.BuildContext.CanonicalBaseUrl == null
+			|| baseUri == null
 			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
 			|| !Uri.IsWellFormedUriString(url, UriKind.Relative))
 			return url;
 		try
 		{
-			var baseUri = renderer.BuildContext.CanonicalBaseUrl;
 			var absoluteUri = new Uri(baseUri, url);
 			return absoluteUri.ToString();
 		}
@@ -60,6 +83,9 @@ public static class LlmRenderingHelpers
 			return url;
 		}
 	}
+
+
+
 }
 
 /// <summary>
