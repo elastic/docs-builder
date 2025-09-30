@@ -33,8 +33,7 @@ module MarkdownDocumentAssertions =
         let matter = result.File.YamlFrontMatter
         match matter with
         | NonNull m ->
-            if expectedAvailability <> null then
-                m.AppliesTo.Diagnostics <- expectedAvailability.Diagnostics
+            m.AppliesTo.Diagnostics <- expectedAvailability.Diagnostics
             let apply = m.AppliesTo
             test <@ apply = expectedAvailability @>
         | _ -> failwithf "%s has no yamlfront matter" result.File.RelativePath
