@@ -179,6 +179,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
+		// Store the original cross-link URL for LLM rendering
+		link.SetData("originalCrossLinkUrl", uri.ToString());
+
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
 				uri, out var resolvedUri)
