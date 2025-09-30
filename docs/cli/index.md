@@ -1,5 +1,5 @@
 ---
-navigation_title: docs-builder CLI
+navigation_title: CLI (docs-builder)
 ---
 
 # Command line interface

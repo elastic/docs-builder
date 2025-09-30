@@ -139,10 +139,6 @@ toc:
   - folder: migration
     children:
       - file: index.md
-      - folder: freeze
-        children:
-          - file: index.md
-          - file: gh-action.md
       - file: syntax.md
       - file: ia.md
       - file: versioning.md
