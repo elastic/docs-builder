@@ -44,25 +44,25 @@ This is my `definition`
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-              <dl>
- 	            <dt>This is my
- 		            <code>definition</code>
- 	            </dt>
- 	            <dd>
-             		<p>And this is the definition
- 			            <strong>body</strong>
- 			            Which may contain multiple lines</p>
- 		            <div class="admonition note">
-            			<div class="admonition-title">
-             				<span>Note</span>
-             			</div>
-             			<div class="admonition-content">
- 				            <p>My note</p>
-             			</div>
- 		            </div>
- 	            </dd>
-             </dl>
-            """
+<dl>
+	<dt>This is my
+		<code>definition</code>
+	</dt>
+	<dd>
+		<p>And this is the definition
+			<strong>body</strong>
+			Which may contain multiple lines</p>
+		<div class="admonition note">
+			<div class="admonition-header">
+				<span class="admonition-title">Note</span>
+			</div>
+			<div class="admonition-content">
+				<p>My note</p>
+			</div>
+		</div>
+	</dd>
+</dl>
+"""
 
     [<Fact>]
     let ``has no errors 2`` () = markdown |> hasNoErrors
