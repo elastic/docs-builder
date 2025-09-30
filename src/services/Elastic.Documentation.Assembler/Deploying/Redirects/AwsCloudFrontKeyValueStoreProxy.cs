@@ -31,7 +31,10 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		if (string.IsNullOrEmpty(eTag))
 			return;
 
-		var existingRedirects = ListAllKeys(kvsArn);
+		var listingSuccessful = TryListAllKeys(kvsArn, out var existingRedirects);
+
+		if (!listingSuccessful)
+			return;
 
 		var toPut = sourcedRedirects
 			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
@@ -51,7 +54,14 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		try
 		{
 			var json = CaptureMultiple("aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
-			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			var concatJson = string.Concat(json);
+			if (string.IsNullOrWhiteSpace(concatJson))
+			{
+				Collector.EmitError("", "The output from cloudfront:describe-key-value-store was empty");
+				return string.Empty;
+			}
+
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
 			if (describeResponse?.KeyValueStore is { ARN.Length: > 0 })
 				return describeResponse.KeyValueStore.ARN;
 
@@ -71,7 +81,13 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		try
 		{
 			var json = CaptureMultiple("aws", "cloudfront-keyvaluestore", "describe-key-value-store", "--kvs-arn", kvsArn);
-			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			var concatJson = string.Concat(json);
+			if (string.IsNullOrWhiteSpace(concatJson))
+			{
+				Collector.EmitError("", "The output from cloudfront-keyvaluestore:describe-key-value-store was empty");
+				return string.Empty;
+			}
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
 			if (describeResponse?.ETag is not null)
 				return describeResponse.ETag;
 
@@ -85,10 +101,10 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		}
 	}
 
-	private HashSet<string> ListAllKeys(string kvsArn)
+	private bool TryListAllKeys(string kvsArn, out HashSet<string> keys)
 	{
 		_logger.LogInformation("Acquiring existing redirects");
-		var allKeys = new HashSet<string>();
+		keys = [];
 		string[] baseArgs = ["cloudfront-keyvaluestore", "list-keys", "--kvs-arn", kvsArn, "--page-size", "50", "--max-items", "50"];
 		string? nextToken = null;
 		try
@@ -96,12 +112,18 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 			do
 			{
 				var json = CaptureMultiple("aws", [.. baseArgs, .. nextToken is not null ? (string[])["--starting-token", nextToken] : []]);
-				var response = JsonSerializer.Deserialize<ListKeysResponse>(string.Concat(json), AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
+				var concatJson = string.Concat(json);
+				if (string.IsNullOrWhiteSpace(concatJson))
+				{
+					Collector.EmitError("", "The output from cloudfront-keyvaluestore:list-keys was empty");
+					throw new JsonException("Empty output from cloudfront-keyvaluestore:list-keys");
+				}
+				var response = JsonSerializer.Deserialize<ListKeysResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
 
 				if (response?.Items != null)
 				{
 					foreach (var item in response.Items)
-						_ = allKeys.Add(item.Key);
+						_ = keys.Add(item.Key);
 				}
 
 				nextToken = response?.NextToken;
@@ -110,9 +132,9 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		catch (Exception e)
 		{
 			Collector.EmitError("", "An error occurred while acquiring existing redirects in the KeyValueStore", e);
-			return [];
+			return false;
 		}
-		return allKeys;
+		return true;
 	}
 
 
@@ -138,7 +160,15 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 				};
 				var responseJson = CaptureMultiple(false, 1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
 					$"--{operation.ToString().ToLowerInvariant()}", payload);
-				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(string.Concat(responseJson), AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
+
+				var concatJson = string.Concat(responseJson);
+				if (string.IsNullOrWhiteSpace(concatJson))
+				{
+					Collector.EmitError("", "The output from cloudfront-keyvaluestore:update-keys was empty");
+					throw new JsonException("Empty output from cloudfront-keyvaluestore:update-keys");
+				}
+
+				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
 
 				if (string.IsNullOrEmpty(updateResponse?.ETag))
 					throw new Exception("Failed to get new ETag after update operation.");
