@@ -50,14 +50,3 @@ The products frontmatter is a list of products that the page relates to.
 `products` can also be defined in the [`docset.yml` file](/configure/content-set/navigation.md#products).
 If you define `products` in a page's Markdown file and the `docset.yml` file also includes `products`, docs-builder will combine the two lists.
 You can _not_ override doc set level `products` at the page level.
-
-
-```yaml
-products:
-  - id: apm
-applies_to:
-  stack: ga
-  serverless:
-    observability: ga
-```
-:::
