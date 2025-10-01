@@ -6,10 +6,10 @@ navigation_title: assembler.yml
 
 The [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) file defines the global documentation site:
 
-* `environments`
-* `shared_configuration`
-* narrative repository configuration
-* reference repository configurations
+* `environments`.
+* `shared_configuration`.
+* narrative repository configuration.
+* reference repository configurations.
 
 ## `environments`
 

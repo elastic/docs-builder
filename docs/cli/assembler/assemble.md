@@ -30,7 +30,7 @@ docs-builder assembler serve
 
 Where this command really shines is when you want to create a temporary workspace folder to validate:
 
-* changes to [site wide configuration](../../configure/site/index.md)
+* changes to [site wide configuration](../../configure/site/index.md).
 * changes to one or more repositories and their effect on the assembler build.
 
 To do that inside an empty folder, call:

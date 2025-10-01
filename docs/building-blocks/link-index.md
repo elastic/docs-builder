@@ -10,18 +10,18 @@ A **Link Index** is a JSON file (`links.json`) that contains all the linkable re
 
 The Link Index enables:
 
-* **Cross-repository linking** - Other documentation sets can link to your content
-* **Link validation** - Validate that links to your content are correct
-* **Inbound link detection** - Know when other repositories link to your content
-* **Distributed builds** - Build documentation independently while maintaining link integrity
+* **Cross-repository linking** - Other documentation sets can link to your content.
+* **Link validation** - Validate that links to your content are correct.
+* **Inbound link detection** - Know when other repositories link to your content.
+* **Distributed builds** - Build documentation independently while maintaining link integrity.
 
 ## Structure
 
 Each repository branch gets its own Link Index file in the [Link Service](link-service.md), organized by:
 
-* **Organization** - e.g., `elastic`
-* **Repository** - e.g., `elasticsearch`
-* **Branch** - e.g., `main`, `8.x`, `7.17`
+* **Organization** - e.g., `elastic`.
+* **Repository** - e.g., `elasticsearch`.
+* **Branch** - e.g., `main`, `8.x`, `7.17`.
 
 ## Example
 
@@ -29,11 +29,11 @@ View [Elasticsearch's main branch Link Index](https://elastic-docs-link-index.s3
 
 The Link Index contains:
 
-* All documentation pages in the repository
-* Headings within those pages
-* Anchors and linkable elements
-* Version information
-* Metadata about the build
+* All documentation pages in the repository.
+* Headings within those pages.
+* Anchors and linkable elements.
+* Version information.
+* Metadata about the build.
 
 ## Generation
 
@@ -80,7 +80,7 @@ https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{org}/{repo}/{branch}
 
 ## Related concepts
 
-* [Link Service](link-service.md) - Where Link Index files are stored
-* [Link Catalog](link-catalog.md) - Catalog of all Link Index files
-* [Outbound Cross-links](outbound-cross-links.md) - Links that use the Link Index
-* [Inbound Cross-links](inbound-cross-links.md) - Links to resources in the Link Index
+* [Link Service](link-service.md) - Where Link Index files are stored.
+* [Link Catalog](link-catalog.md) - Catalog of all Link Index files.
+* [Outbound Cross-links](outbound-cross-links.md) - Links that use the Link Index.
+* [Inbound Cross-links](inbound-cross-links.md) - Links to resources in the Link Index.

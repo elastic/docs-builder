@@ -8,9 +8,9 @@ Sources the configuration from [The `config` folder on the `main` branch of `doc
 
 By default, the configuration is placed in a special application folder as its main usages is to be used by CI environments. 
 
-* OSX: `~/Library/Application Support/docs-builder` [NSApplicationSupportDirectory](https://developer.apple.com/documentation/foundation/filemanager/searchpathdirectory/applicationsupportdirectory)
-* Linux: `~/.config/docs-builder`
-* {icon}`logo_windows` Windows: `%APPDATA%\docs-builder`
+* OSX: `~/Library/Application Support/docs-builder` [NSApplicationSupportDirectory](https://developer.apple.com/documentation/foundation/filemanager/searchpathdirectory/applicationsupportdirectory).
+* Linux: `~/.config/docs-builder`.
+* {icon}`logo_windows` Windows: `%APPDATA%\docs-builder`.
 
 You can also use the `--local` option to save the configuration locally in the current working directory. This exposes a great way to assemble the full documentation locally in an empty directory.
 

@@ -19,10 +19,10 @@ The assembler:
 
 Assembled documentation is configured through the site configuration, which defines:
 
-* [assembler.yml](../configure/site/index.md): Which repositories to include and [their branching strategy](../contribute/branching-strategy.md)
+* [assembler.yml](../configure/site/index.md): Which repositories to include and [their branching strategy](../contribute/branching-strategy.md).
 * [navigation.yml](../configure/site/index.md): Navigation and url prefixes for TOC's.
-* [versions.yml](../configure/site/versions.md): Defines the various versioning schemes of products/solutions being documented
-* [products.yml](../configure/site/products.md): Defines the product catalog (id, name) and ties it to a specific versioning scheme
+* [versions.yml](../configure/site/versions.md): Defines the various versioning schemes of products/solutions being documented.
+* [products.yml](../configure/site/products.md): Defines the product catalog (id, name) and ties it to a specific versioning scheme.
 
 Refer to [Site Configuration](../configure/site/index.md) for details on configuring assembled documentation.
 
@@ -47,6 +47,6 @@ This uses the embedded configuration files inside the `docs-builder` binary. To 
 
 ## Related concepts
 
-* [Documentation set](documentation-set.md): The individual units being assembled.
-* [Distributed documentation](distributed-documentation.md): How documentation sets work independently.
-* [Link catalog](link-catalog.md): How the assembler knows what to include.
+* [Documentation Set](documentation-set.md): The individual units being assembled.
+* [Distributed Documentation](distributed-documentation.md): How documentation sets work independently.
+* [Link Catalog](link-catalog.md): How the assembler knows what to include.

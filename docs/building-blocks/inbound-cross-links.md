@@ -10,9 +10,9 @@ navigation_title: Inbound cross-links
 
 Inbound cross-link validation allows you to:
 
-* **Detect breaking changes** - Know when renaming or deleting a file will break links from other repositories
-* **Prevent regressions** - Avoid publishing changes that break documentation elsewhere
-* **Coordinate changes** - Understand dependencies before making structural changes
+* **Detect breaking changes** - Know when renaming or deleting a file will break links from other repositories.
+* **Prevent regressions** - Avoid publishing changes that break documentation elsewhere.
+* **Coordinate changes** - Understand dependencies before making structural changes.
 
 ## How it works
 
@@ -99,22 +99,22 @@ redirects:
 
 If you need to make a breaking change:
 
-1. Run inbound link validation to identify affected repositories
-2. File issues or notify maintainers of affected repositories
-3. Coordinate the change timing
-4. Provide redirect mappings or alternative URLs
+1. Run inbound link validation to identify affected repositories.
+2. File issues or notify maintainers of affected repositories.
+3. Coordinate the change timing,
+4. Provide redirect mappings or alternative URLs.
 
 ### Validate before merging
 
 Make inbound link validation part of your review process:
 
-* Run validation locally before creating a PR
-* Include validation in CI checks
-* Review validation results before merging
+* Run validation locally before creating a PR.
+* Include validation in CI checks.
+* Review validation results before merging.
 
 ## Related concepts
 
-* [Outbound Cross-links](outbound-cross-links.md) - Links from your documentation to others
-* [Link Index](link-index.md) - How your linkable resources are tracked
-* [Link Service](link-service.md) - Where inbound link information is stored
-* [Distributed Documentation](distributed-documentation.md) - The architecture enabling this validation
+* [Outbound Cross-links](outbound-cross-links.md) - Links from your documentation to others.
+* [Link Index](link-index.md) - How your linkable resources are tracked.
+* [Link Service](link-service.md) - Where inbound link information is stored.
+* [Distributed Documentation](distributed-documentation.md) - The architecture enabling this validation.

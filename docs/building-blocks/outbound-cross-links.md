@@ -10,10 +10,10 @@ navigation_title: Outbound cross-links
 
 Outbound cross-links allow you to:
 
-* Link to documentation in other repositories
-* Maintain those links even as the target repository evolves
-* Validate links during local builds
-* Get warnings if target content is moved or deleted
+* Link to documentation in other repositories.
+* Maintain those links even as the target repository evolves.
+* Validate links during local builds.
+* Get warnings if target content is moved or deleted.
 
 ## Syntax
 
@@ -50,8 +50,8 @@ When `docs-builder` encounters a cross-link:
 
 During a build, `docs-builder`:
 
-* **Validates immediately** - Checks all outbound cross-links against locally fetched [Link Index](link-index.md) files
-* **Reports errors** - Reports errors about broken links before you publish
+* **Validates immediately** - Checks all outbound cross-links against locally fetched [Link Index](link-index.md) files.
+* **Reports errors** - Reports errors about broken links before you publish.
 
 ## Configuration
 
@@ -86,9 +86,9 @@ The explicit opt-in prevents each repository build having the fetch all the link
 ```
 
 The cross-link syntax is resilient to:
-* URL structure changes
-* File moves (if redirects are configured)
-* Version differences
+* URL structure changes.
+* File moves (if redirects are configured).
+* Version differences.
 
 ### Link to headings
 
@@ -100,6 +100,6 @@ You can link to specific headings within a page:
 
 ## Related concepts
 
-* [Inbound Cross-links](inbound-cross-links.md) - Links from other repositories to yours
-* [Link Index](link-index.md) - How cross-links are resolved
-* [Links syntax](../syntax/links.md) - Complete link syntax documentation
+* [Inbound Cross-links](inbound-cross-links.md) - Links from other repositories to yours.
+* [Link Index](link-index.md) - How cross-links are resolved.
+* [Links syntax](../syntax/links.md) - Complete link syntax documentation.

@@ -10,10 +10,10 @@ navigation_title: Documentation set navigation
 
 Documentation set navigation allows repository maintainers to:
 
-* **Organize content** - Define the logical structure of their documentation
-* **Control hierarchy** - Determine which pages are nested under others
-* **Create sections** - Group related content together
-* **Maintain autonomy** - Structure documentation independently of other repositories
+* **Organize content** - Define the logical structure of their documentation.
+* **Control hierarchy** - Determine which pages are nested under others.
+* **Create sections** - Group related content together.
+* **Maintain autonomy** - Structure documentation independently of other repositories.
 
 ## Basic structure
 
@@ -121,10 +121,10 @@ The folder name `development` is not repeated in the `toc.yml` file. This allows
 
 ### Benefits of separate toc.yml files
 
-* **Modularity** - Each section can be maintained independently
-* **Cleaner docset.yml** - Keep the main file focused and readable
-* **Easier refactoring** - Rename folders without updating TOC references
-* **Team ownership** - Different teams can manage different TOC sections
+* **Modularity** - Each section can be maintained independently.
+* **Cleaner docset.yml** - Keep the main file focused and readable.
+* **Easier refactoring** - Rename folders without updating TOC references.
+* **Team ownership** - Different teams can manage different TOC sections.
 
 ## File paths
 
@@ -163,8 +163,8 @@ contained in its file.
 
 When building [assembled documentation](assembled-documentation.md), the documentation set navigation becomes a component of the [global navigation](global-navigation.md):
 
-* **Documentation set navigation** defines the structure **within** a repository
-* **Global navigation** defines **how repositories are organized** relative to each other
+* **Documentation set navigation** defines the structure **within** a repository.
+* **Global navigation** defines **how repositories are organized** relative to each other.
 
 Named `toc` sections in `docset.yml` can be referenced and reorganized in the global `navigation.yml` file without affecting the documentation set's internal structure.
 
@@ -172,9 +172,9 @@ Named `toc` sections in `docset.yml` can be referenced and reorganized in the gl
 
 ### Keep it organized
 
-* Group related content in folders
-* Use descriptive folder and file names
-* Maintain a logical hierarchy
+* Group related content in folders.
+* Use descriptive folder and file names.
+* Maintain a logical hierarchy.
 
 The folder names and hierarchy are reflected directly in the URL structure.
 
@@ -231,6 +231,6 @@ These names will end up in the URL structure of the published documentation
 
 ## Related concepts
 
-* [Global Navigation](global-navigation.md) - How documentation sets are organized in assembled documentation
-* [Content Set Configuration](../configure/content-set/index.md) - Complete `docset.yml` reference
-* [Navigation Configuration](../configure/content-set/navigation.md) - Detailed navigation options
+* [Global Navigation](global-navigation.md) - How documentation sets are organized in assembled documentation.
+* [Content Set Configuration](../configure/content-set/index.md) - Complete `docset.yml` reference.
+* [Navigation Configuration](../configure/content-set/navigation.md) - Detailed navigation options.

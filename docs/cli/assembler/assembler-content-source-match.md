@@ -6,9 +6,9 @@ navigation_title: "content-source match"
 
 This command is used to match a repository and branch to a content source it will emit the following `$GITHUB_OUTPUT`:
 
-* `content-source-match` - whether the branch is a configured content source
-* `content-source-next` - whether the branch is the next content source
-* `content-source-current` - whether the branch is the current content source
+* `content-source-match` - whether the branch is a configured content source.
+* `content-source-next` - whether the branch is the next content source.
+* `content-source-current` - whether the branch is the current content source.
 * `content-source-speculative` - whether the branch is a speculative content source.
 
 #### Speculative builds

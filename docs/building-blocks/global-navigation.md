@@ -10,10 +10,10 @@ navigation_title: Global navigation
 
 Global navigation enables:
 
-* **Unified experience** - Present documentation from multiple repositories as a cohesive whole
-* **Flexible organization** - Arrange documentation by product, feature, or audience rather than by repository
-* **Independent evolution** - Reorganize global structure without changing documentation sets
-* **Cross-repository grouping** - Combine related content from different repositories
+* **Unified experience** - Present documentation from multiple repositories as a cohesive whole.
+* **Flexible organization** - Arrange documentation by product, feature, or audience rather than by repository.
+* **Independent evolution** - Reorganize global structure without changing documentation sets.
+* **Cross-repository grouping** - Combine related content from different repositories.
 
 ## Configuration
 
@@ -23,9 +23,9 @@ Global navigation is defined in the `navigation.yml` file, which is part of the 
 
 Global navigation has specific restrictions:
 
-* **It may only link to `toc.yml` or `docset.yml` files** - You cannot reference individual markdown files
-* **Uses crosslink syntax** - References to other repositories use the `repository://` syntax
-* **Requires all TOC sections** - Dangling TOC sections are not allowed
+* **It may only link to `toc.yml` or `docset.yml` files** - You cannot reference individual markdown files.
+* **Uses crosslink syntax** - References to other repositories use the `repository://` syntax.
+* **Requires all TOC sections** - Dangling TOC sections are not allowed.
 
 ## Basic structure
 
@@ -82,9 +82,9 @@ You must explicitly provide a URL path prefix when including a `toc`.
 ```
 
 This allows you to:
-* Group content from different repositories under a common path
-* Avoid URL conflicts when combining repositories
-* Create product-specific URL structures
+* Group content from different repositories under a common path.
+* Avoid URL conflicts when combining repositories.
+* Create product-specific URL structures.
 
 ## Reorganization independence
 
@@ -115,10 +115,10 @@ All `toc` sections must be linked in `navigation.yml`.
 **Dangling `toc` sections are not allowed** and the assembler build will report an error if it finds any.
 
 This ensures:
-* No content is accidentally excluded from the site
-* Navigation references are always valid
-* Documentation coverage is complete
-* Every TOC section defined in a `docset.yml` appears somewhere in the global navigation
+* No content is accidentally excluded from the site.
+* Navigation references are always valid.
+* Documentation coverage is complete.
+* Every TOC section defined in a `docset.yml` appears somewhere in the global navigation.
 
 ### Example of validation
 
@@ -147,10 +147,10 @@ If either is missing, the build will fail with an error about dangling TOC secti
 
 When building assembled documentation, `docs-builder` validates:
 
-* All referenced TOC sections exist
-* No TOC sections are dangling (unreferenced)
-* Path prefixes don't conflict
-* Crosslink references resolve correctly
+* All referenced TOC sections exist.
+* No TOC sections are dangling (unreferenced).
+* Path prefixes don't conflict.
+* Crosslink references resolve correctly.
 
 Validation errors will cause the assembler build to fail.
 
@@ -186,8 +186,8 @@ During an assembler build:
 
 ## Related concepts
 
-* [Documentation Set Navigation](documentation-set-navigation.md) - How individual repositories organize their content
-* [Assembled Documentation](assembled-documentation.md) - The build process that uses global navigation
-* [Site Configuration](../configure/site/index.md) - Complete site configuration reference
-* [Navigation Configuration](../configure/site/navigation.md) - Detailed navigation.yml reference
-* [Cross-link syntax](../syntax/links.md) - Understanding the repository:// syntax
+* [Documentation Set Navigation](documentation-set-navigation.md) - How individual repositories organize their content.
+* [Assembled Documentation](assembled-documentation.md) - The build process that uses global navigation.
+* [Site Configuration](../configure/site/index.md) - Complete site configuration reference.
+* [Navigation Configuration](../configure/site/navigation.md) - Detailed navigation.yml reference.
+* [Cross-link syntax](../syntax/links.md) - Understanding the `<repository>://<path>` syntax.

@@ -4,8 +4,8 @@ Builds a local documentation set folder.
 
 Repeated invocations will do incremental builds of only the changed files unless:
 
-* The base branch has changed 
-* The state file in the output folder has been removed
+* The base branch has changed.
+* The state file in the output folder has been removed.
 * The `--force` option is specified.
 
 ## Usage
