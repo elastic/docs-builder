@@ -404,6 +404,7 @@ jobs:
             !cancelled() 
             && github.repository != 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true'
+            && steps.docs-build.outcome != 'skipped'
             && (
               steps.deployment.outputs.result 
               || (
@@ -421,6 +422,7 @@ jobs:
             !cancelled() 
             && github.repository == 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true'
+            && steps.docs-build.outcome != 'skipped'
             && (
               steps.deployment.outputs.result 
               || (
@@ -437,6 +439,7 @@ jobs:
           !cancelled() 
           && steps.docs-build.outputs.skip != 'true'
           && steps.deployment.outputs.result
+          && steps.docs-build.outcome == 'success'
       - name: Upload to S3
         id: s3-upload
         if: >
@@ -444,6 +447,7 @@ jobs:
           && !cancelled() 
           && steps.docs-build.outputs.skip != 'true' 
           && steps.deployment.outputs.result
+          && steps.docs-build.outcome == 'success'
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
