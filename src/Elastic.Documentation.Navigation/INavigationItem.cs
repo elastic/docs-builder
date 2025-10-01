@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Site.Navigation;
+namespace Elastic.Documentation.Navigation;
 
 /// Represents navigation model data for documentation elements.
 public interface INavigationModel
@@ -76,4 +76,15 @@ public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNa
 	where TChildNavigation : INavigationItem
 {
 	bool IsUsingNavigationDropdown { get; }
+}
+
+
+/// Represents the site navigation
+/// <typeparam name="TChildNavigation">The type of child navigation items.</typeparam>
+public interface ISiteNavigation<out TChildNavigation>
+{
+	/// <summary>
+	/// Gets the collection of child navigation items.
+	/// </summary>
+	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
 }

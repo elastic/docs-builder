@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 

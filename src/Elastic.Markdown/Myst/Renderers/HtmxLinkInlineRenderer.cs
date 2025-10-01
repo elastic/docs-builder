@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Site;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Markdig;
 using Markdig.Renderers;

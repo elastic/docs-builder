@@ -8,7 +8,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;

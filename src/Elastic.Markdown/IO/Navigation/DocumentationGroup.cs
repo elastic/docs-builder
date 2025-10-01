@@ -7,7 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 
 namespace Elastic.Markdown.IO.Navigation;
 

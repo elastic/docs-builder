@@ -5,7 +5,7 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Xml.Linq;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
 

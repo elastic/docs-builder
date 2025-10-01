@@ -9,7 +9,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer;

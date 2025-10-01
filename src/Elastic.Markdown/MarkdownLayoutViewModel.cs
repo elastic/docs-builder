@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Site;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 
 namespace Elastic.Markdown;
 

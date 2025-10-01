@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Navigation;
 using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
