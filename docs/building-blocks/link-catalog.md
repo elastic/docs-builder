@@ -32,6 +32,7 @@ The Link Catalog contains:
 * Metadata about each Link Index:
   * Last updated timestamp
   * Commit SHA that produced the Link Index
+  * ETAG of the Link Index file
   * URL to the Link Index file
 
 ## Maintenance
@@ -52,9 +53,8 @@ This process ensures the catalog stays in sync with published Link Index files w
 When running `docs-builder assembler clone` or `docs-builder assembler build`:
 
 1. The assembler fetches the Link Catalog
-2. It determines which repositories and versions to clone/build based on the site configuration
+2. It determines which repositories and versions to clone/build based on the [site configuration](../configure/site/index.md)
 3. It uses the commit SHAs from the catalog to clone specific versions
-4. It falls back to the last known good commit if a repository's current state has build failures
 
 ### By documentation builds
 
@@ -62,7 +62,7 @@ During a documentation build:
 
 1. `docs-builder` fetches the Link Catalog
 2. It determines which Link Index files to download for cross-repository validation
-3. It validates all crosslinks against the appropriate Link Index files
+3. It validates all cross-links against the appropriate Link Index files
 
 ## Benefits
 

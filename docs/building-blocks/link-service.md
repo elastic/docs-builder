@@ -4,13 +4,20 @@ navigation_title: Link Service
 
 # Link Service
 
-The **Link Service** is the central location where all [Link Index](link-index.md) files are published and stored.
+The **Link Service** is the central location that stores:
+
+* All [Link Index](link-index.md) files for all the repositories and branches that are published.
+* The [Link Catalog](link-catalog.md), a single JSON file that contains references to all the `Link Index` files. 
+
+We only have one link service today for all public documentation.
+
+* https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/
 
 ## Architecture
 
 The Link Service is implemented as:
 
-* **Storage** - An S3 bucket containing all Link Index files
+* **Storage** - An S3 bucket
 * **CDN** - CloudFront fronting the S3 bucket for fast global access
 * **Access** - Publicly accessible for read operations
 
