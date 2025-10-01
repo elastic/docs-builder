@@ -55,8 +55,8 @@ toc:
       - file: link-service.md
       - file: link-index.md
       - file: link-catalog.md
-      - file: outbound-crosslinks.md
-      - file: inbound-crosslinks.md
+      - file: outbound-cross-links.md
+      - file: inbound-cross-links.md
       - file: documentation-set-navigation.md
       - file: global-navigation.md
   - folder: configure

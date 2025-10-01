@@ -10,6 +10,6 @@ Inbound links, those going from other sources to the documentation set, are vali
 
 ### Inbound link validation commands
 
-- [inbound-links validate-all](links/inbound-links-validate-all.md) - validate all inbounds links as published to the links registry. 
-- [inbound-links validate](links/inbound-links-validate.md)  - validate inbound links from and to specific repositories
-- [inbound-links validate-link-reference](links/inbound-links-validate-link-reference.md) - validate a local link reference artifact from [build](docset/build.md) with the published registry
+- [inbound-links validate-all](inbound-links-validate-all.md) - validate all inbounds links as published to the links registry. 
+- [inbound-links validate](inbound-links-validate.md)  - validate inbound links from and to specific repositories
+- [inbound-links validate-link-reference](inbound-links-validate-link-reference.md) - validate a local link reference artifact from [build](../docset/build.md) with the published registry

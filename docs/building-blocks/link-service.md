@@ -56,8 +56,8 @@ When a documentation build completes successfully on a default integration branc
 During both local and CI builds, `docs-builder`:
 
 * Fetches relevant Link Index files from the Link Service
-* Validates outbound crosslinks against these indexes
-* Validates that inbound crosslinks won't be broken by local changes
+* Validates outbound cross-links against these indexes
+* Validates that inbound cross-links won't be broken by local changes
 
 ## Related concepts
 

@@ -55,8 +55,8 @@ The distributed documentation system relies on several key components:
 * [Link Index](link-index.md) - Per-repository file of linkable resources
 * [Link Service](link-service.md) - Central storage for Link Index files
 * [Link Catalog](link-catalog.md) - Catalog of all available Link Index files
-* [Outbound Crosslinks](outbound-crosslinks.md) - Links from one repository to another
-* [Inbound Crosslinks](inbound-crosslinks.md) - Links from other repositories to yours
+* [Outbound Cross-links](outbound-cross-links.md) - Links from one repository to another
+* [Inbound Cross-links](inbound-cross-links.md) - Links from other repositories to yours
 
 ## Local development
 

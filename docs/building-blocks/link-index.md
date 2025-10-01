@@ -46,16 +46,16 @@ The Link Index is automatically generated during a documentation build:
 
 ## Usage
 
-### Resolving outbound crosslinks
+### Resolving outbound cross-links
 
-When you use a crosslink like `elasticsearch://reference/api/search.md`, `docs-builder`:
+When you use a cross-link like `elasticsearch://reference/api/search.md`, `docs-builder`:
 
 1. Fetches the Elasticsearch Link Index from the Link Service
 2. Looks up the path in the index
 3. Validates the link exists
 4. Resolves it to the correct URL
 
-### Validating inbound crosslinks
+### Validating inbound cross-links
 
 When building your documentation, `docs-builder` can:
 
@@ -82,5 +82,5 @@ https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{org}/{repo}/{branch}
 
 * [Link Service](link-service.md) - Where Link Index files are stored
 * [Link Catalog](link-catalog.md) - Catalog of all Link Index files
-* [Outbound Crosslinks](outbound-crosslinks.md) - Links that use the Link Index
-* [Inbound Crosslinks](inbound-crosslinks.md) - Links to resources in the Link Index
+* [Outbound Cross-links](outbound-cross-links.md) - Links that use the Link Index
+* [Inbound Cross-links](inbound-cross-links.md) - Links to resources in the Link Index

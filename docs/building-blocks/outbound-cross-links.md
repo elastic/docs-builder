@@ -1,14 +1,14 @@
 ---
-navigation_title: Outbound crosslinks
+navigation_title: Outbound cross-links
 ---
 
-# Outbound crosslinks
+# Outbound cross-links
 
-**Outbound crosslinks** are links from your documentation set to other documentation sets in different repositories.
+**Outbound cross-links** are links from your documentation set to other documentation sets in different repositories.
 
 ## Purpose
 
-Outbound crosslinks allow you to:
+Outbound cross-links allow you to:
 
 * Link to documentation in other repositories
 * Maintain those links even as the target repository evolves
@@ -17,7 +17,7 @@ Outbound crosslinks allow you to:
 
 ## Syntax
 
-If both repositories publish to the same [Link Service](link-service.md), they can link to each other using the crosslink syntax:
+If both repositories publish to the same [Link Service](link-service.md), they can link to each other using the cross-link syntax:
 
 ```markdown
 [Link text](repository-name://path/to/file.md)
@@ -39,12 +39,12 @@ cross_links:
 ```
 
 
-When `docs-builder` encounters a crosslink:
+When `docs-builder` encounters a cross-link:
 
 1. **Parse** - Extracts the repository name and path from the link
 3. **Resolve** - Looks up the path in the locally cached [Link Index](link-index.md) to get the actual URL
 4. **Validate** - Verifies the link exists and generates an error if not
-5. **Transform** - Replaces the crosslink with the fully resolved URL in the output
+5. **Transform** - Replaces the cross-link with the fully resolved URL in the output
 
 ## Validation
 
@@ -67,7 +67,7 @@ cross_links:
 This instructs `docs-builder` to fetch the `Link Index` from the [Link Service](link-service.md) during the build process which are then cached locally.
 `docs-builder` will validate locally cached `Link Index` files against the remote `Link Index` files on each build fetching updates as needed.
 
-Now you can create crosslinks e.g `elasticsearch://path/to/file.md`
+Now you can create cross-links e.g `elasticsearch://path/to/file.md`
 
 The explicit opt-in prevents each repository build having the fetch all the links for all the repositories in the [`Link Catalog`](link-catalog.md) of which there may be many.
 
@@ -85,7 +85,7 @@ The explicit opt-in prevents each repository build having the fetch all the link
 [Search API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search.html)
 ```
 
-The crosslink syntax is resilient to:
+The cross-link syntax is resilient to:
 * URL structure changes
 * File moves (if redirects are configured)
 * Version differences
@@ -100,6 +100,6 @@ You can link to specific headings within a page:
 
 ## Related concepts
 
-* [Inbound Crosslinks](inbound-crosslinks.md) - Links from other repositories to yours
-* [Link Index](link-index.md) - How crosslinks are resolved
+* [Inbound Cross-links](inbound-cross-links.md) - Links from other repositories to yours
+* [Link Index](link-index.md) - How cross-links are resolved
 * [Links syntax](../syntax/links.md) - Complete link syntax documentation

@@ -4,11 +4,11 @@ navigation_title: Inbound cross-links
 
 # Inbound cross-links
 
-**Inbound crosslinks** are links from other documentation sets to yours. Understanding and validating inbound crosslinks helps prevent breaking links in other repositories when you make changes.
+**Inbound cross-links** are links from other documentation sets to yours. Understanding and validating inbound cross-links helps prevent breaking links in other repositories when you make changes.
 
 ## Purpose
 
-Inbound crosslink validation allows you to:
+Inbound cross-link validation allows you to:
 
 * **Detect breaking changes** - Know when renaming or deleting a file will break links from other repositories
 * **Prevent regressions** - Avoid publishing changes that break documentation elsewhere
@@ -114,7 +114,7 @@ Make inbound link validation part of your review process:
 
 ## Related concepts
 
-* [Outbound Crosslinks](outbound-crosslinks.md) - Links from your documentation to others
+* [Outbound Cross-links](outbound-cross-links.md) - Links from your documentation to others
 * [Link Index](link-index.md) - How your linkable resources are tracked
 * [Link Service](link-service.md) - Where inbound link information is stored
 * [Distributed Documentation](distributed-documentation.md) - The architecture enabling this validation

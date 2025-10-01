@@ -36,11 +36,11 @@ A catalog file listing all available Link Index files across all repositories an
 
 ## Cross-repository linking
 
-### [Outbound Crosslinks](outbound-crosslinks.md)
+### [Outbound Cross-links](outbound-cross-links.md)
 
 Links from your documentation to other documentation sets. Validated against published Link Index files to ensure they're correct.
 
-### [Inbound Crosslinks](inbound-crosslinks.md)
+### [Inbound Cross-links](inbound-cross-links.md)
 
 Links from other documentation sets to yours. Validated to prevent breaking changes when you move or delete content.
 
@@ -52,13 +52,13 @@ How individual documentation sets organize their content through TOC sections in
 
 ### [Global Navigation](global-navigation.md)
 
-How multiple documentation sets are organized together in assembled documentation through `navigation.yml`. Uses crosslink syntax to reference TOC sections from different repositories and enables cross-repository content organization.
+How multiple documentation sets are organized together in assembled documentation through `navigation.yml`. Uses cross-link syntax to reference TOC sections from different repositories and enables cross-repository content organization.
 
 ## How it all works together
 
 1. Each repository builds its documentation set independently
 2. Successful builds publish a Link Index to the Link Service
 3. The Link Catalog catalogs all available Link Index files
-4. Documentation builds validate crosslinks using these Link Index files
+4. Documentation builds validate cross-links using these Link Index files
 5. The assembler combines documentation sets using the Link Catalog
 6. Teams can work independently while maintaining link integrity across repositories
