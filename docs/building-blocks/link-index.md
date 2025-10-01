@@ -81,6 +81,6 @@ https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{org}/{repo}/{branch}
 ## Related concepts
 
 * [Link Service](link-service.md) - Where Link Index files are stored
-* [Link Registry](link-registry.md) - Catalog of all Link Index files
+* [Link Catalog](link-catalog.md) - Catalog of all Link Index files
 * [Outbound Crosslinks](outbound-crosslinks.md) - Links that use the Link Index
 * [Inbound Crosslinks](inbound-crosslinks.md) - Links to resources in the Link Index

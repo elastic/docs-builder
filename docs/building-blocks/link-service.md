@@ -42,7 +42,7 @@ When a documentation build completes successfully on a default integration branc
 1. The build generates a `links.json` file
 2. The CI/CD pipeline publishes the file to the Link Service
 3. An AWS Lambda function triggers on the S3 event
-4. The Lambda updates the [Link Registry](link-registry.md) to include the new Link Index
+4. The Lambda updates the [Link Catalog](link-catalog.md) to include the new Link Index
 
 ## Access during builds
 
@@ -55,5 +55,5 @@ During both local and CI builds, `docs-builder`:
 ## Related concepts
 
 * [Link Index](link-index.md) - The files stored in the Link Service
-* [Link Registry](link-registry.md) - The catalog of all Link Index files
+* [Link Catalog](link-catalog.md) - The catalog of all Link Index files
 * [Distributed Documentation](distributed-documentation.md) - Why the Link Service exists

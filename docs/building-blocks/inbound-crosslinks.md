@@ -16,19 +16,18 @@ Inbound crosslink validation allows you to:
 
 ## How it works
 
-When you build your documentation, `docs-builder` can validate inbound crosslinks by:
+A regular [build](../cli/docset/build.md) of a documentation set won't validate inbound links automatically.
 
-1. **Fetching your published Link Index** - Gets your repository's [Link Index](link-index.md) from the [Link Service](link-service.md)
-2. **Comparing with local changes** - Compares your current local state with the published Link Index
-3. **Detecting differences** - Identifies files that have been moved, renamed, or deleted
-4. **Checking references** - Queries the Link Service to see if other repositories link to the changed files
-5. **Reporting warnings** - Alerts you to potential breaking changes
+You have to use the [inbound-links validate-link-reference](../cli/links/inbound-links-validate-link-reference.md) after a build to validate all inbound links.
+
+The reason for this is that validating all inbound links has to download all published [Link Index](link-index.md) files
+for the current [Content Source](../configure/content-sources.md).
 
 ## Validation commands
 
 ### Validate all inbound links
 
-Check all inbound crosslinks for your repository:
+Check all inbound links for all published [Link Index](link-index.md) files declared in the [Link Catalog](link-catalog.md)
 
 ```bash
 docs-builder inbound-links validate-all
@@ -39,6 +38,7 @@ docs-builder inbound-links validate-all
 Validate a locally built `links.json` against all published Link Index files:
 
 ```bash
+docs-builder inbound-links validate-link-reference 
 docs-builder inbound-links validate-link-reference --file .artifacts/docs/html/links.json
 ```
 
@@ -80,16 +80,7 @@ Heading anchors are part of the Link Index. If other repositories link to specif
 
 ## Integration with CI/CD
 
-You can integrate inbound link validation into your CI/CD pipeline:
-
-```yaml
-- name: Validate inbound links
-  run: |
-    docs-builder inbound-links validate-link-reference \
-      --file .artifacts/docs/html/links.json
-```
-
-This will fail the build if you're about to break links from other repositories.
+Our preview CI job will run inbound link validation automatically.
 
 ## Best practices
 

@@ -54,7 +54,7 @@ toc:
       - file: distributed-documentation.md
       - file: link-service.md
       - file: link-index.md
-      - file: link-registry.md
+      - file: link-catalog.md
       - file: outbound-crosslinks.md
       - file: inbound-crosslinks.md
   - folder: configure

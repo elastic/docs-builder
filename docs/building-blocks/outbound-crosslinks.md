@@ -31,38 +31,31 @@ See the [Search API documentation](elasticsearch://reference/api/search.md)
 
 ## How it works
 
+You have to explicitly opt in to another repository's `Link Index` by adding it to your `docset.yml` file:
+
+```yaml
+cross_links:
+  - docs-content
+```
+
+
 When `docs-builder` encounters a crosslink:
 
 1. **Parse** - Extracts the repository name and path from the link
-2. **Fetch** - Downloads the target repository's [Link Index](link-index.md) from the Link Service
-3. **Resolve** - Looks up the path in the Link Index to get the actual URL
-4. **Validate** - Verifies the link exists and generates a warning if not
-5. **Transform** - Replaces the crosslink with the resolved URL in the output
+3. **Resolve** - Looks up the path in the locally cached [Link Index](link-index.md) to get the actual URL
+4. **Validate** - Verifies the link exists and generates an error if not
+5. **Transform** - Replaces the crosslink with the fully resolved URL in the output
 
 ## Validation
 
 During a build, `docs-builder`:
 
-* **Validates immediately** - Checks all outbound crosslinks against published Link Index files
-* **Reports errors** - Warns about broken links before you publish
-* **Suggests fixes** - If a file was moved, the Link Index may include redirect information
-
-### Local validation
-
-Even during local development, you can validate outbound crosslinks:
-
-```bash
-docs-builder --path ./docs
-```
-
-This will:
-* Fetch Link Index files from the Link Service
-* Validate all crosslinks in your local documentation
-* Report any broken links
+* **Validates immediately** - Checks all outbound cross-links against locally fetched [Link Index](link-index.md) files
+* **Reports errors** - Reports errors about broken links before you publish
 
 ## Configuration
 
-To enable crosslinks to a repository, add it to your `docset.yml`:
+To enable cross-links to a repository, add it to your `docset.yml`:
 
 ```yaml
 cross_links:
@@ -70,6 +63,13 @@ cross_links:
   - kibana
   - fleet
 ```
+
+This instructs `docs-builder` to fetch the `Link Index` from the [Link Service](link-service.md) during the build process which are then cached locally.
+`docs-builder` will validate locally cached `Link Index` files against the remote `Link Index` files on each build fetching updates as needed.
+
+Now you can create crosslinks e.g `elasticsearch://path/to/file.md`
+
+The explicit opt-in prevents each repository build having the fetch all the links for all the repositories in the [`Link Catalog`](link-catalog.md) of which there may be many.
 
 ## Best practices
 
@@ -97,10 +97,6 @@ You can link to specific headings within a page:
 ```markdown
 [Query DSL](elasticsearch://reference/query-dsl.md#match-query)
 ```
-
-### Specify versions
-
-For assembled documentation, the assembler handles version mapping. For local builds, crosslinks resolve to the default branch of the target repository.
 
 ## Related concepts
 

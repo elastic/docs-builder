@@ -4,7 +4,7 @@ navigation_title: Distributed Documentation
 
 # Distributed Documentation
 
-**Distributed documentation** is the architectural approach that allows documentation sets to be built independently while still enabling cross-repository linking and validation.
+**Distributed documentation** is the architectural approach that allows repositories to build their own documentation independently.
 
 ## Purpose
 
@@ -54,10 +54,10 @@ The distributed documentation system relies on several key components:
 
 * [Link Index](link-index.md) - Per-repository file of linkable resources
 * [Link Service](link-service.md) - Central storage for Link Index files
-* [Link Registry](link-registry.md) - Catalog of all available Link Index files
+* [Link Catalog](link-catalog.md) - Catalog of all available Link Index files
 * [Outbound Crosslinks](outbound-crosslinks.md) - Links from one repository to another
 * [Inbound Crosslinks](inbound-crosslinks.md) - Links from other repositories to yours
 
 ## Local development
 
-Even during local development, `docs-builder` can access the Link Service to validate cross-repository links without requiring you to clone and build all related repositories.
+Even during local development, `docs-builder` can access the [Link Service](link-service.md) to validate cross-repository links without requiring you to clone and build all related repositories.

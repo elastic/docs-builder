@@ -30,7 +30,7 @@ The central S3-backed service where Link Index files are published and stored. T
 
 A JSON file (`links.json`) containing all linkable resources for a specific repository branch. Published to the Link Service after each successful build.
 
-### [Link Registry](link-registry.md)
+### [Link Catalog](link-catalog.md)
 
 A catalog file listing all available Link Index files across all repositories and branches. Used by the assembler to coordinate builds and by documentation builds for validation.
 
@@ -48,7 +48,7 @@ Links from other documentation sets to yours. Validated to prevent breaking chan
 
 1. Each repository builds its documentation set independently
 2. Successful builds publish a Link Index to the Link Service
-3. The Link Registry catalogs all available Link Index files
+3. The Link Catalog catalogs all available Link Index files
 4. Documentation builds validate crosslinks using these Link Index files
-5. The assembler combines documentation sets using the Link Registry
+5. The assembler combines documentation sets using the Link Catalog
 6. Teams can work independently while maintaining link integrity across repositories
