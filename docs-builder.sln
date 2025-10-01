@@ -158,6 +158,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Links
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Isolated", "src\services\Elastic.Documentation.Isolated\Elastic.Documentation.Isolated.csproj", "{AABD3EF7-8C86-4981-B1D2-B1F786F33069}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Documentation.Navigation", "src\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj", "{2906C5A4-6EF2-47A4-8CC8-18D3A53AC300}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -283,6 +285,10 @@ Global
 		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AABD3EF7-8C86-4981-B1D2-B1F786F33069}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2906C5A4-6EF2-47A4-8CC8-18D3A53AC300}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2906C5A4-6EF2-47A4-8CC8-18D3A53AC300}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2906C5A4-6EF2-47A4-8CC8-18D3A53AC300}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2906C5A4-6EF2-47A4-8CC8-18D3A53AC300}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4D198E25-C211-41DC-9E84-B15E89BD7048} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
@@ -325,5 +331,6 @@ Global
 		{E6EA955D-D0A7-4749-9586-0F7256EF5C5E} = {7AACA67B-3C56-4C7C-9891-558589FC52DB}
 		{153FC4AD-F5B0-4100-990E-0987C86DBF01} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 		{AABD3EF7-8C86-4981-B1D2-B1F786F33069} = {7AACA67B-3C56-4C7C-9891-558589FC52DB}
+		{2906C5A4-6EF2-47A4-8CC8-18D3A53AC300} = {BE6011CC-1200-4957-B01F-FCCA10C5CF5A}
 	EndGlobalSection
 EndGlobal
