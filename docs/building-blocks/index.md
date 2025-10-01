@@ -44,6 +44,25 @@ Links from your documentation to other documentation sets. Validated against pub
 
 Links from other documentation sets to yours. Validated to prevent breaking changes when you move or delete content.
 
+## Navigation
+
+### Documentation Set Navigation
+
+A documentation set is responsible for defining how files are organized in the navigation. This is done by defining a `toc` section in the `docset.yml` file.
+If the `toc` section becomes to big folders can define a dedicated `toc.yml` file to organize the files and link them in their parent `toc.yml` or `docset.yml` file. 
+
+Read more details in the reference for [docset.yml](../configure/content-set/index.md)
+
+### Global Navigation
+
+The global navigation is defined in the [`navigation.yml`](../configure/site/navigation.md) file. 
+This navigation only concerns itself with `toc` sections defined in either `docset.yml` or `toc.yml` files. 
+These `toc` sections can be reorganized independently of their position in the documentation set navigation.
+
+Dangling `toc` sections are **not** allowed and the assembler build will report an error if it finds any. All `toc` sections must be linked in `navigation.yml`.
+
+Read more details in the reference for [navigation.yml](../configure/site/navigation.md)
+
 ## How it all works together
 
 1. Each repository builds its documentation set independently
