@@ -13,22 +13,18 @@
 			}
 		}
 
-		.applies-item {
+		&>.applies-switch-label>.applies-item {
 			@apply cursor-pointer text-inherit;
 
 			&:hover {
 				@apply text-inherit;
 			}
 			.applicable-info {
-				@apply cursor-pointer border-none bg-transparent p-0;
-
-				&:not(:last-child):after {
-					content: ',';
-				}
+				@apply cursor-pointer;
 			}
 			.applicable-name,
 			.applicable-meta {
-				@apply text-base;
+				@apply text-xs;
 			}
 		}
 
