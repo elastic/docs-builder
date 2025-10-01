@@ -49,17 +49,79 @@ Links from other documentation sets to yours. Validated to prevent breaking chan
 ### Documentation Set Navigation
 
 A documentation set is responsible for defining how files are organized in the navigation. This is done by defining a `toc` section in the `docset.yml` file.
-If the `toc` section becomes to big folders can define a dedicated `toc.yml` file to organize the files and link them in their parent `toc.yml` or `docset.yml` file. 
+
+```yaml
+toc:
+  - file: index.md
+  - folder: contribute
+    children:
+      - file: index.md
+      - file: locally.md
+        children:
+          - file: page.md
+```
+
+If the `toc` section becomes too unwieldy folders can define a dedicated `toc.yml` file to organize their files and link them in their parent `toc.yml` or `docset.yml` file. 
+
+```yaml
+toc:
+  - file: index.md
+  - folder: contribute
+    children:
+      - file: index.md
+      - file: locally.md
+        children:
+          - file: page.md
+  - toc: development
+```
+
+Where `development/toc.yml` is defined as:
+
+```yaml
+toc:
+  - file: index.md 
+  - toc: link-validation
+```
+
+:::{note}
+The folder name `development` is not repeated in the `toc.yml` file this allows for easier renames of the folder itself.
+:::
 
 Read more details in the reference for [docset.yml](../configure/content-set/index.md)
 
 ### Global Navigation
 
-The global navigation is defined in the [`navigation.yml`](../configure/site/navigation.md) file. 
-This navigation only concerns itself with `toc` sections defined in either `docset.yml` or `toc.yml` files. 
-These `toc` sections can be reorganized independently of their position in the documentation set navigation.
+The global navigation is defined in the [`navigation.yml`](../configure/site/navigation.md) file. It follows a very similar 
+`toc` configuration structure to the documentation set navigation. 
 
-Dangling `toc` sections are **not** allowed and the assembler build will report an error if it finds any. All `toc` sections must be linked in `navigation.yml`.
+It comes, however, with the following restrictions:
+
+* It may only link to `toc.yml` or `docset.yml` files
+
+```yaml
+toc:
+  - toc: get-started
+  - toc: elasticsearch-net://
+  - toc: extend
+    children:
+      - toc: kibana://extend
+        path_prefix: extend/kibana
+      - toc: logstash://extend
+        path_prefix: extend/logstash
+      - toc: beats://extend
+```
+
+Some syntactic notes:
+
+* The toc uses a similar [cross-link syntax to links](../syntax/links.md)
+* The `./docset.yml` or `/toc.yml` suffix is implied, assembler will find the correct file for you.
+* The narrative repository `elastic/docs-content` is 'special' so omitting `scheme://` implies `docs-content://`.
+
+These `toc` sections can be reorganized independently of their position in their origin documentation set navigation.
+This allows sections from different repositories to be grouped together in the global navigation.
+
+All `toc` sections must be linked in `navigation.yml`.
+Dangling `toc` sections are **not** allowed and the assembler build will report an error if it finds any. 
 
 Read more details in the reference for [navigation.yml](../configure/site/navigation.md)
 
