@@ -10,9 +10,9 @@ navigation_title: Inbound cross-links
 
 Inbound cross-link validation allows you to:
 
-* **Detect breaking changes** - Know when renaming or deleting a file will break links from other repositories.
-* **Prevent regressions** - Avoid publishing changes that break documentation elsewhere.
-* **Coordinate changes** - Understand dependencies before making structural changes.
+* **Detect breaking changes**: Know when renaming or deleting a file will break links from other repositories.
+* **Prevent regressions**: Avoid publishing changes that break documentation elsewhere.
+* **Coordinate changes**: Understand dependencies before making structural changes.
 
 ## How it works
 

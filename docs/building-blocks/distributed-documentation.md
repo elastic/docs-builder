@@ -33,14 +33,14 @@ This distributed approach provides several key advantages:
 
 ### Link validation
 
-* **Outbound links** - Validate links to other repositories ahead of time, even during local `docs-builder` builds.
-* **Inbound links** - Know when changes to your documentation would break links from other repositories.
+* **Outbound links**: Validate links to other repositories ahead of time, even during local `docs-builder` builds.
+* **Inbound links**: Know when changes to your documentation would break links from other repositories.
 
 ### Resilient builds
 
-* **Isolation** - Documentation errors in one repository won't affect builds of other repositories.
-* **Fallback mechanism** - When a repository has build failures on its integration branch, the assembler falls back to the last known good commit.
-* **Snapshot builds** - Assembled builds only use commits that successfully produced a Link Index.
+* **Isolation**: Documentation errors in one repository won't affect builds of other repositories.
+* **Fallback mechanism**: When a repository has build failures on its integration branch, the assembler falls back to the last known good commit.
+* **Snapshot builds**: Assembled builds only use commits that successfully produced a Link Index.
 
 ### Independent iteration
 

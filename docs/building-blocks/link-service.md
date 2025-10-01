@@ -17,18 +17,18 @@ We only have one link service today for all public documentation.
 
 The Link Service is implemented as:
 
-* **Storage** - An S3 bucket.
-* **CDN** - CloudFront fronting the S3 bucket for fast global access.
-* **Access** - Publicly accessible for read operations.
+* **Storage**: An S3 bucket.
+* **CDN**: CloudFront fronting the S3 bucket for fast global access.
+* **Access**: Publicly accessible for read operations.
 
 ## Purpose
 
 The Link Service enables:
 
-* **Distributed validation** - Any documentation build can validate cross-repository links without cloning all repositories.
-* **Link discovery** - Find what resources are available in other repositories.
-* **Build resilience** - Assembler builds can reference the last known good state of each repository.
-* **Decentralized publishing** - Each repository publishes its own Link Index independently.
+* **Distributed validation**: Any documentation build can validate cross-repository links without cloning all repositories.
+* **Link discovery**: Find what resources are available in other repositories.
+* **Build resilience**: Assembler builds can reference the last known good state of each repository.
+* **Decentralized publishing**: Each repository publishes its own Link Index independently.
 
 ## URL structure
 

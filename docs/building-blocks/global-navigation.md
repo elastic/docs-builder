@@ -10,10 +10,10 @@ navigation_title: Global navigation
 
 Global navigation enables:
 
-* **Unified experience** - Present documentation from multiple repositories as a cohesive whole.
-* **Flexible organization** - Arrange documentation by product, feature, or audience rather than by repository.
-* **Independent evolution** - Reorganize global structure without changing documentation sets.
-* **Cross-repository grouping** - Combine related content from different repositories.
+* **Unified experience**: Present documentation from multiple repositories as a cohesive whole.
+* **Flexible organization**: Arrange documentation by product, feature, or audience rather than by repository.
+* **Independent evolution**: Reorganize global structure without changing documentation sets.
+* **Cross-repository grouping**: Combine related content from different repositories.
 
 ## Configuration
 
@@ -23,9 +23,9 @@ Global navigation is defined in the `navigation.yml` file, which is part of the 
 
 Global navigation has specific restrictions:
 
-* **It may only link to `toc.yml` or `docset.yml` files** - You cannot reference individual markdown files.
-* **Uses crosslink syntax** - References to other repositories use the `repository://` syntax.
-* **Requires all TOC sections** - Dangling TOC sections are not allowed.
+* **It may only link to `toc.yml` or `docset.yml` files**: You cannot reference individual markdown files.
+* **Uses crosslink syntax**: References to other repositories use the `repository://` syntax.
+* **Requires all TOC sections**: Dangling TOC sections are not allowed.
 
 ## Basic structure
 

@@ -41,17 +41,17 @@ cross_links:
 
 When `docs-builder` encounters a cross-link:
 
-1. **Parse** - Extracts the repository name and path from the link
-3. **Resolve** - Looks up the path in the locally cached [Link Index](link-index.md) to get the actual URL
-4. **Validate** - Verifies the link exists and generates an error if not
-5. **Transform** - Replaces the cross-link with the fully resolved URL in the output
+1. **Parse**: Extracts the repository name and path from the link
+3. **Resolve**: Looks up the path in the locally cached [Link Index](link-index.md) to get the actual URL
+4. **Validate**: Verifies the link exists and generates an error if not
+5. **Transform**: Replaces the cross-link with the fully resolved URL in the output
 
 ## Validation
 
 During a build, `docs-builder`:
 
-* **Validates immediately** - Checks all outbound cross-links against locally fetched [Link Index](link-index.md) files.
-* **Reports errors** - Reports errors about broken links before you publish.
+* **Validates immediately**: Checks all outbound cross-links against locally fetched [Link Index](link-index.md) files.
+* **Reports errors**: Reports errors about broken links before you publish.
 
 ## Configuration
 

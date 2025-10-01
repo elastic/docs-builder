@@ -10,9 +10,9 @@ The **Link Catalog** is a single JSON file that serves as a catalog of all avail
 
 The Link Catalog provides:
 
-* **Discovery** - A single file to query for all available documentation across all repositories and branches.
-* **Efficiency** - Avoid scanning the entire [Link Service](link-service.md) to find available Link Index files.
-* **Assembler coordination** - The assembler uses this to determine which repositories and versions are available to build.
+* **Discovery**: A single file to query for all available documentation across all repositories and branches.
+* **Efficiency**: Avoid scanning the entire [Link Service](link-service.md) to find available Link Index files.
+* **Assembler coordination**: The assembler uses this to determine which repositories and versions are available to build.
 
 ## Location
 
@@ -66,10 +66,10 @@ During a documentation build:
 
 ## Benefits
 
-* **Single source of truth** - One file to check for all available documentation.
-* **Performance** - Fast lookup without scanning the entire Link Service.
-* **Automation** - Maintained automatically via Lambda functions.
-* **Resilience** - Represents only successful builds with valid Link Indexes.
+* **Single source of truth**: One file to check for all available documentation.
+* **Performance**: Fast lookup without scanning the entire Link Service.
+* **Automation**: Maintained automatically via Lambda functions.
+* **Resilience**: Represents only successful builds with valid Link Indexes.
 
 ## Related concepts
 

@@ -10,18 +10,18 @@ A **Link Index** is a JSON file (`links.json`) that contains all the linkable re
 
 The Link Index enables:
 
-* **Cross-repository linking** - Other documentation sets can link to your content.
-* **Link validation** - Validate that links to your content are correct.
-* **Inbound link detection** - Know when other repositories link to your content.
-* **Distributed builds** - Build documentation independently while maintaining link integrity.
+* **Cross-repository linking**: Other documentation sets can link to your content.
+* **Link validation**: Validate that links to your content are correct.
+* **Inbound link detection**: Know when other repositories link to your content.
+* **Distributed builds**: Build documentation independently while maintaining link integrity.
 
 ## Structure
 
 Each repository branch gets its own Link Index file in the [Link Service](link-service.md), organized by:
 
-* **Organization** - e.g., `elastic`.
-* **Repository** - e.g., `elasticsearch`.
-* **Branch** - e.g., `main`, `8.x`, `7.17`.
+* **Organization**: e.g., `elastic`.
+* **Repository**: e.g., `elasticsearch`.
+* **Branch**: e.g., `main`, `8.x`, `7.17`.
 
 ## Example
 

@@ -10,10 +10,10 @@ navigation_title: Documentation set navigation
 
 Documentation set navigation allows repository maintainers to:
 
-* **Organize content** - Define the logical structure of their documentation.
-* **Control hierarchy** - Determine which pages are nested under others.
-* **Create sections** - Group related content together.
-* **Maintain autonomy** - Structure documentation independently of other repositories.
+* **Organize content**: Define the logical structure of their documentation.
+* **Control hierarchy**: Determine which pages are nested under others.
+* **Create sections**: Group related content together.
+* **Maintain autonomy**: Structure documentation independently of other repositories.
 
 ## Basic structure
 
@@ -121,10 +121,10 @@ The folder name `development` is not repeated in the `toc.yml` file. This allows
 
 ### Benefits of separate toc.yml files
 
-* **Modularity** - Each section can be maintained independently.
-* **Cleaner docset.yml** - Keep the main file focused and readable.
-* **Easier refactoring** - Rename folders without updating TOC references.
-* **Team ownership** - Different teams can manage different TOC sections.
+* **Modularity**: Each section can be maintained independently.
+* **Cleaner docset.yml**: Keep the main file focused and readable.
+* **Easier refactoring**: Rename folders without updating TOC references.
+* **Team ownership**: Different teams can manage different TOC sections.
 
 ## File paths
 
