@@ -1,8 +1,8 @@
 ---
-navigation_title: Documentation Set
+navigation_title: Documentation set
 ---
 
-# Documentation Set
+# Documentation set
 
 A **documentation set** is a single folder containing the documentation of a single repository. This is the fundamental unit of documentation in the docs-builder system.
 

@@ -1,8 +1,8 @@
 ---
-navigation_title: Documentation Set Navigation
+navigation_title: Documentation set navigation
 ---
 
-# Documentation Set Navigation
+# Documentation set navigation
 
 **Documentation set navigation** defines how files within a single documentation set are organized and structured. Each documentation set is responsible for its own internal navigation hierarchy.
 

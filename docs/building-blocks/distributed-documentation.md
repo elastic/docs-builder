@@ -1,8 +1,8 @@
 ---
-navigation_title: Distributed Documentation
+navigation_title: Distributed documentation
 ---
 
-# Distributed Documentation
+# Distributed documentation
 
 **Distributed documentation** is the architectural approach that allows repositories to build their own documentation independently.
 

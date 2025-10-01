@@ -1,8 +1,8 @@
 ---
-navigation_title: Link Catalog
+navigation_title: Link catalog
 ---
 
-# Link Catalog
+# Link catalog
 
 The **Link Catalog** is a single JSON file that serves as a catalog of all available [Link Index](link-index.md) files across all repositories.
 

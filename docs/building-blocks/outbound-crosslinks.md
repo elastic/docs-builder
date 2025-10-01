@@ -1,8 +1,8 @@
 ---
-navigation_title: Outbound Crosslinks
+navigation_title: Outbound crosslinks
 ---
 
-# Outbound Crosslinks
+# Outbound crosslinks
 
 **Outbound crosslinks** are links from your documentation set to other documentation sets in different repositories.
 

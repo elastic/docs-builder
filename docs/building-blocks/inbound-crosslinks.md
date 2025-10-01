@@ -1,8 +1,8 @@
 ---
-navigation_title: Inbound Crosslinks
+navigation_title: Inbound cross-links
 ---
 
-# Inbound Crosslinks
+# Inbound cross-links
 
 **Inbound crosslinks** are links from other documentation sets to yours. Understanding and validating inbound crosslinks helps prevent breaking links in other repositories when you make changes.
 

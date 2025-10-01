@@ -1,8 +1,8 @@
 ---
-navigation_title: Link Index
+navigation_title: Link index
 ---
 
-# Link Index
+# Link index
 
 A **Link Index** is a JSON file (`links.json`) that contains all the linkable resources for a specific repository branch.
 

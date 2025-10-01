@@ -1,8 +1,8 @@
 ---
-navigation_title: Global Navigation
+navigation_title: Global navigation
 ---
 
-# Global Navigation
+# Global navigation
 
 **Global navigation** defines how multiple documentation sets are organized and presented together in [assembled documentation](assembled-documentation.md). It creates a unified navigation structure across all repositories.
 

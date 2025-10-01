@@ -1,8 +1,8 @@
 ---
-navigation_title: Building Blocks
+navigation_title: Building blocks
 ---
 
-# Building Blocks
+# Building blocks
 
 This section explains the core concepts and building blocks that make up the docs-builder architecture. Understanding these concepts will help you work effectively with distributed documentation and cross-repository linking.
 

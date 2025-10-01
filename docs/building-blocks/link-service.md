@@ -1,8 +1,8 @@
 ---
-navigation_title: Link Service
+navigation_title: Link service
 ---
 
-# Link Service
+# Link service
 
 The **Link Service** is the central location that stores:
 
