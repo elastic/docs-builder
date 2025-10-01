@@ -13,7 +13,7 @@
 			}
 		}
 
-		&>.applies-switch-label>.applies-item {
+		& > .applies-switch-label > .applies-item {
 			@apply cursor-pointer text-inherit;
 
 			&:hover {

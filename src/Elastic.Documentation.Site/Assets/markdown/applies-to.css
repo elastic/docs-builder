@@ -22,7 +22,7 @@
 		}
 
 		.applicable-separator {
-			@apply self-stretch bg-grey-20 mx-2;
+			@apply bg-grey-20 mx-2 self-stretch;
 			mix-blend-mode: multiply;
 			width: 1px;
 		}
