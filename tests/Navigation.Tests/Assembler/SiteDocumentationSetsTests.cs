@@ -63,8 +63,11 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavYaml = """
 		                  toc:
 		                    - toc: observability://
+		                      path_prefix: /serverless/observability
 		                    - toc: serverless-search://
+		                      path_prefix: /serverless/search
 		                    - toc: serverless-security://
+		                      path_prefix: /serverless/security
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -94,14 +97,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		siteNavigation.NavigationItems.Should().HaveCount(3);
 
 		var observability = siteNavigation.NavigationItems.ElementAt(0);
-		observability.Url.Should().Be("/");
+		observability.Url.Should().Be("/serverless/observability");
 		observability.NavigationTitle.Should().NotBeNullOrEmpty();
 
 		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Url.Should().Be("/");
+		search.Url.Should().Be("/serverless/search");
 
 		var security = siteNavigation.NavigationItems.ElementAt(2);
-		security.Url.Should().Be("/");
+		security.Url.Should().Be("/serverless/security");
 	}
 
 	[Fact]
@@ -111,9 +114,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavYaml = """
 		                  toc:
 		                    - toc: platform://
+		                      path_prefix: /platform
 		                      children:
-		                        - toc: platform:///deployment-guide
-		                        - toc: platform:///cloud-guide
+		                        - toc: platform://deployment-guide
+		                          path_prefix: /platform/deployment
+		                        - toc: platform://cloud-guide
+		                          path_prefix: /platform/cloud
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -134,16 +140,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/"); // Root DocumentationSetNavigation URL
-		// 2 toc's + its index
-		platform.NavigationItems.Should().HaveCount(3);
+		platform!.Url.Should().Be("/platform");
+		platform.NavigationItems.Should().HaveCount(2);
 
-		// verify TOC children starting from index 1
-		var deployment = platform.NavigationItems.ElementAt(1);
-		deployment.Url.Should().Be("/deployment-guide");
+		var deployment = platform.NavigationItems.ElementAt(0);
+		deployment.Url.Should().Be("/platform/deployment");
 
-		var cloud = platform.NavigationItems.ElementAt(2);
-		cloud.Url.Should().Be("/cloud-guide");
+		var cloud = platform.NavigationItems.ElementAt(1);
+		cloud.Url.Should().Be("/platform/cloud");
 	}
 
 	[Fact]
@@ -153,13 +157,20 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavYaml = """
 		                  toc:
 		                    - toc: observability://
+		                      path_prefix: /serverless/observability
 		                    - toc: serverless-search://
+		                      path_prefix: /serverless/search
 		                    - toc: serverless-security://
+		                      path_prefix: /serverless/security
 		                    - toc: platform://
+		                      path_prefix: /platform
 		                      children:
 		                        - toc: platform://deployment-guide
+		                          path_prefix: /platform/deployment
 		                        - toc: platform://cloud-guide
+		                          path_prefix: /platform/cloud
 		                    - toc: elasticsearch-reference://
+		                      path_prefix: /elasticsearch/reference
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -196,22 +207,21 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		// Verify top-level items
 		var observability = siteNavigation.NavigationItems.ElementAt(0);
-		observability.Url.Should().Be("/");
+		observability.Url.Should().Be("/serverless/observability");
 
 		var search = siteNavigation.NavigationItems.ElementAt(1);
-		search.Url.Should().Be("/");
+		search.Url.Should().Be("/serverless/search");
 
 		var security = siteNavigation.NavigationItems.ElementAt(2);
-		security.Url.Should().Be("/");
+		security.Url.Should().Be("/serverless/security");
 
 		var platform = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform.Url.Should().Be("/");
-		// 2 toc's + its index
-		platform.NavigationItems.Should().HaveCount(3);
+		platform!.Url.Should().Be("/platform");
+		platform.NavigationItems.Should().HaveCount(2);
 
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(4);
-		elasticsearch.Url.Should().Be("/");
+		elasticsearch.Url.Should().Be("/elasticsearch/reference");
 	}
 
 	[Fact]
@@ -294,5 +304,99 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		authorization.Should().BeOfType<FolderNavigation>();
 		var authorizationFolder = (FolderNavigation)authorization;
 		authorizationFolder.NavigationItems.Should().HaveCount(2); // index.md, rbac.md
+	}
+
+	[Fact]
+	public void SiteNavigationAppliesPathPrefixToAllUrls()
+	{
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: /serverless/observability
+		                  """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
+		var documentationSets = new List<DocumentationSetNavigation> { new(observabilityDocset, observabilityContext) };
+
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+
+		// Verify root URL has path prefix
+		var root = siteNavigation.NavigationItems.First();
+		root.Url.Should().StartWith("/serverless/observability");
+
+		// Verify all nested items also have the path prefix
+		if (root is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
+		{
+			foreach (var item in nodeItem.NavigationItems)
+			{
+				item.Url.Should().StartWith("/serverless/observability");
+			}
+		}
+	}
+
+	[Fact]
+	public void SiteNavigationWithNestedTocsAppliesCorrectPathPrefixes()
+	{
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: platform://
+		                      path_prefix: /platform
+		                      children:
+		                        - toc: platform://deployment-guide
+		                          path_prefix: /platform/deployment
+		                        - toc: platform://cloud-guide
+		                          path_prefix: /platform/cloud
+		                  """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var documentationSets = new List<DocumentationSetNavigation> { new(platformDocset, platformContext) };
+
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+
+		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
+		platform.Should().NotBeNull();
+		platform!.Url.Should().Be("/platform");
+
+		// Verify child TOCs have their specific path prefixes
+		var deployment = platform.NavigationItems.ElementAt(0);
+		deployment.Url.Should().StartWith("/platform/deployment");
+
+		var cloud = platform.NavigationItems.ElementAt(1);
+		cloud.Url.Should().StartWith("/platform/cloud");
+	}
+
+	[Fact]
+	public void SiteNavigationRequiresPathPrefix()
+	{
+		// language=yaml - missing path_prefix
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: observability://
+		                  """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
+		var documentationSets = new List<DocumentationSetNavigation> { new(observabilityDocset, observabilityContext) };
+
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
+
+		// Should have 0 items because path_prefix was required and missing
+		siteNavigation.NavigationItems.Should().BeEmpty();
 	}
 }

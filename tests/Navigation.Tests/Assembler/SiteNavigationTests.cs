@@ -30,7 +30,9 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var yaml = """
 		           toc:
 		             - toc: observability://
+		               path_prefix: /serverless/observability
 		             - toc: serverless-search://
+		               path_prefix: /serverless/search
 		           """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
@@ -63,9 +65,12 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var yaml = """
 		           toc:
 		             - toc: platform://
+		               path_prefix: /platform
 		               children:
 		                 - toc: platform://deployment-guide
+		                   path_prefix: /platform/deployment
 		                 - toc: platform://cloud-guide
+		                   path_prefix: /platform/cloud
 		           """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
