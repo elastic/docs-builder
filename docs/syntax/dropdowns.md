@@ -102,3 +102,39 @@ Dropdown content for ECE and ECH
 ::::
 
 :::::
+
+## Anchors and deep linking
+
+Dropdowns automatically generate anchors from their titles, allowing you to link directly to them. The anchor is created by converting the title to lowercase and replacing spaces with hyphens (slugify).
+
+For example, a dropdown with title "Installation Guide" will have the anchor `#installation-guide`.
+
+### Custom anchors
+
+You can specify a custom anchor using the `:name:` option:
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{dropdown} My Dropdown
+:name: custom-anchor
+Content that can be linked to via #custom-anchor
+:::
+
+::::
+
+::::{tab-item} Markdown
+```markdown
+:::{dropdown} My Dropdown
+:name: custom-anchor
+Content that can be linked to via #custom-anchor
+:::
+```
+::::
+
+:::::
+
+### Duplicate anchors
+
+If multiple elements (dropdowns or headings) in the same document have the same anchor, the build will emit a hint warning. While this doesn't fail the build, it may cause linking issues. Ensure each dropdown has a unique title or use the `:name:` option to specify unique anchors.

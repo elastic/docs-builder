@@ -12,14 +12,12 @@ export function openDetailsWithAnchor() {
             if (closestDetails && !closestDetails.open) {
                 // Only open if it's not already open by default
                 if (!closestDetails.dataset.openDefault) {
-                    if (browser.name !== 'Chrome') {
                     closestDetails.open = true
                 }
             }
 
             // Chrome automatically ensures parent content is visible, scroll immediately
             // Other browsers need manual scroll handling
-            const browser = getBrowser()
             if (browser.name !== 'Chrome') {
                 target.scrollIntoView({
                     behavior: 'instant',

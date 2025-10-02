@@ -68,14 +68,17 @@ This is a test page without products frontmatter.
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         
         // Test that the file has the correct products
-        test <@ defaultFile.File.YamlFrontMatter <> null @>
-        test <@ defaultFile.File.YamlFrontMatter.Products <> null @>
-        test <@ defaultFile.File.YamlFrontMatter.Products.Count = 2 @>
-        
-        // Test that the products are correctly identified
-        let productIds = defaultFile.File.YamlFrontMatter.Products |> Seq.map (fun p -> p.Id) |> Set.ofSeq
-        test <@ productIds.Contains("elasticsearch") @>
-        test <@ productIds.Contains("ecctl") @>
+        match defaultFile.File.YamlFrontMatter with
+        | NonNull fm ->
+            match fm.Products with
+            | NonNull products ->
+                test <@ products.Count = 2 @>
+                // Test that the products are correctly identified
+                let productIds = products |> Seq.map (fun p -> p.Id) |> Set.ofSeq
+                test <@ productIds.Contains("elasticsearch") @>
+                test <@ productIds.Contains("ecctl") @>
+            | _ -> failwith "Products should not be null"
+        | _ -> failwith "YamlFrontMatter should not be null"
 
     [<Fact>]
     let ``does not include products in frontmatter when no products are specified`` () =
@@ -84,4 +87,9 @@ This is a test page without products frontmatter.
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         
         // Test that the file has no products
-        test <@ defaultFile.File.YamlFrontMatter = null || defaultFile.File.YamlFrontMatter.Products = null || defaultFile.File.YamlFrontMatter.Products.Count = 0 @>
+        match defaultFile.File.YamlFrontMatter with
+        | NonNull fm ->
+            match fm.Products with
+            | NonNull products -> test <@ products.Count = 0 @>
+            | _ -> () // null is acceptable
+        | _ -> () // null is acceptable
