@@ -10,13 +10,12 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
-using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 
@@ -28,6 +27,7 @@ public interface INavigationLookups
 	IReadOnlyCollection<ITocItem> TableOfContents { get; }
 	IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 	FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
+	ICrossLinkResolver CrossLinkResolver { get; }
 }
 
 public interface IPositionalNavigation
@@ -96,10 +96,12 @@ public record NavigationLookups : INavigationLookups
 	public required IReadOnlyCollection<ITocItem> TableOfContents { get; init; }
 	public required IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; init; }
 	public required FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; init; }
+	public required ICrossLinkResolver CrossLinkResolver { get; init; }
 }
 
 public class DocumentationSet : INavigationLookups, IPositionalNavigation
 {
+	private readonly ILogger<DocumentationSet> _logger;
 	public BuildContext Context { get; }
 	public string Name { get; }
 	public IFileInfo OutputStateFile { get; }
@@ -114,7 +116,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public MarkdownParser MarkdownParser { get; }
 
-	public ICrossLinkResolver LinkResolver { get; }
+	public ICrossLinkResolver CrossLinkResolver { get; }
 
 	public TableOfContentsTree Tree { get; }
 
@@ -137,23 +139,23 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,
-		ICrossLinkResolver? linkResolver = null,
+		ICrossLinkResolver linkResolver,
 		TableOfContentsTreeCollector? treeCollector = null
 	)
 	{
+		_logger = logFactory.CreateLogger<DocumentationSet>();
 		Context = context;
 		Source = ContentSourceMoniker.Create(context.Git.RepositoryName, null);
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.OutputDirectory;
-		LinkResolver =
-			linkResolver ?? new CrossLinkResolver(new ConfigurationCrossLinkFetcher(logFactory, context.Configuration, Aws3LinkIndexReader.CreateAnonymous()));
+		CrossLinkResolver = linkResolver;
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 		treeCollector ??= new TableOfContentsTreeCollector();
 
 		var resolver = new ParserResolvers
 		{
-			CrossLinkResolver = LinkResolver,
+			CrossLinkResolver = CrossLinkResolver,
 			DocumentationFileLookup = DocumentationFileLookup
 		};
 		MarkdownParser = new MarkdownParser(context, resolver);
@@ -186,7 +188,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 			FlatMappedFiles = FlatMappedFiles,
 			TableOfContents = Configuration.TableOfContents,
 			EnabledExtensions = EnabledExtensions,
-			FilesGroupedByFolder = FilesGroupedByFolder
+			FilesGroupedByFolder = FilesGroupedByFolder,
+			CrossLinkResolver = CrossLinkResolver
 		};
 
 		Tree = new TableOfContentsTree(Source, Context, lookups, treeCollector, ref fileIndex);
@@ -224,13 +227,17 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
 					fileNavigationItem.NavigationIndex = fileIndex;
 					break;
+				case CrossLinkNavigationItem crossLinkNavigationItem:
+					var crossLinkIndex = Interlocked.Increment(ref navigationIndex);
+					crossLinkNavigationItem.NavigationIndex = crossLinkIndex;
+					break;
 				case DocumentationGroup documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
 					documentationGroup.NavigationIndex = groupIndex;
 					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
 					break;
 				default:
-					Context.EmitError(Context.ConfigurationPath, $"Unhandled navigation item type: {item.GetType()}");
+					Context.EmitError(Context.ConfigurationPath, $"{nameof(DocumentationSet)}.{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
 					break;
 			}
 		}
@@ -242,6 +249,9 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		if (item is ILeafNavigationItem<INavigationModel> leaf)
 			return [leaf];
+
+		if (item is CrossLinkNavigationItem crossLink)
+			return [crossLink];
 
 		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
 		{
@@ -256,6 +266,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 	{
 		if (item is FileNavigationItem f)
 			return [(f.Model.CrossLink, item)];
+		if (item is CrossLinkNavigationItem cl)
+			return [(cl.Url, item)]; // Use the URL as the key for cross-links
 		if (item is DocumentationGroup g)
 		{
 			var index = new List<(string, INavigationItem)>
@@ -367,8 +379,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
 	}
 
-	public async Task ResolveDirectoryTree(Cancel ctx) =>
-		await Tree.Resolve(ctx);
+	public async Task ResolveDirectoryTree(Cancel ctx) => await Tree.Resolve(ctx);
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{
@@ -451,6 +462,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 	public void ClearOutputDirectory()
 	{
+		_logger.LogInformation("Clearing output directory {OutputDirectory}", OutputDirectory.Name);
 		if (OutputDirectory.Exists)
 			OutputDirectory.Delete(true);
 		OutputDirectory.Create();

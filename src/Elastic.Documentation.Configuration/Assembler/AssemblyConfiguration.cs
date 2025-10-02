@@ -18,22 +18,18 @@ public record AssemblyConfiguration
 	{
 		var input = new StringReader(yaml);
 
-		var deserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-			.IgnoreUnmatchedProperties()
-			.Build();
-
 		try
 		{
-			var config = deserializer.Deserialize<AssemblyConfiguration>(input);
+			var config = ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfiguration>(input);
 			foreach (var (name, r) in config.ReferenceRepositories)
 			{
 				var repository = RepositoryDefaults(r, name);
 				config.ReferenceRepositories[name] = repository;
 			}
 
-			// if we are not running in CI, and we are skipping private repositories, and we can locate the solution directory. build the local docs-content repository
-			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI"))
-				&& skipPrivateRepositories
+			// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
+			// this allows us to test new docset features as part of the assembler build
+			if (skipPrivateRepositories
 				&& config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
 				&& Paths.GetSolutionDirectory() is { } solutionDir
 			)
@@ -98,7 +94,7 @@ public record AssemblyConfiguration
 			{
 				var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 				repository.Origin = !string.IsNullOrEmpty(token)
-					? $"https://oath2:{token}@github.com/elastic/{name}.git"
+					? $"https://oauth2:{token}@github.com/elastic/{name}.git"
 					: $"https://github.com/elastic/{name}.git";
 			}
 			else

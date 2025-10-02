@@ -2,128 +2,62 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using System.Text.Json;
 using Actions.Core.Services;
-using Amazon.S3;
-using Amazon.S3.Transfer;
 using ConsoleAppFramework;
-using Documentation.Assembler.Deploying;
+using Elastic.Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Serialization;
-using Elastic.Documentation.Tooling.Diagnostics.Console;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Documentation.Assembler.Cli;
 
+// TODO This copy is scheduled for deletion soon
 internal sealed class DeployCommands(
 	AssemblyConfiguration assemblyConfiguration,
+	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
 	ILoggerFactory logFactory,
 	ICoreService githubActionsService
 )
 {
-	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
-	private void AssignOutputLogger()
-	{
-		var log = logFactory.CreateLogger<Program>();
-		ConsoleApp.Log = msg => log.LogInformation(msg);
-		ConsoleApp.LogError = msg => log.LogError(msg);
-	}
-
 	/// <summary> Creates a sync plan </summary>
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="s3BucketName">The S3 bucket name to deploy to</param>
 	/// <param name="out"> The file to write the plan to</param>
-	/// <param name="deleteThreshold"> The percentage of deletions allowed in the plan as percentage of total files to sync</param>
+	/// <param name="deleteThreshold"> The percentage of deletions allowed in the plan as float</param>
 	/// <param name="ctx"></param>
-	public async Task<int> Plan(
-		string environment,
-		string s3BucketName,
-		string @out = "",
-		float deleteThreshold = 0.2f,
-		Cancel ctx = default
-	)
+	[Command("plan")]
+	public async Task<int> Plan(string environment, string s3BucketName, string @out = "", float? deleteThreshold = null, Cancel ctx = default)
 	{
-		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
-		{
-			NoHints = true
-		}.StartAsync(ctx);
-		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
-		var s3Client = new AmazonS3Client();
-		IDocsSyncPlanStrategy planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
-		var plan = await planner.Plan(ctx);
-		ConsoleApp.Log("Total files to sync: " + plan.TotalSyncRequests);
-		ConsoleApp.Log("Total files to delete: " + plan.DeleteRequests.Count);
-		ConsoleApp.Log("Total files to add: " + plan.AddRequests.Count);
-		ConsoleApp.Log("Total files to update: " + plan.UpdateRequests.Count);
-		ConsoleApp.Log("Total files to skip: " + plan.SkipRequests.Count);
-		if (plan.TotalSyncRequests == 0)
-		{
-			collector.EmitError(@out, $"Plan has no files to sync so no plan will be written.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
-		}
-		var validationResult = planner.Validate(plan, deleteThreshold);
-		if (!validationResult.Valid)
-		{
-			collector.EmitError(@out, $"Plan is invalid, delete ratio: {validationResult.DeleteRatio}, threshold: {validationResult.DeleteThreshold} over {plan.TotalSyncRequests:N0} files while plan has {plan.DeleteRequests:N0} deletions");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
-		}
+		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		if (!string.IsNullOrEmpty(@out))
-		{
-			var output = SyncPlan.Serialize(plan);
-			await using var fileStream = new FileStream(@out, FileMode.Create, FileAccess.Write);
-			await using var writer = new StreamWriter(fileStream);
-			await writer.WriteAsync(output);
-			ConsoleApp.Log("Plan written to " + @out);
-		}
-		await collector.StopAsync(ctx);
-		return collector.Errors;
+		var fs = new FileSystem();
+		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, fs);
+		serviceInvoker.AddCommand(service, (environment, s3BucketName, @out, deleteThreshold),
+			static async (s, collector, state, ctx) => await s.Plan(collector, state.environment, state.s3BucketName, state.@out, state.deleteThreshold, ctx)
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
 	/// <summary> Applies a sync plan </summary>
 	/// <param name="environment"> The environment to build</param>
 	/// <param name="s3BucketName">The S3 bucket name to deploy to</param>
-	/// <param name="planFile">The path to the plan file to apply</param>
+	/// <param name="planFile">The file path to the plan file to apply</param>
 	/// <param name="ctx"></param>
-	public async Task<int> Apply(
-		string environment,
-		string s3BucketName,
-		string planFile,
-		Cancel ctx = default)
+	[Command("apply")]
+	public async Task<int> Apply(string environment, string s3BucketName, string planFile, Cancel ctx = default)
 	{
-		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
-		{
-			NoHints = true
-		}.StartAsync(ctx);
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
-		var s3Client = new AmazonS3Client();
-		var transferUtility = new TransferUtility(s3Client, new TransferUtilityConfig
-		{
-			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
-			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
-		});
-		IDocsSyncApplyStrategy applier = new AwsS3SyncApplyStrategy(logFactory, s3Client, transferUtility, s3BucketName, assembleContext, collector);
-		if (!File.Exists(planFile))
-		{
-			collector.EmitError(planFile, "Plan file does not exist.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
-		}
-		var planJson = await File.ReadAllTextAsync(planFile, ctx);
-		var plan = SyncPlan.Deserialize(planJson);
-		await applier.Apply(plan, ctx);
-		await collector.StopAsync(ctx);
-		return collector.Errors;
+		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, fs);
+		serviceInvoker.AddCommand(service, (environment, s3BucketName, planFile),
+			static async (s, collector, state, ctx) => await s.Apply(collector, state.environment, state.s3BucketName, state.planFile, ctx)
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
 	/// <summary>Refreshes the redirects mapping in Cloudfront's KeyValueStore</summary>
@@ -131,41 +65,16 @@ internal sealed class DeployCommands(
 	/// <param name="redirectsFile">Path to the redirects mapping pre-generated by docs-assembler</param>
 	/// <param name="ctx"></param>
 	[Command("update-redirects")]
-	public async Task<int> UpdateRedirects(
-		string environment,
-		string redirectsFile = ".artifacts/assembly/redirects.json",
-		Cancel ctx = default)
+	public async Task<int> UpdateRedirects(string environment, string? redirectsFile = null, Cancel ctx = default)
 	{
-		AssignOutputLogger();
-		await using var collector = new ConsoleDiagnosticsCollector(logFactory, githubActionsService)
-		{
-			NoHints = true
-		}.StartAsync(ctx);
+		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		if (!File.Exists(redirectsFile))
-		{
-			collector.EmitError(redirectsFile, "Redirects mapping does not exist.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
-		}
-
-		ConsoleApp.Log("Parsing redirects mapping");
-		var jsonContent = await File.ReadAllTextAsync(redirectsFile, ctx);
-		var sourcedRedirects = JsonSerializer.Deserialize(jsonContent, SourceGenerationContext.Default.DictionaryStringString);
-
-		if (sourcedRedirects is null)
-		{
-			collector.EmitError(redirectsFile, "Redirects mapping is invalid.");
-			await collector.StopAsync(ctx);
-			return collector.Errors;
-		}
-
-		var kvsName = $"elastic-docs-v3-{environment}-redirects-kvs";
-		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, new FileSystem().DirectoryInfo.New(Directory.GetCurrentDirectory()));
-
-		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects);
-
-		await collector.StopAsync(ctx);
-		return collector.Errors;
+		var fs = new FileSystem();
+		var service = new DeployUpdateRedirectsService(logFactory, fs);
+		serviceInvoker.AddCommand(service, (environment, redirectsFile),
+			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile, ctx)
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
 	}
+
 }

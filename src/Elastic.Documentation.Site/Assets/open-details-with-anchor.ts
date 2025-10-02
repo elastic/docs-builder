@@ -1,6 +1,6 @@
 import { UAParser } from 'ua-parser-js'
 
-const { getBrowser } = new UAParser()
+const { browser } = UAParser()
 
 // Opens details elements (dropdowns) when navigating to an anchor link within them
 // This enables deeplinking to collapsed dropdown content
@@ -12,6 +12,7 @@ export function openDetailsWithAnchor() {
             if (closestDetails && !closestDetails.open) {
                 // Only open if it's not already open by default
                 if (!closestDetails.dataset.openDefault) {
+                    if (browser.name !== 'Chrome') {
                     closestDetails.open = true
                 }
             }

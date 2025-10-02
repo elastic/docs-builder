@@ -10,7 +10,7 @@ open System.Collections.Frozen
 open System.IO.Abstractions.TestingHelpers
 open Elastic.Documentation.Diagnostics
 open Elastic.Documentation.Links
-open Elastic.Markdown.Links.CrossLinks
+open Elastic.Documentation.Links.CrossLinks
 open Elastic.Documentation
 open Swensen.Unquote
 open Elastic.Documentation.Configuration.Builder
@@ -60,7 +60,6 @@ module CrossLinkResolverAssertions =
         FetchedCrossLinks(
             DeclaredRepositories = declaredRepos,
             LinkReferences = FrozenDictionary.ToFrozenDictionary(dict [repoName, repositoryLinks]),
-            FromConfiguration = true,
             LinkIndexEntries = FrozenDictionary<string, LinkRegistryEntry>.Empty
         )
 

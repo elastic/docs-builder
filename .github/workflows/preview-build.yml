@@ -147,7 +147,7 @@ jobs:
       - name: Get modified file detail
         if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
         id: check-modified-file-detail
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
           PATH_PATTERN: "${{ inputs.path-pattern != '' && inputs.path-pattern || '**' }}"
           IGNORE_PATTERNS: |
@@ -240,7 +240,7 @@ jobs:
             contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
             || (needs.check.outputs.any_modified == 'true' && startsWith(github.event_name, 'pull_request'))
           )
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -334,6 +334,7 @@ jobs:
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
+        id: internal-docs-build
         if: >
           env.MATCH == 'true'
           && github.repository == 'elastic/docs-builder'
@@ -367,6 +368,7 @@ jobs:
           env.MATCH == 'true'
           && (
             !cancelled()
+            && github.repository != 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true' 
             && (
               steps.deployment.outputs.result
@@ -377,13 +379,33 @@ jobs:
             )
           )
         uses: elastic/docs-builder/actions/validate-inbound-local@main
+        
+      - name: 'Validate inbound links'
+        if: >
+          env.MATCH == 'true'
+          && (
+            !cancelled()
+            && github.repository == 'elastic/docs-builder'
+            && steps.internal-docs-build.outputs.skip != 'true' 
+            && (
+              steps.deployment.outputs.result
+              || (
+                needs.check.outputs.any_modified == 'true' 
+                && github.event_name == 'merge_group'
+              )
+            )
+          )
+        run: |
+          dotnet run --project src/tooling/docs-builder -- inbound-links validate-link-reference
 
       - name: 'Validate local path prefixes against those claimed by global navigation.yml'
         if: >
           env.MATCH == 'true'
           && (
             !cancelled() 
+            && github.repository != 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true'
+            && steps.docs-build.outcome != 'skipped'
             && (
               steps.deployment.outputs.result 
               || (
@@ -393,19 +415,40 @@ jobs:
             )
           )
         uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
+        
+      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
+        if: >
+          env.MATCH == 'true'
+          && (
+            !cancelled() 
+            && github.repository == 'elastic/docs-builder'
+            && steps.internal-docs-build.outputs.skip != 'true'
+            && steps.internal-docs-build.outcome != 'skipped'
+            && (
+              steps.deployment.outputs.result 
+              || (
+                needs.check.outputs.any_modified == 'true' 
+                && github.event_name == 'merge_group'
+              )
+            )
+          )
+        run: |
+          dotnet run --project src/tooling/docs-assembler -- navigation validate-link-reference
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
           !cancelled() 
-          && steps.docs-build.outputs.skip != 'true'
+          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
           && steps.deployment.outputs.result
+          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
       - name: Upload to S3
         id: s3-upload
         if: >
           env.MATCH == 'true'
           && !cancelled() 
-          && steps.docs-build.outputs.skip != 'true' 
+          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
           && steps.deployment.outputs.result
+          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
@@ -427,7 +470,7 @@ jobs:
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: >
           env.MATCH == 'true'
           && always() 
@@ -448,7 +491,7 @@ jobs:
   comment:
     if: >
       startsWith(github.event_name, 'pull_request')
-      && inputs.disable-comments != 'true'
+      && inputs.disable-comments != true
       && needs.build.outputs.deployment_result
       && needs.check.outputs.any_modified
     runs-on: ubuntu-latest
@@ -463,7 +506,7 @@ jobs:
     steps:
       - name: Comment on PR
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           ALL_CHANGED_FILES: ${{ needs.check.outputs.all_changed_files }}
           PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
@@ -480,15 +523,15 @@ jobs:
               return;
             }
 
-            const toLink = (file) => {
+            const toMarkdownLink = (file) => {
               const path = file
-                .replace('docs/', '')
-                .replace('/index.md', '')
-                .replace('.md', '');
+                .replace(/^docs\//, '')
+                .replace(/\/index.md$/, '')
+                .replace(/\.md$/, '');
               return `[${file}](https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}/${path})`;
             }
 
-            const links = changedMdFiles.map(toLink)
+            const links = changedMdFiles.map(toMarkdownLink)
 
             const body = [
               title,
@@ -537,8 +580,8 @@ jobs:
               });
             }
       - name: Comment on docs changes about versioning requirements
-        if: inputs.enable-cumulative-comment == 'true'
-        uses: actions/github-script@v7
+        if: inputs.enable-cumulative-comment == true
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # language=javascript

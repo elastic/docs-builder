@@ -51,8 +51,10 @@
     <Compile Include="Blocks\ImageBlocks.fs" />
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />
+    <Compile Include="Applicability\ApplicableToComponent.fs" />
     <Compile Include="Directives\IncludeBlocks.fs" />
     <Compile Include="Linters\WhiteSpaceNormalizers.fs" />
     <Compile Include="LlmMarkdown\LlmMarkdownOutput.fs" />
+    <Compile Include="FrontMatter\ProductsFrontMatter.fs" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,186 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using System.Text.Json;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ExternalCommands;
+using Microsoft.Extensions.Logging;
+
+namespace Elastic.Documentation.Assembler.Deploying.Redirects;
+
+internal enum KvsOperation
+{
+	Puts,
+	Deletes
+}
+
+public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, ILoggerFactory logFactory, IDirectoryInfo workingDirectory)
+	: ExternalCommandExecutor(collector, workingDirectory)
+{
+	/// <inheritdoc />
+	protected override ILogger Logger { get; } = logFactory.CreateLogger<AwsCloudFrontKeyValueStoreProxy>();
+
+	public void UpdateRedirects(string kvsName, IReadOnlyDictionary<string, string> sourcedRedirects)
+	{
+		var kvsArn = DescribeKeyValueStore(kvsName);
+		if (string.IsNullOrEmpty(kvsArn))
+			return;
+
+		var eTag = AcquireETag(kvsArn);
+		if (string.IsNullOrEmpty(eTag))
+			return;
+
+		var listingSuccessful = TryListAllKeys(kvsArn, out var existingRedirects);
+
+		if (!listingSuccessful)
+			return;
+
+		var toPut = sourcedRedirects
+			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
+			.ToArray();
+		var toDelete = sourcedRedirects.Keys
+			.Except(existingRedirects)
+			.Select(k => new DeleteKeyRequestListItem { Key = k })
+			.ToArray();
+
+		eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
+		_ = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);
+	}
+
+	private string DescribeKeyValueStore(string kvsName)
+	{
+		Logger.LogInformation("Describing KeyValueStore");
+		try
+		{
+			var json = CaptureMultiple("aws", "cloudfront", "describe-key-value-store", "--name", kvsName);
+			var concatJson = string.Concat(json);
+			if (string.IsNullOrWhiteSpace(concatJson))
+			{
+				Collector.EmitError("", "The output from cloudfront:describe-key-value-store was empty");
+				return string.Empty;
+			}
+
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			if (describeResponse?.KeyValueStore is { ARN.Length: > 0 })
+				return describeResponse.KeyValueStore.ARN;
+
+			Collector.EmitError("", "Could not deserialize the DescribeKeyValueStoreResponse");
+			return string.Empty;
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError("", "An error occurred while describing the KeyValueStore", e);
+			return string.Empty;
+		}
+	}
+
+	private string AcquireETag(string kvsArn)
+	{
+		Logger.LogInformation("Acquiring ETag for updates");
+		try
+		{
+			var json = CaptureMultiple("aws", "cloudfront-keyvaluestore", "describe-key-value-store", "--kvs-arn", kvsArn);
+			var concatJson = string.Concat(json);
+			if (string.IsNullOrWhiteSpace(concatJson))
+			{
+				Collector.EmitError("", "The output from cloudfront-keyvaluestore:describe-key-value-store was empty");
+				return string.Empty;
+			}
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			if (describeResponse?.ETag is not null)
+				return describeResponse.ETag;
+
+			Collector.EmitError("", "Could not deserialize Cloudfront-KeyValueStore:DescribeKeyValueStoreResponse");
+			return string.Empty;
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError("", "An error occurred while calling Cloudfront-KeyValueStore:DescribeKeyValueStore", e);
+			return string.Empty;
+		}
+	}
+
+	private bool TryListAllKeys(string kvsArn, out HashSet<string> keys)
+	{
+		Logger.LogInformation("Acquiring existing redirects");
+		keys = [];
+		string[] baseArgs = ["cloudfront-keyvaluestore", "list-keys", "--kvs-arn", kvsArn, "--page-size", "50", "--max-items", "50"];
+		string? nextToken = null;
+		try
+		{
+			do
+			{
+				var json = CaptureMultiple("aws", [.. baseArgs, .. nextToken is not null ? (string[])["--starting-token", nextToken] : []]);
+				var concatJson = string.Concat(json);
+				if (string.IsNullOrWhiteSpace(concatJson))
+				{
+					Collector.EmitError("", "The output from cloudfront-keyvaluestore:list-keys was empty");
+					throw new JsonException("Empty output from cloudfront-keyvaluestore:list-keys");
+				}
+				var response = JsonSerializer.Deserialize<ListKeysResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
+
+				if (response?.Items != null)
+				{
+					foreach (var item in response.Items)
+						_ = keys.Add(item.Key);
+				}
+
+				nextToken = response?.NextToken;
+			} while (!string.IsNullOrEmpty(nextToken));
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError("", "An error occurred while acquiring existing redirects in the KeyValueStore", e);
+			return false;
+		}
+		return true;
+	}
+
+
+	private string ProcessBatchUpdates(
+		string kvsArn,
+		string eTag,
+		IReadOnlyCollection<object> items,
+		KvsOperation operation)
+	{
+		const int batchSize = 50;
+		Logger.LogInformation("Processing {Count} items in batches of {BatchSize} for {Operation} update operation.", items.Count, batchSize, operation);
+		try
+		{
+			foreach (var batch in items.Chunk(batchSize))
+			{
+				var payload = operation switch
+				{
+					KvsOperation.Puts => JsonSerializer.Serialize(batch.Cast<PutKeyRequestListItem>().ToList(),
+						AwsCloudFrontKeyValueStoreJsonContext.Default.ListPutKeyRequestListItem),
+					KvsOperation.Deletes => JsonSerializer.Serialize(batch.Cast<DeleteKeyRequestListItem>().ToList(),
+						AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem),
+					_ => string.Empty
+				};
+				var responseJson = CaptureMultiple(1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
+					$"--{operation.ToString().ToLowerInvariant()}", payload);
+
+				var concatJson = string.Concat(responseJson);
+				if (string.IsNullOrWhiteSpace(concatJson))
+				{
+					Collector.EmitError("", "The output from cloudfront-keyvaluestore:update-keys was empty");
+					throw new JsonException("Empty output from cloudfront-keyvaluestore:update-keys");
+				}
+
+				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
+
+				if (string.IsNullOrEmpty(updateResponse?.ETag))
+					throw new Exception("Failed to get new ETag after update operation.");
+
+				eTag = updateResponse.ETag;
+			}
+		}
+		catch (Exception e)
+		{
+			Collector.EmitError("", $"An error occurred while performing a {operation} update to the KeyValueStore", e);
+		}
+		return eTag;
+	}
+}

@@ -76,6 +76,7 @@ toc:
           - file: navigation.md
           - file: versions.md
           - file: legacy-url-mappings.md
+          - file: products.md
       - folder: content-set
         children:
           - file: index.md
@@ -92,6 +93,7 @@ toc:
       - file: headings.md
       - file: admonitions.md
       - file: applies.md
+      - file: applies-switch.md
       - file: automated_settings.md
       - file: code.md
       - file: comments.md
@@ -129,6 +131,9 @@ toc:
       - file: req.md
       - folder: nested
       - file: cross-links.md
+        children:
+          - title: "Getting Started Guide"
+            crosslink: docs-content://get-started/introduction.md
       - file: custom-highlighters.md
       - hidden: archive.md
       - hidden: landing-page.md

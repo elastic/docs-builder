@@ -6,10 +6,10 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
@@ -122,13 +122,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		{
 			if (_url is not null)
 				return _url;
-			if (_set.LinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
+			if (_set.CrossLinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
 			{
 				_url = DefaultUrlPath;
 				return _url;
 			}
 			var crossLink = new Uri(CrossLink);
-			var uri = _set.LinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
+			var uri = _set.CrossLinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
 			_url = uri.AbsolutePath;
 			return _url;
 
@@ -317,12 +317,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 					|| file is not SnippetFile snippet)
 					return null;
 
-				return snippet.GetAnchors(set, parser, frontMatter);
+				var anchors = snippet.GetAnchors(set, parser, frontMatter);
+				return new { Block = i, Anchors = anchors };
 			})
 			.Where(i => i is not null)
 			.ToArray();
 
-		var includedTocs = includes.SelectMany(i => i!.TableOfContentItems).ToArray();
+		var includedTocs = includes
+			.SelectMany(i => i!.Anchors!.TableOfContentItems
+				.Select(item => new { TocItem = item, i.Block.Line }))
+			.ToArray();
 
 		// Collect headings from standard markdown
 		var headingTocs = document
@@ -372,7 +376,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 
 		var toc = headingTocs
 			.Concat(stepperTocs)
-			.Concat(includedTocs.Select(item => new { TocItem = item, Line = 0 }))
+			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)
 			.Select(toc => subs.Count == 0
@@ -382,7 +386,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 					: toc)
 			.ToList();
 
-		var includedAnchors = includes.SelectMany(i => i!.Anchors).ToArray();
+		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
 		anchors =
 		[
 			..document.Descendants<DirectiveBlock>()
@@ -423,6 +427,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				Collector.Emit(severity, FilePath, message);
 		}
 
+		// Validate mapped_pages URLs
+		if (fm.MappedPages is not null)
+		{
+			foreach (var url in fm.MappedPages)
+			{
+				if (!string.IsNullOrEmpty(url) && (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase) || !Uri.IsWellFormedUriString(url, UriKind.Absolute)))
+				{
+					Collector.EmitError(FilePath, $"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide.");
+				}
+			}
+		}
+
 		// TODO remove when migration tool and our demo content sets are updated
 		var deprecatedTitle = fm.Title;
 		if (!string.IsNullOrEmpty(deprecatedTitle))
@@ -443,7 +459,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw);
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, _set.Context.ProductsConfiguration);
 		}
 		catch (InvalidProductException e)
 		{

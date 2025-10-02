@@ -43,6 +43,7 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 		}
 		renderer.Writer.Write(")");
 	}
+
 }
 
 public class LlmEmphasisInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, EmphasisInline>

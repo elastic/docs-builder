@@ -124,60 +124,63 @@ public record ProductApplicability
 	[YamlMember(Alias = "curator")]
 	public AppliesCollection? Curator { get; set; }
 
-	[YamlMember(Alias = "apm_agent_android")]
+	[YamlMember(Alias = "apm-agent-android")]
 	public AppliesCollection? ApmAgentAndroid { get; set; }
 
-	[YamlMember(Alias = "apm_agent_dotnet")]
+	[YamlMember(Alias = "apm-agent-dotnet")]
 	public AppliesCollection? ApmAgentDotnet { get; set; }
 
-	[YamlMember(Alias = "apm_agent_go")]
+	[YamlMember(Alias = "apm-agent-go")]
 	public AppliesCollection? ApmAgentGo { get; set; }
 
-	[YamlMember(Alias = "apm_agent_ios")]
+	[YamlMember(Alias = "apm-agent-ios")]
 	public AppliesCollection? ApmAgentIos { get; set; }
 
-	[YamlMember(Alias = "apm_agent_java")]
+	[YamlMember(Alias = "apm-agent-java")]
 	public AppliesCollection? ApmAgentJava { get; set; }
 
-	[YamlMember(Alias = "apm_agent_node")]
+	[YamlMember(Alias = "apm-agent-node")]
 	public AppliesCollection? ApmAgentNode { get; set; }
 
-	[YamlMember(Alias = "apm_agent_php")]
+	[YamlMember(Alias = "apm-agent-php")]
 	public AppliesCollection? ApmAgentPhp { get; set; }
 
-	[YamlMember(Alias = "apm_agent_python")]
+	[YamlMember(Alias = "apm-agent-python")]
 	public AppliesCollection? ApmAgentPython { get; set; }
 
-	[YamlMember(Alias = "apm_agent_ruby")]
+	[YamlMember(Alias = "apm-agent-ruby")]
 	public AppliesCollection? ApmAgentRuby { get; set; }
 
-	[YamlMember(Alias = "apm_agent_rum")]
-	public AppliesCollection? ApmAgentRum { get; set; }
+	[YamlMember(Alias = "apm-agent-rum-js")]
+	public AppliesCollection? ApmAgentRumJs { get; set; }
 
-	[YamlMember(Alias = "edot_ios")]
+	[YamlMember(Alias = "edot-ios")]
 	public AppliesCollection? EdotIos { get; set; }
 
-	[YamlMember(Alias = "edot_android")]
+	[YamlMember(Alias = "edot-android")]
 	public AppliesCollection? EdotAndroid { get; set; }
 
-	[YamlMember(Alias = "edot_dotnet")]
+	[YamlMember(Alias = "edot-dotnet")]
 	public AppliesCollection? EdotDotnet { get; set; }
 
-	[YamlMember(Alias = "edot_java")]
+	[YamlMember(Alias = "edot-java")]
 	public AppliesCollection? EdotJava { get; set; }
 
-	[YamlMember(Alias = "edot_node")]
+	[YamlMember(Alias = "edot-node")]
 	public AppliesCollection? EdotNode { get; set; }
 
-	[YamlMember(Alias = "edot_php")]
+	[YamlMember(Alias = "edot-php")]
 	public AppliesCollection? EdotPhp { get; set; }
 
-	[YamlMember(Alias = "edot_python")]
+	[YamlMember(Alias = "edot-python")]
 	public AppliesCollection? EdotPython { get; set; }
 
-	[YamlMember(Alias = "edot_cf_aws")]
+	[YamlMember(Alias = "edot-cf-aws")]
 	public AppliesCollection? EdotCfAws { get; set; }
 
-	[YamlMember(Alias = "edot_collector")]
+	[YamlMember(Alias = "edot-cf-azure")]
+	public AppliesCollection? EdotCfAzure { get; set; }
+
+	[YamlMember(Alias = "edot-collector")]
 	public AppliesCollection? EdotCollector { get; set; }
 }

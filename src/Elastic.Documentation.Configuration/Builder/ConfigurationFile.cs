@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using DotNet.Globbing;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Configuration.Versions;
@@ -36,7 +37,7 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public Dictionary<string, LinkRedirect>? Redirects { get; }
 
-	public HashSet<string> Products { get; } = new(StringComparer.Ordinal);
+	public HashSet<Product> Products { get; } = [];
 
 	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -62,7 +63,7 @@ public record ConfigurationFile : ITableOfContentsScope
 		Project is not null
 		&& Project.Equals("Elastic documentation", StringComparison.OrdinalIgnoreCase);
 
-	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig)
+	public ConfigurationFile(IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -133,6 +134,7 @@ public record ConfigurationFile : ITableOfContentsScope
 						foreach (var node in sequence.Children.OfType<YamlMappingNode>())
 						{
 							YamlScalarNode? productId = null;
+
 							foreach (var child in node.Children)
 							{
 								if (child is { Key: YamlScalarNode { Value: "id" }, Value: YamlScalarNode scalarNode })
@@ -147,10 +149,10 @@ public record ConfigurationFile : ITableOfContentsScope
 								break;
 							}
 
-							if (!Builder.Products.AllById.ContainsKey(productId.Value))
-								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(Builder.Products.All.Select(p => p.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
+							if (!productsConfig.Products.TryGetValue(productId.Value.Replace('_', '-'), out var productToAdd))
+								reader.EmitError($"Product \"{productId.Value}\" not found in the product list. {new Suggestion(productsConfig.Products.Select(p => p.Value.Id).ToHashSet(), productId.Value).GetSuggestionQuestion()}", node);
 							else
-								_ = Products.Add(productId.Value);
+								_ = Products.Add(productToAdd);
 						}
 						break;
 					case "features":
@@ -168,11 +170,20 @@ public record ConfigurationFile : ITableOfContentsScope
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
 			{
 				var name = id.ToStringFast(true);
-				var key = $"version.{name}";
-				_substitutions[key] = system.Current;
+				var alternativeName = name.Replace('-', '_');
+				_substitutions[$"version.{name}"] = system.Current;
+				_substitutions[$"version.{alternativeName}"] = system.Current;
+				_substitutions[$"version.{name}.base"] = system.Base;
+				_substitutions[$"version.{alternativeName}.base"] = system.Base;
+			}
 
-				key = $"version.{name}.base";
-				_substitutions[key] = system.Base;
+			foreach (var product in productsConfig.Products.Values)
+			{
+				var alternativeProductId = product.Id.Replace('-', '_');
+				_substitutions[$"product.{product.Id}"] = product.DisplayName;
+				_substitutions[$".{product.Id}"] = product.DisplayName;
+				_substitutions[$"product.{alternativeProductId}"] = product.DisplayName;
+				_substitutions[$".{alternativeProductId}"] = product.DisplayName;
 			}
 
 			var toc = new TableOfContentsConfiguration(this, sourceFile, ScopeDirectory, _context, 0, "");

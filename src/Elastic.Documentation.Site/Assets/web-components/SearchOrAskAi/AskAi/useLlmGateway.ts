@@ -154,8 +154,10 @@ export const useLlmGateway = (props: Props): UseLlmGatewayResponse => {
         async (question: string) => {
             if (question.trim() && question !== lastSentQuestionRef.current) {
                 abort()
-                lastSentQuestionRef.current = question
                 setError(null)
+                setMessages([])
+                clearQueue()
+                lastSentQuestionRef.current = question
                 const payload = createLlmGatewayRequest(
                     question,
                     props.threadId

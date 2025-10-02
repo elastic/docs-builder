@@ -124,57 +124,26 @@ A regular paragraph.
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 
 	[Fact]
-	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
+	public void SetsName() => Block!.Name.Should().Be("test-dropdown");
 }
 
-public class DuplicateDropdownAnchorTests(ITestOutputHelper output) : DirectiveTest(output,
+public class DropdownAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
 """
-:::{dropdown} Same title
-First dropdown content
+:::{dropdown} This is my custom dropdown
+:applies_to: stack: ga 9.0
+This is an attention block
 :::
-
-:::{dropdown} Same title
-Second dropdown content
-:::
-""")
+A regular paragraph.
+"""
+)
 {
 	[Fact]
-	public void ReportsHintForDuplicateAnchors()
-	{
-		Collector.Diagnostics.Should().Contain(m =>
-			m.Severity == Severity.Hint &&
-			m.Message.Contains("Duplicate anchor") &&
-			m.Message.Contains("'same-title'"));
+	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
 
-		// Should report hint for both duplicate dropdowns
-		Collector.Diagnostics.Where(m =>
-			m.Severity == Severity.Hint &&
-			m.Message.Contains("Duplicate anchor") &&
-			m.Message.Contains("'same-title'")).Should().HaveCount(2);
-	}
-}
-
-public class DuplicateDropdownAndHeadingAnchorTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
-## Test Heading
-
-:::{dropdown} Test Heading
-Dropdown content with same anchor as heading
-:::
-""")
-{
 	[Fact]
-	public void ReportsHintForDuplicateAnchorsAcrossTypes()
-	{
-		Collector.Diagnostics.Should().Contain(m =>
-			m.Severity == Severity.Hint &&
-			m.Message.Contains("Duplicate anchor") &&
-			m.Message.Contains("'test-heading'"));
+	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom dropdown");
 
-		// Should report hint for both the heading and dropdown
-		Collector.Diagnostics.Where(m =>
-			m.Severity == Severity.Hint &&
-			m.Message.Contains("Duplicate anchor") &&
-			m.Message.Contains("'test-heading'")).Should().HaveCount(2);
+	[Fact]
+	public void SetsAppliesTo() => Block!.AppliesTo.Should().Be("stack: ga 9.0");
 	}
 }

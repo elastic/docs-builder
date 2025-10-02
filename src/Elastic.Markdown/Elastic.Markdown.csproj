@@ -17,6 +17,7 @@
   
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
@@ -31,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation.LegacyDocs\Elastic.Documentation.LegacyDocs.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
@@ -39,6 +41,11 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Myst\Roles\Icons\svgs\*.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Myst\Directives\AppliesSwitch\AppliesItemView.cshtml" />
+    <UpToDateCheckInput Remove="Myst\Directives\AppliesSwitch\AppliesSwitchView.cshtml" />
   </ItemGroup>
 
 </Project>

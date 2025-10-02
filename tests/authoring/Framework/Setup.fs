@@ -6,13 +6,16 @@ namespace authoring
 
 
 open System
+open System.Collections.Frozen
 open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open Elastic.Documentation
 open Elastic.Documentation.Configuration
+open Elastic.Documentation.Configuration.LegacyUrlMappings
 open Elastic.Documentation.Configuration.Versions
+open Elastic.Documentation.Configuration.Products
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
@@ -209,12 +212,75 @@ type Setup =
                 Base = SemVersion(8, 0, 0)
             )
         )
+        versioningSystems.Add(VersioningSystemId.ApmAgentJava, 
+            VersioningSystem(
+                Id = VersioningSystemId.ApmAgentJava,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.ApmAgentPython, 
+            VersioningSystem(
+                Id = VersioningSystemId.ApmAgentPython,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotDotnet, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotDotnet,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotJava, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotJava,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotPython, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotPython,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.Curator, 
+            VersioningSystem(
+                Id = VersioningSystemId.Curator,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+        versioningSystems.Add(VersioningSystemId.EdotCollector, 
+            VersioningSystem(
+                Id = VersioningSystemId.EdotCollector,
+                Current = SemVersion(8, 0, 0),
+                Base = SemVersion(8, 0, 0)
+            )
+        )
+       
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
-        let configurationFileProvider = ConfigurationFileProvider(fileSystem)
+        let productDict = Dictionary<string, Product>()
+        productDict.Add("elasticsearch", Product(Id = "elasticsearch",
+            DisplayName = "Elasticsearch",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ElasticsearchProject]))
+        productDict.Add("apm_agent_dotnet", Product(Id = "apm_agent_dotnet",
+            DisplayName = "APM Agent for .NET",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ApmAgentDotnet]))
+        productDict.Add("ecctl", Product(Id = "ecctl",
+            DisplayName = "Elastic Cloud Control ECCTL",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.Ecctl]))
+        
+        let configurationFileProvider = ConfigurationFileProvider(new TestLoggerFactory(), fileSystem)
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
-            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default)
+            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
+            ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
+            LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = [])
         )
         let context = BuildContext(
             collector,

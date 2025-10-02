@@ -1,0 +1,184 @@
+products:
+  apm:
+    display: 'APM'
+    versioning: 'stack'
+  apm-agent:
+    display: 'APM Agent'
+    versioning: 'all'
+  apm-agent-dotnet:
+    display: 'APM .NET Agent'
+  apm-agent-go:
+    display: 'APM Go Agent'
+  apm-agent-java:
+    display: 'APM Java Agent'
+  apm-agent-node:
+    display: 'APM Node.js Agent'
+  apm-agent-php:
+    display: 'APM PHP Agent'
+  apm-agent-python:
+    display: 'APM Python Agent'
+  apm-agent-ruby:
+    display: 'APM Ruby Agent'
+  apm-agent-rum-js:
+    display: 'APM RUM JavaScript Agent'
+  apm-k8s-attacher:
+    display: 'APM Attacher for Kubernetes'
+    versioning: 'apm-attacher'
+  apm-aws-lambda:
+    display: 'APM AWS Lambda extension'
+    versioning: 'apm-lambda'
+  apm-server:
+    display: 'APM Server'
+    versioning: 'stack'
+  auditbeat:
+    display: 'Auditbeat'
+    versioning: 'stack'
+  beats:
+    display: 'Beats'
+    versioning: 'stack'
+  cloud-control-ecctl:
+    display: 'Elastic Cloud Control'
+    versioning: 'ecctl'
+  cloud-enterprise:
+    display: 'Elastic Cloud Enterprise'
+    versioning: 'ece'
+  cloud-hosted:
+    display: 'Elastic Cloud Hosted'
+    versioning: 'ech'
+  cloud-kubernetes:
+    display: 'Elastic Cloud on Kubernetes'
+    versioning: 'eck'
+  cloud-serverless:
+    display: 'Elastic Cloud Serverless'
+    versioning: 'serverless'
+  cloud-terraform:
+    display: 'Elastic Cloud Terraform Provider'
+    versioning: 'cloud-terraform'
+  curator:
+    display: 'Elasticsearch Curator'
+  ecs:
+    display: 'Elastic Common Schema (ECS)'
+  ecs-logging:
+    display: 'ECS Logging'
+    versioning: 'stack'
+  ecs-dotnet:
+    display: 'ECS Logging .NET'
+    versioning: 'ecs-logging-dotnet'
+  ecs-logging-go-logrus:
+    display: 'ECS Logging Go (Logrus)'
+  ecs-logging-go-zap:
+    display: 'ECS Logging Go (Zap)'
+  ecs-logging-go-zerolog:
+    display: 'ECS Logging Go (Zerolog)'
+  ecs-logging-java:
+    display: 'ECS Logging Java'
+  ecs-logging-nodejs:
+    display: 'ECS Logging Node.js'
+  ecs-logging-php:
+    display: 'ECS Logging PHP'
+  ecs-logging-python:
+    display: 'ECS Logging Python'
+  ecs-logging-ruby:
+    display: 'ECS Logging Ruby'
+  edot-cf:
+    display: 'EDOT Cloud Forwarder'
+    versioning: 'stack'
+  edot-sdk:
+    display: 'Elastic Distribution of OpenTelemetry SDK'
+    versioning: 'all'
+  edot-collector:
+    display: 'Elastic Distribution of OpenTelemetry Collector'
+    versioning: 'stack'
+  edot-ios:
+    display: 'Elastic Distribution of OpenTelemetry iOS'
+  edot-android:
+    display: 'Elastic Distribution of OpenTelemetry Android'
+  edot-dotnet:
+    display: 'Elastic Distribution of OpenTelemetry .NET'
+  edot-java:
+    display: 'Elastic Distribution of OpenTelemetry Java'
+  edot-node:
+    display: 'Elastic Distribution of OpenTelemetry Node'
+  edot-php:
+    display: 'Elastic Distribution of OpenTelemetry PHP'
+  edot-python:
+    display: 'Elastic Distribution of OpenTelemetry Python'
+  edot-cf-aws:
+    display: 'EDOT Cloud Forwarder for AWS'
+  edot-cf-azure:
+    display: 'EDOT Cloud Forwarder for Azure'
+  eland:
+    display: 'Eland'
+    versioning: 'stack'
+  elastic-agent:
+    display: 'Elastic Agent'
+    versioning: 'stack'
+  elastic-serverless-forwarder:
+    display: 'Elastic Serverless Forwarder'
+    versioning: 'esf'
+  elastic-stack:
+    display: 'Elastic Stack'
+    versioning: 'stack'
+  elasticsearch:
+    display: 'Elasticsearch'
+    versioning: 'stack'
+  elasticsearch-client:
+    display: 'Elasticsearch Client'
+    versioning: 'stack'
+  ess:
+    display: 'Elastic Cloud Hosted'
+    versioning: 'all'
+  filebeat:
+    display: 'Filebeat'
+    versioning: 'stack'
+  fleet:
+    display: 'Fleet'
+    versioning: 'stack'
+  heartbeat:
+    display: 'Heartbeat'
+    versioning: 'stack'
+  integrations:
+    display: 'Elastic integrations'
+    versioning: 'stack'
+  kibana:
+    display: 'Kibana'
+    versioning: 'stack'
+  logstash:
+    display: 'Logstash'
+    versioning: 'stack'
+  machine-learning:
+    display: 'Machine Learning'
+    versioning: 'stack'
+  metricbeat:
+    display: 'Metricbeat'
+    versioning: 'stack'
+  observability:
+    display: 'Elastic Observability'
+    versioning: 'stack'
+  packetbeat:
+    display: 'Packetbeat'
+    versioning: 'stack'
+  painless:
+    display: 'Painless'
+    versioning: 'stack'
+  search-ui:
+    display: 'Search UI'
+    versioning: 'stack'
+  security:
+    display: 'Elastic Security'
+    versioning: 'stack'
+  self:
+    display: 'Self-managed Elastic'
+    versioning: 'stack'
+  serverless-elasticsearch:
+    display: 'Elasticsearch Serverless'
+    versioning: 'all'
+  serverless-observability:
+    display: 'Elastic Observability Serverless'
+    versioning: 'all'
+  serverless-security:
+    display: 'Elastic Security Serverless'
+    versioning: 'all'
+  winlogbeat:
+    display: 'Winlogbeat'
+    versioning: 'stack'

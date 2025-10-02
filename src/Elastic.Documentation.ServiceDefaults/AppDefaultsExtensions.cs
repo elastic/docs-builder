@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,22 +22,25 @@ public static class AppDefaultsExtensions
 		var args = Array.Empty<string>();
 		return builder.AddDocumentationServiceDefaults(ref args);
 	}
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider> configure) where TBuilder : IHostApplicationBuilder =>
-		builder.AddDocumentationServiceDefaults(ref args, null, configure);
-
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, LogLevel? defaultLogLevel = null, Action<IServiceCollection, ConfigurationFileProvider>? configure = null) where TBuilder : IHostApplicationBuilder
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+		where TBuilder : IHostApplicationBuilder
 	{
-		var logLevel = defaultLogLevel ?? LogLevel.Information;
-		GlobalCommandLine.Process(ref args, ref logLevel, out var skipPrivateRepositories);
+		GlobalCli.Process(ref args, out var globalArgs);
 
 		var services = builder.Services;
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);
 		_ = services
-			.AddConfigurationFileProvider(skipPrivateRepositories, (s, p) =>
+			.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, (s, p) =>
 			{
-				_ = s.AddSingleton(p.CreateVersionConfiguration());
+				var versionConfiguration = p.CreateVersionConfiguration();
+				var products = p.CreateProducts(versionConfiguration);
+				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
+				_ = s.AddSingleton(products);
+				_ = s.AddSingleton(versionConfiguration);
 				configure?.Invoke(s, p);
 			});
-		_ = builder.Services.AddElasticDocumentationLogging(logLevel);
+		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel);
+		_ = services.AddSingleton(globalArgs);
 
 		return builder.AddServiceDefaults();
 	}

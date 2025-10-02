@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
+#if DEBUG
 using Elastic.Documentation.Api.Infrastructure;
+#endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
@@ -42,8 +44,10 @@ public class DocumentationWebHost
 		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		_ = builder.AddDocumentationServiceDefaults();
-
+#if DEBUG
 		builder.Services.AddElasticDocsApiUsecases("dev");
+#endif
+
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
@@ -58,7 +62,7 @@ public class DocumentationWebHost
 		_hostedService = collector;
 		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
-			CanonicalBaseUrl = new Uri(hostUrl),
+			CanonicalBaseUrl = new Uri(hostUrl)
 		};
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
 		_ = builder.Services
@@ -68,7 +72,7 @@ public class DocumentationWebHost
 				s.ClientFileExtensions = ".md,.yml";
 			})
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
-			.AddHostedService<ReloadGeneratorService>();
+			.AddHostedService<ReloadGeneratorService>((_) => new ReloadGeneratorService(GeneratorState, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -136,7 +140,9 @@ public class DocumentationWebHost
 			ServeApiFile(holder, slug, ctx));
 
 		var apiV1 = _webApplication.MapGroup("/docs/_api/v1");
+#if DEBUG
 		apiV1.MapElasticDocsApiEndpoints();
+#endif
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, ctx));

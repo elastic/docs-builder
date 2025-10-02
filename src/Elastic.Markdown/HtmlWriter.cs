@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Legacy;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -83,22 +85,9 @@ public class HtmlWriter(
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
-
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		var configProducts = DocumentationSet.Configuration.Products.Select(p =>
-		{
-			if (Products.AllById.TryGetValue(p, out var product))
-				return product;
-			throw new ArgumentException($"Invalid product id: {p}");
-		});
-
-		var frontMatterProducts = markdown.YamlFrontMatter?.Products ?? [];
-
-		var allProducts = frontMatterProducts
-			.Union(configProducts)
-			.Distinct()
-			.ToHashSet();
+		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
 
 		string? allVersionsUrl = null;
 
@@ -113,6 +102,14 @@ public class HtmlWriter(
 			fullNavigationRenderResult
 		);
 
+		var currentBaseVersion = legacyPages is { Count: > 0 }
+			? $"{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Major}.{legacyPages.ElementAt(0).Product.VersioningSystem?.Base.Minor}+"
+			: $"{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{DocumentationSet.Context.VersionsConfiguration.VersioningSystems[VersioningSystemId.Stack].Base.Minor}+";
+		//TODO should we even distinctby
+		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
+		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
+		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
+
 
 		var slice = Page.Index.Create(new IndexViewModel
 		{
@@ -124,12 +121,11 @@ public class HtmlWriter(
 			TitleRaw = markdown.TitleRaw ?? "[TITLE NOT SET]",
 			MarkdownHtml = html,
 			PageTocItems = [.. markdown.PageTableOfContent.Values],
-			Tree = DocumentationSet.Tree,
 			CurrentDocument = markdown,
 			CurrentNavigationItem = current,
 			PreviousDocument = previous,
 			NextDocument = next,
-			Parents = parents,
+			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			NavigationFileName = navigationFileName,
 			UrlPathPrefix = markdown.UrlPathPrefix,
@@ -142,12 +138,13 @@ public class HtmlWriter(
 			Features = DocumentationSet.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
-			CurrentVersion = legacyPages?.Count > 0 ? legacyPages.ElementAt(0).Version : "9.0+",
+			CurrentVersion = currentBaseVersion,
 			AllVersionsUrl = allVersionsUrl,
-			LegacyPages = legacyPages?.Skip(1).ToArray(),
-			VersionDropdownItems = VersionDrownDownItemViewModel.FromLegacyPageMappings(legacyPages?.Skip(1).ToArray()),
-			Products = allProducts,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration
+			LegacyPages = legacyPages?.ToArray(),
+			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
+			Products = pageProducts,
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
+			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString
 		});
 
 		return new RenderResult
@@ -157,6 +154,31 @@ public class HtmlWriter(
 			NavigationFileName = navigationFileName
 		};
 
+	}
+
+	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] crumbs)
+	{
+		List<BreadcrumbListItem> breadcrumbItems = [];
+		var position = 1;
+		// Add parents
+		breadcrumbItems.AddRange(crumbs.Select(parent => new BreadcrumbListItem
+		{
+			Position = position++,
+			Name = parent.NavigationTitle,
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+		}));
+		// Add current page
+		breadcrumbItems.Add(new BreadcrumbListItem
+		{
+			Position = position,
+			Name = markdown.Title ?? markdown.NavigationTitle,
+			Item = null,
+		});
+		var breadcrumbsList = new BreadcrumbsList
+		{
+			ItemListElement = breadcrumbItems
+		};
+		return breadcrumbsList;
 	}
 
 	public async Task<MarkdownDocument> WriteAsync(IDirectoryInfo outBaseDir, IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
@@ -196,6 +218,9 @@ public class HtmlWriter(
 		return document;
 	}
 
+	private static HashSet<Product> GetPageProducts(IReadOnlyCollection<Product>? frontMatterProducts) =>
+		frontMatterProducts?.ToHashSet() ?? [];
+
 }
 
 public record RenderResult
@@ -203,5 +228,4 @@ public record RenderResult
 	public required string Html { get; init; }
 	public required string FullNavigationPartialHtml { get; init; }
 	public required string NavigationFileName { get; init; }
-
 }
