@@ -13,7 +13,7 @@ function getSchedule(env: string) {
 journey('navigation test', ({ page, params }) => {
     
     monitor.use({
-        id: `elastic-co-docs-${params.environment}-v2`,
+        id: `elastic-co-docs-nav-${params.environment}-v2`,
         schedule: getSchedule(params.environment),
         tags: [`env:${params.environment}`],
     })
