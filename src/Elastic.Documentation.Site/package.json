@@ -73,7 +73,8 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "text-diff": "1.0.1",
-    "typescript-eslint": "8.43.0"
+    "typescript-eslint": "8.43.0",
+    "wait-on": "9.0.1"
   },
   "browserslist": [
     "defaults"

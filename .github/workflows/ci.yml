@@ -37,7 +37,35 @@ jobs:
   
   build-api-lambda:
     uses: ./.github/workflows/build-api-lambda.yml
+    
   
+  synthetics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        
+      - name: Bootstrap Action Workspace
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+          
+      - name: Install dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+        
+      - name: Run assembler
+        run: |
+          dotnet run --project src/tooling/docs-builder -- assembler config init --local 
+          dotnet run --project src/tooling/docs-builder -- assembler clone -c local --skip-private-repositories
+          dotnet run --project src/tooling/docs-builder -- assembler build -c local --skip-private-repositories &
+        
+      - name: Wait for docs
+        working-directory: src/Elastic.Documentation.Site
+        run: npx wait-on http://localhost:4000/docs
+          
+      - name: Run synthetics
+        working-directory: src/Elastic.Documentation.Site
+        run: npm run synthetics:test
+
   npm:
     runs-on: ubuntu-latest
     defaults: 
