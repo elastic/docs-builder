@@ -127,7 +127,7 @@ A regular paragraph.
 	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
 }
 
-public class DuplicateDropdownTitleTests(ITestOutputHelper output) : DirectiveTest(output,
+public class DuplicateDropdownAnchorTests(ITestOutputHelper output) : DirectiveTest(output,
 """
 :::{dropdown} Same title
 First dropdown content
@@ -139,17 +139,42 @@ Second dropdown content
 """)
 {
 	[Fact]
-	public void ReportsErrorForDuplicateDropdownTitles()
+	public void ReportsHintForDuplicateAnchors()
 	{
 		Collector.Diagnostics.Should().Contain(m =>
-			m.Severity == Severity.Error &&
-			m.Message.Contains("Duplicate dropdown title") &&
-			m.Message.Contains("'Same title'"));
+			m.Severity == Severity.Hint &&
+			m.Message.Contains("Duplicate anchor") &&
+			m.Message.Contains("'same-title'"));
 
-		// Should report error for both duplicate dropdowns
+		// Should report hint for both duplicate dropdowns
 		Collector.Diagnostics.Where(m =>
-			m.Severity == Severity.Error &&
-			m.Message.Contains("Duplicate dropdown title") &&
-			m.Message.Contains("'Same title'")).Should().HaveCount(2);
+			m.Severity == Severity.Hint &&
+			m.Message.Contains("Duplicate anchor") &&
+			m.Message.Contains("'same-title'")).Should().HaveCount(2);
+	}
+}
+
+public class DuplicateDropdownAndHeadingAnchorTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+## Test Heading
+
+:::{dropdown} Test Heading
+Dropdown content with same anchor as heading
+:::
+""")
+{
+	[Fact]
+	public void ReportsHintForDuplicateAnchorsAcrossTypes()
+	{
+		Collector.Diagnostics.Should().Contain(m =>
+			m.Severity == Severity.Hint &&
+			m.Message.Contains("Duplicate anchor") &&
+			m.Message.Contains("'test-heading'"));
+
+		// Should report hint for both the heading and dropdown
+		Collector.Diagnostics.Where(m =>
+			m.Severity == Severity.Hint &&
+			m.Message.Contains("Duplicate anchor") &&
+			m.Message.Contains("'test-heading'")).Should().HaveCount(2);
 	}
 }

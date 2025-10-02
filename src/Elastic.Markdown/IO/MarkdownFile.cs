@@ -179,7 +179,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			_ = await MinimalParseAsync(ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
-		ValidateDropdownTitles(document);
+		ValidateDuplicateAnchors(document);
 		return document;
 	}
 
@@ -196,29 +196,63 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		return allProperties;
 	}
 
-	private void ValidateDropdownTitles(MarkdownDocument document)
+	private void ValidateDuplicateAnchors(MarkdownDocument document)
 	{
-		var dropdowns = document.Descendants<DropdownBlock>().ToList();
-		if (dropdowns.Count <= 1)
-			return;
+		// Collect all anchors with their source blocks
+		var anchorSources = new List<(string Anchor, int Line, int Column, int Length, string Type)>();
 
-		var titleGroups = dropdowns
-			.GroupBy(d => d.Title, StringComparer.OrdinalIgnoreCase)
+		// Collect dropdown anchors
+		foreach (var dropdown in document.Descendants<DropdownBlock>())
+		{
+			if (!string.IsNullOrEmpty(dropdown.CrossReferenceName))
+			{
+				anchorSources.Add((
+					dropdown.CrossReferenceName,
+					dropdown.Line + 1,
+					dropdown.Column,
+					dropdown.OpeningLength,
+					"dropdown"
+				));
+			}
+		}
+
+		// Collect heading anchors
+		foreach (var heading in document.Descendants<HeadingBlock>())
+		{
+			var header = heading.GetData("header") as string;
+			var anchor = heading.GetData("anchor") as string;
+			var slugTarget = (anchor ?? header) ?? string.Empty;
+			if (!string.IsNullOrEmpty(slugTarget))
+			{
+				var slug = slugTarget.Slugify();
+				anchorSources.Add((
+					slug,
+					heading.Line + 1,
+					heading.Column,
+					1, // heading length
+					"heading"
+				));
+			}
+		}
+
+		// Group by anchor and find duplicates
+		var duplicateGroups = anchorSources
+			.GroupBy(a => a.Anchor, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1);
 
-		foreach (var group in titleGroups)
+		foreach (var group in duplicateGroups)
 		{
-			var title = group.Key;
-			foreach (var dropdown in group)
+			var anchor = group.Key;
+			foreach (var (_, line, column, length, type) in group)
 			{
 				Collector.Write(new Diagnostic
 				{
-					Severity = Severity.Error,
+					Severity = Severity.Hint,
 					File = SourceFile.FullName,
-					Line = dropdown.Line + 1,
-					Column = dropdown.Column,
-					Length = dropdown.OpeningLength,
-					Message = $"Duplicate dropdown title '{title}' found. Each dropdown must have a unique title for proper anchor generation."
+					Line = line,
+					Column = column,
+					Length = length,
+					Message = $"Duplicate anchor '{anchor}' found in {type}. Multiple elements with the same anchor may cause linking issues."
 				});
 			}
 		}
