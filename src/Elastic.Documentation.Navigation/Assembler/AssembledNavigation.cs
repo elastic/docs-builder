@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
@@ -14,7 +15,13 @@ public record SiteModel(string NavigationTitle) : INavigationModel;
 
 public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContentsNavigation>
 {
-	public SiteNavigation(SiteNavigationFile siteNavigationFile, IDocumentationSetContext context)
+	public SiteNavigation(
+		SiteNavigationFile siteNavigationFile,
+		IDocumentationSetContext context,
+#pragma warning disable IDE0060
+		IReadOnlyCollection<DocumentationSetNavigation> documentationSets
+#pragma warning restore IDE0060
+	)
 	{
 		// Initialize root properties
 		NavigationRoot = this;

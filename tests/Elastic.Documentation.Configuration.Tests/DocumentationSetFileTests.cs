@@ -108,7 +108,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.Toc.Should().HaveCount(2);
-		result.Toc.ElementAt(0).Should().BeOfType<FileRef>()
+		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.RelativePath.Should().Be("index.md");
 		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.RelativePath.Should().Be("getting-started.md");
@@ -129,7 +129,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.Toc.Should().HaveCount(3);
-		result.Toc.ElementAt(0).Should().BeOfType<FileRef>()
+		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.Hidden.Should().BeFalse();
 		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
@@ -158,7 +158,7 @@ public class DocumentationSetFileTests
 		var folder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
 		folder.RelativePath.Should().Be("contribute");
 		folder.Children.Should().HaveCount(2);
-		folder.Children.ElementAt(0).Should().BeOfType<FileRef>()
+		folder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.RelativePath.Should().Be("index.md");
 		folder.Children.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.RelativePath.Should().Be("locally.md");
@@ -178,7 +178,7 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.Toc.Should().HaveCount(2);
-		result.Toc.ElementAt(0).Should().BeOfType<FileRef>();
+		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>();
 		result.Toc.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>()
 			.Which.Source.Should().Be("development");
 	}
@@ -231,13 +231,13 @@ public class DocumentationSetFileTests
 		topFolder.RelativePath.Should().Be("configure");
 		topFolder.Children.Should().HaveCount(2);
 
-		topFolder.Children.ElementAt(0).Should().BeOfType<FileRef>()
+		topFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.RelativePath.Should().Be("index.md");
 
 		var nestedFolder = topFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
 		nestedFolder.RelativePath.Should().Be("site");
 		nestedFolder.Children.Should().HaveCount(3);
-		nestedFolder.Children.ElementAt(0).Should().BeOfType<FileRef>()
+		nestedFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.RelativePath.Should().Be("index.md");
 		nestedFolder.Children.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.RelativePath.Should().Be("content.md");
@@ -300,7 +300,7 @@ public class DocumentationSetFileTests
 		result.Toc.Should().HaveCount(4);
 
 		// First item: simple file reference
-		var firstItem = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var firstItem = result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		firstItem.RelativePath.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 		firstItem.Children.Should().BeEmpty();
@@ -317,7 +317,7 @@ public class DocumentationSetFileTests
 		configureFolder.Children.Should().HaveCount(3);
 
 		// First child: file reference
-		var configureIndexFile = configureFolder.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var configureIndexFile = configureFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		configureIndexFile.RelativePath.Should().Be("index.md");
 		configureIndexFile.Hidden.Should().BeFalse();
 
@@ -327,7 +327,7 @@ public class DocumentationSetFileTests
 		siteFolder.Children.Should().HaveCount(3);
 
 		// Assert nested folder's children
-		var siteIndexFile = siteFolder.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var siteIndexFile = siteFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		siteIndexFile.RelativePath.Should().Be("index.md");
 
 		var contentFile = siteFolder.Children.ElementAt(1).Should().BeOfType<FileRef>().Subject;

@@ -36,7 +36,9 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		IDirectoryInfo sourceDirectory,
 		IDirectoryInfo outputDirectory,
 		IFileInfo configPath,
-		ITestOutputHelper output)
+		ITestOutputHelper output,
+		string? repository = null
+	)
 	{
 		ReadFileSystem = fileSystem;
 		WriteFileSystem = fileSystem;
@@ -44,7 +46,13 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;
 		Collector = new TestDiagnosticsCollector(output);
-		Git = GitCheckoutInformation.Unavailable;
+		Git = repository is null ? GitCheckoutInformation.Unavailable : new GitCheckoutInformation
+		{
+			Branch = "main",
+			Remote = $"elastic/{repository}",
+			Ref = "main",
+			RepositoryName = repository
+		};
 
 		// Start the diagnostics collector to process messages
 		_ = Collector.StartAsync(CancellationToken.None);

@@ -19,11 +19,11 @@ public class SiteNavigationFileTests
 		             - toc: docs-content://
 		           toc:
 		             - toc: serverless/observability
-		               path: /serverless/observability
+		               path_prefix: /serverless/observability
 		             - toc: serverless/search
-		               path: /serverless/search
+		               path_prefix: /serverless/search
 		             - toc: serverless/security
-		               path: /serverless/security
+		               path_prefix: /serverless/security
 		           """;
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
@@ -56,12 +56,12 @@ public class SiteNavigationFileTests
 		var yaml = """
 		           toc:
 		             - toc: platform
-		               path: /platform
+		               path_prefix: /platform
 		               children:
 		                 - toc: platform/deployment-guide
-		                   path: /platform/deployment
+		                   path_prefix: /platform/deployment
 		                 - toc: platform/cloud-guide
-		                   path: /platform/cloud
+		                   path_prefix: /platform/cloud
 		           """;
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);

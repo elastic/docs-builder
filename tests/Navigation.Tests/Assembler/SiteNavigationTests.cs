@@ -19,7 +19,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
 		var configPath = fileSystem.FileInfo.New("/docs/navigation.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output);
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, "docs-builder");
 	}
 
 	[Fact]
@@ -40,7 +40,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/serverless/search");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		navigation.Should().NotBeNull();
 		navigation.Url.Should().Be("/");
@@ -78,7 +78,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/platform/cloud-guide");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 
@@ -112,7 +112,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/elasticsearch/reference");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 
@@ -141,7 +141,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/reference/8.0");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		navigation.NavigationItems.Should().HaveCount(2);
 
@@ -173,7 +173,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/platform/deployment-guide");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		var platform = navigation.NavigationItems.First();
 		var deployment = platform.NavigationItems.First();
@@ -210,7 +210,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/level3");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		navigation.Depth.Should().Be(0);
 
@@ -246,7 +246,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddDirectory("/docs/product-a/reference");
 
 		var context = CreateContext(fileSystem);
-		var navigation = new SiteNavigation(siteNavFile, context);
+		var navigation = new SiteNavigation(siteNavFile, context, []);
 
 		var productA = navigation.NavigationItems.First();
 		productA.Url.Should().Be("/products/a");

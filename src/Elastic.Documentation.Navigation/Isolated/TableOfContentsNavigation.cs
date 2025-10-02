@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.Design;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
@@ -27,6 +28,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		Index = new DocumentationDirectory(documentationSet.Project ?? "Documentation");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
+		Git = context.Git;
 
 		// Convert TOC items to navigation items
 		var items = new List<INavigationItem>();
@@ -51,6 +53,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 
 		NavigationItems = items;
 	}
+
+	public GitCheckoutInformation Git { get; }
 
 	/// <inheritdoc />
 	public string Url { get; set; } = "/";

@@ -15,6 +15,6 @@ public abstract class DocumentationSetNavigationTestBase(ITestOutputHelper outpu
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
 		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output);
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, "docs-builder");
 	}
 }
