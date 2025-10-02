@@ -51,57 +51,23 @@ Dropdown content
 
 :::::
 
-<<<<<<< HEAD
-## Deeplinking
-
-Dropdowns support deeplinking through anchor links. When you navigate to a URL with a hash that points to a dropdown or content within a dropdown, the dropdown will automatically open. When you manually open a dropdown that has a name/anchor, the URL will automatically update to reflect the current state.
-=======
 ## With applies_to badge
 
 You can add an applies_to badge to the dropdown title by specifying the `:applies_to:` option. This displays a badge indicating which deployment types, versions, or other applicability criteria the dropdown content applies to.
->>>>>>> main
 
 :::::{tab-set}
 
 ::::{tab-item} Output
 
-<<<<<<< HEAD
-:::{dropdown} Deeplink Example
-:name: deeplink-example
-
-This dropdown can be opened by navigating to `#deeplink-example`.
-
-When you open this dropdown manually by clicking the title, the URL will automatically update to show `#deeplink-example`.
-
-#### Nested Content [#nested-content]
-
-You can also link directly to content within dropdowns. This content has the anchor `#nested-content`.
-
-=======
 :::{dropdown} Dropdown Title
 :applies_to: stack: ga 9.0
 Dropdown content for Stack GA 9.0
->>>>>>> main
 :::
 
 ::::
 
 ::::{tab-item} Markdown
 ```markdown
-<<<<<<< HEAD
-:::{dropdown} Deeplink Example
-:name: deeplink-example
-
-This dropdown can be opened by navigating to `#deeplink-example`.
-
-When you open this dropdown manually by clicking the title, the URL will automatically update to show `#deeplink-example`.
-
-#### Nested Content [#nested-content]
-
-You can also link directly to content within dropdowns. This content has the anchor `#nested-content`.
-
-:::
-=======
 :::{dropdown} Dropdown Title
 :applies_to: stack: ga 9.0
 Dropdown content for Stack GA 9.0
@@ -133,7 +99,6 @@ Dropdown content for ECE and ECH
 Dropdown content for ECE and ECH
 :::
 ```
->>>>>>> main
 ::::
 
 :::::
