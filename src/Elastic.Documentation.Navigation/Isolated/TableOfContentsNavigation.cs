@@ -50,7 +50,7 @@ public class DocumentationSetNavigation :
 		Hidden = false;
 		IsCrossLink = false;
 		PathPrefixProvider = pathPrefixProvider ?? this;
-		PathPrefix = pathPrefixProvider?.PathPrefix ?? string.Empty;
+		_pathPrefix = pathPrefixProvider?.PathPrefix ?? string.Empty;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		Index = new DocumentationDirectory(documentationSet.Project ?? "Documentation");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
@@ -82,7 +82,13 @@ public class DocumentationSetNavigation :
 		NavigationItems = items;
 	}
 
-	public string PathPrefix { get; }
+	private readonly string _pathPrefix;
+
+	/// <summary>
+	/// Gets the path prefix. When PathPrefixProvider is set to a different instance, returns that provider's prefix.
+	/// Otherwise returns the prefix set during construction.
+	/// </summary>
+	public string PathPrefix => PathPrefixProvider == this ? _pathPrefix : PathPrefixProvider.PathPrefix;
 
 	public IPathPrefixProvider PathPrefixProvider { get; set; }
 
@@ -335,7 +341,7 @@ public class DocumentationSetNavigation :
 				context,
 				folderNavigation,
 				root,
-				prefixProvider,
+				prefixProvider, // Folders don't change the URL root
 				depth + 1,
 				folderPath,
 				allowNestedToc
@@ -443,7 +449,7 @@ public class DocumentationSetNavigation :
 					context,
 					tocNavigation,
 					root,
-					prefixProvider,
+					tocNavigation, // TOC navigation becomes the new URL root for its children
 					depth + 1,
 					"", // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 					parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
@@ -463,7 +469,7 @@ public class DocumentationSetNavigation :
 				context,
 				tocNavigation,
 				root,
-				prefixProvider, // TOC navigation becomes the new URL root
+				tocNavigation, // TOC navigation becomes the new URL root for its children // TOC navigation becomes the new URL root
 				depth + 1,
 				"", // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 				parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
@@ -477,7 +483,7 @@ public class DocumentationSetNavigation :
 		if (children.Count == 0)
 		{
 			var placeholderModel = new CrossLinkModel(new Uri(tocRef.Source, UriKind.Relative), tocRef.Source);
-			children.Add(new FileNavigationLeaf(placeholderModel, tocRef.Source, false, tocNavigation, root, prefixProvider));
+			children.Add(new FileNavigationLeaf(placeholderModel, tocRef.Source, false, tocNavigation, root, tocNavigation));
 		}
 
 		var finalTocNavigation = new TableOfContentsNavigation(
@@ -647,6 +653,7 @@ public class FileNavigation(
 
 public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 	, INavigationPathPrefixProvider
+	, IPathPrefixProvider
 {
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
@@ -678,15 +685,21 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		_ = tocNodes.TryAdd(Identifier, this);
 	}
 
-	/// <inheritdoc />
-	public virtual string Url
+	/// <summary>
+	/// The composed path prefix for this TOC, which is the parent's prefix + this TOC's parent path.
+	/// This is used by children to build their URLs.
+	/// </summary>
+	public string PathPrefix
 	{
 		get
 		{
-			var rootUrl = PathPrefixProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(rootUrl) ? $"/{ParentPath}" : $"{rootUrl}/{ParentPath}";
+			var parentPrefix = PathPrefixProvider.PathPrefix.TrimEnd('/');
+			return string.IsNullOrEmpty(parentPrefix) ? $"/{ParentPath}" : $"{parentPrefix}/{ParentPath}";
 		}
 	}
+
+	/// <inheritdoc />
+	public virtual string Url => PathPrefix;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;

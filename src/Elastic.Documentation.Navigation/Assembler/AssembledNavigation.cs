@@ -132,27 +132,30 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 		node.NavigationIndex = index;
 		prefixProvider.PathPrefixProvider = new PathPrefixProvider(tocRef.PathPrefix);
 
-		if (tocRef.Children.Count <= 0)
-			return node;
-
-		// Recursively create child navigation items
+		// Recursively create child navigation items if children are specified
 		var children = new List<INavigationItem>();
-		var childIndex = 0;
-		foreach (var child in tocRef.Children)
+		if (tocRef.Children.Count > 0)
 		{
-			var childItem = CreateSiteTableOfContentsNavigation(
-				child,
-				childIndex++,
-				context
-			);
-			if (childItem != null)
-				children.Add(childItem);
+			var childIndex = 0;
+			foreach (var child in tocRef.Children)
+			{
+				var childItem = CreateSiteTableOfContentsNavigation(
+					child,
+					childIndex++,
+					context
+				);
+				if (childItem != null)
+					children.Add(childItem);
+			}
+		}
+		else
+		{
+			// If no children specified, use the node's original children
+			children = node.NavigationItems.ToList();
 		}
 
-		// Return a wrapper that contains only the specified children and applies path prefix
+		// Always return a wrapper to ensure path_prefix is the URL (not path_prefix + node's URL)
 		return new SiteTableOfContentsNavigation(node, prefixProvider.PathPrefixProvider, children);
-
-		// Return a wrapper that applies the path prefix
 	}
 }
 
@@ -172,7 +175,14 @@ internal sealed class SiteTableOfContentsNavigation(
 {
 	// For site navigation TOC references, the path_prefix IS the URL
 	// We don't append the wrapped node's URL
-	public string Url => wrappedNode.Url;
+	public string Url
+	{
+		get
+		{
+			var url = PathPrefixProvider.PathPrefix.TrimEnd('/');
+			return string.IsNullOrEmpty(url) ? "/" : url;
+		}
+	}
 
 	public string NavigationTitle => wrappedNode.NavigationTitle;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => wrappedNode.NavigationRoot;
