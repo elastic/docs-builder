@@ -301,7 +301,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				tocNavigation, // TOC navigation becomes the new URL root
 				depth + 1,
 				"", // Reset parentPath since TOC is new urlRoot - children paths are relative to this TOC
-				!(parent is TableOfContentsNavigation && parent.Parent is null) && allowNestedToc // Only restrict nested TOCs if this TOC's parent is also a TOC that's directly under root
+				parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
 			);
 
 			if (childNav != null)

@@ -1,0 +1,109 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Configuration.DocSet;
+using Elastic.Documentation.Navigation.Isolated;
+using FluentAssertions;
+
+namespace Elastic.Documentation.Navigation.Tests.Isolation;
+
+public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+{
+	[Fact]
+	public void DynamicUrlUpdatesWhenRootUrlChanges()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: setup
+		               children:
+		                 - file: install.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+		var file = folder!.NavigationItems.First();
+
+		// Initial URL
+		file.Url.Should().Be("/setup/install");
+
+		// Change root URL
+		navigation.Url = "/v8.0";
+
+		// URLs should update dynamically
+		folder.Url.Should().Be("/v8.0/setup");
+		file.Url.Should().Be("/v8.0/setup/install");
+	}
+
+	[Fact]
+	public void UrlRootPropagatesCorrectlyThroughFolders()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: outer
+		               children:
+		                 - folder: inner
+		                   children:
+		                     - file: deep.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+		var outerFolder = navigation.NavigationItems.First() as FolderNavigation;
+		var innerFolder = outerFolder!.NavigationItems.First() as FolderNavigation;
+		var file = innerFolder!.NavigationItems.First();
+
+		file.Url.Should().Be("/outer/inner/deep");
+
+		// Change root URL
+		navigation.Url = "/base";
+
+		file.Url.Should().Be("/base/outer/inner/deep");
+	}
+
+	[Fact]
+	public void UrlRootChangesForTableOfContentsNavigation()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - toc: api
+		                   children:
+		                     - file: reference.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs/guides/api");
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext(fileSystem);
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+		var toc = folder!.NavigationItems.First() as TableOfContentsNavigation;
+		var file = toc!.NavigationItems.First();
+
+		// The TOC becomes the new URL root, so the file URL is based on TOC's URL
+		toc.Url.Should().Be("/guides/api");
+		file.Url.Should().Be("/guides/api/reference");
+
+		// Change root URL
+		navigation.Url = "/v2";
+
+		// Both TOC and file URLs should update
+		toc.Url.Should().Be("/v2/guides/api");
+		file.Url.Should().Be("/v2/guides/api/reference");
+	}
+}
