@@ -209,7 +209,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				anchorSources.Add((
 					dropdown.CrossReferenceName,
 					dropdown.Line + 1,
-					dropdown.Column,
+					dropdown.Column + 1, // Column is 0-indexed, add 1
 					dropdown.OpeningLength,
 					"dropdown"
 				));
@@ -228,7 +228,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				anchorSources.Add((
 					slug,
 					heading.Line + 1,
-					heading.Column,
+					heading.Column + 1, // Column is 0-indexed, add 1
 					1, // heading length
 					"heading"
 				));
