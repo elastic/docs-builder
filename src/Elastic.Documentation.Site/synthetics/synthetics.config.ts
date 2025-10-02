@@ -27,7 +27,7 @@ export default (env) => {
             space: 'default',
         },
     }
-    
+
     switch (DOCS_ENVIRONMENT) {
         case 'prod':
             config.params.baseUrl = 'https://www.elastic.co'
