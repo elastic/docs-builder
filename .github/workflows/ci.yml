@@ -54,9 +54,11 @@ jobs:
         
       - name: Run assembler
         run: |
-          dotnet run --project src/tooling/docs-builder -- assembler config init --local 
-          dotnet run --project src/tooling/docs-builder -- assembler clone -c local --skip-private-repositories
-          dotnet run --project src/tooling/docs-builder -- assembler build -c local --skip-private-repositories &
+          mkdir assembler-workspace
+          cd assembler-workspace
+          dotnet run --project ../src/tooling/docs-builder -- assembler config init --local 
+          dotnet run --project ../src/tooling/docs-builder -- assembler clone -c local --skip-private-repositories
+          dotnet run --project ../src/tooling/docs-builder -- assembler build -c local --skip-private-repositories &
         
       - name: Wait for docs
         working-directory: src/Elastic.Documentation.Site
