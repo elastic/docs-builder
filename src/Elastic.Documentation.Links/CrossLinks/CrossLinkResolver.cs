@@ -89,16 +89,6 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (sourceLinkReference.Links.TryGetValue(originalLookupPath, out var directLinkMetadata))
 			return ResolveDirectLink(errorEmitter, uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata, out resolvedUri);
 
-		// For development docs or known repositories, allow links even if they don't exist in the link index
-		if (isDeclaredRepo)
-		{
-			// Create a synthesized URL for development purposes
-			var path = ToTargetUrlPath(originalLookupPath);
-			resolvedUri = uriResolver.Resolve(crossLinkUri, path);
-			return true;
-		}
-
-
 		var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{crossLinkUri.Scheme}/main/links.json";
 		if (fetchedCrossLinks.LinkIndexEntries.TryGetValue(crossLinkUri.Scheme, out var indexEntry))
 			linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{indexEntry.Path}";
