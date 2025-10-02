@@ -526,9 +526,9 @@ jobs:
             const toLink = (file) => {
               console.log('file', file);
               const path = file
-                .replace('docs/', '')
-                .replace('/index.md', '')
-                .replace('.md', '');
+                .replace(/^docs\//, '')
+                .replace(/\/index.md$/, '')
+                .replace(/\.md$/, '');
               return `[${file}](https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}/${path})`;
             }
 
