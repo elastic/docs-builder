@@ -1,6 +1,6 @@
 import type { SyntheticsConfig } from '@elastic/synthetics'
 
-export default (env) => {
+export default () => {
     const DOCS_ENVIRONMENT = process.env.DOCS_ENV ?? 'local'
     const config: SyntheticsConfig = {
         params: {
