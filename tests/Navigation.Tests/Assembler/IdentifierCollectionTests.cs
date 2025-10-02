@@ -24,7 +24,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 
 		// Root identifier should be <repository>://
 		platformNav.Identifier.Should().Be(new Uri("platform://"));
-		platformNav.Identifiers.Should().Contain(new Uri("platform://"));
+		platformNav.TableOfContentNodes.Keys.Should().Contain(new Uri("platform://"));
 	}
 
 	[Fact]
@@ -40,14 +40,14 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
 
 		// Should collect identifiers from nested TOCs
-		platformNav.Identifiers.Should().Contain(
+		platformNav.TableOfContentNodes.Keys.Should().Contain(
 		[
 			new Uri("platform://"),
 			new Uri("platform://deployment-guide"),
 			new Uri("platform://cloud-guide")
 		]);
 
-		platformNav.Identifiers.Should().HaveCount(3);
+		platformNav.TableOfContentNodes.Should().HaveCount(3);
 	}
 
 	[Fact]
@@ -63,8 +63,8 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext);
 
 		// Should only have root identifier
-		observabilityNav.Identifiers.Should().Contain(new Uri("observability://"));
-		observabilityNav.Identifiers.Should().HaveCount(1);
+		observabilityNav.TableOfContentNodes.Keys.Should().Contain(new Uri("observability://"));
+		observabilityNav.TableOfContentNodes.Should().HaveCount(1);
 	}
 
 	[Fact]
@@ -109,12 +109,12 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext);
 
 		// Each should have its own set of identifiers
-		platformNav.Identifiers.Should().NotIntersectWith(observabilityNav.Identifiers);
+		platformNav.TableOfContentNodes.Keys.Should().NotIntersectWith(observabilityNav.TableOfContentNodes.Keys);
 
 		// Platform should have repository name in its identifiers
-		platformNav.Identifiers.Should().AllSatisfy(id => id.Scheme.Should().Be("platform"));
+		platformNav.TableOfContentNodes.Keys.Should().AllSatisfy(id => id.Scheme.Should().Be("platform"));
 
 		// Observability should have repository name in its identifiers
-		observabilityNav.Identifiers.Should().AllSatisfy(id => id.Scheme.Should().Be("observability"));
+		observabilityNav.TableOfContentNodes.Keys.Should().AllSatisfy(id => id.Scheme.Should().Be("observability"));
 	}
 }

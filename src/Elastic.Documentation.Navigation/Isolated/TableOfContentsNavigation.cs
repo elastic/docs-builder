@@ -35,7 +35,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
 		Git = context.Git;
 		Identifier = new Uri($"{Git.RepositoryName}://");
-		_tableOfContentNodes.Add(Identifier, this);
+		_ = _tableOfContentNodes.TryAdd(Identifier, this);
 
 		// Convert TOC items to navigation items
 		var items = new List<INavigationItem>();
@@ -641,7 +641,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 
 		// Create identifier for this TOC
 		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
-		tocNodes.Add(Identifier, this);
+		_ = tocNodes.TryAdd(Identifier, this);
 	}
 
 	/// <inheritdoc />
