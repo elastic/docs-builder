@@ -524,19 +524,16 @@ public class FileNavigation(
 	IReadOnlyCollection<INavigationItem> navigationItems
 ) : INodeNavigationItem<IDocumentationFile, INavigationItem>
 {
-	private readonly string _relativePath = relativePath;
-	private readonly IRootNavigationItem<INavigationModel, INavigationItem> _urlRoot = urlRoot;
-
 	/// <inheritdoc />
 	public string Url
 	{
 		get
 		{
-			var rootUrl = _urlRoot.Url.TrimEnd('/');
+			var rootUrl = urlRoot.Url.TrimEnd('/');
 			// Remove extension while preserving directory path
-			var path = _relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-				? _relativePath[..^3]  // Remove last 3 characters (.md)
-				: _relativePath;
+			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+				? relativePath[..^3]  // Remove last 3 characters (.md)
+				: relativePath;
 
 			// If path ends with /index or is just index, omit it from the URL
 			if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
@@ -608,7 +605,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	}
 
 	/// <inheritdoc />
-	public string Url
+	public virtual string Url
 	{
 		get
 		{

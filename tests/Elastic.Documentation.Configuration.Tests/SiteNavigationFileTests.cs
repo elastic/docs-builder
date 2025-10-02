@@ -69,7 +69,7 @@ public class SiteNavigationFileTests
 		siteNav.TableOfContents.Should().HaveCount(1);
 
 		var platform = siteNav.TableOfContents.First();
-		platform.Source.ToString().Should().Be("docs-content://platform");
+		platform.Source.ToString().Should().Be("docs-content://platform/");
 		platform.PathPrefix.Should().Be("/platform");
 		platform.Children.Should().HaveCount(2);
 
@@ -138,7 +138,8 @@ public class SiteNavigationFileTests
 
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should().Throw<InvalidOperationException>()
+		act.Should().Throw<YamlDotNet.Core.YamlException>()
+			.WithInnerException<InvalidOperationException>()
 			.WithMessage("Invalid TOC source: '://invalid' could not be parsed as a URI");
 	}
 }

@@ -121,15 +121,15 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 		// Check for toc reference - required
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)
 		{
-			var pathPrefix = dictionary.TryGetValue("path", out var pathValue) && pathValue is string path
-				? path
-				: string.Empty;
-
 			// Convert string to Uri - if no scheme, prepend "docs-content://"
 			var uriString = sourceString.Contains("://") ? sourceString : $"docs-content://{sourceString}";
 
 			if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
 				throw new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
+
+			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path
+				? path
+				: string.Empty;
 
 			return new SiteTableOfContentsRef(source, pathPrefix, children);
 		}
