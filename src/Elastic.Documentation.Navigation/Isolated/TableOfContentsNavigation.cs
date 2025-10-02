@@ -116,7 +116,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 						$"TableOfContents navigation does not allow nested children, found: {tocItem.GetType().Name}"
 					);
 				}
-				else if (tocItem is not TableOfContentsRef)
+				else if (tocItem is not IsolatedTableOfContentsRef)
 				{
 					// When nested TOC is allowed, only TableOfContentsRef children are permitted
 					context.EmitError(
@@ -143,7 +143,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, urlRoot, parentPath),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
 			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, urlRoot, depth, parentPath, allowNestedToc),
-			TableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, urlRoot, depth, parentPath, allowNestedToc),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, urlRoot, depth, parentPath, allowNestedToc),
 			_ => null
 		};
 	}
@@ -310,7 +310,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 	}
 
 	private INavigationItem CreateTocNavigation(
-		TableOfContentsRef tocRef,
+		IsolatedTableOfContentsRef tocRef,
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,

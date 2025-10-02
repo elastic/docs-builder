@@ -179,7 +179,7 @@ public class DocumentationSetFileTests
 
 		result.Toc.Should().HaveCount(2);
 		result.Toc.ElementAt(0).Should().BeOfType<FileRef>();
-		result.Toc.ElementAt(1).Should().BeOfType<TableOfContentsRef>()
+		result.Toc.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>()
 			.Which.Source.Should().Be("development");
 	}
 
@@ -349,7 +349,7 @@ public class DocumentationSetFileTests
 		crosslink.Children.Should().BeEmpty();
 
 		// Fourth item: toc reference
-		var tocRef = result.Toc.ElementAt(3).Should().BeOfType<TableOfContentsRef>().Subject;
+		var tocRef = result.Toc.ElementAt(3).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
 		tocRef.Source.Should().Be("development");
 		tocRef.Children.Should().BeEmpty();
 	}

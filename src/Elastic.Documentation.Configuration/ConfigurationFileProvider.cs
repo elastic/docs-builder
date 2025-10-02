@@ -23,6 +23,8 @@ public partial class ConfigurationFileProvider
 	internal static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithTypeConverter(new TocItemCollectionYamlConverter())
 		.WithTypeConverter(new TocItemYamlConverter())
+		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
+		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
 		.Build();
 
 	public ConfigurationSource ConfigurationSource { get; }

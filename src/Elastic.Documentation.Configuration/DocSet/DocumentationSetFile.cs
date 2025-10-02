@@ -2,9 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json;
-using Elastic.Documentation.Configuration.Serialization;
-using Elastic.Documentation.Configuration.TableOfContents;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -72,7 +69,6 @@ public class TableOfContents : List<ITableOfContentsItem>
 
 public interface ITableOfContentsItem;
 
-
 public record FileRef(string RelativePath, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
@@ -85,7 +81,7 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 public record FolderRef(string RelativePath, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
-public record TableOfContentsRef(string Source, IReadOnlyCollection<ITableOfContentsItem> Children)
+public record IsolatedTableOfContentsRef(string Source, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
 
@@ -190,7 +186,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 
 		// Check for toc reference
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string source)
-			return new TableOfContentsRef(source, children);
+			return new IsolatedTableOfContentsRef(source, children);
 
 		return null;
 	}
