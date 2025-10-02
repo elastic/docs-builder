@@ -19,7 +19,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 		SiteNavigationFile siteNavigationFile,
 		IDocumentationSetContext context,
 #pragma warning disable IDE0060
-		IReadOnlyCollection<DocumentationSetNavigation> documentationSets
+		IReadOnlyCollection<DocumentationSetNavigation> documentationSetNavigations
 #pragma warning restore IDE0060
 	)
 	{

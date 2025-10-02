@@ -19,7 +19,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
 		var configPath = fileSystem.FileInfo.New("/docs/navigation.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, "docs-builder");
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output);
 	}
 
 	[Fact]
