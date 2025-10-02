@@ -77,14 +77,3 @@ public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNa
 {
 	bool IsUsingNavigationDropdown { get; }
 }
-
-
-/// Represents the site navigation
-/// <typeparam name="TChildNavigation">The type of child navigation items.</typeparam>
-public interface ISiteNavigation<out TChildNavigation>
-{
-	/// <summary>
-	/// Gets the collection of child navigation items.
-	/// </summary>
-	IReadOnlyCollection<TChildNavigation> NavigationItems { get; }
-}

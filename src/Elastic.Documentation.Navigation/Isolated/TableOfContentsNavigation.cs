@@ -14,14 +14,242 @@ public interface IDocumentationFile : INavigationModel
 }
 public record DocumentationDirectory(string NavigationTitle) : IDocumentationFile;
 
-public class DocumentationSetNavigation : ISiteNavigation<IDocumentationFile>
+public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
 	public DocumentationSetNavigation(DocumentationSetFile documentationSet, IDocumentationSetContext context)
 	{
+		// Initialize root properties
+		NavigationRoot = this;
+		Parent = null;
+		Depth = 0;
+		Hidden = false;
+		IsCrossLink = false;
+		Id = ShortId.Create(documentationSet.Project ?? "root");
+		Index = new DocumentationDirectory(documentationSet.Project ?? "Documentation");
+		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
+
+		// Convert TOC items to navigation items
+		var items = new List<INavigationItem>();
+		var index = 0;
+		foreach (var tocItem in documentationSet.Toc)
+		{
+			var navItem = ConvertToNavigationItem(
+				tocItem,
+				index++,
+				context,
+				parent: null,
+				root: this,
+				depth: 0,
+				parentPath: ""
+			);
+
+			if (navItem != null)
+				items.Add(navItem);
+		}
+
+		NavigationItems = items;
 	}
 
 	/// <inheritdoc />
-	public IReadOnlyCollection<IDocumentationFile> NavigationItems { get; }
+	public string Url => NavigationItems.FirstOrDefault()?.Url ?? "/";
+
+	/// <inheritdoc />
+	public string NavigationTitle => Index.NavigationTitle;
+
+	/// <inheritdoc />
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+
+	/// <inheritdoc />
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+
+	/// <inheritdoc />
+	public bool Hidden { get; }
+
+	/// <inheritdoc />
+	public int NavigationIndex { get; set; }
+
+	/// <inheritdoc />
+	public bool IsCrossLink { get; }
+
+	/// <inheritdoc />
+	public int Depth { get; }
+
+	/// <inheritdoc />
+	public string Id { get; }
+
+	/// <inheritdoc />
+	public IDocumentationFile Index { get; }
+
+	/// <inheritdoc />
+	public bool IsUsingNavigationDropdown { get; }
+
+	/// <inheritdoc />
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+
+	private INavigationItem? ConvertToNavigationItem(
+		ITableOfContentsItem tocItem,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		int depth,
+		string parentPath) =>
+		tocItem switch
+		{
+			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root),
+			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, depth, parentPath),
+			TableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, depth, parentPath),
+			_ => null
+		};
+
+	private INavigationItem CreateFileNavigation(
+		FileRef fileRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root)
+	{
+		// Extract title from file path
+		var title = context.ReadFileSystem.Path.GetFileNameWithoutExtension(fileRef.RelativePath);
+
+		// Create model
+		var model = new CrossLinkModel(new Uri(fileRef.RelativePath, UriKind.Relative), title);
+
+		// Construct URL (convert .md to .html)
+		var url = $"/{fileRef.RelativePath.Replace(".md", ".html", StringComparison.OrdinalIgnoreCase)}";
+
+		return new FileNavigationLeaf(model, url, fileRef.Hidden, parent, root)
+		{
+			NavigationIndex = index
+		};
+	}
+
+	private INavigationItem CreateCrossLinkNavigation(
+		CrossLinkRef crossLinkRef,
+		int index,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root)
+	{
+		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.ToString();
+		var model = new CrossLinkModel(crossLinkRef.CrossLinkUri, title);
+
+		return new CrossLinkNavigationLeaf(
+			model,
+			crossLinkRef.CrossLinkUri.ToString(),
+			crossLinkRef.Hidden,
+			parent,
+			root
+		)
+		{
+			NavigationIndex = index
+		};
+	}
+
+	private INavigationItem CreateFolderNavigation(
+		FolderRef folderRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		int depth,
+		string parentPath)
+	{
+		var folderPath = string.IsNullOrEmpty(parentPath)
+			? folderRef.RelativePath
+			: $"{parentPath}/{folderRef.RelativePath}";
+
+		// Convert children first
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		var folderNavigation = new FolderNavigation(
+			depth + 1,
+			folderPath,
+			parent,
+			root,
+			[]
+		);
+
+		foreach (var child in folderRef.Children)
+		{
+			var childNav = ConvertToNavigationItem(
+				child,
+				childIndex++,
+				context,
+				folderNavigation,
+				root,
+				depth + 1,
+				folderPath
+			);
+
+			if (childNav != null)
+				children.Add(childNav);
+		}
+
+		// Create folder navigation with actual children
+		return new FolderNavigation(depth + 1, folderPath, parent, root, children)
+		{
+			NavigationIndex = index
+		};
+	}
+
+	private INavigationItem CreateTocNavigation(
+		TableOfContentsRef tocRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		int depth,
+		string parentPath)
+	{
+		var tocPath = string.IsNullOrEmpty(parentPath)
+			? tocRef.Source
+			: $"{parentPath}/{tocRef.Source}";
+
+		// Resolve the TOC directory
+		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
+			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
+		);
+
+		// Convert children
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		foreach (var child in tocRef.Children)
+		{
+			var childNav = ConvertToNavigationItem(
+				child,
+				childIndex++,
+				context,
+				parent,
+				root,
+				depth + 1,
+				tocPath
+			);
+
+			if (childNav != null)
+				children.Add(childNav);
+		}
+
+		// If no children, add a placeholder
+		if (children.Count == 0)
+		{
+			var placeholderModel = new CrossLinkModel(new Uri(tocRef.Source, UriKind.Relative), tocRef.Source);
+			children.Add(new FileNavigationLeaf(placeholderModel, $"/{tocRef.Source}/", false, parent, root));
+		}
+
+		return new TableOfContentsNavigation(
+			tocDirectory,
+			depth + 1,
+			tocPath,
+			parent,
+			children
+		)
+		{
+			NavigationIndex = index
+		};
+	}
 }
 
 public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>
