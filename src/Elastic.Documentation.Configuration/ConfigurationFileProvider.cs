@@ -216,7 +216,7 @@ public partial class ConfigurationFileProvider
 	}
 
 	public static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
-	public static string LocalConfigurationDirectory { get; } = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config");
+	public static string LocalConfigurationDirectory { get; } = Path.Combine(Directory.GetCurrentDirectory(), "config");
 
 	private static string GetLocalPath(string file) => Path.Combine(LocalConfigurationDirectory, file);
 	private static string GetAppDataPath(string file) => Path.Combine(AppDataConfigurationDirectory, file);
