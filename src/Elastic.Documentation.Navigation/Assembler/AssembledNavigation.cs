@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Navigation.Assembler;
 
 public record SiteModel(string NavigationTitle) : INavigationModel;
 
-public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContentsNavigation>
+public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 {
 	public SiteNavigation(
 		SiteNavigationFile siteNavigationFile,
@@ -30,7 +30,6 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 		Id = ShortId.Create("site");
 		Index = new SiteModel("Site Navigation");
 		IsUsingNavigationDropdown = false;
-		Git = context.Git;
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
 		{
@@ -47,18 +46,14 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 		}
 
 		// Build NavigationItems from SiteTableOfContentsRef items
-		var items = new List<SiteTableOfContentsNavigation>();
+		var items = new List<INavigationItem>();
 		var index = 0;
 		foreach (var tocRef in siteNavigationFile.TableOfContents)
 		{
 			var navItem = CreateSiteTableOfContentsNavigation(
 				tocRef,
 				index++,
-				context,
-				parent: null, // Top-level items have no parent
-				root: this,
-				urlRoot: this,
-				depth: Depth
+				context
 			);
 
 			if (navItem != null)
@@ -67,8 +62,6 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 
 		NavigationItems = items;
 	}
-
-	public GitCheckoutInformation Git { get; }
 
 	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _nodes;
 	public IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> Nodes => _nodes;
@@ -107,216 +100,44 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 	public bool IsUsingNavigationDropdown { get; }
 
 	/// <inheritdoc />
-	public IReadOnlyCollection<SiteTableOfContentsNavigation> NavigationItems { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 
-	private SiteTableOfContentsNavigation? CreateSiteTableOfContentsNavigation(
+	private INavigationItem? CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
-		IDocumentationSetContext context,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
-		int depth
+		IDocumentationSetContext context
 	)
 	{
 		// Convert docs-content:// URI to repository identifier URI
 		// Example: docs-content://platform/deployment-guide -> platform://deployment-guide
 		var identifier = ConvertSourceToIdentifier(tocRef.Source);
 
-		// Try to look up the node in the collected nodes
-		if (_nodes.TryGetValue(identifier, out var node))
+		// Look up the node in the collected nodes
+		if (!_nodes.TryGetValue(identifier, out var node))
 		{
-			// Get the TableOfContentsNavigation properties from the node
-			if (node is not TableOfContentsNavigation and not DocumentationSetNavigation)
-			{
-				context.EmitError(context.ConfigurationPath, $"Node {identifier} is not a TableOfContentsNavigation or DocumentationSetNavigation, found: {node.GetType().Name}");
-				return null;
-			}
+			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {identifier} (from source: {tocRef.Source})");
+			return null;
+		}
 
-			// Handle both TableOfContentsNavigation and DocumentationSetNavigation
-			IDirectoryInfo tocDirectory;
-			string parentPath;
-			GitCheckoutInformation git;
+		// Set the navigation index
+		node.NavigationIndex = index;
 
-			if (node is TableOfContentsNavigation tocNav)
+		// Handle children if defined in tocRef
+		if (tocRef.Children.Count > 0)
+		{
+			// Recursively create child navigation items
+			var childIndex = 0;
+			foreach (var child in tocRef.Children)
 			{
-				tocDirectory = tocNav.TableOfContentsDirectory;
-				parentPath = tocNav.ParentPath;
-				// Use Git from the repository name in the identifier
-				git = context.Git;
-			}
-			else // DocumentationSetNavigation
-			{
-				var docSetNav = (DocumentationSetNavigation)node;
-				// For DocumentationSetNavigation, use the source directory
-				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-					context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, GetTocPath(tocRef))
+				_ = CreateSiteTableOfContentsNavigation(
+					child,
+					childIndex++,
+					context
 				);
-				parentPath = string.Empty;
-				git = docSetNav.Git;
-			}
-
-			// Determine navigation items based on whether children are defined in tocRef
-			IReadOnlyCollection<INavigationItem> navigationItems;
-
-			if (tocRef.Children.Count > 0)
-			{
-				// Create placeholder to use as parent and urlRoot for children
-				var placeholder = new SiteTableOfContentsNavigation(
-					tocDirectory,
-					depth + 1,
-					parentPath,
-					parent,
-					urlRoot,
-					[],
-					git,
-					_nodes
-				)
-				{
-					NavigationIndex = index,
-					PathPrefix = tocRef.PathPrefix
-				};
-
-				// Use children from tocRef
-				var children = new List<SiteTableOfContentsNavigation>();
-				var childIndex = 0;
-				foreach (var child in tocRef.Children)
-				{
-					var childNav = CreateSiteTableOfContentsNavigation(
-						child,
-						childIndex++,
-						context,
-						parent: placeholder,
-						root,
-						placeholder, // Each SiteTableOfContentsNavigation becomes a new URL root
-						depth + 1
-					);
-
-					if (childNav != null)
-						children.Add(childNav);
-				}
-
-				navigationItems = children;
-
-				// Create the final SiteTableOfContentsNavigation with actual children
-				var siteTableOfContentsNavigation = new SiteTableOfContentsNavigation(
-					tocDirectory,
-					depth + 1,
-					parentPath,
-					parent,
-					urlRoot,
-					navigationItems,
-					git,
-					_nodes
-				)
-				{
-					NavigationIndex = index,
-					PathPrefix = tocRef.PathPrefix
-				};
-
-				// Update children's Parent and UrlRoot to point to final navigation
-				foreach (var child in children)
-				{
-					child.Parent = siteTableOfContentsNavigation;
-				}
-
-				return siteTableOfContentsNavigation;
-			}
-			else
-			{
-				// Use navigation items from the looked-up node
-				navigationItems = node is TableOfContentsNavigation tNav
-					? tNav.NavigationItems
-					: ((DocumentationSetNavigation)node).NavigationItems;
-
-				// Create the SiteTableOfContentsNavigation
-				return new SiteTableOfContentsNavigation(
-					tocDirectory,
-					depth + 1,
-					parentPath,
-					parent,
-					urlRoot,
-					navigationItems,
-					git,
-					_nodes
-				)
-				{
-					NavigationIndex = index,
-					PathPrefix = tocRef.PathPrefix
-				};
 			}
 		}
 
-		// Node not found in dictionary - create from directory structure
-		var tocPath = GetTocPath(tocRef);
-		var tocDir = context.ReadFileSystem.DirectoryInfo.New(
-			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
-		);
-
-		// Process children recursively (create temp placeholder first, then actual)
-		var tempPlaceholder = new SiteTableOfContentsNavigation(
-			tocDir,
-			depth + 1,
-			tocPath,
-			parent,
-			urlRoot,
-			[],
-			context.Git,
-			_nodes
-		)
-		{
-			NavigationIndex = index,
-			PathPrefix = tocRef.PathPrefix
-		};
-
-		var directoryChildren = new List<SiteTableOfContentsNavigation>();
-		var childIdx = 0;
-		foreach (var child in tocRef.Children)
-		{
-			var childNav = CreateSiteTableOfContentsNavigation(
-				child,
-				childIdx++,
-				context,
-				parent: tempPlaceholder,
-				root,
-				tempPlaceholder, // Each SiteTableOfContentsNavigation becomes a new URL root
-				depth + 1
-			);
-
-			if (childNav != null)
-				directoryChildren.Add(childNav);
-		}
-
-		// Create final navigation with children
-		var directoryNavigation = new SiteTableOfContentsNavigation(
-			tocDir,
-			depth + 1,
-			tocPath,
-			parent,
-			urlRoot,
-			directoryChildren,
-			context.Git,
-			_nodes
-		)
-		{
-			NavigationIndex = index,
-			PathPrefix = tocRef.PathPrefix
-		};
-
-		// Update children's Parent to point to final navigation
-		foreach (var child in directoryChildren)
-			child.Parent = directoryNavigation;
-
-		return directoryNavigation;
-	}
-
-	private static string GetTocPath(SiteTableOfContentsRef tocRef)
-	{
-		// Determine the TOC path from the URI
-		// For URIs like docs-content://elasticsearch/reference, we need both host and path
-		return string.IsNullOrEmpty(tocRef.Source.Host)
-			? tocRef.Source.AbsolutePath.TrimStart('/')
-			: $"{tocRef.Source.Host}{tocRef.Source.AbsolutePath}";
+		return node;
 	}
 
 	private static Uri ConvertSourceToIdentifier(Uri source)
@@ -331,34 +152,5 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 			: $"{repositoryName}://{path}";
 
 		return new Uri(identifierString);
-	}
-}
-
-/// <inheritdoc />
-public class SiteTableOfContentsNavigation(
-	IDirectoryInfo tableOfContentsDirectory,
-	int depth,
-	string parentPath,
-	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-	IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
-	IReadOnlyCollection<INavigationItem> navigationItems,
-	GitCheckoutInformation git,
-	Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> tocNodes
-)
-	: TableOfContentsNavigation(tableOfContentsDirectory, depth, parentPath, parent, urlRoot, navigationItems, git, tocNodes)
-{
-	public string PathPrefix { get; init; } = string.Empty;
-
-	public override string Url
-	{
-		get
-		{
-			// If PathPrefix is specified, use it
-			if (!string.IsNullOrEmpty(PathPrefix))
-				return PathPrefix;
-
-			// Otherwise, use the base implementation
-			return base.Url;
-		}
 	}
 }
