@@ -173,10 +173,10 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		if (fileRef.Children.Count > 0)
 		{
 			// Validate: index files may not have children
-			if (title.Equals("index", StringComparison.OrdinalIgnoreCase))
+			if (fileRef is IndexFileRef)
 			{
 				context.EmitError(context.ConfigurationPath,
-					$"File navigation '{fileRef.RelativePath}' is named 'index' and may not have children");
+					$"File navigation '{fileRef.RelativePath}' is an index file and may not have children");
 				// Return a leaf to prevent further errors
 				return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, urlRoot)
 				{

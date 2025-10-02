@@ -118,7 +118,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 
 		var diagnostics = context.Diagnostics;
 		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("is named 'index' and may not have children"));
+			d.Message.Contains("is an index file and may not have children"));
 	}
 
 	[Fact]

@@ -66,6 +66,9 @@ public interface ITableOfContentsItem;
 public record FileRef(string RelativePath, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
+public record IndexFileRef(string RelativePath, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
+	: FileRef(RelativePath, Hidden, Children);
+
 public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
@@ -158,10 +161,10 @@ public class TocItemYamlConverter : IYamlTypeConverter
 
 		// Check for file reference (file: or hidden:)
 		if (dictionary.TryGetValue("file", out var filePath) && filePath is string file)
-			return new FileRef(file, false, children);
+			return file == "index.md" ? new IndexFileRef(file, false, children) : new FileRef(file, false, children);
 
-		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string hidden)
-			return new FileRef(hidden, true, children);
+		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
+			return p == "index.md" ? new IndexFileRef(p, true, children) : new FileRef(p, true, children);
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
