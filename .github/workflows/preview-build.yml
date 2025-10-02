@@ -523,15 +523,15 @@ jobs:
               return;
             }
 
-            const toLink = (file) => {
+            const toMarkdownLink = (file) => {
               const path = file
-                .replace('docs/', '')
-                .replace('/index.md', '')
-                .replace('.md', '');
+                .replace(/^docs\//, '')
+                .replace(/\/index.md$/, '')
+                .replace(/\.md$/, '');
               return `[${file}](https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}/${path})`;
             }
 
-            const links = changedMdFiles.map(toLink)
+            const links = changedMdFiles.map(toMarkdownLink)
 
             const body = [
               title,
