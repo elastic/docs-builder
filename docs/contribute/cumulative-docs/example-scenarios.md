@@ -34,8 +34,8 @@ page level in the frontmatter, use section-level `applies_to` badges.
 
 <!--
 TO DO: Consider other alternative titles:
-* If labeling versioned products or serverless vs. stateful
-* If labeling available vs. unavailable
+* If labeling versioned products or serverless vs. stateful.
+* If labeling available vs. unavailable.
 -->
 
 <!--
@@ -51,8 +51,8 @@ available in specific versions or either serverless or stateful.
 In this case, docs contributors should include the following at the page level:
 
 * `stack` with the lowest version that applies to any content (unless it is lower
-  than the base version, {{version.stack.base}}, in which case omit the version number altogether)
-* `serverless` if applicable
+  than the base version, {{version.stack.base}}, in which case omit the version number altogether).
+* `serverless` if applicable.
 
 Then if a section contains content that applies to a different context than what is
 defined at the page level, include section-level `applies_to` only with the items
@@ -117,8 +117,8 @@ Just the syntax slightly differs so that it stays inline: `` {applies_to}`server
 
 <!--
 TO DO: Consider other alternative titles:
-* If labeling parallel content on a single page
-* If labeling applicable vs. not applicable
+* If labeling parallel content on a single page.
+* If labeling applicable vs. not applicable.
 -->
 
 <!--

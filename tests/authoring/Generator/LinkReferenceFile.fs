@@ -86,6 +86,12 @@ Through various means $$$including-this-inline-syntax$$$
          },
          "cross_links": [],
          "redirects": {
+           "migration/freeze/gh-action.md": {
+              "to": "index.md"
+           },
+           "migration/freeze/index.md": {
+             "to": "index.md"
+           },
            "testing/redirects/4th-page.md": {
              "to": "testing/redirects/5th-page.md"
            },

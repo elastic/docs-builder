@@ -64,15 +64,15 @@ public class ApplicableToViewModel
 	{
 		var items = new List<ApplicabilityItem>();
 
-		if (AppliesTo.Stack is not null)
-			items.AddRange(ProcessSingleCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
-
 		if (AppliesTo.Serverless is not null)
 		{
 			items.AddRange(AppliesTo.Serverless.AllProjects is not null
 				? ProcessSingleCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
 				: ProcessMappedCollections(AppliesTo.Serverless, ServerlessMappings));
 		}
+
+		if (AppliesTo.Stack is not null)
+			items.AddRange(ProcessSingleCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
 
 		if (AppliesTo.Deployment is not null)
 			items.AddRange(ProcessMappedCollections(AppliesTo.Deployment, DeploymentMappings));
