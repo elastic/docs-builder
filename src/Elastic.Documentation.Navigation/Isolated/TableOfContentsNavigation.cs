@@ -40,7 +40,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				parent: null,
 				root: this,
 				depth: 0,
-				parentPath: ""
+				parentPath: "",
+				allowNestedToc: true
 			);
 
 			if (navItem != null)
@@ -93,15 +94,39 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		int depth,
-		string parentPath) =>
-		tocItem switch
+		string parentPath,
+		bool allowNestedToc = true)
+	{
+		// Validate TableOfContentsNavigation children
+		if (parent is TableOfContentsNavigation)
+		{
+			if (!allowNestedToc)
+			{
+				// When nested TOC is not allowed, any child is an error
+				context.EmitError(
+					context.ConfigurationPath,
+					$"TableOfContents navigation does not allow nested children, found: {tocItem.GetType().Name}"
+				);
+			}
+			else if (tocItem is not TableOfContentsRef)
+			{
+				// When nested TOC is allowed, only TableOfContentsRef children are permitted
+				context.EmitError(
+					context.ConfigurationPath,
+					$"TableOfContents navigation may only contain other TOC references as children, found: {tocItem.GetType().Name}"
+				);
+			}
+		}
+
+		return tocItem switch
 		{
 			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, depth, parentPath),
-			TableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, depth, parentPath),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, depth, parentPath, allowNestedToc),
+			TableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, depth, parentPath, allowNestedToc),
 			_ => null
 		};
+	}
 
 	private INavigationItem CreateFileNavigation(
 		FileRef fileRef,
@@ -153,7 +178,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		int depth,
-		string parentPath)
+		string parentPath,
+		bool allowNestedToc)
 	{
 		var folderPath = string.IsNullOrEmpty(parentPath)
 			? folderRef.RelativePath
@@ -180,7 +206,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				folderNavigation,
 				root,
 				depth + 1,
-				folderPath
+				folderPath,
+				allowNestedToc
 			);
 
 			if (childNav != null)
@@ -201,7 +228,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		int depth,
-		string parentPath)
+		string parentPath,
+		bool allowNestedToc)
 	{
 		var tocPath = string.IsNullOrEmpty(parentPath)
 			? tocRef.Source
@@ -210,6 +238,15 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		// Resolve the TOC directory
 		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
+		);
+
+		// Create the TOC navigation that will be the parent for children
+		var tocNavigation = new TableOfContentsNavigation(
+			tocDirectory,
+			depth + 1,
+			tocPath,
+			parent,
+			[]
 		);
 
 		// Convert children
@@ -222,10 +259,11 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				child,
 				childIndex++,
 				context,
-				parent,
+				tocNavigation,
 				root,
 				depth + 1,
-				tocPath
+				tocPath,
+				allowNestedToc
 			);
 
 			if (childNav != null)
@@ -236,7 +274,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		if (children.Count == 0)
 		{
 			var placeholderModel = new CrossLinkModel(new Uri(tocRef.Source, UriKind.Relative), tocRef.Source);
-			children.Add(new FileNavigationLeaf(placeholderModel, $"/{tocRef.Source}/", false, parent, root));
+			children.Add(new FileNavigationLeaf(placeholderModel, $"/{tocRef.Source}/", false, tocNavigation, root));
 		}
 
 		return new TableOfContentsNavigation(
