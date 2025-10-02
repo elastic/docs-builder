@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Runtime.CompilerServices;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
@@ -121,33 +122,37 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})");
 			return null;
 		}
+		if (node is not INavigationPathPrefixProvider prefixProvider)
+		{
+			context.EmitError(context.ConfigurationPath, $"Navigation contains an node navigation that does not implement: {nameof(IPathPrefixProvider)} (from source: {tocRef.Source})");
+			return null;
+		}
 
 		// Set the navigation index
 		node.NavigationIndex = index;
+		prefixProvider.PathPrefixProvider = new PathPrefixProvider(tocRef.PathPrefix);
 
-		// Handle children if defined in tocRef
-		if (tocRef.Children.Count > 0)
+		if (tocRef.Children.Count <= 0)
+			return node;
+
+		// Recursively create child navigation items
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+		foreach (var child in tocRef.Children)
 		{
-			// Recursively create child navigation items
-			var children = new List<INavigationItem>();
-			var childIndex = 0;
-			foreach (var child in tocRef.Children)
-			{
-				var childItem = CreateSiteTableOfContentsNavigation(
-					child,
-					childIndex++,
-					context
-				);
-				if (childItem != null)
-					children.Add(childItem);
-			}
-
-			// Return a wrapper that contains only the specified children and applies path prefix
-			return new SiteTableOfContentsNavigation(node, children, tocRef.PathPrefix);
+			var childItem = CreateSiteTableOfContentsNavigation(
+				child,
+				childIndex++,
+				context
+			);
+			if (childItem != null)
+				children.Add(childItem);
 		}
 
+		// Return a wrapper that contains only the specified children and applies path prefix
+		return new SiteTableOfContentsNavigation(node, prefixProvider.PathPrefixProvider, children);
+
 		// Return a wrapper that applies the path prefix
-		return new SiteTableOfContentsNavigation(node, node.NavigationItems, tocRef.PathPrefix);
 	}
 }
 
@@ -155,15 +160,19 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 /// Wrapper for a navigation node that applies a path prefix to URLs and optionally
 /// overrides the children to show only the children specified in the site navigation configuration.
 /// </summary>
+/// <remarks>
+/// Wrapper for a navigation node that applies a path prefix to URLs and optionally
+/// overrides the children to show only the children specified in the site navigation configuration.
+/// </remarks>
 internal sealed class SiteTableOfContentsNavigation(
 	INodeNavigationItem<INavigationModel, INavigationItem> wrappedNode,
-	IReadOnlyCollection<INavigationItem> children,
-	string pathPrefix)
-	: INodeNavigationItem<INavigationModel, INavigationItem>
+	IPathPrefixProvider pathPrefixProvider,
+	IReadOnlyCollection<INavigationItem> children
+	) : INodeNavigationItem<INavigationModel, INavigationItem>, INavigationPathPrefixProvider
 {
 	// For site navigation TOC references, the path_prefix IS the URL
 	// We don't append the wrapped node's URL
-	public string Url { get; } = pathPrefix.TrimEnd('/');
+	public string Url => wrappedNode.Url;
 
 	public string NavigationTitle => wrappedNode.NavigationTitle;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => wrappedNode.NavigationRoot;
@@ -190,73 +199,9 @@ internal sealed class SiteTableOfContentsNavigation(
 	// Override to return the specified children from site navigation
 	// Wrap children to apply path prefix recursively - but don't wrap children that are
 	// already SiteTableOfContentsNavigation (they have their own path prefix)
-	public IReadOnlyCollection<INavigationItem> NavigationItems { get; } = WrapChildren(children, pathPrefix);
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; } = children;
 
-	private static IReadOnlyCollection<INavigationItem> WrapChildren(
-		IReadOnlyCollection<INavigationItem> children,
-		string parentPathPrefix)
-	{
-		var wrappedChildren = new List<INavigationItem>();
-		foreach (var child in children)
-		{
-			// Don't wrap SiteTableOfContentsNavigation - it already has its own path prefix
-			if (child is SiteTableOfContentsNavigation)
-			{
-				wrappedChildren.Add(child);
-			}
-			// Wrap other node items to apply path prefix to their URLs
-			else if (child is INodeNavigationItem<INavigationModel, INavigationItem> nodeChild)
-			{
-				wrappedChildren.Add(new SiteNavigationItemWrapper(nodeChild, parentPathPrefix));
-			}
-			// Wrap non-node items as well
-			else
-			{
-				wrappedChildren.Add(new SiteNavigationItemWrapper(child, parentPathPrefix));
-			}
-		}
-		return wrappedChildren;
-	}
+	/// <inheritdoc />
+	public IPathPrefixProvider PathPrefixProvider { get; set; } = pathPrefixProvider;
 }
 
-/// <summary>
-/// Wrapper for nested navigation items to apply path prefix to their URLs
-/// </summary>
-internal sealed class SiteNavigationItemWrapper(
-	INavigationItem wrappedItem,
-	string pathPrefix) : INavigationItem
-{
-	private readonly string _pathPrefix = pathPrefix.TrimEnd('/');
-
-	public string Url
-	{
-		get
-		{
-			// For root nodes with URL "/", use just the path prefix
-			if (wrappedItem.Url == "/")
-				return _pathPrefix;
-
-			// For other nodes, concatenate path prefix with the item's URL
-			return _pathPrefix + wrappedItem.Url;
-		}
-	}
-
-	public string NavigationTitle => wrappedItem.NavigationTitle;
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => wrappedItem.NavigationRoot;
-
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent
-	{
-		get => wrappedItem.Parent;
-		set => wrappedItem.Parent = value;
-	}
-
-	public bool Hidden => wrappedItem.Hidden;
-
-	public int NavigationIndex
-	{
-		get => wrappedItem.NavigationIndex;
-		set => wrappedItem.NavigationIndex = value;
-	}
-
-	public bool IsCrossLink => wrappedItem.IsCrossLink;
-}

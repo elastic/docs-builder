@@ -13,15 +13,34 @@ public interface IDocumentationFile : INavigationModel
 {
 	string NavigationTitle { get; }
 }
+
+public interface IPathPrefixProvider
+{
+	string PathPrefix { get; }
+}
+
+public interface INavigationPathPrefixProvider
+{
+	IPathPrefixProvider PathPrefixProvider { get; set; }
+}
+
+public class PathPrefixProvider(string pathPrefix) : IPathPrefixProvider
+{
+	/// <inheritdoc />
+	public string PathPrefix { get; } = pathPrefix;
+}
+
 public record DocumentationDirectory(string NavigationTitle) : IDocumentationFile;
 
-public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
+public class DocumentationSetNavigation :
+	IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationPathPrefixProvider, IPathPrefixProvider
 {
 	public DocumentationSetNavigation(
 		DocumentationSetFile documentationSet,
 		IDocumentationSetContext context,
 		IRootNavigationItem<IDocumentationFile, INavigationItem>? parent = null,
-		IRootNavigationItem<IDocumentationFile, INavigationItem>? root = null
+		IRootNavigationItem<IDocumentationFile, INavigationItem>? root = null,
+		IPathPrefixProvider? pathPrefixProvider = null
 	)
 	{
 		// Initialize root properties
@@ -30,6 +49,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		Depth = 0;
 		Hidden = false;
 		IsCrossLink = false;
+		PathPrefixProvider = pathPrefixProvider ?? this;
+		PathPrefix = pathPrefixProvider?.PathPrefix ?? string.Empty;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		Index = new DocumentationDirectory(documentationSet.Project ?? "Documentation");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
@@ -48,7 +69,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				context,
 				parent: null,
 				root: NavigationRoot,
-				urlRoot: NavigationRoot,
+				prefixProvider: PathPrefixProvider,
 				depth: Depth,
 				parentPath: "",
 				allowNestedToc: true
@@ -61,6 +82,10 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		NavigationItems = items;
 	}
 
+	public string PathPrefix { get; }
+
+	public IPathPrefixProvider PathPrefixProvider { get; set; }
+
 	public GitCheckoutInformation Git { get; }
 
 	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _tableOfContentNodes = [];
@@ -69,7 +94,14 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 	public Uri Identifier { get; }
 
 	/// <inheritdoc />
-	public string Url { get; set; } = "/";
+	public virtual string Url
+	{
+		get
+		{
+			var rootUrl = PathPrefixProvider.PathPrefix.TrimEnd('/');
+			return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+		}
+	}
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
@@ -110,7 +142,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+		IPathPrefixProvider prefixProvider,
 		int depth,
 		string parentPath,
 		bool allowNestedToc = true
@@ -157,10 +189,10 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 
 		return tocItem switch
 		{
-			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, urlRoot, parentPath),
+			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, prefixProvider, parentPath),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, urlRoot, depth, parentPath, allowNestedToc),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, urlRoot, depth, parentPath, allowNestedToc),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth, parentPath, allowNestedToc),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth, parentPath, allowNestedToc),
 			_ => null
 		};
 	}
@@ -171,7 +203,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+		IPathPrefixProvider prefixProvider,
 		string parentPath
 	)
 	{
@@ -195,14 +227,14 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				context.EmitError(context.ConfigurationPath,
 					$"File navigation '{fileRef.RelativePath}' is an index file and may not have children");
 				// Return a leaf to prevent further errors
-				return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, urlRoot)
+				return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, prefixProvider)
 				{
 					NavigationIndex = index
 				};
 			}
 
 			// Create temporary file navigation for children to reference
-			var tempFileNavigation = new FileNavigation(model, fullPath, fileRef.Hidden, 0, parent, root, urlRoot, []);
+			var tempFileNavigation = new FileNavigation(model, fullPath, fileRef.Hidden, 0, parent, root, prefixProvider, []);
 
 			// Process children recursively
 			var children = new List<INavigationItem>();
@@ -212,7 +244,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				var childNav = ConvertToNavigationItem(
 					child, childIndex++, context,
 					tempFileNavigation, root,
-					urlRoot, // Files don't change the URL root
+					prefixProvider, // Files don't change the URL root
 					0, // Depth will be set by child
 					fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 						? fullPath[..^3] // Remove .md extension for children's parent path
@@ -227,7 +259,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			var finalFileNavigation = new FileNavigation(
 				model, fullPath, fileRef.Hidden,
 				parent?.Depth + 1 ?? 0,
-				parent, root, urlRoot, children)
+				parent, root, prefixProvider, children)
 			{
 				NavigationIndex = index
 			};
@@ -240,7 +272,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		}
 
 		// No children - return a leaf
-		return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, urlRoot)
+		return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, prefixProvider)
 		{
 			NavigationIndex = index
 		};
@@ -273,7 +305,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+		IPathPrefixProvider prefixProvider,
 		int depth,
 		string parentPath,
 		bool allowNestedToc)
@@ -291,7 +323,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			folderPath,
 			parent,
 			root,
-			urlRoot,
+			prefixProvider,
 			[]
 		);
 
@@ -303,7 +335,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				context,
 				folderNavigation,
 				root,
-				urlRoot,
+				prefixProvider,
 				depth + 1,
 				folderPath,
 				allowNestedToc
@@ -314,7 +346,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		}
 
 		// Create folder navigation with actual children
-		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, root, urlRoot, children)
+		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, root, prefixProvider, children)
 		{
 			NavigationIndex = index
 		};
@@ -345,7 +377,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+		IPathPrefixProvider prefixProvider,
 		int depth,
 		string parentPath,
 		bool allowNestedToc
@@ -381,7 +413,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			context.EmitError(context.ConfigurationPath, $"Table of contents file not found: {tocFilePath}");
 
 		// Create the TOC navigation that will be the parent for children
-		// For nested TOCs, use just the source name as parentPath since urlRoot handles the full path
+		// For nested TOCs, use just the source name as parentPath since prefixProvider handles the full path
 		// For root-level TOCs, use the full tocPath
 		var navigationParentPath = parent is TableOfContentsNavigation ? tocRef.Source : tocPath;
 
@@ -390,7 +422,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			depth + 1,
 			navigationParentPath,
 			parent,
-			urlRoot,
+			prefixProvider,
 			[],
 			Git,
 			_tableOfContentNodes
@@ -411,9 +443,9 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 					context,
 					tocNavigation,
 					root,
-					tocNavigation, // TOC navigation becomes the new URL root
+					prefixProvider,
 					depth + 1,
-					"", // Reset parentPath since TOC is new urlRoot - children paths are relative to this TOC
+					"", // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 					parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
 				);
 
@@ -431,9 +463,9 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 				context,
 				tocNavigation,
 				root,
-				tocNavigation, // TOC navigation becomes the new URL root
+				prefixProvider, // TOC navigation becomes the new URL root
 				depth + 1,
-				"", // Reset parentPath since TOC is new urlRoot - children paths are relative to this TOC
+				"", // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 				parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
 			);
 
@@ -445,7 +477,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		if (children.Count == 0)
 		{
 			var placeholderModel = new CrossLinkModel(new Uri(tocRef.Source, UriKind.Relative), tocRef.Source);
-			children.Add(new FileNavigationLeaf(placeholderModel, tocRef.Source, false, tocNavigation, root, tocNavigation));
+			children.Add(new FileNavigationLeaf(placeholderModel, tocRef.Source, false, tocNavigation, root, prefixProvider));
 		}
 
 		var finalTocNavigation = new TableOfContentsNavigation(
@@ -453,7 +485,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			depth + 1,
 			navigationParentPath,
 			parent,
-			urlRoot,
+			prefixProvider,
 			children,
 			Git,
 			_tableOfContentNodes
@@ -468,24 +500,25 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 
 		return finalTocNavigation;
 	}
+
 }
 
 public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>
 {
 	private readonly string _folderPath;
-	private readonly IRootNavigationItem<INavigationModel, INavigationItem> _urlRoot;
+	private readonly IPathPrefixProvider _pathPrefixProvider;
 
 	public FolderNavigation(
 		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+		IPathPrefixProvider pathPrefixProvider,
 		IReadOnlyCollection<INavigationItem> navigationItems
 	)
 	{
 		_folderPath = parentPath;
-		_urlRoot = urlRoot;
+		_pathPrefixProvider = pathPrefixProvider;
 		NavigationItems = navigationItems;
 		NavigationRoot = navigationRoot;
 		Parent = parent;
@@ -512,7 +545,7 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 				return NavigationItems.First().Url;
 
 			// Otherwise, use the folder path
-			var rootUrl = _urlRoot.Url.TrimEnd('/');
+			var rootUrl = _pathPrefixProvider.PathPrefix.TrimEnd('/');
 			return string.IsNullOrEmpty(rootUrl) ? $"/{_folderPath}" : $"{rootUrl}/{_folderPath}";
 		}
 	}
@@ -554,7 +587,7 @@ public class FileNavigation(
 	int depth,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
-	IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+	IPathPrefixProvider prefixProvider,
 	IReadOnlyCollection<INavigationItem> navigationItems
 ) : INodeNavigationItem<IDocumentationFile, INavigationItem>
 {
@@ -563,7 +596,7 @@ public class FileNavigation(
 	{
 		get
 		{
-			var rootUrl = urlRoot.Url.TrimEnd('/');
+			var rootUrl = prefixProvider.PathPrefix.TrimEnd('/');
 			// Remove extension while preserving directory path
 			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 				? relativePath[..^3]  // Remove last 3 characters (.md)
@@ -613,13 +646,14 @@ public class FileNavigation(
 }
 
 public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
+	, INavigationPathPrefixProvider
 {
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
 		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+		IPathPrefixProvider pathPrefixProvider,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		GitCheckoutInformation git,
 		Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> tocNodes
@@ -628,7 +662,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		TableOfContentsDirectory = tableOfContentsDirectory;
 		NavigationItems = navigationItems;
 		Parent = parent;
-		UrlRoot = urlRoot;
+		PathPrefixProvider = pathPrefixProvider;
 		var title = navigationItems.FirstOrDefault()?.NavigationTitle ?? parentPath;
 		Index = new DocumentationDirectory(title);
 		NavigationRoot = this;
@@ -649,7 +683,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	{
 		get
 		{
-			var rootUrl = UrlRoot.Url.TrimEnd('/');
+			var rootUrl = PathPrefixProvider.PathPrefix.TrimEnd('/');
 			return string.IsNullOrEmpty(rootUrl) ? $"/{ParentPath}" : $"{rootUrl}/{ParentPath}";
 		}
 	}
@@ -663,7 +697,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
-	public IRootNavigationItem<INavigationModel, INavigationItem> UrlRoot { get; }
+	public IPathPrefixProvider PathPrefixProvider { get; set; }
 
 	/// <inheritdoc />
 	public bool Hidden { get; }
@@ -737,7 +771,7 @@ public class FileNavigationLeaf(
 	bool hidden,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
-	IRootNavigationItem<INavigationModel, INavigationItem> urlRoot
+	IPathPrefixProvider prefixProvider
 )
 	: ILeafNavigationItem<IDocumentationFile>
 {
@@ -749,7 +783,7 @@ public class FileNavigationLeaf(
 	{
 		get
 		{
-			var rootUrl = urlRoot.Url.TrimEnd('/');
+			var rootUrl = prefixProvider.PathPrefix.TrimEnd('/');
 			// Remove extension while preserving directory path
 			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 				? relativePath[..^3]  // Remove last 3 characters (.md)
