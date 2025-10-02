@@ -56,6 +56,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/setup/advanced");
 		fileSystem.AddDirectory("/docs/setup/advanced/performance");
+		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData("toc: []"));
+		fileSystem.AddFile("/docs/setup/advanced/performance/toc.yml", new MockFileData("toc: []"));
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);

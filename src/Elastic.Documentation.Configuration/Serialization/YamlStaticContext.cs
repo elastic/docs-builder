@@ -26,4 +26,5 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(LegacyUrlMappingDto))]
 [YamlSerializable(typeof(LegacyUrlMappingConfigDto))]
 [YamlSerializable(typeof(DocumentationSetFile))]
+[YamlSerializable(typeof(TableOfContentsFile))]
 public partial class YamlStaticContext;

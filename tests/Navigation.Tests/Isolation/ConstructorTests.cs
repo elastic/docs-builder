@@ -187,4 +187,83 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		file.Parent.Should().BeSameAs(toc);
 		file.NavigationRoot.Should().BeSameAs(navigation);
 	}
+
+	[Fact]
+	public void ConstructorReadsTableOfContentsFromTocYmlFile()
+	{
+		// language=yaml
+		var docSetYaml = """
+		                 project: 'test-project'
+		                 toc:
+		                   - toc: api
+		                 """;
+
+		// language=yaml
+		var tocYaml = """
+		              toc:
+		                - file: overview.md
+		                - file: reference.md
+		              """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs/api");
+		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
+
+		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
+		var context = CreateContext(fileSystem);
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+
+		navigation.NavigationItems.Should().HaveCount(1);
+		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
+		toc.NavigationItems.Should().HaveCount(2);
+
+		var overview = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		overview.Url.Should().Be("/api/overview");
+
+		var reference = toc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		reference.Url.Should().Be("/api/reference");
+	}
+
+	[Fact]
+	public void ConstructorProcessesTocYmlItemsBeforeChildrenFromNavigation()
+	{
+		// language=yaml
+		var docSetYaml = """
+		                 project: 'test-project'
+		                 toc:
+		                   - toc: api
+		                     children:
+		                       - file: extra.md
+		                 """;
+
+		// language=yaml
+		var tocYaml = """
+		              toc:
+		                - file: from-toc.md
+		              """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs/api");
+		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
+
+		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
+		var context = CreateContext(fileSystem);
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+
+		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
+		toc.NavigationItems.Should().HaveCount(2);
+
+		// First item should be from toc.yml
+		var fromToc = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		fromToc.NavigationTitle.Should().Be("from-toc");
+		fromToc.Url.Should().Be("/api/from-toc");
+
+		// Second item should be from navigation.yml children
+		var fromNav = toc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		fromNav.NavigationTitle.Should().Be("extra");
+
+
+	}
 }

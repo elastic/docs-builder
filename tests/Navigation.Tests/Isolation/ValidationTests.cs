@@ -137,4 +137,32 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		diagnostics.Should().ContainSingle(d =>
 			d.Message.Contains("TableOfContents navigation does not allow nested children"));
 	}
+
+	[Fact]
+	public async Task ValidationEmitsErrorWhenTocYmlFileNotFound()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - toc: api
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs/api");
+		// Note: not adding /docs/api/toc.yml file
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext(fileSystem);
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		_ = new DocumentationSetNavigation(docSet, context);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		var diagnostics = context.Diagnostics;
+		diagnostics.Should().ContainSingle(d =>
+			d.Message.Contains("Table of contents file not found") &&
+			d.Message.Contains("api/toc.yml"));
+	}
 }

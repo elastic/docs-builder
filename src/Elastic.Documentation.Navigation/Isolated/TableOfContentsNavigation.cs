@@ -321,20 +321,44 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		bool allowNestedToc
 	)
 	{
-		var tocPath = string.IsNullOrEmpty(parentPath)
-			? tocRef.Source
-			: $"{parentPath}/{tocRef.Source}";
+		// Determine the full TOC path for file system operations
+		string tocPath;
+		if (parent is TableOfContentsNavigation parentToc)
+		{
+			// Nested TOC: use parent TOC's path as base
+			tocPath = $"{parentToc.ParentPath}/{tocRef.Source}";
+		}
+		else
+		{
+			// Root-level TOC: use parentPath (which comes from folder structure)
+			tocPath = string.IsNullOrEmpty(parentPath)
+				? tocRef.Source
+				: $"{parentPath}/{tocRef.Source}";
+		}
 
 		// Resolve the TOC directory
 		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
 		);
 
+		// Read and deserialize the toc.yml file
+		var tocFilePath = context.ReadFileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
+		TableOfContentsFile? tocFile = null;
+
+		if (context.ReadFileSystem.File.Exists(tocFilePath))
+			tocFile = TableOfContentsFile.Deserialize(context.ReadFileSystem.File.ReadAllText(tocFilePath));
+		else
+			context.EmitError(context.ConfigurationPath, $"Table of contents file not found: {tocFilePath}");
+
 		// Create the TOC navigation that will be the parent for children
+		// For nested TOCs, use just the source name as parentPath since urlRoot handles the full path
+		// For root-level TOCs, use the full tocPath
+		var navigationParentPath = parent is TableOfContentsNavigation ? tocRef.Source : tocPath;
+
 		var tocNavigation = new TableOfContentsNavigation(
 			tocDirectory,
 			depth + 1,
-			tocPath,
+			navigationParentPath,
 			parent,
 			urlRoot,
 			[]
@@ -344,6 +368,29 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
 
+		// First, process items from the toc.yml file if it exists
+		if (tocFile != null)
+		{
+			foreach (var child in tocFile.Toc)
+			{
+				var childNav = ConvertToNavigationItem(
+					child,
+					childIndex++,
+					context,
+					tocNavigation,
+					root,
+					tocNavigation, // TOC navigation becomes the new URL root
+					depth + 1,
+					"", // Reset parentPath since TOC is new urlRoot - children paths are relative to this TOC
+					parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
+				);
+
+				if (childNav != null)
+					children.Add(childNav);
+			}
+		}
+
+		// Then, process items from tocRef.Children
 		foreach (var child in tocRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
@@ -372,7 +419,7 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		var finalTocNavigation = new TableOfContentsNavigation(
 			tocDirectory,
 			depth + 1,
-			tocPath,
+			navigationParentPath,
 			parent,
 			urlRoot,
 			children

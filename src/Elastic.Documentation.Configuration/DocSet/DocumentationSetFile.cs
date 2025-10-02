@@ -12,7 +12,17 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.DocSet;
 
 [YamlSerializable]
-public class DocumentationSetFile
+public class TableOfContentsFile
+{
+	[YamlMember(Alias = "toc")]
+	public TableOfContents Toc { get; set; } = [];
+
+	public static TableOfContentsFile Deserialize(string json) =>
+		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
+}
+
+[YamlSerializable]
+public class DocumentationSetFile : TableOfContentsFile
 {
 	[YamlMember(Alias = "project")]
 	public string? Project { get; set; }
@@ -39,9 +49,9 @@ public class DocumentationSetFile
 	public Dictionary<string, string> Api { get; set; } = [];
 
 	[YamlMember(Alias = "toc")]
-	public TableOfContents Toc { get; set; } = [];
+	public new TableOfContents Toc { get; set; } = [];
 
-	public static DocumentationSetFile Deserialize(string json) =>
+	public static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
 }
 
