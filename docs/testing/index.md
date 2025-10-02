@@ -98,5 +98,3 @@ const foo = "bar"; <1>
 ```
 
 1. This is a JavaScript code block.
-
-test
