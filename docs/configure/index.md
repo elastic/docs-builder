@@ -20,8 +20,8 @@ When working with `docs-builder`, there are three levels at which you can config
 
 At the site level, you can configure:
 
-* Content sources: where files live
-* Global navigation: how navigations are compiled and presented to users
+* Content sources: where files live.
+* Global navigation: how navigations are compiled and presented to users.
 
 [Site configuration](./site/index.md)
 
@@ -29,8 +29,8 @@ At the site level, you can configure:
 
 At the content set level, you can configure:
 
-* Content-set-level and sub-content-set-level navigation: how smaller groups of files are organized and presented to users
-* Attributes: variables that will be substituted at build-time for pre-defined values
+* Content-set-level and sub-content-set-level navigation: how smaller groups of files are organized and presented to users.
+* Attributes: variables that will be substituted at build-time for pre-defined values.
 
 [Content-set configuration](./content-set/index.md)
 
@@ -38,6 +38,6 @@ At the content set level, you can configure:
 
 At the page level, you can configure:
 
-* Frontmatter that influences on-page UX to benefit the user in some way
+* Frontmatter that influences on-page UX to benefit the user in some way.
 
 [Page configuration](./page.md)
