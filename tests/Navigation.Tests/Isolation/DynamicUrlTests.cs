@@ -37,7 +37,8 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		navigation.Url = "/v8.0";
 
 		// URLs should update dynamically
-		folder.Url.Should().Be("/v8.0/setup");
+		// Since folder has no index child, its URL is the first child's URL
+		folder.Url.Should().Be("/v8.0/setup/install");
 		file.Url.Should().Be("/v8.0/setup/install");
 	}
 
@@ -69,6 +70,52 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		navigation.Url = "/base";
 
 		file.Url.Should().Be("/base/outer/inner/deep");
+	}
+
+	[Fact]
+	public void FolderWithoutIndexUsesFirstChildUrl()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - file: getting-started.md
+		                 - file: advanced.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+
+		// Folder has no index.md, so URL should be the first child's URL
+		folder!.Url.Should().Be("/guides/getting-started");
+	}
+
+	[Fact]
+	public void FolderWithIndexUsesOwnUrl()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - file: index.md
+		                 - file: advanced.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation(docSet, context);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+
+		// Folder has index.md, so URL should be the folder path
+		folder!.Url.Should().Be("/guides");
 	}
 
 	[Fact]

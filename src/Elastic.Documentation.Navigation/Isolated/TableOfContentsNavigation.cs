@@ -169,6 +169,60 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		// Create model
 		var model = new CrossLinkModel(new Uri(fileRef.RelativePath, UriKind.Relative), title);
 
+		// Check if file has children
+		if (fileRef.Children.Count > 0)
+		{
+			// Validate: index files may not have children
+			if (title.Equals("index", StringComparison.OrdinalIgnoreCase))
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"File navigation '{fileRef.RelativePath}' is named 'index' and may not have children");
+				// Return a leaf to prevent further errors
+				return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, urlRoot)
+				{
+					NavigationIndex = index
+				};
+			}
+
+			// Create temporary file navigation for children to reference
+			var tempFileNavigation = new FileNavigation(model, fullPath, fileRef.Hidden, 0, parent, root, urlRoot, []);
+
+			// Process children recursively
+			var children = new List<INavigationItem>();
+			var childIndex = 0;
+			foreach (var child in fileRef.Children)
+			{
+				var childNav = ConvertToNavigationItem(
+					child, childIndex++, context,
+					tempFileNavigation, root,
+					urlRoot, // Files don't change the URL root
+					0, // Depth will be set by child
+					fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+						? fullPath[..^3] // Remove .md extension for children's parent path
+						: fullPath,
+					false // Files don't allow nested TOCs
+				);
+				if (childNav != null)
+					children.Add(childNav);
+			}
+
+			// Create final file navigation with actual children
+			var finalFileNavigation = new FileNavigation(
+				model, fullPath, fileRef.Hidden,
+				parent?.Depth + 1 ?? 0,
+				parent, root, urlRoot, children)
+			{
+				NavigationIndex = index
+			};
+
+			// Update children's Parent to point to the final file navigation
+			foreach (var child in children)
+				child.Parent = finalFileNavigation;
+
+			return finalFileNavigation;
+		}
+
+		// No children - return a leaf
 		return new FileNavigationLeaf(model, fullPath, fileRef.Hidden, parent, root, urlRoot)
 		{
 			NavigationIndex = index
@@ -367,6 +421,16 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	{
 		get
 		{
+			// Check if there's an index file among the children
+			var hasIndexChild = NavigationItems.Any(item =>
+				item is FileNavigationLeaf &&
+				item.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase));
+
+			// If no index child exists, use the first child's URL
+			if (!hasIndexChild && NavigationItems.Count > 0)
+				return NavigationItems.First().Url;
+
+			// Otherwise, use the folder path
 			var rootUrl = _urlRoot.Url.TrimEnd('/');
 			return string.IsNullOrEmpty(rootUrl) ? $"/{_folderPath}" : $"{rootUrl}/{_folderPath}";
 		}
@@ -400,6 +464,74 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public IDocumentationFile Index { get; }
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
+}
+
+public class FileNavigation(
+	CrossLinkModel model,
+	string relativePath,
+	bool hidden,
+	int depth,
+	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
+	IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
+	IReadOnlyCollection<INavigationItem> navigationItems
+) : INodeNavigationItem<IDocumentationFile, INavigationItem>
+{
+	private readonly string _relativePath = relativePath;
+	private readonly IRootNavigationItem<INavigationModel, INavigationItem> _urlRoot = urlRoot;
+
+	/// <inheritdoc />
+	public string Url
+	{
+		get
+		{
+			var rootUrl = _urlRoot.Url.TrimEnd('/');
+			// Remove extension while preserving directory path
+			var path = _relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+				? _relativePath[..^3]  // Remove last 3 characters (.md)
+				: _relativePath;
+
+			// If path ends with /index or is just index, omit it from the URL
+			if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+				path = path[..^6]; // Remove "/index"
+			else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
+				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+
+			if (string.IsNullOrEmpty(path))
+				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+
+			return $"{rootUrl}/{path}";
+		}
+	}
+
+	/// <inheritdoc />
+	public string NavigationTitle => Index.NavigationTitle;
+
+	/// <inheritdoc />
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; init; } = navigationRoot;
+
+	/// <inheritdoc />
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
+
+	/// <inheritdoc />
+	public bool Hidden { get; init; } = hidden;
+
+	/// <inheritdoc />
+	public int NavigationIndex { get; set; }
+
+	/// <inheritdoc />
+	public bool IsCrossLink { get; }
+
+	/// <inheritdoc />
+	public int Depth { get; init; } = depth;
+
+	/// <inheritdoc />
+	public string Id { get; } = ShortId.Create(relativePath);
+
+	/// <inheritdoc />
+	public IDocumentationFile Index { get; init; } = model;
+
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; init; } = navigationItems;
 }
 
 public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
