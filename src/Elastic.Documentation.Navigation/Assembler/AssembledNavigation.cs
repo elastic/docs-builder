@@ -32,6 +32,8 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 		Id = ShortId.Create("site");
 		Index = new SiteModel("Site Navigation");
 		IsUsingNavigationDropdown = false;
+		Git = context.Git;
+		_identifiers = [];
 
 		// Convert SiteTableOfContentsRef items to navigation items
 		var items = new List<SiteTableOfContentsNavigation>();
@@ -54,6 +56,11 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 
 		NavigationItems = items;
 	}
+
+	public GitCheckoutInformation Git { get; }
+
+	private readonly HashSet<Uri> _identifiers;
+	public IReadOnlySet<Uri> Identifiers => _identifiers;
 
 	/// <inheritdoc />
 	public string Url { get; set; } = "/";
@@ -91,7 +98,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 	/// <inheritdoc />
 	public IReadOnlyCollection<SiteTableOfContentsNavigation> NavigationItems { get; }
 
-	private SiteTableOfContentsNavigation? CreateSiteTableOfContentsNavigation(
+	private SiteTableOfContentsNavigation CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
 		IDocumentationSetContext context,
@@ -119,7 +126,9 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 			tocPath,
 			parent,
 			urlRoot,
-			[]
+			[],
+			Git,
+			_
 		)
 		{
 			PathPrefix = tocRef.PathPrefix
@@ -152,7 +161,9 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, SiteTableOfContents
 			tocPath,
 			parent,
 			urlRoot,
-			children
+			children,
+			Git,
+			_identifiers
 		)
 		{
 			NavigationIndex = index,
@@ -174,9 +185,11 @@ public class SiteTableOfContentsNavigation(
 	string parentPath,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 	IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
-	IReadOnlyCollection<INavigationItem> navigationItems
+	IReadOnlyCollection<INavigationItem> navigationItems,
+	GitCheckoutInformation git,
+	Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> tocNodes
 )
-	: TableOfContentsNavigation(tableOfContentsDirectory, depth, parentPath, parent, urlRoot, navigationItems)
+	: TableOfContentsNavigation(tableOfContentsDirectory, depth, parentPath, parent, urlRoot, navigationItems, git, tocNodes)
 {
 	public string PathPrefix { get; init; } = string.Empty;
 

@@ -227,6 +227,9 @@ public class SiteNavigationTestFixture
 			? fileSystem.FileInfo.New($"{sourceDir.FullName}/docset.yml")
 			: fileSystem.FileInfo.New($"{sourceDir.FullName}/_docset.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output);
+		// Extract repository name from path (e.g., "/checkouts/current/platform" -> "platform")
+		var repositoryName = fileSystem.Path.GetFileName(repositoryPath);
+
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, repositoryName);
 	}
 }

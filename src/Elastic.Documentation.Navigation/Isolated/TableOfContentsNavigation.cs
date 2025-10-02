@@ -17,11 +17,16 @@ public record DocumentationDirectory(string NavigationTitle) : IDocumentationFil
 
 public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	public DocumentationSetNavigation(DocumentationSetFile documentationSet, IDocumentationSetContext context)
+	public DocumentationSetNavigation(
+		DocumentationSetFile documentationSet,
+		IDocumentationSetContext context,
+		IRootNavigationItem<IDocumentationFile, INavigationItem>? parent = null,
+		IRootNavigationItem<IDocumentationFile, INavigationItem>? root = null
+	)
 	{
 		// Initialize root properties
-		NavigationRoot = this;
-		Parent = null;
+		NavigationRoot = root ?? this;
+		Parent = parent;
 		Depth = 0;
 		Hidden = false;
 		IsCrossLink = false;
@@ -29,6 +34,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		Index = new DocumentationDirectory(documentationSet.Project ?? "Documentation");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
 		Git = context.Git;
+		Identifier = new Uri($"{Git.RepositoryName}://");
+		_tableOfContentNodes.Add(Identifier, this);
 
 		// Convert TOC items to navigation items
 		var items = new List<INavigationItem>();
@@ -55,6 +62,11 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 	}
 
 	public GitCheckoutInformation Git { get; }
+
+	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _tableOfContentNodes = [];
+	public IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
+
+	public Uri Identifier { get; }
 
 	/// <inheritdoc />
 	public string Url { get; set; } = "/";
@@ -101,7 +113,8 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
 		int depth,
 		string parentPath,
-		bool allowNestedToc = true)
+		bool allowNestedToc = true
+	)
 	{
 		// Validate TableOfContentsNavigation children
 		if (parent is TableOfContentsNavigation tocParent)
@@ -313,6 +326,19 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 		return finalFolderNavigation;
 	}
 
+	private static DocumentationSetNavigation GetDocumentationSetRoot(IRootNavigationItem<INavigationModel, INavigationItem> root)
+	{
+		// Walk up the tree to find the DocumentationSetNavigation root
+		var current = root;
+		while (current is TableOfContentsNavigation toc && toc.Parent is IRootNavigationItem<INavigationModel, INavigationItem> parentRoot)
+			current = parentRoot;
+
+		if (current is DocumentationSetNavigation docSetNav)
+			return docSetNav;
+
+		throw new InvalidOperationException("Could not find DocumentationSetNavigation root in navigation tree");
+	}
+
 	private INavigationItem CreateTocNavigation(
 		IsolatedTableOfContentsRef tocRef,
 		int index,
@@ -365,7 +391,9 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			navigationParentPath,
 			parent,
 			urlRoot,
-			[]
+			[],
+			Git,
+			_tableOfContentNodes
 		);
 
 		// Convert children
@@ -426,7 +454,9 @@ public class DocumentationSetNavigation : IRootNavigationItem<IDocumentationFile
 			navigationParentPath,
 			parent,
 			urlRoot,
-			children
+			children,
+			Git,
+			_tableOfContentNodes
 		)
 		{
 			NavigationIndex = index
@@ -590,7 +620,9 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> urlRoot,
-		IReadOnlyCollection<INavigationItem> navigationItems
+		IReadOnlyCollection<INavigationItem> navigationItems,
+		GitCheckoutInformation git,
+		Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> tocNodes
 	)
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;
@@ -606,6 +638,10 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		Id = ShortId.Create(parentPath);
 		Depth = depth;
 		ParentPath = parentPath;
+
+		// Create identifier for this TOC
+		Identifier = new Uri($"{git.RepositoryName}://{parentPath}");
+		tocNodes.Add(Identifier, this);
 	}
 
 	/// <inheritdoc />
@@ -653,6 +689,8 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	public bool IsUsingNavigationDropdown { get; }
 
 	public IDirectoryInfo TableOfContentsDirectory { get; }
+
+	public Uri Identifier { get; }
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 }
