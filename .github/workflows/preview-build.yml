@@ -524,6 +524,7 @@ jobs:
             }
 
             const toLink = (file) => {
+              console.log('file', file);
               const path = file
                 .replace('docs/', '')
                 .replace('/index.md', '')
