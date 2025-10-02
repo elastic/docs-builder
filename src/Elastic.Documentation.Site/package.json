@@ -12,7 +12,14 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ignore-pattern './_static/*' --ignore-pattern 'jest.config.js'",
     "fmt:check": "prettier --check .",
-    "fmt:write": "prettier --write ."
+    "fmt:write": "prettier --write .",
+    "synthetics:test": "npx @elastic/synthetics ./synthetics/journeys --config=./synthetics/synthetics.config.ts",
+    "synthetics:test:prod": "DOCS_ENV=prod npm run synthetics:test",
+    "synthetics:test:staging": "DOCS_ENV=staging npm run synthetics:test",
+    "synthetics:test:edge": "DOCS_ENV=edge npm run synthetics:test",
+    "synthetics:test:local": "DOCS_ENV=local npm run synthetics:test",
+    "synthetics:push": "npx @elastic/synthetics push --config=./synthetics/synthetics.config.ts",
+    "synthetics:push:edge": "DOCS_ENV=edge npm run synthetics:push -- --tags=\"env:edge\""
   },
   "targets": {
     "customElements": {
@@ -38,6 +45,7 @@
     "@babel/preset-env": "7.28.3",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
+    "@elastic/synthetics": "1.19.0",
     "@eslint/js": "9.35.0",
     "@parcel/reporter-bundle-analyzer": "2.15.4",
     "@tailwindcss/postcss": "4.1.13",
