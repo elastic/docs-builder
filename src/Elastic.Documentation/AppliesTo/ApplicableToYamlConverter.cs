@@ -221,6 +221,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{ "apm_agent_rum_js", a => productAvailability.ApmAgentRumJs = a },
 			{ "edot_ios", a => productAvailability.EdotIos = a },
 			{ "edot_android", a => productAvailability.EdotAndroid = a },
+			{ "edot_collector", a => productAvailability.EdotCollector = a },
 			{ "edot_dotnet", a => productAvailability.EdotDotnet = a },
 			{ "edot_java", a => productAvailability.EdotJava = a },
 			{ "edot_node", a => productAvailability.EdotNode = a },

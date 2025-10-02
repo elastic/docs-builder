@@ -38,17 +38,13 @@
 			}
 
 			.applies-dropdown {
-				@apply flex cursor-pointer items-center gap-1 p-2 px-4 font-normal;
+				@apply flex cursor-pointer items-center gap-1 p-2 px-2 font-normal;
 				.applicable-info {
-					@apply cursor-pointer border-none bg-transparent p-0;
-					&:not(:last-child):after {
-						@apply text-sm;
-						content: ',';
-					}
+					@apply cursor-pointer;
 				}
 				.applicable-name,
 				.applicable-meta {
-					@apply text-sm;
+					@apply text-xs;
 				}
 			}
 		}
