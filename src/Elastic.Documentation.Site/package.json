@@ -19,6 +19,8 @@
     "synthetics:test:edge": "DOCS_ENV=edge npm run synthetics:test",
     "synthetics:test:local": "DOCS_ENV=local npm run synthetics:test",
     "synthetics:push": "npx @elastic/synthetics push --config=./synthetics/synthetics.config.ts",
+    "synthetics:push:prod": "DOCS_ENV=prod npm run synthetics:push -- --tags=\"env:prod\"",
+    "synthetics:push:staging": "DOCS_ENV=staging npm run synthetics:push -- --tags=\"env:staging\"",
     "synthetics:push:edge": "DOCS_ENV=edge npm run synthetics:push -- --tags=\"env:edge\""
   },
   "targets": {
