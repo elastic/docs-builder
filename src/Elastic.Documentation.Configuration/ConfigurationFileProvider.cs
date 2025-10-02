@@ -45,11 +45,18 @@ public partial class ConfigurationFileProvider
 		// 	fileSystem.Directory.Exists(LocalConfigurationDirectory)
 		// 		? ConfigurationSource.Local : ConfigurationSource.Embedded
 		// 	);
-
-
-		// Using Embedded as default for now
-		ConfigurationSource = configurationSource ?? ConfigurationSource.Embedded;
-
+		if (configurationSource is { } source)
+			ConfigurationSource = source;
+		else
+		{
+			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml"];
+			var defaultSource =
+				fileSystem.Directory.Exists(LocalConfigurationDirectory)
+					&& spotChecks.All(f => fileSystem.File.Exists(Path.Combine(LocalConfigurationDirectory, f)))
+				? ConfigurationSource.Local
+				: ConfigurationSource.Embedded;
+			ConfigurationSource = defaultSource;
+		}
 
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
 			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
