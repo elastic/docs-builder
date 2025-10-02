@@ -29,8 +29,8 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// language=yaml
 		var yaml = """
 		           toc:
-		             - toc: observability
-		             - toc: serverless-search
+		             - toc: observability://
+		             - toc: serverless-search://
 		           """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
@@ -62,10 +62,10 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// language=yaml
 		var yaml = """
 		           toc:
-		             - toc: platform
+		             - toc: platform://
 		               children:
-		                 - toc: platform/deployment-guide
-		                 - toc: platform/cloud-guide
+		                 - toc: platform://deployment-guide
+		                 - toc: platform://cloud-guide
 		           """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);

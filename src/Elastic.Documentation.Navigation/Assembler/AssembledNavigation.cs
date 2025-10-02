@@ -108,14 +108,10 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 		IDocumentationSetContext context
 	)
 	{
-		// Convert docs-content:// URI to repository identifier URI
-		// Example: docs-content://platform/deployment-guide -> platform://deployment-guide
-		var identifier = ConvertSourceToIdentifier(tocRef.Source);
-
 		// Look up the node in the collected nodes
-		if (!_nodes.TryGetValue(identifier, out var node))
+		if (!_nodes.TryGetValue(tocRef.Source, out var node))
 		{
-			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {identifier} (from source: {tocRef.Source})");
+			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})");
 			return null;
 		}
 
@@ -138,19 +134,5 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 		}
 
 		return node;
-	}
-
-	private static Uri ConvertSourceToIdentifier(Uri source)
-	{
-		// Convert docs-content://platform/deployment-guide to platform://deployment-guide
-		// Convert docs-content://platform to platform://
-		var repositoryName = source.Host;
-		var path = source.AbsolutePath.TrimStart('/');
-
-		var identifierString = string.IsNullOrEmpty(path)
-			? $"{repositoryName}://"
-			: $"{repositoryName}://{path}";
-
-		return new Uri(identifierString);
 	}
 }

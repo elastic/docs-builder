@@ -62,9 +62,9 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// language=yaml
 		var siteNavYaml = """
 		                  toc:
-		                    - toc: observability
-		                    - toc: serverless-search
-		                    - toc: serverless-security
+		                    - toc: observability://
+		                    - toc: serverless-search://
+		                    - toc: serverless-security://
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -110,10 +110,10 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// language=yaml
 		var siteNavYaml = """
 		                  toc:
-		                    - toc: platform
+		                    - toc: platform://
 		                      children:
-		                        - toc: platform/deployment-guide
-		                        - toc: platform/cloud-guide
+		                        - toc: platform:///deployment-guide
+		                        - toc: platform:///cloud-guide
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -134,13 +134,15 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/"); // Root DocumentationSetNavigation URL
-		platform.NavigationItems.Should().HaveCount(2);
+		platform.Url.Should().Be("/"); // Root DocumentationSetNavigation URL
+		// 2 toc's + its index
+		platform.NavigationItems.Should().HaveCount(3);
 
-		var deployment = platform.NavigationItems.ElementAt(0);
+		// verify TOC children starting from index 1
+		var deployment = platform.NavigationItems.ElementAt(1);
 		deployment.Url.Should().Be("/deployment-guide");
 
-		var cloud = platform.NavigationItems.ElementAt(1);
+		var cloud = platform.NavigationItems.ElementAt(2);
 		cloud.Url.Should().Be("/cloud-guide");
 	}
 
@@ -150,14 +152,14 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// language=yaml
 		var siteNavYaml = """
 		                  toc:
-		                    - toc: observability
-		                    - toc: serverless-search
-		                    - toc: serverless-security
-		                    - toc: platform
+		                    - toc: observability://
+		                    - toc: serverless-search://
+		                    - toc: serverless-security://
+		                    - toc: platform://
 		                      children:
-		                        - toc: platform/deployment-guide
-		                        - toc: platform/cloud-guide
-		                    - toc: elasticsearch-reference
+		                        - toc: platform://deployment-guide
+		                        - toc: platform://cloud-guide
+		                    - toc: elasticsearch-reference://
 		                  """;
 
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
@@ -204,8 +206,9 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/");
-		platform.NavigationItems.Should().HaveCount(2);
+		platform.Url.Should().Be("/");
+		// 2 toc's + its index
+		platform.NavigationItems.Should().HaveCount(3);
 
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(4);
 		elasticsearch.Url.Should().Be("/");
