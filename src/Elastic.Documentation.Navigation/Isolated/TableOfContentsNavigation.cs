@@ -536,6 +536,16 @@ public class FileNavigationLeaf(
 			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 				? relativePath[..^3]  // Remove last 3 characters (.md)
 				: relativePath;
+
+			// If path ends with /index or is just index, omit it from the URL
+			if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+				path = path[..^6]; // Remove "/index"
+			else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
+				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+
+			if (string.IsNullOrEmpty(path))
+				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
+
 			return $"{rootUrl}/{path}";
 		}
 	}

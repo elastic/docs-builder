@@ -70,14 +70,15 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		// First item: simple file
 		var indexFile = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
-		indexFile.Url.Should().Be("/index");
+		indexFile.Url.Should().Be("/"); // index.md becomes /
 
 		// Second item: complex nested structure
 		var setupFolder = navigation.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
 		setupFolder.NavigationItems.Should().HaveCount(2);
+		setupFolder.Url.Should().Be("/setup");
 
 		var setupIndex = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
-		setupIndex.Url.Should().Be("/setup/index");
+		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		advancedToc.Url.Should().Be("/setup/advanced");
