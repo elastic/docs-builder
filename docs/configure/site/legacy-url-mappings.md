@@ -1,3 +1,6 @@
+---
+navigation_title: 'legacy-url-mappings.yml'
+---
 # Legacy URL mappings
 
 This [`legacy-url-mappings.yml`](https://github.com/elastic/docs-builder/blob/main/config/legacy-url-mappings.yml) file manages legacy URL patterns for Elastic documentation, mapping the path of each legacy build URL to a list of documentation versions. It ensures that users can easily find previous versions of our documentation.

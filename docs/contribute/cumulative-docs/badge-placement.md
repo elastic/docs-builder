@@ -26,11 +26,11 @@ version and deployment type differences in your docs:
 % Source: Brandon's PR review comment
 At a high level, you should follow these badge placement principles:
 
-* Place badges where they're most visible but least disruptive to reading flow
-* Consider scanning patterns - readers often scan for relevant information
-* Ensure badges don't break the natural flow of content
-* Use consistent placement patterns within similar content types
-* Consider visual grouping - readers must naturally associate the badge with its corresponding content, no more, no less
+* Place badges where they're most visible but least disruptive to reading flow.
+* Consider scanning patterns - readers often scan for relevant information.
+* Ensure badges don't break the natural flow of content.
+* Use consistent placement patterns within similar content types.
+* Consider visual grouping - readers must naturally associate the badge with its corresponding content, no more, no less.
 
 ## Placement in specific elements
 
