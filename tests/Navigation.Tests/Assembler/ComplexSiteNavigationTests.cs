@@ -78,7 +78,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Test 3: Platform - verify root URL has path prefix
 		var platform = siteNavigation.NavigationItems.ElementAt(2) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/platform");
+		platform.Url.Should().Be("/platform");
 		platform.NavigationItems.Should().HaveCount(2, "platform should only show the two nested TOCs as children");
 
 		// Verify nested TOC URLs have their specified path prefixes
@@ -98,12 +98,15 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		elasticsearch.Url.Should().Be("/elasticsearch/reference");
 		elasticsearch.NavigationItems.Should().HaveCount(3, "elasticsearch should have read its toc");
 
-		var restApis = elasticsearch.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
+		// rest-apis is a folder (not a TOC)
+		var restApis = elasticsearch.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
 		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis");
-		restApis.NavigationItems.Should().HaveCount(3, "elasticsearch rest-apis should have read its toc");
+		restApis.NavigationItems.Should().HaveCount(3, "rest-apis folder should have 3 files");
 
-		var documentApis = restApis.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
-		documentApis.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
+		// Verify the file inside the folder has the correct path prefix
+		var documentApisFile = restApis.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
+		documentApisFile.NavigationTitle.Should().Be("document-apis");
 	}
 
 	[Fact]
