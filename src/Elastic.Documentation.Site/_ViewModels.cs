@@ -4,8 +4,8 @@
 
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.Documentation.Site;
 
