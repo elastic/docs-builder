@@ -29,7 +29,7 @@ public class ConfigurationCloneService(
 	{
 		var checkoutFolder = fs.DirectoryInfo.New(ConfigurationFileProvider.AppDataConfigurationDirectory).Parent;
 		if (saveLocal)
-			checkoutFolder = fs.DirectoryInfo.New(ConfigurationFileProvider.LocalConfigurationDirectory).Parent;
+			checkoutFolder = fs.DirectoryInfo.New(ConfigurationFileProvider.LocalConfigurationDirectory);
 		if (checkoutFolder is null)
 		{
 			collector.EmitGlobalError($"Unable to find checkout folder {checkoutFolder}");

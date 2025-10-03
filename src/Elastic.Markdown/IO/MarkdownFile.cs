@@ -362,6 +362,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 				Collector.Emit(severity, FilePath, message);
 		}
 
+		// Validate mapped_pages URLs
+		if (fm.MappedPages is not null)
+		{
+			foreach (var url in fm.MappedPages)
+			{
+				if (!string.IsNullOrEmpty(url) && (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase) || !Uri.IsWellFormedUriString(url, UriKind.Absolute)))
+				{
+					Collector.EmitError(FilePath, $"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide.");
+				}
+			}
+		}
+
 		// TODO remove when migration tool and our demo content sets are updated
 		var deprecatedTitle = fm.Title;
 		if (!string.IsNullOrEmpty(deprecatedTitle))
