@@ -58,6 +58,9 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddDirectory("/docs/setup/advanced/performance");
 		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData("toc: []"));
 		fileSystem.AddFile("/docs/setup/advanced/performance/toc.yml", new MockFileData("toc: []"));
+		// Add index.md files that should be automatically discovered as placeholders
+		fileSystem.AddFile("/docs/setup/advanced/index.md", new MockFileData("# Advanced"));
+		fileSystem.AddFile("/docs/setup/advanced/performance/index.md", new MockFileData("# Performance"));
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
@@ -84,12 +87,13 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		advancedToc.Url.Should().Be("/setup/advanced");
+		// Advanced TOC has the nested performance TOC as its only child (from docset.yml children),
+		// even though it also has index.md - nested TOCs take precedence over auto-discovered files
 		advancedToc.NavigationItems.Should().HaveCount(1);
 
 		var performanceToc = advancedToc.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
-		// Nested TOC has a placeholder since it has no explicit children
-		performanceToc.NavigationItems.Should().HaveCount(1);
+		performanceToc.NavigationItems.Should().HaveCount(0);
 
 		// Third item: crosslink
 		var crosslink = navigation.NavigationItems.ElementAt(2).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;

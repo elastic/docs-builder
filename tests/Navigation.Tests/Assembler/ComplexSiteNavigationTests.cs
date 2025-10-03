@@ -318,15 +318,15 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	/// <summary>
 	/// Helper method to collect all FileNavigationLeaf items recursively
 	/// </summary>
-	private static List<FileNavigationLeaf<IDocumentationFile>> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
+	private static List<ILeafNavigationItem<IDocumentationFile>> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
 	{
-		var fileLeaves = new List<FileNavigationLeaf<IDocumentationFile>>();
+		var fileLeaves = new List<ILeafNavigationItem<IDocumentationFile>>();
 
 		foreach (var item in items)
 		{
 			switch (item)
 			{
-				case FileNavigationLeaf<IDocumentationFile> fileLeaf:
+				case ILeafNavigationItem<IDocumentationFile> fileLeaf:
 					fileLeaves.Add(fileLeaf);
 					break;
 				case INodeNavigationItem<INavigationModel, INavigationItem>:

@@ -71,19 +71,25 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IReadOnlyCollection<Diagnostic> Diagnostics => ((TestDiagnosticsCollector)Collector).Diagnostics;
 }
 
-public class TestDocumentationFile : IDocumentationFile
+public class TestDocumentationFile(string navigationTitle) : IDocumentationFile
 {
 	/// <inheritdoc />
-	public string NavigationTitle { get; } = "Some navigation title";
+	public string NavigationTitle { get; } = navigationTitle;
 }
 
 public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
 {
+	// Covariance allows IDocumentationFileFactory<TestDocumentationFile> to be used as IDocumentationFileFactory<IDocumentationFile>
 	public static IDocumentationFileFactory<IDocumentationFile> Instance { get; } = new TestDocumentationFileFactory();
 
 	/// <inheritdoc />
-	public TestDocumentationFile? TryCreateDocumentationFile(IFileInfo path)
+	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path)
 	{
-		return new TestDocumentationFile();
+		// Extract the title from the file name (without extension)
+		var fileName = path.Name;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fileName[..^3]
+			: fileName;
+		return new TestDocumentationFile(title);
 	}
 }

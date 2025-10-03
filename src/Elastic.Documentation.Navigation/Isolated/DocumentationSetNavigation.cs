@@ -16,21 +16,32 @@ public interface IDocumentationFileFactory<out TModel> where TModel : IDocumenta
 	TModel? TryCreateDocumentationFile(IFileInfo path);
 }
 
+public static class DocumentationNavigationFactory
+{
+	public static ILeafNavigationItem<TModel> CreateFileNavigationLeaf<TModel>(TModel model, FileNavigationArgs args)
+		where TModel : IDocumentationFile =>
+		new FileNavigationLeaf<TModel>(model, args) { NavigationIndex = args.NavigationIndex };
+
+	public static INodeNavigationItem<TModel, INavigationItem> CreateVirtualFileNavigation<TModel>(TModel model, VirtualFileNavigationArgs args)
+		where TModel : IDocumentationFile =>
+		new VirtualFileNavigation<TModel>(model, args) { NavigationIndex = args.NavigationIndex };
+}
+
 public class DocumentationSetNavigation :
 	IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationPathPrefixProvider, IPathPrefixProvider
 {
-	private readonly IDocumentationFileFactory<IDocumentationFile> _documentationFileFactory;
+	private readonly IDocumentationFileFactory<IDocumentationFile> _factory;
 
 	public DocumentationSetNavigation(
 		DocumentationSetFile documentationSet,
 		IDocumentationSetContext context,
-		IDocumentationFileFactory<IDocumentationFile> documentationFileFactory,
+		IDocumentationFileFactory<IDocumentationFile> factory,
 		IRootNavigationItem<IDocumentationFile, INavigationItem>? parent = null,
 		IRootNavigationItem<IDocumentationFile, INavigationItem>? root = null,
 		IPathPrefixProvider? pathPrefixProvider = null
 	)
 	{
-		_documentationFileFactory = documentationFileFactory;
+		_factory = factory;
 		// Initialize root properties
 		NavigationRoot = root ?? this;
 		Parent = parent;
@@ -158,19 +169,15 @@ public class DocumentationSetNavigation :
 		string parentPath
 	)
 	{
-		// Extract title from file path
-		var title = context.ReadFileSystem.Path.GetFileNameWithoutExtension(fileRef.RelativePath);
-
 		// Combine parent path with file path
 		var fullPath = string.IsNullOrEmpty(parentPath)
 			? fileRef.RelativePath
 			: $"{parentPath}/{fileRef.RelativePath}";
 
-		// Create model
-		var model = new CrossLinkModel(new Uri(fileRef.RelativePath, UriKind.Relative), title);
+		// Create documentation file from factory
 		var fs = context.ReadFileSystem;
 		var fileInfo = fs.FileInfo.NewCombine(context.DocumentationSourceDirectory.FullName, parentPath, fileRef.RelativePath);
-		var documentationFile = _documentationFileFactory.TryCreateDocumentationFile(fileInfo);
+		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo);
 		if (documentationFile == null)
 		{
 			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.RelativePath}' could not be created");
@@ -180,7 +187,7 @@ public class DocumentationSetNavigation :
 		var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
 		// Check if file has children
 		if (fileRef.Children.Count <= 0)
-			return new FileNavigationLeaf<IDocumentationFile>(documentationFile, leafNavigationArgs);
+			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, leafNavigationArgs);
 
 		// No children - return a leaf
 		// Validate: index files may not have children
@@ -192,7 +199,7 @@ public class DocumentationSetNavigation :
 
 		// Create temporary file navigation for children to reference
 		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, fileRef.Hidden, index, 0, parent, root, prefixProvider, []);
-		var tempFileNavigation = new VirtualFileNavigation<IDocumentationFile>(documentationFile, virtualFileNavigationArgs);
+		var tempFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, virtualFileNavigationArgs);
 
 		// Process children recursively
 		var children = new List<INavigationItem>();
@@ -219,7 +226,7 @@ public class DocumentationSetNavigation :
 			NavigationItems = children
 		};
 
-		var finalFileNavigation = new VirtualFileNavigation<IDocumentationFile>(model, virtualFileNavigationArgs);
+		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, virtualFileNavigationArgs);
 
 		// Update children's Parent to point to the final file navigation
 		foreach (var child in children)

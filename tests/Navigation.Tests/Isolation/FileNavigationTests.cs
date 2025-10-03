@@ -137,7 +137,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
-		var fileNav = navigation.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
+		var fileNav = navigation.NavigationItems.First() as INodeNavigationItem<IDocumentationFile, INavigationItem>;
 		var child = fileNav!.NavigationItems.First();
 
 		// Initial URLs
