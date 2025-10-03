@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.Markdown;
 
