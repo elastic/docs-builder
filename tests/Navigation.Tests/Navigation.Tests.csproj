@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Elastic.Documentation.Navigation.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj"/>
+    <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
+  </ItemGroup>
+
+
+</Project>

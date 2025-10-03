@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Navigation;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;

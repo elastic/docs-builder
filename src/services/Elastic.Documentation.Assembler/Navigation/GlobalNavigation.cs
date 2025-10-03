@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Configuration.TableOfContents;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 
