@@ -47,13 +47,13 @@
 
 @media screen and (min-width: 767px) {
 	:root {
-		--offset-top: 123px;
+		--offset-top: 102px;
 	}
 }
 
 @media screen and (min-width: 992px) {
 	:root {
-		--offset-top: 131px;
+		--offset-top: 110px;
 	}
 }
 
@@ -186,22 +186,9 @@
 
 #elastic-nav {
 	@media screen and (min-width: 1200px) {
-		.oldNav {
-			& > div {
-				width: 100%;
-				max-width: var(--max-layout-width);
-			}
-			div:has(> div > nav) {
-				flex-grow: 1;
-				justify-content: center;
-			}
-		}
-	}
-	@media screen and (min-width: 1536px) {
-		.oldNav {
-			nav {
-				margin-left: -74px;
-			}
+		[data-component='Container'] {
+			/* subtract the padding */
+			max-width: calc(var(--max-layout-width) - (var(--spacing) * 10));
 		}
 	}
 }
