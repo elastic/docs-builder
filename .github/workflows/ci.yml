@@ -63,7 +63,7 @@ jobs:
         
       - name: Wait for docs
         working-directory: src/Elastic.Documentation.Site
-        run: npx wait-on http://localhost:4000/docs
+        run: npx wait-on http-get://localhost:4000/docs
           
       - name: Run synthetics
         working-directory: src/Elastic.Documentation.Site
