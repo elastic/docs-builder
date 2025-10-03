@@ -34,7 +34,11 @@ module MarkdownDocumentAssertions =
         match matter with
         | NonNull m ->
             match expectedAvailability with
-            | NonNull a -> m.AppliesTo.Diagnostics <- a.Diagnostics
+            | NonNull a ->
+                match m.AppliesTo with
+                | NonNull  ma -> ma.Diagnostics <- a.Diagnostics
+                | _ -> ()
+                m.AppliesTo.Diagnostics <- a.Diagnostics
             | _ -> ()
                 
             let apply = m.AppliesTo
