@@ -93,9 +93,17 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		cloudGuide.NavigationTitle.Should().Be("cloud-guide");
 
 		// Test 4: Elasticsearch Reference - verify root URL has path prefix
-		var elasticsearch = siteNavigation.NavigationItems.ElementAt(3);
+		var elasticsearch = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		elasticsearch.Should().NotBeNull();
 		elasticsearch.Url.Should().Be("/elasticsearch/reference");
+		elasticsearch.NavigationItems.Should().HaveCount(3, "elasticsearch should have read its toc");
+
+		var restApis = elasticsearch.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
+		restApis.Url.Should().Be("/elasticsearch/reference/rest-apis");
+		restApis.NavigationItems.Should().HaveCount(3, "elasticsearch rest-apis should have read its toc");
+
+		var documentApis = restApis.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
+		documentApis.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
 	}
 
 	[Fact]
