@@ -26,7 +26,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.ElementAt(0).NavigationIndex.Should().Be(0);
 		navigation.NavigationItems.ElementAt(1).NavigationIndex.Should().Be(1);
@@ -62,7 +62,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -71,7 +71,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 
 		// First item: simple file
-		var indexFile = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var indexFile = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		indexFile.Url.Should().Be("/"); // index.md becomes /
 
 		// Second item: complex nested structure
@@ -79,7 +79,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		setupFolder.NavigationItems.Should().HaveCount(2);
 		setupFolder.Url.Should().Be("/setup");
 
-		var setupIndex = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var setupIndex = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;

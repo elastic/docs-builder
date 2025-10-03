@@ -26,7 +26,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 		var file = folder!.NavigationItems.First();
 
@@ -67,7 +67,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 		var outerFolder = navigation.NavigationItems.First() as FolderNavigation;
 		var innerFolder = outerFolder!.NavigationItems.First() as FolderNavigation;
 		var file = innerFolder!.NavigationItems.First();
@@ -96,7 +96,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has no index.md, so URL should be the first child's URL
@@ -119,7 +119,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 
 		// Folder has index.md, so URL should be the folder path
@@ -150,7 +150,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 		var folder = navigation.NavigationItems.First() as FolderNavigation;
 		var toc = folder!.NavigationItems.First() as TableOfContentsNavigation;
 		var file = toc!.NavigationItems.First();

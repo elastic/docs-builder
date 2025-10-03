@@ -45,7 +45,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 			var docsetYaml = fileSystem.File.ReadAllText(docsetPath);
 			var docset = DocumentationSetFile.Deserialize(docsetYaml);
 
-			var navigation = new DocumentationSetNavigation(docset, context);
+			var navigation = new DocumentationSetNavigation(docset, context, TestDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
 		}
 
@@ -78,15 +78,15 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		documentationSets.Add(new DocumentationSetNavigation(observabilityDocset, observabilityContext));
+		documentationSets.Add(new DocumentationSetNavigation(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance));
 
 		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
 		var searchDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-search/docs/docset.yml"));
-		documentationSets.Add(new DocumentationSetNavigation(searchDocset, searchContext));
+		documentationSets.Add(new DocumentationSetNavigation(searchDocset, searchContext, TestDocumentationFileFactory.Instance));
 
 		var securityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security", output);
 		var securityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-security/docs/_docset.yml"));
-		documentationSets.Add(new DocumentationSetNavigation(securityDocset, securityContext));
+		documentationSets.Add(new DocumentationSetNavigation(securityDocset, securityContext, TestDocumentationFileFactory.Instance));
 
 		// Create site navigation context (using any repository's filesystem)
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
@@ -128,7 +128,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Create DocumentationSetNavigation for platform
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<DocumentationSetNavigation> { platformNav };
 
@@ -193,7 +193,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 			var docsetYaml = fileSystem.File.ReadAllText(docsetPath);
 			var docset = DocumentationSetFile.Deserialize(docsetYaml);
 
-			var navigation = new DocumentationSetNavigation(docset, context);
+			var navigation = new DocumentationSetNavigation(docset, context, TestDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
 		}
 
@@ -232,13 +232,13 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Test observability repository structure
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext);
+		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance);
 
 		observabilityNav.NavigationTitle.Should().Be("serverless-observability");
 		observabilityNav.NavigationItems.Should().HaveCount(3); // index.md, getting-started folder, monitoring folder
 
 		var indexFile = observabilityNav.NavigationItems.ElementAt(0);
-		indexFile.Should().BeOfType<FileNavigationLeaf>();
+		indexFile.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>();
 		indexFile.Url.Should().Be("/");
 
 		var gettingStarted = observabilityNav.NavigationItems.ElementAt(1);
@@ -260,13 +260,13 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Test platform repository with nested TOCs
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		platformNav.NavigationTitle.Should().Be("platform");
 		platformNav.NavigationItems.Should().HaveCount(3); // index.md, deployment-guide TOC, cloud-guide TOC
 
 		var indexFile = platformNav.NavigationItems.ElementAt(0);
-		indexFile.Should().BeOfType<FileNavigationLeaf>();
+		indexFile.Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>();
 		indexFile.Url.Should().Be("/");
 
 		var deploymentGuide = platformNav.NavigationItems.ElementAt(1);
@@ -290,7 +290,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Test serverless-security repository with _docset.yml
 		var securityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security", output);
 		var securityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-security/docs/_docset.yml"));
-		var securityNav = new DocumentationSetNavigation(securityDocset, securityContext);
+		var securityNav = new DocumentationSetNavigation(securityDocset, securityContext, TestDocumentationFileFactory.Instance);
 
 		securityNav.NavigationTitle.Should().Be("serverless-security");
 		securityNav.NavigationItems.Should().HaveCount(3); // index.md, authentication folder, authorization folder
@@ -321,7 +321,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var documentationSets = new List<DocumentationSetNavigation> { new(observabilityDocset, observabilityContext) };
+		var documentationSets = new List<DocumentationSetNavigation> { new(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance) };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
@@ -360,7 +360,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var documentationSets = new List<DocumentationSetNavigation> { new(platformDocset, platformContext) };
+		var documentationSets = new List<DocumentationSetNavigation> { new(platformDocset, platformContext, TestDocumentationFileFactory.Instance) };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
@@ -391,7 +391,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var documentationSets = new List<DocumentationSetNavigation> { new(observabilityDocset, observabilityContext) };
+		var documentationSets = new List<DocumentationSetNavigation> { new(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance) };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);

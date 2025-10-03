@@ -5,6 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Isolated;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
@@ -67,4 +69,21 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IFileInfo ConfigurationPath { get; }
 
 	public IReadOnlyCollection<Diagnostic> Diagnostics => ((TestDiagnosticsCollector)Collector).Diagnostics;
+}
+
+public class TestDocumentationFile : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string NavigationTitle { get; } = "Some navigation title";
+}
+
+public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
+{
+	public static IDocumentationFileFactory<IDocumentationFile> Instance { get; } = new TestDocumentationFileFactory();
+
+	/// <inheritdoc />
+	public TestDocumentationFile? TryCreateDocumentationFile(IFileInfo path)
+	{
+		return new TestDocumentationFile();
+	}
 }

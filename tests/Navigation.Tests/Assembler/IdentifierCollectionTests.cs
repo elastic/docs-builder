@@ -20,7 +20,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		// Root identifier should be <repository>://
 		platformNav.Identifier.Should().Be(new Uri("platform://"));
@@ -37,7 +37,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		// Should collect identifiers from nested TOCs
 		platformNav.TableOfContentNodes.Keys.Should().Contain(
@@ -60,7 +60,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 			fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext);
+		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance);
 
 		// Should only have root identifier
 		observabilityNav.TableOfContentNodes.Keys.Should().Contain(new Uri("observability://"));
@@ -77,7 +77,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		// Get the deployment-guide TOC
 		var deploymentGuide = platformNav.NavigationItems.ElementAt(1) as TableOfContentsNavigation;
@@ -100,13 +100,13 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext);
+		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance);
 
 		// Each should have its own set of identifiers
 		platformNav.TableOfContentNodes.Keys.Should().NotIntersectWith(observabilityNav.TableOfContentNodes.Keys);

@@ -59,7 +59,9 @@ internal sealed record VersionsConfigDto
 
 internal sealed record VersioningSystemDto
 {
+	[YamlMember(Alias = "base")]
 	public string Base { get; set; } = string.Empty;
+	[YamlMember(Alias = "current")]
 	public string Current { get; set; } = string.Empty;
 }
 

@@ -24,7 +24,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationRoot.Should().BeSameAs(navigation);
 		navigation.Parent.Should().BeNull();
@@ -52,7 +52,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 	}
@@ -70,10 +70,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf>().Subject;
+		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.NavigationTitle.Should().Be("getting-started");
 		fileNav.Url.Should().Be("/getting-started");
 		fileNav.Hidden.Should().BeFalse();
@@ -94,10 +94,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf>().Subject;
+		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.Hidden.Should().BeTrue();
 		fileNav.Url.Should().Be("/404");
 	}
@@ -116,7 +116,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var crossLink = navigation.NavigationItems.First().Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
@@ -141,7 +141,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
@@ -149,11 +149,11 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		folder.Url.Should().Be("/setup");
 		folder.NavigationItems.Should().HaveCount(2);
 
-		var firstFile = folder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var firstFile = folder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		firstFile.Url.Should().Be("/setup"); // index.md becomes /setup
 		firstFile.Parent.Should().BeSameAs(folder);
 
-		var secondFile = folder.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var secondFile = folder.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		secondFile.Url.Should().Be("/setup/install");
 	}
 
@@ -179,7 +179,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
@@ -187,7 +187,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		toc.Url.Should().Be("/api");
 		toc.NavigationItems.Should().HaveCount(1);
 
-		var file = toc.NavigationItems.First().Should().BeOfType<FileNavigationLeaf>().Subject;
+		var file = toc.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		file.Url.Should().Be("/api"); // index.md becomes /api
 		file.Parent.Should().BeSameAs(toc);
 		file.NavigationRoot.Should().BeSameAs(navigation);
@@ -217,16 +217,16 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
 		toc.NavigationItems.Should().HaveCount(2);
 
-		var overview = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var overview = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		overview.Url.Should().Be("/api/overview");
 
-		var reference = toc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var reference = toc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		reference.Url.Should().Be("/api/reference");
 	}
 
@@ -256,13 +256,13 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
 		toc.NavigationItems.Should().HaveCount(2);
 
 		// First item should be from toc.yml
-		var fromToc = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var fromToc = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fromToc.NavigationTitle.Should().Be("from-toc");
 		fromToc.Url.Should().Be("/api/from-toc");
 

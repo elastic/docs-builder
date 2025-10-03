@@ -41,11 +41,11 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// Create DocumentationSetNavigation instances for the referenced repos
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext);
+		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance);
 
 		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
 		var searchDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-search/docs/docset.yml"));
-		var searchNav = new DocumentationSetNavigation(searchDocset, searchContext);
+		var searchNav = new DocumentationSetNavigation(searchDocset, searchContext, TestDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<DocumentationSetNavigation> { observabilityNav, searchNav };
 
@@ -79,7 +79,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// Create DocumentationSetNavigation for platform
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext);
+		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<DocumentationSetNavigation> { platformNav };
 

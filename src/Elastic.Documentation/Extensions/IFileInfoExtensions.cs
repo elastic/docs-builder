@@ -34,6 +34,13 @@ public static class IFileInfoExtensions
 		var parent = file.Directory;
 		return parent is not null && parent.HasParent(parentName);
 	}
+
+	public static IFileInfo NewCombine(this IFileInfoFactory fileInfo, params string[] paths)
+	{
+		paths = paths.Select(f => f.OptionalWindowsReplace()).ToArray();
+		var fi = fileInfo.New(Path.Combine(paths));
+		return fi;
+	}
 }
 
 public static class IDirectoryInfoExtensions

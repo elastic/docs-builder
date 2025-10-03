@@ -52,7 +52,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			var docsetYaml = fileSystem.File.ReadAllText(docsetPath);
 			var docset = DocumentationSetFile.Deserialize(docsetYaml);
 
-			var navigation = new DocumentationSetNavigation(docset, context);
+			var navigation = new DocumentationSetNavigation(docset, context, TestDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
 		}
 
@@ -104,7 +104,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		restApis.NavigationItems.Should().HaveCount(3, "rest-apis folder should have 3 files");
 
 		// Verify the file inside the folder has the correct path prefix
-		var documentApisFile = restApis.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var documentApisFile = restApis.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
 		documentApisFile.NavigationTitle.Should().Be("document-apis");
 	}
@@ -129,7 +129,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<DocumentationSetNavigation>
 		{
-			new(platformDocset, platformContext)
+			new(platformDocset, platformContext, TestDocumentationFileFactory.Instance)
 		};
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(
@@ -177,7 +177,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<DocumentationSetNavigation>
 		{
-			new(platformDocset, platformContext)
+			new(platformDocset, platformContext, TestDocumentationFileFactory.Instance)
 		};
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(
@@ -233,7 +233,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var documentationSets = new List<DocumentationSetNavigation>
 		{
-			new(platformDocset, platformContext)
+			new(platformDocset, platformContext, TestDocumentationFileFactory.Instance)
 		};
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(
@@ -318,19 +318,19 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	/// <summary>
 	/// Helper method to collect all FileNavigationLeaf items recursively
 	/// </summary>
-	private static List<FileNavigationLeaf> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
+	private static List<FileNavigationLeaf<IDocumentationFile>> CollectAllFileLeaves(IEnumerable<INavigationItem> items)
 	{
-		var fileLeaves = new List<FileNavigationLeaf>();
+		var fileLeaves = new List<FileNavigationLeaf<IDocumentationFile>>();
 
 		foreach (var item in items)
 		{
-			if (item is FileNavigationLeaf fileLeaf)
+			switch (item)
 			{
-				fileLeaves.Add(fileLeaf);
-			}
-			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
-			{
-				fileLeaves.AddRange(CollectAllFileLeaves(nodeItem.NavigationItems));
+				case FileNavigationLeaf<IDocumentationFile> fileLeaf:
+					fileLeaves.Add(fileLeaf);
+					break;
+				case INodeNavigationItem<INavigationModel, INavigationItem>:
+					break;
 			}
 		}
 

@@ -23,10 +23,10 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf>().Subject;
+		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fileNav.Url.Should().Be("/getting-started");
 	}
 
@@ -46,18 +46,18 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigation>().Subject;
+		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
 		fileNav.Url.Should().Be("/guide");
 		fileNav.NavigationItems.Should().HaveCount(2);
 
-		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		section1.Url.Should().Be("/guide/section1");
 		section1.Parent.Should().BeSameAs(fileNav);
 
-		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		section2.Url.Should().Be("/guide/section2");
 		section2.Parent.Should().BeSameAs(fileNav);
 	}
@@ -79,19 +79,19 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
-		var guideFile = navigation.NavigationItems.First().Should().BeOfType<FileNavigation>().Subject;
+		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
 		guideFile.Url.Should().Be("/guide");
 		guideFile.NavigationItems.Should().HaveCount(1);
 
-		var chapter1 = guideFile.NavigationItems.First().Should().BeOfType<FileNavigation>().Subject;
+		var chapter1 = guideFile.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
 		chapter1.Url.Should().Be("/guide/chapter1");
 		chapter1.Parent.Should().BeSameAs(guideFile);
 		chapter1.NavigationItems.Should().HaveCount(1);
 
-		var subsection = chapter1.NavigationItems.First().Should().BeOfType<FileNavigationLeaf>().Subject;
+		var subsection = chapter1.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		subsection.Url.Should().Be("/guide/chapter1/subsection");
 		subsection.Parent.Should().BeSameAs(chapter1);
 	}
@@ -112,7 +112,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var context = CreateContext();
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context);
+		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -136,8 +136,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
-		var fileNav = navigation.NavigationItems.First() as FileNavigation;
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var fileNav = navigation.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
 		var child = fileNav!.NavigationItems.First();
 
 		// Initial URLs
@@ -170,19 +170,19 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context);
+		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
 
-		var guideFile = navigation.NavigationItems.First().Should().BeOfType<FileNavigation>().Subject;
+		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
 		guideFile.NavigationItems.Should().HaveCount(2);
 
-		var intro = guideFile.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf>().Subject;
+		var intro = guideFile.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		intro.Url.Should().Be("/guide/intro");
 
 		var advancedFolder = guideFile.NavigationItems.ElementAt(1).Should().BeOfType<FolderNavigation>().Subject;
 		advancedFolder.Url.Should().Be("/guide/advanced/topics"); // No index, uses first child
 		advancedFolder.NavigationItems.Should().HaveCount(1);
 
-		var topics = advancedFolder.NavigationItems.First().Should().BeOfType<FileNavigationLeaf>().Subject;
+		var topics = advancedFolder.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		topics.Url.Should().Be("/guide/advanced/topics");
 	}
 }
