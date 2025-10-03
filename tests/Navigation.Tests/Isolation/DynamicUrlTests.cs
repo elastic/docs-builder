@@ -136,12 +136,17 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		             - folder: guides
 		               children:
 		                 - toc: api
-		                   children:
-		                     - file: reference.md
 		           """;
+
+		// language=yaml
+		var tocYaml = """
+		              toc:
+		                - file: reference.md
+		              """;
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/guides/api");
+		fileSystem.AddFile("/docs/guides/api/toc.yml", new MockFileData(tocYaml));
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 

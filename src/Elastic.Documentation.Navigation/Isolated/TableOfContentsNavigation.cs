@@ -71,8 +71,7 @@ public class DocumentationSetNavigation :
 				root: NavigationRoot,
 				prefixProvider: PathPrefixProvider,
 				depth: Depth,
-				parentPath: "",
-				allowNestedToc: true
+				parentPath: ""
 			);
 
 			if (navItem != null)
@@ -150,58 +149,16 @@ public class DocumentationSetNavigation :
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		IPathPrefixProvider prefixProvider,
 		int depth,
-		string parentPath,
-		bool allowNestedToc = true
-	)
-	{
-		// Validate TableOfContentsNavigation children
-		if (parent is TableOfContentsNavigation tocParent)
-		{
-			// Check if this is a root-level TOC (parent is not a TOC)
-			var isRootLevelToc = tocParent.Parent is not TableOfContentsNavigation;
-
-			if (isRootLevelToc)
-			{
-				// Root-level TOC validation
-				if (!allowNestedToc)
-				{
-					// When nested TOC is not allowed, any child is an error
-					context.EmitError(
-						context.ConfigurationPath,
-						$"TableOfContents navigation does not allow nested children, found: {tocItem.GetType().Name}"
-					);
-				}
-				else if (tocItem is not IsolatedTableOfContentsRef)
-				{
-					// When nested TOC is allowed, only TableOfContentsRef children are permitted
-					context.EmitError(
-						context.ConfigurationPath,
-						$"TableOfContents navigation may only contain other TOC references as children, found: {tocItem.GetType().Name}"
-					);
-				}
-			}
-			else
-			{
-				// Nested TOC validation - nested TOCs should not have children when allowNestedToc is false
-				if (!allowNestedToc)
-				{
-					context.EmitError(
-						context.ConfigurationPath,
-						$"TableOfContents navigation does not allow nested children, found: {tocItem.GetType().Name}"
-					);
-				}
-			}
-		}
-
-		return tocItem switch
+		string parentPath
+	) =>
+		tocItem switch
 		{
 			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, prefixProvider, parentPath),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth, parentPath, allowNestedToc),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth, parentPath, allowNestedToc),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth, parentPath),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth, parentPath),
 			_ => null
 		};
-	}
 
 	private INavigationItem CreateFileNavigation(
 		FileRef fileRef,
@@ -254,8 +211,7 @@ public class DocumentationSetNavigation :
 					0, // Depth will be set by child
 					fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 						? fullPath[..^3] // Remove .md extension for children's parent path
-						: fullPath,
-					false // Files don't allow nested TOCs
+						: fullPath
 				);
 				if (childNav != null)
 					children.Add(childNav);
@@ -313,8 +269,8 @@ public class DocumentationSetNavigation :
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		IPathPrefixProvider prefixProvider,
 		int depth,
-		string parentPath,
-		bool allowNestedToc)
+		string parentPath
+	)
 	{
 		var folderPath = string.IsNullOrEmpty(parentPath)
 			? folderRef.RelativePath
@@ -343,8 +299,7 @@ public class DocumentationSetNavigation :
 				root,
 				prefixProvider, // Folders don't change the URL root
 				depth + 1,
-				folderPath,
-				allowNestedToc
+				folderPath
 			);
 
 			if (childNav != null)
@@ -385,8 +340,7 @@ public class DocumentationSetNavigation :
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		IPathPrefixProvider prefixProvider,
 		int depth,
-		string parentPath,
-		bool allowNestedToc
+		string parentPath
 	)
 	{
 		// Determine the full TOC path for file system operations
@@ -451,8 +405,7 @@ public class DocumentationSetNavigation :
 					root,
 					tocNavigation, // TOC navigation becomes the new URL root for its children
 					depth + 1,
-					"", // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
-					parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
+					"" // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 				);
 
 				if (childNav != null)
@@ -461,18 +414,28 @@ public class DocumentationSetNavigation :
 		}
 
 		// Then, process items from tocRef.Children
+		// In DocumentationSetFile, TOC references can only have other TOC references as children
 		foreach (var child in tocRef.Children)
 		{
+			// Validate that TOC children are only other TOC references
+			if (child is not IsolatedTableOfContentsRef)
+			{
+				context.EmitError(
+					context.ConfigurationPath,
+					$"TableOfContents navigation does not allow nested children, found: {child.GetType().Name}"
+				);
+				continue;
+			}
+
 			var childNav = ConvertToNavigationItem(
 				child,
 				childIndex++,
 				context,
 				tocNavigation,
 				root,
-				tocNavigation, // TOC navigation becomes the new URL root for its children // TOC navigation becomes the new URL root
+				tocNavigation, // TOC navigation becomes the new URL root for its children
 				depth + 1,
-				"", // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
-				parent is not TableOfContentsNavigation && allowNestedToc // Only allow nested TOCs if this TOC's parent is NOT a TOC
+				"" // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 			);
 
 			if (childNav != null)

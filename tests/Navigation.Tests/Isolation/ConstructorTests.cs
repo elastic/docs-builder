@@ -165,12 +165,17 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		           project: 'test-project'
 		           toc:
 		             - toc: api
-		               children:
-		                 - file: index.md
 		           """;
+
+		// language=yaml
+		var tocYaml = """
+		              toc:
+		                - file: index.md
+		              """;
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/api");
+		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 
@@ -234,7 +239,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		                 toc:
 		                   - toc: api
 		                     children:
-		                       - file: extra.md
+		                       - toc: extra
 		                 """;
 
 		// language=yaml
@@ -245,6 +250,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/api");
+		fileSystem.AddDirectory("/docs/api/extra");
 		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
 
 		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
@@ -260,10 +266,9 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fromToc.NavigationTitle.Should().Be("from-toc");
 		fromToc.Url.Should().Be("/api/from-toc");
 
-		// Second item should be from navigation.yml children
-		var fromNav = toc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf>().Subject;
+		// Second item should be from docset.yml children (a nested TOC)
+		var fromNav = toc.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		fromNav.NavigationTitle.Should().Be("extra");
-
-
+		fromNav.Url.Should().Be("/api/extra");
 	}
 }

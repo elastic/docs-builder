@@ -67,7 +67,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
 		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("TableOfContents navigation may only contain other TOC references as children"));
+			d.Message.Contains("TableOfContents navigation does not allow nested children"));
 	}
 
 	[Fact]
