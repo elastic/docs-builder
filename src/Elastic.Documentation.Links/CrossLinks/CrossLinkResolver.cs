@@ -10,6 +10,7 @@ namespace Elastic.Documentation.Links.CrossLinks;
 public interface ICrossLinkResolver
 {
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	bool TryGetLinkMetadata(Uri crossLinkUri, [NotNullWhen(true)] out LinkMetadata? linkMetadata);
 	IUriEnvironmentResolver UriResolver { get; }
 }
 
@@ -21,6 +22,13 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
 	{
 		resolvedUri = null;
+		return false;
+	}
+
+	/// <inheritdoc />
+	public bool TryGetLinkMetadata(Uri crossLinkUri, [NotNullWhen(true)] out LinkMetadata? linkMetadata)
+	{
+		linkMetadata = null;
 		return false;
 	}
 
@@ -38,6 +46,20 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	public bool TryGetLinkMetadata(Uri crossLinkUri, [NotNullWhen(true)] out LinkMetadata? linkMetadata)
+	{
+		linkMetadata = null;
+
+		if (!_crossLinks.LinkReferences.TryGetValue(crossLinkUri.Scheme, out var sourceLinkReference))
+			return false;
+
+		var originalLookupPath = (crossLinkUri.Host + '/' + crossLinkUri.AbsolutePath.TrimStart('/')).Trim('/');
+		if (string.IsNullOrEmpty(originalLookupPath) && crossLinkUri.Host.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+			originalLookupPath = crossLinkUri.Host;
+
+		return sourceLinkReference.Links.TryGetValue(originalLookupPath, out linkMetadata);
+	}
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{

@@ -89,4 +89,8 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
         member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri)
 
+        member this.TryGetLinkMetadata(crossLinkUri, [<Out>]linkMetadata : byref<LinkMetadata|null>) =
+            let resolver = new CrossLinkResolver(crossLinks, uriResolver)
+            resolver.TryGetLinkMetadata(crossLinkUri, &linkMetadata)
+
 

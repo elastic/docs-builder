@@ -17,6 +17,10 @@ public record LinkMetadata
 	[JsonPropertyName("hidden")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool Hidden { get; init; }
+
+	[JsonPropertyName("title")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Title { get; init; }
 }
 
 public record LinkSingleRedirect
