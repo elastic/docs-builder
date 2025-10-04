@@ -11,6 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
       <ProjectReference Include="..\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
     </ItemGroup>
 

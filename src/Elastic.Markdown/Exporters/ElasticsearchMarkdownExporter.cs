@@ -11,6 +11,7 @@ using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Catalog;
 using Elastic.Ingest.Elasticsearch.Semantic;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -86,6 +87,13 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		          "lowercase",
 		          "synonyms_filter"
 		        ]
+		      },
+		      "highlight_analyzer": {
+		        "tokenizer": "standard",
+		        "filter": [
+		          "lowercase",
+		          "english_stop"
+		        ]
 		      }
 		    },
 		    "filter": {
@@ -93,6 +101,10 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		        "type": "synonym",
 		        "synonyms_set": "docs",
 		        "updateable": true
+		      },
+		      "english_stop": {
+		        "type": "stop",
+		        "stopwords": "_english_"
 		      }
 		    }
 		  }
@@ -125,6 +137,9 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		        "type": "integer"
 		      },
 		      "body": {
+		        "type": "text"
+		      },
+		      "stripped_body": {
 		        "type": "text"
 		      }
 		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
@@ -268,10 +283,13 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		IPositionalNavigation navigation = fileContext.DocumentationSet;
 
 		//use LLM text if it was already provided (because we run with both llm and elasticsearch output)
-		var body = fileContext.LLMText ??= LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
+		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
+
+		// Remove headings from body for better search highlighting
+		var bodyWithoutHeadings = body.StripHeadings();
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => h.GetData("header") as string ?? string.Empty)
+			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: this
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 
@@ -279,9 +297,9 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		{
 			Title = file.Title,
 			Url = url,
-			Body = body,
+			Body = bodyWithoutHeadings,
+			StrippedBody = bodyWithoutHeadings.StripMarkdown(),
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
-
 			Abstract = !string.IsNullOrEmpty(body)
 				? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
 				: string.Empty,
@@ -306,4 +324,3 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		return await _channel.RefreshAsync(ctx);
 	}
 }
-

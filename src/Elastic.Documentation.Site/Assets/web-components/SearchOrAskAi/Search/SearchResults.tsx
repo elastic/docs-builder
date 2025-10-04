@@ -10,12 +10,30 @@ import {
     useEuiTheme,
     EuiIcon,
     EuiPagination,
-    EuiHorizontalRule,
+    EuiHorizontalRule, EuiMarkdownFormat,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useDebounce } from '@uidotdev/usehooks'
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
+import DOMPurify from 'dompurify';
+
+
+const SafeHtmlRenderer = ({ htmlContent }: { htmlContent: string }) => {
+
+    // Sanitize the HTML string before rendering it.
+    // DOMPurify will keep the <mark> tag by default but remove dangerous elements.
+    const sanitizedHtml = DOMPurify.sanitize(htmlContent);
+
+    // The object passed to dangerouslySetInnerHTML must have a key named __html.
+    const createMarkup = (html: string) => {
+        return { __html: html };
+    };
+
+    return (
+        <div dangerouslySetInnerHTML={createMarkup(sanitizedHtml)} />
+    );
+};
 
 export const SearchResults = () => {
     const searchTerm = useSearchTerm()
@@ -104,6 +122,7 @@ interface SearchResultListItemProps {
 function SearchResultListItem({ item: result }: SearchResultListItemProps) {
     const { euiTheme } = useEuiTheme()
     const searchTerm = useSearchTerm()
+    const titleFontSize = useEuiFontSize('m')
     const highlightSearchTerms = useMemo(
         () =>
             searchTerm
@@ -129,7 +148,7 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
                             align-items: flex-start;
                             gap: ${euiTheme.size.s};
                             padding-inline: ${euiTheme.size.s};
-                            padding-block: ${euiTheme.size.xs};
+                            padding-block: ${euiTheme.size.m};
                             border-radius: ${euiTheme.border.radius.small};
                             :hover {
                                 background-color: ${euiTheme.colors.backgroundTransparentSubdued};
@@ -148,28 +167,34 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
                         text-align: left;
                     `}
                 >
-                    <EuiLink
-                        tabIndex={-1}
-                        href={result.url}
-                        css={css`
-                            .euiMark {
-                                background-color: ${euiTheme.colors
-                                    .backgroundLightWarning};
-                                font-weight: inherit;
-                            }
-                        `}
-                    >
-                        <EuiHighlight
-                            search={highlightSearchTerms}
-                            highlightAll={true}
-                        >
-                            {result.title}
-                        </EuiHighlight>
-                    </EuiLink>
                     <Breadcrumbs
                         parents={result.parents}
                         highlightSearchTerms={highlightSearchTerms}
                     />
+                    <div css={css`
+                            padding-block: ${euiTheme.size.xs};
+                            font-size: ${titleFontSize.fontSize};
+                        `}>
+                        <EuiLink
+                            tabIndex={-1}
+                            href={result.url}
+                        >
+                            <span>{result.title}</span>
+                        </EuiLink>
+                    </div>
+
+                    <EuiText size="xs">
+                        <div css={css`
+                            color: ${euiTheme.colors.text};
+                            mark {
+                                background-color: transparent;
+                                font-family: ${euiTheme.font.family};
+                                font-weight: ${euiTheme.font.weight.semiBold};
+                            }
+                        `}>
+                            <SafeHtmlRenderer htmlContent={result.highlightedBody || ''} />
+                        </div>
+                    </EuiText>
                 </div>
             </div>
         </li>

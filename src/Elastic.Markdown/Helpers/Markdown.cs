@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
+
 namespace Elastic.Markdown.Helpers;
 
-public static class MarkdownStringExtensions
+public static partial class MarkdownStringExtensions
 {
 	public static string StripMarkdown(this string markdown)
 	{
@@ -12,4 +14,24 @@ public static class MarkdownStringExtensions
 		_ = Markdig.Markdown.ToPlainText(markdown, writer);
 		return writer.ToString().TrimEnd('\n');
 	}
+
+	public static string StripHeadings(this string markdown)
+	{
+		// Remove ATX-style headings (# Heading)
+		var result = HeadingRegex().Replace(markdown, string.Empty);
+		// Remove setext-style headings (underline with = or -)
+		result = SetextHeadingRegex().Replace(result, string.Empty);
+		// Clean up multiple consecutive newlines
+		result = MultipleNewlinesRegex().Replace(result, "\n\n");
+		return result.Trim();
+	}
+
+	[GeneratedRegex(@"^#{1,6}\s+.+$", RegexOptions.Multiline)]
+	private static partial Regex HeadingRegex();
+
+	[GeneratedRegex(@"^.+\n[=\-]+\s*$", RegexOptions.Multiline)]
+	private static partial Regex SetextHeadingRegex();
+
+	[GeneratedRegex(@"\n{3,}")]
+	private static partial Regex MultipleNewlinesRegex();
 }
