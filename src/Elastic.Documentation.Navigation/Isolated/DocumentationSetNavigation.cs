@@ -186,13 +186,13 @@ public class DocumentationSetNavigation<TModel>
 				: "";
 
 			// If file path starts with parent's directory, extract just the filename
-			relativePathForUrl = !string.IsNullOrEmpty(parentDir) && fileRef.RelativePath.StartsWith(parentDir + "/", StringComparison.Ordinal)
-				? fileRef.RelativePath[(parentDir.Length + 1)..]
-				: fileRef.RelativePath;
+			relativePathForUrl = !string.IsNullOrEmpty(parentDir) && fileRef.Path.StartsWith(parentDir + "/", StringComparison.Ordinal)
+				? fileRef.Path[(parentDir.Length + 1)..]
+				: fileRef.Path;
 		}
 		else
 		{
-			relativePathForUrl = fileRef.RelativePath;
+			relativePathForUrl = fileRef.Path;
 		}
 
 		// Combine parent path with file path
@@ -202,11 +202,11 @@ public class DocumentationSetNavigation<TModel>
 
 		// Create documentation file from factory
 		var fs = context.ReadFileSystem;
-		var fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.RelativePath));
+		var fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.Path));
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
 		if (documentationFile == null)
 		{
-			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.RelativePath}' could not be created");
+			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.Path}' could not be created");
 			return null;
 		}
 
@@ -219,7 +219,7 @@ public class DocumentationSetNavigation<TModel>
 		// Validate: index files may not have children
 		if (fileRef is IndexFileRef)
 		{
-			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.RelativePath}' is an index file and may not have children");
+			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.Path}' is an index file and may not have children");
 			return null;
 		}
 
@@ -294,8 +294,8 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		var folderPath = string.IsNullOrEmpty(parentPath)
-			? folderRef.RelativePath
-			: $"{parentPath}/{folderRef.RelativePath}";
+			? folderRef.Path
+			: $"{parentPath}/{folderRef.Path}";
 
 		// Create temporary folder navigation for parent reference
 		var children = new List<INavigationItem>();

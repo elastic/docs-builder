@@ -69,16 +69,16 @@ public class TableOfContents : List<ITableOfContentsItem>
 
 public interface ITableOfContentsItem;
 
-public record FileRef(string RelativePath, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
+public record FileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
-public record IndexFileRef(string RelativePath, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
-	: FileRef(RelativePath, Hidden, Children);
+public record IndexFileRef(string Path, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
+	: FileRef(Path, Hidden, Children);
 
 public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
-public record FolderRef(string RelativePath, IReadOnlyCollection<ITableOfContentsItem> Children)
+public record FolderRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
 public record IsolatedTableOfContentsRef(string Source, IReadOnlyCollection<ITableOfContentsItem> Children)

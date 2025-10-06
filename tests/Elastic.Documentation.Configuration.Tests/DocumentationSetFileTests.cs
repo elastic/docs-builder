@@ -109,9 +109,9 @@ public class DocumentationSetFileTests
 
 		result.Toc.Should().HaveCount(2);
 		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
-			.Which.RelativePath.Should().Be("index.md");
+			.Which.Path.Should().Be("index.md");
 		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("getting-started.md");
+			.Which.Path.Should().Be("getting-started.md");
 	}
 
 	[Fact]
@@ -134,7 +134,7 @@ public class DocumentationSetFileTests
 		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
 		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("404.md");
+			.Which.Path.Should().Be("404.md");
 		result.Toc.ElementAt(2).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
 	}
@@ -156,12 +156,12 @@ public class DocumentationSetFileTests
 
 		result.Toc.Should().HaveCount(1);
 		var folder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
-		folder.RelativePath.Should().Be("contribute");
+		folder.Path.Should().Be("contribute");
 		folder.Children.Should().HaveCount(2);
 		folder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
-			.Which.RelativePath.Should().Be("index.md");
+			.Which.Path.Should().Be("index.md");
 		folder.Children.ElementAt(1).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("locally.md");
+			.Which.Path.Should().Be("locally.md");
 	}
 
 	[Fact]
@@ -228,21 +228,21 @@ public class DocumentationSetFileTests
 
 		result.Toc.Should().HaveCount(1);
 		var topFolder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
-		topFolder.RelativePath.Should().Be("configure");
+		topFolder.Path.Should().Be("configure");
 		topFolder.Children.Should().HaveCount(2);
 
 		topFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
-			.Which.RelativePath.Should().Be("index.md");
+			.Which.Path.Should().Be("index.md");
 
 		var nestedFolder = topFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		nestedFolder.RelativePath.Should().Be("site");
+		nestedFolder.Path.Should().Be("site");
 		nestedFolder.Children.Should().HaveCount(3);
 		nestedFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
-			.Which.RelativePath.Should().Be("index.md");
+			.Which.Path.Should().Be("index.md");
 		nestedFolder.Children.ElementAt(1).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("content.md");
+			.Which.Path.Should().Be("content.md");
 		nestedFolder.Children.ElementAt(2).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("navigation.md");
+			.Which.Path.Should().Be("navigation.md");
 	}
 
 	[Fact]
@@ -301,44 +301,44 @@ public class DocumentationSetFileTests
 
 		// First item: simple file reference
 		var firstItem = result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		firstItem.RelativePath.Should().Be("index.md");
+		firstItem.Path.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 		firstItem.Children.Should().BeEmpty();
 
 		// Second item: hidden file reference
 		var secondItem = result.Toc.ElementAt(1).Should().BeOfType<FileRef>().Subject;
-		secondItem.RelativePath.Should().Be("404.md");
+		secondItem.Path.Should().Be("404.md");
 		secondItem.Hidden.Should().BeTrue();
 		secondItem.Children.Should().BeEmpty();
 
 		// Third item: folder with a deeply nested structure
 		var configureFolder = result.Toc.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
-		configureFolder.RelativePath.Should().Be("configure");
+		configureFolder.Path.Should().Be("configure");
 		configureFolder.Children.Should().HaveCount(3);
 
 		// First child: file reference
 		var configureIndexFile = configureFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		configureIndexFile.RelativePath.Should().Be("index.md");
+		configureIndexFile.Path.Should().Be("index.md");
 		configureIndexFile.Hidden.Should().BeFalse();
 
 		// Second child: nested folder with 3 files
 		var siteFolder = configureFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		siteFolder.RelativePath.Should().Be("site");
+		siteFolder.Path.Should().Be("site");
 		siteFolder.Children.Should().HaveCount(3);
 
 		// Assert nested folder's children
 		var siteIndexFile = siteFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		siteIndexFile.RelativePath.Should().Be("index.md");
+		siteIndexFile.Path.Should().Be("index.md");
 
 		var contentFile = siteFolder.Children.ElementAt(1).Should().BeOfType<FileRef>().Subject;
-		contentFile.RelativePath.Should().Be("content.md");
+		contentFile.Path.Should().Be("content.md");
 
 		var navigationFile = siteFolder.Children.ElementAt(2).Should().BeOfType<FileRef>().Subject;
-		navigationFile.RelativePath.Should().Be("navigation.md");
+		navigationFile.Path.Should().Be("navigation.md");
 
 		// Third child: file with crosslink child
 		var pageFile = configureFolder.Children.ElementAt(2).Should().BeOfType<FileRef>().Subject;
-		pageFile.RelativePath.Should().Be("page.md");
+		pageFile.Path.Should().Be("page.md");
 		pageFile.Children.Should().HaveCount(1);
 
 		// Assert crosslink reference as a child of page.md
@@ -372,14 +372,14 @@ public class DocumentationSetFileTests
 
 		result.Toc.Should().HaveCount(1);
 		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		guide.RelativePath.Should().Be("guide.md");
+		guide.Path.Should().Be("guide.md");
 		guide.Children.Should().HaveCount(3);
 		guide.Children.ElementAt(0).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("chapter1.md");
+			.Which.Path.Should().Be("chapter1.md");
 		guide.Children.ElementAt(1).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("chapter2.md");
+			.Which.Path.Should().Be("chapter2.md");
 		guide.Children.ElementAt(2).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("chapter3.md");
+			.Which.Path.Should().Be("chapter3.md");
 	}
 
 	[Fact]
@@ -399,12 +399,12 @@ public class DocumentationSetFileTests
 
 		result.Toc.Should().HaveCount(1);
 		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		guide.RelativePath.Should().Be("api/guide.md");
+		guide.Path.Should().Be("api/guide.md");
 		guide.Children.Should().HaveCount(2);
 		guide.Children.ElementAt(0).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("api/section1.md");
+			.Which.Path.Should().Be("api/section1.md");
 		guide.Children.ElementAt(1).Should().BeOfType<FileRef>()
-			.Which.RelativePath.Should().Be("api/section2.md");
+			.Which.Path.Should().Be("api/section2.md");
 	}
 
 	[Fact]
@@ -511,7 +511,7 @@ public class DocumentationSetFileTests
 		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 		var subsection1 = section1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 
-		subsection1.RelativePath.Should().Be("subsection1.md");
+		subsection1.Path.Should().Be("subsection1.md");
 		subsection1.Children.Should().BeEmpty();
 	}
 
