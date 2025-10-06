@@ -152,7 +152,6 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
                         <div
                             css={css`
                                 font-family: ${euiTheme.font.family};
-                                // color: ${euiTheme.colors.textSubdued};
                                 position: relative;
 
                                 /* 2 lines with ellipsis */

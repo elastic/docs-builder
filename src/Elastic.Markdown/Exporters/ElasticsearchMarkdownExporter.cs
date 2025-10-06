@@ -293,7 +293,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: this
+			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 
