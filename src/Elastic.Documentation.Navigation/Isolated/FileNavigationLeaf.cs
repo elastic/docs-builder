@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+
 namespace Elastic.Documentation.Navigation.Isolated;
 
 public record FileNavigationArgs(
@@ -13,10 +15,12 @@ public record FileNavigationArgs(
 	IPathPrefixProvider PrefixProvider
 );
 
-public class FileNavigationLeaf<TModel>(TModel model, FileNavigationArgs args)
+public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args)
 	: ILeafNavigationItem<TModel>
 	where TModel : IDocumentationFile
 {
+	public IFileInfo FileInfo { get; } = fileInfo;
+
 	/// <inheritdoc />
 	public TModel Model { get; init; } = model;
 

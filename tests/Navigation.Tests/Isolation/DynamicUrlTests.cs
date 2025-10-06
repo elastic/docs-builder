@@ -172,6 +172,40 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	}
 
 	[Fact]
+	public void FolderWithNestedDeeplinkedOfIndexChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - file: clients/index.md
+		                   children:
+		                     - file: clients/advanced.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+
+		// Folder has no index.md, so URL should be the first child's URL
+		folder!.Url.Should().Be("/guides/clients");
+
+		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
+		gettingStarted.Should().NotBeNull();
+		gettingStarted.Url.Should().Be("/guides/clients");
+		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
+		advanced.Should().NotBeNull();
+		advanced.Url.Should().Be("/guides/clients/advanced");
+
+		advanced.Parent.Should().BeSameAs(gettingStarted);
+		gettingStarted.Parent.Should().BeSameAs(folder);
+	}
+
+	[Fact]
 	public void FolderWithIndexUsesOwnUrl()
 	{
 		// language=yaml

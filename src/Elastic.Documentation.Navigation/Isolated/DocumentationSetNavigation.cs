@@ -18,13 +18,14 @@ public interface IDocumentationFileFactory<out TModel> where TModel : IDocumenta
 
 public static class DocumentationNavigationFactory
 {
-	public static ILeafNavigationItem<TModel> CreateFileNavigationLeaf<TModel>(TModel model, FileNavigationArgs args)
+	public static ILeafNavigationItem<TModel> CreateFileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args)
 		where TModel : IDocumentationFile =>
-		new FileNavigationLeaf<TModel>(model, args) { NavigationIndex = args.NavigationIndex };
+		new FileNavigationLeaf<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 
-	public static INodeNavigationItem<TModel, INavigationItem> CreateVirtualFileNavigation<TModel>(TModel model, VirtualFileNavigationArgs args)
+	public static INodeNavigationItem<TModel, INavigationItem> CreateVirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo,
+		VirtualFileNavigationArgs args)
 		where TModel : IDocumentationFile =>
-		new VirtualFileNavigation<TModel>(model, args) { NavigationIndex = args.NavigationIndex };
+		new VirtualFileNavigation<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 }
 
 public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
@@ -180,20 +181,29 @@ public class DocumentationSetNavigation<TModel>
 
 		if (!string.IsNullOrEmpty(parentPath))
 		{
-			// Extract parent's directory from its path
+			// Extract parent's directory (everything before the last /)
 			var parentDir = parentPath.Contains('/')
 				? parentPath[..parentPath.LastIndexOf('/')]
 				: "";
 
-			// If file path starts with parent's directory, extract just the filename
-			relativePathForUrl = !string.IsNullOrEmpty(parentDir) && fileRef.Path.StartsWith(parentDir + "/", StringComparison.Ordinal)
-				? fileRef.Path[(parentDir.Length + 1)..]
-				: fileRef.Path;
+			// Extract child's directory from fileRef.Path
+			var childDir = fileRef.Path.Contains('/')
+				? fileRef.Path[..fileRef.Path.LastIndexOf('/')]
+				: "";
+
+			// Check for deeplinked paths where child's directory is already in parent path
+			// Case 1: parentDir ends with childDir (e.g., parentPath="guides/clients/getting-started", childDir="clients")
+			// Case 2: parentPath ends with childDir (e.g., parentPath="guides/clients", childDir="clients")
+			relativePathForUrl = !string.IsNullOrEmpty(childDir) &&
+				(parentDir == childDir || parentDir.EndsWith($"/{childDir}", StringComparison.Ordinal) ||
+					parentPath.EndsWith(childDir, StringComparison.Ordinal))
+				? fileRef.Path[(childDir.Length + 1)..] // Strip child's directory from path
+				: fileRef.Path.StartsWith($"{parentPath}/", StringComparison.Ordinal)
+					? fileRef.Path[(parentPath.Length + 1)..] // If file path starts with parent path, extract just the relative part
+					: fileRef.Path;
 		}
 		else
-		{
 			relativePathForUrl = fileRef.Path;
-		}
 
 		// Combine parent path with file path
 		var fullPath = string.IsNullOrEmpty(parentPath)
@@ -206,14 +216,14 @@ public class DocumentationSetNavigation<TModel>
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
 		if (documentationFile == null)
 		{
-			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.Path}' could not be created");
+			context.EmitError(context.ConfigurationPath, $"File navigation '{fullPath}' could not be created");
 			return null;
 		}
 
 		var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
 		// Check if file has children
 		if (fileRef.Children.Count <= 0)
-			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, leafNavigationArgs);
+			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 
 		// No children - return a leaf
 		// Validate: index files may not have children
@@ -225,11 +235,21 @@ public class DocumentationSetNavigation<TModel>
 
 		// Create temporary file navigation for children to reference
 		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, fileRef.Hidden, index, 0, parent, root, prefixProvider, []);
-		var tempFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, virtualFileNavigationArgs);
+		var tempFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
 
 		// Process children recursively
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
+
+		// Compute parent path for children: remove .md extension and /index if present
+		var parentPathForChildren = fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fullPath[..^3] // Remove .md extension
+			: fullPath;
+
+		// If this is an index file, also remove the /index suffix for children's parent path
+		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+			parentPathForChildren = parentPathForChildren[..^6]; // Remove "/index"
+
 		foreach (var child in fileRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
@@ -237,9 +257,7 @@ public class DocumentationSetNavigation<TModel>
 				(INodeNavigationItem<INavigationModel, INavigationItem>)tempFileNavigation, root,
 				prefixProvider, // Files don't change the URL root
 				0, // Depth will be set by child
-				fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-					? fullPath[..^3] // Remove .md extension for children's parent path
-					: fullPath
+				parentPathForChildren
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -252,7 +270,7 @@ public class DocumentationSetNavigation<TModel>
 			NavigationItems = children
 		};
 
-		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, virtualFileNavigationArgs);
+		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
 
 		// Update children's Parent to point to the final file navigation
 		foreach (var child in children)
