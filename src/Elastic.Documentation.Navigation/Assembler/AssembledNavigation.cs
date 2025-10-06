@@ -19,7 +19,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 	public SiteNavigation(
 		SiteNavigationFile siteNavigationFile,
 		IDocumentationSetContext context,
-		IReadOnlyCollection<DocumentationSetNavigation> documentationSetNavigations
+		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations
 	)
 	{
 		// Initialize root properties

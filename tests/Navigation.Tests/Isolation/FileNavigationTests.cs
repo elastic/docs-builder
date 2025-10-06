@@ -23,7 +23,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
@@ -46,7 +46,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
@@ -79,7 +79,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
@@ -112,7 +112,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var context = CreateContext();
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -136,7 +136,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 		var fileNav = navigation.NavigationItems.First() as INodeNavigationItem<IDocumentationFile, INavigationItem>;
 		var child = fileNav!.NavigationItems.First();
 
@@ -170,7 +170,7 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		var guideFile = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
 		guideFile.NavigationItems.Should().HaveCount(2);

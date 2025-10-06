@@ -24,7 +24,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationRoot.Should().BeSameAs(navigation);
 		navigation.Parent.Should().BeNull();
@@ -52,7 +52,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 	}
@@ -70,7 +70,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
@@ -94,7 +94,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var fileNav = navigation.NavigationItems.First().Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
@@ -116,7 +116,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var crossLink = navigation.NavigationItems.First().Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
@@ -141,7 +141,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
@@ -179,7 +179,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
@@ -217,7 +217,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
@@ -256,7 +256,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
 		var context = CreateContext(fileSystem);
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
 		toc.NavigationItems.Should().HaveCount(2);

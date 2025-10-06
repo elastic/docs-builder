@@ -79,11 +79,28 @@ public class TestDocumentationFile(string navigationTitle) : IDocumentationFile
 
 public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
 {
-	// Covariance allows IDocumentationFileFactory<TestDocumentationFile> to be used as IDocumentationFileFactory<IDocumentationFile>
-	public static IDocumentationFileFactory<IDocumentationFile> Instance { get; } = new TestDocumentationFileFactory();
+	// Preserve concrete type to leverage covariance properly
+	public static TestDocumentationFileFactory Instance { get; } = new TestDocumentationFileFactory();
 
 	/// <inheritdoc />
 	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path)
+	{
+		// Extract the title from the file name (without extension)
+		var fileName = path.Name;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fileName[..^3]
+			: fileName;
+		return new TestDocumentationFile(title);
+	}
+}
+
+// Factory that creates base IDocumentationFile instances for tests that don't need concrete types
+public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocumentationFile>
+{
+	public static GenericDocumentationFileFactory Instance { get; } = new GenericDocumentationFileFactory();
+
+	/// <inheritdoc />
+	public IDocumentationFile TryCreateDocumentationFile(IFileInfo path)
 	{
 		// Extract the title from the file name (without extension)
 		var fileName = path.Name;

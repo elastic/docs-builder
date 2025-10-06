@@ -32,7 +32,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -59,7 +59,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -93,7 +93,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -128,7 +128,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -156,7 +156,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 

@@ -39,7 +39,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var checkoutDir = fileSystem.DirectoryInfo.New("/checkouts/current");
 		var repositories = checkoutDir.GetDirectories();
 
-		var documentationSets = new List<DocumentationSetNavigation>();
+		var documentationSets = new List<IDocumentationSetNavigation>();
 
 		foreach (var repo in repositories)
 		{
@@ -52,7 +52,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			var docsetYaml = fileSystem.File.ReadAllText(docsetPath);
 			var docset = DocumentationSetFile.Deserialize(docsetYaml);
 
-			var navigation = new DocumentationSetNavigation(docset, context, TestDocumentationFileFactory.Instance);
+			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
 		}
 
@@ -127,9 +127,9 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
 
-		var documentationSets = new List<DocumentationSetNavigation>
+		var documentationSets = new List<IDocumentationSetNavigation>
 		{
-			new(platformDocset, platformContext, TestDocumentationFileFactory.Instance)
+			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(
@@ -175,9 +175,9 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
 
-		var documentationSets = new List<DocumentationSetNavigation>
+		var documentationSets = new List<IDocumentationSetNavigation>
 		{
-			new(platformDocset, platformContext, TestDocumentationFileFactory.Instance)
+			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(
@@ -231,9 +231,9 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var platformDocset = DocumentationSetFile.Deserialize(
 			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
 
-		var documentationSets = new List<DocumentationSetNavigation>
+		var documentationSets = new List<IDocumentationSetNavigation>
 		{
-			new(platformDocset, platformContext, TestDocumentationFileFactory.Instance)
+			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(

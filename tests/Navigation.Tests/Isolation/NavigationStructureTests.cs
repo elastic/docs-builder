@@ -26,11 +26,75 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext();
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.ElementAt(0).NavigationIndex.Should().Be(0);
 		navigation.NavigationItems.ElementAt(1).NavigationIndex.Should().Be(1);
 		navigation.NavigationItems.ElementAt(2).NavigationIndex.Should().Be(2);
+	}
+
+	[Fact]
+	public void CanQueryNavigationForBothInterfaceAndConcreteTypes()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: first.md
+		             - folder: guides
+		               children:
+		                 - file: second.md
+		                 - file: third.md
+		             - file: fourth.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		// Create navigation using the covariant factory interface
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+
+		// Query for all leaf items using the base interface type
+		var allLeafItems = navigation.NavigationItems
+			.SelectMany(item => item is INodeNavigationItem<IDocumentationFile, INavigationItem> node
+				? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>()
+				: item is ILeafNavigationItem<IDocumentationFile> leaf
+					? [leaf]
+					: [])
+			.ToList();
+
+		// All items are queryable as ILeafNavigationItem<IDocumentationFile> due to covariance
+		allLeafItems.Should().HaveCount(4);
+		allLeafItems.Should().AllBeAssignableTo<ILeafNavigationItem<IDocumentationFile>>();
+		allLeafItems.Should().AllBeAssignableTo<ILeafNavigationItem<TestDocumentationFile>>();
+		allLeafItems.Select(l => l.NavigationTitle).Should().BeEquivalentTo(["first", "second", "third", "fourth"]);
+
+		// The navigation items themselves are FileNavigationLeaf<TestDocumentationFile> at runtime
+		allLeafItems.Should().AllBeOfType<FileNavigationLeaf<TestDocumentationFile>>();
+
+		// And the Model property on each leaf contains TestDocumentationFile instances
+		var allModels = allLeafItems.Select(l => l.Model).ToList();
+		allModels.Should().AllBeOfType<TestDocumentationFile>();
+
+		// Access the underlying model through the interface
+		foreach (var leaf in allLeafItems)
+		{
+			// The Model property returns IDocumentationFile due to covariance
+			leaf.Model.Should().BeAssignableTo<IDocumentationFile>();
+			leaf.Model.NavigationTitle.Should().NotBeNullOrEmpty();
+
+			// But at runtime, it's still TestDocumentationFile
+			leaf.Model.Should().BeOfType<TestDocumentationFile>();
+
+			// Can access concrete type through pattern matching without explicit cast
+			if (leaf.Model is TestDocumentationFile concreteFile)
+				concreteFile.NavigationTitle.Should().Be(leaf.NavigationTitle);
+		}
+
+		// Demonstrate type-safe LINQ queries work with the interface type
+		var firstItem = allLeafItems.FirstOrDefault(l => l.Model.NavigationTitle == "first");
+		firstItem.Should().NotBeNull();
+		firstItem!.Url.Should().Be("/first");
 	}
 
 	[Fact]
@@ -65,7 +129,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation(docSet, context, TestDocumentationFileFactory.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -74,7 +138,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 
 		// First item: simple file
-		var indexFile = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		var indexFile = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		indexFile.Url.Should().Be("/"); // index.md becomes /
 
 		// Second item: complex nested structure
@@ -82,7 +146,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		setupFolder.NavigationItems.Should().HaveCount(2);
 		setupFolder.Url.Should().Be("/setup");
 
-		var setupIndex = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		var setupIndex = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;

@@ -27,17 +27,23 @@ public static class DocumentationNavigationFactory
 		new VirtualFileNavigation<TModel>(model, args) { NavigationIndex = args.NavigationIndex };
 }
 
-public class DocumentationSetNavigation :
-	IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationPathPrefixProvider, IPathPrefixProvider
+public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	private readonly IDocumentationFileFactory<IDocumentationFile> _factory;
+	IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> TableOfContentNodes { get; }
+}
+
+public class DocumentationSetNavigation<TModel>
+	: IDocumentationSetNavigation, INavigationPathPrefixProvider, IPathPrefixProvider
+	where TModel : IDocumentationFile
+{
+	private readonly IDocumentationFileFactory<TModel> _factory;
 
 	public DocumentationSetNavigation(
 		DocumentationSetFile documentationSet,
 		IDocumentationSetContext context,
-		IDocumentationFileFactory<IDocumentationFile> factory,
-		IRootNavigationItem<IDocumentationFile, INavigationItem>? parent = null,
-		IRootNavigationItem<IDocumentationFile, INavigationItem>? root = null,
+		IDocumentationFileFactory<TModel> factory,
+		IRootNavigationItem<INavigationModel, INavigationItem>? parent = null,
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		IPathPrefixProvider? pathPrefixProvider = null
 	)
 	{
@@ -208,7 +214,7 @@ public class DocumentationSetNavigation :
 		{
 			var childNav = ConvertToNavigationItem(
 				child, childIndex++, context,
-				tempFileNavigation, root,
+				(INodeNavigationItem<INavigationModel, INavigationItem>)tempFileNavigation, root,
 				prefixProvider, // Files don't change the URL root
 				0, // Depth will be set by child
 				fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
@@ -230,7 +236,7 @@ public class DocumentationSetNavigation :
 
 		// Update children's Parent to point to the final file navigation
 		foreach (var child in children)
-			child.Parent = finalFileNavigation;
+			child.Parent = (INodeNavigationItem<INavigationModel, INavigationItem>)finalFileNavigation;
 
 		return finalFileNavigation;
 	}
@@ -312,19 +318,6 @@ public class DocumentationSetNavigation :
 			child.Parent = finalFolderNavigation;
 
 		return finalFolderNavigation;
-	}
-
-	private static DocumentationSetNavigation GetDocumentationSetRoot(IRootNavigationItem<INavigationModel, INavigationItem> root)
-	{
-		// Walk up the tree to find the DocumentationSetNavigation root
-		var current = root;
-		while (current is TableOfContentsNavigation toc && toc.Parent is IRootNavigationItem<INavigationModel, INavigationItem> parentRoot)
-			current = parentRoot;
-
-		if (current is DocumentationSetNavigation docSetNav)
-			return docSetNav;
-
-		throw new InvalidOperationException("Could not find DocumentationSetNavigation root in navigation tree");
 	}
 
 	private INavigationItem CreateTocNavigation(

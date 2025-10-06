@@ -41,13 +41,13 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// Create DocumentationSetNavigation instances for the referenced repos
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
-		var observabilityNav = new DocumentationSetNavigation(observabilityDocset, observabilityContext, TestDocumentationFileFactory.Instance);
+		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
 		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
 		var searchDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-search/docs/docset.yml"));
-		var searchNav = new DocumentationSetNavigation(searchDocset, searchContext, TestDocumentationFileFactory.Instance);
+		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(searchDocset, searchContext, GenericDocumentationFileFactory.Instance);
 
-		var documentationSets = new List<DocumentationSetNavigation> { observabilityNav, searchNav };
+		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav, searchNav };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
@@ -79,9 +79,9 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// Create DocumentationSetNavigation for platform
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
-		var platformNav = new DocumentationSetNavigation(platformDocset, platformContext, TestDocumentationFileFactory.Instance);
+		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
-		var documentationSets = new List<DocumentationSetNavigation> { platformNav };
+		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };
 
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
