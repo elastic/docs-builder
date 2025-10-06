@@ -111,8 +111,6 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		               children:
 		                 - file: index.md
 		                 - toc: advanced
-		                   children:
-		                     - toc: performance
 		             - title: "External"
 		               crosslink: other://link.md
 		           """;
@@ -120,11 +118,26 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/setup/advanced");
 		fileSystem.AddDirectory("/docs/setup/advanced/performance");
-		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData("toc: []"));
-		fileSystem.AddFile("/docs/setup/advanced/performance/toc.yml", new MockFileData("toc: []"));
+		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData(
+			// language=yaml
+			"""
+			toc:
+			  - toc: performance
+			"""));
+
+		// language=yaml
+		var performanceTocYaml = """
+		                         toc:
+		                           - file: index.md
+		                           - file: tuning.md
+		                           - file: benchmarks.md
+		                         """;
+		fileSystem.AddFile("/docs/setup/advanced/performance/toc.yml", new MockFileData(performanceTocYaml));
 		// Add index.md files that should be automatically discovered as placeholders
 		fileSystem.AddFile("/docs/setup/advanced/index.md", new MockFileData("# Advanced"));
 		fileSystem.AddFile("/docs/setup/advanced/performance/index.md", new MockFileData("# Performance"));
+		fileSystem.AddFile("/docs/setup/advanced/performance/tuning.md", new MockFileData("# Tuning"));
+		fileSystem.AddFile("/docs/setup/advanced/performance/benchmarks.md", new MockFileData("# Benchmarks"));
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
@@ -132,7 +145,6 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
-
 
 		navigation.NavigationItems.Should().HaveCount(3);
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
@@ -157,7 +169,16 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var performanceToc = advancedToc.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
-		performanceToc.NavigationItems.Should().HaveCount(0);
+		performanceToc.NavigationItems.Should().HaveCount(3);
+
+		var performanceIndex = performanceToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		performanceIndex.Url.Should().Be("/setup/advanced/performance");
+
+		var tuning = performanceToc.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		tuning.Url.Should().Be("/setup/advanced/performance/tuning");
+
+		var benchmarks = performanceToc.NavigationItems.ElementAt(2).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		benchmarks.Url.Should().Be("/setup/advanced/performance/benchmarks");
 
 		// Third item: crosslink
 		var crosslink = navigation.NavigationItems.ElementAt(2).Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
