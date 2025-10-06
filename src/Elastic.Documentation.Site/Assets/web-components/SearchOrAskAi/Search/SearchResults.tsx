@@ -2,7 +2,6 @@ import { useSearchTerm } from '../search.store'
 import { SearchResultItem, useSearchQuery } from './useSearchQuery'
 import {
     useEuiFontSize,
-    EuiHighlight,
     EuiLink,
     EuiLoadingSpinner,
     EuiSpacer,
