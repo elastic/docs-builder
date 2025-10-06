@@ -80,7 +80,7 @@ public class TestDocumentationFile(string navigationTitle) : IDocumentationFile
 public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
 {
 	// Preserve concrete type to leverage covariance properly
-	public static TestDocumentationFileFactory Instance { get; } = new TestDocumentationFileFactory();
+	public static TestDocumentationFileFactory Instance { get; } = new();
 
 	/// <inheritdoc />
 	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
@@ -97,7 +97,7 @@ public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocume
 // Factory that creates base IDocumentationFile instances for tests that don't need concrete types
 public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocumentationFile>
 {
-	public static GenericDocumentationFileFactory Instance { get; } = new GenericDocumentationFileFactory();
+	public static GenericDocumentationFileFactory Instance { get; } = new();
 
 	/// <inheritdoc />
 	public IDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)

@@ -104,6 +104,74 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	}
 
 	[Fact]
+	public void FolderWithNestedChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - file: getting-started.md
+		                   children:
+		                     - file: advanced.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+
+		// Folder has no index.md, so URL should be the first child's URL
+		folder!.Url.Should().Be("/guides/getting-started");
+
+		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
+		gettingStarted.Should().NotBeNull();
+		gettingStarted.Url.Should().Be("/guides/getting-started");
+		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
+		advanced.Should().NotBeNull();
+		advanced.Url.Should().Be("/guides/getting-started/advanced");
+
+		advanced.Parent.Should().BeSameAs(gettingStarted);
+		gettingStarted.Parent.Should().BeSameAs(folder);
+	}
+
+	[Fact]
+	public void FolderWithNestedDeeplinkedChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - file: clients/getting-started.md
+		                   children:
+		                     - file: clients/advanced.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First() as FolderNavigation;
+
+		// Folder has no index.md, so URL should be the first child's URL
+		folder!.Url.Should().Be("/guides/clients/getting-started");
+
+		var gettingStarted = folder.NavigationItems.First() as VirtualFileNavigation<IDocumentationFile>;
+		gettingStarted.Should().NotBeNull();
+		gettingStarted.Url.Should().Be("/guides/clients/getting-started");
+		var advanced = gettingStarted.NavigationItems.First() as FileNavigationLeaf<IDocumentationFile>;
+		advanced.Should().NotBeNull();
+		advanced.Url.Should().Be("/guides/clients/getting-started/advanced");
+
+		advanced.Parent.Should().BeSameAs(gettingStarted);
+		gettingStarted.Parent.Should().BeSameAs(folder);
+	}
+
+	[Fact]
 	public void FolderWithIndexUsesOwnUrl()
 	{
 		// language=yaml

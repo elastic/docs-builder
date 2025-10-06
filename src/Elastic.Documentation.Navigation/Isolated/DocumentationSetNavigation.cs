@@ -202,7 +202,7 @@ public class DocumentationSetNavigation<TModel>
 
 		// Create documentation file from factory
 		var fs = context.ReadFileSystem;
-		var fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.Path));
+		var fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fullPath));
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
 		if (documentationFile == null)
 		{
