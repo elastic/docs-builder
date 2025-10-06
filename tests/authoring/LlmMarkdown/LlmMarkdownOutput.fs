@@ -602,3 +602,44 @@ sub:
         markdown |> convertsToNewLLM """
 ## Hello, World!
 """
+
+type ``settings directive`` () =
+    static let generator = Setup.Generate [
+        Index """
+:::{settings} _settings/example-settings.yml
+:::
+"""
+        File("_settings/example-settings.yml", """groups:
+  - group: General settings
+    settings:
+      - setting: xpack.example.setting
+        description: |
+          This is a test setting with **bold** text and a [link](https://example.com).
+      - setting: xpack.another.setting
+        description: Another setting description.
+  - group: Advanced settings
+    settings:
+      - setting: xpack.advanced.option
+        description: An advanced option.
+""")
+    ]
+
+    [<Fact>]
+    let ``renders settings as markdown headings`` () =
+        generator |> convertsToNewLLM """
+## General settings
+
+#### xpack.example.setting
+
+This is a test setting with **bold** text and a [link](https://example.com).
+
+#### xpack.another.setting
+
+Another setting description.
+
+## Advanced settings
+
+#### xpack.advanced.option
+
+An advanced option.
+"""
