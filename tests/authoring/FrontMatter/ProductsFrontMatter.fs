@@ -66,30 +66,33 @@ This is a test page without products frontmatter.
         // Test that the products frontmatter is correctly processed by checking the file
         let results = markdownWithProducts.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        
+
         // Test that the file has the correct products
+        test <@ defaultFile.File.YamlFrontMatter <> null @>
         match defaultFile.File.YamlFrontMatter with
-        | NonNull fm ->
-            match fm.Products with
+        | NonNull yamlFrontMatter ->
+            test <@ yamlFrontMatter.Products <> null @>
+            match yamlFrontMatter.Products with
             | NonNull products ->
                 test <@ products.Count = 2 @>
                 // Test that the products are correctly identified
-                let productIds = products |> Seq.map (fun p -> p.Id) |> Set.ofSeq
+                let productIds = products |> Seq.map _.Id |> Set.ofSeq
                 test <@ productIds.Contains("elasticsearch") @>
                 test <@ productIds.Contains("ecctl") @>
-            | _ -> failwith "Products should not be null"
-        | _ -> failwith "YamlFrontMatter should not be null"
+            | _ -> ()
+        | _ -> ()
 
     [<Fact>]
     let ``does not include products in frontmatter when no products are specified`` () =
         // Test that pages without products frontmatter don't have products
         let results = markdownWithoutProducts.Value
         let defaultFile = results.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
-        
+
         // Test that the file has no products
         match defaultFile.File.YamlFrontMatter with
-        | NonNull fm ->
-            match fm.Products with
-            | NonNull products -> test <@ products.Count = 0 @>
-            | _ -> () // null is acceptable
-        | _ -> () // null is acceptable
+        | NonNull frontMatter ->
+            match frontMatter.Products with
+            | NonNull products ->
+                test <@ products.Count = 0 @>
+            | _ -> ()
+        | _ -> ()

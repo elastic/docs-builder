@@ -33,11 +33,8 @@ module MarkdownDocumentAssertions =
         let matter = result.File.YamlFrontMatter
         match matter with
         | NonNull m ->
-            match expectedAvailability with
-            | NonNull a ->
-                match m.AppliesTo with
-                | NonNull appliesTo -> appliesTo.Diagnostics <- a.Diagnostics
-                | _ -> ()
+            match (expectedAvailability, m.AppliesTo) with
+            | NonNull a, NonNull applies -> applies.Diagnostics <- a.Diagnostics
             | _ -> ()
 
             let apply = m.AppliesTo
