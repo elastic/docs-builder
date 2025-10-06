@@ -69,8 +69,7 @@ public partial class ElasticsearchGateway : ISearchGateway
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
 			)
 			.DefaultIndex(elasticsearchOptions.IndexName)
-			.Authentication(new ApiKey(elasticsearchOptions.ApiKey))
-			.DisableDirectStreaming(); // Captures request/response bodies for debugging
+			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
 
 		_client = new ElasticsearchClient(clientSettings);
 	}
