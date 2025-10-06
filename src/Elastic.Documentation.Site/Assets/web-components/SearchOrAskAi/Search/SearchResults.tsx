@@ -245,7 +245,7 @@ const SanitizedHtmlContent = memo(
             const sanitized = DOMPurify.sanitize(htmlContent, {
                 ALLOWED_TAGS: ['mark'],
                 ALLOWED_ATTR: [],
-                KEEP_CONTENT: true
+                KEEP_CONTENT: true,
             })
 
             // Check if text starts mid-sentence (lowercase first letter)
