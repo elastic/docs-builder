@@ -30,7 +30,7 @@ versioning_systems:
     current: 1.15.0
   curator:
     base: 8.0
-    current: 8.0.21
+    current: 9.0.0
 
   # Serverless
   serverless: *all
