@@ -36,8 +36,8 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 			if (link.Url?.StartsWith('/') == true || isCrossLink)
 			{
-				var currentRootNavigation = link.GetData(nameof(MarkdownFile.NavigationRoot)) as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var targetRootNavigation = link.GetData($"Target{nameof(MarkdownFile.NavigationRoot)}") as INodeNavigationItem<INavigationModel, INavigationItem>;
+				var currentRootNavigation = link.GetData("NavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
+				var targetRootNavigation = link.GetData("TargetNavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
 				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
 				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");

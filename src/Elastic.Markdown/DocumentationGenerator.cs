@@ -252,7 +252,7 @@ public class DocumentationGenerator
 			{
 				foreach (var exporter in _markdownExporters)
 				{
-					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(ctx);
+					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
 					_ = await exporter.ExportAsync(new MarkdownExportFileContext
 					{
 						BuildContext = Context,
@@ -349,14 +349,14 @@ public class DocumentationGenerator
 
 	public async Task<string> RenderLlmMarkdown(MarkdownFile markdown, Cancel ctx)
 	{
-		await DocumentationSet.Tree.Resolve(ctx);
-		var document = await markdown.ParseFullAsync(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
 		return LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)
 	{
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);
 	}
 }

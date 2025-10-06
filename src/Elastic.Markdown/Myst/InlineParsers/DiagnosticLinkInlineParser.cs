@@ -209,12 +209,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		UpdateLinkUrl(link, linkMarkdown, url, context, anchor);
 	}
 
-	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,
-		IFileInfo file, string url)
+	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context, IFileInfo file, string url)
 	{
 		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			link.SetData(nameof(currentMarkdown.NavigationRoot), currentMarkdown.NavigationRoot);
+			if (context.NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(currentMarkdown.CrossLink, out var navigationLookup))
+				link.SetData("NavigationRoot", navigationLookup.NavigationRoot);
 
 			if (link.IsImage)
 			{
@@ -227,7 +227,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
 		if (linkMarkdown is not null)
-			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
+		{
+			if (context.NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(linkMarkdown.CrossLink, out var navigationLookup))
+				link.SetData("TargetNavigationRoot", navigationLookup.NavigationRoot);
+
+		}
 		return linkMarkdown;
 	}
 

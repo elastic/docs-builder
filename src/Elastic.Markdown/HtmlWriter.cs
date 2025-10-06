@@ -49,17 +49,18 @@ public class HtmlWriter(
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
-		var document = await markdown.ParseFullAsync(ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
 		return await RenderLayout(markdown, document, ctx);
 	}
 
 	private async Task<RenderResult> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
 		var html = MarkdownFile.CreateHtml(document);
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
+		var root = DocumentationSet.MarkdownNavigationLookup[markdown.CrossLink].NavigationRoot;
 
-		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, INavigationHtmlWriter.AllLevels, ctx);
-		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, 1, ctx);
+		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, INavigationHtmlWriter.AllLevels, ctx);
+		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, 1, ctx);
 
 		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
 			? miniNavigationRenderResult
@@ -204,7 +205,7 @@ public class HtmlWriter(
 				: Path.Combine(dir, "index.html");
 		}
 
-		var document = await markdown.ParseFullAsync(ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
 
 		var rendered = await RenderLayout(markdown, document, ctx);
 		collector?.Collect(markdown, document, rendered.Html);

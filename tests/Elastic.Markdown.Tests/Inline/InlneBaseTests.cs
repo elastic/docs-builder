@@ -132,7 +132,7 @@ $"""
 
 		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 
-		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
+		Document = await File.ParseFullAsync(Set.FlatMappedFiles, TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</h1>\n</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);

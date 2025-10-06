@@ -36,8 +36,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	private IReadOnlyCollection<MarkdownFile> FilesInOrder { get; }
 
-	private IReadOnlyCollection<DocumentationGroup> GroupsInOrder { get; }
-
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; }
 
 	public int Depth { get; }
@@ -79,7 +77,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		NavigationRoot = toplevelTree;
 		Index = ProcessTocItems(context, toplevelTree, lookups, depth, virtualIndexFile, ref fileIndex, out var groups, out var files, out var navigationItems);
 
-		GroupsInOrder = groups;
 		FilesInOrder = files;
 		NavigationItems = navigationItems;
 		Id = ShortId.Create(NavigationSource.ToString(), FolderName);
@@ -165,7 +162,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 				// TODO these have to be refactor to be pure navigational properties
 				md.ScopeDirectory = file.TableOfContentsScope.ScopeDirectory;
-				md.NavigationRoot = rootNavigationItem;
 
 				foreach (var extension in lookups.EnabledExtensions)
 					extension.Visit(d, tocItem);
@@ -238,18 +234,4 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		return index ?? throw new InvalidOperationException($"No index file found. {depth}, {fileIndex}");
 	}
 
-	private bool _resolved;
-
-	public async Task Resolve(Cancel ctx = default)
-	{
-		if (_resolved)
-			return;
-
-		await Parallel.ForEachAsync(FilesInOrder, ctx, async (file, token) => await file.MinimalParseAsync(token));
-		await Parallel.ForEachAsync(GroupsInOrder, ctx, async (group, token) => await group.Resolve(token));
-
-		_ = await Index.MinimalParseAsync(ctx);
-
-		_resolved = true;
-	}
 }

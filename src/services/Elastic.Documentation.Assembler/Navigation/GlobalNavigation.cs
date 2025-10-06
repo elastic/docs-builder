@@ -78,8 +78,6 @@ public record GlobalNavigation : IPositionalNavigation
 				case FileNavigationItem fileNavigationItem:
 					if (parent is not null)
 						fileNavigationItem.Parent = parent;
-					if (topLevelNavigation is not null)
-						fileNavigationItem.Model.NavigationRoot = topLevelNavigation;
 					_ = allNavigationItems.Add(fileNavigationItem);
 					break;
 				case CrossLinkNavigationItem crossLinkNavigationItem:
@@ -90,8 +88,6 @@ public record GlobalNavigation : IPositionalNavigation
 				case DocumentationGroup documentationGroup:
 					if (parent is not null)
 						documentationGroup.Parent = parent;
-					if (topLevelNavigation is not null)
-						documentationGroup.Index.NavigationRoot = topLevelNavigation;
 					_ = allNavigationItems.Add(documentationGroup);
 					UpdateParent(allNavigationItems, documentationGroup.NavigationItems, documentationGroup, topLevelNavigation);
 					break;
@@ -144,10 +140,7 @@ public record GlobalNavigation : IPositionalNavigation
 			var tocNavigationItems = BuildNavigation(tocChildren, depth + 1);
 
 			if (depth == 0 && tree.Parent != RootContentTree)
-			{
 				tree.Parent = RootContentTree;
-				tree.Index.NavigationRoot = tree;
-			}
 
 			var configuredNavigationItems =
 				depth == 0

@@ -9,14 +9,17 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
+using Elastic.Markdown.IO.NewNavigation;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +32,11 @@ public interface INavigationLookups
 	IReadOnlyCollection<IDocsBuilderExtension> EnabledExtensions { get; }
 	FrozenDictionary<string, DocumentationFile[]> FilesGroupedByFolder { get; }
 	ICrossLinkResolver CrossLinkResolver { get; }
+}
+
+public interface INavigationLookupProvider
+{
+	FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; }
 }
 
 public interface IPositionalNavigation
@@ -100,7 +108,7 @@ public record NavigationLookups : INavigationLookups
 	public required ICrossLinkResolver CrossLinkResolver { get; init; }
 }
 
-public class DocumentationSet : INavigationLookups, IPositionalNavigation
+public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavigationLookupProvider
 {
 	private readonly ILogger<DocumentationSet> _logger;
 	public BuildContext Context { get; }
@@ -157,9 +165,13 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		var resolver = new ParserResolvers
 		{
 			CrossLinkResolver = CrossLinkResolver,
-			DocumentationFileLookup = DocumentationFileLookup
+			DocumentationFileLookup = DocumentationFileLookup,
+			NavigationLookupProvider = this
 		};
 		MarkdownParser = new MarkdownParser(context, resolver);
+
+		var fileFactory = new MarkdownFileFactory(context, MarkdownParser);
+		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
@@ -217,6 +229,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 
 		ValidateRedirectsExists();
 	}
+
+	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
 
 	private void UpdateNavigationIndex(IReadOnlyCollection<INavigationItem> navigationItems, ref int navigationIndex)
 	{
@@ -380,7 +394,16 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 		return FlatMappedFiles.GetValueOrDefault(relativePath);
 	}
 
-	public async Task ResolveDirectoryTree(Cancel ctx) => await Tree.Resolve(ctx);
+	private bool _resolved;
+	public async Task ResolveDirectoryTree(Cancel ctx)
+	{
+		if (_resolved)
+			return;
+
+		await Parallel.ForEachAsync(FlatMappedFiles.Values.OfType<MarkdownFile>(), ctx, async (file, token) => await file.MinimalParseAsync(FlatMappedFiles, token));
+
+		_resolved = true;
+	}
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{
@@ -413,7 +436,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation
 				if (documentationFile is not null)
 					return documentationFile;
 			}
-			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context, this);
+			return new MarkdownFile(file, SourceDirectory, MarkdownParser, context);
 		}
 	}
 

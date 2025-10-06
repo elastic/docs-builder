@@ -83,7 +83,7 @@ $"""
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		Document = await File.ParseFullAsync(TestContext.Current.CancellationToken);
+		Document = await File.ParseFullAsync(Set.FlatMappedFiles, TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);

@@ -13,7 +13,7 @@ public record DocumentationDirectory(string NavigationTitle) : IDocumentationFil
 
 public interface IDocumentationFileFactory<out TModel> where TModel : IDocumentationFile
 {
-	TModel? TryCreateDocumentationFile(IFileInfo path);
+	TModel? TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem);
 }
 
 public static class DocumentationNavigationFactory
@@ -183,7 +183,7 @@ public class DocumentationSetNavigation<TModel>
 		// Create documentation file from factory
 		var fs = context.ReadFileSystem;
 		var fileInfo = fs.FileInfo.NewCombine(context.DocumentationSourceDirectory.FullName, parentPath, fileRef.RelativePath);
-		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo);
+		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
 		if (documentationFile == null)
 		{
 			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.RelativePath}' could not be created");

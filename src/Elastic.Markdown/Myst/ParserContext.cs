@@ -29,6 +29,7 @@ public interface IParserResolvers
 {
 	ICrossLinkResolver CrossLinkResolver { get; }
 	Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
+	INavigationLookupProvider NavigationLookupProvider { get; }
 }
 
 public record ParserResolvers : IParserResolvers
@@ -36,6 +37,8 @@ public record ParserResolvers : IParserResolvers
 	public required ICrossLinkResolver CrossLinkResolver { get; init; }
 
 	public required Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; init; }
+
+	public required INavigationLookupProvider NavigationLookupProvider { get; init; }
 }
 
 public record ParserState(BuildContext Build) : ParserResolvers
@@ -62,6 +65,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	public Func<IFileInfo, DocumentationFile?> DocumentationFileLookup { get; }
 	public IReadOnlyDictionary<string, string> Substitutions { get; }
 	public IReadOnlyDictionary<string, string> ContextSubstitutions { get; }
+	public INavigationLookupProvider NavigationLookupProvider { get; }
 
 	public ParserContext(ParserState state)
 	{
@@ -74,6 +78,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		CrossLinkResolver = state.CrossLinkResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;
 		DocumentationFileLookup = state.DocumentationFileLookup;
+		NavigationLookupProvider = state.NavigationLookupProvider;
 
 		CurrentUrlPath = DocumentationFileLookup(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile md
 			? md.Url
@@ -108,4 +113,5 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 
 		ContextSubstitutions = contextSubs;
 	}
+
 }

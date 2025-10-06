@@ -83,7 +83,7 @@ public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocume
 	public static TestDocumentationFileFactory Instance { get; } = new TestDocumentationFileFactory();
 
 	/// <inheritdoc />
-	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path)
+	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
 	{
 		// Extract the title from the file name (without extension)
 		var fileName = path.Name;
@@ -100,7 +100,7 @@ public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocume
 	public static GenericDocumentationFileFactory Instance { get; } = new GenericDocumentationFileFactory();
 
 	/// <inheritdoc />
-	public IDocumentationFile TryCreateDocumentationFile(IFileInfo path)
+	public IDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
 	{
 		// Extract the title from the file name (without extension)
 		var fileName = path.Name;

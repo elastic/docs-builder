@@ -42,12 +42,12 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		if (file.Extension != ".toml")
 			return null;
 
-		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, documentationSet.MarkdownParser, Build, documentationSet);
+		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, documentationSet.MarkdownParser, Build);
 	}
 
 	public MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, DocumentationSet documentationSet) =>
 		file.Name == "index.md"
-			? new DetectionRuleOverviewFile(file, sourceDirectory, documentationSet.MarkdownParser, Build, documentationSet)
+			? new DetectionRuleOverviewFile(file, sourceDirectory, documentationSet.MarkdownParser, Build)
 			: null;
 
 	public bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile)

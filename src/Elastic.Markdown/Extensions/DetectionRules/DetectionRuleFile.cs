@@ -14,8 +14,8 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DetectionRuleOverviewFile : MarkdownFile
 {
-	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build, DocumentationSet set)
-		: base(sourceFile, rootPath, parser, build, set)
+	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
+		: base(sourceFile, rootPath, parser, build)
 	{
 	}
 
@@ -96,9 +96,8 @@ public record DetectionRuleFile : MarkdownFile
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext build,
-		DocumentationSet set
-	) : base(sourceFile, rootPath, parser, build, set)
+		BuildContext build
+	) : base(sourceFile, rootPath, parser, build)
 	{
 		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);

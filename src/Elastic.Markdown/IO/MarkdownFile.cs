@@ -2,12 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
@@ -21,11 +24,9 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.IO;
 
-public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigationModel
+public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocumentationFile
 {
 	private string? _navigationTitle;
-
-	private readonly DocumentationSet _set;
 
 	private readonly IFileInfo _configurationFile;
 
@@ -35,8 +36,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext build,
-		DocumentationSet set
+		BuildContext build
 	)
 		: base(sourceFile, rootPath, build.Git.RepositoryName)
 	{
@@ -48,19 +48,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		Collector = build.Collector;
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
-		_set = set;
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
+		Products = build.ProductsConfiguration;
 
-		NavigationRoot = set.Tree;
 	}
+
+	public ProductsConfiguration Products { get; }
 
 	public bool PartOfNavigation { get; set; }
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
-
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; set; }
 
 	private IDiagnosticsCollector Collector { get; }
 
@@ -113,25 +112,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 
 	private string DefaultUrlPath => $"{UrlPathPrefix}{DefaultUrlPathSuffix}";
 
-	private string? _url;
-	public string Url
-	{
-		get
-		{
-			if (_url is not null)
-				return _url;
-			if (_set.CrossLinkResolver.UriResolver is IsolatedBuildEnvironmentUriResolver)
-			{
-				_url = DefaultUrlPath;
-				return _url;
-			}
-			var crossLink = new Uri(CrossLink);
-			var uri = _set.CrossLinkResolver.UriResolver.Resolve(crossLink, DefaultUrlPathSuffix);
-			_url = uri.AbsolutePath;
-			return _url;
-
-		}
-	}
+	public string Url => string.Empty ?? throw new InvalidOperationException("Url is not set");
 
 	//public int NavigationIndex { get; set; } = -1;
 
@@ -163,18 +144,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	protected virtual async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
 		await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 
-	public async Task<MarkdownDocument> MinimalParseAsync(Cancel ctx)
+	public async Task<MarkdownDocument> MinimalParseAsync(FrozenDictionary<string, DocumentationFile> documentationFileLookup, Cancel ctx)
 	{
 		var document = await GetMinimalParseDocumentAsync(ctx);
-		ReadDocumentInstructions(document);
+		ReadDocumentInstructions(document, documentationFileLookup);
 		ValidateAnchorRemapping();
 		return document;
 	}
 
-	public async Task<MarkdownDocument> ParseFullAsync(Cancel ctx)
+	public async Task<MarkdownDocument> ParseFullAsync(FrozenDictionary<string, DocumentationFile> documentationFileLookup, Cancel ctx)
 	{
 		if (!_instructionsParsed)
-			_ = await MinimalParseAsync(ctx);
+			_ = await MinimalParseAsync(documentationFileLookup, ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
 		return document;
@@ -193,7 +174,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		return allProperties;
 	}
 
-	protected void ReadDocumentInstructions(MarkdownDocument document)
+	protected void ReadDocumentInstructions(MarkdownDocument document, FrozenDictionary<string, DocumentationFile> documentationFileLookup)
 	{
 		Title ??= document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
@@ -220,7 +201,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
-		var toc = GetAnchors(_set, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
+		var toc = GetAnchors(Collector, documentationFileLookup, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
 		_pageTableOfContent.Clear();
 		foreach (var t in toc)
@@ -234,7 +215,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	}
 
 	public static List<PageTocItem> GetAnchors(
-		DocumentationSet set,
+		IDiagnosticsCollector collector,
+		FrozenDictionary<string, DocumentationFile> documentationFileLookup,
 		MarkdownParser parser,
 		YamlFrontMatter? frontMatter,
 		MarkdownDocument document,
@@ -248,11 +230,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			{
 				var relativePath = i.IncludePathRelativeToSource;
 				if (relativePath is null
-					|| !set.FlatMappedFiles.TryGetValue(relativePath, out var file)
+					|| !documentationFileLookup.TryGetValue(relativePath, out var file)
 					|| file is not SnippetFile snippet)
 					return null;
 
-				var anchors = snippet.GetAnchors(set, parser, frontMatter);
+				var anchors = snippet.GetAnchors(collector, documentationFileLookup, parser, frontMatter);
 				return new { Block = i, Anchors = anchors };
 			})
 			.Where(i => i is not null)
@@ -294,7 +276,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			{
 				var processedTitle = step.Title;
 				// Apply substitutions to step titles
-				if (subs.Count > 0 && processedTitle.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var replacement))
+				if (subs.Count > 0 && processedTitle.AsSpan().ReplaceSubstitutions(subs, collector, out var replacement))
 					processedTitle = replacement;
 
 				return new
@@ -316,7 +298,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 			.Select(item => item.TocItem)
 			.Select(toc => subs.Count == 0
 				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, set.Context.Collector, out var r)
+				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, collector, out var r)
 					? toc with { Heading = r }
 					: toc)
 			.ToList();
@@ -394,7 +376,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, INavigati
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, _set.Context.ProductsConfiguration);
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, Products);
 		}
 		catch (InvalidProductException e)
 		{
