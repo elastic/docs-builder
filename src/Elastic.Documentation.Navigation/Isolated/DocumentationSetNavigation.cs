@@ -212,7 +212,19 @@ public class DocumentationSetNavigation<TModel>
 
 		// Create documentation file from factory
 		var fs = context.ReadFileSystem;
-		var fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fullPath));
+
+		// When inside a TOC, files are relative to the TOC directory, not the parent path
+		IFileInfo fileInfo;
+		if (prefixProvider is TableOfContentsNavigation toc)
+		{
+			// For TOC children, use the TOC directory as the base
+			fileInfo = fs.FileInfo.New(fs.Path.Combine(toc.TableOfContentsDirectory.FullName, relativePathForUrl));
+		}
+		else
+		{
+			// For other files, use the documentation source directory + full path
+			fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fullPath));
+		}
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
 		if (documentationFile == null)
 		{
