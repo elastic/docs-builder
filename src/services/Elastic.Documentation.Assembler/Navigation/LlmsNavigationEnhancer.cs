@@ -9,6 +9,7 @@ using System.Text;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -20,7 +21,7 @@ namespace Elastic.Documentation.Assembler.Navigation;
 /// </summary>
 public class LlmsNavigationEnhancer
 {
-	public string GenerateNavigationSections(GlobalNavigation navigation, Uri canonicalBaseUrl)
+	public string GenerateNavigationSections(SiteNavigation navigation, Uri canonicalBaseUrl)
 	{
 		var content = new StringBuilder();
 

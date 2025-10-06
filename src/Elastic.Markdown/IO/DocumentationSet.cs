@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -148,8 +147,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,
-		ICrossLinkResolver linkResolver,
-		TableOfContentsTreeCollector? treeCollector = null
+		ICrossLinkResolver linkResolver
 	)
 	{
 		_logger = logFactory.CreateLogger<DocumentationSet>();
@@ -160,7 +158,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 		CrossLinkResolver = linkResolver;
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
-		treeCollector ??= new TableOfContentsTreeCollector();
 
 		var resolver = new ParserResolvers
 		{
@@ -205,7 +202,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 			CrossLinkResolver = CrossLinkResolver
 		};
 
-		Tree = new TableOfContentsTree(Source, Context, lookups, treeCollector, ref fileIndex);
+		Tree = new TableOfContentsTree(Source, Context, lookups, ref fileIndex);
 
 		var navigationIndex = 0;
 		UpdateNavigationIndex(Tree.NavigationItems, ref navigationIndex);

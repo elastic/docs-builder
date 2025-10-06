@@ -175,14 +175,34 @@ public class DocumentationSetNavigation<TModel>
 		string parentPath
 	)
 	{
+		// Determine the actual relative path for this file in the URL
+		string relativePathForUrl;
+
+		if (!string.IsNullOrEmpty(parentPath))
+		{
+			// Extract parent's directory from its path
+			var parentDir = parentPath.Contains('/')
+				? parentPath[..parentPath.LastIndexOf('/')]
+				: "";
+
+			// If file path starts with parent's directory, extract just the filename
+			relativePathForUrl = !string.IsNullOrEmpty(parentDir) && fileRef.RelativePath.StartsWith(parentDir + "/", StringComparison.Ordinal)
+				? fileRef.RelativePath[(parentDir.Length + 1)..]
+				: fileRef.RelativePath;
+		}
+		else
+		{
+			relativePathForUrl = fileRef.RelativePath;
+		}
+
 		// Combine parent path with file path
 		var fullPath = string.IsNullOrEmpty(parentPath)
-			? fileRef.RelativePath
-			: $"{parentPath}/{fileRef.RelativePath}";
+			? relativePathForUrl
+			: $"{parentPath}/{relativePathForUrl}";
 
 		// Create documentation file from factory
 		var fs = context.ReadFileSystem;
-		var fileInfo = fs.FileInfo.NewCombine(context.DocumentationSourceDirectory.FullName, parentPath, fileRef.RelativePath);
+		var fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.RelativePath));
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
 		if (documentationFile == null)
 		{

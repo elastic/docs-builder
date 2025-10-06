@@ -2,9 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
-using System.Runtime.CompilerServices;
-using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
@@ -18,7 +15,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 {
 	public SiteNavigation(
 		SiteNavigationFile siteNavigationFile,
-		IDocumentationSetContext context,
+		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations
 	)
 	{
@@ -67,6 +64,11 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _nodes;
 	public IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> Nodes => _nodes;
 
+
+	//TODO Obsolete?
+	public IReadOnlyCollection<INodeNavigationItem<INavigationModel, INavigationItem>> TopLevelItems =>
+		NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
+
 	/// <inheritdoc />
 	public string Url { get; set; } = "/";
 
@@ -106,7 +108,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 	private INavigationItem? CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
-		IDocumentationSetContext context
+		IDocumentationContext context
 	)
 	{
 		// Validate that path_prefix is set

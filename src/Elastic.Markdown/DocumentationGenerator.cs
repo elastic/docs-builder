@@ -48,7 +48,6 @@ public class DocumentationGenerator
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
-	public ICrossLinkResolver CrossLinkResolver { get; }
 	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
 
 	public DocumentationGenerator(
@@ -58,8 +57,7 @@ public class DocumentationGenerator
 		IDocumentationFileOutputProvider? documentationFileOutputProvider = null,
 		IMarkdownExporter[]? markdownExporters = null,
 		IConversionCollector? conversionCollector = null,
-		ILegacyUrlMapper? legacyUrlMapper = null,
-		IPositionalNavigation? positionalNavigation = null
+		ILegacyUrlMapper? legacyUrlMapper = null
 	)
 	{
 		_markdownExporters = markdownExporters ?? [];
@@ -70,9 +68,7 @@ public class DocumentationGenerator
 
 		DocumentationSet = docSet;
 		Context = docSet.Context;
-		CrossLinkResolver = docSet.CrossLinkResolver;
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper,
-			positionalNavigation);
+		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), navigationHtmlWriter, legacyUrlMapper);
 		_documentationFileExporter =
 			docSet.Context.AvailableExporters.Contains(Exporter.Html)
 				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter

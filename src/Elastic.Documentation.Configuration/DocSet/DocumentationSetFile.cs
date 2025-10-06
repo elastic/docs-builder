@@ -55,7 +55,7 @@ public class DocumentationSetFile : TableOfContentsFile
 [YamlSerializable]
 public class DocumentationSetFeatures
 {
-	[YamlMember(Alias = "primary-nav")]
+	[YamlMember(Alias = "primary-nav", ApplyNamingConventions = false)]
 	public bool? PrimaryNav { get; set; }
 }
 

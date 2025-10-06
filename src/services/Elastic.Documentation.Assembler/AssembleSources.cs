@@ -14,6 +14,8 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Isolated;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.RepresentationModel;
@@ -31,8 +33,6 @@ public class AssembleSources
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
 	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
-
-	public TableOfContentsTreeCollector TreeCollector { get; } = new();
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
@@ -87,7 +87,7 @@ public class AssembleSources
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, TreeCollector, configurationContext,
+			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, configurationContext,
 				availableExporters))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();

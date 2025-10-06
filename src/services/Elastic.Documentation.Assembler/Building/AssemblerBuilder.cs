@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -21,7 +22,6 @@ namespace Elastic.Documentation.Assembler.Building;
 public class AssemblerBuilder(
 	ILoggerFactory logFactory,
 	AssembleContext context,
-	GlobalNavigation navigation,
 	GlobalNavigationHtmlWriter writer,
 	GlobalNavigationPathProvider pathProvider,
 	ILegacyUrlMapper? legacyUrlMapper
@@ -136,7 +136,6 @@ public class AssemblerBuilder(
 			logFactory, HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
-			positionalNavigation: navigation,
 			markdownExporters: markdownExporters
 		);
 		return await generator.GenerateAll(ctx);

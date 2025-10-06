@@ -36,6 +36,9 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 	public IDirectoryInfo OutputDirectory { get; }
 
+	/// <inheritdoc />
+	public IFileInfo ConfigurationPath { get; }
+
 	public PublishEnvironment Environment { get; }
 
 	public AssembleContext(
@@ -55,6 +58,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 		Configuration = configuration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
+		ConfigurationPath = ConfigurationFileProvider.AssemblerFile;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		Endpoints = configurationContext.Endpoints;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;

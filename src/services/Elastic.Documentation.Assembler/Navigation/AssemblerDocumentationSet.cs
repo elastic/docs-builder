@@ -27,7 +27,6 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		ICrossLinkResolver crossLinkResolver,
-		TableOfContentsTreeCollector treeCollector,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters
 	)
@@ -77,6 +76,6 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, treeCollector);
+		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
 	}
 }

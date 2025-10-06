@@ -63,6 +63,38 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	}
 
 	[Fact]
+	public void FileWithChildrenDeeplinksPreservesPaths()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: nest/guide.md
+		               children:
+		                 - file: nest/section1.md
+		                 - file: nest/section2.md
+		           """;
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext();
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		navigation.NavigationItems.Should().HaveCount(1);
+		var fileNav = navigation.NavigationItems.First().Should().BeOfType<VirtualFileNavigation<IDocumentationFile>>().Subject;
+		fileNav.Url.Should().Be("/nest/guide");
+		fileNav.NavigationItems.Should().HaveCount(2);
+
+		var section1 = fileNav.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		section1.Url.Should().Be("/nest/guide/section1");
+		section1.Parent.Should().BeSameAs(fileNav);
+
+		var section2 = fileNav.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		section2.Url.Should().Be("/nest/guide/section2");
+		section2.Parent.Should().BeSameAs(fileNav);
+	}
+
+	[Fact]
 	public void FileWithNestedChildrenBuildsCorrectly()
 	{
 		// language=yaml

@@ -353,4 +353,233 @@ public class DocumentationSetFileTests
 		tocRef.Source.Should().Be("development");
 		tocRef.Children.Should().BeEmpty();
 	}
+
+	[Fact]
+	public void DeserializesFileWithChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: guide.md
+		               children:
+		                 - file: chapter1.md
+		                 - file: chapter2.md
+		                 - file: chapter3.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Toc.Should().HaveCount(1);
+		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		guide.RelativePath.Should().Be("guide.md");
+		guide.Children.Should().HaveCount(3);
+		guide.Children.ElementAt(0).Should().BeOfType<FileRef>()
+			.Which.RelativePath.Should().Be("chapter1.md");
+		guide.Children.ElementAt(1).Should().BeOfType<FileRef>()
+			.Which.RelativePath.Should().Be("chapter2.md");
+		guide.Children.ElementAt(2).Should().BeOfType<FileRef>()
+			.Which.RelativePath.Should().Be("chapter3.md");
+	}
+
+	[Fact]
+	public void DeserializesFileWithNestedPathsAsChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: api/guide.md
+		               children:
+		                 - file: api/section1.md
+		                 - file: api/section2.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Toc.Should().HaveCount(1);
+		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		guide.RelativePath.Should().Be("api/guide.md");
+		guide.Children.Should().HaveCount(2);
+		guide.Children.ElementAt(0).Should().BeOfType<FileRef>()
+			.Which.RelativePath.Should().Be("api/section1.md");
+		guide.Children.ElementAt(1).Should().BeOfType<FileRef>()
+			.Which.RelativePath.Should().Be("api/section2.md");
+	}
+
+	[Fact]
+	public void DeserializesDefaultValues()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.MaxTocDepth.Should().Be(2); // Default value
+		result.DevDocs.Should().BeFalse(); // Default value
+		result.CrossLinks.Should().BeEmpty();
+		result.Exclude.Should().BeEmpty();
+		result.Subs.Should().BeEmpty();
+		result.Api.Should().BeEmpty();
+		result.Features.PrimaryNav.Should().BeNull();
+	}
+
+	[Fact]
+	public void DeserializesEmptyToc()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc: []
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Toc.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void DeserializesCrossLinkWithoutTitle()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		               children:
+		                 - crosslink: docs-content://get-started.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		var file = result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
+		var crosslink = file.Children.ElementAt(0).Should().BeOfType<CrossLinkRef>().Subject;
+		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started.md/"); // URI normalization adds trailing slash
+		crosslink.Title.Should().BeNull();
+	}
+
+	[Fact]
+	public void DeserializesMixedHiddenAndVisibleItems()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		             - hidden: _internal.md
+		             - file: public.md
+		             - hidden: _draft.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Toc.Should().HaveCount(4);
+		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
+			.Which.Hidden.Should().BeFalse();
+		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
+			.Which.Hidden.Should().BeTrue();
+		result.Toc.ElementAt(2).Should().BeOfType<FileRef>()
+			.Which.Hidden.Should().BeFalse();
+		result.Toc.ElementAt(3).Should().BeOfType<FileRef>()
+			.Which.Hidden.Should().BeTrue();
+	}
+
+	[Fact]
+	public void DeserializesDeeplyNestedFileWithChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: guide.md
+		               children:
+		                 - file: chapter1.md
+		                   children:
+		                     - file: section1.md
+		                       children:
+		                         - file: subsection1.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var subsection1 = section1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+
+		subsection1.RelativePath.Should().Be("subsection1.md");
+		subsection1.Children.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void DeserializesMultipleExcludePatterns()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           exclude:
+		             - '_*.md'
+		             - '*.tmp'
+		             - '*.draft'
+		             - '.DS_Store'
+		             - 'node_modules/**'
+		           toc:
+		             - file: index.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Exclude.Should().HaveCount(5)
+			.And.ContainInOrder("_*.md", "*.tmp", "*.draft", ".DS_Store", "node_modules/**");
+	}
+
+	[Fact]
+	public void DeserializesMultipleCrossLinks()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           cross_links:
+		             - elasticsearch
+		             - kibana
+		             - docs-content
+		             - cloud
+		           toc:
+		             - file: index.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.CrossLinks.Should().HaveCount(4)
+			.And.ContainInOrder("elasticsearch", "kibana", "docs-content", "cloud");
+	}
+
+	[Fact]
+	public void DeserializesFolderWithMixedChildren()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: api
+		               children:
+		                 - file: index.md
+		                 - folder: rest
+		                   children:
+		                     - file: index.md
+		                 - file: overview.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		var apiFolder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
+		apiFolder.Children.Should().HaveCount(3);
+		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>();
+		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>();
+		apiFolder.Children.ElementAt(2).Should().BeOfType<FileRef>();
+	}
 }

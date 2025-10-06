@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
@@ -10,9 +9,11 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -78,14 +79,18 @@ public class AssemblerBuildService(
 		var navigationFile = new GlobalNavigationFile(collector, configurationContext.ConfigurationFileProvider, assemblyConfiguration, assembleSources.TocConfigurationMapping);
 
 		_logger.LogInformation("Create global navigation");
-		var navigation = new GlobalNavigation(assembleSources, navigationFile);
+
+		var yaml = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(yaml.FullName, ctx));
+		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 
-		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, htmlWriter, pathProvider, historyMapper);
 
 		await builder.BuildAllAsync(assembleContext.Environment, assembleSources.AssembleSets, exporters, ctx);
 
@@ -116,7 +121,7 @@ public class AssemblerBuildService(
 		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 
-	private static async Task EnhanceLlmsTxtFile(AssembleContext context, GlobalNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
+	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
 		var llmsTxtPath = Path.Combine(context.OutputDirectory.FullName, "docs", "llms.txt");
 

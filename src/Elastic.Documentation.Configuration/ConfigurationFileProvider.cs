@@ -21,6 +21,7 @@ public partial class ConfigurationFileProvider
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
 	internal static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
+		.WithNamingConvention(UnderscoredNamingConvention.Instance)
 		.WithTypeConverter(new TocItemCollectionYamlConverter())
 		.WithTypeConverter(new TocItemYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())

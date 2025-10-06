@@ -14,8 +14,6 @@ namespace Elastic.Markdown.IO.Navigation;
 [DebuggerDisplay("Toc: {Depth} {NavigationSource} > ({NavigationItems.Count} items)")]
 public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationItem>
 {
-	private readonly TableOfContentsTreeCollector _treeCollector;
-
 	public string Id { get; }
 
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; protected init; }
@@ -50,7 +48,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		_root ?? throw new InvalidOperationException("root navigation's model is not of type MarkdownFile");
 
 	protected DocumentationGroup(string folderName,
-		TableOfContentsTreeCollector treeCollector,
 		BuildContext context,
 		NavigationLookups lookups,
 		Uri navigationSource,
@@ -64,7 +61,6 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 		Parent = parent;
 		FolderName = folderName;
 		NavigationSource = navigationSource;
-		_treeCollector = treeCollector;
 		Depth = depth;
 		// Virtual calls don't use state, so while ugly not an issue
 		// We'll need to address this more structurally
@@ -171,7 +167,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					if (file.Hidden)
 						context.EmitError(context.ConfigurationPath, $"The following file is hidden but has children: {file.RelativePath}");
 					var group = new DocumentationGroup(md.RelativePath,
-						_treeCollector, context, lookups with
+						context, lookups with
 						{
 							TableOfContents = file.Children,
 						}, NavigationSource, ref fileIndex, depth + 1, rootNavigationItem, this, md);
@@ -209,7 +205,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				DocumentationGroup group;
 				if (folder is TocReference tocReference)
 				{
-					var toc = new TableOfContentsTree(tocReference.Source, folder.RelativePath, _treeCollector, context, lookups with
+					var toc = new TableOfContentsTree(tocReference.Source, folder.RelativePath, context, lookups with
 					{
 						TableOfContents = children
 					}, ref fileIndex, depth + 1, rootNavigationItem, this);
@@ -219,7 +215,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 				}
 				else
 				{
-					group = new DocumentationGroup(folder.RelativePath, _treeCollector, context, lookups with
+					group = new DocumentationGroup(folder.RelativePath, context, lookups with
 					{
 						TableOfContents = children
 					}, NavigationSource, ref fileIndex, depth + 1, rootNavigationItem, this);

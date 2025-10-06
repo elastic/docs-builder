@@ -5,13 +5,14 @@
 using System.Collections.Concurrent;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
-public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, GlobalNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
 

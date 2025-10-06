@@ -53,7 +53,6 @@ public static class VersionsConfigurationExtensions
 
 internal sealed record VersionsConfigDto
 {
-	[YamlMember(Alias = "versioning_systems")]
 	public Dictionary<string, VersioningSystemDto> VersioningSystems { get; set; } = [];
 }
 
