@@ -230,14 +230,14 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 		{
 			switch (item)
 			{
-				case ILeafNavigationItem<INavigationModel> fileNavigationItem:
+				case ILeafNavigationItem<INavigationModel> leaf:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
-					fileNavigationItem.NavigationIndex = fileIndex;
+					leaf.NavigationIndex = fileIndex;
 					break;
-				case INodeNavigationItem<INavigationModel, INavigationItem> documentationGroup:
+				case INodeNavigationItem<INavigationModel, INavigationItem> node:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
-					documentationGroup.NavigationIndex = groupIndex;
-					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);
+					node.NavigationIndex = groupIndex;
+					UpdateNavigationIndex(node.NavigationItems, ref navigationIndex);
 					break;
 				default:
 					Context.EmitError(Context.ConfigurationPath, $"{nameof(DocumentationSet)}.{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
@@ -267,10 +267,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 		//TODO add crosslink to navigation if still necessary later
 		switch (item)
 		{
+			case ILeafNavigationItem<IDocumentationFile> { IsCrossLink: true } f:
+				return [(f.Url, item)];
 			case ILeafNavigationItem<IDocumentationFile> f:
 				return [(f.Url, item)];
-			case CrossLinkNavigationItem cl:
-				return [(cl.Url, item)]; // Use the URL as the key for cross-links
 			case INodeNavigationItem<INavigationModel, INavigationItem> g:
 				var index = new List<(string, INavigationItem)>
 				{
