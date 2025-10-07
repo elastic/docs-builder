@@ -80,8 +80,8 @@ For inline images, the alt text always overrides any title specified in the Mark
 Image sizing is specified through the title argument. You can specify just the size without needing to provide a redundant title:
 
 ```markdown
-![alt](img.png "=WxH")
-![alt](img.png "=W")
+![alt](img.png " =WxH")
+![alt](img.png " =W")
 ```
 
 In this case, the alt text will be used as both the `alt` and `title` attributes, and the size parameters will be applied.
@@ -91,9 +91,9 @@ In this case, the alt text will be used as both the `alt` and `title` attributes
 If `H` is omitted `W` is used as the height as well.
 
 ```markdown
-![alt](img.png "=250x330")
-![alt](img.png "=50%x40%")
-![alt](img.png "=50%")
+![alt](img.png " =250x330")
+![alt](img.png " =50%x40%")
+![alt](img.png " =50%")
 ```
 
 
