@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.NewNavigation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -193,11 +194,13 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
-		if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out var documentationFile))
+		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))
 		{
 			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
-			if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue(s, out documentationFile))
+			fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
+			if (!generator.DocumentationSet.Files.TryGetValue(fp, out documentationFile))
 			{
 				foreach (var extension in holder.Generator.DocumentationSet.EnabledExtensions)
 				{
@@ -227,7 +230,8 @@ public class DocumentationWebHost
 				if (s == "index.md")
 					return Results.Redirect(generator.DocumentationSet.Navigation.Url);
 
-				if (!generator.DocumentationSet.FlatMappedFiles.TryGetValue("404.md", out var notFoundDocumentationFile))
+				var fp404 = new FilePath("404.md", generator.DocumentationSet.SourceDirectory);
+				if (!generator.DocumentationSet.Files.TryGetValue(fp404, out var notFoundDocumentationFile))
 					return Results.NotFound();
 
 				if (Path.GetExtension(s) is "" or not ".md")

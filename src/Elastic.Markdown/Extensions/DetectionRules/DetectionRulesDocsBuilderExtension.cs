@@ -8,6 +8,8 @@ using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.IO.NewNavigation;
+using Elastic.Markdown.Myst;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
@@ -37,26 +39,27 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		}
 	}
 
-	public DocumentationFile? CreateDocumentationFile(IFileInfo file, DocumentationSet documentationSet)
+	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser)
 	{
 		if (file.Extension != ".toml")
 			return null;
 
-		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, documentationSet.MarkdownParser, Build);
+		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, markdownParser, Build);
 	}
 
-	public MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, DocumentationSet documentationSet) =>
+	public MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser) =>
 		file.Name == "index.md"
-			? new DetectionRuleOverviewFile(file, sourceDirectory, documentationSet.MarkdownParser, Build)
+			? new DetectionRuleOverviewFile(file, sourceDirectory, markdownParser, Build)
 			: null;
 
 	public bool TryGetDocumentationFileBySlug(DocumentationSet documentationSet, string slug, out DocumentationFile? documentationFile)
 	{
 		var tomlFile = $"../{slug}.toml";
-		return documentationSet.FlatMappedFiles.TryGetValue(tomlFile, out documentationFile);
+		var filePath = new FilePath(tomlFile, Build.DocumentationSourceDirectory);
+		return documentationSet.Files.TryGetValue(filePath, out documentationFile);
 	}
 
-	public IReadOnlyCollection<DocumentationFile> ScanDocumentationFiles(
+	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(
 		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
 	)
 	{
@@ -69,7 +72,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		return rules.Select(r =>
 		{
 			var file = Build.ReadFileSystem.FileInfo.New(Path.Combine(sourceDirectory.FullName, r.RelativePath));
-			return defaultFileHandling(file, sourceDirectory);
+			return (file, defaultFileHandling(file, sourceDirectory));
 
 		}).ToArray();
 	}

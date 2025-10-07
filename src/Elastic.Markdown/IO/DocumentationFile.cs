@@ -48,7 +48,7 @@ public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string 
 
 	public SnippetAnchors? GetAnchors(
 		IDiagnosticsCollector collector,
-		FrozenDictionary<string, DocumentationFile> documentationFileLookup,
+		Func<string, DocumentationFile?> documentationFileLookup,
 		MarkdownParser parser,
 		YamlFrontMatter? frontMatter
 	)

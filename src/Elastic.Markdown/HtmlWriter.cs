@@ -49,7 +49,7 @@ public class HtmlWriter(
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
-		var document = await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
 		return await RenderLayout(markdown, document, ctx);
 	}
 
@@ -57,7 +57,9 @@ public class HtmlWriter(
 	{
 		var html = MarkdownFile.CreateHtml(document);
 		await DocumentationSet.ResolveDirectoryTree(ctx);
-		var root = DocumentationSet.MarkdownNavigationLookup[markdown.CrossLink].NavigationRoot;
+		var navigationItem = DocumentationSet.FindNavigationByMarkdown(markdown);
+
+		var root = navigationItem.NavigationRoot;
 
 		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, INavigationHtmlWriter.AllLevels, ctx);
 		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, 1, ctx);
@@ -93,8 +95,9 @@ public class HtmlWriter(
 
 		string? allVersionsUrl = null;
 
-		if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
-			allVersionsUrl = item.Url;
+		// TODO exposese allversions again
+		//if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
+		//	allVersionsUrl = item.Url;
 
 
 		var navigationFileName = $"{fullNavigationRenderResult.Id}.nav.html";
@@ -205,7 +208,7 @@ public class HtmlWriter(
 				: Path.Combine(dir, "index.html");
 		}
 
-		var document = await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
 
 		var rendered = await RenderLayout(markdown, document, ctx);
 		collector?.Collect(markdown, document, rendered.Html);

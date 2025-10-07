@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
@@ -18,11 +19,19 @@ public class StepViewModel : DirectiveViewModel
 	public required string Anchor { get; init; }
 	public required int HeadingLevel { get; init; }
 
-	public class StepCrossNavigationLookupProvider : INavigationLookupProvider
+	public class StepCrossNavigationLookupProvider : IPositionalNavigation
 	{
 		public static StepCrossNavigationLookupProvider Instance { get; } = new();
+
 		/// <inheritdoc />
-		public FrozenDictionary<string, INavigationItem> MarkdownNavigationLookup { get; } = new Dictionary<string, INavigationItem>().ToFrozenDictionary();
+		public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; } = new Dictionary<int, INavigationItem>().ToFrozenDictionary();
+
+		/// <inheritdoc />
+		public FrozenDictionary<string, ILeafNavigationItem<MarkdownFile>> NavigationIndexedByCrossLink { get; } =
+			new Dictionary<string, ILeafNavigationItem<MarkdownFile>>().ToFrozenDictionary();
+
+		/// <inheritdoc />
+		public ConditionalWeakTable<MarkdownFile, INavigationItem> MarkdownNavigationLookup { get; } = [];
 	}
 
 	public class StepCrossLinkResolver : ICrossLinkResolver
@@ -55,9 +64,10 @@ public class StepViewModel : DirectiveViewModel
 		{
 			MarkdownSourcePath = directiveBlock.CurrentFile,
 			YamlFrontMatter = yamlFrontMatter,
-			DocumentationFileLookup = _ => null!,
+			TryFindDocument = _ => null!,
+			TryFindDocumentByRelativePath = _ => null!,
 			CrossLinkResolver = StepCrossLinkResolver.Instance,
-			NavigationLookupProvider = StepCrossNavigationLookupProvider.Instance
+			PositionalNavigation = StepCrossNavigationLookupProvider.Instance
 		});
 
 		var document = Markdig.Markdown.Parse(Title, MarkdownParser.Pipeline, context);

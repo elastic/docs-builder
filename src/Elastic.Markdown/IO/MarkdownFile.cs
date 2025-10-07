@@ -12,6 +12,7 @@ using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO.NewNavigation;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -56,8 +57,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	public ProductsConfiguration Products { get; }
-
-	public bool PartOfNavigation { get; set; }
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
@@ -123,7 +122,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	protected virtual async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
 		await MarkdownParser.ParseAsync(SourceFile, YamlFrontMatter, ctx);
 
-	public async Task<MarkdownDocument> MinimalParseAsync(FrozenDictionary<string, DocumentationFile> documentationFileLookup, Cancel ctx)
+	public async Task<MarkdownDocument> MinimalParseAsync(Func<string, DocumentationFile?> documentationFileLookup, Cancel ctx)
 	{
 		var document = await GetMinimalParseDocumentAsync(ctx);
 		ReadDocumentInstructions(document, documentationFileLookup);
@@ -131,7 +130,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return document;
 	}
 
-	public async Task<MarkdownDocument> ParseFullAsync(FrozenDictionary<string, DocumentationFile> documentationFileLookup, Cancel ctx)
+	public async Task<MarkdownDocument> ParseFullAsync(Func<string, DocumentationFile?> documentationFileLookup, Cancel ctx)
 	{
 		if (!_instructionsParsed)
 			_ = await MinimalParseAsync(documentationFileLookup, ctx);
@@ -153,7 +152,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return allProperties;
 	}
 
-	protected void ReadDocumentInstructions(MarkdownDocument document, FrozenDictionary<string, DocumentationFile> documentationFileLookup)
+	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
 		Title ??= document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
@@ -195,7 +194,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	public static List<PageTocItem> GetAnchors(
 		IDiagnosticsCollector collector,
-		FrozenDictionary<string, DocumentationFile> documentationFileLookup,
+		Func<string, DocumentationFile?> documentationFileLookup,
 		MarkdownParser parser,
 		YamlFrontMatter? frontMatter,
 		MarkdownDocument document,
@@ -208,9 +207,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.Select(i =>
 			{
 				var relativePath = i.IncludePathRelativeToSource;
-				if (relativePath is null
-					|| !documentationFileLookup.TryGetValue(relativePath, out var file)
-					|| file is not SnippetFile snippet)
+				if (relativePath is null)
+					return null;
+				var doc = documentationFileLookup(relativePath);
+				if (doc is not SnippetFile snippet)
 					return null;
 
 				var anchors = snippet.GetAnchors(collector, documentationFileLookup, parser, frontMatter);
@@ -329,9 +329,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			foreach (var url in fm.MappedPages)
 			{
 				if (!string.IsNullOrEmpty(url) && (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase) || !Uri.IsWellFormedUriString(url, UriKind.Absolute)))
-				{
 					Collector.EmitError(FilePath, $"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide.");
-				}
 			}
 		}
 

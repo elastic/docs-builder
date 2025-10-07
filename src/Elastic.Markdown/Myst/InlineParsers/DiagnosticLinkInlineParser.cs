@@ -211,9 +211,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context, IFileInfo file, string url)
 	{
-		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		if (context.TryFindDocument(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			if (context.NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(currentMarkdown.CrossLink, out var navigationLookup))
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var navigationLookup))
 				link.SetData("NavigationRoot", navigationLookup.NavigationRoot);
 
 			if (link.IsImage)
@@ -225,10 +225,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 
-		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
+		var linkMarkdown = context.TryFindDocument(file) as MarkdownFile;
 		if (linkMarkdown is not null)
 		{
-			if (context.NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(linkMarkdown.CrossLink, out var navigationLookup))
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup))
 				link.SetData("TargetNavigationRoot", navigationLookup.NavigationRoot);
 
 		}
@@ -314,7 +314,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (linkMarkdown is not null)
 		{
-			if (context.NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(linkMarkdown.CrossLink, out var navigationLookup)
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup)
 				&& !string.IsNullOrEmpty(navigationLookup.Url))
 				newUrl = navigationLookup.Url;
 		}
@@ -355,7 +355,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
-			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippet)
+			if (newUrl.StartsWith("../") && context.TryFindDocument(context.MarkdownSourcePath) is SnippetFile snippet)
 			{
 				//figure out how many nested folders inside `_snippets` we need to ignore.
 				var d = snippet.SourceFile.Directory;

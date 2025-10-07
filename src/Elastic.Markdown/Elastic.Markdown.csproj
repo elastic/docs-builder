@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="Elastic.Ingest.Elasticsearch" />
+    <PackageReference Include="Generator.Equals" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />

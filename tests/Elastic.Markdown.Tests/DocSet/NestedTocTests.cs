@@ -13,12 +13,13 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 	[Fact]
 	public void InjectsNestedTocsIntoDocumentationSet()
 	{
-		var doc = Generator.DocumentationSet.Files.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md")) as MarkdownFile;
+		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md"));
 
 		doc.Should().NotBeNull();
 		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
-		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc.CrossLink);
-		var nav = positionalNavigation.MarkdownNavigationLookup[doc.CrossLink];
+		positionalNavigation.MarkdownNavigationLookup.Should().ContainKey(doc);
+		if (!positionalNavigation.MarkdownNavigationLookup.TryGetValue(doc, out var nav))
+			throw new Exception($"Could not find nav item for {doc.CrossLink}");
 
 		var parent = nav.Parent;
 
