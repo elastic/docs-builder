@@ -256,7 +256,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
 		var file = fileContext.SourceFile;
-		var url = file.Url;
+		var url = fileContext.NavigationItem.Url;
 
 		if (url is "/docs" or "/docs/404")
 		{

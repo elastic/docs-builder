@@ -249,6 +249,7 @@ public class DocumentationGenerator
 				foreach (var exporter in _markdownExporters)
 				{
 					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.FlatMappedFiles, ctx);
+					var navigationItem = DocumentationSet.MarkdownNavigationLookup[markdown.CrossLink];
 					_ = await exporter.ExportAsync(new MarkdownExportFileContext
 					{
 						BuildContext = Context,
@@ -256,7 +257,8 @@ public class DocumentationGenerator
 						Document = document,
 						SourceFile = markdown,
 						DefaultOutputFile = outputFile,
-						DocumentationSet = DocumentationSet
+						DocumentationSet = DocumentationSet,
+						NavigationItem = navigationItem
 					}, ctx);
 				}
 			}

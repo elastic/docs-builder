@@ -52,8 +52,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel
 		{
-			Title = group.Index.NavigationTitle,
-			TitleUrl = group.Index.Url,
+			Title = group.NavigationTitle,
+			TitleUrl = group.Url,
 			Tree = group,
 			IsPrimaryNavEnabled = true,
 			IsUsingNavigationDropdown = true,

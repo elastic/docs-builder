@@ -126,8 +126,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 
 	public ICrossLinkResolver CrossLinkResolver { get; }
 
-	public TableOfContentsTree Tree { get; }
-
 	public Uri Source { get; }
 
 	public IReadOnlyCollection<DocumentationFile> Files { get; }
@@ -192,7 +190,6 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 			.ToDictionary(g => g.Key, g => g.ToArray())
 			.ToFrozenDictionary();
 
-		var fileIndex = 0;
 		var lookups = new NavigationLookups
 		{
 			FlatMappedFiles = FlatMappedFiles,
@@ -202,10 +199,8 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 			CrossLinkResolver = CrossLinkResolver
 		};
 
-		Tree = new TableOfContentsTree(Source, Context, lookups, ref fileIndex);
-
 		var navigationIndex = 0;
-		UpdateNavigationIndex(Tree.NavigationItems, ref navigationIndex);
+		UpdateNavigationIndex(Navigation.NavigationItems, ref navigationIndex);
 		var markdownFiles = Files.OfType<MarkdownFile>().ToArray();
 
 		var excludedChildren = markdownFiles.Where(f => !f.PartOfNavigation).ToArray();
@@ -213,13 +208,13 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 			Context.EmitError(Context.ConfigurationPath, $"{excludedChild.RelativePath} is unreachable in the TOC because one of its parents matches exclusion glob");
 
 		MarkdownFiles = markdownFiles.Where(f => f.PartOfNavigation).ToFrozenSet();
-		NavigationIndexedByOrder = CreateNavigationLookup(Tree)
+		NavigationIndexedByOrder = CreateNavigationLookup(Navigation)
 			.ToDictionary(n => n.NavigationIndex, n => n)
 			.ToFrozenDictionary();
 
-		MarkdownNavigationLookup = Tree.NavigationItems
+		MarkdownNavigationLookup = Navigation.NavigationItems
 			.SelectMany(Pairs)
-			.Concat(Pairs(Tree))
+			.Concat(Pairs(Navigation))
 			.DistinctBy(kv => kv.Item1)
 			.ToDictionary(kv => kv.Item1, kv => kv.Item2)
 			.ToFrozenDictionary();
@@ -235,15 +230,11 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 		{
 			switch (item)
 			{
-				case FileNavigationItem fileNavigationItem:
+				case ILeafNavigationItem<INavigationModel> fileNavigationItem:
 					var fileIndex = Interlocked.Increment(ref navigationIndex);
 					fileNavigationItem.NavigationIndex = fileIndex;
 					break;
-				case CrossLinkNavigationItem crossLinkNavigationItem:
-					var crossLinkIndex = Interlocked.Increment(ref navigationIndex);
-					crossLinkNavigationItem.NavigationIndex = crossLinkIndex;
-					break;
-				case DocumentationGroup documentationGroup:
+				case INodeNavigationItem<INavigationModel, INavigationItem> documentationGroup:
 					var groupIndex = Interlocked.Increment(ref navigationIndex);
 					documentationGroup.NavigationIndex = groupIndex;
 					UpdateNavigationIndex(documentationGroup.NavigationItems, ref navigationIndex);

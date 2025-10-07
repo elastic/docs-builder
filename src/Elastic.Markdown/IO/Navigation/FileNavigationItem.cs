@@ -13,7 +13,7 @@ public record FileNavigationItem(MarkdownFile Model, DocumentationGroup Group, b
 {
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = Group;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = Group.NavigationRoot;
-	public string Url => Model.Url;
+	public string Url => string.Empty;
 	public string NavigationTitle => Model.NavigationTitle;
 	public int NavigationIndex { get; set; }
 	public bool IsCrossLink => false; // File navigation items are never cross-links

@@ -38,8 +38,8 @@ public class SitemapBuilder(
 			flattenedNavigationItems
 				.Select(n => n switch
 				{
-					DocumentationGroup group => (group.Index.Url, NavigationItem: group),
-					FileNavigationItem file => (file.Model.Url, NavigationItem: file as INavigationItem),
+					INodeNavigationItem<INavigationModel, INavigationItem> group => (group.Url, NavigationItem: group),
+					ILeafNavigationItem<INavigationModel> file => (file.Url, NavigationItem: file as INavigationItem),
 					_ => throw new Exception($"{nameof(SitemapBuilder)}.{nameof(Generate)}: Unhandled navigation item type: {n.GetType()}")
 				})
 				.Select(n => n.Url)

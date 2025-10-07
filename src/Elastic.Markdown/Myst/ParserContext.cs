@@ -79,10 +79,14 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		MarkdownSourcePath = state.MarkdownSourcePath;
 		DocumentationFileLookup = state.DocumentationFileLookup;
 		NavigationLookupProvider = state.NavigationLookupProvider;
+		CurrentUrlPath = string.Empty;
 
-		CurrentUrlPath = DocumentationFileLookup(state.ParentMarkdownPath ?? MarkdownSourcePath) is MarkdownFile md
-			? md.Url
-			: string.Empty;
+		var document = DocumentationFileLookup(state.ParentMarkdownPath ?? MarkdownSourcePath);
+		if (document is not null)
+		{
+			if (NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(document.CrossLink, out var navigationLookup))
+				CurrentUrlPath = navigationLookup.Url;
+		}
 
 		if (SkipValidation && string.IsNullOrEmpty(CurrentUrlPath))
 		{

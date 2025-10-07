@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Markdig.Syntax;
@@ -19,6 +20,7 @@ public record MarkdownExportFileContext
 	public required IFileInfo DefaultOutputFile { get; init; }
 	public string? LLMText { get; set; }
 	public required DocumentationSet DocumentationSet { get; init; }
+	public required INavigationItem NavigationItem { get; init; }
 }
 
 public interface IMarkdownExporter

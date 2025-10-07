@@ -68,7 +68,8 @@ $"""
 """;
 			foreach (var r in group.OrderBy(r => r.Rule.Name))
 			{
-				var url = Files[r.RelativePath].Url;
+				// TODO update this to use the new URL from navigation
+				var url = "does-not-exist-yet";
 				markdown +=
 $"""
 [{r.Rule.Name}](!{url}) <br>

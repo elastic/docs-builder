@@ -314,9 +314,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (linkMarkdown is not null)
 		{
-			// if url is null it's an anchor link
-			if (!string.IsNullOrEmpty(url))
-				newUrl = linkMarkdown.Url;
+			if (context.NavigationLookupProvider.MarkdownNavigationLookup.TryGetValue(linkMarkdown.CrossLink, out var navigationLookup)
+				&& !string.IsNullOrEmpty(navigationLookup.Url))
+				newUrl = navigationLookup.Url;
 		}
 		else
 			newUrl = UpdateRelativeUrl(context, url);

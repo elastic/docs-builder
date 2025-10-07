@@ -97,23 +97,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	protected virtual string RelativePathUrl => RelativePath;
 
-	private string DefaultUrlPathSuffix
-	{
-		get
-		{
-			var relativePath = RelativePathUrl;
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				relativePath = relativePath.Replace('\\', '/');
-			return Path.GetFileName(relativePath) == "index.md"
-				? $"/{relativePath.Remove(relativePath.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)}"
-				: $"/{relativePath.Remove(relativePath.LastIndexOf(SourceFile.Extension, StringComparison.Ordinal), SourceFile.Extension.Length)}";
-		}
-	}
-
-	private string DefaultUrlPath => $"{UrlPathPrefix}{DefaultUrlPathSuffix}";
-
-	public string Url => string.Empty ?? throw new InvalidOperationException("Url is not set");
-
 	//public int NavigationIndex { get; set; } = -1;
 
 	private bool _instructionsParsed;

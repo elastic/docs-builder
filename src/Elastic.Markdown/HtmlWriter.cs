@@ -33,7 +33,7 @@ public class HtmlWriter(
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
 	private INavigationHtmlWriter NavigationHtmlWriter { get; } =
-		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Tree);
+		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Navigation);
 
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
@@ -83,10 +83,10 @@ public class HtmlWriter(
 
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
@@ -133,7 +133,7 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			MarkdownUrl = markdown.Url.TrimEnd('/') + ".md",
+			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,

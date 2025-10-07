@@ -22,7 +22,7 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 
 	public MarkdownFile Index { get; }
 
-	public string Url => Index.Url;
+	public string Url => string.Empty;
 
 	public string NavigationTitle => Index.NavigationTitle;
 
