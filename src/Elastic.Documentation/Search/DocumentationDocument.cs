@@ -45,6 +45,10 @@ public record DocumentationDocument
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
+	// Stripped body is the body with markdown removed, suitable for search indexing
+	[JsonPropertyName("stripped_body")]
+	public string? StrippedBody { get; set; }
+
 	[JsonPropertyName("url_segment_count")]
 	public int? UrlSegmentCount { get; set; }
 

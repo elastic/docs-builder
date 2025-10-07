@@ -48,7 +48,7 @@ export const SearchOrAskAiModal = () => {
                 css={css`
                     flex-grow: 1;
                     overflow-y: scroll;
-                    max-height: 80vh;
+                    max-height: 70vh;
                     ${useEuiOverflowScroll('y')}
                 `}
             >

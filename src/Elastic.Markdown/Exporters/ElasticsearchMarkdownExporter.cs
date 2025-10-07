@@ -12,6 +12,7 @@ using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Catalog;
 using Elastic.Ingest.Elasticsearch.Semantic;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -90,6 +91,13 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		          "synonyms_filter"
 		        ]
 		      },
+		      "highlight_analyzer": {
+		        "tokenizer": "standard",
+		        "filter": [
+		          "lowercase",
+		          "english_stop"
+		        ]
+		      },
 		      "hierarchy_analyzer": { "tokenizer": "path_tokenizer" }
 		    },
 		    "filter": {
@@ -97,6 +105,10 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		        "type": "synonym",
 		        "synonyms_set": "docs",
 		        "updateable": true
+		      },
+		      "english_stop": {
+		        "type": "stop",
+		        "stopwords": "_english_"
 		      }
 		    },
 		    "tokenizer": {
@@ -136,6 +148,11 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		      },
 		      "body": {
 		        "type": "text"
+		      },
+		      "stripped_body": {
+		        "type": "text",
+		        "search_analyzer": "highlight_analyzer",
+		        "term_vector": "with_positions_offsets"
 		      }
 		      {{(!string.IsNullOrWhiteSpace(inferenceId) ? AbstractInferenceMapping(inferenceId) : AbstractMapping())}}
 		    }
@@ -277,11 +294,16 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 
 		IPositionalNavigation navigation = fileContext.DocumentationSet;
 
-		//use LLM text if it was already provided (because we run with both llm and elasticsearch output)
-		var body = fileContext.LLMText ??= LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
+		// Remove the first h1 because we already have the title
+		// and we don't want it to appear in the body
+		var h1 = fileContext.Document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+		if (h1 is not null)
+			_ = fileContext.Document.Remove(h1);
+
+		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => h.GetData("header") as string ?? string.Empty)
+			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 
@@ -295,6 +317,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 			Hash = ShortId.Create(url, body),
 			Title = file.Title,
 			Body = body,
+			StrippedBody = body.StripMarkdown(),
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Abstract = @abstract,
 			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
@@ -318,4 +341,3 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		return await _channel.RefreshAsync(ctx);
 	}
 }
-
