@@ -197,7 +197,7 @@ const VersionDropdown = ({
             <EuiText
                 css={css`
                     font-weight: ${euiTheme.font.weight.bold};
-                    font-size: ${useEuiFontSize('xs').fontSize};
+                    font-size: ${useEuiFontSize('s').fontSize};
                 `}
             >
                 Current version ({currentVersion})
