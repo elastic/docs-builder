@@ -95,10 +95,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string FilePath { get; }
 	public string FileName { get; }
 
-	protected virtual string RelativePathUrl => RelativePath;
-
-	//public int NavigationIndex { get; set; } = -1;
-
 	private bool _instructionsParsed;
 	private string? _title;
 

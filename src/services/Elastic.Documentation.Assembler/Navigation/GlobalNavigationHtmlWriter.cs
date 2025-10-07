@@ -34,7 +34,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 
 		_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", currentRootNavigation.NavigationTitle, currentRootNavigation.Id);
 
-		if (currentRootNavigation is not DocumentationGroup group)
+		if (currentRootNavigation is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
 		var model = CreateNavigationModel(group, maxLevel);
@@ -47,7 +47,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		};
 	}
 
-	private NavigationViewModel CreateNavigationModel(DocumentationGroup group, int maxLevel)
+	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group, int maxLevel)
 	{
 		var topLevelItems = globalNavigation.TopLevelItems;
 		return new NavigationViewModel

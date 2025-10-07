@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
@@ -29,7 +29,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
-		var index = (parent as DocumentationGroup)?.Index;
+		var index = (parent as INodeNavigationItem<MarkdownFile, INavigationItem>)?.Index;
 		index.Should().NotBeNull();
 		index.RelativePath.Should().Be("index.md");
 

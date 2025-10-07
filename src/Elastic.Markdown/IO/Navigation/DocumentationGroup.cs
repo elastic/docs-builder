@@ -202,25 +202,11 @@ public class DocumentationGroup : INodeNavigationItem<MarkdownFile, INavigationI
 					];
 				}
 
-				DocumentationGroup group;
-				if (folder is TocReference tocReference)
+				var group = new DocumentationGroup(folder.RelativePath, context, lookups with
 				{
-					var toc = new TableOfContentsTree(tocReference.Source, folder.RelativePath, context, lookups with
-					{
-						TableOfContents = children
-					}, ref fileIndex, depth + 1, rootNavigationItem, this);
-
-					group = toc;
-					AddToNavigationItems(toc, ref fileIndex);
-				}
-				else
-				{
-					group = new DocumentationGroup(folder.RelativePath, context, lookups with
-					{
-						TableOfContents = children
-					}, NavigationSource, ref fileIndex, depth + 1, rootNavigationItem, this);
-					AddToNavigationItems(group, ref fileIndex);
-				}
+					TableOfContents = children
+				}, NavigationSource, ref fileIndex, depth + 1, rootNavigationItem, this);
+				AddToNavigationItems(group, ref fileIndex);
 
 				groups.Add(group);
 			}

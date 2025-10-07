@@ -64,22 +64,22 @@ public class SitemapBuilder(
 		{
 			switch (item)
 			{
-				case FileNavigationItem file:
+				case ILeafNavigationItem<INavigationModel> file:
 					// these are hidden from the navigation programatically.
 					// TODO find a cleaner way to model this.
 					if (item.Hidden && file.Model is not DetectionRuleFile)
 						continue;
+					if (file.IsCrossLink)
+						continue;
 					result.Add(file);
 					break;
-				case DocumentationGroup group:
+				case INodeNavigationItem<INavigationModel, INavigationItem> group:
 					if (item.Hidden)
 						continue;
 
 					result.AddRange(GetNavigationItems(group.NavigationItems));
 					result.Add(group);
 					break;
-				case CrossLinkNavigationItem:
-					continue; // we do not emit cross links in the sitemap
 				default:
 					throw new Exception($"{nameof(SitemapBuilder)}.{nameof(GetNavigationItems)}: Unhandled navigation item type: {item.GetType()}");
 			}

@@ -250,40 +250,39 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 
 	private static IReadOnlyCollection<INavigationItem> CreateNavigationLookup(INavigationItem item)
 	{
-		if (item is ILeafNavigationItem<INavigationModel> leaf)
-			return [leaf];
-
-		if (item is CrossLinkNavigationItem crossLink)
-			return [crossLink];
-
-		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+		switch (item)
 		{
-			var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
-			return items.Concat([node]).ToArray();
+			case ILeafNavigationItem<INavigationModel> leaf:
+				return [leaf];
+			case INodeNavigationItem<INavigationModel, INavigationItem> node:
+				var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
+				return items.Concat([node]).ToArray();
+			default:
+				return [];
 		}
-
-		return [];
 	}
 
 	public static (string, INavigationItem)[] Pairs(INavigationItem item)
 	{
-		if (item is FileNavigationItem f)
-			return [(f.Model.CrossLink, item)];
-		if (item is CrossLinkNavigationItem cl)
-			return [(cl.Url, item)]; // Use the URL as the key for cross-links
-		if (item is DocumentationGroup g)
+		//TODO add crosslink to navigation if still necessary later
+		switch (item)
 		{
-			var index = new List<(string, INavigationItem)>
-			{
-				(g.Index.CrossLink, g)
-			};
+			case ILeafNavigationItem<IDocumentationFile> f:
+				return [(f.Url, item)];
+			case CrossLinkNavigationItem cl:
+				return [(cl.Url, item)]; // Use the URL as the key for cross-links
+			case INodeNavigationItem<INavigationModel, INavigationItem> g:
+				var index = new List<(string, INavigationItem)>
+				{
+					(g.Url, g)
+				};
 
-			return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
-				.DistinctBy(kv => kv.Item1)
-				.ToArray();
+				return index.Concat(g.NavigationItems.SelectMany(Pairs).ToArray())
+					.DistinctBy(kv => kv.Item1)
+					.ToArray();
+			default:
+				return [];
 		}
-
-		return [];
 	}
 
 	private DocumentationFile[] ScanDocumentationFiles(BuildContext build, IDirectoryInfo sourceDirectory) =>
@@ -374,7 +373,7 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
 
 	public string FirstInterestingUrl =>
-		NavigationIndexedByOrder.Values.OfType<DocumentationGroup>().First().Url;
+		NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().First().Url;
 
 	public DocumentationFile? DocumentationFileLookup(IFileInfo sourceFile)
 	{
@@ -433,10 +432,10 @@ public class DocumentationSet : INavigationLookups, IPositionalNavigation, INavi
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().ToArray();
 		var markdownInNavigation = NavigationIndexedByOrder.Values
-			.OfType<FileNavigationItem>()
+			.OfType<ILeafNavigationItem<MarkdownFile>>()
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
 			.Concat(NavigationIndexedByOrder.Values
-				.OfType<DocumentationGroup>()
+				.OfType<INodeNavigationItem<MarkdownFile, INavigationItem>>()
 				.Select(g => (Markdown: g.Index, Navigation: (INavigationItem)g))
 			)
 			.ToList();

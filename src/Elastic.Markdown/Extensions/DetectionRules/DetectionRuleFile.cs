@@ -121,7 +121,7 @@ public record DetectionRuleFile : MarkdownFile
 		return rulePath.FileSystem.FileInfo.New(newPath);
 	}
 
-	protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
+	//protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
