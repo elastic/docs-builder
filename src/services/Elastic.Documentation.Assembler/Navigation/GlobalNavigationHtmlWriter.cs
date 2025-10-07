@@ -7,7 +7,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.Navigation;
-using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;

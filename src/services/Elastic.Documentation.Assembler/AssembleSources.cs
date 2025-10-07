@@ -14,9 +14,6 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
-using Elastic.Documentation.Navigation.Isolated;
-using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.RepresentationModel;
 
