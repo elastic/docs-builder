@@ -30,7 +30,7 @@ public class LlmsNavigationEnhancer
 
 		foreach (var topLevelItem in topLevelItems)
 		{
-			if (topLevelItem is not DocumentationGroup group)
+			if (topLevelItem is not { } group)
 				continue;
 
 			// Create H2 section for the category - use H1 title if available, fallback to navigation title
@@ -61,7 +61,7 @@ public class LlmsNavigationEnhancer
 	}
 
 
-	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(DocumentationGroup group) =>
+	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(INodeNavigationItem<INavigationModel, INavigationItem> group) =>
 		group.NavigationItems.Where(i => !i.Hidden).ToArray();
 
 	/// <summary>
