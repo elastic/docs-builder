@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Channels;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
@@ -27,8 +28,9 @@ public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosti
 	/// <inheritdoc />
 	protected override CatalogIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
 	{
+		BulkOperationIdLookup = d => d.Url,
 		GetMapping = () => CreateMapping(null),
-		GetMappingSettings = () => CreateMappingSetting(),
+		GetMappingSettings = CreateMappingSetting,
 		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 	};
@@ -44,13 +46,14 @@ public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, ID
 	/// <inheritdoc />
 	protected override SemanticIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
 	{
+		BulkOperationIdLookup = d => d.Url,
 		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
 		GetMappingSettings = (_, _) => CreateMappingSetting(),
 		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
 		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
 		IndexNumThreads = Endpoint.IndexNumThreads,
 		SearchNumThreads = Endpoint.SearchNumThreads,
-		InferenceCreateTimeout = TimeSpan.FromMinutes(Endpoint.BootstrapTimeout ?? 4)
+		InferenceCreateTimeout = TimeSpan.FromMinutes(Endpoint.BootstrapTimeout ?? 4),
 	};
 
 	/// <inheritdoc />
@@ -94,7 +97,8 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		          "lowercase",
 		          "english_stop"
 		        ]
-		      }
+		      },
+		      "hierarchy_analyzer": { "tokenizer": "path_tokenizer" }
 		    },
 		    "filter": {
 		      "synonyms_filter": {
@@ -106,6 +110,12 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		        "type": "stop",
 		        "stopwords": "_english_"
 		      }
+		    },
+		    "tokenizer": {
+		      "path_tokenizer": {
+		        "type": "path_hierarchy",
+		        "delimiter": "/"
+		      }
 		    }
 		  }
 		}
@@ -115,6 +125,14 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		$$"""
 		  {
 		    "properties": {
+		      "url" : {
+		        "type": "keyword",
+		        "fields": {
+		          "match": { "type": "text" },
+		          "prefix": { "type": "text", "analyzer" : "hierarchy_analyzer" }
+		        }
+		      },
+		      "hash" : { "type" : "keyword" },
 		      "title": {
 		        "type": "text",
 		        "search_analyzer": "synonyms_analyzer",
@@ -123,14 +141,6 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		            "type": "keyword"
 		          }
 		          {{(!string.IsNullOrWhiteSpace(inferenceId) ? $$""", "semantic_text": {{{InferenceMapping(inferenceId)}}}""" : "")}}
-		        }
-		      },
-		      "url": {
-		        "type": "text",
-		        "fields": {
-		          "keyword": {
-		            "type": "keyword"
-		          }
 		        }
 		      },
 		      "url_segment_count": {
@@ -297,16 +307,19 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 
+		var @abstract = !string.IsNullOrEmpty(body)
+			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
+			: string.Empty;
+
 		var doc = new DocumentationDocument
 		{
-			Title = file.Title,
 			Url = url,
+			Hash = ShortId.Create(url, body),
+			Title = file.Title,
 			Body = body,
 			StrippedBody = body.StripMarkdown(),
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
-			Abstract = !string.IsNullOrEmpty(body)
-				? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
-				: string.Empty,
+			Abstract = @abstract,
 			Applies = fileContext.SourceFile.YamlFrontMatter?.AppliesTo,
 			UrlSegmentCount = url.Split('/', StringSplitOptions.RemoveEmptyEntries).Length,
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
@@ -314,7 +327,7 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 				Title = i.NavigationTitle,
 				Url = i.Url
 			}).Reverse().ToArray(),
-			Headings = headings
+			Headings = headings,
 		};
 		return await TryWrite(doc, ctx);
 	}

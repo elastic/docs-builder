@@ -24,6 +24,16 @@
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 
+html {
+	/* We need to use 14px because EUI works best with a 14px base */
+	font-size: 14px;
+}
+
+body {
+	/* This is still needed because of some usages of ch units and to maintain the previous behavior */
+	font-size: 16px;
+}
+
 :root {
 	--outline-size: max(2px, 0.08em);
 	--outline-style: auto;
