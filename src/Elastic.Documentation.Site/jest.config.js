@@ -1,3 +1,5 @@
+const isCI = process.env.CI === 'true'
+
 module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
@@ -23,5 +25,10 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: [],
-  reporters: [['github-actions', { silent: false }], 'summary'],
+  // Use 'summary' reporter in CI for cleaner logs, 'default' locally for verbose output
+  reporters: isCI
+    ? [['github-actions', { silent: false }], 'summary']
+    : [['github-actions', { silent: false }], 'default'],
+  // Verbose output locally, quiet in CI
+  verbose: !isCI,
 }

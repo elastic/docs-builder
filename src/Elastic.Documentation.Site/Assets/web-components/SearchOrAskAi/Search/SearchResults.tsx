@@ -1,4 +1,4 @@
-import { useSearchTerm } from '../search.store'
+import { useSearchTerm } from './search.store'
 import { SearchResultItem, useSearchQuery } from './useSearchQuery'
 import {
     useEuiFontSize,
@@ -105,6 +105,7 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
     const titleFontSize = useEuiFontSize('m')
     return (
         <li
+            tabIndex={0}
             css={css`
                 :not(:first-child) {
                     border-top: 1px dotted ${euiTheme.colors.borderBasePrimary};
@@ -112,7 +113,6 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
             `}
         >
             <div
-                tabIndex={0}
                 css={css`
                             display: flex; 
                             align-items: flex-start;
@@ -148,7 +148,7 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
                         </EuiLink>
                     </div>
 
-                    <EuiText size="xs">
+                    <EuiText size="s">
                         <div
                             css={css`
                                 font-family: ${euiTheme.font.family};
@@ -156,7 +156,7 @@ function SearchResultListItem({ item: result }: SearchResultListItemProps) {
 
                                 /* 2 lines with ellipsis */
                                 display: -webkit-box;
-                                -webkit-line-clamp: 2;
+                                -webkit-line-clamp: 1;
                                 -webkit-box-orient: vertical;
                                 overflow: hidden;
 
@@ -198,7 +198,7 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
             `}
         >
             {parents
-                .slice(1) // skip /docs
+                // .slice(1) // skip /docs
                 .map((parent) => (
                     <li
                         key={'breadcrumb-' + parent.url}

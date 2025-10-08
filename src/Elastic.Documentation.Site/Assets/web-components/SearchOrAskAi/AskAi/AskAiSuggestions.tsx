@@ -1,4 +1,6 @@
-import { useSearchActions, useSearchTerm } from '../search.store'
+import { useModalActions } from '../modal.store'
+import { useSearchTerm } from '../Search/search.store'
+import { useChatActions } from './chat.store'
 import {
     EuiButton,
     EuiIcon,
@@ -14,12 +16,12 @@ export interface AskAiSuggestion {
 }
 
 interface Props {
-    suggestions: AskAiSuggestion[]
+    suggestions: Set<AskAiSuggestion>
 }
 
 export const AskAiSuggestions = (props: Props) => {
-    const searchTerm = useSearchTerm()
-    const { setSearchTerm, submitAskAiTerm } = useSearchActions()
+    const { submitQuestion } = useChatActions()
+    const { setModalMode } = useModalActions()
     const { euiTheme } = useEuiTheme()
     const buttonCss = css`
         border: none;
@@ -31,48 +33,24 @@ export const AskAiSuggestions = (props: Props) => {
         }
     `
     return (
-        <>
-            <div
-                css={css`
-                    display: flex;
-                    gap: ${euiTheme.size.s};
-                    align-items: center;
-                `}
-            >
-                <EuiIcon type="sparkles" color="subdued" size="s" />
-                <EuiText size="xs">Ask Elastic Docs AI Assistant</EuiText>
-            </div>
-            <EuiSpacer size="s" />
-            {searchTerm && (
-                <EuiButton
-                    iconType="newChat"
-                    color="text"
-                    fullWidth
-                    size="s"
-                    css={buttonCss}
-                    onClick={() => {
-                        submitAskAiTerm(searchTerm)
-                    }}
-                >
-                    {searchTerm}
-                </EuiButton>
-            )}
-            {props.suggestions.map((suggestion, index) => (
-                <EuiButton
-                    key={index}
-                    iconType="newChat"
-                    color="text"
-                    fullWidth
-                    size="s"
-                    css={buttonCss}
-                    onClick={() => {
-                        setSearchTerm(suggestion.question)
-                        submitAskAiTerm(suggestion.question)
-                    }}
-                >
-                    {suggestion.question}
-                </EuiButton>
+        <ul>
+            {Array.from(props.suggestions).map((suggestion) => (
+                <li key={suggestion.question}>
+                    <EuiButton
+                        iconType="newChat"
+                        color="text"
+                        fullWidth
+                        size="s"
+                        css={buttonCss}
+                        onClick={() => {
+                            submitQuestion(suggestion.question)
+                            setModalMode('askAi')
+                        }}
+                    >
+                        {suggestion.question}
+                    </EuiButton>
+                </li>
             ))}
-        </>
+        </ul>
     )
 }

@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import '../../eui-icons-cache'
 import { useModalActions, useModalIsOpen } from './modal.store'
-import { useSearchActions, useSearchTerm } from './search.store'
+import { useSearchActions, useSearchTerm } from './Search/search.store'
 import {
     EuiButton,
     EuiPortal,
@@ -47,6 +47,7 @@ export const SearchOrAskAiButton = () => {
         top: 48px;
         width: 90ch;
         max-width: 100%;
+        //padding-top: 4px;
     `
 
     const loadingCss = css`
@@ -87,7 +88,7 @@ export const SearchOrAskAiButton = () => {
             >
                 <EuiText
                     color="subdued"
-                    size="xs"
+                    size="s"
                     style={{ width: 200 }}
                     textAlign="left"
                 >
