@@ -7,7 +7,7 @@
 		details.dropdown {
 			@apply border-grey-20 mt-4 block rounded-sm border-1 shadow-xs;
 			summary.dropdown-title {
-				@apply text-ink-dark flex cursor-pointer items-stretch justify-between font-sans font-bold;
+				@apply text-ink-dark flex cursor-pointer items-stretch justify-between font-sans font-bold text-xl;
 			}
 
 			&[open] .dropdown-title {
