@@ -231,7 +231,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 	}
 
 	[Fact]
-	public void ConstructorProcessesTocYmlItemsBeforeChildrenFromNavigation()
+	public async Task ConstructorProcessesTocYmlItemsBeforeChildrenFromNavigation()
 	{
 		// language=yaml
 		var docSetYaml = """
@@ -255,20 +255,24 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
 		var context = CreateContext(fileSystem);
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		var toc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
-		toc.NavigationItems.Should().HaveCount(2);
+		var apiToc = navigation.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
+		apiToc.NavigationItems.Should().HaveCount(1);
 
-		// First item should be from toc.yml
-		var fromToc = toc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
+		// First item should be from api/toc.yml
+		var fromToc = apiToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		fromToc.NavigationTitle.Should().Be("from-toc");
 		fromToc.Url.Should().Be("/api/from-toc");
 
-		// Second item should be from docset.yml children (a nested TOC)
-		var fromNav = toc.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
-		fromNav.NavigationTitle.Should().Be("extra");
-		fromNav.Url.Should().Be("/api/extra");
+		apiToc.NavigationItems.Should().HaveCount(1);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		var diagnostics = context.Diagnostics;
+		diagnostics.Should().ContainSingle(d =>
+			d.Message.Contains("TableOfContents 'api' may not contain children, define children in 'api/toc.yml' instead."));
 	}
 }

@@ -626,33 +626,13 @@ public class DocumentationSetNavigation<TModel>
 			}
 		}
 
-		// Then, process items from tocRef.Children
-		// In DocumentationSetFile, TOC references can only have other TOC references as children
-		foreach (var child in tocRef.Children)
+		// Validate that TOC references should not have children defined in navigation
+		if (tocRef.Children.Count > 0)
 		{
-			// Validate that TOC children are only other TOC references
-			if (child is not IsolatedTableOfContentsRef)
-			{
-				context.EmitError(
-					context.ConfigurationPath,
-					$"TableOfContents navigation does not allow nested children, found: {child.GetType().Name}"
-				);
-				continue;
-			}
-
-			var childNav = ConvertToNavigationItem(
-				child,
-				childIndex++,
-				context,
-				placeholderNavigation,
-				root,
-				placeholderNavigation, // Placeholder acts as the new prefix provider for children
-				depth + 1,
-				"" // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
+			context.EmitError(
+				context.ConfigurationPath,
+				$"TableOfContents '{tocRef.Source}' may not contain children, define children in '{tocRef.Source}/toc.yml' instead."
 			);
-
-			if (childNav != null)
-				children.Add(childNav);
 		}
 
 		// Validate TOCs have children
