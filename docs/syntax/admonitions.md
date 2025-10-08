@@ -176,6 +176,12 @@ This warning applies to serverless GA.
 This tip applies to ECH and ECE.
 :::
 
+:::{important}
+:applies_to: {"stack": "preview 9.1, ga 9.2", "serverless": "ga"}
+
+This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
+:::
+
 ::::
 
 ::::{tab-item} Markdown
@@ -197,6 +203,12 @@ This warning applies to serverless GA.
 :applies_to: { ess:, ece: }
 
 This tip applies to ECH and ECE.
+:::
+
+:::{important}
+:applies_to: {"stack": "preview 9.1, ga 9.2", "serverless": "ga"}
+
+This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
 :::
 ```
 
