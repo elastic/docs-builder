@@ -234,7 +234,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
-		observabilityNav.NavigationTitle.Should().Be("serverless-observability");
+		observabilityNav.NavigationTitle.Should().Be("Serverless Observability");
 		observabilityNav.NavigationItems.Should().HaveCount(3); // index.md, getting-started folder, monitoring folder
 
 		var indexFile = observabilityNav.NavigationItems.ElementAt(0);
@@ -262,7 +262,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
-		platformNav.NavigationTitle.Should().Be("platform");
+		platformNav.NavigationTitle.Should().Be("Platform");
 		platformNav.NavigationItems.Should().HaveCount(3); // index.md, deployment-guide TOC, cloud-guide TOC
 
 		var indexFile = platformNav.NavigationItems.ElementAt(0);
@@ -292,7 +292,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var securityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-security/docs/_docset.yml"));
 		var securityNav = new DocumentationSetNavigation<IDocumentationFile>(securityDocset, securityContext, GenericDocumentationFileFactory.Instance);
 
-		securityNav.NavigationTitle.Should().Be("serverless-security");
+		securityNav.NavigationTitle.Should().Be("Serverless Security");
 		securityNav.NavigationItems.Should().HaveCount(3); // index.md, authentication folder, authorization folder
 
 		var authentication = securityNav.NavigationItems.ElementAt(1);
@@ -334,9 +334,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		if (root is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
 		{
 			foreach (var item in nodeItem.NavigationItems)
-			{
 				item.Url.Should().StartWith("/serverless/observability");
-			}
 		}
 	}
 
@@ -396,7 +394,11 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets);
 
-		// Should have 0 items because path_prefix was required and missing
-		siteNavigation.NavigationItems.Should().BeEmpty();
+		// navigation will still be build
+		siteNavigation.NavigationItems.Should().NotBeEmpty();
+
+		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation;
+		toc.Should().NotBeNull();
+		toc.PathPrefixProvider.PathPrefix.Should().Be("observability"); //constructed from toc URI as fallback
 	}
 }

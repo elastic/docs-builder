@@ -54,7 +54,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		navigation.Should().NotBeNull();
 		navigation.Url.Should().Be("/");
-		navigation.NavigationTitle.Should().Be("Site Navigation");
+		navigation.NavigationTitle.Should().Be("Serverless Observability");
 		navigation.NavigationItems.Should().HaveCount(2);
 	}
 

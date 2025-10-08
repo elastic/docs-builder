@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
-using Elastic.Documentation.Navigation.Tests.Isolation;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
-public class SiteNavigationTestFixture
+public static class SiteNavigationTestFixture
 {
 	public static MockFileSystem CreateMultiRepositoryFileSystem()
 	{

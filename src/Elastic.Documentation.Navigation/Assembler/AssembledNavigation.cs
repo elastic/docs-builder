@@ -8,6 +8,8 @@ using Elastic.Documentation.Navigation.Isolated;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
+public record SiteNavigationNoIndexFile(string NavigationTitle) : IDocumentationFile;
+
 
 public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
@@ -30,13 +32,11 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		{
 			foreach (var (identifier, node) in setNavigation.TableOfContentNodes)
 			{
-				if (_nodes.ContainsKey(identifier))
+				if (!_nodes.TryAdd(identifier, node))
 				{
 					//TODO configurationFileProvider navigation path
 					context.EmitError(context.ConfigurationPath, $"Duplicate navigation identifier: {identifier} in navigation.yml");
-					continue;
 				}
-				_nodes.Add(identifier, node);
 			}
 		}
 
@@ -56,7 +56,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		NavigationItems = items;
-		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
+		Index = NavigationItems.FindIndex<IDocumentationFile>()
+				?? throw new InvalidOperationException($"Could not find index file in {nameof(SiteNavigation)}");
 	}
 
 	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _nodes;
@@ -109,11 +110,16 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		IDocumentationContext context
 	)
 	{
+		var pathPrefix = tocRef.PathPrefix;
 		// Validate that path_prefix is set
-		if (string.IsNullOrWhiteSpace(tocRef.PathPrefix))
+		if (string.IsNullOrWhiteSpace(pathPrefix))
 		{
 			context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
-			return null;
+			pathPrefix = tocRef.Source.Scheme;
+			if (!string.IsNullOrEmpty(tocRef.Source.Host))
+				pathPrefix += $"/{tocRef.Source.Host}";
+			if (!string.IsNullOrEmpty(tocRef.Source.AbsolutePath) && tocRef.Source.AbsolutePath != "/")
+				pathPrefix += $"/{tocRef.Source.AbsolutePath}";
 		}
 
 		// Look up the node in the collected nodes
@@ -130,7 +136,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 		// Set the navigation index
 		node.NavigationIndex = index;
-		prefixProvider.PathPrefixProvider = new PathPrefixProvider(tocRef.PathPrefix);
+		prefixProvider.PathPrefixProvider = new PathPrefixProvider(pathPrefix);
 
 		// Recursively create child navigation items if children are specified
 		var children = new List<INavigationItem>();
@@ -167,7 +173,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 /// Wrapper for a navigation node that applies a path prefix to URLs and optionally
 /// overrides the children to show only the children specified in the site navigation configuration.
 /// </remarks>
-internal sealed class SiteTableOfContentsNavigation(
+public sealed class SiteTableOfContentsNavigation(
 	INodeNavigationItem<INavigationModel, INavigationItem> wrappedNode,
 	IPathPrefixProvider pathPrefixProvider,
 	IReadOnlyCollection<INavigationItem> children

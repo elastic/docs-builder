@@ -7,6 +7,10 @@ using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
+using Markdig;
+using Markdig.Parsers;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
@@ -107,6 +111,17 @@ public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocume
 		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 			? fileName[..^3]
 			: fileName;
+		if (path.Exists)
+		{
+			var text = readFileSystem.File.ReadAllText(path.FullName);
+			var md = MarkdownParser.Parse(text);
+			var header = md.OfType<HeadingBlock>().FirstOrDefault();
+			var inline = header?.Inline.OfType<LiteralInline>().FirstOrDefault()?.Content.Text;
+			if (inline != null)
+				title = inline.Trim(['#', ' ']);
+		}
+
+
 		return new TestDocumentationFile(title);
 	}
 }

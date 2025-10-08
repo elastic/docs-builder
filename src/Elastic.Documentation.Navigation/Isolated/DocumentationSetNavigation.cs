@@ -9,8 +9,6 @@ using Elastic.Documentation.Extensions;
 namespace Elastic.Documentation.Navigation.Isolated;
 
 // A model for nodes in the navigation representing directories e.g., sets, toc's and folders.
-public record DocumentationDirectory(string NavigationTitle) : IDocumentationFile;
-
 public interface IDocumentationFileFactory<out TModel> where TModel : IDocumentationFile
 {
 	TModel? TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem);
@@ -84,7 +82,8 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		NavigationItems = items;
-		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
+		Index = NavigationItems.FindIndex<IDocumentationFile>()
+			?? throw new InvalidOperationException($"Could not find index file in {nameof(DocumentationSetNavigation<TModel>)}");
 
 		var navigationIndex = 0;
 		UpdateNavigationIndex(NavigationItems, context, ref navigationIndex);

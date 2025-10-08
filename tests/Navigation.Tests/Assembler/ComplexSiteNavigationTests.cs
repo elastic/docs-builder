@@ -68,7 +68,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var observability = siteNavigation.NavigationItems.ElementAt(0);
 		observability.Should().NotBeNull();
 		observability.Url.Should().Be("/serverless/observability");
-		observability.NavigationTitle.Should().Be("serverless-observability");
+		observability.NavigationTitle.Should().Be("Serverless Observability");
 
 		// Test 2: Serverless Search - verify root URL has path prefix
 		var search = siteNavigation.NavigationItems.ElementAt(1);
@@ -85,12 +85,12 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var deploymentGuide = platform.NavigationItems.ElementAt(0);
 		deploymentGuide.Should().NotBeNull();
 		deploymentGuide.Url.Should().Be("/platform/deployment");
-		deploymentGuide.NavigationTitle.Should().Be("deployment-guide");
+		deploymentGuide.NavigationTitle.Should().Be("Deployment Guide");
 
 		var cloudGuide = platform.NavigationItems.ElementAt(1);
 		cloudGuide.Should().NotBeNull();
 		cloudGuide.Url.Should().Be("/platform/cloud");
-		cloudGuide.NavigationTitle.Should().Be("cloud-guide");
+		cloudGuide.NavigationTitle.Should().Be("Cloud Guide");
 
 		// Test 4: Elasticsearch Reference - verify root URL has path prefix
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
@@ -106,7 +106,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Verify the file inside the folder has the correct path prefix
 		var documentApisFile = restApis.NavigationItems.ElementAt(1).Should().BeOfType<FileNavigationLeaf<IDocumentationFile>>().Subject;
 		documentApisFile.Url.Should().Be("/elasticsearch/reference/rest-apis/document-apis");
-		documentApisFile.NavigationTitle.Should().Be("document-apis");
+		documentApisFile.NavigationTitle.Should().Be("Document APIs");
 	}
 
 	[Fact]
@@ -208,7 +208,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		}
 
 		// Verify at least one specific file to ensure we're testing real data
-		var indexFile = fileLeaves.FirstOrDefault(f => f.NavigationTitle == "index");
+		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>().FirstOrDefault(f => f.FileInfo.FullName.EndsWith("/index.md"));
 		indexFile.Should().NotBeNull();
 		indexFile!.Url.Should().StartWith("/platform");
 	}
