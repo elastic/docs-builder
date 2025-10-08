@@ -40,7 +40,7 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 internal sealed partial class LinkRegexExtensions
 {
-	[GeneratedRegex(@"\s\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"\s*\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchTitleStylingInstructions();
 }
 
