@@ -1,9 +1,7 @@
 import { Chat } from './Chat'
-import { chatStore } from './chat.store'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
-import { act } from 'react'
 
 // Mock the chat store
 jest.mock('./chat.store', () => ({
@@ -30,9 +28,11 @@ jest.mock('./AskAiSuggestions', () => ({
 }))
 
 const mockUseChatMessages = jest.mocked(
-    require('./chat.store').useChatMessages
+    jest.requireMock('./chat.store').useChatMessages
 )
-const mockUseChatActions = jest.mocked(require('./chat.store').useChatActions)
+const mockUseChatActions = jest.mocked(
+    jest.requireMock('./chat.store').useChatActions
+)
 
 describe('Chat Component', () => {
     const mockSubmitQuestion = jest.fn()

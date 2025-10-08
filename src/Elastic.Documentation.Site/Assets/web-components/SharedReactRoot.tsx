@@ -9,7 +9,11 @@ const queryClient = new QueryClient()
  * Shared React root provider for all web components
  * This ensures all components share the same React instance and providers
  */
-export const SharedReactRoot = ({ children }: { children: React.ReactNode }) => {
+export const SharedReactRoot = ({
+    children,
+}: {
+    children: React.ReactNode
+}) => {
     return (
         <StrictMode>
             <QueryClientProvider client={queryClient}>

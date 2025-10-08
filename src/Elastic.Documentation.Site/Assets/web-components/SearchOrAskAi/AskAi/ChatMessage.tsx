@@ -96,7 +96,11 @@ const ActionBar = ({
             </EuiToolTip>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-            <EuiCopy textToCopy={content} beforeMessage="Copy markdown" afterMessage="Copied!">
+            <EuiCopy
+                textToCopy={content}
+                beforeMessage="Copy markdown"
+                afterMessage="Copied!"
+            >
                 {(copy) => (
                     <EuiButtonIcon
                         aria-label="Copy markdown"

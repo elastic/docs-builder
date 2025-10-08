@@ -5,12 +5,12 @@ import * as React from 'react'
 
 /*
  * Note: These tests use mock verification for store actions.
- * 
+ *
  * Unlike pure unit tests, the Search component's main responsibility is
  * orchestrating the handoff from search to chat (calling clearChat,
  * submitQuestion, setModalMode in the right order). Testing these calls
  * verifies the integration/workflow, not just implementation details.
- * 
+ *
  * For full E2E behavior testing without mocks, see integration tests.
  */
 
@@ -39,15 +39,17 @@ jest.mock('./SearchResults', () => ({
     SearchResults: () => <div data-testid="search-results">Search Results</div>,
 }))
 
-const mockUseSearchTerm = jest.mocked(require('./search.store').useSearchTerm)
+const mockUseSearchTerm = jest.mocked(
+    jest.requireMock('./search.store').useSearchTerm
+)
 const mockUseSearchActions = jest.mocked(
-    require('./search.store').useSearchActions
+    jest.requireMock('./search.store').useSearchActions
 )
 const mockUseChatActions = jest.mocked(
-    require('../AskAi/chat.store').useChatActions
+    jest.requireMock('../AskAi/chat.store').useChatActions
 )
 const mockUseModalActions = jest.mocked(
-    require('../modal.store').useModalActions
+    jest.requireMock('../modal.store').useModalActions
 )
 
 describe('Search Component', () => {

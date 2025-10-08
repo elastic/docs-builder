@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
-import { useChatActions, useChatMessages } from './chat.store'
 import { AskAiSuggestions } from './AskAiSuggestions'
 import { ChatMessageList } from './ChatMessageList'
+import { useChatActions, useChatMessages } from './chat.store'
 import {
     useEuiOverflowScroll,
     EuiButtonEmpty,
@@ -117,7 +117,9 @@ export const Chat = () => {
             css={containerStyles}
         >
             {/* Header - only show when there are messages */}
-            {messages.length > 0 && <NewConversationHeader onClick={clearChat} />}
+            {messages.length > 0 && (
+                <NewConversationHeader onClick={clearChat} />
+            )}
 
             {/* Messages */}
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
@@ -143,32 +145,34 @@ export const Chat = () => {
                                     </EuiTitle>
                                     <EuiSpacer size="s" />
                                     <AskAiSuggestions
-                                        suggestions={new Set([
-                                            {
-                                                question:
-                                                    'How do I set up a data stream in Elasticsearch?',
-                                            },
-                                            {
-                                                question:
-                                                    'What are the best practices for indexing performance?',
-                                            },
-                                            {
-                                                question:
-                                                    'How can I create a dashboard in Kibana?',
-                                            },
-                                            {
-                                                question:
-                                                    'What is the difference between a keyword and text field?',
-                                            },
-                                            {
-                                                question:
-                                                    'How do I configure machine learning jobs?',
-                                            },
-                                            {
-                                                question:
-                                                    'What are aggregations and how do I use them?',
-                                            },
-                                        ])}
+                                        suggestions={
+                                            new Set([
+                                                {
+                                                    question:
+                                                        'How do I set up a data stream in Elasticsearch?',
+                                                },
+                                                {
+                                                    question:
+                                                        'What are the best practices for indexing performance?',
+                                                },
+                                                {
+                                                    question:
+                                                        'How can I create a dashboard in Kibana?',
+                                                },
+                                                {
+                                                    question:
+                                                        'What is the difference between a keyword and text field?',
+                                                },
+                                                {
+                                                    question:
+                                                        'How do I configure machine learning jobs?',
+                                                },
+                                                {
+                                                    question:
+                                                        'What are aggregations and how do I use them?',
+                                                },
+                                            ])
+                                        }
                                     />
                                 </>
                             }

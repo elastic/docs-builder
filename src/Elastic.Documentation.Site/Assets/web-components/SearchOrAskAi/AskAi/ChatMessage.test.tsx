@@ -1,7 +1,6 @@
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
 describe('ChatMessage Component', () => {
@@ -33,9 +32,9 @@ describe('ChatMessage Component', () => {
             render(<ChatMessage message={userMessage} />)
 
             // Assert
-            const messageElement = screen.getByText(
-                'What is Elasticsearch?'
-            ).closest('[data-message-type="user"]')
+            const messageElement = screen
+                .getByText('What is Elasticsearch?')
+                .closest('[data-message-type="user"]')
             expect(messageElement).toBeInTheDocument()
         })
     })
@@ -68,10 +67,14 @@ describe('ChatMessage Component', () => {
 
             // Assert
             expect(
-                screen.getByRole('button', { name: /^This answer was helpful$/i })
+                screen.getByRole('button', {
+                    name: /^This answer was helpful$/i,
+                })
             ).toBeInTheDocument()
             expect(
-                screen.getByRole('button', { name: /^This answer was not helpful$/i })
+                screen.getByRole('button', {
+                    name: /^This answer was not helpful$/i,
+                })
             ).toBeInTheDocument()
         })
 
@@ -80,12 +83,16 @@ describe('ChatMessage Component', () => {
             render(<ChatMessage message={aiMessage} />)
 
             // Assert
-            const messageElement = screen.getAllByText(
-                /Elasticsearch is a distributed search engine/i
-            )[0].closest('[data-message-type="ai"]')
+            const messageElement = screen
+                .getAllByText(
+                    /Elasticsearch is a distributed search engine/i
+                )[0]
+                .closest('[data-message-type="ai"]')
             expect(messageElement).toBeInTheDocument()
             // Check for logo icon
-            const logoIcon = messageElement?.querySelector('[data-type="logoElastic"]')
+            const logoIcon = messageElement?.querySelector(
+                '[data-type="logoElastic"]'
+            )
             expect(logoIcon).toBeInTheDocument()
         })
     })
@@ -106,9 +113,9 @@ describe('ChatMessage Component', () => {
 
             // Assert
             // Loading elastic icon should be present
-            const messageElement = screen.getByText(
-                /Elasticsearch is\.\.\./i
-            ).closest('[data-message-type="ai"]')
+            const messageElement = screen
+                .getByText(/Elasticsearch is\.\.\./i)
+                .closest('[data-message-type="ai"]')
             expect(messageElement).toBeInTheDocument()
         })
 
@@ -118,10 +125,14 @@ describe('ChatMessage Component', () => {
 
             // Assert
             expect(
-                screen.queryByRole('button', { name: /^This answer was helpful$/i })
+                screen.queryByRole('button', {
+                    name: /^This answer was helpful$/i,
+                })
             ).not.toBeInTheDocument()
             expect(
-                screen.queryByRole('button', { name: /^This answer was not helpful$/i })
+                screen.queryByRole('button', {
+                    name: /^This answer was not helpful$/i,
+                })
             ).not.toBeInTheDocument()
         })
     })
@@ -145,7 +156,9 @@ describe('ChatMessage Component', () => {
                 screen.getByText(/Sorry, there was an error/i)
             ).toBeInTheDocument()
             expect(
-                screen.getByText(/The Elastic Docs AI Assistant encountered an error/i)
+                screen.getByText(
+                    /The Elastic Docs AI Assistant encountered an error/i
+                )
             ).toBeInTheDocument()
         })
 

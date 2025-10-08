@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import '../../eui-icons-cache'
-import { useModalActions, useModalIsOpen } from './modal.store'
 import { useSearchActions, useSearchTerm } from './Search/search.store'
+import { useModalActions, useModalIsOpen } from './modal.store'
 import {
     EuiButton,
     EuiPortal,

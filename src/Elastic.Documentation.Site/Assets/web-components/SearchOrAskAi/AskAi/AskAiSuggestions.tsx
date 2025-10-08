@@ -1,13 +1,6 @@
 import { useModalActions } from '../modal.store'
-import { useSearchTerm } from '../Search/search.store'
 import { useChatActions } from './chat.store'
-import {
-    EuiButton,
-    EuiIcon,
-    EuiSpacer,
-    EuiText,
-    useEuiTheme,
-} from '@elastic/eui'
+import { EuiButton, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 

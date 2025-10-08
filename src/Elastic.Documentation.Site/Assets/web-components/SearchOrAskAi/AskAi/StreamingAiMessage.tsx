@@ -1,9 +1,9 @@
+import { ChatMessage } from './ChatMessage'
 import {
     ChatMessage as ChatMessageType,
     useChatActions,
     useThreadId,
 } from './chat.store'
-import { ChatMessage } from './ChatMessage'
 import { useLlmGateway } from './useLlmGateway'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
@@ -13,7 +13,10 @@ interface StreamingAiMessageProps {
     isLast: boolean
 }
 
-export const StreamingAiMessage = ({ message, isLast }: StreamingAiMessageProps) => {
+export const StreamingAiMessage = ({
+    message,
+    isLast,
+}: StreamingAiMessageProps) => {
     const { updateAiMessage, hasMessageBeenSent, markMessageAsSent } =
         useChatActions()
     const threadId = useThreadId()

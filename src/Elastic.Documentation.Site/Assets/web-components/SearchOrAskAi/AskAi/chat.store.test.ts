@@ -13,8 +13,8 @@ describe('chat.store', () => {
     beforeEach(() => {
         // Setup UUID mock to return unique IDs
         let counter = 0
-        mockUuidv4.mockImplementation(() => `mock-uuid-${++counter}` as any)
-        
+        mockUuidv4.mockImplementation(() => `mock-uuid-${++counter}` as string)
+
         // Reset store state before each test
         act(() => {
             chatStore.getState().actions.clearChat()
@@ -24,7 +24,9 @@ describe('chat.store', () => {
     it('should support a complete chat conversation flow', () => {
         // Submit first question
         act(() => {
-            chatStore.getState().actions.submitQuestion('What is Elasticsearch?')
+            chatStore
+                .getState()
+                .actions.submitQuestion('What is Elasticsearch?')
         })
 
         let messages = chatStore.getState().chatMessages
@@ -54,7 +56,9 @@ describe('chat.store', () => {
 
         // Submit follow-up question
         act(() => {
-            chatStore.getState().actions.submitQuestion('Tell me more about shards')
+            chatStore
+                .getState()
+                .actions.submitQuestion('Tell me more about shards')
         })
 
         messages = chatStore.getState().chatMessages
@@ -105,11 +109,11 @@ describe('chat.store', () => {
 
     /*
      * Note: ThreadId behavior is NOT tested here.
-     * 
+     *
      * ThreadId is used by the LLM backend to maintain conversational context
      * across follow-up questions. Testing that we assign a threadId to messages
      * doesn't verify the actual behavior (LLM maintaining context).
-     * 
+     *
      * This requires system/E2E testing with a real LLM backend, which is
      * outside the scope of frontend unit tests.
      */
