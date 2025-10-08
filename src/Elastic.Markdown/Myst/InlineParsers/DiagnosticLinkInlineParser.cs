@@ -40,7 +40,7 @@ public class DiagnosticLinkInlineExtensions : IMarkdownExtension
 
 internal sealed partial class LinkRegexExtensions
 {
-	[GeneratedRegex(@"\s*\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
+	[GeneratedRegex(@"(?:^|\s)\=(?<width>\d+%?)(?:x(?<height>\d+%?))?$", RegexOptions.IgnoreCase, "en-US")]
 	public static partial Regex MatchTitleStylingInstructions();
 }
 
@@ -92,7 +92,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			attributes.AddProperty("width", width);
 			attributes.AddProperty("height", height);
 
-			title = title[..matches.Index];
+			title = title[..matches.Index].TrimEnd();
 		}
 		link.Title = title.ReplaceSubstitutions(context);
 	}
