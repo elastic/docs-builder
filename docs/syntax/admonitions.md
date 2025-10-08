@@ -177,7 +177,7 @@ This tip applies to ECH and ECE.
 :::
 
 :::{important}
-:applies_to: {"stack": "preview 9.1, ga 9.2", "serverless": "ga"}
+:applies_to: {"stack": "ga 9.2, preview 9.1", "serverless": "ga"}
 
 This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
 :::
@@ -206,7 +206,7 @@ This tip applies to ECH and ECE.
 :::
 
 :::{important}
-:applies_to: {"stack": "preview 9.1, ga 9.2", "serverless": "ga"}
+:applies_to: {"stack": "ga 9.2, preview 9.1", "serverless": "ga"}
 
 This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
 :::
