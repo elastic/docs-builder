@@ -28,9 +28,10 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
-		navigation.NavigationItems.ElementAt(0).NavigationIndex.Should().Be(0);
-		navigation.NavigationItems.ElementAt(1).NavigationIndex.Should().Be(1);
-		navigation.NavigationItems.ElementAt(2).NavigationIndex.Should().Be(2);
+		navigation.NavigationIndex.Should().Be(0);
+		navigation.NavigationItems.ElementAt(0).NavigationIndex.Should().Be(1);
+		navigation.NavigationItems.ElementAt(1).NavigationIndex.Should().Be(2);
+		navigation.NavigationItems.ElementAt(2).NavigationIndex.Should().Be(3);
 	}
 
 	[Fact]

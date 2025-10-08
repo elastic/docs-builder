@@ -59,7 +59,6 @@ public static class NavigationItemExtensions
 	{
 		var navigationIndex = -1;
 		ProcessNavigationItem(context, ref navigationIndex, node);
-		UpdateNavigationIndex(node.NavigationItems, context, ref navigationIndex);
 		return navigationIndex;
 
 	}
