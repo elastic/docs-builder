@@ -32,7 +32,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.Hidden.Should().BeFalse();
 		navigation.IsCrossLink.Should().BeFalse();
 		navigation.Id.Should().NotBeNullOrEmpty();
-		navigation.NavigationTitle.Should().Be("test-project");
+		navigation.NavigationTitle.Should().Be("index");
 		navigation.IsUsingNavigationDropdown.Should().BeFalse();
 		navigation.Url.Should().Be("/");
 	}

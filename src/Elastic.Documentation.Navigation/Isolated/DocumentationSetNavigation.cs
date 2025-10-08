@@ -63,7 +63,7 @@ public class DocumentationSetNavigation<TModel>
 
 		// Convert TOC items to navigation items
 		var items = new List<INavigationItem>();
-		var index = 0;
+		var index = -1;
 		foreach (var tocItem in documentationSet.Toc)
 		{
 			var navItem = ConvertToNavigationItem(
@@ -84,7 +84,7 @@ public class DocumentationSetNavigation<TModel>
 		NavigationItems = items;
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
 
-		var navigationIndex = 0;
+		var navigationIndex = -1;
 		UpdateNavigationIndex(NavigationItems, context, ref navigationIndex);
 	}
 
