@@ -29,27 +29,23 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
 	public string Id { get; }
 	public int Depth { get; }
-	public ApiLanding Index { get; }
+	public ILeafNavigationItem<ApiLanding> Index { get; }
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
 	public bool IsCrossLink => false; // API landing items are never cross-links
-	public string Url { get; }
+	public string Url => Index.Url;
 	public bool Hidden => false;
 
-	//TODO
-	public string NavigationTitle { get; } = "API Overview";
+	public string NavigationTitle => Index.NavigationTitle;
 
 	public LandingNavigationItem(string url)
 	{
 		Depth = 0;
 		NavigationRoot = this;
 		Id = ShortId.Create("root");
-
 		var landing = new ApiLanding();
-		Url = url;
-
-		Index = landing;
+		Index = new ApiIndexLeafNavigation<ApiLanding>(landing, url, "Api Overview", this);
 	}
 
 	/// <inheritdoc />
@@ -63,7 +59,8 @@ public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationI
 public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>(
 	TGroupingModel groupingModel,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
-	INodeNavigationItem<INavigationModel, INavigationItem> parent)
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
+)
 	: IApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 	where TGroupingModel : IApiGroupingModel
 	where TNavigationItem : INavigationItem
@@ -91,8 +88,10 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 
 	/// <inheritdoc />
 	public abstract string Id { get; }
+
+	//TODO ensure Index is not newed everytime
 	/// <inheritdoc />
-	public TGroupingModel Index { get; } = groupingModel;
+	public ILeafNavigationItem<TGroupingModel> Index => new ApiIndexLeafNavigation<TGroupingModel>(groupingModel, Url, NavigationTitle, rootNavigation, Parent);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<TNavigationItem> NavigationItems { get; set; } = [];
@@ -151,8 +150,9 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create(nameof(EndpointNavigationItem), endpoint.Operations.First().ApiName, endpoint.Operations.First().Route);
 
+	//TODO ensure Index is not newed everytime
 	/// <inheritdoc />
-	public ApiEndpoint Index { get; } = endpoint;
+	public ILeafNavigationItem<ApiEndpoint> Index => new ApiIndexLeafNavigation<ApiEndpoint>(endpoint, Url, NavigationTitle, rootNavigation, Parent);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];

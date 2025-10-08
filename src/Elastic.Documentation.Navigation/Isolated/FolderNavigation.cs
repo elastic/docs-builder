@@ -23,10 +23,9 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 		_folderPath = parentPath;
 		_pathPrefixProvider = pathPrefixProvider;
 		NavigationItems = navigationItems;
+		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
 		NavigationRoot = navigationRoot;
 		Parent = parent;
-		var title = navigationItems.FirstOrDefault()?.NavigationTitle ?? parentPath;
-		Index = new DocumentationDirectory(title);
 		Depth = depth;
 		Hidden = false;
 		IsCrossLink = false;
@@ -78,7 +77,7 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public IDocumentationFile Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; }
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
 }

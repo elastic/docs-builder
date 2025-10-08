@@ -58,7 +58,6 @@ public class DocumentationSetNavigation<TModel>
 		PathPrefixProvider = pathPrefixProvider ?? this;
 		_pathPrefix = pathPrefixProvider?.PathPrefix ?? string.Empty;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
-		Index = new DocumentationDirectory(documentationSet.Project ?? "Documentation");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
 		Git = context.Git;
 		Identifier = new Uri($"{Git.RepositoryName}://");
@@ -85,6 +84,7 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		NavigationItems = items;
+		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
 
 		var navigationIndex = 0;
 		UpdateNavigationIndex(NavigationItems, context, ref navigationIndex);
@@ -142,7 +142,7 @@ public class DocumentationSetNavigation<TModel>
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public IDocumentationFile Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }

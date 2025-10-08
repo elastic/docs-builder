@@ -9,9 +9,7 @@ using Elastic.Documentation.Navigation.Isolated;
 namespace Elastic.Documentation.Navigation.Assembler;
 
 
-public record SiteModel(string NavigationTitle) : INavigationModel;
-
-public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
+public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
 	public SiteNavigation(
 		SiteNavigationFile siteNavigationFile,
@@ -26,7 +24,6 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 		Hidden = false;
 		IsCrossLink = false;
 		Id = ShortId.Create("site");
-		Index = new SiteModel("Site Navigation");
 		IsUsingNavigationDropdown = false;
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
@@ -59,6 +56,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 		}
 
 		NavigationItems = items;
+		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
 	}
 
 	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _nodes;
@@ -97,7 +95,7 @@ public class SiteNavigation : IRootNavigationItem<SiteModel, INavigationItem>
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public SiteModel Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }
@@ -206,7 +204,7 @@ internal sealed class SiteTableOfContentsNavigation(
 	public bool IsCrossLink => wrappedNode.IsCrossLink;
 	public int Depth => wrappedNode.Depth;
 	public string Id => wrappedNode.Id;
-	public INavigationModel Index => wrappedNode.Index;
+	public ILeafNavigationItem<INavigationModel> Index => wrappedNode.Index;
 
 	// Override to return the specified children from site navigation
 	// Wrap children to apply path prefix recursively - but don't wrap children that are

@@ -70,7 +70,7 @@ public class LlmsNavigationEnhancer
 
 		// For documentation groups, try to get the full title of the index
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
-			markdownNodeNavigation.Index.Title ?? markdownNodeNavigation.NavigationTitle,
+			markdownNodeNavigation.Index.Model.Title ?? markdownNodeNavigation.NavigationTitle,
 
 		// For other navigation item types, use the navigation title
 		_ => navigationItem.NavigationTitle
@@ -87,7 +87,7 @@ public class LlmsNavigationEnhancer
 
 		// For documentation groups, try to get from index file
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
-			markdownNodeNavigation.Index.YamlFrontMatter?.Description,
+			markdownNodeNavigation.Index.Model.YamlFrontMatter?.Description,
 
 		// API-related navigation items (these don't have markdown frontmatter)
 		// Check by namespace to avoid direct assembly references

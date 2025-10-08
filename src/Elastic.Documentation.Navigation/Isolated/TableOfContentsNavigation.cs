@@ -29,10 +29,9 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;
 		NavigationItems = navigationItems;
+		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
 		Parent = parent;
 		PathPrefixProvider = pathPrefixProvider;
-		var title = navigationItems.FirstOrDefault()?.NavigationTitle ?? parentPath;
-		Index = new DocumentationDirectory(title);
 		NavigationRoot = this;
 		Hidden = false;
 		IsUsingNavigationDropdown = false;
@@ -91,7 +90,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	public string Id { get; }
 
 	/// <inheritdoc />
-	public IDocumentationFile Index { get; }
+	public ILeafNavigationItem<IDocumentationFile> Index { get; }
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }

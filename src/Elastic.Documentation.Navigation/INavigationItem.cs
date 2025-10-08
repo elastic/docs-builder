@@ -63,7 +63,7 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 	string Id { get; }
 
 	/// Gets the index model associated with this node.
-	TIndex Index { get; }
+	ILeafNavigationItem<TIndex> Index { get; }
 
 	/// <summary>
 	/// Gets the collection of child navigation items.

@@ -20,34 +20,11 @@ public record VirtualFileNavigationArgs(
 
 /// Represents a file navigation item that defines children which are not part of the file tree.
 public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-	: INodeNavigationItem<TModel, INavigationItem> where TModel : IDocumentationFile
+	: INodeNavigationItem<TModel, INavigationItem>
+	where TModel : IDocumentationFile
 {
-	public IFileInfo FileInfo { get; } = fileInfo;
-
 	/// <inheritdoc />
-	public string Url
-	{
-		get
-		{
-			var rootUrl = args.PrefixProvider.PathPrefix.TrimEnd('/');
-			// Remove extension while preserving directory path
-			var relativePath = args.RelativePath;
-			var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-				? relativePath[..^3]  // Remove last 3 characters (.md)
-				: relativePath;
-
-			// If path ends with /index or is just index, omit it from the URL
-			if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
-				path = path[..^6]; // Remove "/index"
-			else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
-				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
-
-			if (string.IsNullOrEmpty(path))
-				return string.IsNullOrEmpty(rootUrl) ? "/" : rootUrl;
-
-			return $"{rootUrl}/{path}";
-		}
-	}
+	public string Url => Index.Url;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
@@ -74,7 +51,8 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public string Id { get; } = ShortId.Create(args.RelativePath);
 
 	/// <inheritdoc />
-	public TModel Index { get; init; } = model;
+	public ILeafNavigationItem<TModel> Index { get; init; } =
+		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePath, args.Hidden, args.NavigationIndex, args.Parent, args.NavigationRoot, args.PrefixProvider));
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; init; } = args.NavigationItems;
 }

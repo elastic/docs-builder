@@ -316,7 +316,7 @@ public class DocumentationSet : IPositionalNavigation
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
 			.Concat(NavigationIndexedByOrder.Values
 				.OfType<INodeNavigationItem<MarkdownFile, INavigationItem>>()
-				.Select(g => (Markdown: g.Index, Navigation: (INavigationItem)g))
+				.Select(g => (Markdown: g.Index.Model, Navigation: (INavigationItem)g))
 			)
 			.ToList();
 

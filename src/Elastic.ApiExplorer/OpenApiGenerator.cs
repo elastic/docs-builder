@@ -266,7 +266,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				CurrentNavigation = navigation,
 				MarkdownRenderer = markdownStringRenderer
 			};
-			_ = await Render(prefix, navigation, navigation.Index, renderContext, navigationRenderer, ctx);
+			_ = await Render(prefix, navigation, navigation.Index.Model, renderContext, navigationRenderer, ctx);
 			await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
 
 		}
@@ -276,7 +276,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			_ = await Render(prefix, node, node.Index, renderContext, navigationRenderer, ctx);
+			_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
 			foreach (var child in node.NavigationItems)
 				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, ctx);
 		}
