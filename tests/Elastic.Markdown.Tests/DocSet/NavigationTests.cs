@@ -13,14 +13,6 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 		Configuration.TableOfContents.Should().NotBeNullOrEmpty();
 
 	[Fact]
-	public void ParsesNestedFoldersAndPrefixesPaths()
-	{
-		Configuration.ImplicitFolders.Should().NotBeNullOrEmpty();
-		Configuration.ImplicitFolders.Should()
-			.Contain(Path.Combine("testing", "nested"));
-	}
-
-	[Fact]
 	public void ParsesFilesAndPrefixesPaths() =>
 		Configuration.Files.Should()
 			.Contain("index.md")

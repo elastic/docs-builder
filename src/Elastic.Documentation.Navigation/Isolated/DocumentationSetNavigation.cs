@@ -33,6 +33,7 @@ public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentatio
 
 public class DocumentationSetNavigation<TModel>
 	: IDocumentationSetNavigation, INavigationPathPrefixProvider, IPathPrefixProvider
+
 	where TModel : IDocumentationFile
 {
 	private readonly IDocumentationFileFactory<TModel> _factory;
@@ -82,10 +83,9 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		NavigationItems = items;
+		_ = this.UpdateNavigationIndex(context);
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
 
-		var navigationIndex = -1;
-		UpdateNavigationIndex(NavigationItems, context, ref navigationIndex);
 	}
 
 	private readonly string _pathPrefix;
@@ -147,29 +147,6 @@ public class DocumentationSetNavigation<TModel>
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; }
-
-	private void UpdateNavigationIndex(IReadOnlyCollection<INavigationItem> navigationItems, IDocumentationSetContext context, ref int navigationIndex)
-	{
-		foreach (var item in navigationItems)
-		{
-			switch (item)
-			{
-				case ILeafNavigationItem<INavigationModel> leaf:
-					var fileIndex = Interlocked.Increment(ref navigationIndex);
-					leaf.NavigationIndex = fileIndex;
-					break;
-				case INodeNavigationItem<INavigationModel, INavigationItem> node:
-					var groupIndex = Interlocked.Increment(ref navigationIndex);
-					node.NavigationIndex = groupIndex;
-					UpdateNavigationIndex(node.NavigationItems, context, ref navigationIndex);
-					break;
-				default:
-					context.EmitError(context.ConfigurationPath, $"{nameof(DocumentationSetNavigation<TModel>)}.{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
-					break;
-			}
-		}
-	}
-
 
 	private INavigationItem? ConvertToNavigationItem(
 		ITableOfContentsItem tocItem,

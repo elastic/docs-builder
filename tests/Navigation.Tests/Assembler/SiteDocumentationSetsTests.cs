@@ -140,7 +140,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/platform");
+		platform.Url.Should().Be("/platform");
 		platform.NavigationItems.Should().HaveCount(2);
 
 		var deployment = platform.NavigationItems.ElementAt(0);
@@ -217,7 +217,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.ElementAt(3) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/platform");
+		platform.Url.Should().Be("/platform");
 		platform.NavigationItems.Should().HaveCount(2);
 
 		var elasticsearch = siteNavigation.NavigationItems.ElementAt(4);
@@ -365,7 +365,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/platform");
+		platform.Url.Should().Be("/platform");
 
 		// Verify child TOCs have their specific path prefixes
 		var deployment = platform.NavigationItems.ElementAt(0);

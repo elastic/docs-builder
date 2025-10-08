@@ -23,69 +23,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.IO;
 
-public interface IPositionalNavigation
-{
-	ConditionalWeakTable<MarkdownFile, INavigationItem> MarkdownNavigationLookup { get; }
-	FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
-	FrozenDictionary<string, ILeafNavigationItem<MarkdownFile>> NavigationIndexedByCrossLink { get; }
-
-	INavigationItem? GetPrevious(MarkdownFile current)
-	{
-		if (!MarkdownNavigationLookup.TryGetValue(current, out var currentNavigation))
-			return null;
-		var index = currentNavigation.NavigationIndex;
-		do
-		{
-			var previous = NavigationIndexedByOrder.GetValueOrDefault(index - 1);
-			if (previous is not null && !previous.Hidden)
-				return previous;
-			index--;
-		} while (index > 0);
-
-		return null;
-	}
-
-	INavigationItem? GetNext(MarkdownFile current)
-	{
-		if (!MarkdownNavigationLookup.TryGetValue(current, out var currentNavigation))
-			return null;
-		var index = currentNavigation.NavigationIndex;
-		do
-		{
-			var next = NavigationIndexedByOrder.GetValueOrDefault(index + 1);
-			if (next is not null && !next.Hidden && next.Url != currentNavigation.Url)
-				return next;
-			index++;
-		} while (index <= NavigationIndexedByOrder.Count - 1);
-
-		return null;
-	}
-
-	INavigationItem GetCurrent(MarkdownFile file) =>
-		MarkdownNavigationLookup.TryGetValue(file, out var navigation)
-			? navigation : throw new InvalidOperationException($"Could not find {file.RelativePath} in navigation");
-
-	INavigationItem[] GetParents(INavigationItem current)
-	{
-		var parents = new List<INavigationItem>();
-		var parent = current.Parent;
-		do
-		{
-			if (parent is null)
-				continue;
-			if (parents.All(i => i.Url != parent.Url))
-				parents.Add(parent);
-
-			parent = parent.Parent;
-		} while (parent != null);
-
-		return [.. parents];
-	}
-
-	INavigationItem[] GetParentsOfMarkdownFile(MarkdownFile file) =>
-		MarkdownNavigationLookup.TryGetValue(file, out var navigation) ? GetParents(navigation) : [];
-}
-
 public class DocumentationSet : IPositionalNavigation
 {
 	private readonly ILogger<DocumentationSet> _logger;

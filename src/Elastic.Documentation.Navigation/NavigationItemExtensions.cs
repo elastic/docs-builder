@@ -54,4 +54,38 @@ public static class NavigationItemExtensions
 		return nodes.First().Index;
 
 	}
+
+	public static int UpdateNavigationIndex(this IRootNavigationItem<INavigationModel, INavigationItem> node, IDocumentationContext context)
+	{
+		var navigationIndex = -1;
+		ProcessNavigationItem(context, ref navigationIndex, node);
+		UpdateNavigationIndex(node.NavigationItems, context, ref navigationIndex);
+		return navigationIndex;
+
+	}
+
+	private static void UpdateNavigationIndex(IReadOnlyCollection<INavigationItem> navigationItems, IDocumentationContext context, ref int navigationIndex)
+	{
+		foreach (var item in navigationItems)
+			ProcessNavigationItem(context, ref navigationIndex, item);
+	}
+
+	private static void ProcessNavigationItem(IDocumentationContext context, ref int navigationIndex, INavigationItem item)
+	{
+		switch (item)
+		{
+			case ILeafNavigationItem<INavigationModel> leaf:
+				var fileIndex = Interlocked.Increment(ref navigationIndex);
+				leaf.NavigationIndex = fileIndex;
+				break;
+			case INodeNavigationItem<INavigationModel, INavigationItem> node:
+				var groupIndex = Interlocked.Increment(ref navigationIndex);
+				node.NavigationIndex = groupIndex;
+				UpdateNavigationIndex(node.NavigationItems, context, ref navigationIndex);
+				break;
+			default:
+				context.EmitError(context.ConfigurationPath, $"{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
+				break;
+		}
+	}
 }

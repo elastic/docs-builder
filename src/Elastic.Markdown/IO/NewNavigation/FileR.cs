@@ -107,9 +107,6 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		if (config.Files.Contains(relativePath))
 			return ExtensionOrDefaultMarkdown();
 
-		if (config.Globs.Any(g => g.IsMatch(relativePath)))
-			return ExtensionOrDefaultMarkdown();
-
 		context.Collector.EmitError(config.SourceFile, $"Not linked in toc: {relativePath}");
 		return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 

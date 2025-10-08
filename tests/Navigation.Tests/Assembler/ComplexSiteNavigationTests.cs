@@ -112,7 +112,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	[Fact]
 	public void DeeplyNestedNavigationMaintainsPathPrefixThroughoutHierarchy()
 	{
-		// language=yaml - test without specifying children for nested TOCs
+		// language=YAML - test without specifying children for nested TOCs
 		var siteNavYaml = """
 		                  toc:
 		                    - toc: platform://
@@ -139,7 +139,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
 		platform.Should().NotBeNull();
-		platform!.Url.Should().Be("/docs/platform");
+		platform.Url.Should().Be("/docs/platform");
 
 		// Platform should have its children (index, deployment-guide, cloud-guide)
 		platform.NavigationItems.Should().HaveCount(3);
@@ -147,10 +147,10 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Find the deployment-guide TOC (it's the second item after index)
 		var deploymentGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
-		deploymentGuide!.Should().BeOfType<TableOfContentsNavigation>();
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
 		deploymentGuide.Url.Should().StartWith("/docs/platform");
 
-		// Walk through the entire tree and verify every single URL starts with path prefix
+		// Walk through the entire tree and verify every single URL starts with a path prefix
 		var allUrls = CollectAllUrls(platform.NavigationItems);
 		allUrls.Should().NotBeEmpty();
 		allUrls.Should().OnlyContain(url => url.StartsWith("/docs/platform"),
@@ -160,7 +160,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	[Fact]
 	public void FileNavigationLeafUrlsReflectPathPrefixInDeeplyNestedStructures()
 	{
-		// language=yaml - don't specify children so we can access the actual file leaves
+		// language=YAML - don't specify children so we can access the actual file leaves
 		var siteNavYaml = """
 		                  toc:
 		                    - toc: platform://
@@ -189,12 +189,12 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 
 		// Platform should have its children including deployment-guide TOC
-		platform!.NavigationItems.Should().HaveCount(3);
+		platform.NavigationItems.Should().HaveCount(3);
 
 		// Get deployment-guide TOC (second item after index)
 		var deploymentGuide = platform.NavigationItems.ElementAt(1) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		deploymentGuide.Should().NotBeNull();
-		deploymentGuide!.Should().BeOfType<TableOfContentsNavigation>();
+		deploymentGuide.Should().BeOfType<TableOfContentsNavigation>();
 
 		// Find all FileNavigationLeaf items recursively
 		var fileLeaves = CollectAllFileLeaves(deploymentGuide.NavigationItems);
@@ -211,13 +211,13 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>()
 			.FirstOrDefault(f => f.FileInfo.FullName.EndsWith("/index.md", StringComparison.OrdinalIgnoreCase));
 		indexFile.Should().NotBeNull();
-		indexFile!.Url.Should().StartWith("/platform");
+		indexFile.Url.Should().StartWith("/platform");
 	}
 
 	[Fact]
 	public void FolderNavigationWithinNestedTocsHasCorrectPathPrefix()
 	{
-		// language=yaml - don't specify children so we can access the actual folders
+		// language=YAML - don't specify children so we can access the actual folders
 		var siteNavYaml = """
 		                  toc:
 		                    - toc: platform://
@@ -246,12 +246,12 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 
 		// Platform should have its children including cloud-guide TOC
-		platform!.NavigationItems.Should().HaveCount(3);
+		platform.NavigationItems.Should().HaveCount(3);
 
 		// Get cloud-guide TOC (third item after index and deployment-guide)
 		var cloudGuide = platform.NavigationItems.ElementAt(2) as INodeNavigationItem<INavigationModel, INavigationItem>;
 		cloudGuide.Should().NotBeNull();
-		cloudGuide!.Should().BeOfType<TableOfContentsNavigation>();
+		cloudGuide.Should().BeOfType<TableOfContentsNavigation>();
 
 		// cloud-guide should have folders (index, aws, azure)
 		var folders = cloudGuide.NavigationItems
@@ -260,7 +260,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		folders.Should().NotBeEmpty("cloud-guide should contain folders");
 
-		// Verify each folder and all its contents have correct path prefix
+		// Verify each folder and all its contents have a correct path prefix
 		foreach (var folder in folders)
 		{
 			folder.Url.Should().StartWith("/platform/cloud",
@@ -290,9 +290,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 				$"item '{item.NavigationTitle}' should have URL starting with '{expectedPrefix}' but got '{item.Url}'");
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
-			{
 				AssertAllUrlsStartWith(nodeItem.NavigationItems, expectedPrefix);
-			}
 		}
 	}
 
@@ -308,9 +306,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			urls.Add(item.Url);
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
-			{
 				urls.AddRange(CollectAllUrls(nodeItem.NavigationItems));
-			}
 		}
 
 		return urls;

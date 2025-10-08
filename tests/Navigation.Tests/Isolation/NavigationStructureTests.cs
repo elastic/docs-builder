@@ -94,7 +94,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Demonstrate type-safe LINQ queries work with the interface type
 		var firstItem = allLeafItems.FirstOrDefault(l => l.Model.NavigationTitle == "first");
 		firstItem.Should().NotBeNull();
-		firstItem!.Url.Should().Be("/first");
+		firstItem.Url.Should().Be("/first");
 	}
 
 	[Fact]

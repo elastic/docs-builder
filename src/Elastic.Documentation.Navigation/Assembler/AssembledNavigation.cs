@@ -56,6 +56,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		NavigationItems = items;
+		_ = this.UpdateNavigationIndex(context);
 		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel("/index.md"));
 	}
 

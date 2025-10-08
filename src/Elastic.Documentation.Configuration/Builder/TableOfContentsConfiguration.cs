@@ -240,12 +240,7 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		}
 
 		if (folder is not null)
-		{
-			if (children is null)
-				_ = _configuration.ImplicitFolders.Add(parentPath.TrimStart(Path.DirectorySeparatorChar));
-
 			return [new FolderReference(this, $"{parentPath}".TrimStart(Path.DirectorySeparatorChar), children ?? [])];
-		}
 
 		return null;
 	}

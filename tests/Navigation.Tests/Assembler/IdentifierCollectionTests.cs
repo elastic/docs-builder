@@ -82,12 +82,12 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		// Get the deployment-guide TOC
 		var deploymentGuide = platformNav.NavigationItems.ElementAt(1) as TableOfContentsNavigation;
 		deploymentGuide.Should().NotBeNull();
-		deploymentGuide!.Identifier.Should().Be(new Uri("platform://deployment-guide"));
+		deploymentGuide.Identifier.Should().Be(new Uri("platform://deployment-guide"));
 
 		// Get the cloud-guide TOC
 		var cloudGuide = platformNav.NavigationItems.ElementAt(2) as TableOfContentsNavigation;
 		cloudGuide.Should().NotBeNull();
-		cloudGuide!.Identifier.Should().Be(new Uri("platform://cloud-guide"));
+		cloudGuide.Identifier.Should().Be(new Uri("platform://cloud-guide"));
 	}
 
 	[Fact]
