@@ -127,6 +127,10 @@ public class DocumentationSet : IPositionalNavigation
 				return [markdownLeaf];
 			case ILeafNavigationItem<INavigationModel> leaf:
 				return [leaf];
+			case INodeNavigationItem<MarkdownFile, INavigationItem> node:
+				MarkdownNavigationLookup.Add(node.Index.Model, node);
+				var nodeItems = node.NavigationItems.SelectMany(CreateNavigationLookup);
+				return nodeItems.Concat([node]).ToArray();
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
 				var items = node.NavigationItems.SelectMany(CreateNavigationLookup);
 				return items.Concat([node]).ToArray();
