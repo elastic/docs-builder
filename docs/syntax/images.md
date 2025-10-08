@@ -96,6 +96,13 @@ If `H` is omitted `W` is used as the height as well.
 ![alt](img.png "=50%")
 ```
 
+The sizing syntax is flexible and works with or without spaces before the `=` sign. You can also combine it with a title:
+
+```markdown
+![alt](img.png "My Title =50%")
+![alt](img.png "My Title=50%")
+```
+
 
 
 ### SVG 

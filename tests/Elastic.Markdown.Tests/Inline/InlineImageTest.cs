@@ -76,10 +76,10 @@ public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : 
 		);
 }
 
-// Test image sizing with space after =
-public class InlineImageWithSizingSpaceAfterTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
+// Test image sizing with title but no space before =
+public class InlineImageWithTitleNoSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
 """
-![Elasticsearch](/_static/img/observability.png "=50% ")
+![Elasticsearch](/_static/img/observability.png "My Title=50%")
 """
 )
 {
@@ -90,7 +90,7 @@ public class InlineImageWithSizingSpaceAfterTest(ITestOutputHelper output) : Inl
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="My Title" width="50%" height="50%" /></p>"""
 		);
 }
 
