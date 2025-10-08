@@ -62,12 +62,18 @@ type Setup =
         yaml.WriteLine("  - docs-content")
         yaml.WriteLine("  - elasticsearch")
         yaml.WriteLine("  - kibana")
+        yaml.WriteLine("exclude:")
+        yaml.WriteLine("  - '_*.md'")
         yaml.WriteLine("toc:")
         let markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories)
         markdownFiles
         |> Seq.iter(fun markdownFile ->
             let relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
-            yaml.WriteLine($" - file: {relative}");
+            // Skip files that match the exclusion pattern (any path segment starting with _)
+            let pathSegments = relative.Split([|'/'; '\\'|], StringSplitOptions.RemoveEmptyEntries)
+            let shouldExclude = pathSegments |> Array.exists (fun segment -> segment.StartsWith("_"))
+            if not shouldExclude then
+                yaml.WriteLine($" - file: {relative}");
         )
         let redirectFiles = ["5th-page"; "second-page"; "third-page"; "first-page"]
         redirectFiles
