@@ -29,7 +29,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;
 		NavigationItems = navigationItems;
-		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{parentPath}/index.md"));
 		Parent = parent;
 		PathPrefixProvider = pathPrefixProvider;
 		NavigationRoot = this;

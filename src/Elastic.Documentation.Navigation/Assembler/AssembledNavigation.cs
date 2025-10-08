@@ -56,8 +56,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		NavigationItems = items;
-		Index = NavigationItems.FindIndex<IDocumentationFile>()
-				?? throw new InvalidOperationException($"Could not find index file in {nameof(SiteNavigation)}");
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel("/index.md"));
 	}
 
 	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _nodes;

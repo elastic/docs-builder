@@ -37,8 +37,9 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("TableOfContents navigation does not allow nested children"));
+		diagnostics.Should().Contain(d =>
+			d.Message.Contains("may not contain children, define children in") &&
+			d.Message.Contains("toc.yml"));
 	}
 
 	[Fact]
@@ -66,8 +67,9 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		// Check using Errors count instead of Diagnostics collection
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("TableOfContents navigation does not allow nested children"));
+		diagnostics.Should().Contain(d =>
+			d.Message.Contains("may not contain children, define children in") &&
+			d.Message.Contains("toc.yml"));
 	}
 
 	[Fact]
@@ -99,8 +101,9 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		// Nested TOC under a root-level TOC should not allow file children
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("TableOfContents navigation does not allow nested children"));
+		diagnostics.Should().Contain(d =>
+			d.Message.Contains("may not contain children, define children in") &&
+			d.Message.Contains("toc.yml"));
 	}
 
 	[Fact]
@@ -134,8 +137,9 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		// Nested TOC structure under folders should still validate correctly
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("TableOfContents navigation does not allow nested children"));
+		diagnostics.Should().Contain(d =>
+			d.Message.Contains("may not contain children, define children in") &&
+			d.Message.Contains("toc.yml"));
 	}
 
 	[Fact]

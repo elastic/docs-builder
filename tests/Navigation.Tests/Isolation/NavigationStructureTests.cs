@@ -122,6 +122,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 			// language=yaml
 			"""
 			toc:
+			  - file: index.md
 			  - toc: performance
 			"""));
 
@@ -163,11 +164,13 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		advancedToc.Url.Should().Be("/setup/advanced");
-		// Advanced TOC has the nested performance TOC as its only child (from docset.yml children),
-		// even though it also has index.md - nested TOCs take precedence over auto-discovered files
-		advancedToc.NavigationItems.Should().HaveCount(1);
+		// Advanced TOC has index.md and the nested performance TOC as children
+		advancedToc.NavigationItems.Should().HaveCount(2);
 
-		var performanceToc = advancedToc.NavigationItems.First().Should().BeOfType<TableOfContentsNavigation>().Subject;
+		var advancedIndex = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		advancedIndex.Url.Should().Be("/setup/advanced");
+
+		var performanceToc = advancedToc.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
 		performanceToc.NavigationItems.Should().HaveCount(3);
 

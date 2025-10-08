@@ -82,8 +82,7 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		NavigationItems = items;
-		Index = NavigationItems.FindIndex<IDocumentationFile>()
-			?? throw new InvalidOperationException($"Could not find index file in {nameof(DocumentationSetNavigation<TModel>)}");
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{PathPrefix}/index.md"));
 
 		var navigationIndex = 0;
 		UpdateNavigationIndex(NavigationItems, context, ref navigationIndex);
@@ -498,9 +497,9 @@ public class DocumentationSetNavigation<TModel>
 				context,
 				placeholderNavigation,
 				root,
-				prefixProvider, // Folders don't change the URL root
+				prefixProvider, // Keep parent's prefix provider
 				depth + 1,
-				folderPath
+				folderPath // Pass folder path for children
 			);
 
 			if (childNav != null)
@@ -542,20 +541,29 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		// Determine the full TOC path for file system operations
+		IDirectoryInfo tocDirectory;
 		string tocPath;
 
 		// Check if parent is a TOC (or placeholder for a TOC being constructed)
-		var parentTocPath = parent switch
+		var parentTocDirectory = parent switch
 		{
-			TableOfContentsNavigation toc => toc.ParentPath,
-			TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.ParentPath,
+			TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
+			TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.TableOfContentsDirectory,
 			_ => null
 		};
 
-		if (parentTocPath != null)
+		if (parentTocDirectory != null)
 		{
-			// Nested TOC: use parent TOC's path as base
-			tocPath = $"{parentTocPath}/{tocRef.Source}";
+			// Nested TOC: use parent TOC's directory as base
+			tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
+				context.ReadFileSystem.Path.Combine(parentTocDirectory.FullName, tocRef.Source)
+			);
+			// Extract the relative path from the documentation source directory
+			var fullPath = tocDirectory.FullName;
+			var basePath = context.DocumentationSourceDirectory.FullName.TrimEnd('/');
+			tocPath = fullPath.StartsWith(basePath, StringComparison.Ordinal)
+				? fullPath[(basePath.Length + 1)..]
+				: tocRef.Source;
 		}
 		else
 		{
@@ -563,12 +571,10 @@ public class DocumentationSetNavigation<TModel>
 			tocPath = string.IsNullOrEmpty(parentPath)
 				? tocRef.Source
 				: $"{parentPath}/{tocRef.Source}";
+			tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
+				context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
+			);
 		}
-
-		// Resolve the TOC directory
-		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
-		);
 
 		// Read and deserialize the toc.yml file
 		var tocFilePath = context.ReadFileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
@@ -580,9 +586,9 @@ public class DocumentationSetNavigation<TModel>
 			context.EmitError(context.ConfigurationPath, $"Table of contents file not found: {tocFilePath}");
 
 		// Create the TOC navigation that will be the parent for children
-		// For nested TOCs, use just the source name as parentPath since prefixProvider handles the full path
-		// For root-level TOCs, use the full tocPath
-		var navigationParentPath = parent is TableOfContentsNavigation ? tocRef.Source : tocPath;
+		// For TOCs nested under other TOCs, use just the source name since the parent TOC's path is the base
+		// For TOCs at root or under folders, use the full tocPath
+		var navigationParentPath = (parent != null && parentTocDirectory != null) ? tocRef.Source : tocPath;
 
 		var placeholderNavigation = new TemporaryNavigationPlaceholder(
 			depth + 1,

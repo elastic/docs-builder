@@ -18,8 +18,7 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 	{
 		FolderPath = parentPath;
 		NavigationItems = navigationItems;
-		Index = NavigationItems.FindIndex<IDocumentationFile>()
-			?? throw new InvalidOperationException("Folder navigation must have an index");
+		Index = this.FindIndex<IDocumentationFile>(new NotFoundModel($"{FolderPath}/index.md"));
 		NavigationRoot = navigationRoot;
 		Parent = parent;
 		Depth = depth;
