@@ -317,10 +317,11 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup)
 				&& !string.IsNullOrEmpty(navigationLookup.Url))
 			{
+				// Navigation URLs are absolute and start with /
+				// Apply the same prefix handling as UpdateRelativeUrl would for absolute paths
 				newUrl = navigationLookup.Url;
-				// Prepend UrlPathPrefix to navigation URLs
 				var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
-				if (!string.IsNullOrWhiteSpace(urlPathPrefix))
+				if (!string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
 					newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 			}
 		}
@@ -402,7 +403,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = newUrl[2..];
 		}
 
-		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
+		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
 			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
 		// eat overall path prefix since its gets appended later
