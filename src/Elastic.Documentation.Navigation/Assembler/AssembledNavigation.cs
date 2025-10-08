@@ -60,8 +60,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				?? throw new InvalidOperationException($"Could not find index file in {nameof(SiteNavigation)}");
 	}
 
-	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _nodes;
-	public IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> Nodes => _nodes;
+	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _nodes;
+	public IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> Nodes => _nodes;
 
 
 	//TODO Obsolete?
@@ -161,7 +161,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		// Always return a wrapper to ensure path_prefix is the URL (not path_prefix + node's URL)
-		return new SiteTableOfContentsNavigation(node, prefixProvider.PathPrefixProvider, children);
+		return new SiteTableOfContentsNavigation<IDocumentationFile>(node, prefixProvider.PathPrefixProvider, children);
 	}
 }
 
@@ -173,11 +173,12 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 /// Wrapper for a navigation node that applies a path prefix to URLs and optionally
 /// overrides the children to show only the children specified in the site navigation configuration.
 /// </remarks>
-public sealed class SiteTableOfContentsNavigation(
-	INodeNavigationItem<INavigationModel, INavigationItem> wrappedNode,
+public sealed class SiteTableOfContentsNavigation<TModel>(
+	INodeNavigationItem<TModel, INavigationItem> wrappedNode,
 	IPathPrefixProvider pathPrefixProvider,
 	IReadOnlyCollection<INavigationItem> children
-	) : INodeNavigationItem<INavigationModel, INavigationItem>, INavigationPathPrefixProvider
+	) : INodeNavigationItem<TModel, INavigationItem>, INavigationPathPrefixProvider
+	where TModel : IDocumentationFile
 {
 	// For site navigation TOC references, the path_prefix IS the URL
 	// We don't append the wrapped node's URL
@@ -210,7 +211,7 @@ public sealed class SiteTableOfContentsNavigation(
 	public bool IsCrossLink => wrappedNode.IsCrossLink;
 	public int Depth => wrappedNode.Depth;
 	public string Id => wrappedNode.Id;
-	public ILeafNavigationItem<INavigationModel> Index => wrappedNode.Index;
+	public ILeafNavigationItem<TModel> Index => wrappedNode.Index;
 
 	// Override to return the specified children from site navigation
 	// Wrap children to apply path prefix recursively - but don't wrap children that are

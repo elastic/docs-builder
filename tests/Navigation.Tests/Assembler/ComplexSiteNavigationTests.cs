@@ -208,7 +208,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		}
 
 		// Verify at least one specific file to ensure we're testing real data
-		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>().FirstOrDefault(f => f.FileInfo.FullName.EndsWith("/index.md"));
+		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>()
+			.FirstOrDefault(f => f.FileInfo.FullName.EndsWith("/index.md", StringComparison.OrdinalIgnoreCase));
 		indexFile.Should().NotBeNull();
 		indexFile!.Url.Should().StartWith("/platform");
 	}

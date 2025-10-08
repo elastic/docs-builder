@@ -258,14 +258,14 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var file = toc!.NavigationItems.First();
 
 		// The TOC becomes the new URL root, so the file URL is based on TOC's URL
-		toc.Url.Should().Be("/guides/api");
+		toc.Url.Should().Be("/guides/api/reference");
 		file.Url.Should().Be("/guides/api/reference");
 
 		// Change root URL
 		navigation.PathPrefixProvider = new PathPrefixProvider("/v2");
 
 		// Both TOC and file URLs should update
-		toc.Url.Should().Be("/v2/guides/api");
+		toc.Url.Should().Be("/v2/guides/api/reference");
 		file.Url.Should().Be("/v2/guides/api/reference");
 	}
 }

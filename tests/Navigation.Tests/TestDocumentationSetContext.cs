@@ -116,7 +116,7 @@ public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocume
 			var text = readFileSystem.File.ReadAllText(path.FullName);
 			var md = MarkdownParser.Parse(text);
 			var header = md.OfType<HeadingBlock>().FirstOrDefault();
-			var inline = header?.Inline.OfType<LiteralInline>().FirstOrDefault()?.Content.Text;
+			var inline = header?.Inline?.OfType<LiteralInline>().FirstOrDefault()?.Content.Text;
 			if (inline != null)
 				title = inline.Trim(['#', ' ']);
 		}

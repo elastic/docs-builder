@@ -13,22 +13,11 @@ public static class NavigationItemExtensions
 		if (leaf is not null)
 			return leaf;
 
-		var nodes = navigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
+		var nodes = navigationItems.OfType<INodeNavigationItem<TModel, INavigationItem>>().ToList();
 		if (nodes.Count == 0)
 			return null;
 
-		var topLevelLeafs = nodes.First().NavigationItems.OfType<ILeafNavigationItem<TModel>>().ToList();
-		if (topLevelLeafs.Count == 0)
-			return null;
-
-		foreach (var node in nodes)
-		{
-			var index = node.NavigationItems.FindIndex<TModel>();
-			if (index is not null)
-				return index;
-		}
-
-		return null;
+		return nodes.First().Index;
 
 	}
 }

@@ -397,7 +397,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// navigation will still be build
 		siteNavigation.NavigationItems.Should().NotBeEmpty();
 
-		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation;
+		var toc = siteNavigation.NavigationItems.First() as SiteTableOfContentsNavigation<IDocumentationFile>;
 		toc.Should().NotBeNull();
 		toc.PathPrefixProvider.PathPrefix.Should().Be("observability"); //constructed from toc URI as fallback
 	}

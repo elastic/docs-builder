@@ -24,7 +24,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 		IPathPrefixProvider pathPrefixProvider,
 		IReadOnlyCollection<INavigationItem> navigationItems,
 		GitCheckoutInformation git,
-		Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> tocNodes
+		Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> tocNodes
 	)
 	{
 		TableOfContentsDirectory = tableOfContentsDirectory;

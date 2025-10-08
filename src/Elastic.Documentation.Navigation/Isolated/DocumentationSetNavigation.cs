@@ -28,7 +28,7 @@ public static class DocumentationNavigationFactory
 
 public interface IDocumentationSetNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>
 {
-	IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> TableOfContentNodes { get; }
+	IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
 }
 
 public class DocumentationSetNavigation<TModel>
@@ -101,8 +101,8 @@ public class DocumentationSetNavigation<TModel>
 
 	public GitCheckoutInformation Git { get; }
 
-	private readonly Dictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> _tableOfContentNodes = [];
-	public IReadOnlyDictionary<Uri, INodeNavigationItem<INavigationModel, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
+	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _tableOfContentNodes = [];
+	public IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes => _tableOfContentNodes;
 
 	public Uri Identifier { get; }
 
