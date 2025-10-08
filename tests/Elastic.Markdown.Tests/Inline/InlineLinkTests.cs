@@ -164,6 +164,62 @@ public class CrossLinkTest(ITestOutputHelper output) : LinkTestBase(output,
 	}
 }
 
+public class CrossLinkEmptyTextTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+
+	Go to [](kibana://index.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html - empty crosslinks now emit an error
+		Html.Should().Contain(
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#main-container" preload="mousedown"></a></p>"""
+		);
+
+	[Fact]
+	public void HasError() =>
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("empty link text"));
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(1);
+		Collector.CrossLinks.Should().Contain("kibana://index.md");
+	}
+}
+
+public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+
+	Go to [](kibana://get-started/index.md)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		// language=html - empty crosslinks emit an error
+		Html.Should().Contain(
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" hx-select-oob="#main-container" preload="mousedown"></a></p>"""
+		);
+
+	[Fact]
+	public void HasError() =>
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("empty link text"));
+
+	[Fact]
+	public void EmitsCrossLink()
+	{
+		Collector.CrossLinks.Should().HaveCount(1);
+		Collector.CrossLinks.Should().Contain("kibana://get-started/index.md");
+	}
+}
+
 public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : LinkTestBase(output,
 	"""
 	[global search field]({{this-variable-does-not-exist}}/introduction.html#kibana-navigation-search)

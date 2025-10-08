@@ -90,3 +90,4 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
             CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri)
 
 
+
