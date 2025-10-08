@@ -514,17 +514,13 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// Folders must have at least one child defined in yaml
-		if (folderRef.Children.Count == 0)
-		{
-			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has no children defined");
-			return null;
-		}
-
-		// If children were defined but none could be created, emit error
+		// Validate folders have children
 		if (children.Count == 0)
 		{
-			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
+			if (folderRef.Children.Count == 0)
+				context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has no children defined");
+			else
+				context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
 			return null;
 		}
 
@@ -650,20 +646,16 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// TOCs should have at least one child from either toc.yml or children
-		var hasTocFileChildren = tocFile?.Toc.Count > 0;
-		var hasTocRefChildren = tocRef.Children.Count > 0;
-
-		if (!hasTocFileChildren && !hasTocRefChildren)
-		{
-			context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has no children defined");
-			return null;
-		}
-
-		// If children were defined but none could be created, emit error
+		// Validate TOCs have children
 		if (children.Count == 0)
 		{
-			context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has children defined but none could be created");
+			var hasTocFileChildren = tocFile?.Toc.Count > 0;
+			var hasTocRefChildren = tocRef.Children.Count > 0;
+
+			if (!hasTocFileChildren && !hasTocRefChildren)
+				context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has no children defined");
+			else
+				context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has children defined but none could be created");
 			return null;
 		}
 
