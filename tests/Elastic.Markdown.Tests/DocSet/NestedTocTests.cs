@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.IO;
 using FluentAssertions;
 
@@ -30,9 +31,11 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		parent.Parent.Should().BeNull();
 
 		// its parent should point to an index
-		var index = (parent as INodeNavigationItem<MarkdownFile, INavigationItem>)?.Index;
+		var index = (parent as TableOfContentsNavigation)?.Index;
 		index.Should().NotBeNull();
-		index.Model.RelativePath.Should().Be("index.md");
+		var fileNav = index as FileNavigationLeaf<MarkdownFile>;
+		fileNav.Should().NotBeNull();
+		fileNav.Model.RelativePath.Should().Be("development/index.md");
 
 	}
 }

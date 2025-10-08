@@ -102,4 +102,20 @@ public static class IDirectoryInfoExtensions
 
 		return false;
 	}
+
+	/// Gets the first  <paramref name="parentName"/>, parent of <paramref name="directory"/>
+	public static IDirectoryInfo? GetParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)
+	{
+		if (string.Equals(directory.Name, parentName, comparison))
+			return directory;
+		var parent = directory;
+		do
+		{
+			if (string.Equals(parent.Name, parentName, comparison))
+				return parent;
+			parent = parent.Parent;
+		} while (parent != null);
+
+		return null;
+	}
 }
