@@ -129,31 +129,6 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	}
 
 	[Fact]
-	public async Task IndexFileWithChildrenEmitsError()
-	{
-		// language=yaml
-		var yaml = """
-		           project: 'test-project'
-		           toc:
-		             - file: index.md
-		               children:
-		                 - file: section1.md
-		           """;
-
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-
-		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
-
-		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("is an index file and may not have children"));
-	}
-
-	[Fact]
 	public void FileNavigationUrlUpdatesWhenRootChanges()
 	{
 		// language=yaml

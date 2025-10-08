@@ -409,13 +409,6 @@ public class DocumentationSetNavigation<TModel>
 			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 		}
 
-		// Validate: index files may not have children
-		if (fileRef is IndexFileRef)
-		{
-			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.Path}' is an index file and may not have children");
-			return null;
-		}
-
 		// Create temporary file navigation for children to reference
 		var tempFileNavigation = CreateTemporaryFileNavigation(documentationFile, fileInfo, fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
 
