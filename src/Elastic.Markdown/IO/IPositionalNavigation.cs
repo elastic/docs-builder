@@ -22,7 +22,7 @@ public interface IPositionalNavigation
 		do
 		{
 			var previous = NavigationIndexedByOrder.GetValueOrDefault(index - 1);
-			if (previous is not null && !previous.Hidden)
+			if (previous is not null && !previous.Hidden && previous.Url != currentNavigation.Url)
 				return previous;
 			index--;
 		} while (index > 0);
