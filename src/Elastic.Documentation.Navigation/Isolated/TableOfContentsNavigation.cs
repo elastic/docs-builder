@@ -59,7 +59,7 @@ public class TableOfContentsNavigation : IRootNavigationItem<IDocumentationFile,
 	}
 
 	/// <inheritdoc />
-	public string Url => PathPrefix;
+	public string Url => Index.Url;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;

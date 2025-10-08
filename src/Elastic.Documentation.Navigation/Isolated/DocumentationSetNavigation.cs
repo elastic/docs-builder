@@ -192,101 +192,140 @@ public class DocumentationSetNavigation<TModel>
 			_ => null
 		};
 
-	private INavigationItem? CreateFileNavigation(
-		FileRef fileRef,
+	#region CreateFileNavigation Helper Methods
+
+	/// <summary>
+	/// Creates a temporary file navigation placeholder used during construction before children are processed.
+	/// This is distinct from the factory method to make it clear this is a temporary instance.
+	/// </summary>
+	private INodeNavigationItem<TModel, INavigationItem> CreateTemporaryFileNavigation(
+		TModel documentationFile,
+		IFileInfo fileInfo,
+		string fullPath,
+		bool hidden,
 		int index,
-		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider,
-		string parentPath
-	)
+		IPathPrefixProvider prefixProvider)
 	{
-		// Determine the actual relative path for this file in the URL
-		string relativePathForUrl;
+		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, hidden, index, 0, parent, root, prefixProvider, []);
+		return new VirtualFileNavigation<TModel>(documentationFile, fileInfo, virtualFileNavigationArgs);
+	}
 
-		if (!string.IsNullOrEmpty(parentPath))
-		{
-			// Extract parent's directory (everything before the last /)
-			var parentDir = parentPath.Contains('/')
-				? parentPath[..parentPath.LastIndexOf('/')]
-				: "";
+	/// <summary>
+	/// Resolves the relative path for URL generation, handling parent path and deeplinked paths.
+	/// </summary>
+	private static string ResolveFileRelativePath(string fileRefPath, string parentPath)
+	{
+		if (string.IsNullOrEmpty(parentPath))
+			return fileRefPath;
 
-			// Extract child's directory from fileRef.Path
-			var childDir = fileRef.Path.Contains('/')
-				? fileRef.Path[..fileRef.Path.LastIndexOf('/')]
-				: "";
+		// Extract parent's directory (everything before the last /)
+		var parentDir = parentPath.Contains('/')
+			? parentPath[..parentPath.LastIndexOf('/')]
+			: "";
 
-			// Check for deeplinked paths where child's directory is already in parent path
-			// Case 1: parentDir ends with childDir (e.g., parentPath="guides/clients/getting-started", childDir="clients")
-			// Case 2: parentPath ends with childDir (e.g., parentPath="guides/clients", childDir="clients")
-			relativePathForUrl = !string.IsNullOrEmpty(childDir) &&
-				(parentDir == childDir || parentDir.EndsWith($"/{childDir}", StringComparison.Ordinal) ||
-					parentPath.EndsWith(childDir, StringComparison.Ordinal))
-				? fileRef.Path[(childDir.Length + 1)..] // Strip child's directory from path
-				: fileRef.Path.StartsWith($"{parentPath}/", StringComparison.Ordinal)
-					? fileRef.Path[(parentPath.Length + 1)..] // If file path starts with parent path, extract just the relative part
-					: fileRef.Path;
-		}
-		else
-			relativePathForUrl = fileRef.Path;
+		// Extract child's directory from fileRef.Path
+		var childDir = fileRefPath.Contains('/')
+			? fileRefPath[..fileRefPath.LastIndexOf('/')]
+			: "";
 
-		// Combine parent path with file path
-		var fullPath = string.IsNullOrEmpty(parentPath)
+		// Check for deeplinked paths where child's directory is already in parent path
+		// Case 1: parentDir ends with childDir (e.g., parentPath="guides/clients/getting-started", childDir="clients")
+		// Case 2: parentPath ends with childDir (e.g., parentPath="guides/clients", childDir="clients")
+		return !string.IsNullOrEmpty(childDir) &&
+			(parentDir == childDir || parentDir.EndsWith($"/{childDir}", StringComparison.Ordinal) ||
+				parentPath.EndsWith(childDir, StringComparison.Ordinal))
+			? fileRefPath[(childDir.Length + 1)..] // Strip child's directory from path
+			: fileRefPath.StartsWith($"{parentPath}/", StringComparison.Ordinal)
+				? fileRefPath[(parentPath.Length + 1)..] // If file path starts with parent path, extract just the relative part
+				: fileRefPath;
+	}
+
+	/// <summary>
+	/// Combines parent path with relative path to create the full file path.
+	/// </summary>
+	private static string CreateFullFilePath(string relativePathForUrl, string parentPath) =>
+		string.IsNullOrEmpty(parentPath)
 			? relativePathForUrl
 			: $"{parentPath}/{relativePathForUrl}";
 
-		// Create documentation file from factory
+	/// <summary>
+	/// Resolves the file info based on the context and prefix provider.
+	/// </summary>
+	private static IFileInfo ResolveFileInfo(
+		IDocumentationSetContext context,
+		IPathPrefixProvider prefixProvider,
+		string relativePathForUrl,
+		string fullPath)
+	{
 		var fs = context.ReadFileSystem;
 
 		// When inside a TOC, files are relative to the TOC directory, not the parent path
-		IFileInfo fileInfo;
-		if (prefixProvider is TableOfContentsNavigation toc)
+		// Check both actual TableOfContentsNavigation and temporary placeholders
+		var tocDirectory = prefixProvider switch
+		{
+			TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
+			TemporaryNavigationPlaceholder placeholder => placeholder.TableOfContentsDirectory,
+			_ => null
+		};
+
+		if (tocDirectory != null)
 		{
 			// For TOC children, use the TOC directory as the base
-			fileInfo = fs.FileInfo.New(fs.Path.Combine(toc.TableOfContentsDirectory.FullName, relativePathForUrl));
+			return fs.FileInfo.New(fs.Path.Combine(tocDirectory.FullName, relativePathForUrl));
 		}
-		else
-		{
-			// For other files, use the documentation source directory + full path
-			fileInfo = fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fullPath));
-		}
-		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fs);
+
+		// For other files, use the documentation source directory + full path
+		return fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fullPath));
+	}
+
+	/// <summary>
+	/// Creates the documentation file from the factory, emitting an error if creation fails.
+	/// </summary>
+	private TModel? CreateDocumentationFile(
+		IFileInfo fileInfo,
+		IFileSystem fileSystem,
+		IDocumentationSetContext context,
+		string fullPath)
+	{
+		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);
 		if (documentationFile == null)
-		{
 			context.EmitError(context.ConfigurationPath, $"File navigation '{fullPath}' could not be created");
-			return null;
-		}
 
-		var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
-		// Check if file has children
-		if (fileRef.Children.Count <= 0)
-			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
+		return documentationFile;
+	}
 
-		// No children - return a leaf
-		// Validate: index files may not have children
-		if (fileRef is IndexFileRef)
-		{
-			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.Path}' is an index file and may not have children");
-			return null;
-		}
-
-		// Create temporary file navigation for children to reference
-		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, fileRef.Hidden, index, 0, parent, root, prefixProvider, []);
-		var tempFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
-
-		// Process children recursively
-		var children = new List<INavigationItem>();
-		var childIndex = 0;
-
-		// Compute parent path for children: remove .md extension and /index if present
+	/// <summary>
+	/// Computes the parent path for children by removing .md extension and /index suffix if present.
+	/// </summary>
+	private static string DetermineParentPathForChildren(string fullPath)
+	{
+		// Remove .md extension
 		var parentPathForChildren = fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fullPath[..^3] // Remove .md extension
+			? fullPath[..^3]
 			: fullPath;
 
 		// If this is an index file, also remove the /index suffix for children's parent path
 		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 			parentPathForChildren = parentPathForChildren[..^6]; // Remove "/index"
+
+		return parentPathForChildren;
+	}
+
+	/// <summary>
+	/// Processes children recursively and returns the list of navigation items.
+	/// </summary>
+	private List<INavigationItem> ProcessFileChildren(
+		FileRef fileRef,
+		IDocumentationSetContext context,
+		INodeNavigationItem<TModel, INavigationItem> tempFileNavigation,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		IPathPrefixProvider prefixProvider,
+		string parentPathForChildren)
+	{
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
 
 		foreach (var child in fileRef.Children)
 		{
@@ -301,12 +340,105 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// Create final file navigation with actual children
-		virtualFileNavigationArgs = virtualFileNavigationArgs with
+		return children;
+	}
+
+	/// <summary>
+	/// Ensures the first item in the navigation items is the index file (index.md or the first file in the list).
+	/// </summary>
+	private static void EnsureIndexIsFirst(List<INavigationItem> children)
+	{
+		if (children.Count == 0)
+			return;
+
+		// Find an item named "index" or "index.md"
+		var indexItem = children.FirstOrDefault(c =>
+			c is ILeafNavigationItem<IDocumentationFile> leaf &&
+			(leaf.Model.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase) ||
+			 (leaf is FileNavigationLeaf<IDocumentationFile> fileLeaf &&
+			  fileLeaf.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase))));
+
+		// If found and it's not already first, move it to the front
+		if (indexItem != null && children[0] != indexItem)
 		{
-			Depth = parent?.Depth + 1 ?? 0,
-			NavigationItems = children
-		};
+			_ = children.Remove(indexItem);
+			children.Insert(0, indexItem);
+		}
+	}
+
+	/// <summary>
+	/// Validates that navigation items has at least one item, emitting an error if not.
+	/// </summary>
+	private static void ValidateNavigationItems(
+		List<INavigationItem> children,
+		IDocumentationSetContext context,
+		string fullPath)
+	{
+		if (children.Count < 1)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"File navigation '{fullPath}' has children defined but none could be created");
+		}
+	}
+
+	#endregion
+
+	private INavigationItem? CreateFileNavigation(
+		FileRef fileRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		IPathPrefixProvider prefixProvider,
+		string parentPath
+	)
+	{
+		// Resolve paths
+		var relativePathForUrl = ResolveFileRelativePath(fileRef.Path, parentPath);
+		var fullPath = CreateFullFilePath(relativePathForUrl, parentPath);
+
+		// Create file info and documentation file
+		var fileInfo = ResolveFileInfo(context, prefixProvider, relativePathForUrl, fullPath);
+		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
+		if (documentationFile == null)
+			return null;
+
+		// Handle leaf case (no children)
+		if (fileRef.Children.Count <= 0)
+		{
+			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
+			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
+		}
+
+		// Validate: index files may not have children
+		if (fileRef is IndexFileRef)
+		{
+			context.EmitError(context.ConfigurationPath, $"File navigation '{fileRef.Path}' is an index file and may not have children");
+			return null;
+		}
+
+		// Create temporary file navigation for children to reference
+		var tempFileNavigation = CreateTemporaryFileNavigation(documentationFile, fileInfo, fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
+
+		// Process children recursively
+		var parentPathForChildren = DetermineParentPathForChildren(fullPath);
+		var children = ProcessFileChildren(fileRef, context, tempFileNavigation, root, prefixProvider, parentPathForChildren);
+
+		// Validate and order children
+		ValidateNavigationItems(children, context, fullPath);
+		EnsureIndexIsFirst(children);
+
+		// Create final file navigation with actual children
+		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(
+			fullPath,
+			fileRef.Hidden,
+			index,
+			parent?.Depth + 1 ?? 0,
+			parent,
+			root,
+			prefixProvider,
+			children
+		);
 
 		var finalFileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
 
@@ -338,7 +470,7 @@ public class DocumentationSetNavigation<TModel>
 		};
 	}
 
-	private INavigationItem CreateFolderNavigation(
+	private INavigationItem? CreateFolderNavigation(
 		FolderRef folderRef,
 		int index,
 		IDocumentationSetContext context,
@@ -353,17 +485,17 @@ public class DocumentationSetNavigation<TModel>
 			? folderRef.Path
 			: $"{parentPath}/{folderRef.Path}";
 
-		// Create temporary folder navigation for parent reference
+		// Create temporary placeholder for parent reference
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
 
-		var folderNavigation = new FolderNavigation(
+		var placeholderNavigation = new TemporaryNavigationPlaceholder(
 			depth + 1,
-			folderPath,
+			ShortId.Create(folderPath),
 			parent,
 			root,
 			prefixProvider,
-			[]
+			folderPath
 		);
 
 		foreach (var child in folderRef.Children)
@@ -372,7 +504,7 @@ public class DocumentationSetNavigation<TModel>
 				child,
 				childIndex++,
 				context,
-				folderNavigation,
+				placeholderNavigation,
 				root,
 				prefixProvider, // Folders don't change the URL root
 				depth + 1,
@@ -383,8 +515,22 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
+		// Folders must have at least one child defined in yaml
+		if (folderRef.Children.Count == 0)
+		{
+			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has no children defined");
+			return null;
+		}
+
+		// If children were defined but none could be created, emit error
+		if (children.Count == 0)
+		{
+			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
+			return null;
+		}
+
 		// Create folder navigation with actual children
-		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, root, prefixProvider, children)
+		var finalFolderNavigation = new FolderNavigation(depth + 1, folderPath, parent, root, children)
 		{
 			NavigationIndex = index
 		};
@@ -396,7 +542,7 @@ public class DocumentationSetNavigation<TModel>
 		return finalFolderNavigation;
 	}
 
-	private INavigationItem CreateTocNavigation(
+	private INavigationItem? CreateTocNavigation(
 		IsolatedTableOfContentsRef tocRef,
 		int index,
 		IDocumentationSetContext context,
@@ -441,15 +587,14 @@ public class DocumentationSetNavigation<TModel>
 		// For root-level TOCs, use the full tocPath
 		var navigationParentPath = parent is TableOfContentsNavigation ? tocRef.Source : tocPath;
 
-		var tocNavigation = new TableOfContentsNavigation(
-			tocDirectory,
+		var placeholderNavigation = new TemporaryNavigationPlaceholder(
 			depth + 1,
-			navigationParentPath,
+			ShortId.Create(navigationParentPath),
 			parent,
+			root,
 			prefixProvider,
-			[],
-			Git,
-			_tableOfContentNodes
+			navigationParentPath,
+			tocDirectory
 		);
 
 		// Convert children
@@ -465,9 +610,9 @@ public class DocumentationSetNavigation<TModel>
 					child,
 					childIndex++,
 					context,
-					tocNavigation,
+					placeholderNavigation,
 					root,
-					tocNavigation, // TOC navigation becomes the new URL root for its children
+					placeholderNavigation, // Placeholder acts as the new prefix provider for children
 					depth + 1,
 					"" // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 				);
@@ -495,15 +640,32 @@ public class DocumentationSetNavigation<TModel>
 				child,
 				childIndex++,
 				context,
-				tocNavigation,
+				placeholderNavigation,
 				root,
-				tocNavigation, // TOC navigation becomes the new URL root for its children
+				placeholderNavigation, // Placeholder acts as the new prefix provider for children
 				depth + 1,
 				"" // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
 			);
 
 			if (childNav != null)
 				children.Add(childNav);
+		}
+
+		// TOCs should have at least one child from either toc.yml or children
+		var hasTocFileChildren = tocFile?.Toc.Count > 0;
+		var hasTocRefChildren = tocRef.Children.Count > 0;
+
+		if (!hasTocFileChildren && !hasTocRefChildren)
+		{
+			context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has no children defined");
+			return null;
+		}
+
+		// If children were defined but none could be created, emit error
+		if (children.Count == 0)
+		{
+			context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has children defined but none could be created");
+			return null;
 		}
 
 		var finalTocNavigation = new TableOfContentsNavigation(

@@ -8,20 +8,15 @@ namespace Elastic.Documentation.Navigation.Isolated;
 
 public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigationItem>
 {
-	private readonly string _folderPath;
-	private readonly IPathPrefixProvider _pathPrefixProvider;
-
 	public FolderNavigation(
 		int depth,
 		string parentPath,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
-		IPathPrefixProvider pathPrefixProvider,
 		IReadOnlyCollection<INavigationItem> navigationItems
 	)
 	{
-		_folderPath = parentPath;
-		_pathPrefixProvider = pathPrefixProvider;
+		FolderPath = parentPath;
 		NavigationItems = navigationItems;
 		Index = NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().First();
 		NavigationRoot = navigationRoot;
@@ -32,25 +27,10 @@ public class FolderNavigation : INodeNavigationItem<IDocumentationFile, INavigat
 		Id = ShortId.Create(parentPath);
 	}
 
+	public string FolderPath { get; }
+
 	/// <inheritdoc />
-	public string Url
-	{
-		get
-		{
-			// Check if there's an index file among the children
-			var hasIndexChild = NavigationItems.Any(item =>
-				item is ILeafNavigationItem<IDocumentationFile> &&
-				item.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase));
-
-			// If no index child exists, use the first child's URL
-			if (!hasIndexChild && NavigationItems.Count > 0)
-				return NavigationItems.First().Url;
-
-			// Otherwise, use the folder path
-			var rootUrl = _pathPrefixProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(rootUrl) ? $"/{_folderPath}" : $"{rootUrl}/{_folderPath}";
-		}
-	}
+	public string Url => Index.Url;
 
 	/// <inheritdoc />
 	public string NavigationTitle => Index.NavigationTitle;
