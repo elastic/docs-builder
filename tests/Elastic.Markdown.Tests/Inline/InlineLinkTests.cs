@@ -204,7 +204,10 @@ public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestB
 		);
 
 	[Fact]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasError() =>
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("empty link text but no title is available"));
 
 	[Fact]
 	public void EmitsCrossLink()
