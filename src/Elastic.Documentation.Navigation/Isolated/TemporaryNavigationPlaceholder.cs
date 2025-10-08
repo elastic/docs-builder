@@ -26,6 +26,11 @@ internal sealed class TemporaryNavigationPlaceholder(
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
 
 	/// <summary>
+	/// The parent path used for constructing nested paths, matching TableOfContentsNavigation behavior.
+	/// </summary>
+	public string ParentPath { get; } = parentPath;
+
+	/// <summary>
 	/// When this placeholder represents a TOC, this contains the TOC directory.
 	/// This is needed for resolving file paths relative to the TOC directory.
 	/// </summary>
@@ -39,7 +44,7 @@ internal sealed class TemporaryNavigationPlaceholder(
 		get
 		{
 			var parentPrefix = pathPrefixProvider.PathPrefix.TrimEnd('/');
-			return string.IsNullOrEmpty(parentPrefix) ? $"/{parentPath}" : $"{parentPrefix}/{parentPath}";
+			return string.IsNullOrEmpty(parentPrefix) ? $"/{ParentPath}" : $"{parentPrefix}/{ParentPath}";
 		}
 	}
 

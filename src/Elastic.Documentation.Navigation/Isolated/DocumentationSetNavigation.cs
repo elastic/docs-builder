@@ -550,10 +550,19 @@ public class DocumentationSetNavigation<TModel>
 	{
 		// Determine the full TOC path for file system operations
 		string tocPath;
-		if (parent is TableOfContentsNavigation parentToc)
+
+		// Check if parent is a TOC (or placeholder for a TOC being constructed)
+		var parentTocPath = parent switch
+		{
+			TableOfContentsNavigation toc => toc.ParentPath,
+			TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.ParentPath,
+			_ => null
+		};
+
+		if (parentTocPath != null)
 		{
 			// Nested TOC: use parent TOC's path as base
-			tocPath = $"{parentToc.ParentPath}/{tocRef.Source}";
+			tocPath = $"{parentTocPath}/{tocRef.Source}";
 		}
 		else
 		{
