@@ -173,13 +173,16 @@ public class CrossLinkEmptyTextTest(ITestOutputHelper output) : LinkTestBase(out
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html
+		// language=html - empty crosslinks now emit an error
 		Html.Should().Contain(
-			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#main-container" preload="mousedown">Kibana Guide</a></p>"""
+			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" hx-select-oob="#main-container" preload="mousedown"></a></p>"""
 		);
 
 	[Fact]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasError() =>
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("empty link text"));
 
 	[Fact]
 	public void EmitsCrossLink()
@@ -198,7 +201,7 @@ public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestB
 {
 	[Fact]
 	public void GeneratesHtml() =>
-		// language=html - when no title is available, link text should remain empty
+		// language=html - empty crosslinks emit an error
 		Html.Should().Contain(
 			"""<p>Go to <a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/get-started" hx-select-oob="#main-container" preload="mousedown"></a></p>"""
 		);
@@ -207,7 +210,7 @@ public class CrossLinkEmptyTextNoTitleTest(ITestOutputHelper output) : LinkTestB
 	public void HasError() =>
 		Collector.Diagnostics.Should().Contain(d =>
 			d.Severity == Severity.Error &&
-			d.Message.Contains("empty link text but no title is available"));
+			d.Message.Contains("empty link text"));
 
 	[Fact]
 	public void EmitsCrossLink()

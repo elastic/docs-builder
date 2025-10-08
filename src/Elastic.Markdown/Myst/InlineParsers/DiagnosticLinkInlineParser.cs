@@ -185,21 +185,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			 )
 			link.Url = resolvedUri.ToString();
 
-		// Handle empty link text by trying to get title from crosslink metadata
+		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)
 		{
-			if (context.CrossLinkResolver.TryGetLinkMetadata(uri, out var linkMetadata))
-			{
-				var title = linkMetadata.Title;
-				if (!string.IsNullOrEmpty(title))
-					_ = link.AppendChild(new LiteralInline(title));
-				else
-					processor.EmitError(link, $"Crosslink '{url}' has empty link text but no title is available in metadata. Please provide explicit link text or ensure the target page has a title in the link index.");
-			}
-			else
-			{
-				processor.EmitError(link, $"Crosslink '{url}' has empty link text but metadata could not be retrieved. Please provide explicit link text.");
-			}
+			processor.EmitError(link, $"Crosslink '{url}' has empty link text. Please provide explicit link text.");
 		}
 	}
 
