@@ -190,4 +190,65 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Verify no errors were emitted
 		context.Diagnostics.Should().BeEmpty();
 	}
+
+	[Fact]
+	public void NestedTocUrlsDoNotDuplicatePath()
+	{
+		// This test verifies that nested TOC URLs are constructed correctly
+		// without duplicating path segments (e.g., /setup/advanced not /setup/setup/advanced)
+
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: setup
+		               children:
+		                 - file: index.md
+		                 - toc: advanced
+		           """;
+
+		// language=yaml
+		var advancedTocYaml = """
+		                      toc:
+		                        - file: index.md
+		                        - toc: performance
+		                      """;
+
+		// language=yaml
+		var performanceTocYaml = """
+		                         toc:
+		                           - file: index.md
+		                         """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddFile("/docs/setup/index.md", new MockFileData("# Setup"));
+		fileSystem.AddFile("/docs/setup/advanced/index.md", new MockFileData("# Advanced Setup"));
+		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData(advancedTocYaml));
+		fileSystem.AddFile("/docs/setup/advanced/performance/index.md", new MockFileData("# Performance"));
+		fileSystem.AddFile("/docs/setup/advanced/performance/toc.yml", new MockFileData(performanceTocYaml));
+
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var context = CreateContext(fileSystem);
+
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+
+		var setupFolder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation>().Subject;
+		setupFolder.Url.Should().Be("/setup");
+
+		// Setup folder has index.md and advanced TOC
+		setupFolder.NavigationItems.Should().HaveCount(2);
+
+		var advancedToc = setupFolder.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		// Verify the URL is /setup/advanced and not /setup/setup/advanced
+		advancedToc.Url.Should().Be("/setup/advanced");
+
+		// Advanced TOC has index.md and performance TOC
+		advancedToc.NavigationItems.Should().HaveCount(2);
+
+		var performanceToc = advancedToc.NavigationItems.ElementAt(1).Should().BeOfType<TableOfContentsNavigation>().Subject;
+		// Verify the URL is /setup/advanced/performance and not /setup/advanced/setup/advanced/performance
+		performanceToc.Url.Should().Be("/setup/advanced/performance");
+
+		context.Diagnostics.Should().BeEmpty();
+	}
 }

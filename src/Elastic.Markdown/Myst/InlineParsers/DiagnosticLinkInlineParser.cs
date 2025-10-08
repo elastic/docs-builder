@@ -316,7 +316,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup)
 				&& !string.IsNullOrEmpty(navigationLookup.Url))
+			{
 				newUrl = navigationLookup.Url;
+				// Prepend UrlPathPrefix to navigation URLs
+				var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+				if (!string.IsNullOrWhiteSpace(urlPathPrefix))
+					newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+			}
 		}
 		else
 			newUrl = UpdateRelativeUrl(context, url);
