@@ -16,6 +16,7 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		IPositionalNavigation positionalNavigation = Generator.DocumentationSet;
 		var allKeys = positionalNavigation.NavigationIndexedByCrossLink.Keys;
 		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
+		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
 
 		var lookup = Path.Combine("testing", "nested", "index.md");
 		var folder = Path.Combine(Generator.Context.DocumentationSourceDirectory.FullName, "testing");

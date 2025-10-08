@@ -94,8 +94,18 @@ public class DocumentationSet : IPositionalNavigation
 		NavigationIndexedByOrder = navigationFlatList
 			.ToDictionary(n => n.NavigationIndex, n => n)
 			.ToFrozenDictionary();
-		NavigationIndexedByCrossLink = navigationFlatList
-			.OfType<ILeafNavigationItem<MarkdownFile>>()
+
+		// Build cross-link dictionary including both:
+		// 1. Direct leaf items (files without children)
+		// 2. Index property of node items (files with children)
+		var leafItems = navigationFlatList.OfType<ILeafNavigationItem<MarkdownFile>>();
+		var nodeIndexes = navigationFlatList
+			.OfType<INodeNavigationItem<MarkdownFile, INavigationItem>>()
+			.Select(node => node.Index);
+
+		NavigationIndexedByCrossLink = leafItems
+			.Concat(nodeIndexes)
+			.DistinctBy(n => n.Model.CrossLink)
 			.ToDictionary(n => n.Model.CrossLink, n => n)
 			.ToFrozenDictionary();
 
