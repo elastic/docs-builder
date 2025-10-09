@@ -9,14 +9,39 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.ServiceDefaults;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.AddDocumentationServiceDefaults(ref args);
 
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
+builder.AddElasticOpenTelemetry(edotBuilder =>
+{
+	_ = edotBuilder
+		.WithElasticTracing(tracing =>
+		{
+			_ = tracing
+				.AddAspNetCoreInstrumentation()
+				.AddHttpClientInstrumentation();
+		})
+		.WithElasticMetrics(metrics =>
+		{
+			_ = metrics
+				.AddAspNetCoreInstrumentation()
+				.AddHttpClientInstrumentation()
+				.AddProcessInstrumentation()
+				.AddRuntimeInstrumentation();
+		});
+});
+
 builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("ENVIRONMENT"));
 builder.WebHost.UseKestrelHttpsConfiguration();
+
+
+
 
 var app = builder.Build();
 
