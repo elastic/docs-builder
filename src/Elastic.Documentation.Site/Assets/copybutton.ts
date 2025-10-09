@@ -98,15 +98,6 @@ if (!iconCopy) {
 
 const codeCellId = (index: number, prefix: string) => `${prefix}${index}`
 
-// Clears selected text since ClipboardJS will select the text when copying
-const clearSelection = () => {
-    if (window.getSelection) {
-        window.getSelection().removeAllRanges()
-    } else if ('selection' in document) {
-        ;(document.selection as Selection).empty()
-    }
-}
-
 // Changes tooltip text for a moment, then changes it back
 // We want the timeout of our `success` class to be a bit shorter than the
 // tooltip and icon change, so that we can hide the icon before changing back.
@@ -130,7 +121,11 @@ const temporarilyChangeIcon = (el) => {
     }, timeoutIcon)
 }
 
-const addCopyButtonToCodeCells = (selector: string, baseElement: ParentNode, prefix: string) => {
+const addCopyButtonToCodeCells = (
+    selector: string,
+    baseElement: ParentNode,
+    prefix: string
+) => {
     // If ClipboardJS hasn't loaded, wait a bit and try again. This
     // happens because we load ClipboardJS asynchronously.
 
@@ -148,11 +143,10 @@ const addCopyButtonToCodeCells = (selector: string, baseElement: ParentNode, pre
         clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
         clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
         clipboardButton.innerHTML = iconCopy
-        clipboardButton.onclick = async (event) => {
+        clipboardButton.onclick = async () => {
             try {
                 const text = copyTargetText(clipboardButton, baseElement)
                 await navigator.clipboard.writeText(text)
-            
                 temporarilyChangeTooltip(
                     clipboardButton,
                     messages[locale]['copy'],
@@ -163,7 +157,7 @@ const addCopyButtonToCodeCells = (selector: string, baseElement: ParentNode, pre
                 console.error(error)
             }
         }
-    
+
         codeCell.insertAdjacentElement('afterend', clipboardButton)
     })
 
@@ -277,6 +271,10 @@ const addCopyButtonToCodeCells = (selector: string, baseElement: ParentNode, pre
     // })
 }
 
-export function initCopyButton(selector: string = '.highlight pre', baseElement: ParentNode = document, prefix: string = 'markdown-content-codecell-') {
+export function initCopyButton(
+    selector: string = '.highlight pre',
+    baseElement: ParentNode = document,
+    prefix: string = 'markdown-content-codecell-'
+) {
     addCopyButtonToCodeCells(selector, baseElement, prefix)
 }
