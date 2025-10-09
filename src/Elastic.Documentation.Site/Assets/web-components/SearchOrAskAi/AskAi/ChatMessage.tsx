@@ -1,5 +1,5 @@
-import {ChatMessage as ChatMessageType} from './chat.store'
-import {LlmGatewayMessage} from './useLlmGateway'
+import { ChatMessage as ChatMessageType } from './chat.store'
+import { LlmGatewayMessage } from './useLlmGateway'
 import {
     EuiAvatar,
     EuiButtonIcon,
@@ -16,14 +16,12 @@ import {
     EuiToolTip,
     useEuiTheme,
 } from '@elastic/eui'
-import {css} from '@emotion/react'
-import * as React from 'react'
-import {useEffect, useMemo, useRef, useCallback} from 'react'
-import {marked} from 'marked'
+import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js/lib/core'
-import {$$} from "select-dom";
-
+import { marked } from 'marked'
+import * as React from 'react'
+import { $$ } from 'select-dom'
 
 interface ChatMessageProps {
     message: ChatMessageType
@@ -157,14 +155,14 @@ export const ChatMessage = ({
             : message.content
 
     const hasError = message.status === 'error' || !!error
-    
+
     const html = marked.parse(content)
     const sanitized = DOMPurify.sanitize(html as string)
     const tempDiv = document.createElement('div')
     tempDiv.innerHTML = sanitized
     $$('pre code', tempDiv).forEach(hljs.highlightElement)
     const parsed = tempDiv.innerHTML
-    
+
     return (
         <EuiFlexGroup
             gutterSize="s"
@@ -214,18 +212,18 @@ export const ChatMessage = ({
                         // <EuiMarkdownFormat css={markdownFormatStyles}>
                         //     {content}
                         // </EuiMarkdownFormat>
-                        <div 
-                            className="markdown-content" 
+                        <div
+                            className="markdown-content"
                             css={css`
                                 font-size: 14px;
-                                &>*:first-child {
+                                & > *:first-child {
                                     margin-top: 0;
                                 }
-                                pre>code {
+                                pre > code {
                                     margin-top: calc(var(--spacing) * 4);
                                 }
                             `}
-                            dangerouslySetInnerHTML={{ __html: parsed }} 
+                            dangerouslySetInnerHTML={{ __html: parsed }}
                         />
                     )}
 

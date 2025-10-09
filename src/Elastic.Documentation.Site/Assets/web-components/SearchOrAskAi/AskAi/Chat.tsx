@@ -147,7 +147,10 @@ export const Chat = () => {
                                     <AskAiSuggestions
                                         suggestions={
                                             new Set([
-                                                { question: 'Give me an example of a hybrid search query.' },
+                                                {
+                                                    question:
+                                                        'Give me an example of a hybrid search query.',
+                                                },
                                                 {
                                                     question:
                                                         'How do I set up a data stream in Elasticsearch?',
