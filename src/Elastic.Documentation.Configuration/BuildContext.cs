@@ -110,10 +110,12 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-		Configuration = new ConfigurationFile(this, VersionsConfiguration, ProductsConfiguration);
 
-		var yaml = readFileSystem.File.ReadAllText(Configuration.SourceFile.FullName);
-		ConfigurationYaml = DocumentationSetFile.Deserialize(yaml);
+		// Deserialize the YAML first, then pass it to ConfigurationFile
+		var yaml = ConfigurationPath.Exists ? readFileSystem.File.ReadAllText(ConfigurationPath.FullName) : "";
+		ConfigurationYaml = string.IsNullOrEmpty(yaml) ? new DocumentationSetFile() : DocumentationSetFile.Deserialize(yaml);
+
+		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{
 			Enabled = false

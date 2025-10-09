@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using YamlDotNet.RepresentationModel;

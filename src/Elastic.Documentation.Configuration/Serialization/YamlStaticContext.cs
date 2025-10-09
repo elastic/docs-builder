@@ -6,7 +6,6 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 

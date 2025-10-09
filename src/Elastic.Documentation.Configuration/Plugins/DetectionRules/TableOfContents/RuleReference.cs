@@ -2,16 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.TableOfContents;
-using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Configuration.DocSet;
 
 namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 
 public record RuleReference(
-	ITableOfContentsScope TableOfContentsScope,
 	string RelativePath,
 	string SourceDirectory,
 	bool Found,
-	IReadOnlyCollection<ITocItem> Children, DetectionRule Rule
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	DetectionRule Rule
 )
-	: FileReference(TableOfContentsScope, RelativePath, true, Children);
+	: FileRef(RelativePath, true, Children);

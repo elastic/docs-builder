@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
 
-public record RuleOverviewReference : FileReference
+public record RuleOverviewReference : FileRef
 {
 
 	public IReadOnlyCollection<string> DetectionRuleFolders { get; init; }
@@ -16,23 +16,22 @@ public record RuleOverviewReference : FileReference
 	private string ParentPath { get; }
 
 	public RuleOverviewReference(
-		ITableOfContentsScope tableOfContentsScope,
 		string overviewFilePath,
 		string parentPath,
 		ConfigurationFile configuration,
 		IDocumentationSetContext context,
 		IReadOnlyCollection<string> detectionRuleFolders
 	)
-		: base(tableOfContentsScope, overviewFilePath, false, [])
+		: base(overviewFilePath, false, [])
 	{
 		ParentPath = parentPath;
 		DetectionRuleFolders = detectionRuleFolders;
 		Children = CreateTableOfContentItems(configuration, context);
 	}
 
-	private IReadOnlyCollection<ITocItem> CreateTableOfContentItems(ConfigurationFile configuration, IDocumentationSetContext context)
+	private IReadOnlyCollection<ITableOfContentsItem> CreateTableOfContentItems(ConfigurationFile configuration, IDocumentationSetContext context)
 	{
-		var tocItems = new List<ITocItem>();
+		var tocItems = new List<ITableOfContentsItem>();
 		foreach (var detectionRuleFolder in DetectionRuleFolders)
 		{
 			var children = ReadDetectionRuleFolder(configuration, context, detectionRuleFolder);
@@ -44,13 +43,13 @@ public record RuleOverviewReference : FileReference
 			.ToArray();
 	}
 
-	private IReadOnlyCollection<ITocItem> ReadDetectionRuleFolder(ConfigurationFile configuration, IDocumentationSetContext context, string detectionRuleFolder)
+	private IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(ConfigurationFile configuration, IDocumentationSetContext context, string detectionRuleFolder)
 	{
 		var detectionRulesFolder = Path.Combine(ParentPath, detectionRuleFolder).TrimStart(Path.DirectorySeparatorChar);
 		var fs = context.ReadFileSystem;
 		var sourceDirectory = context.DocumentationSourceDirectory;
 		var path = fs.DirectoryInfo.New(fs.Path.GetFullPath(fs.Path.Combine(sourceDirectory.FullName, detectionRulesFolder)));
-		IReadOnlyCollection<ITocItem> children = path
+		IReadOnlyCollection<ITableOfContentsItem> children = path
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
@@ -63,10 +62,10 @@ public record RuleOverviewReference : FileReference
 				if (f.Extension == ".toml")
 				{
 					var rule = DetectionRule.From(f);
-					return new RuleReference(configuration, relativePath, detectionRuleFolder, true, [], rule);
+					return new RuleReference(relativePath, detectionRuleFolder, true, [], rule);
 				}
 
-				return new FileReference(configuration, relativePath, false, []);
+				return new FileRef(relativePath, false, []);
 			})
 			.ToArray();
 
