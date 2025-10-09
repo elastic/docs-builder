@@ -118,7 +118,7 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 		else
 			this.EmitError($"`{imageUrl}` does not exist. resolved to `{file}");
 
-		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		if (context.TryFindDocument(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
 			if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
 				this.EmitWarning($"Image '{imageUrl}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");

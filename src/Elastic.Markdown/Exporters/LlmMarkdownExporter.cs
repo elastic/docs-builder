@@ -145,8 +145,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		if (!string.IsNullOrEmpty(sourceFile.Url))
-			_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{sourceFile.Url}");
+		_ = metadata.AppendLine($"url: {context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}");
 
 		var pageProducts = GetPageProducts(sourceFile.YamlFrontMatter?.Products);
 		if (pageProducts.Count > 0)

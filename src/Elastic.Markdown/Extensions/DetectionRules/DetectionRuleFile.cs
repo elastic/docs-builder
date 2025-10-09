@@ -14,8 +14,8 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DetectionRuleOverviewFile : MarkdownFile
 {
-	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build, DocumentationSet set)
-		: base(sourceFile, rootPath, parser, build, set)
+	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
+		: base(sourceFile, rootPath, parser, build)
 	{
 	}
 
@@ -68,7 +68,8 @@ $"""
 """;
 			foreach (var r in group.OrderBy(r => r.Rule.Name))
 			{
-				var url = Files[r.RelativePath].Url;
+				// TODO update this to use the new URL from navigation
+				var url = "does-not-exist-yet";
 				markdown +=
 $"""
 [{r.Rule.Name}](!{url}) <br>
@@ -96,9 +97,8 @@ public record DetectionRuleFile : MarkdownFile
 		IFileInfo sourceFile,
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
-		BuildContext build,
-		DocumentationSet set
-	) : base(sourceFile, rootPath, parser, build, set)
+		BuildContext build
+	) : base(sourceFile, rootPath, parser, build)
 	{
 		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
@@ -121,7 +121,7 @@ public record DetectionRuleFile : MarkdownFile
 		return rulePath.FileSystem.FileInfo.New(newPath);
 	}
 
-	protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
+	//protected override string RelativePathUrl => RelativePath.AsSpan().TrimStart("../").ToString();
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{

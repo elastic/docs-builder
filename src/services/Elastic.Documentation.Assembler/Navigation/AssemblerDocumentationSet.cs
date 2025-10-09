@@ -7,7 +7,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.IO.Navigation;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Navigation;
@@ -27,7 +26,6 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		ICrossLinkResolver crossLinkResolver,
-		TableOfContentsTreeCollector treeCollector,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters
 	)
@@ -77,6 +75,6 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, treeCollector);
+		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
 	}
 }

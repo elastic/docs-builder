@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
@@ -32,7 +33,7 @@ public class HtmlWriter(
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
 	private INavigationHtmlWriter NavigationHtmlWriter { get; } =
-		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Tree);
+		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Navigation);
 
 	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
@@ -48,17 +49,20 @@ public class HtmlWriter(
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
 	{
-		var document = await markdown.ParseFullAsync(ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
 		return await RenderLayout(markdown, document, ctx);
 	}
 
 	private async Task<RenderResult> RenderLayout(MarkdownFile markdown, MarkdownDocument document, Cancel ctx = default)
 	{
 		var html = MarkdownFile.CreateHtml(document);
-		await DocumentationSet.Tree.Resolve(ctx);
+		await DocumentationSet.ResolveDirectoryTree(ctx);
+		var navigationItem = DocumentationSet.FindNavigationByMarkdown(markdown);
 
-		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, INavigationHtmlWriter.AllLevels, ctx);
-		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(markdown.NavigationRoot, 1, ctx);
+		var root = navigationItem.NavigationRoot;
+
+		var fullNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, INavigationHtmlWriter.AllLevels, ctx);
+		var miniNavigationRenderResult = await NavigationHtmlWriter.RenderNavigation(root, 1, ctx);
 
 		var navigationHtmlRenderResult = DocumentationSet.Context.Configuration.Features.LazyLoadNavigation
 			? miniNavigationRenderResult
@@ -81,18 +85,19 @@ public class HtmlWriter(
 
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, markdown.Url));
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
-		var siteName = DocumentationSet.Tree.Index.Title ?? "Elastic Documentation";
+		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
 		var pageProducts = GetPageProducts(markdown.YamlFrontMatter?.Products);
 
 		string? allVersionsUrl = null;
 
-		if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
-			allVersionsUrl = item.Url;
+		// TODO exposese allversions again
+		//if (PositionalNavigation.MarkdownNavigationLookup.TryGetValue("docs-content://versions.md", out var item))
+		//	allVersionsUrl = item.Url;
 
 
 		var navigationFileName = $"{fullNavigationRenderResult.Id}.nav.html";
@@ -131,7 +136,7 @@ public class HtmlWriter(
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			MarkdownUrl = markdown.Url.TrimEnd('/') + ".md",
+			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
@@ -203,7 +208,7 @@ public class HtmlWriter(
 				: Path.Combine(dir, "index.html");
 		}
 
-		var document = await markdown.ParseFullAsync(ctx);
+		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
 
 		var rendered = await RenderLayout(markdown, document, ctx);
 		collector?.Collect(markdown, document, rendered.Html);
