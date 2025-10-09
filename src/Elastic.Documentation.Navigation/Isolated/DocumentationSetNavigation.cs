@@ -226,6 +226,44 @@ public class DocumentationSetNavigation<TModel>
 			: $"{parentPath}/{relativePathForUrl}";
 
 	/// <summary>
+	/// Resolves TOC path handling overlapping path segments to avoid duplication.
+	/// For example, parentPath="troubleshoot/ingest" + tocSource="ingest/opentelemetry" → "troubleshoot/ingest/opentelemetry"
+	/// </summary>
+	private static string ResolveTocPath(string parentPath, string tocSource)
+	{
+		if (string.IsNullOrEmpty(parentPath))
+			return tocSource;
+
+		// If tocSource already starts with parentPath, don't combine them
+		if (tocSource.StartsWith($"{parentPath}/", StringComparison.Ordinal))
+			return tocSource;
+
+		// Check for overlapping path segments at the end of parentPath and start of tocSource
+		// e.g., parentPath="troubleshoot/ingest" + tocSource="ingest/opentelemetry"
+		var parentSegments = parentPath.Split('/');
+		var tocSegments = tocSource.Split('/');
+
+		// Find longest overlap
+		for (var overlapLength = Math.Min(parentSegments.Length, tocSegments.Length); overlapLength > 0; overlapLength--)
+		{
+			var parentEnd = string.Join("/", parentSegments[^overlapLength..]);
+			var tocStart = string.Join("/", tocSegments[..overlapLength]);
+
+			if (parentEnd.Equals(tocStart, StringComparison.Ordinal))
+			{
+				// Found overlap - combine parent with non-overlapping part of toc
+				var tocRemainder = string.Join("/", tocSegments[overlapLength..]);
+				return string.IsNullOrEmpty(tocRemainder)
+					? parentPath
+					: $"{parentPath}/{tocRemainder}";
+			}
+		}
+
+		// No overlap found, combine normally
+		return $"{parentPath}/{tocSource}";
+	}
+
+	/// <summary>
 	/// Resolves the file info based on the context and prefix provider.
 	/// </summary>
 	private static IFileInfo ResolveFileInfo(
@@ -449,9 +487,8 @@ public class DocumentationSetNavigation<TModel>
 		string parentPath
 	)
 	{
-		var folderPath = string.IsNullOrEmpty(parentPath)
-			? folderRef.Path
-			: $"{parentPath}/{folderRef.Path}";
+		// Check for path overlap to avoid duplication
+		var folderPath = ResolveTocPath(parentPath, folderRef.Path);
 
 		// Create temporary placeholder for parent reference
 		var children = new List<INavigationItem>();
@@ -483,13 +520,20 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// Validate folders have children
-		if (children.Count == 0)
+		// If no children defined in YAML, auto-discover .md files in the folder
+		if (children.Count == 0 && folderRef.Children.Count == 0)
 		{
-			if (folderRef.Children.Count == 0)
-				context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has no children defined");
-			else
-				context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
+			children = AutoDiscoverFolderFiles(folderPath, context, placeholderNavigation, root, prefixProvider);
+
+			if (children.Count == 0)
+			{
+				context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has no children defined and no .md files found in directory");
+				return null;
+			}
+		}
+		else if (children.Count == 0)
+		{
+			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
 			return null;
 		}
 
@@ -504,6 +548,91 @@ public class DocumentationSetNavigation<TModel>
 			child.Parent = finalFolderNavigation;
 
 		return finalFolderNavigation;
+	}
+
+	/// <summary>
+	/// Auto-discovers .md files in a folder and creates navigation items for them.
+	/// If index.md exists, it's placed first. Otherwise, files are sorted alphabetically.
+	/// </summary>
+	private List<INavigationItem> AutoDiscoverFolderFiles(
+		string folderPath,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		IPathPrefixProvider prefixProvider)
+	{
+		var children = new List<INavigationItem>();
+
+		// Determine the actual directory path
+		var tocDirectory = prefixProvider switch
+		{
+			TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
+			TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.TableOfContentsDirectory,
+			_ => null
+		};
+
+		var directoryPath = tocDirectory != null
+			? context.ReadFileSystem.Path.Combine(tocDirectory.FullName, folderPath)
+			: context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, folderPath);
+
+		var directory = context.ReadFileSystem.DirectoryInfo.New(directoryPath);
+		if (!directory.Exists)
+			return children;
+
+		// Find all .md files in the directory (not recursive)
+		var mdFiles = context.ReadFileSystem.Directory
+			.GetFiles(directoryPath, "*.md")
+			.Select(f => context.ReadFileSystem.FileInfo.New(f))
+			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
+			.OrderBy(f => f.Name)
+			.ToList();
+
+		// Find index.md if it exists
+		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)).ToList();
+
+		var childIndex = 0;
+
+		// Add index.md first if it exists
+		if (indexFile != null)
+		{
+			var indexNav = CreateFileNavigationFromFileInfo(indexFile, folderPath, childIndex++, context, parent, root, prefixProvider);
+			if (indexNav != null)
+				children.Add(indexNav);
+		}
+
+		// Add other files
+		foreach (var file in otherFiles)
+		{
+			var fileNav = CreateFileNavigationFromFileInfo(file, folderPath, childIndex++, context, parent, root, prefixProvider);
+			if (fileNav != null)
+				children.Add(fileNav);
+		}
+
+		return children;
+	}
+
+	/// <summary>
+	/// Creates a file navigation item from a file info object.
+	/// </summary>
+	private INavigationItem? CreateFileNavigationFromFileInfo(
+		IFileInfo fileInfo,
+		string folderPath,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		IPathPrefixProvider prefixProvider)
+	{
+		var fileName = fileInfo.Name;
+		var fullPath = $"{folderPath}/{fileName}";
+
+		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
+		if (documentationFile == null)
+			return null;
+
+		var leafNavigationArgs = new FileNavigationArgs(fullPath, false, index, parent, root, prefixProvider);
+		return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 	}
 
 	private INavigationItem? CreateTocNavigation(
@@ -544,13 +673,35 @@ public class DocumentationSetNavigation<TModel>
 		}
 		else
 		{
-			// Root-level TOC: use parentPath (which comes from folder structure)
-			tocPath = string.IsNullOrEmpty(parentPath)
-				? tocRef.Source
-				: $"{parentPath}/{tocRef.Source}";
-			tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-				context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
-			);
+			// Check if we're inside a TOC (parent TOC but not nested under another TOC's directory)
+			var parentTocDir = prefixProvider switch
+			{
+				TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
+				TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.TableOfContentsDirectory,
+				_ => null
+			};
+
+			if (parentTocDir != null)
+			{
+				// Inside a TOC: resolve relative to the parent TOC's directory
+				tocPath = string.IsNullOrEmpty(parentPath)
+					? tocRef.Source
+					: ResolveTocPath(parentPath, tocRef.Source);
+
+				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
+					context.ReadFileSystem.Path.Combine(parentTocDir.FullName, tocPath)
+				);
+			}
+			else
+			{
+				// Root-level: use parentPath (which comes from folder structure)
+				// Check for path overlap to avoid duplication
+				tocPath = ResolveTocPath(parentPath, tocRef.Source);
+
+				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
+					context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
+				);
+			}
 		}
 
 		// Read and deserialize the toc.yml file

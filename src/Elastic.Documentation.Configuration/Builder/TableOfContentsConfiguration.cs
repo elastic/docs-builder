@@ -36,7 +36,8 @@ public record TableOfContentsConfiguration : ITableOfContentsScope
 		IDirectoryInfo scope,
 		IDocumentationSetContext context,
 		int depth,
-		string parentPath)
+		string parentPath
+		)
 	{
 		_configuration = configuration;
 		DefinitionFile = definitionFile;

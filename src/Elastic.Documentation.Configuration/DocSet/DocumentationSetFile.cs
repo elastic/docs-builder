@@ -11,6 +11,9 @@ namespace Elastic.Documentation.Configuration.DocSet;
 [YamlSerializable]
 public class TableOfContentsFile
 {
+	[YamlMember(Alias = "project")]
+	public string? Project { get; set; }
+
 	[YamlMember(Alias = "toc")]
 	public TableOfContents Toc { get; set; } = [];
 
@@ -21,9 +24,6 @@ public class TableOfContentsFile
 [YamlSerializable]
 public class DocumentationSetFile : TableOfContentsFile
 {
-	[YamlMember(Alias = "project")]
-	public string? Project { get; set; }
-
 	[YamlMember(Alias = "max_toc_depth")]
 	public int MaxTocDepth { get; set; } = 2;
 

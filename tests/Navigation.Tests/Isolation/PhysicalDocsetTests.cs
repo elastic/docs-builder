@@ -13,6 +13,33 @@ namespace Elastic.Documentation.Navigation.Tests.Isolation;
 public class PhysicalDocsetTests(ITestOutputHelper output)
 {
 	[Fact]
+	public async Task DocsContentHasNoErrors()
+	{
+		var docsetPath = Path.Combine("/Users/mpdreamz/Projects/docs-content", "docset.yml");
+		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
+
+		var yaml = File.ReadAllText(docsetPath);
+		var docSet = DocumentationSetFile.Deserialize(yaml);
+
+		var fileSystem = new FileSystem();
+		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine("/Users/mpdreamz/Projects/docs-content"));
+		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine("/Users/mpdreamz/Projects/docs-content", ".artifacts", "test-output"));
+		var configPath = fileSystem.FileInfo.New(docsetPath);
+
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Errors.Should().Be(0);
+
+		// Assert navigation was built successfully
+		navigation.NavigationItems.Should().NotBeEmpty();
+	}
+
+	[Fact]
 	public async Task PhysicalDocsetCanBeNavigated()
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");

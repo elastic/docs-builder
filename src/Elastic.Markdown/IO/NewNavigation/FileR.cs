@@ -91,7 +91,6 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)
 	{
 		var sourceDirectory = context.DocumentationSourceDirectory;
-		var config = context.Configuration;
 		var relativePath = Path.GetRelativePath(sourceDirectory.FullName, file.FullName);
 		if (context.Configuration.Exclude.Any(g => g.IsMatch(relativePath)))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
@@ -104,11 +103,13 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		if (folder is not null && (folder.Contains($"{Path.DirectorySeparatorChar}_", StringComparison.Ordinal) || folder.StartsWith('_')))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
-		if (config.Files.Contains(relativePath))
-			return ExtensionOrDefaultMarkdown();
+		// Todo re-enable not included check else where
+		// var config = context.ConfigurationYaml;
+		//if (config.Files.Contains(relativePath))
+		return ExtensionOrDefaultMarkdown();
 
-		context.Collector.EmitError(config.SourceFile, $"Not linked in toc: {relativePath}");
-		return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
+		//context.Collector.EmitError(config.SourceFile, $"Not linked in toc: {relativePath}");
+		//return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		MarkdownFile ExtensionOrDefaultMarkdown()
 		{
