@@ -178,6 +178,60 @@ body {
 	@apply text-blue-elastic! font-semibold;
 }
 
+/* Highlight the active section: parent li and all sibling li elements */
+#pages-nav li:has(ul a.current),
+#pages-nav li:has(ul a.current) > ul > li {
+	position: relative;
+}
+
+#pages-nav li:has(ul a.current)::before,
+#pages-nav li:has(ul a.current) > ul > li::before {
+	content: '';
+	position: absolute;
+	top: -12px;
+	left: -12px;
+	right: -12px;
+	bottom: -12px;
+	@apply bg-grey-10 rounded-lg;
+	z-index: -1;
+}
+
+/* Also highlight when the parent itself is the current item */
+#pages-nav li:has(> a.current),
+#pages-nav li:has(> a.current) ~ li {
+	position: relative;
+}
+
+#pages-nav li:has(> a.current)::before,
+#pages-nav li:has(> a.current) ~ li::before {
+	content: '';
+	position: absolute;
+	top: -12px;
+	left: -12px;
+	right: -12px;
+	bottom: -12px;
+	@apply bg-grey-10 rounded-lg;
+	z-index: -1;
+}
+
+/* Also highlight all children when the parent itself is current */
+#pages-nav li:has(> div > a.current),
+#pages-nav li:has(> div > a.current) > ul > li {
+	position: relative;
+}
+
+#pages-nav li:has(> div > a.current)::before,
+#pages-nav li:has(> div > a.current) > ul > li::before {
+	content: '';
+	position: absolute;
+	top: -12px;
+	left: -12px;
+	right: -12px;
+	bottom: -12px;
+	@apply bg-grey-10 rounded-lg;
+	z-index: -1;
+}
+
 .markdown-content {
 	@apply font-body;
 }
