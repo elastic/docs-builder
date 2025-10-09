@@ -188,11 +188,11 @@ body {
 #pages-nav li:has(ul a.current) > ul > li::before {
 	content: '';
 	position: absolute;
-	top: -12px;
-	left: -12px;
-	right: -8px;
-	bottom: -12px;
-	@apply bg-grey-20 rounded-lg;
+	top: -15px;
+	left: -15px;
+	right: 0;
+	bottom: -15px;
+	@apply bg-grey-20 rounded-sm;
 	z-index: -1;
 }
 
@@ -206,11 +206,11 @@ body {
 #pages-nav li:has(> a.current) ~ li::before {
 	content: '';
 	position: absolute;
-	top: -12px;
-	left: -12px;
-	right: -8px;
-	bottom: -12px;
-	@apply bg-grey-20 rounded-lg;
+	top: -15px;
+	left: -15px;
+	right: 0;
+	bottom: -15px;
+	@apply bg-grey-20 rounded-sm;
 	z-index: -1;
 }
 
@@ -224,11 +224,11 @@ body {
 #pages-nav li:has(> div > a.current) > ul > li::before {
 	content: '';
 	position: absolute;
-	top: -12px;
-	left: -12px;
-	right: -8px;
-	bottom: -12px;
-	@apply bg-grey-20 rounded-lg;
+	top: -15px;
+	left: -15px;
+	right: 0;
+	bottom: -15px;
+	@apply bg-grey-20 rounded-sm;
 	z-index: -1;
 }
 
