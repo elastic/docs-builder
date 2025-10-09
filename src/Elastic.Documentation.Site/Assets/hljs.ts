@@ -172,7 +172,7 @@ hljs.addPlugin(mergeHTMLPlugin)
 hljs.configure({ ignoreUnescapedHTML: true })
 
 export function initHighlight() {
-    $$('#markdown-content pre code:not([data-highlighted])').forEach(
+    $$('.markdown-content pre code:not([data-highlighted])').forEach(
         hljs.highlightElement
     )
 }

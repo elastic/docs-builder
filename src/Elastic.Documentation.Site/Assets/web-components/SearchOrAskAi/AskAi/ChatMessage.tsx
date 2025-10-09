@@ -1,24 +1,29 @@
-import { ChatMessage as ChatMessageType } from './chat.store'
-import { LlmGatewayMessage } from './useLlmGateway'
+import {ChatMessage as ChatMessageType} from './chat.store'
+import {LlmGatewayMessage} from './useLlmGateway'
 import {
+    EuiAvatar,
+    EuiButtonIcon,
+    EuiCallOut,
+    EuiCopy,
     EuiFlexGroup,
     EuiFlexItem,
+    EuiIcon,
+    EuiLoadingElastic,
     EuiLoadingSpinner,
-    EuiMarkdownFormat,
     EuiPanel,
     EuiSpacer,
     EuiText,
-    EuiButtonIcon,
     EuiToolTip,
     useEuiTheme,
-    EuiCallOut,
-    EuiIcon,
-    EuiAvatar,
-    EuiCopy,
-    EuiLoadingElastic,
 } from '@elastic/eui'
-import { css } from '@emotion/react'
+import {css} from '@emotion/react'
 import * as React from 'react'
+import {useEffect, useMemo, useRef, useCallback} from 'react'
+import {marked} from 'marked'
+import DOMPurify from 'dompurify'
+import hljs from 'highlight.js/lib/core'
+import {$$} from "select-dom";
+
 
 interface ChatMessageProps {
     message: ChatMessageType
@@ -42,29 +47,6 @@ const getMessageState = (message: ChatMessageType) => ({
     isComplete: message.status === 'complete',
     hasError: message.status === 'error',
 })
-
-// Extracted styles for markdown render
-const markdownFormatStyles = css`
-    .euiScreenReaderOnly {
-        display: none;
-    }
-    font-size: 14px;
-    b,
-    strong {
-        font-weight: 600;
-    }
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        b,
-        strong {
-            font-weight: inherit;
-        }
-    }
-`
 
 // Action bar for complete AI messages
 const ActionBar = ({
@@ -175,7 +157,14 @@ export const ChatMessage = ({
             : message.content
 
     const hasError = message.status === 'error' || !!error
-
+    
+    const html = marked.parse(content)
+    const sanitized = DOMPurify.sanitize(html as string)
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = sanitized
+    $$('pre code', tempDiv).forEach(hljs.highlightElement)
+    const parsed = tempDiv.innerHTML
+    
     return (
         <EuiFlexGroup
             gutterSize="s"
@@ -222,9 +211,22 @@ export const ChatMessage = ({
                     `}
                 >
                     {content && (
-                        <EuiMarkdownFormat css={markdownFormatStyles}>
-                            {content}
-                        </EuiMarkdownFormat>
+                        // <EuiMarkdownFormat css={markdownFormatStyles}>
+                        //     {content}
+                        // </EuiMarkdownFormat>
+                        <div 
+                            className="markdown-content" 
+                            css={css`
+                                font-size: 14px;
+                                &>*:first-child {
+                                    margin-top: 0;
+                                }
+                                pre>code {
+                                    margin-top: calc(var(--spacing) * 4);
+                                }
+                            `}
+                            dangerouslySetInnerHTML={{ __html: parsed }} 
+                        />
                     )}
 
                     {isLoading && (
