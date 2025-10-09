@@ -47,7 +47,6 @@ export const SearchOrAskAiButton = () => {
         top: 48px;
         width: 90ch;
         max-width: 100%;
-        //padding-top: 4px;
     `
 
     const loadingCss = css`
