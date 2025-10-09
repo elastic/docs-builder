@@ -1,105 +1,88 @@
-import { AskAiAnswer } from './AskAi/AskAiAnswer'
-import { AskAiSuggestions } from './AskAi/AskAiSuggestions'
-import { SearchResults } from './Search/SearchResults'
-import { useAskAiTerm, useSearchActions, useSearchTerm } from './search.store'
+import { Chat } from './AskAi/Chat'
+import { Search } from './Search/Search'
+import { useModalActions, useModalMode } from './modal.store'
 import {
-    EuiFieldSearch,
     EuiSpacer,
     EuiBetaBadge,
     EuiText,
-    EuiHorizontalRule,
-    useEuiOverflowScroll,
     EuiLink,
+    EuiTabbedContent,
+    EuiIcon,
+    type EuiTabbedContentTab,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
+import { useMemo } from 'react'
 
 export const SearchOrAskAiModal = () => {
-    const searchTerm = useSearchTerm()
-    const askAiTerm = useAskAiTerm()
-    const { setSearchTerm, submitAskAiTerm } = useSearchActions()
+    const modalMode = useModalMode()
+    const { setModalMode } = useModalActions()
 
+    const tabs: EuiTabbedContentTab[] = useMemo(
+        () => [
+            {
+                id: 'search',
+                name: 'Search',
+                prepend: <EuiIcon type="search" />,
+                content: <Search />,
+            },
+            {
+                id: 'askAi',
+                name: 'Ask AI',
+                prepend: <EuiIcon type="sparkles" />,
+                content: (
+                    <>
+                        <EuiSpacer size="m" />
+                        <Chat />
+                    </>
+                ),
+            },
+        ],
+        []
+    )
+
+    const selectedTab = tabs.find((tab) => tab.id === modalMode) || tabs[0]
+
+    return (
+        <>
+            <EuiTabbedContent
+                tabs={tabs}
+                selectedTab={selectedTab}
+                onTabClick={(tab) => setModalMode(tab.id as 'search' | 'askAi')}
+            />
+            <ModalFooter />
+        </>
+    )
+}
+
+const ModalFooter = () => {
     return (
         <div
             css={css`
                 display: flex;
-                flex-direction: column;
+                align-items: center;
+                gap: calc(var(--spacing) * 2);
             `}
         >
-            <div
+            <EuiBetaBadge
                 css={css`
-                    flex-grow: 0;
+                    display: inline-flex;
                 `}
-            >
-                <EuiFieldSearch
-                    fullWidth
-                    placeholder="Search the docs or ask Elastic Docs AI Assistant"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onSearch={(e) => {
-                        submitAskAiTerm(e)
-                    }}
-                    isClearable
-                    autoFocus={true}
-                />
-                <EuiSpacer size="m" />
-            </div>
-            <div
-                css={css`
-                    flex-grow: 1;
-                    overflow-y: scroll;
-                    max-height: 70vh;
-                    ${useEuiOverflowScroll('y')}
-                `}
-            >
-                <SearchResults />
-                {askAiTerm ? (
-                    <AskAiAnswer />
-                ) : (
-                    <AskAiSuggestions
-                        suggestions={[
-                            { question: 'What is an index template?' },
-                            { question: 'What is semantic search?' },
-                            {
-                                question:
-                                    'How do I create an elasticsearch index?',
-                            },
-                            { question: 'How do I set up an ingest pipeline?' },
-                        ]}
-                    />
-                )}
-            </div>
-            <EuiHorizontalRule margin="m" />
-            <div
-                css={css`
-                    flex-grow: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: calc(var(--spacing) * 2);
-                `}
-            >
-                <EuiBetaBadge
-                    size="s"
-                    css={css`
-                        block-size: 2em;
-                        display: flex;
-                    `}
-                    label="Alpha"
-                    color="accent"
-                    tooltipContent="This feature is in private preview and is only enabled if you are in Elastic's Global VPN."
-                />
+                label="Alpha"
+                color="accent"
+                tooltipContent="This feature is in private preview and is only enabled if you are in Elastic's Global VPN."
+            />
 
-                <EuiText color="subdued" size="xs">
-                    This feature is in private preview (alpha).{' '}
-                    <EuiLink
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        href="https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml"
-                    >
-                        Got feedback? We'd love to hear it!
-                    </EuiLink>
-                </EuiText>
-            </div>
+            <EuiText color="subdued" size="s">
+                This feature is in private preview (alpha).{' '}
+                <EuiLink
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://github.com/elastic/docs-eng-team/issues/new?template=search-or-ask-ai-feedback.yml"
+                >
+                    Got feedback? We'd love to hear it!
+                </EuiLink>
+            </EuiText>
         </div>
     )
 }

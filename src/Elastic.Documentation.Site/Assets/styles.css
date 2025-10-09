@@ -27,6 +27,7 @@
 html {
 	/* We need to use 14px because EUI works best with a 14px base */
 	font-size: 14px;
+	@apply font-body;
 }
 
 body {
