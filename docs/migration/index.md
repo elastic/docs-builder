@@ -1,11 +1,11 @@
 ---
-navigation_title: Migration
+navigation_title: Asciidoc Migration
 ---
 
 # Migration to docs-builder
 
 :::{important}
-We are enforcing a [Documentation Freeze](./freeze/index.md) while we migrate docs between our two build systems.
+All repositories have been migrated to `docs-builder` however older branches may still be using `asciidoc`.
 :::
 
 Migrating to Elastic Docs V3 is more than just moving to a new documentation build system. This migration includes:

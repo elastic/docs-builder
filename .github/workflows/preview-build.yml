@@ -334,6 +334,7 @@ jobs:
       # we run our artifact directly, please use the prebuild
       # elastic/docs-builder@main GitHub Action for all other repositories!
       - name: Build documentation
+        id: internal-docs-build
         if: >
           env.MATCH == 'true'
           && github.repository == 'elastic/docs-builder'
@@ -385,7 +386,7 @@ jobs:
           && (
             !cancelled()
             && github.repository == 'elastic/docs-builder'
-            && steps.docs-build.outputs.skip != 'true' 
+            && steps.internal-docs-build.outputs.skip != 'true' 
             && (
               steps.deployment.outputs.result
               || (
@@ -404,6 +405,7 @@ jobs:
             !cancelled() 
             && github.repository != 'elastic/docs-builder'
             && steps.docs-build.outputs.skip != 'true'
+            && steps.docs-build.outcome != 'skipped'
             && (
               steps.deployment.outputs.result 
               || (
@@ -420,7 +422,8 @@ jobs:
           && (
             !cancelled() 
             && github.repository == 'elastic/docs-builder'
-            && steps.docs-build.outputs.skip != 'true'
+            && steps.internal-docs-build.outputs.skip != 'true'
+            && steps.internal-docs-build.outcome != 'skipped'
             && (
               steps.deployment.outputs.result 
               || (
@@ -435,15 +438,17 @@ jobs:
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
           !cancelled() 
-          && steps.docs-build.outputs.skip != 'true'
+          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
           && steps.deployment.outputs.result
+          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
       - name: Upload to S3
         id: s3-upload
         if: >
           env.MATCH == 'true'
           && !cancelled() 
-          && steps.docs-build.outputs.skip != 'true' 
+          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
           && steps.deployment.outputs.result
+          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
         run: |
           aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
@@ -518,15 +523,15 @@ jobs:
               return;
             }
 
-            const toLink = (file) => {
+            const toMarkdownLink = (file) => {
               const path = file
-                .replace('docs/', '')
-                .replace('/index.md', '')
-                .replace('.md', '');
+                .replace(/^docs\//, '')
+                .replace(/\/index.md$/, '')
+                .replace(/\.md$/, '');
               return `[${file}](https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}/${path})`;
             }
 
-            const links = changedMdFiles.map(toLink)
+            const links = changedMdFiles.map(toMarkdownLink)
 
             const body = [
               title,

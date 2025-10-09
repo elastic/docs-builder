@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Search;
 
@@ -18,6 +19,14 @@ public record ParentDocument
 
 public record DocumentationDocument
 {
+	// TODO make this required once all doc_sets have published again
+	[JsonPropertyName("url")]
+	public string Url { get; set; } = string.Empty;
+
+	// TODO make this required once all doc_sets have published again
+	[JsonPropertyName("hash")]
+	public string Hash { get; set; } = string.Empty;
+
 	[JsonPropertyName("title")]
 	public string? Title { get; set; }
 
@@ -30,14 +39,15 @@ public record DocumentationDocument
 	[JsonPropertyName("links")]
 	public string[] Links { get; set; } = [];
 
-	[JsonPropertyName("url")]
-	public string? Url { get; set; }
-
 	[JsonPropertyName("applies_to")]
 	public ApplicableTo? Applies { get; set; }
 
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
+
+	// Stripped body is the body with markdown removed, suitable for search indexing
+	[JsonPropertyName("stripped_body")]
+	public string? StrippedBody { get; set; }
 
 	[JsonPropertyName("url_segment_count")]
 	public int? UrlSegmentCount { get; set; }
