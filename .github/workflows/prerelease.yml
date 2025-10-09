@@ -19,6 +19,8 @@ jobs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
     needs: [build]
+    concurrency: 
+      group: deploy-to-github-pages
 
     environment:
       name: github-pages

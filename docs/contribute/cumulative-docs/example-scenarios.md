@@ -34,8 +34,8 @@ page level in the frontmatter, use section-level `applies_to` badges.
 
 <!--
 TO DO: Consider other alternative titles:
-* If labeling versioned products or serverless vs. stateful
-* If labeling available vs. unavailable
+* If labeling versioned products or serverless vs. stateful.
+* If labeling available vs. unavailable.
 -->
 
 <!--
@@ -51,8 +51,8 @@ available in specific versions or either serverless or stateful.
 In this case, docs contributors should include the following at the page level:
 
 * `stack` with the lowest version that applies to any content (unless it is lower
-  than the base version, {{version.stack.base}}, in which case omit the version number altogether)
-* `serverless` if applicable
+  than the base version, {{version.stack.base}}, in which case omit the version number altogether).
+* `serverless` if applicable.
 
 Then if a section contains content that applies to a different context than what is
 defined at the page level, include section-level `applies_to` only with the items
@@ -117,8 +117,8 @@ Just the syntax slightly differs so that it stays inline: `` {applies_to}`server
 
 <!--
 TO DO: Consider other alternative titles:
-* If labeling parallel content on a single page
-* If labeling applicable vs. not applicable
+* If labeling parallel content on a single page.
+* If labeling applicable vs. not applicable.
 -->
 
 <!--
@@ -557,7 +557,7 @@ _Work in progress._
 
 ## Functionality is added to multiple patch versions [multiple-patch]
 
-Sometimes, features and enhancements slip through into patch versions. In that case, the same functionality might be added for the first time to multiple patch versions at the same time.
+Sometimes, features and enhancements slip through into patch versions, and the same functionality might be added for the first time to multiple patch versions at the same time. In that case, use two `applies_to` badges so that users can see clearly the versions in which the functionality is introduced. Order the `applies_to` badges starting with the latest version, and ending with the earliest version. (Automatic ordering for multiple badges is not currently supported.)
 
 For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beats/filebeat/filebeat-input-httpjson) page, the `terminate` helper function was added to a 9.0.x and 9.1.x patch version at the same time.
 
@@ -572,7 +572,7 @@ For example, on the [HTTP JSON input](https://www.elastic.co/docs/reference/beat
 ```markdown
 * `terminate`: exits the template without falling back to the default value
   and without causing an error. It takes a single string argument that is
-  logged in debug logging. {applies_to}`stack: ga 9.1.2, ga 9.0.6`
+  logged in debug logging. {applies_to}`stack: ga 9.1.2` {applies_to}`stack: ga 9.0.6`
 ```
 ::::
 :::::

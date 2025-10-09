@@ -150,26 +150,37 @@ It can *span* multiple lines and supports inline formatting.
 
 :::::
 
-## Collapsible admonitions
+## Applies to information
 
-:::{warning}
-Collapsible admonitions are deprecated. Do not use them. Use [dropdowns](./dropdowns.md) instead.
-:::
-
-Use `:open: <bool>` to make an admonition collapsible.
+Admonitions support the `applies_to` property to indicate which products or versions the information applies to.
 
 :::::{tab-set}
 
 ::::{tab-item} Output
 
 :::{note}
-:open:
+:applies_to: stack: ga 9.1.0
 
-Longer content can be collapsed to take less space.
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+This note applies to the Elastic Stack GA version 9.1.0.
 :::
 
+:::{warning}
+:applies_to: serverless: ga
+
+This warning applies to serverless GA.
+:::
+
+:::{tip}
+:applies_to: { ess:, ece: }
+
+This tip applies to ECH and ECE.
+:::
+
+:::{important}
+:applies_to: {"stack": "ga 9.2, preview 9.1", "serverless": "ga"}
+
+This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
+:::
 
 ::::
 
@@ -177,11 +188,27 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 
 ```markdown
 :::{note}
-:open:
+:applies_to: stack: ga 9.1.0
 
-Longer content can be collapsed to take less space.
+This note applies to the Elastic Stack GA version 9.1.0.
+:::
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+:::{warning}
+:applies_to: serverless: ga
+
+This warning applies to serverless GA.
+:::
+
+:::{tip}
+:applies_to: { ess:, ece: }
+
+This tip applies to ECH and ECE.
+:::
+
+:::{important}
+:applies_to: {"stack": "ga 9.2, preview 9.1", "serverless": "ga"}
+
+This important note applies to Elastic Stack GA version 9.2 and Elastic Stack Preview version 9.1. It also applies to serverless GA.
 :::
 ```
 

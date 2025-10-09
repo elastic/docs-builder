@@ -9,12 +9,14 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Settings;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using YamlDotNet.Core;
 using CodeBlock = Markdig.Syntax.CodeBlock;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -39,19 +41,42 @@ public static class LlmRenderingHelpers
 	}
 
 	/// <summary>
-	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption
+	/// Converts relative URLs to absolute URLs using BuildContext.CanonicalBaseUrl for better LLM consumption.
+	/// Also converts localhost URLs to canonical URLs.
 	/// </summary>
 	public static string? MakeAbsoluteUrl(LlmMarkdownRenderer renderer, string? url)
 	{
+		if (renderer.BuildContext.CanonicalBaseUrl == null)
+			return url;
+
+		// Convert localhost URLs to canonical URLs for LLM consumption
+		if (!string.IsNullOrEmpty(url) && url.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase))
+		{
+			if (Uri.TryCreate(url, UriKind.Absolute, out var localhostUri) &&
+				localhostUri.AbsolutePath.StartsWith("/docs/", StringComparison.Ordinal))
+			{
+				// Replace localhost with canonical base URL
+				var canonicalUrl = new Uri(renderer.BuildContext.CanonicalBaseUrl, localhostUri.AbsolutePath);
+				return canonicalUrl.ToString();
+			}
+		}
+
+		return MakeAbsoluteUrl(renderer.BuildContext.CanonicalBaseUrl, url);
+	}
+
+	/// <summary>
+	/// Converts relative URLs to absolute URLs for LLM consumption
+	/// </summary>
+	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url)
+	{
 		if (
 			string.IsNullOrEmpty(url)
-			|| renderer.BuildContext.CanonicalBaseUrl == null
+			|| baseUri == null
 			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
 			|| !Uri.IsWellFormedUriString(url, UriKind.Relative))
 			return url;
 		try
 		{
-			var baseUri = renderer.BuildContext.CanonicalBaseUrl;
 			var absoluteUri = new Uri(baseUri, url);
 			return absoluteUri.ToString();
 		}
@@ -60,6 +85,9 @@ public static class LlmRenderingHelpers
 			return url;
 		}
 	}
+
+
+
 }
 
 /// <summary>
@@ -362,6 +390,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case DiagramBlock diagramBlock:
 				WriteDiagramBlock(renderer, diagramBlock);
 				return;
+			case SettingsBlock settingsBlock:
+				WriteSettingsBlock(renderer, settingsBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -380,6 +411,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				break;
 			case IBlockTitle titledBlock:
 				renderer.Writer.Write($" title=\"{titledBlock.Title}\"");
+				break;
+		}
+
+		switch (obj)
+		{
+			case IBlockAppliesTo appliesBlock when !string.IsNullOrEmpty(appliesBlock.AppliesToDefinition):
+				renderer.Writer.Write($" applies-to=\"{appliesBlock.AppliesToDefinition}\"");
 				break;
 		}
 
@@ -470,6 +508,99 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			catch (Exception ex)
 			{
 				renderer.BuildContext.Collector.EmitError(block.IncludePath ?? string.Empty, "Failed to parse included content", ex);
+			}
+		}
+
+		renderer.EnsureLine();
+	}
+
+	private void WriteSettingsBlock(LlmMarkdownRenderer renderer, SettingsBlock block)
+	{
+		if (!block.Found || block.IncludePath is null)
+		{
+			var path = block.IncludePath ?? "(no path specified)";
+			renderer.BuildContext.Collector.EmitError(
+				block.IncludePath ?? string.Empty,
+				$"Settings directive error: Could not resolve path '{path}'. Ensure the file exists and the path is correct.");
+			return;
+		}
+
+		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
+
+		// Check if file exists before attempting to read
+		if (!file.Exists)
+		{
+			renderer.BuildContext.Collector.EmitError(
+				block.IncludePath,
+				$"Settings file not found: '{block.IncludePath}' does not exist. Check that the file path is correct and the file has been committed to the repository.");
+			return;
+		}
+
+		YamlSettings? settings;
+		try
+		{
+			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+		}
+		catch (FileNotFoundException e)
+		{
+			renderer.BuildContext.Collector.EmitError(
+				block.IncludePath,
+				$"Settings file not found: Unable to read '{block.IncludePath}'. The file may have been moved or deleted.",
+				e);
+			return;
+		}
+		catch (DirectoryNotFoundException e)
+		{
+			renderer.BuildContext.Collector.EmitError(
+				block.IncludePath,
+				$"Settings directory not found: The directory containing '{block.IncludePath}' does not exist. Check that the path is correct.",
+				e);
+			return;
+		}
+		catch (YamlException e)
+		{
+			renderer.BuildContext.Collector.EmitError(
+				block.IncludePath,
+				$"Invalid YAML in settings file: '{block.IncludePath}' contains invalid YAML syntax. Please check the file format matches the expected settings structure (groups, settings, etc.).",
+				e.InnerException ?? e);
+			return;
+		}
+		catch (Exception e)
+		{
+			renderer.BuildContext.Collector.EmitError(
+				block.IncludePath,
+				$"Failed to process settings file: Unable to parse '{block.IncludePath}'. Error: {e.Message}",
+				e);
+			return;
+		}
+
+		renderer.EnsureBlockSpacing();
+
+		foreach (var group in settings.Groups)
+		{
+			renderer.WriteLine();
+			renderer.Write("## ");
+			renderer.WriteLine(group.Name ?? string.Empty);
+
+			foreach (var setting in group.Settings)
+			{
+				renderer.WriteLine();
+				renderer.Write("#### ");
+				renderer.WriteLine(setting.Name ?? string.Empty);
+
+				if (!string.IsNullOrEmpty(setting.Description))
+				{
+					var document = MarkdownParser.ParseMarkdownStringAsync(
+						block.Build,
+						block.Context,
+						setting.Description,
+						block.IncludeFrom,
+						block.Context.YamlFrontMatter,
+						MarkdownParser.Pipeline);
+					_ = renderer.Render(document);
+					renderer.EnsureBlockSpacing();
+				}
 			}
 		}
 

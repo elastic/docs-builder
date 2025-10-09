@@ -6,13 +6,16 @@ namespace authoring
 
 
 open System
+open System.Collections.Frozen
 open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open Elastic.Documentation
 open Elastic.Documentation.Configuration
+open Elastic.Documentation.Configuration.LegacyUrlMappings
 open Elastic.Documentation.Configuration.Versions
+open Elastic.Documentation.Configuration.Products
 open Elastic.Markdown
 open Elastic.Markdown.IO
 open JetBrains.Annotations
@@ -260,11 +263,24 @@ type Setup =
         )
        
         let versionConfig = VersionsConfiguration(VersioningSystems = versioningSystems)
-        let configurationFileProvider = ConfigurationFileProvider(fileSystem)
+        let productDict = Dictionary<string, Product>()
+        productDict.Add("elasticsearch", Product(Id = "elasticsearch",
+            DisplayName = "Elasticsearch",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ElasticsearchProject]))
+        productDict.Add("apm_agent_dotnet", Product(Id = "apm_agent_dotnet",
+            DisplayName = "APM Agent for .NET",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.ApmAgentDotnet]))
+        productDict.Add("ecctl", Product(Id = "ecctl",
+            DisplayName = "Elastic Cloud Control ECCTL",
+            VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.Ecctl]))
+        
+        let configurationFileProvider = ConfigurationFileProvider(new TestLoggerFactory(), fileSystem)
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
-            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default)
+            Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
+            ProductsConfiguration = ProductsConfiguration(Products = productDict.ToFrozenDictionary()),
+            LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = [])
         )
         let context = BuildContext(
             collector,

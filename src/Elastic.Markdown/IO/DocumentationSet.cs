@@ -11,11 +11,11 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO.Navigation;
-using Elastic.Markdown.Links.CrossLinks;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 

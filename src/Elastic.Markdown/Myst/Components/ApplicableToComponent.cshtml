@@ -2,7 +2,7 @@
 
 @foreach (var item in Model.GetApplicabilityItems())
 {
-		<span class="applicable-info" data-tippy-content="@(new HtmlString(item.RenderData.TooltipText))">
+		<span class="applicable-info" data-tippy-content="@(new HtmlString(Model.ShowTooltip ? item.RenderData.TooltipText : string.Empty))">
 			<span class="applicable-name">@item.Key</span>
 			
 			@if (!string.IsNullOrEmpty(item.Key) && (item.RenderData.ShowLifecycleName || item.RenderData.ShowVersion || !string.IsNullOrEmpty(item.RenderData.BadgeLifecycleText)))
@@ -12,7 +12,7 @@
 			<span class="applicable-meta applicable-meta-@item.RenderData.LifecycleClass">
 				@if (item.RenderData.ShowLifecycleName)
 				{
-					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.Applicability.GetLifeCycleName()</span>
+					<span class="applicable-lifecycle applicable-lifecycle-@item.RenderData.LifecycleClass">@item.PrimaryApplicability.GetLifeCycleName()</span>
 				}
 				@if (item.RenderData.ShowVersion)
 				{
@@ -23,6 +23,14 @@
 				else
 				{
 					@item.RenderData.BadgeLifecycleText
+				}
+				@if (item.RenderData.HasMultipleLifecycles)
+				{
+					<span class="applicable-ellipsis">
+						<span class="applicable-ellipsis__dot"></span>
+						<span class="applicable-ellipsis__dot"></span>
+						<span class="applicable-ellipsis__dot"></span>
+					</span>
 				}
 			</span>
 		</span>

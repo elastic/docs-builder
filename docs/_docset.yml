@@ -46,26 +46,19 @@ toc:
       - file: branching-strategy.md
       - file: add-repo.md
       - file: release-new-version.md
-  - folder: migration
+  - folder: building-blocks
     children:
       - file: index.md
-      - folder: freeze
-        children:
-          - file: index.md
-          - file: gh-action.md
-      - file: syntax.md
-      - file: ia.md
-      - file: versioning.md
-      - file: engineering.md
-      - folder: guide
-        children:
-          - file: index.md
-          - file: working-in-docs-content.md
-          - file: automated.md
-          - file: tooling.md
-          - file: move-ref-docs.md
-          - file: mapping.md
-          - file: how-to-set-up-docs-previews.md
+      - file: documentation-set.md
+      - file: assembled-documentation.md
+      - file: distributed-documentation.md
+      - file: link-service.md
+      - file: link-index.md
+      - file: link-catalog.md
+      - file: outbound-cross-links.md
+      - file: inbound-cross-links.md
+      - file: documentation-set-navigation.md
+      - file: global-navigation.md
   - folder: configure
     children:
       - file: index.md
@@ -74,6 +67,7 @@ toc:
           - file: index.md
           - file: content.md
           - file: navigation.md
+          - file: products.md
           - file: versions.md
           - file: legacy-url-mappings.md
       - folder: content-set
@@ -92,6 +86,7 @@ toc:
       - file: headings.md
       - file: admonitions.md
       - file: applies.md
+      - file: applies-switch.md
       - file: automated_settings.md
       - file: code.md
       - file: comments.md
@@ -119,6 +114,57 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
+  - folder: cli
+    children:
+      - file: index.md
+      - folder: docset
+        children:
+          - file: index.md
+          - file: build.md
+          - file: diff-validate.md
+          - file: index-command.md
+          - file: mv.md
+          - file: serve.md
+      - folder: assembler
+        children:
+          - file: index.md
+          - file: assemble.md
+          - file: assembler-bloom-filter-create.md
+          - file: assembler-bloom-filter-lookup.md
+          - file: assembler-build.md
+          - file: assembler-clone.md
+          - file: assembler-config-init.md
+          - file: assembler-content-source-match.md
+          - file: assembler-content-source-validate.md
+          - file: assembler-deploy-apply.md
+          - file: assembler-deploy-plan.md
+          - file: assembler-deploy-update-redirects.md
+          - file: assembler-index.md
+          - file: assembler-navigation-validate.md
+          - file: assembler-navigation-validate-link-reference.md
+          - file: assembler-serve.md
+      - folder: links
+        children:
+          - file: index.md
+          - file: inbound-links-validate.md
+          - file: inbound-links-validate-all.md
+          - file: inbound-links-validate-link-reference.md
+  - folder: migration
+    children:
+      - file: index.md
+      - file: syntax.md
+      - file: ia.md
+      - file: versioning.md
+      - file: engineering.md
+      - folder: guide
+        children:
+          - file: index.md
+          - file: working-in-docs-content.md
+          - file: automated.md
+          - file: tooling.md
+          - file: move-ref-docs.md
+          - file: mapping.md
+          - file: how-to-set-up-docs-previews.md
   # nested TOCs are only allowed from docset.yml by default
   # to prevent them from being nested deeply arbitrarily
   # use max_toc_depth to allow deeper nesting (Expert mode, consult with docs team)

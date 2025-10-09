@@ -134,7 +134,7 @@ let private runTests (testSuite: TestSuite) _ =
     let testFilter =
         match testSuite with
         | All -> []
-        | Unit -> ["--filter"; "FullyQualifiedName~.Tests"]
+        | Unit -> ["--filter"; "FullyQualifiedName~.Tests|FullyQualifiedName~AuthoringTests"]
         | Integration -> ["--filter"; "FullyQualifiedName~.IntegrationTests"]
 
     exec {

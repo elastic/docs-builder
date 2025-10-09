@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``substitutions``
+module ``AuthoringTests``.``inline elements``.``substitutions``
 
 open Xunit
 open authoring

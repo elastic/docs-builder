@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``cross links``
+module ``AuthoringTests``.``inline elements``.``cross links``
 
 open Xunit
 open authoring
@@ -97,6 +97,30 @@ type ``link to repository that does not resolve yet`` () =
 
     [<Fact>]
     let ``error when not found in links.json`` () = markdown |> hasError("'elasticsearch' was not found in the cross link index")
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``error when linking to non-existent file in declared repository`` () =
+
+    static let markdown = Setup.Markdown """
+[Non-existent file](docs-content://non-existent-file.md)
+"""
+    
+    [<Fact>]
+    let ``validate HTML`` () =
+        // This link cannot be resolved, so we just output the link as-is
+        markdown |> convertsToHtml """
+            <p><a
+                href="docs-content://non-existent-file.md">
+                Non-existent file
+                </a>
+            </p>
+        """
+
+    [<Fact>]
+    let ``error when file not found in links.json`` () = 
+        markdown |> hasError("'non-existent-file.md' is not a valid link in the 'docs-content' cross link index")
 
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings

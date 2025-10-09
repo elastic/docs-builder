@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``product availability``.``applicable to component``
+module ``AuthoringTests``.``product availability``.``applicable to component``
 
 open Elastic.Documentation.AppliesTo
 open Elastic.Markdown.Myst.Directives.AppliesTo
@@ -396,7 +396,7 @@ This functionality may be changed or removed in a future release. Elastic will w
 type ``mixed lifecycles with ga planned`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
-stack: ga 8.8.0, preview 9.0.0
+stack: ga 8.8.0, preview 8.1.0
 ```
 """
 
@@ -404,22 +404,22 @@ stack: ga 8.8.0, preview 9.0.0
     let ``renders GA planned when preview exists alongside GA`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+	<span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack GA 8.8.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
 
-This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.">
-		<span class="applicable-name">Stack</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-preview">
-			Planned
-		</span>
-	</span>
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.</div>
 
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
+<div><strong>Elastic&nbsp;Stack Preview 8.1.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+This functionality may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.</div>">
 		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
 			GA planned
+			<span class="applicable-ellipsis">
+				<span class="applicable-ellipsis__dot"></span>
+				<span class="applicable-ellipsis__dot"></span>
+				<span class="applicable-ellipsis__dot"></span>
+			</span>
 		</span>
 	</span>
 </p>
@@ -554,15 +554,6 @@ apm_agent_java: beta 9.1.0
     let ``renders complex mixed scenario`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
-
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
-		<span class="applicable-name">Stack</span>
-		<span class="applicable-separator"></span>
-		<span class="applicable-meta applicable-meta-ga">
-			Planned
-		</span>
-	</span>
 	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Serverless&nbsp;Elasticsearch projects update. Subject to change.
 
 Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.">
@@ -578,6 +569,15 @@ This functionality may be changed or removed in a future release. Elastic will w
 		<span class="applicable-name">Serverless Observability</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-preview">
+			Planned
+		</span>
+	</span>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
+		<span class="applicable-name">Stack</span>
+		<span class="applicable-separator"></span>
+		<span class="applicable-meta applicable-meta-ga">
 			Planned
 		</span>
 	</span>
@@ -723,17 +723,17 @@ product: ga 9.0.0
     let ``renders missing VersioningSystemId coverage`` () =
         markdown |> convertsToHtml """
 <p class="applies applies-block">
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
-
-If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
-		<span class="applicable-name">Stack</span>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Serverless update. Subject to change.">
+		<span class="applicable-name">Serverless</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
 			Planned
 		</span>
 	</span>
-	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Cloud&nbsp;Serverless update. Subject to change.">
-		<span class="applicable-name">Serverless</span>
+	<span class="applicable-info" data-tippy-content="We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.">
+		<span class="applicable-name">Stack</span>
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
 			Planned
@@ -795,6 +795,42 @@ If this functionality is unavailable or behaves differently when deployed on ECH
 		<span class="applicable-separator"></span>
 		<span class="applicable-meta applicable-meta-ga">
 			Planned
+		</span>
+	</span>
+</p>
+"""
+
+// Test multiple lifecycles for same applicability key
+type ``multiple lifecycles same key`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: ga 8.0.0, beta 8.1.0
+```
+"""
+
+    [<Fact>]
+    let ``renders multiple lifecycles with ellipsis and shows GA lifecycle`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<span class="applicable-info" data-tippy-content="<div><strong>Elastic&nbsp;Stack GA 8.0.0:</strong>Available on Elastic&nbsp;Stack version 8.0.0 and later unless otherwise specified.
+
+If this functionality is unavailable or behaves differently when deployed on ECH, ECE, ECK, or a self-managed installation, it will be indicated on the page.</div>
+
+<div><strong>Elastic&nbsp;Stack Beta 8.1.0:</strong>We plan to add this functionality in a future Elastic&nbsp;Stack update. Subject to change.
+
+Beta features are subject to change. The design and code is less mature than official GA features and is being provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.</div>">
+		<span class="applicable-name">Stack</span>
+		<span class="applicable-separator"></span>
+		<span class="applicable-meta applicable-meta-ga">
+			<span class="applicable-lifecycle applicable-lifecycle-ga">GA</span>
+			<span class="applicable-version applicable-version-ga">
+				8.0.0
+			</span>
+			<span class="applicable-ellipsis">
+				<span class="applicable-ellipsis__dot"></span>
+				<span class="applicable-ellipsis__dot"></span>
+				<span class="applicable-ellipsis__dot"></span>
+			</span>
 		</span>
 	</span>
 </p>

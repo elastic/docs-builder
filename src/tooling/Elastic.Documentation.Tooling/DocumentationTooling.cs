@@ -5,11 +5,17 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using Actions.Core.Extensions;
+using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.Tooling.Diagnostics.Console;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ServiceDiscovery;
 
 namespace Elastic.Documentation.Tooling;
@@ -21,11 +27,19 @@ public static class DocumentationTooling
 		_ = builder.Services
 			.AddGitHubActionsCore()
 			.AddSingleton<DiagnosticsChannel>()
-			.AddSingleton<DiagnosticsCollector>()
 			.AddServiceDiscovery()
 			.ConfigureHttpClientDefaults(static client =>
 			{
 				_ = client.AddServiceDiscovery();
+			})
+			.AddSingleton<IDiagnosticsCollector>(sp =>
+			{
+				var logFactory = sp.GetRequiredService<ILoggerFactory>();
+				var githubActionsService = sp.GetRequiredService<ICoreService>();
+				var globalArgs = sp.GetRequiredService<GlobalCliArgs>();
+				if (globalArgs.IsHelpOrVersion)
+					return new DiagnosticsCollector([]);
+				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})
 			.AddSingleton(sp =>
 			{
@@ -60,11 +74,15 @@ public static class DocumentationTooling
 				var endpoints = sp.GetRequiredService<DocumentationEndpoints>();
 				var configurationFileProvider = sp.GetRequiredService<ConfigurationFileProvider>();
 				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
+				var products = sp.GetRequiredService<ProductsConfiguration>();
+				var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
 				return new ConfigurationContext
 				{
 					ConfigurationFileProvider = configurationFileProvider,
 					VersionsConfiguration = versionsConfiguration,
-					Endpoints = endpoints
+					Endpoints = endpoints,
+					ProductsConfiguration = products,
+					LegacyUrlMappings = legacyUrlMappings
 				};
 			});
 
@@ -89,8 +107,6 @@ public static class DocumentationTooling
 		}
 		return null;
 	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	private static Uri ResolveServiceEndpoint(ServiceEndpointResolver resolver, Func<string> fallback)

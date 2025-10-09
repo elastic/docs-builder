@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
+    <PackageReference Include="Proc" />
     <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>

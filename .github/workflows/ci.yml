@@ -37,7 +37,38 @@ jobs:
   
   build-api-lambda:
     uses: ./.github/workflows/build-api-lambda.yml
+    
   
+  synthetics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        
+      - name: Bootstrap Action Workspace
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+          
+      - name: Install dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+        
+      - name: Run assembler
+        run: |
+          mkdir ../assembler-workspace
+          cd ../assembler-workspace
+          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler config init --local 
+          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler clone -c local --skip-private-repositories
+          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler build -c local --skip-private-repositories
+          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler serve &
+        
+      - name: Wait for docs
+        working-directory: src/Elastic.Documentation.Site
+        run: npx wait-on http-get://localhost:4000/docs
+          
+      - name: Run synthetics
+        working-directory: src/Elastic.Documentation.Site
+        run: npm run synthetics:test
+
   npm:
     runs-on: ubuntu-latest
     defaults: 
@@ -87,6 +118,12 @@ jobs:
          - windows-latest
     steps:          
       - uses: actions/checkout@v5
+      - name: 'Windows only, set TEMP to the same drive'
+        if: ${{ matrix.os == 'windows-latest' }}
+        #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
+        run: |
+          mkdir "D:\\Temp"
+          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
 
       - name: Bootstrap Action Workspace
         id: bootstrap

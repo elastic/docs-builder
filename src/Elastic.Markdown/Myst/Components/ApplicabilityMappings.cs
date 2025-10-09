@@ -32,6 +32,7 @@ public static class ApplicabilityMappings
 	// EDOT Products
 	public static readonly ApplicabilityDefinition EdotAndroid = new("EDOT Android", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android", VersioningSystemId.EdotAndroid);
 	public static readonly ApplicabilityDefinition EdotCfAws = new("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws);
+	public static readonly ApplicabilityDefinition EdotCfAzure = new("EDOT CF Azure", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for Azure", VersioningSystemId.EdotCfAzure);
 	public static readonly ApplicabilityDefinition EdotCollector = new("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector);
 	public static readonly ApplicabilityDefinition EdotDotnet = new("EDOT .NET", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET", VersioningSystemId.EdotDotnet);
 	public static readonly ApplicabilityDefinition EdotIos = new("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos);
@@ -50,8 +51,9 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition ApmAgentPhp = new("APM Agent PHP", "Application&nbsp;Performance&nbsp;Monitoring Agent for PHP", VersioningSystemId.ApmAgentPhp);
 	public static readonly ApplicabilityDefinition ApmAgentPython = new("APM Agent Python", "Application&nbsp;Performance&nbsp;Monitoring Agent for Python", VersioningSystemId.ApmAgentPython);
 	public static readonly ApplicabilityDefinition ApmAgentRuby = new("APM Agent Ruby", "Application&nbsp;Performance&nbsp;Monitoring Agent for Ruby", VersioningSystemId.ApmAgentRuby);
-	public static readonly ApplicabilityDefinition ApmAgentRum = new("APM Agent RUM", "Application&nbsp;Performance&nbsp;Monitoring Agent for Real&nbsp;User&nbsp;Monitoring", VersioningSystemId.ApmAgentRum);
+	public static readonly ApplicabilityDefinition ApmAgentRumJs = new("APM Agent RUM", "Application&nbsp;Performance&nbsp;Monitoring Agent for Real&nbsp;User&nbsp;Monitoring", VersioningSystemId.ApmAgentRumJs);
 
 	// Generic product
 	public static readonly ApplicabilityDefinition Product = new("", "", VersioningSystemId.All);
+
 }
