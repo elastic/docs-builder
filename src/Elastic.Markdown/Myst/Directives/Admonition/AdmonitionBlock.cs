@@ -53,6 +53,10 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 		else if (!string.IsNullOrEmpty(Arguments))
 			Title += $" {Arguments}";
 		Title = Title.ReplaceSubstitutions(context);
+
+		// Auto-generate CrossReferenceName for dropdowns without explicit name, same as headings
+		if (string.IsNullOrEmpty(CrossReferenceName) && (Admonition == "dropdown" || Classes == "dropdown"))
+			CrossReferenceName = Title.Slugify();
 	}
 
 	private ApplicableTo? ParseApplicableTo(string yaml)
