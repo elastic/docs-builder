@@ -21,7 +21,9 @@ import DOMPurify from 'dompurify'
 import hljs from 'highlight.js/lib/core'
 import { marked } from 'marked'
 import * as React from 'react'
-import { $$ } from 'select-dom'
+import {$, $$} from 'select-dom'
+import {initCopyButton} from "../../../copybutton";
+import {useEffect} from "react";
 
 interface ChatMessageProps {
     message: ChatMessageType
@@ -160,8 +162,36 @@ export const ChatMessage = ({
     const sanitized = DOMPurify.sanitize(html as string)
     const tempDiv = document.createElement('div')
     tempDiv.innerHTML = sanitized
-    $$('pre code', tempDiv).forEach(hljs.highlightElement)
+    
+    // Add highlight wrappers and highlight code blocks
+    $$('pre', tempDiv).forEach((preEl => {
+        const wrapper = document.createElement('div')
+        wrapper.className = 'highlight';
+        preEl.parentNode?.insertBefore(wrapper, preEl);
+        wrapper.appendChild(preEl);
+        const codeEl = $('code', preEl)
+        if (codeEl) {
+            hljs.highlightElement(codeEl);
+        }
+    }))
+    
     const parsed = tempDiv.innerHTML
+    const ref = React.useRef<HTMLDivElement>(null);
+    
+    // Initialize copy buttons after DOM is updated
+    useEffect(() => {
+        if (isComplete && ref.current) {
+            const timer = setTimeout(() => {
+                try {
+                    // Use the modified initCopyButton with scoped element
+                    initCopyButton('.highlight pre', ref.current!, 'ai-message-codecell-');
+                } catch (error) {
+                    console.error('Failed to initialize copy buttons:', error);
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [parsed, isComplete]);
 
     return (
         <EuiFlexGroup
@@ -213,14 +243,12 @@ export const ChatMessage = ({
                         //     {content}
                         // </EuiMarkdownFormat>
                         <div
+                            ref={ref}
                             className="markdown-content"
                             css={css`
                                 font-size: 14px;
                                 & > *:first-child {
                                     margin-top: 0;
-                                }
-                                pre > code {
-                                    margin-top: calc(var(--spacing) * 4);
                                 }
                             `}
                             dangerouslySetInnerHTML={{ __html: parsed }}
