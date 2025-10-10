@@ -235,6 +235,12 @@ body {
 	z-index: -1;
 }
 
+/* Position the parent link/div containers */
+#pages-nav li > a,
+#pages-nav li > div {
+	position: relative;
+}
+
 /* For parent items with children, apply hover only to the direct link/div area */
 #pages-nav li:has(> a:hover):has(> ul) > a::before,
 #pages-nav li:has(> div > a:hover):has(> ul) > div::before {
