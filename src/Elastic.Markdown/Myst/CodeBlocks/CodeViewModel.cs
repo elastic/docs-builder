@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using Elastic.Markdown.Helpers;
 using Microsoft.AspNetCore.Html;
 
@@ -33,11 +34,11 @@ public class CodeViewModel
 	public HtmlString RenderLineWithCallouts(string content, int lineNumber)
 	{
 		if (EnhancedCodeBlock?.CallOuts == null)
-			return new HtmlString(content);
+			return new HtmlString(WebUtility.HtmlEncode(content));
 
 		var callouts = EnhancedCodeBlock.CallOuts.Where(c => c.Line == lineNumber);
 		if (!callouts.Any())
-			return new HtmlString(content);
+			return new HtmlString(WebUtility.HtmlEncode(content));
 
 		var line = content;
 		var html = new System.Text.StringBuilder();
@@ -50,7 +51,7 @@ public class CodeViewModel
 		}
 		line = line.TrimEnd();
 
-		_ = html.Append(line);
+		_ = html.Append(WebUtility.HtmlEncode(line));
 
 		// Add callout HTML after the line
 		foreach (var callout in callouts)

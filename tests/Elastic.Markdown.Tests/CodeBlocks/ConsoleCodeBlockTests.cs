@@ -346,3 +346,78 @@ GET my-index-000001/_mapping <3>
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+public class ConsoleWithHtmlCharsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
+"""
+```console
+POST /auth/login
+{
+  "username": "<username>",
+  "password": "<password>",
+  "token": "<api_token>"
+}
+```
+"""
+)
+{
+	[Fact]
+	public void CreatesApiSegmentWithHtmlChars()
+	{
+		Block!.ApiSegments.Should().HaveCount(1);
+		var segment = Block.ApiSegments[0];
+		segment.Header.Should().Be("POST /auth/login");
+		segment.ContentLines.Should().Contain(line => line.Contains("<username>"));
+		segment.ContentLines.Should().Contain(line => line.Contains("<password>"));
+		segment.ContentLines.Should().Contain(line => line.Contains("<api_token>"));
+	}
+
+	[Fact]
+	public void EscapesHtmlCharsInRenderedOutput()
+	{
+		var viewModel = new CodeViewModel
+		{
+			ApiSegments = Block!.ApiSegments,
+			Language = Block.Language,
+			Caption = null,
+			CrossReferenceName = null,
+			RawIncludedFileContents = null,
+			EnhancedCodeBlock = Block
+		};
+
+		var contentHtml = viewModel.RenderContentLinesWithCallouts(Block.ApiSegments[0].ContentLinesWithNumbers);
+
+		// HTML characters should be escaped in the output
+		contentHtml.Value.Should().Contain("&lt;username&gt;");
+		contentHtml.Value.Should().Contain("&lt;password&gt;");
+		contentHtml.Value.Should().Contain("&lt;api_token&gt;");
+
+		// Original unescaped versions should NOT be present
+		contentHtml.Value.Should().NotContain("\"username\": \"<username>\"");
+		contentHtml.Value.Should().NotContain("\"password\": \"<password>\"");
+		contentHtml.Value.Should().NotContain("\"token\": \"<api_token>\"");
+	}
+
+	[Fact]
+	public void EscapesHtmlCharsInHeader()
+	{
+		var viewModel = new CodeViewModel
+		{
+			ApiSegments = Block!.ApiSegments,
+			Language = Block.Language,
+			Caption = null,
+			CrossReferenceName = null,
+			RawIncludedFileContents = null,
+			EnhancedCodeBlock = Block
+		};
+
+		// Test header with HTML chars
+		var headerWithHtml = "GET /api/<resource>";
+		var headerHtml = viewModel.RenderLineWithCallouts(headerWithHtml, 1);
+
+		headerHtml.Value.Should().Contain("&lt;resource&gt;");
+		headerHtml.Value.Should().NotContain("<resource>");
+	}
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+

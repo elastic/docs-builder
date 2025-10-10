@@ -135,12 +135,9 @@ render(input2);
 
 ::::
 
+#### Automatic callouts
 
-
-
-#### Magic Callouts
-
-If a code block contains code comments in the form of `//` or `#`, callouts will be magically created 🪄.
+If a code block contains code comments in the form of `//` or `#`, callouts are automatically created.
 
 
 ::::{tab-set}
@@ -231,9 +228,9 @@ bazbazbaz: 3 <3>
 
 ::::
 
-#### Disable callouts
+#### Turn off callouts
 
-You can disable callouts by adding a code block argument `callouts=false`.
+You can turn off callouts by adding a code block argument `callouts=false`.
 
 ::::{tab-set}
 
@@ -276,14 +273,27 @@ In a console code block, the first line is highlighted as a dev console string a
 :::{tab-item} Output
 
 ```console
-GET /mydocuments/_search
+POST _reindex
 {
-    "from": 1,
+  "source": {
+    "remote": {
+      "host": "<OTHER_HOST_URL>",
+      "username": "user",
+      "password": "pass"
+    },
+    "index": "my-index-000001",
     "query": {
-        "match_all" {}
+      "match": {
+        "test": "data"
+      }
     }
+  },
+  "dest": {
+    "index": "my-new-index-000001"
+  }
 }
 ```
+
 
 :::
 
@@ -291,12 +301,24 @@ GET /mydocuments/_search
 
 ````markdown
 ```console
-GET /mydocuments/_search
+POST _reindex
 {
-    "from": 1,
+  "source": {
+    "remote": {
+      "host": "<OTHER_HOST_URL>",
+      "username": "user",
+      "password": "pass"
+    },
+    "index": "my-index-000001",
     "query": {
-        "match_all" {}
+      "match": {
+        "test": "data"
+      }
     }
+  },
+  "dest": {
+    "index": "my-new-index-000001"
+  }
 }
 ```
 ````
@@ -402,7 +424,7 @@ This `code` is inline.
 
 ::::
 
-## Supported Languages
+## Supported languages
 
-Please refer to [hljs.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Site/Assets/hljs.ts)
+Refer to [hljs.ts](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation.Site/Assets/hljs.ts)
 for a complete list of supported languages.

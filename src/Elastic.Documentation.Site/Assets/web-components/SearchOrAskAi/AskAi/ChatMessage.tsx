@@ -1,70 +1,69 @@
+import { initCopyButton } from '../../../copybutton'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { LlmGatewayMessage } from './useLlmGateway'
 import {
+    EuiAvatar,
+    EuiButtonIcon,
+    EuiCallOut,
+    EuiCopy,
     EuiFlexGroup,
     EuiFlexItem,
+    EuiIcon,
+    EuiLoadingElastic,
     EuiLoadingSpinner,
-    EuiMarkdownFormat,
     EuiPanel,
     EuiSpacer,
     EuiText,
-    EuiButtonIcon,
     EuiToolTip,
     useEuiTheme,
-    EuiCallOut,
-    EuiIcon,
-    EuiAvatar,
-    EuiCopy,
-    EuiLoadingElastic,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import DOMPurify from 'dompurify'
+import hljs from 'highlight.js/lib/core'
+import { Marked, RendererObject, Tokens } from 'marked'
 import * as React from 'react'
+import { useEffect, useMemo } from 'react'
+
+// Create the marked instance once globally (renderer never changes)
+const createMarkedInstance = () => {
+    const renderer: RendererObject = {
+        code({ text, lang }: Tokens.Code): string {
+            const highlighted = lang
+                ? hljs.highlight(text, { language: lang }).value
+                : hljs.highlightAuto(text).value
+            return `<div class="highlight">
+                <pre>
+                    <code class="language-${lang}">${highlighted}</code>
+                </pre>
+            </div>`
+        },
+    }
+    return new Marked({ renderer })
+}
+
+const markedInstance = createMarkedInstance()
 
 interface ChatMessageProps {
     message: ChatMessageType
     llmMessages?: LlmGatewayMessage[]
+    streamingContent?: string
     error?: Error | null
     onRetry?: () => void
 }
 
-// Helper function to accumulate AI message content
 const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
     return messages
-        .filter((m) => m.type === 'ai_message_chunk') // Only accumulate chunks, not the final message
+        .filter((m) => m.type === 'ai_message_chunk')
         .map((m) => m.data.content)
         .join('')
 }
 
-// Derived state helper for readability
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
     isComplete: message.status === 'complete',
     hasError: message.status === 'error',
 })
-
-// Extracted styles for markdown render
-const markdownFormatStyles = css`
-    .euiScreenReaderOnly {
-        display: none;
-    }
-    font-size: 14px;
-    b,
-    strong {
-        font-weight: 600;
-    }
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        b,
-        strong {
-            font-weight: inherit;
-        }
-    }
-`
 
 // Action bar for complete AI messages
 const ActionBar = ({
@@ -129,6 +128,7 @@ const ActionBar = ({
 export const ChatMessage = ({
     message,
     llmMessages = [],
+    streamingContent,
     error,
     onRetry,
 }: ChatMessageProps) => {
@@ -168,13 +168,37 @@ export const ChatMessage = ({
         )
     }
 
-    // AI message
     const content =
-        llmMessages.length > 0
+        streamingContent ||
+        (llmMessages.length > 0
             ? getAccumulatedContent(llmMessages)
-            : message.content
+            : message.content)
 
     const hasError = message.status === 'error' || !!error
+
+    const parsed = useMemo(() => {
+        const html = markedInstance.parse(content) as string
+        return DOMPurify.sanitize(html)
+    }, [content])
+
+    const ref = React.useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (isComplete && ref.current) {
+            const timer = setTimeout(() => {
+                try {
+                    initCopyButton(
+                        '.highlight pre',
+                        ref.current!,
+                        'ai-message-codecell-'
+                    )
+                } catch (error) {
+                    console.error('Failed to initialize copy buttons:', error)
+                }
+            }, 100)
+            return () => clearTimeout(timer)
+        }
+    }, [isComplete])
 
     return (
         <EuiFlexGroup
@@ -222,9 +246,20 @@ export const ChatMessage = ({
                     `}
                 >
                     {content && (
-                        <EuiMarkdownFormat css={markdownFormatStyles}>
-                            {content}
-                        </EuiMarkdownFormat>
+                        // <EuiMarkdownFormat css={markdownFormatStyles}>
+                        //     {content}
+                        // </EuiMarkdownFormat>
+                        <div
+                            ref={ref}
+                            className="markdown-content"
+                            css={css`
+                                font-size: 14px;
+                                & > *:first-child {
+                                    margin-top: 0;
+                                }
+                            `}
+                            dangerouslySetInnerHTML={{ __html: parsed }}
+                        />
                     )}
 
                     {isLoading && (
