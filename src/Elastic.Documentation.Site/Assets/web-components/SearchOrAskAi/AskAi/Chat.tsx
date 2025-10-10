@@ -120,12 +120,12 @@ export const Chat = () => {
             gutterSize="none"
             css={containerStyles}
         >
-            {/* Header - only show when there are messages */}
+            <EuiSpacer size="m" />
+            
             {messages.length > 0 && (
                 <NewConversationHeader onClick={clearChat} />
             )}
 
-            {/* Messages */}
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
                 <div ref={scrollRef} css={dynamicScrollableStyles}>
                     {messages.length === 0 ? (

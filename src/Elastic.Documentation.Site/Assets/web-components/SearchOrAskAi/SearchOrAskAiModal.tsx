@@ -24,13 +24,14 @@ export const SearchOrAskAiModal = React.memo(() => {
                 id: 'search',
                 name: 'Search',
                 prepend: <EuiIcon type="search" />,
-                content: <></>,
+                content: <Search />
+                ,
             },
             {
                 id: 'askAi',
                 name: 'Ask AI',
                 prepend: <EuiIcon type="sparkles" />,
-                content: <></>,
+                content: <Chat />,
             },
         ],
         []
@@ -45,16 +46,6 @@ export const SearchOrAskAiModal = React.memo(() => {
                 selectedTab={selectedTab}
                 onTabClick={(tab) => setModalMode(tab.id as 'search' | 'askAi')}
             />
-
-            {modalMode === 'search' ? (
-                <Search />
-            ) : (
-                <>
-                    <EuiSpacer size="m" />
-                    <Chat />
-                </>
-            )}
-
             <ModalFooter />
         </>
     )
