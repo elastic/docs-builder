@@ -17,6 +17,29 @@ import { css } from '@emotion/react'
 import * as React from 'react'
 import { useCallback, useEffect, useRef } from 'react'
 
+const containerStyles = css`
+    height: 100%;
+    max-height: 70vh;
+    overflow: hidden;
+`
+
+const scrollContainerStyles = css`
+    position: relative;
+    overflow: hidden;
+`
+
+const scrollableStyles = css`
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding: 1rem;
+`
+
+const messagesStyles = css`
+    max-width: 800px;
+    margin: 0 auto;
+`
+
 // Small helper for scroll behavior
 const scrollToBottom = (container: HTMLDivElement | null) => {
     if (!container) return
@@ -44,28 +67,9 @@ export const Chat = () => {
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
 
-    const containerStyles = css`
-        height: 100%;
-        max-height: 70vh;
-        overflow: hidden;
-    `
-
-    const scrollContainerStyles = css`
-        position: relative;
-        overflow: hidden;
-    `
-
-    const scrollableStyles = css`
-        height: 100%;
-        overflow-y: auto;
-        scrollbar-gutter: stable;
+    const dynamicScrollableStyles = css`
+        ${scrollableStyles}
         ${useEuiOverflowScroll('y', true)}
-        padding: 1rem;
-    `
-
-    const messagesStyles = css`
-        max-width: 800px;
-        margin: 0 auto;
     `
 
     const handleSubmit = useCallback(
@@ -116,14 +120,14 @@ export const Chat = () => {
             gutterSize="none"
             css={containerStyles}
         >
-            {/* Header - only show when there are messages */}
+            <EuiSpacer size="m" />
+
             {messages.length > 0 && (
                 <NewConversationHeader onClick={clearChat} />
             )}
 
-            {/* Messages */}
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
-                <div ref={scrollRef} css={scrollableStyles}>
+                <div ref={scrollRef} css={dynamicScrollableStyles}>
                     {messages.length === 0 ? (
                         <EuiEmptyPrompt
                             iconType="logoElastic"

@@ -4,6 +4,13 @@ import { EuiButton, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 
+const buttonStyles = css`
+    border: none;
+    & > span {
+        justify-content: flex-start;
+    }
+`
+
 export interface AskAiSuggestion {
     question: string
 }
@@ -16,15 +23,14 @@ export const AskAiSuggestions = (props: Props) => {
     const { submitQuestion } = useChatActions()
     const { setModalMode } = useModalActions()
     const { euiTheme } = useEuiTheme()
-    const buttonCss = css`
-        border: none;
-        & > span {
-            justify-content: flex-start;
-        }
+
+    const dynamicButtonStyles = css`
+        ${buttonStyles}
         svg {
             color: ${euiTheme.colors.textSubdued};
         }
     `
+
     return (
         <ul>
             {Array.from(props.suggestions).map((suggestion) => (
@@ -34,7 +40,7 @@ export const AskAiSuggestions = (props: Props) => {
                         color="text"
                         fullWidth
                         size="s"
-                        css={buttonCss}
+                        css={dynamicButtonStyles}
                         onClick={() => {
                             submitQuestion(suggestion.question)
                             setModalMode('askAi')
