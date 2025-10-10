@@ -43,43 +43,10 @@ See [](./applies.md)
 ## Products
 
 The products frontmatter is a list of products that the page relates to.
-This is used for the "Products" filter in the Search UI.
 
-The products frontmatter is a list of objects, each object has an `id` field.
+:::{include} /_snippets/products-list.md
+:::
 
-| Product ID                                  | Product Name                                  |
-|---------------------------------------------|-----------------------------------------------|
-| `apm`                                       | APM                                           |
-| `apm-agent`                                 | APM Agent                                     |
-| `auditbeat`                                 | Auditbeat                                     |
-| `beats`                                     | Beats                                         |
-| `cloud-control-ecctl`                       | Elastic Cloud Control ECCTL                   |
-| `cloud-enterprise`                          | Elastic Cloud Enterprise                      |
-| `cloud-hosted`                              | Elastic Cloud Hosted                          |
-| `cloud-kubernetes`                          | Elastic Cloud Kubernetes                      |
-| `cloud-serverless`                          | Elastic Cloud Serverless                      |
-| `cloud-terraform`                           | Elastic Cloud Terraform                       |
-| `ecs`                                       | Elastic Common Schema (ECS)                   |
-| `ecs-logging`                               | ECS Logging                                   |
-| `edot-cf`                                   | EDOT Cloud Forwarder                          |
-| `edot-sdk`                                  | Elastic Distribution of OpenTelemetry SDK     |
-| `edot-collector`                            | Elastic Distribution of OpenTelemetry Collector |
-| `elastic-agent`                             | Elastic Agent                                 |
-| `elastic-serverless-forwarder`              | Elastic Serverless Forwarder                  |
-| `elastic-stack`                             | Elastic Stack                                 |
-| `elasticsearch`                             | Elasticsearch                                 |
-| `elasticsearch-client`                      | Elasticsearch Client                          |
-| `filebeat`                                  | Filebeat                                      |
-| `fleet`                                     | Fleet                                         |
-| `heartbeat`                                 | Heartbeat                                     |
-| `integrations`                              | Integrations                                  |
-| `kibana`                                    | Kibana                                        |
-| `logstash`                                  | Logstash                                      |
-| `machine-learning`                          | Machine Learning                              |
-| `metricbeat`                                | Metricbeat                                    |
-| `observability`                             | Elastic Observability                         |
-| `packetbeat`                                | Packetbeat                                    |
-| `painless`                                  | Painless                                      |
-| `search-ui`                                 | Search UI                                     |
-| `security`                                  | Elastic Security                              |
-| `winlogbeat`                                | Winlogbeat                                    |
+`products` can also be defined in the [`docset.yml` file](/configure/content-set/navigation.md#products).
+If you define `products` in a page's Markdown file and the `docset.yml` file also includes `products`, docs-builder will combine the two lists.
+You can _not_ override doc set level `products` at the page level.
