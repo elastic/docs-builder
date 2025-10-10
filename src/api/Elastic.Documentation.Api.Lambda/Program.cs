@@ -40,11 +40,8 @@ builder.AddElasticOpenTelemetry(edotBuilder =>
 builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("ENVIRONMENT"));
 builder.WebHost.UseKestrelHttpsConfiguration();
 
-
-
-
 var app = builder.Build();
-
+Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 var v1 = app.MapGroup("/docs/_api/v1");
 v1.MapElasticDocsApiEndpoints();
 
