@@ -121,7 +121,7 @@ export const Chat = () => {
             css={containerStyles}
         >
             <EuiSpacer size="m" />
-            
+
             {messages.length > 0 && (
                 <NewConversationHeader onClick={clearChat} />
             )}

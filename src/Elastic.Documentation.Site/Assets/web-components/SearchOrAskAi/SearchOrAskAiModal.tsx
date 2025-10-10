@@ -23,8 +23,7 @@ export const SearchOrAskAiModal = React.memo(() => {
                 id: 'search',
                 name: 'Search',
                 prepend: <EuiIcon type="search" />,
-                content: <Search />
-                ,
+                content: <Search />,
             },
             {
                 id: 'askAi',
