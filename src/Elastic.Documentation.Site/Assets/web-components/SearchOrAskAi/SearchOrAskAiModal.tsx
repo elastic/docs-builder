@@ -2,7 +2,6 @@ import { Chat } from './AskAi/Chat'
 import { Search } from './Search/Search'
 import { useModalActions, useModalMode } from './modal.store'
 import {
-    EuiSpacer,
     EuiBetaBadge,
     EuiText,
     EuiLink,
