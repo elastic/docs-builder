@@ -20,10 +20,26 @@ import {
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js/lib/core'
-import { marked } from 'marked'
+import {Marked, RendererObject, Tokens} from 'marked'
 import * as React from 'react'
-import { useEffect } from 'react'
-import { $, $$ } from 'select-dom'
+import { useEffect, useMemo } from 'react'
+
+// Create the marked instance once globally (renderer never changes)
+const createMarkedInstance = () => {
+    const renderer: RendererObject = {
+        code({ text, lang }: Tokens.Code): string {
+            const highlighted = lang ? hljs.highlight(text, { language: lang }).value : hljs.highlightAuto(text).value;
+            return `<div class="highlight">
+                <pre>
+                    <code class="language-${lang}">${highlighted}</code>
+                </pre>
+            </div>`;
+        }
+    }
+    return new Marked({ renderer })
+}
+
+const markedInstance = createMarkedInstance() // Created once globally
 
 interface ChatMessageProps {
     message: ChatMessageType
@@ -157,25 +173,12 @@ export const ChatMessage = ({
             : message.content
 
     const hasError = message.status === 'error' || !!error
-
-    const html = marked.parse(content)
-    const sanitized = DOMPurify.sanitize(html as string)
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = sanitized
-
-    // Add highlight wrappers and highlight code blocks
-    $$('pre', tempDiv).forEach((preEl) => {
-        const wrapper = document.createElement('div')
-        wrapper.className = 'highlight'
-        preEl.parentNode?.insertBefore(wrapper, preEl)
-        wrapper.appendChild(preEl)
-        const codeEl = $('code', preEl)
-        if (codeEl) {
-            hljs.highlightElement(codeEl)
-        }
-    })
-
-    const parsed = tempDiv.innerHTML
+    
+    // Memoize the parsed HTML to avoid re-parsing on every render
+    const parsed = useMemo(() => {
+        const html = markedInstance.parse(content) as string
+        return DOMPurify.sanitize(html)
+    }, [content])
     const ref = React.useRef<HTMLDivElement>(null)
 
     // Initialize copy buttons after DOM is updated
@@ -195,7 +198,7 @@ export const ChatMessage = ({
             }, 100)
             return () => clearTimeout(timer)
         }
-    }, [parsed, isComplete])
+    }, [isComplete]) // Only depend on isComplete, not parsed
 
     return (
         <EuiFlexGroup
