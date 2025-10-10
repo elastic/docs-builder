@@ -47,12 +47,6 @@ const parseReferences = (jsonString: string): Reference[] => {
         }
         return []
     } catch (e) {
-        console.error(
-            'Failed to parse references JSON:',
-            e,
-            'Input:',
-            jsonString
-        )
         return []
     }
 }
@@ -67,7 +61,7 @@ export const References = ({ referencesJson }: ReferencesProps) => {
 
     return (
         <>
-            <EuiSpacer size="m" />
+            <EuiSpacer size="l" />
             <EuiPanel
                 hasShadow={false}
                 paddingSize="m"

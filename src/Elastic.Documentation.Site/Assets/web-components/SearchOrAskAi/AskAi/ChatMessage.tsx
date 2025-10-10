@@ -83,6 +83,59 @@ const getMessageState = (message: ChatMessageType) => ({
     hasError: message.status === 'error',
 })
 
+// Helper functions for computing AI status
+const getToolCallSearchQuery = (
+    messages: LlmGatewayMessage[]
+): string | null => {
+    const toolCallMessage = messages.find((m) => m.type === 'tool_call')
+    if (!toolCallMessage) return null
+
+    try {
+        const toolCalls = toolCallMessage.data?.toolCalls
+        if (toolCalls && toolCalls.length > 0) {
+            const firstToolCall = toolCalls[0]
+            return firstToolCall.args?.searchQuery || null
+        }
+    } catch (e) {
+        console.error('Error extracting search query from tool call:', e)
+    }
+
+    return null
+}
+
+const hasContentStarted = (messages: LlmGatewayMessage[]): boolean => {
+    return messages.some((m) => m.type === 'ai_message_chunk' && m.data.content)
+}
+
+const hasReachedReferences = (messages: LlmGatewayMessage[]): boolean => {
+    const accumulatedContent = messages
+        .filter((m) => m.type === 'ai_message_chunk')
+        .map((m) => m.data.content)
+        .join('')
+    return accumulatedContent.includes('--- references ---')
+}
+
+const computeAiStatus = (
+    llmMessages: LlmGatewayMessage[],
+    isComplete: boolean
+): string | null => {
+    if (isComplete) return null
+
+    const searchQuery = getToolCallSearchQuery(llmMessages)
+    const contentStarted = hasContentStarted(llmMessages)
+    const reachedReferences = hasReachedReferences(llmMessages)
+
+    if (reachedReferences) {
+        return 'Gathering resources'
+    } else if (contentStarted) {
+        return 'Generating'
+    } else if (searchQuery) {
+        return `Searching for "${searchQuery}"`
+    }
+
+    return 'Thinking'
+}
+
 // Action bar for complete AI messages
 const ActionBar = ({
     content,
@@ -187,15 +240,29 @@ export const ChatMessage = ({
 
     const hasError = message.status === 'error' || !!error
 
-    const { mainContent, referencesJson } = useMemo(
-        () => splitContentAndReferences(content),
-        [content]
-    )
+    // Only split content and references when complete for better performance
+    const { mainContent, referencesJson } = useMemo(() => {
+        if (isComplete) {
+            return splitContentAndReferences(content)
+        }
+        // During streaming, strip out unparsed references but don't parse them yet
+        const delimiter = '--- references ---'
+        const delimiterIndex = content.indexOf(delimiter)
+        if (delimiterIndex !== -1) {
+            return { mainContent: content.substring(0, delimiterIndex).trim(), referencesJson: null }
+        }
+        return { mainContent: content, referencesJson: null }
+    }, [content, isComplete])
 
     const parsed = useMemo(() => {
         const html = markedInstance.parse(mainContent) as string
         return DOMPurify.sanitize(html)
     }, [mainContent])
+
+    const aiStatus = useMemo(
+        () => computeAiStatus(llmMessages, isComplete),
+        [llmMessages, isComplete]
+    )
 
     const ref = React.useRef<HTMLDivElement>(null)
 
@@ -279,15 +346,12 @@ export const ChatMessage = ({
                     )}
 
                     {content && isLoading && <EuiSpacer size="m" />}
-                    <GeneratingStatus
-                        llmMessages={llmMessages}
-                        isComplete={isComplete}
-                    />
+                    <GeneratingStatus status={aiStatus} />
 
                     {isComplete && content && (
                         <>
                             <EuiSpacer size="m" />
-                            <ActionBar content={content} onRetry={onRetry} />
+                            <ActionBar content={mainContent} onRetry={onRetry} />
                         </>
                     )}
 

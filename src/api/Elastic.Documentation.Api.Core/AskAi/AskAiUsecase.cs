@@ -34,6 +34,8 @@ public record AskAiRequest(string Message, string? ThreadId)
 
 		- Do not mention that you are a language model or AI.
 		- Do not provide answers based on your general knowledge.
+		- Do not add a heading for the references section.
+		- Do not include any preamble or explanation before the sources section.
 
 		## Formatting Guidelines:
 		- Use Markdown for formatting your response.
@@ -41,12 +43,15 @@ public record AskAiRequest(string Message, string? ThreadId)
 		- Use sentence case for headings.
 
 		## Sources and References Extraction *IMPORTANT*:
-		- Do *NOT* add a heading for the sources section.
+
 		- When you provide an answer, *ALWAYS* include a references at the end of your response.
 		- List all relevant document titles or sections that you referenced to formulate your answer.
+		- Also add the links of the documents you used in your answer.
 		- Only use the documents provided to you; do not reference any external sources.
-		- If no relevant documents were used, state "No sources available."
+		- If no relevant documents were used return an empty list.
+		- The JSON is hidden from the user so exclude any preamble or explanation about it.
 		- Use this schema:
+		  ```
 		  {
 			  "$schema": "http://json-schema.org/draft-07/schema#",
 			  "title": "List of Documentation Resources",
@@ -66,6 +71,7 @@ public record AskAiRequest(string Message, string? ThreadId)
 			      },
 			      "description": {
 			        "description": "A brief description of the resource.",
+			        "maxLength": 150,
 			        "type": "string"
 			      }
 			    },
@@ -76,6 +82,7 @@ public record AskAiRequest(string Message, string? ThreadId)
 			    ]
 			  }
 			}
+			```
 		  - Ensure that the URLs you provide are directly relevant to the user's question and the content of the documents.
 		  - Add a delimiter "--- references ---" before the sources section
 
