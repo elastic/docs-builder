@@ -7,6 +7,10 @@ import { EuiFieldSearch, EuiSpacer, EuiButton, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 
+const askAiButtonStyles = css`
+    font-weight: bold;
+`
+
 export const Search = () => {
     const searchTerm = useSearchTerm()
     const { setSearchTerm } = useSearchActions()
@@ -53,15 +57,10 @@ export const Search = () => {
 }
 
 const AskAiButton = ({ term, onAsk }: { term: string; onAsk: () => void }) => {
-    const { euiTheme } = useEuiTheme()
     return (
         <EuiButton iconType="newChat" fullWidth onClick={onAsk}>
             Ask AI about{' '}
-            <span
-                css={css`
-                    font-weight: ${euiTheme.font.weight.bold};
-                `}
-            >
+            <span css={askAiButtonStyles}>
                 "{term}"
             </span>
         </EuiButton>

@@ -14,7 +14,7 @@ import { css } from '@emotion/react'
 import * as React from 'react'
 import { useMemo } from 'react'
 
-export const SearchOrAskAiModal = () => {
+export const SearchOrAskAiModal = React.memo(() => {
     const modalMode = useModalMode()
     const { setModalMode } = useModalActions()
 
@@ -24,18 +24,13 @@ export const SearchOrAskAiModal = () => {
                 id: 'search',
                 name: 'Search',
                 prepend: <EuiIcon type="search" />,
-                content: <Search />,
+                content: <></>,
             },
             {
                 id: 'askAi',
                 name: 'Ask AI',
                 prepend: <EuiIcon type="sparkles" />,
-                content: (
-                    <>
-                        <EuiSpacer size="m" />
-                        <Chat />
-                    </>
-                ),
+                content: <></>,
             },
         ],
         []
@@ -50,10 +45,20 @@ export const SearchOrAskAiModal = () => {
                 selectedTab={selectedTab}
                 onTabClick={(tab) => setModalMode(tab.id as 'search' | 'askAi')}
             />
+            
+            {modalMode === 'search' ? (
+                <Search />
+            ) : (
+                <>
+                    <EuiSpacer size="m" />
+                    <Chat />
+                </>
+            )}
+            
             <ModalFooter />
         </>
     )
-}
+})
 
 const ModalFooter = () => {
     return (

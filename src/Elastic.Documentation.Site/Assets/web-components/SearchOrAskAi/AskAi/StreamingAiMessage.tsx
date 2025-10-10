@@ -27,7 +27,6 @@ export const StreamingAiMessage = ({
         onMessage: (llmMessage) => {
             if (llmMessage.type === 'ai_message_chunk') {
                 contentRef.current += llmMessage.data.content
-                updateAiMessage(message.id, contentRef.current, 'streaming')
             } else if (llmMessage.type === 'agent_end') {
                 updateAiMessage(message.id, contentRef.current, 'complete')
             }
@@ -41,8 +40,6 @@ export const StreamingAiMessage = ({
         },
     })
 
-    // Send question when this is the last message and status is streaming
-    // Use store-level tracking so it persists across remounts
     useEffect(() => {
         if (
             isLast &&
@@ -68,6 +65,7 @@ export const StreamingAiMessage = ({
         <ChatMessage
             message={message}
             llmMessages={isLast ? llmMessages : []}
+            streamingContent={isLast && message.status === 'streaming' ? contentRef.current : undefined}
         />
     )
 }

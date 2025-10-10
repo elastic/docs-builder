@@ -39,24 +39,23 @@ const createMarkedInstance = () => {
     return new Marked({ renderer })
 }
 
-const markedInstance = createMarkedInstance() // Created once globally
+const markedInstance = createMarkedInstance()
 
 interface ChatMessageProps {
     message: ChatMessageType
     llmMessages?: LlmGatewayMessage[]
+    streamingContent?: string
     error?: Error | null
     onRetry?: () => void
 }
 
-// Helper function to accumulate AI message content
 const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
     return messages
-        .filter((m) => m.type === 'ai_message_chunk') // Only accumulate chunks, not the final message
+        .filter((m) => m.type === 'ai_message_chunk')
         .map((m) => m.data.content)
         .join('')
 }
 
-// Derived state helper for readability
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
@@ -127,6 +126,7 @@ const ActionBar = ({
 export const ChatMessage = ({
     message,
     llmMessages = [],
+    streamingContent,
     error,
     onRetry,
 }: ChatMessageProps) => {
@@ -166,27 +166,22 @@ export const ChatMessage = ({
         )
     }
 
-    // AI message
-    const content =
-        llmMessages.length > 0
-            ? getAccumulatedContent(llmMessages)
-            : message.content
+    const content = streamingContent 
+        || (llmMessages.length > 0 ? getAccumulatedContent(llmMessages) : message.content)
 
     const hasError = message.status === 'error' || !!error
     
-    // Memoize the parsed HTML to avoid re-parsing on every render
     const parsed = useMemo(() => {
         const html = markedInstance.parse(content) as string
         return DOMPurify.sanitize(html)
     }, [content])
+    
     const ref = React.useRef<HTMLDivElement>(null)
 
-    // Initialize copy buttons after DOM is updated
     useEffect(() => {
         if (isComplete && ref.current) {
             const timer = setTimeout(() => {
                 try {
-                    // Use the modified initCopyButton with scoped element
                     initCopyButton(
                         '.highlight pre',
                         ref.current!,
@@ -198,7 +193,7 @@ export const ChatMessage = ({
             }, 100)
             return () => clearTimeout(timer)
         }
-    }, [isComplete]) // Only depend on isComplete, not parsed
+    }, [isComplete])
 
     return (
         <EuiFlexGroup
