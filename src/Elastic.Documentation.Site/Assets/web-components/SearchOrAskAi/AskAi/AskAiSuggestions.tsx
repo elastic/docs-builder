@@ -23,14 +23,14 @@ export const AskAiSuggestions = (props: Props) => {
     const { submitQuestion } = useChatActions()
     const { setModalMode } = useModalActions()
     const { euiTheme } = useEuiTheme()
-    
+
     const dynamicButtonStyles = css`
         ${buttonStyles}
         svg {
             color: ${euiTheme.colors.textSubdued};
         }
     `
-    
+
     return (
         <ul>
             {Array.from(props.suggestions).map((suggestion) => (

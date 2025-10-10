@@ -20,7 +20,7 @@ import {
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js/lib/core'
-import {Marked, RendererObject, Tokens} from 'marked'
+import { Marked, RendererObject, Tokens } from 'marked'
 import * as React from 'react'
 import { useEffect, useMemo } from 'react'
 
@@ -28,13 +28,15 @@ import { useEffect, useMemo } from 'react'
 const createMarkedInstance = () => {
     const renderer: RendererObject = {
         code({ text, lang }: Tokens.Code): string {
-            const highlighted = lang ? hljs.highlight(text, { language: lang }).value : hljs.highlightAuto(text).value;
+            const highlighted = lang
+                ? hljs.highlight(text, { language: lang }).value
+                : hljs.highlightAuto(text).value
             return `<div class="highlight">
                 <pre>
                     <code class="language-${lang}">${highlighted}</code>
                 </pre>
-            </div>`;
-        }
+            </div>`
+        },
     }
     return new Marked({ renderer })
 }
@@ -166,16 +168,19 @@ export const ChatMessage = ({
         )
     }
 
-    const content = streamingContent 
-        || (llmMessages.length > 0 ? getAccumulatedContent(llmMessages) : message.content)
+    const content =
+        streamingContent ||
+        (llmMessages.length > 0
+            ? getAccumulatedContent(llmMessages)
+            : message.content)
 
     const hasError = message.status === 'error' || !!error
-    
+
     const parsed = useMemo(() => {
         const html = markedInstance.parse(content) as string
         return DOMPurify.sanitize(html)
     }, [content])
-    
+
     const ref = React.useRef<HTMLDivElement>(null)
 
     useEffect(() => {

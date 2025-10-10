@@ -45,7 +45,7 @@ export const SearchOrAskAiModal = React.memo(() => {
                 selectedTab={selectedTab}
                 onTabClick={(tab) => setModalMode(tab.id as 'search' | 'askAi')}
             />
-            
+
             {modalMode === 'search' ? (
                 <Search />
             ) : (
@@ -54,7 +54,7 @@ export const SearchOrAskAiModal = React.memo(() => {
                     <Chat />
                 </>
             )}
-            
+
             <ModalFooter />
         </>
     )

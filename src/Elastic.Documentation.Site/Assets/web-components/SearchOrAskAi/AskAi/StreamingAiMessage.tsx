@@ -65,7 +65,11 @@ export const StreamingAiMessage = ({
         <ChatMessage
             message={message}
             llmMessages={isLast ? llmMessages : []}
-            streamingContent={isLast && message.status === 'streaming' ? contentRef.current : undefined}
+            streamingContent={
+                isLast && message.status === 'streaming'
+                    ? contentRef.current
+                    : undefined
+            }
         />
     )
 }

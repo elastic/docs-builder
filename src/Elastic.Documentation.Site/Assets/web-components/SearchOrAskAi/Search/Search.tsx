@@ -3,7 +3,7 @@ import { useChatActions } from '../AskAi/chat.store'
 import { useModalActions } from '../modal.store'
 import { SearchResults } from './SearchResults'
 import { useSearchActions, useSearchTerm } from './search.store'
-import { EuiFieldSearch, EuiSpacer, EuiButton, useEuiTheme } from '@elastic/eui'
+import { EuiFieldSearch, EuiSpacer, EuiButton } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
 
@@ -59,10 +59,7 @@ export const Search = () => {
 const AskAiButton = ({ term, onAsk }: { term: string; onAsk: () => void }) => {
     return (
         <EuiButton iconType="newChat" fullWidth onClick={onAsk}>
-            Ask AI about{' '}
-            <span css={askAiButtonStyles}>
-                "{term}"
-            </span>
+            Ask AI about <span css={askAiButtonStyles}>"{term}"</span>
         </EuiButton>
     )
 }
