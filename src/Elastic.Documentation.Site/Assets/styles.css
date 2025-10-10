@@ -247,8 +247,8 @@ body {
 	content: '';
 	position: absolute;
 	top: -8px;
-	left: -8px;
-	right: 8px;
+	left: -15px;
+	right: 0;
 	bottom: -8px;
 	@apply bg-grey-20 rounded-sm;
 	z-index: -1;
