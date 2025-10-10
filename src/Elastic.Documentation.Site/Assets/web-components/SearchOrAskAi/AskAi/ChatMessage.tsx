@@ -1,8 +1,9 @@
 import { initCopyButton } from '../../../copybutton'
+import { GeneratingStatus } from './GeneratingStatus'
+import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { LlmGatewayMessage } from './useLlmGateway'
 import {
-    EuiAvatar,
     EuiButtonIcon,
     EuiCallOut,
     EuiCopy,
@@ -10,7 +11,6 @@ import {
     EuiFlexItem,
     EuiIcon,
     EuiLoadingElastic,
-    EuiLoadingSpinner,
     EuiPanel,
     EuiSpacer,
     EuiText,
@@ -58,6 +58,24 @@ const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
         .join('')
 }
 
+const splitContentAndReferences = (
+    content: string
+): { mainContent: string; referencesJson: string | null } => {
+    const delimiter = '--- references ---'
+    const delimiterIndex = content.indexOf(delimiter)
+
+    if (delimiterIndex === -1) {
+        return { mainContent: content, referencesJson: null }
+    }
+
+    const mainContent = content.substring(0, delimiterIndex).trim()
+    const referencesJson = content
+        .substring(delimiterIndex + delimiter.length)
+        .trim()
+
+    return { mainContent, referencesJson }
+}
+
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
@@ -73,7 +91,7 @@ const ActionBar = ({
     content: string
     onRetry?: () => void
 }) => (
-    <EuiFlexGroup responsive={false} component="span" gutterSize="s">
+    <EuiFlexGroup responsive={false} component="span" gutterSize="none">
         <EuiFlexItem grow={false}>
             <EuiToolTip content="This answer was helpful">
                 <EuiButtonIcon
@@ -137,34 +155,27 @@ export const ChatMessage = ({
 
     if (isUser) {
         return (
-            <EuiFlexGroup
-                gutterSize="s"
-                alignItems="flexStart"
-                responsive={false}
+            <div
                 data-message-type="user"
                 data-message-id={message.id}
+                css={css`
+                    max-width: 50%;
+                    justify-self: flex-end;
+                `}
             >
-                <EuiFlexItem grow={false}>
-                    <EuiAvatar
-                        name="User"
-                        size="m"
-                        color="#6DCCB1"
-                        iconType="user"
-                    />
-                </EuiFlexItem>
-                <EuiFlexItem>
-                    <EuiPanel
-                        paddingSize="m"
-                        hasShadow={false}
-                        hasBorder={true}
-                        css={css`
-                            background-color: ${euiTheme.colors.emptyShade};
-                        `}
-                    >
-                        <EuiText size="s">{message.content}</EuiText>
-                    </EuiPanel>
-                </EuiFlexItem>
-            </EuiFlexGroup>
+                <EuiPanel
+                    paddingSize="s"
+                    hasShadow={false}
+                    hasBorder={true}
+                    css={css`
+                        border-radius: ${euiTheme.border.radius.medium};
+                        background-color: ${euiTheme.colors
+                            .backgroundLightText};
+                    `}
+                >
+                    <EuiText size="s">{message.content}</EuiText>
+                </EuiPanel>
+            </div>
         )
     }
 
@@ -176,10 +187,15 @@ export const ChatMessage = ({
 
     const hasError = message.status === 'error' || !!error
 
+    const { mainContent, referencesJson } = useMemo(
+        () => splitContentAndReferences(content),
+        [content]
+    )
+
     const parsed = useMemo(() => {
-        const html = markedInstance.parse(content) as string
+        const html = markedInstance.parse(mainContent) as string
         return DOMPurify.sanitize(html)
-    }, [content])
+    }, [mainContent])
 
     const ref = React.useRef<HTMLDivElement>(null)
 
@@ -239,16 +255,12 @@ export const ChatMessage = ({
                 <EuiPanel
                     paddingSize="m"
                     hasShadow={false}
-                    hasBorder={true}
+                    hasBorder={false}
                     css={css`
-                        background-color: ${euiTheme.colors
-                            .backgroundLightText};
+                        padding-top: 8px;
                     `}
                 >
                     {content && (
-                        // <EuiMarkdownFormat css={markdownFormatStyles}>
-                        //     {content}
-                        // </EuiMarkdownFormat>
                         <div
                             ref={ref}
                             className="markdown-content"
@@ -262,25 +274,15 @@ export const ChatMessage = ({
                         />
                     )}
 
-                    {isLoading && (
-                        <>
-                            {content && <EuiSpacer size="s" />}
-                            <EuiFlexGroup
-                                alignItems="center"
-                                gutterSize="s"
-                                responsive={false}
-                            >
-                                <EuiFlexItem grow={false}>
-                                    <EuiLoadingSpinner size="s" />
-                                </EuiFlexItem>
-                                <EuiFlexItem grow={false}>
-                                    <EuiText size="xs" color="subdued">
-                                        Generating...
-                                    </EuiText>
-                                </EuiFlexItem>
-                            </EuiFlexGroup>
-                        </>
+                    {referencesJson && (
+                        <References referencesJson={referencesJson} />
                     )}
+
+                    {content && isLoading && <EuiSpacer size="m" />}
+                    <GeneratingStatus
+                        llmMessages={llmMessages}
+                        isComplete={isComplete}
+                    />
 
                     {isComplete && content && (
                         <>
