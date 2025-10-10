@@ -61,16 +61,22 @@ const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
 const splitContentAndReferences = (
     content: string
 ): { mainContent: string; referencesJson: string | null } => {
-    const delimiter = '--- references ---'
-    const delimiterIndex = content.indexOf(delimiter)
+    const startDelimiter = '<!--REFERENCES'
+    const endDelimiter = '-->'
 
-    if (delimiterIndex === -1) {
+    const startIndex = content.indexOf(startDelimiter)
+    if (startIndex === -1) {
         return { mainContent: content, referencesJson: null }
     }
 
-    const mainContent = content.substring(0, delimiterIndex).trim()
+    const endIndex = content.indexOf(endDelimiter, startIndex)
+    if (endIndex === -1) {
+        return { mainContent: content, referencesJson: null }
+    }
+
+    const mainContent = content.substring(0, startIndex).trim()
     const referencesJson = content
-        .substring(delimiterIndex + delimiter.length)
+        .substring(startIndex + startDelimiter.length, endIndex)
         .trim()
 
     return { mainContent, referencesJson }
@@ -112,7 +118,7 @@ const hasReachedReferences = (messages: LlmGatewayMessage[]): boolean => {
         .filter((m) => m.type === 'ai_message_chunk')
         .map((m) => m.data.content)
         .join('')
-    return accumulatedContent.includes('--- references ---')
+    return accumulatedContent.includes('<!--REFERENCES')
 }
 
 const computeAiStatus = (
@@ -246,10 +252,13 @@ export const ChatMessage = ({
             return splitContentAndReferences(content)
         }
         // During streaming, strip out unparsed references but don't parse them yet
-        const delimiter = '--- references ---'
-        const delimiterIndex = content.indexOf(delimiter)
+        const startDelimiter = '<!--REFERENCES'
+        const delimiterIndex = content.indexOf(startDelimiter)
         if (delimiterIndex !== -1) {
-            return { mainContent: content.substring(0, delimiterIndex).trim(), referencesJson: null }
+            return {
+                mainContent: content.substring(0, delimiterIndex).trim(),
+                referencesJson: null,
+            }
         }
         return { mainContent: content, referencesJson: null }
     }, [content, isComplete])
@@ -351,7 +360,10 @@ export const ChatMessage = ({
                     {isComplete && content && (
                         <>
                             <EuiSpacer size="m" />
-                            <ActionBar content={mainContent} onRetry={onRetry} />
+                            <ActionBar
+                                content={mainContent}
+                                onRetry={onRetry}
+                            />
                         </>
                     )}
 

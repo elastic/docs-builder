@@ -213,11 +213,12 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
                             display: inline-flex;
                         `}
                     >
-                        <EuiLink href={parent.url} color="subdued" tabIndex={-1}>
-                            <EuiText
-                                size="xs"
-                                color="subdued"
-                            >
+                        <EuiLink
+                            href={parent.url}
+                            color="subdued"
+                            tabIndex={-1}
+                        >
+                            <EuiText size="xs" color="subdued">
                                 {parent.title}
                             </EuiText>
                         </EuiLink>

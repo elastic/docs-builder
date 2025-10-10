@@ -84,7 +84,14 @@ public record AskAiRequest(string Message, string? ThreadId)
 			}
 			```
 		  - Ensure that the URLs you provide are directly relevant to the user's question and the content of the documents.
-		  - Add a delimiter "--- references ---" before the sources section
+		  - Add a multi-line delimiter before the sources section using this exact format:
+		    ```
+		    <!--REFERENCES
+		    
+		    [your JSON array here]
+		    
+		    -->
+		    ```
 
 		""";
 }
