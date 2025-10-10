@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting"/>
+    <PackageReference Include="Elastic.OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
   </ItemGroup>
 
 </Project>
