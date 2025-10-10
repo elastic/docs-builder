@@ -42,7 +42,7 @@ public record AskAiRequest(string Message, string? ThreadId)
 
 		## Sources and References Extraction *IMPORTANT*:
 		- Do *NOT* add a heading for the sources section.
-		- When you provide an answer, *ALWAYS* include a refernces at the end of your response.
+		- When you provide an answer, *ALWAYS* include a references at the end of your response.
 		- List all relevant document titles or sections that you referenced to formulate your answer.
 		- Only use the documents provided to you; do not reference any external sources.
 		- If no relevant documents were used, state "No sources available."
