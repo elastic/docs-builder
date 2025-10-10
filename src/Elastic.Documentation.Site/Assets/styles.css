@@ -178,12 +178,12 @@ body {
 	@apply text-blue-elastic! font-semibold;
 }
 
-/* Highlight the active section: parent li and all sibling li elements */
-#pages-nav li:has(ul a.current),
-#pages-nav li:has(ul a.current) > ul > li {
+/* Grey-10 background for active sections */
+#pages-nav li {
 	position: relative;
 }
 
+/* Highlight the active section: parent li and all sibling li elements */
 #pages-nav li:has(ul a.current)::before,
 #pages-nav li:has(ul a.current) > ul > li::before {
 	content: '';
@@ -192,16 +192,11 @@ body {
 	left: -15px;
 	right: 0;
 	bottom: -15px;
-	@apply bg-grey-20 rounded-sm;
-	z-index: -1;
+	@apply bg-grey-10 rounded-sm;
+	z-index: -2;
 }
 
 /* Also highlight when the parent itself is the current item */
-#pages-nav li:has(> a.current),
-#pages-nav li:has(> a.current) ~ li {
-	position: relative;
-}
-
 #pages-nav li:has(> a.current)::before,
 #pages-nav li:has(> a.current) ~ li::before {
 	content: '';
@@ -210,16 +205,11 @@ body {
 	left: -15px;
 	right: 0;
 	bottom: -15px;
-	@apply bg-grey-20 rounded-sm;
-	z-index: -1;
+	@apply bg-grey-10 rounded-sm;
+	z-index: -2;
 }
 
 /* Also highlight all children when the parent itself is current */
-#pages-nav li:has(> div > a.current),
-#pages-nav li:has(> div > a.current) > ul > li {
-	position: relative;
-}
-
 #pages-nav li:has(> div > a.current)::before,
 #pages-nav li:has(> div > a.current) > ul > li::before {
 	content: '';
@@ -228,6 +218,32 @@ body {
 	left: -15px;
 	right: 0;
 	bottom: -15px;
+	@apply bg-grey-10 rounded-sm;
+	z-index: -2;
+}
+
+/* Grey-20 hover effect for all nav links - only direct child link */
+#pages-nav li:has(> a:hover):not(:has(> ul))::after,
+#pages-nav li:has(> div > a:hover):not(:has(> ul))::after {
+	content: '';
+	position: absolute;
+	top: -8px;
+	left: -8px;
+	right: 8px;
+	bottom: -8px;
+	@apply bg-grey-20 rounded-sm;
+	z-index: -1;
+}
+
+/* For parent items with children, apply hover only to the direct link/div area */
+#pages-nav li:has(> a:hover):has(> ul) > a::before,
+#pages-nav li:has(> div > a:hover):has(> ul) > div::before {
+	content: '';
+	position: absolute;
+	top: -8px;
+	left: -8px;
+	right: 8px;
+	bottom: -8px;
 	@apply bg-grey-20 rounded-sm;
 	z-index: -1;
 }
