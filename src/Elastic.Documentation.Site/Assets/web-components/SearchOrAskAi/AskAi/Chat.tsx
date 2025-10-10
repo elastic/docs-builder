@@ -148,36 +148,7 @@ export const Chat = () => {
                                         <h3>Try asking me:</h3>
                                     </EuiTitle>
                                     <EuiSpacer size="s" />
-                                    <AskAiSuggestions
-                                        suggestions={
-                                            new Set([
-                                                {
-                                                    question:
-                                                        'How do I set up a data stream in Elasticsearch?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What are the best practices for indexing performance?',
-                                                },
-                                                {
-                                                    question:
-                                                        'How can I create a dashboard in Kibana?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What is the difference between a keyword and text field?',
-                                                },
-                                                {
-                                                    question:
-                                                        'How do I configure machine learning jobs?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What are aggregations and how do I use them?',
-                                                },
-                                            ])
-                                        }
-                                    />
+                                    <AskAiSuggestions />
                                 </>
                             }
                         />
