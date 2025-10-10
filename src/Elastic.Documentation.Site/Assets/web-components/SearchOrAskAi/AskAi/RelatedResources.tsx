@@ -47,7 +47,12 @@ const parseReferences = (jsonString: string): Reference[] => {
         }
         return []
     } catch (e) {
-        console.error('Failed to parse references JSON:', e, 'Input:', jsonString)
+        console.error(
+            'Failed to parse references JSON:',
+            e,
+            'Input:',
+            jsonString
+        )
         return []
     }
 }
