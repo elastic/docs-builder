@@ -20,7 +20,10 @@ const ALL_SUGGESTIONS: AskAiSuggestion[] = [
     { question: 'How do I set up Elasticsearch security and authentication?' },
     { question: 'What are the different types of Elasticsearch queries?' },
     { question: 'How do I monitor cluster health and performance?' },
-    { question: 'What is the Elastic Stack and how do the components work together?' },
+    {
+        question:
+            'What is the Elastic Stack and how do the components work together?',
+    },
     { question: 'How do I create and manage Elasticsearch indices?' },
     { question: 'What are the best practices for Elasticsearch mapping?' },
     { question: 'How do I set up log shipping with Beats?' },
@@ -28,7 +31,10 @@ const ALL_SUGGESTIONS: AskAiSuggestion[] = [
     { question: 'How do I create custom visualizations in Kibana?' },
     { question: 'What are Elasticsearch snapshots and how do I use them?' },
     { question: 'How do I configure cross-cluster search?' },
-    { question: 'What are the different Elasticsearch node types and their roles?' },
+    {
+        question:
+            'What are the different Elasticsearch node types and their roles?',
+    },
 ]
 
 export const AskAiSuggestions = () => {
@@ -42,11 +48,16 @@ export const AskAiSuggestions = () => {
         const shuffled = [...ALL_SUGGESTIONS].sort(() => Math.random() - 0.5)
         return shuffled.slice(0, 3)
     }, [])
-    
+
     return (
         <ul>
             {selectedSuggestions.map((suggestion) => (
-                <li key={suggestion.question} css={css`margin-bottom: ${euiTheme.size.s};`}>
+                <li
+                    key={suggestion.question}
+                    css={css`
+                        margin-bottom: ${euiTheme.size.s};
+                    `}
+                >
                     <EuiButton
                         iconType="newChat"
                         color="primary"
