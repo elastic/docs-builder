@@ -126,9 +126,6 @@ const addCopyButtonToCodeCells = (
     baseElement: ParentNode,
     prefix: string
 ) => {
-    // If ClipboardJS hasn't loaded, wait a bit and try again. This
-    // happens because we load ClipboardJS asynchronously.
-
     // Add copybuttons to all of our code cells
     const codeCells = $$(selector, baseElement)
     codeCells.forEach((codeCell, index) => {
@@ -247,28 +244,6 @@ const addCopyButtonToCodeCells = (
             .join('\n')
         return formatCopyText(text, '', false, true, true, true, '', '')
     }
-
-    // // Initialize with a callback so we can modify the text before copy
-    // const clipboard = new ClipboardJS('.copybtn', { text: copyTargetText })
-    //
-    // // Update UI with error/success messages
-    // clipboard.on('success', (event) => {
-    //     clearSelection()
-    //     temporarilyChangeTooltip(
-    //         event.trigger,
-    //         messages[locale]['copy'],
-    //         messages[locale]['copy_success']
-    //     )
-    //     temporarilyChangeIcon(event.trigger)
-    // })
-    //
-    // clipboard.on('error', (event) => {
-    //     temporarilyChangeTooltip(
-    //         event.trigger,
-    //         messages[locale]['copy'],
-    //         messages[locale]['copy_failure']
-    //     )
-    // })
 }
 
 export function initCopyButton(
