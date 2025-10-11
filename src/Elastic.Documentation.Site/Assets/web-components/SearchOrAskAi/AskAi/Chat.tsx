@@ -15,7 +15,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const containerStyles = css`
     height: 100%;
@@ -66,6 +66,7 @@ export const Chat = () => {
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
+    const [inputValue, setInputValue] = useState('')
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}
@@ -81,6 +82,7 @@ export const Chat = () => {
             if (inputRef.current) {
                 inputRef.current.value = ''
             }
+            setInputValue('')
 
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
@@ -202,6 +204,7 @@ export const Chat = () => {
                         inputRef={inputRef}
                         fullWidth
                         placeholder="Ask Elastic Docs AI Assistant"
+                        onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 handleSubmit(e.currentTarget.value)
@@ -219,7 +222,7 @@ export const Chat = () => {
                         `}
                         color="primary"
                         iconType="sortUp"
-                        display="base"
+                        display={inputValue.trim() ? 'fill' : 'base'}
                         onClick={() => {
                             if (inputRef.current) {
                                 handleSubmit(inputRef.current.value)
