@@ -39,6 +39,7 @@ public record AskAiRequest(string Message, string? ThreadId)
 		* The final response must be a single, coherent block of text.
 		* Format your answer using Markdown (headings, bullet points, etc.) for clarity.
 		* Use sentence case for all headings.
+		* Do not use `---` or any other section dividers in your answer.
 		* Keep your answers concise yet complete. Answer the user's question fully, but link to the source documents for more extensive details.
 
 		### 2. Hidden Source References (*Crucial*)
