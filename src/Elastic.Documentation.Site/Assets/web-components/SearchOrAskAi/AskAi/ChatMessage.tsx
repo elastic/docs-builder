@@ -37,6 +37,11 @@ const createMarkedInstance = () => {
                 </pre>
             </div>`
         },
+        table(token: Tokens.Table): string {
+            const defaultMarked = new Marked()
+            const defaultTableHtml = defaultMarked.parse(token.raw)
+            return `<div class="table-wrapper">${defaultTableHtml}</div>`
+        }
     }
     return new Marked({ renderer })
 }
