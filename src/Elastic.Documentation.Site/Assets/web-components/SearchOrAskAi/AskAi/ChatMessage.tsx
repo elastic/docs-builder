@@ -1,4 +1,5 @@
 import { initCopyButton } from '../../../copybutton'
+import { hljs } from '../../../hljs'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
@@ -19,7 +20,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
-import hljs from 'highlight.js/lib/core'
 import { Marked, RendererObject, Tokens } from 'marked'
 import * as React from 'react'
 import { useEffect, useMemo } from 'react'
@@ -28,9 +28,15 @@ import { useEffect, useMemo } from 'react'
 const createMarkedInstance = () => {
     const renderer: RendererObject = {
         code({ text, lang }: Tokens.Code): string {
-            const highlighted = lang
-                ? hljs.highlight(text, { language: lang }).value
-                : hljs.highlightAuto(text).value
+            let highlighted: string
+            try {
+                highlighted = lang
+                    ? hljs.highlight(text, { language: lang }).value
+                    : hljs.highlightAuto(text).value
+            } catch {
+                // Fallback to auto highlighting if the specified language is not found
+                highlighted = hljs.highlightAuto(text).value
+            }
             return `<div class="highlight">
                 <pre>
                     <code class="language-${lang}">${highlighted}</code>
