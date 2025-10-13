@@ -27,6 +27,7 @@ builder.AddElasticOpenTelemetry(edotBuilder =>
 				.AddAspNetCoreInstrumentation()
 				.AddHttpClientInstrumentation();
 		})
+		.WithElasticLogging()
 		.WithElasticMetrics(metrics =>
 		{
 			_ = metrics
