@@ -1,4 +1,5 @@
 import { initCopyButton } from '../../../copybutton'
+import { hljs } from '../../../hljs'
 import { GeneratingStatus } from './GeneratingStatus'
 import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
@@ -19,7 +20,6 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
-import hljs from 'highlight.js/lib/core'
 import { Marked, RendererObject, Tokens } from 'marked'
 import * as React from 'react'
 import { useEffect, useMemo } from 'react'
