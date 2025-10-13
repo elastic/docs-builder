@@ -28,9 +28,15 @@ import { useEffect, useMemo } from 'react'
 const createMarkedInstance = () => {
     const renderer: RendererObject = {
         code({ text, lang }: Tokens.Code): string {
-            const highlighted = lang
-                ? hljs.highlight(text, { language: lang }).value
-                : hljs.highlightAuto(text).value
+            let highlighted: string
+            try {
+                highlighted = lang
+                    ? hljs.highlight(text, { language: lang }).value
+                    : hljs.highlightAuto(text).value
+            } catch {
+                // Fallback to auto highlighting if the specified language is not found
+                highlighted = hljs.highlightAuto(text).value
+            }
             return `<div class="highlight">
                 <pre>
                     <code class="language-${lang}">${highlighted}</code>
