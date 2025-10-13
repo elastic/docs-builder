@@ -96,6 +96,13 @@ If `H` is omitted `W` is used as the height as well.
 ![alt](img.png "=50%")
 ```
 
+When specifying just the size without a title, no space is required before the `=` sign. When combining a title with sizing, a space is required before the `=`:
+
+```markdown
+![alt](img.png "=50%")              <!-- Just size, no space needed -->
+![alt](img.png "My Title =50%")    <!-- With title, space required -->
+```
+
 
 
 ### SVG 
