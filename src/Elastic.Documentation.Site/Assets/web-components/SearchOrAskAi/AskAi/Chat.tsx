@@ -15,7 +15,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const containerStyles = css`
     height: 100%;
@@ -66,6 +66,7 @@ export const Chat = () => {
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
+    const [inputValue, setInputValue] = useState('')
 
     const dynamicScrollableStyles = css`
         ${scrollableStyles}
@@ -81,6 +82,7 @@ export const Chat = () => {
             if (inputRef.current) {
                 inputRef.current.value = ''
             }
+            setInputValue('')
 
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
@@ -148,36 +150,7 @@ export const Chat = () => {
                                         <h3>Try asking me:</h3>
                                     </EuiTitle>
                                     <EuiSpacer size="s" />
-                                    <AskAiSuggestions
-                                        suggestions={
-                                            new Set([
-                                                {
-                                                    question:
-                                                        'How do I set up a data stream in Elasticsearch?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What are the best practices for indexing performance?',
-                                                },
-                                                {
-                                                    question:
-                                                        'How can I create a dashboard in Kibana?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What is the difference between a keyword and text field?',
-                                                },
-                                                {
-                                                    question:
-                                                        'How do I configure machine learning jobs?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What are aggregations and how do I use them?',
-                                                },
-                                            ])
-                                        }
-                                    />
+                                    <AskAiSuggestions />
                                 </>
                             }
                         />
@@ -202,6 +175,7 @@ export const Chat = () => {
                         inputRef={inputRef}
                         fullWidth
                         placeholder="Ask Elastic Docs AI Assistant"
+                        onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 handleSubmit(e.currentTarget.value)
@@ -219,7 +193,7 @@ export const Chat = () => {
                         `}
                         color="primary"
                         iconType="sortUp"
-                        display="base"
+                        display={inputValue.trim() ? 'fill' : 'base'}
                         onClick={() => {
                             if (inputRef.current) {
                                 handleSubmit(inputRef.current.value)
