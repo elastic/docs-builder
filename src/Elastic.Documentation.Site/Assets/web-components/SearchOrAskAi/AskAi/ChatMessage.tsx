@@ -1,41 +1,98 @@
+import { initCopyButton } from '../../../copybutton'
+import { hljs } from '../../../hljs'
+import { GeneratingStatus } from './GeneratingStatus'
+import { References } from './RelatedResources'
 import { ChatMessage as ChatMessageType } from './chat.store'
 import { LlmGatewayMessage } from './useLlmGateway'
 import {
+    EuiButtonIcon,
+    EuiCallOut,
+    EuiCopy,
     EuiFlexGroup,
     EuiFlexItem,
-    EuiLoadingSpinner,
-    EuiMarkdownFormat,
+    EuiIcon,
+    EuiLoadingElastic,
     EuiPanel,
     EuiSpacer,
     EuiText,
-    EuiButtonIcon,
     EuiToolTip,
     useEuiTheme,
-    EuiCallOut,
-    EuiIcon,
-    EuiAvatar,
-    EuiCopy,
-    EuiLoadingElastic,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import DOMPurify from 'dompurify'
+import { Marked, RendererObject, Tokens } from 'marked'
 import * as React from 'react'
+import { useEffect, useMemo } from 'react'
+
+// Create the marked instance once globally (renderer never changes)
+const createMarkedInstance = () => {
+    const renderer: RendererObject = {
+        code({ text, lang }: Tokens.Code): string {
+            let highlighted: string
+            try {
+                highlighted = lang
+                    ? hljs.highlight(text, { language: lang }).value
+                    : hljs.highlightAuto(text).value
+            } catch {
+                // Fallback to auto highlighting if the specified language is not found
+                highlighted = hljs.highlightAuto(text).value
+            }
+            return `<div class="highlight">
+                <pre>
+                    <code class="language-${lang}">${highlighted}</code>
+                </pre>
+            </div>`
+        },
+        table(token: Tokens.Table): string {
+            const defaultMarked = new Marked()
+            const defaultTableHtml = defaultMarked.parse(token.raw)
+            return `<div class="table-wrapper">${defaultTableHtml}</div>`
+        },
+    }
+    return new Marked({ renderer })
+}
+
+const markedInstance = createMarkedInstance()
 
 interface ChatMessageProps {
     message: ChatMessageType
     llmMessages?: LlmGatewayMessage[]
+    streamingContent?: string
     error?: Error | null
     onRetry?: () => void
 }
 
-// Helper function to accumulate AI message content
 const getAccumulatedContent = (messages: LlmGatewayMessage[]) => {
     return messages
-        .filter((m) => m.type === 'ai_message_chunk') // Only accumulate chunks, not the final message
+        .filter((m) => m.type === 'ai_message_chunk')
         .map((m) => m.data.content)
         .join('')
 }
 
-// Derived state helper for readability
+const splitContentAndReferences = (
+    content: string
+): { mainContent: string; referencesJson: string | null } => {
+    const startDelimiter = '<!--REFERENCES'
+    const endDelimiter = '-->'
+
+    const startIndex = content.indexOf(startDelimiter)
+    if (startIndex === -1) {
+        return { mainContent: content, referencesJson: null }
+    }
+
+    const endIndex = content.indexOf(endDelimiter, startIndex)
+    if (endIndex === -1) {
+        return { mainContent: content, referencesJson: null }
+    }
+
+    const mainContent = content.substring(0, startIndex).trim()
+    const referencesJson = content
+        .substring(startIndex + startDelimiter.length, endIndex)
+        .trim()
+
+    return { mainContent, referencesJson }
+}
+
 const getMessageState = (message: ChatMessageType) => ({
     isUser: message.type === 'user',
     isLoading: message.status === 'streaming',
@@ -43,28 +100,58 @@ const getMessageState = (message: ChatMessageType) => ({
     hasError: message.status === 'error',
 })
 
-// Extracted styles for markdown render
-const markdownFormatStyles = css`
-    .euiScreenReaderOnly {
-        display: none;
-    }
-    font-size: 14px;
-    b,
-    strong {
-        font-weight: 600;
-    }
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        b,
-        strong {
-            font-weight: inherit;
+// Helper functions for computing AI status
+const getToolCallSearchQuery = (
+    messages: LlmGatewayMessage[]
+): string | null => {
+    const toolCallMessage = messages.find((m) => m.type === 'tool_call')
+    if (!toolCallMessage) return null
+
+    try {
+        const toolCalls = toolCallMessage.data?.toolCalls
+        if (toolCalls && toolCalls.length > 0) {
+            const firstToolCall = toolCalls[0]
+            return firstToolCall.args?.searchQuery || null
         }
+    } catch (e) {
+        console.error('Error extracting search query from tool call:', e)
     }
-`
+
+    return null
+}
+
+const hasContentStarted = (messages: LlmGatewayMessage[]): boolean => {
+    return messages.some((m) => m.type === 'ai_message_chunk' && m.data.content)
+}
+
+const hasReachedReferences = (messages: LlmGatewayMessage[]): boolean => {
+    const accumulatedContent = messages
+        .filter((m) => m.type === 'ai_message_chunk')
+        .map((m) => m.data.content)
+        .join('')
+    return accumulatedContent.includes('<!--REFERENCES')
+}
+
+const computeAiStatus = (
+    llmMessages: LlmGatewayMessage[],
+    isComplete: boolean
+): string | null => {
+    if (isComplete) return null
+
+    const searchQuery = getToolCallSearchQuery(llmMessages)
+    const contentStarted = hasContentStarted(llmMessages)
+    const reachedReferences = hasReachedReferences(llmMessages)
+
+    if (reachedReferences) {
+        return 'Gathering resources'
+    } else if (contentStarted) {
+        return 'Generating'
+    } else if (searchQuery) {
+        return `Searching for "${searchQuery}"`
+    }
+
+    return 'Thinking'
+}
 
 // Action bar for complete AI messages
 const ActionBar = ({
@@ -74,7 +161,7 @@ const ActionBar = ({
     content: string
     onRetry?: () => void
 }) => (
-    <EuiFlexGroup responsive={false} component="span" gutterSize="s">
+    <EuiFlexGroup responsive={false} component="span" gutterSize="none">
         <EuiFlexItem grow={false}>
             <EuiToolTip content="This answer was helpful">
                 <EuiButtonIcon
@@ -129,6 +216,7 @@ const ActionBar = ({
 export const ChatMessage = ({
     message,
     llmMessages = [],
+    streamingContent,
     error,
     onRetry,
 }: ChatMessageProps) => {
@@ -137,44 +225,83 @@ export const ChatMessage = ({
 
     if (isUser) {
         return (
-            <EuiFlexGroup
-                gutterSize="s"
-                alignItems="flexStart"
-                responsive={false}
+            <div
                 data-message-type="user"
                 data-message-id={message.id}
+                css={css`
+                    max-width: 50%;
+                    justify-self: flex-end;
+                `}
             >
-                <EuiFlexItem grow={false}>
-                    <EuiAvatar
-                        name="User"
-                        size="m"
-                        color="#6DCCB1"
-                        iconType="user"
-                    />
-                </EuiFlexItem>
-                <EuiFlexItem>
-                    <EuiPanel
-                        paddingSize="m"
-                        hasShadow={false}
-                        hasBorder={true}
-                        css={css`
-                            background-color: ${euiTheme.colors.emptyShade};
-                        `}
-                    >
-                        <EuiText size="s">{message.content}</EuiText>
-                    </EuiPanel>
-                </EuiFlexItem>
-            </EuiFlexGroup>
+                <EuiPanel
+                    paddingSize="s"
+                    hasShadow={false}
+                    hasBorder={true}
+                    css={css`
+                        border-radius: ${euiTheme.border.radius.medium};
+                        background-color: ${euiTheme.colors
+                            .backgroundLightText};
+                    `}
+                >
+                    <EuiText size="s">{message.content}</EuiText>
+                </EuiPanel>
+            </div>
         )
     }
 
-    // AI message
     const content =
-        llmMessages.length > 0
+        streamingContent ||
+        (llmMessages.length > 0
             ? getAccumulatedContent(llmMessages)
-            : message.content
+            : message.content)
 
     const hasError = message.status === 'error' || !!error
+
+    // Only split content and references when complete for better performance
+    const { mainContent, referencesJson } = useMemo(() => {
+        if (isComplete) {
+            return splitContentAndReferences(content)
+        }
+        // During streaming, strip out unparsed references but don't parse them yet
+        const startDelimiter = '<!--REFERENCES'
+        const delimiterIndex = content.indexOf(startDelimiter)
+        if (delimiterIndex !== -1) {
+            return {
+                mainContent: content.substring(0, delimiterIndex).trim(),
+                referencesJson: null,
+            }
+        }
+        return { mainContent: content, referencesJson: null }
+    }, [content, isComplete])
+
+    const parsed = useMemo(() => {
+        const html = markedInstance.parse(mainContent) as string
+        return DOMPurify.sanitize(html)
+    }, [mainContent])
+
+    const aiStatus = useMemo(
+        () => computeAiStatus(llmMessages, isComplete),
+        [llmMessages, isComplete]
+    )
+
+    const ref = React.useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (isComplete && ref.current) {
+            const timer = setTimeout(() => {
+                try {
+                    initCopyButton(
+                        '.highlight pre',
+                        ref.current!,
+                        'ai-message-codecell-'
+                    )
+                } catch (error) {
+                    console.error('Failed to initialize copy buttons:', error)
+                }
+            }, 100)
+            return () => clearTimeout(timer)
+        }
+    }, [isComplete])
 
     return (
         <EuiFlexGroup
@@ -215,42 +342,39 @@ export const ChatMessage = ({
                 <EuiPanel
                     paddingSize="m"
                     hasShadow={false}
-                    hasBorder={true}
+                    hasBorder={false}
                     css={css`
-                        background-color: ${euiTheme.colors
-                            .backgroundLightText};
+                        padding-top: 8px;
                     `}
                 >
                     {content && (
-                        <EuiMarkdownFormat css={markdownFormatStyles}>
-                            {content}
-                        </EuiMarkdownFormat>
+                        <div
+                            ref={ref}
+                            className="markdown-content"
+                            css={css`
+                                font-size: 14px;
+                                & > *:first-child {
+                                    margin-top: 0;
+                                }
+                            `}
+                            dangerouslySetInnerHTML={{ __html: parsed }}
+                        />
                     )}
 
-                    {isLoading && (
-                        <>
-                            {content && <EuiSpacer size="s" />}
-                            <EuiFlexGroup
-                                alignItems="center"
-                                gutterSize="s"
-                                responsive={false}
-                            >
-                                <EuiFlexItem grow={false}>
-                                    <EuiLoadingSpinner size="s" />
-                                </EuiFlexItem>
-                                <EuiFlexItem grow={false}>
-                                    <EuiText size="xs" color="subdued">
-                                        Generating...
-                                    </EuiText>
-                                </EuiFlexItem>
-                            </EuiFlexGroup>
-                        </>
+                    {referencesJson && (
+                        <References referencesJson={referencesJson} />
                     )}
+
+                    {content && isLoading && <EuiSpacer size="m" />}
+                    <GeneratingStatus status={aiStatus} />
 
                     {isComplete && content && (
                         <>
                             <EuiSpacer size="m" />
-                            <ActionBar content={content} onRetry={onRetry} />
+                            <ActionBar
+                                content={mainContent}
+                                onRetry={onRetry}
+                            />
                         </>
                     )}
 

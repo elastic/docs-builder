@@ -21,7 +21,7 @@ export const ChatMessageList = ({ messages }: ChatMessageListProps) => {
                             isLast={index === messages.length - 1}
                         />
                     )}
-                    {index < messages.length - 1 && <EuiSpacer size="m" />}
+                    {index < messages.length - 1 && <EuiSpacer size="l" />}
                 </React.Fragment>
             ))}
         </>

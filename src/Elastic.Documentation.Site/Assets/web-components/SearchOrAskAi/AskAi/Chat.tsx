@@ -15,7 +15,30 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import * as React from 'react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+const containerStyles = css`
+    height: 100%;
+    max-height: 70vh;
+    overflow: hidden;
+`
+
+const scrollContainerStyles = css`
+    position: relative;
+    overflow: hidden;
+`
+
+const scrollableStyles = css`
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding: 1rem;
+`
+
+const messagesStyles = css`
+    max-width: 800px;
+    margin: 0 auto;
+`
 
 // Small helper for scroll behavior
 const scrollToBottom = (container: HTMLDivElement | null) => {
@@ -43,29 +66,11 @@ export const Chat = () => {
     const inputRef = useRef<HTMLInputElement>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
     const lastMessageStatusRef = useRef<string | null>(null)
+    const [inputValue, setInputValue] = useState('')
 
-    const containerStyles = css`
-        height: 100%;
-        max-height: 70vh;
-        overflow: hidden;
-    `
-
-    const scrollContainerStyles = css`
-        position: relative;
-        overflow: hidden;
-    `
-
-    const scrollableStyles = css`
-        height: 100%;
-        overflow-y: auto;
-        scrollbar-gutter: stable;
+    const dynamicScrollableStyles = css`
+        ${scrollableStyles}
         ${useEuiOverflowScroll('y', true)}
-        padding: 1rem;
-    `
-
-    const messagesStyles = css`
-        max-width: 800px;
-        margin: 0 auto;
     `
 
     const handleSubmit = useCallback(
@@ -77,6 +82,7 @@ export const Chat = () => {
             if (inputRef.current) {
                 inputRef.current.value = ''
             }
+            setInputValue('')
 
             // Scroll to bottom after new message
             setTimeout(() => scrollToBottom(scrollRef.current), 100)
@@ -116,14 +122,14 @@ export const Chat = () => {
             gutterSize="none"
             css={containerStyles}
         >
-            {/* Header - only show when there are messages */}
+            <EuiSpacer size="m" />
+
             {messages.length > 0 && (
                 <NewConversationHeader onClick={clearChat} />
             )}
 
-            {/* Messages */}
             <EuiFlexItem grow={true} css={scrollContainerStyles}>
-                <div ref={scrollRef} css={scrollableStyles}>
+                <div ref={scrollRef} css={dynamicScrollableStyles}>
                     {messages.length === 0 ? (
                         <EuiEmptyPrompt
                             iconType="logoElastic"
@@ -144,36 +150,7 @@ export const Chat = () => {
                                         <h3>Try asking me:</h3>
                                     </EuiTitle>
                                     <EuiSpacer size="s" />
-                                    <AskAiSuggestions
-                                        suggestions={
-                                            new Set([
-                                                {
-                                                    question:
-                                                        'How do I set up a data stream in Elasticsearch?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What are the best practices for indexing performance?',
-                                                },
-                                                {
-                                                    question:
-                                                        'How can I create a dashboard in Kibana?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What is the difference between a keyword and text field?',
-                                                },
-                                                {
-                                                    question:
-                                                        'How do I configure machine learning jobs?',
-                                                },
-                                                {
-                                                    question:
-                                                        'What are aggregations and how do I use them?',
-                                                },
-                                            ])
-                                        }
-                                    />
+                                    <AskAiSuggestions />
                                 </>
                             }
                         />
@@ -198,6 +175,7 @@ export const Chat = () => {
                         inputRef={inputRef}
                         fullWidth
                         placeholder="Ask Elastic Docs AI Assistant"
+                        onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 handleSubmit(e.currentTarget.value)
@@ -215,7 +193,7 @@ export const Chat = () => {
                         `}
                         color="primary"
                         iconType="sortUp"
-                        display="base"
+                        display={inputValue.trim() ? 'fill' : 'base'}
                         onClick={() => {
                             if (inputRef.current) {
                                 handleSubmit(inputRef.current.value)

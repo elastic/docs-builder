@@ -192,7 +192,7 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
             css={css`
                 margin-top: 2px;
                 display: flex;
-                gap: 0 ${euiTheme.size.xs};
+                gap: 0 ${euiTheme.size.s};
                 flex-wrap: wrap;
                 list-style: none;
             `}
@@ -205,27 +205,20 @@ function Breadcrumbs({ parents }: { parents: SearchResultItem['parents'] }) {
                         css={css`
                             &:not(:last-child)::after {
                                 content: '/';
-                                margin-left: ${euiTheme.size.xs};
+                                margin-left: ${euiTheme.size.s};
                                 font-size: ${smallFontsize};
-                                color: ${euiTheme.colors.text};
+                                color: ${euiTheme.colors.textSubdued};
                                 margin-top: -1px;
                             }
                             display: inline-flex;
                         `}
                     >
-                        <EuiLink href={parent.url} color="text" tabIndex={-1}>
-                            <EuiText
-                                size="xs"
-                                color="subdued"
-                                css={css`
-                                    .euiMark {
-                                        background-color: transparent;
-                                        text-decoration: underline;
-                                        color: inherit;
-                                        font-weight: inherit;
-                                    }
-                                `}
-                            >
+                        <EuiLink
+                            href={parent.url}
+                            color="subdued"
+                            tabIndex={-1}
+                        >
+                            <EuiText size="xs" color="subdued">
                                 {parent.title}
                             </EuiText>
                         </EuiLink>

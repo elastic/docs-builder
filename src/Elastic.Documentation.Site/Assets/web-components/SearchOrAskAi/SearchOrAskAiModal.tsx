@@ -2,7 +2,6 @@ import { Chat } from './AskAi/Chat'
 import { Search } from './Search/Search'
 import { useModalActions, useModalMode } from './modal.store'
 import {
-    EuiSpacer,
     EuiBetaBadge,
     EuiText,
     EuiLink,
@@ -14,7 +13,7 @@ import { css } from '@emotion/react'
 import * as React from 'react'
 import { useMemo } from 'react'
 
-export const SearchOrAskAiModal = () => {
+export const SearchOrAskAiModal = React.memo(() => {
     const modalMode = useModalMode()
     const { setModalMode } = useModalActions()
 
@@ -30,12 +29,7 @@ export const SearchOrAskAiModal = () => {
                 id: 'askAi',
                 name: 'Ask AI',
                 prepend: <EuiIcon type="sparkles" />,
-                content: (
-                    <>
-                        <EuiSpacer size="m" />
-                        <Chat />
-                    </>
-                ),
+                content: <Chat />,
             },
         ],
         []
@@ -53,7 +47,7 @@ export const SearchOrAskAiModal = () => {
             <ModalFooter />
         </>
     )
-}
+})
 
 const ModalFooter = () => {
     return (
