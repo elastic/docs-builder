@@ -18,11 +18,23 @@
 @import './markdown/definition-list.css';
 @import './markdown/images.css';
 @import './markdown/image-carousel.css';
+@import './markdown/hr.css';
 @import './modal.css';
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
+
+html {
+	/* We need to use 14px because EUI works best with a 14px base */
+	font-size: 14px;
+	@apply font-body;
+}
+
+body {
+	/* This is still needed because of some usages of ch units and to maintain the previous behavior */
+	font-size: 16px;
+}
 
 :root {
 	--outline-size: max(2px, 0.08em);
@@ -47,13 +59,13 @@
 
 @media screen and (min-width: 767px) {
 	:root {
-		--offset-top: 123px;
+		--offset-top: 102px;
 	}
 }
 
 @media screen and (min-width: 992px) {
 	:root {
-		--offset-top: 131px;
+		--offset-top: 110px;
 	}
 }
 
@@ -186,22 +198,9 @@
 
 #elastic-nav {
 	@media screen and (min-width: 1200px) {
-		.oldNav {
-			& > div {
-				width: 100%;
-				max-width: var(--max-layout-width);
-			}
-			div:has(> div > nav) {
-				flex-grow: 1;
-				justify-content: center;
-			}
-		}
-	}
-	@media screen and (min-width: 1536px) {
-		.oldNav {
-			nav {
-				margin-left: -74px;
-			}
+		[data-component='Container'] {
+			/* subtract the padding */
+			max-width: calc(var(--max-layout-width) - (var(--spacing) * 10));
 		}
 	}
 }

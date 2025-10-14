@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``documentation generator``.``links json artifact``
+module ``AuthoringTests``.``documentation generator``.``links json artifact``
 
 open Xunit
 open authoring
@@ -86,6 +86,12 @@ Through various means $$$including-this-inline-syntax$$$
          },
          "cross_links": [],
          "redirects": {
+           "migration/freeze/gh-action.md": {
+              "to": "index.md"
+           },
+           "migration/freeze/index.md": {
+             "to": "index.md"
+           },
            "testing/redirects/4th-page.md": {
              "to": "testing/redirects/5th-page.md"
            },

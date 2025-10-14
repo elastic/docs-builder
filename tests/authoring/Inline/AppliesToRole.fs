@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-module ``inline elements``.``applies_to role``
+module ``AuthoringTests``.``inline elements``.``applies_to role``
 
 open Elastic.Documentation.AppliesTo
 open Elastic.Markdown.Myst.Roles.AppliesTo

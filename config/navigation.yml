@@ -22,6 +22,7 @@ toc:
   - toc: deploy-manage
   - toc: cloud-account
   - toc: troubleshoot
+  - toc: contribute-docs
 
   ##########
   # EXTEND #
@@ -227,6 +228,11 @@ toc:
         # REST APIs, Mapping, Elasticsearch audit events, Command line tools
         children:
 
+          # Text analysis
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/text-analysis/toc.yml
+          - toc: elasticsearch://reference/text-analysis
+            path_prefix: reference/text-analysis
+
           # https://github.com/elastic/elasticsearch/blob/main/docs/reference/aggregations/toc.yml
           - toc: elasticsearch://reference/aggregations
             path_prefix: reference/aggregations
@@ -312,6 +318,38 @@ toc:
           - toc: elasticsearch://reference/elasticsearch-plugins
             path_prefix: reference/elasticsearch/plugins
 
+          # Painless scripting language
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/scripting-languages/toc.yml
+          - toc: elasticsearch://reference/scripting-languages
+            path_prefix: reference/scripting-languages
+
+      # Kibana
+      # https://github.com/elastic/kibana/blob/main/docs/reference/toc.yml
+      - toc: kibana://reference
+        path_prefix: reference/kibana
+        # Children include the entire AsciiDoc book
+        # (minus pages moved to docs-content)
+
+      # Cloud
+      # https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
+      - toc: cloud://reference
+        path_prefix: reference/cloud
+        # Children include Elastic Cloud Enterprise, Elastic Cloud Hosted
+        children:
+          # Elastic Cloud on Kubernetes
+          # https://github.com/elastic/cloud-on-k8s/blob/main/docs/reference/toc.yml
+          - toc: cloud-on-k8s://reference
+            path_prefix: reference/cloud-on-k8s
+            # Children include the entire AsciiDoc book
+            # (minus pages moved to docs-content)
+
+          # Elastic cloud control (ECCTL)
+          # https://github.com/elastic/ecctl/blob/master/docs/reference/toc.yml
+          - toc: ecctl://reference
+            path_prefix: reference/ecctl
+            # Children include the entire AsciiDoc book
+            # (minus pages moved to docs-content)
+
       # Security
       # https://github.com/elastic/docs-content/blob/main/reference/security/toc.yml
       - toc: docs-content://reference/security
@@ -329,39 +367,11 @@ toc:
         # Children include: Fields and object schemas, Elastic Entity Model,
         # Infrastructure app fields
 
-      # Elastic Distributions of OpenTelemetry (EDOT)
-      # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
-      - toc: opentelemetry://reference
-        path_prefix: reference/opentelemetry
-        children:
-          - toc: elastic-agent://reference/edot-collector
-            path_prefix: reference/edot-collector
-          - toc: apm-agent-android://reference/edot-android
-            path_prefix: reference/opentelemetry/edot-sdks/android
-          - toc: elastic-otel-dotnet://reference/edot-dotnet
-            path_prefix: reference/opentelemetry/edot-sdks/dotnet
-          - toc: apm-agent-ios://reference/edot-ios
-            path_prefix: reference/opentelemetry/edot-sdks/ios
-          - toc: elastic-otel-java://reference/edot-java
-            path_prefix: reference/opentelemetry/edot-sdks/java
-          - toc: elastic-otel-node://reference/edot-node
-            path_prefix: reference/opentelemetry/edot-sdks/node
-          - toc: elastic-otel-php://reference/edot-php
-            path_prefix: reference/opentelemetry/edot-sdks/php
-          - toc: elastic-otel-python://reference/edot-python
-            path_prefix: reference/opentelemetry/edot-sdks/python
-
       # Ingestion tools
       # https://github.com/elastic/docs-content/blob/main/reference/ingestion-tools/toc.yml
       - toc: docs-content://reference/ingestion-tools
         path_prefix: reference/ingestion-tools
         children:
-          # Fleet and Elastic Agent
-          # https://github.com/elastic/docs-content/blob/main/reference/fleet/toc.yml
-          - toc: docs-content://reference/fleet
-            path_prefix: reference/fleet
-            # Children include the entire AsciiDoc book
-
           # APM
           # https://github.com/elastic/docs-content/blob/main/reference/apm/toc.yml
           - toc: docs-content://reference/apm
@@ -443,6 +453,57 @@ toc:
             # Filebeat, Heartbeat, Metricbeat, Packetbeat, Winlogbeat,
             # Elastic logging plugin for Docker
 
+          # Search connectors
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/search-connectors/toc.yml
+          - toc: elasticsearch://reference/search-connectors
+            path_prefix: reference/search-connectors
+
+          # Elastic Distributions of OpenTelemetry (EDOT)
+          # https://github.com/elastic/opentelemetry/blob/main/docs/reference/toc.yml
+          - toc: opentelemetry://reference
+            path_prefix: reference/opentelemetry
+            children:
+              - toc: elastic-agent://reference/edot-collector
+                path_prefix: reference/edot-collector
+              - toc: apm-agent-android://reference/edot-android
+                path_prefix: reference/opentelemetry/edot-sdks/android
+              - toc: elastic-otel-dotnet://reference/edot-dotnet
+                path_prefix: reference/opentelemetry/edot-sdks/dotnet
+              - toc: apm-agent-ios://reference/edot-ios
+                path_prefix: reference/opentelemetry/edot-sdks/ios
+              - toc: elastic-otel-java://reference/edot-java
+                path_prefix: reference/opentelemetry/edot-sdks/java
+              - toc: elastic-otel-node://reference/edot-node
+                path_prefix: reference/opentelemetry/edot-sdks/node
+              - toc: elastic-otel-php://reference/edot-php
+                path_prefix: reference/opentelemetry/edot-sdks/php
+              - toc: elastic-otel-python://reference/edot-python
+                path_prefix: reference/opentelemetry/edot-sdks/python
+
+          # Elastic Integrations
+          # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
+          - toc: integration-docs://reference
+            path_prefix: reference/integrations
+            # Children include the entire AsciiDoc book
+
+          # Elastic Serverless Forwarder for AWS
+          # https://github.com/elastic/elastic-serverless-forwarder/blob/main/docs/reference/toc.yml
+          - toc: elastic-serverless-forwarder://reference
+            path_prefix: reference/aws-forwarder
+            # Children include the entire AsciiDoc book
+
+          # Elasticsearch Hadoop
+          # https://github.com/elastic/elasticsearch-hadoop/blob/main/docs/reference/toc.yml
+          - toc: elasticsearch-hadoop://reference
+            path_prefix: reference/elasticsearch-hadoop
+            # Children include the entire AsciiDoc book
+
+          # Fleet and Elastic Agent
+          # https://github.com/elastic/docs-content/blob/main/reference/fleet/toc.yml
+          - toc: docs-content://reference/fleet
+            path_prefix: reference/fleet
+            # Children include the entire AsciiDoc book
+
           # Logstash
           # https://github.com/elastic/logstash/blob/main/docs/reference/toc.yml
           - toc: logstash://reference
@@ -459,45 +520,10 @@ toc:
             path_prefix: reference/logstash/versioned-plugins
             # Children include the entire AsciiDoc book
 
-          # Elastic Serverless Forwarder for AWS
-          # https://github.com/elastic/elastic-serverless-forwarder/blob/main/docs/reference/toc.yml
-          - toc: elastic-serverless-forwarder://reference
-            path_prefix: reference/aws-forwarder
-            # Children include the entire AsciiDoc book
-
-          # Search connectors
-          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/search-connectors/toc.yml
-          - toc: elasticsearch://reference/search-connectors
-            path_prefix: reference/search-connectors
-
-          # Elasticsearch Hadoop
-          # https://github.com/elastic/elasticsearch-hadoop/blob/main/docs/reference/toc.yml
-          - toc: elasticsearch-hadoop://reference
-            path_prefix: reference/elasticsearch-hadoop
-            # Children include the entire AsciiDoc book
-
-          # Elastic Integrations
-          # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
-          - toc: integration-docs://reference
-            path_prefix: reference/integrations
-            # Children include the entire AsciiDoc book
-
-      # Kibana
-      # https://github.com/elastic/kibana/blob/main/docs/reference/toc.yml
-      - toc: kibana://reference
-        path_prefix: reference/kibana
-        # Children include the entire AsciiDoc book
-        # (minus pages moved to docs-content)
-
       # Query languages
       # https://github.com/elastic/elasticsearch/blob/main/docs/reference/query-languages/toc.yml
       - toc: elasticsearch://reference/query-languages
         path_prefix: reference/query-languages
-
-      # Scripting languages
-      # https://github.com/elastic/elasticsearch/blob/main/docs/reference/scripting-languages/toc.yml
-      - toc: elasticsearch://reference/scripting-languages
-        path_prefix: reference/scripting-languages
 
       # ECS
       # https://github.com/elastic/ecs/blob/main/docs/reference/toc.yml
@@ -568,36 +594,12 @@ toc:
       # https://github.com/elastic/docs-content/blob/main/reference/data-analysis/toc.yml
       - toc: docs-content://reference/data-analysis
         path_prefix: reference/data-analysis
-        children:
-          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/text-analysis/toc.yml
-          - toc: elasticsearch://reference/text-analysis
-            path_prefix: reference/text-analysis
 
       # Search UI
       # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
       - toc: search-ui://reference
         path_prefix: reference/search-ui
         # Children include the entire AsciiDoc book
-
-      # Cloud
-      # https://github.com/elastic/cloud/blob/master/docs/reference/toc.yml
-      - toc: cloud://reference
-        path_prefix: reference/cloud
-        # Children include Elastic Cloud Enterprise, Elastic Cloud Hosted
-        children:
-          # Elastic Cloud on Kubernetes
-          # https://github.com/elastic/cloud-on-k8s/blob/main/docs/reference/toc.yml
-          - toc: cloud-on-k8s://reference
-            path_prefix: reference/cloud-on-k8s
-            # Children include the entire AsciiDoc book
-            # (minus pages moved to docs-content)
-
-          # Elastic cloud control (ECCTL)
-          # https://github.com/elastic/ecctl/blob/master/docs/reference/toc.yml
-          - toc: ecctl://reference
-            path_prefix: reference/ecctl
-            # Children include the entire AsciiDoc book
-            # (minus pages moved to docs-content)
 
       # Glossary
       # https://github.com/elastic/docs-content/blob/main/reference/glossary/toc.yml

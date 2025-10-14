@@ -25,7 +25,20 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, GcpIdTokenProvider to
 		request.Headers.Add("User-Agent", "elastic-docs-proxy/1.0");
 		request.Headers.Add("Accept", "text/event-stream");
 		request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+		// Use HttpCompletionOption.ResponseHeadersRead to get headers immediately
+		// This allows us to start streaming as soon as headers are received
 		var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ctx);
+
+		// Ensure the response is successful before streaming
+		if (!response.IsSuccessStatusCode)
+		{
+			var errorContent = await response.Content.ReadAsStringAsync(ctx);
+			throw new HttpRequestException($"LLM Gateway returned {response.StatusCode}: {errorContent}");
+		}
+
+		// Return the response stream directly - this enables true streaming
+		// The stream will be consumed as data arrives from the LLM Gateway
 		return await response.Content.ReadAsStreamAsync(ctx);
 	}
 }

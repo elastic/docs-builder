@@ -5,11 +5,16 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ExternalCommands;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Refactor.Tracking;
 
-public class LocalGitRepositoryTracker(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
+public class LocalGitRepositoryTracker(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath)
+	: ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
+	/// <inheritdoc />
+	protected override ILogger Logger { get; } = logFactory.CreateLogger<LocalGitRepositoryTracker>();
+
 	private string LookupPath { get; } = lookupPath.Trim('\\', '/');
 
 	public IReadOnlyCollection<GitChange> GetChangedFiles()
@@ -30,9 +35,9 @@ public class LocalGitRepositoryTracker(IDiagnosticsCollector collector, IDirecto
 
 	private string GetDefaultBranch()
 	{
-		if (!Capture(true, "git", "merge-base", "-a", "HEAD", "main").StartsWith("fatal", StringComparison.InvariantCulture))
+		if (!CaptureQuiet("git", "merge-base", "-a", "HEAD", "main").StartsWith("fatal", StringComparison.InvariantCulture))
 			return "main";
-		if (!Capture(true, "git", "merge-base", "-a", "HEAD", "master").StartsWith("fatal", StringComparison.InvariantCulture))
+		if (!CaptureQuiet("git", "merge-base", "-a", "HEAD", "master").StartsWith("fatal", StringComparison.InvariantCulture))
 			return "master";
 		return Capture("git", "symbolic-ref", "refs/remotes/origin/HEAD").Split('/').Last();
 	}
