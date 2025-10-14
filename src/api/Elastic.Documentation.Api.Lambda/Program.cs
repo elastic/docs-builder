@@ -13,39 +13,75 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-var builder = WebApplication.CreateSlimBuilder(args);
-
-builder.AddDocumentationServiceDefaults(ref args);
-
-builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
-builder.AddElasticOpenTelemetry(edotBuilder =>
+try
 {
-	_ = edotBuilder
-		.WithElasticTracing(tracing =>
-		{
-			_ = tracing
-				.AddAspNetCoreInstrumentation()
-				.AddHttpClientInstrumentation();
-		})
-		.WithElasticLogging()
-		.WithElasticMetrics(metrics =>
-		{
-			_ = metrics
-				.AddAspNetCoreInstrumentation()
-				.AddHttpClientInstrumentation()
-				.AddProcessInstrumentation()
-				.AddRuntimeInstrumentation();
-		});
-});
+	var process = System.Diagnostics.Process.GetCurrentProcess();
+	Console.WriteLine($"Starting Lambda application... Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("ENVIRONMENT"));
-builder.WebHost.UseKestrelHttpsConfiguration();
+	var builder = WebApplication.CreateSlimBuilder(args);
+	process.Refresh();
+	Console.WriteLine($"WebApplication builder created. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-var app = builder.Build();
-var v1 = app.MapGroup("/docs/_api/v1");
-v1.MapElasticDocsApiEndpoints();
+	_ = builder.AddDocumentationServiceDefaults(ref args);
+	process.Refresh();
+	Console.WriteLine($"Documentation service defaults added. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
-app.Run();
+	_ = builder.AddElasticOpenTelemetry(edotBuilder =>
+	{
+		_ = edotBuilder
+			.WithElasticTracing(tracing =>
+			{
+				_ = tracing
+					.AddAspNetCoreInstrumentation()
+					.AddHttpClientInstrumentation();
+			})
+			.WithElasticLogging()
+			.WithElasticMetrics(metrics =>
+			{
+				_ = metrics
+					.AddAspNetCoreInstrumentation()
+					.AddHttpClientInstrumentation()
+					.AddProcessInstrumentation()
+					.AddRuntimeInstrumentation();
+			});
+	});
+
+	process.Refresh();
+	Console.WriteLine($"Elastic OTel configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+
+	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
+	process.Refresh();
+	Console.WriteLine($"AWS Lambda hosting configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+
+	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
+	Console.WriteLine($"Environment: {environment}");
+
+	builder.Services.AddElasticDocsApiUsecases(environment);
+	process.Refresh();
+	Console.WriteLine($"Elastic docs API use cases added. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+
+	_ = builder.WebHost.UseKestrelHttpsConfiguration();
+	process.Refresh();
+	Console.WriteLine($"Kestrel HTTPS configuration applied. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+
+	var app = builder.Build();
+	process.Refresh();
+	Console.WriteLine($"Application built successfully. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+
+	var v1 = app.MapGroup("/docs/_api/v1");
+	v1.MapElasticDocsApiEndpoints();
+	Console.WriteLine("API endpoints mapped");
+
+	Console.WriteLine("Application startup completed successfully");
+	app.Run();
+}
+catch (Exception ex)
+{
+	Console.WriteLine($"FATAL ERROR during startup: {ex}");
+	Console.WriteLine($"Exception type: {ex.GetType().Name}");
+	Console.WriteLine($"Stack trace: {ex.StackTrace}");
+	throw;
+}
 
 [JsonSerializable(typeof(APIGatewayProxyRequest))]
 [JsonSerializable(typeof(APIGatewayProxyResponse))]
