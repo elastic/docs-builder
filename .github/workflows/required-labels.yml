@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Wait for PR to be ready (if just opened)
+        if: github.event_name == 'pull_request_target' && github.event.action == 'opened'
+        run: sleep 30
       - id: get-labels
         run: |
           labels=$(yq '[.categories[].labels] + .exclude-labels | flatten | unique | sort | @tsv' .github/release-drafter.yml | tr '\t' ',')
