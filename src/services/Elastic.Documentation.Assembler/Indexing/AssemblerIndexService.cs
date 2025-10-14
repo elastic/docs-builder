@@ -131,7 +131,10 @@ public class AssemblerIndexService(
 		if (bootstrapTimeout.HasValue)
 			cfg.BootstrapTimeout = bootstrapTimeout.Value;
 
-		var exporters = new HashSet<Exporter> { noSemantic.GetValueOrDefault(false) ? ElasticsearchNoSemantic : Elasticsearch };
+		if (noSemantic.HasValue)
+			cfg.NoSemantic = noSemantic.Value;
+
+		var exporters = new HashSet<Exporter> { Elasticsearch };
 
 		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, fileSystem, ctx);
 	}

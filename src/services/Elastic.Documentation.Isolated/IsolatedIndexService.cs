@@ -128,7 +128,10 @@ public class IsolatedIndexService(
 		if (bootstrapTimeout.HasValue)
 			cfg.BootstrapTimeout = bootstrapTimeout.Value;
 
-		var exporters = new HashSet<Exporter> { noSemantic.GetValueOrDefault(false) ? ElasticsearchNoSemantic : Elasticsearch };
+		if (noSemantic.HasValue)
+			cfg.NoSemantic = noSemantic.Value;
+
+		var exporters = new HashSet<Exporter> { Elasticsearch };
 
 		return await Build(collector, fileSystem,
 			metadataOnly: true, strict: false, path: path, output: null, pathPrefix: null,

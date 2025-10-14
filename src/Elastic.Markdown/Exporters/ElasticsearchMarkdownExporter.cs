@@ -11,72 +11,102 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Catalog;
+using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Ingest.Elasticsearch.Semantic;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Markdig.Syntax;
+using Microsoft.AspNetCore.Server.Kestrel;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Exporters;
 
-public class ElasticsearchMarkdownExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, string indexNamespace, DocumentationEndpoints endpoints)
-	: ElasticsearchMarkdownExporterBase<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
-		(logFactory, collector, endpoints)
+public interface IElasticsearchExporter
 {
-	/// <inheritdoc />
-	protected override CatalogIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
-	{
-		BulkOperationIdLookup = d => d.Url,
-		GetMapping = () => CreateMapping(null),
-		GetMappingSettings = CreateMappingSetting,
-		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
-		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
-	};
-
-	/// <inheritdoc />
-	protected override CatalogIndexChannel<DocumentationDocument> NewChannel(CatalogIndexChannelOptions<DocumentationDocument> options) => new(options);
+	ValueTask<bool> TryWrite(DocumentationDocument document, Cancel ctx = default);
+	ValueTask<bool> RefreshAsync(Cancel ctx = default);
+	ValueTask<bool> StopAsync(Cancel ctx = default);
 }
 
-public class ElasticsearchMarkdownSemanticExporter(ILoggerFactory logFactory, IDiagnosticsCollector collector, string indexNamespace, DocumentationEndpoints endpoints)
-	: ElasticsearchMarkdownExporterBase<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
-		(logFactory, collector, endpoints)
-{
-	/// <inheritdoc />
-	protected override SemanticIndexChannelOptions<DocumentationDocument> NewOptions(DistributedTransport transport) => new(transport)
-	{
-		BulkOperationIdLookup = d => d.Url,
-		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
-		GetMappingSettings = (_, _) => CreateMappingSetting(),
-		IndexFormat = $"{Endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
-		ActiveSearchAlias = $"{Endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
-		IndexNumThreads = Endpoint.IndexNumThreads,
-		SearchNumThreads = Endpoint.SearchNumThreads,
-		InferenceCreateTimeout = TimeSpan.FromMinutes(Endpoint.BootstrapTimeout ?? 4),
-	};
-
-	/// <inheritdoc />
-	protected override SemanticIndexChannel<DocumentationDocument> NewChannel(SemanticIndexChannelOptions<DocumentationDocument> options) => new(options);
-}
-
-
-public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChannel>(
-	ILoggerFactory logFactory,
-	IDiagnosticsCollector collector,
-	DocumentationEndpoints endpoints
-)
-	: IMarkdownExporter, IDisposable
-	where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
+public abstract class ElasticsearchExporter<TChannelOptions, TChannel> : IDisposable, IElasticsearchExporter where TChannelOptions : CatalogIndexChannelOptionsBase<DocumentationDocument>
 	where TChannel : CatalogIndexChannel<DocumentationDocument, TChannelOptions>
 {
-	private TChannel? _channel;
-	private readonly ILogger<IMarkdownExporter> _logger = logFactory.CreateLogger<IMarkdownExporter>();
+	private readonly IDiagnosticsCollector _collector;
+	public TChannel Channel { get; }
+	private readonly ILogger _logger;
 
-	protected abstract TChannelOptions NewOptions(DistributedTransport transport);
-	protected abstract TChannel NewChannel(TChannelOptions options);
+	protected ElasticsearchExporter(
+		ILoggerFactory logFactory,
+		IDiagnosticsCollector collector,
+		ElasticsearchEndpoint endpoint,
+		DistributedTransport transport,
+		Func<TChannelOptions, TChannel> createChannel,
+		Func<DistributedTransport, TChannelOptions> createOptions
+	)
+	{
+		_collector = collector;
+		_logger = logFactory.CreateLogger<ElasticsearchExporter<TChannelOptions, TChannel>>();
+		//The max num threads per allocated node, from testing its best to limit our max concurrency
+		//producing to this number as well
+		var options = createOptions(transport);
+		var i = 0;
+		options.BufferOptions = new BufferOptions
+		{
+			OutboundBufferMaxSize = endpoint.BufferSize,
+			ExportMaxConcurrency = endpoint.IndexNumThreads,
+			ExportMaxRetries = endpoint.MaxRetries
+		};
+		options.SerializerContext = SourceGenerationContext.Default;
+		options.ExportBufferCallback = () =>
+		{
+			var count = Interlocked.Increment(ref i);
+			_logger.LogInformation("Exported {Count} documents to Elasticsearch index {Format}",
+				count * endpoint.BufferSize, options.IndexFormat);
+		};
+		options.ExportExceptionCallback = e =>
+		{
+			_logger.LogError(e, "Failed to export document");
+			_collector.EmitGlobalError("Elasticsearch export: failed to export document", e);
+		};
+		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
+		Channel = createChannel(options);
+		_logger.LogInformation($"Bootstrapping {nameof(SemanticIndexChannel<DocumentationDocument>)} Elasticsearch target for indexing");
+	}
 
-	protected ElasticsearchEndpoint Endpoint { get; } = endpoints.Elasticsearch;
+	public async ValueTask<bool> StopAsync(Cancel ctx = default)
+	{
+		_logger.LogInformation("Waiting to drain all inflight exports to Elasticsearch");
+		var drained = await Channel.WaitForDrainAsync(null, ctx);
+		if (!drained)
+			_collector.EmitGlobalError("Elasticsearch export: failed to complete indexing in a timely fashion while shutting down");
+
+		_logger.LogInformation("Refreshing target index {Index}", Channel.IndexName);
+		var refreshed = await Channel.RefreshAsync(ctx);
+		if (!refreshed)
+			_collector.EmitGlobalError($"Refreshing target index {Channel.IndexName} did not complete successfully");
+
+		_logger.LogInformation("Applying aliases to {Index}", Channel.IndexName);
+		var swapped = await Channel.ApplyAliasesAsync(ctx);
+		if (!swapped)
+			_collector.EmitGlobalError($"${nameof(ElasticsearchMarkdownExporter)} failed to apply aliases to index {Channel.IndexName}");
+
+		return drained && refreshed && swapped;
+	}
+
+	public async ValueTask<bool> RefreshAsync(Cancel ctx = default) => await Channel.RefreshAsync(ctx);
+
+	public async ValueTask<bool> TryWrite(DocumentationDocument document, Cancel ctx = default)
+	{
+		if (Channel.TryWrite(document))
+			return true;
+
+		if (await Channel.WaitToWriteAsync(ctx))
+			return Channel.TryWrite(document);
+		return false;
+	}
+
 
 	protected static string CreateMappingSetting() =>
 		// language=json
@@ -180,10 +210,97 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		  }
 		  """;
 
-	public async ValueTask StartAsync(Cancel ctx = default)
+
+	public void Dispose()
 	{
-		if (_channel != null)
-			return;
+		Channel.Complete();
+		Channel.Dispose();
+
+		GC.SuppressFinalize(this);
+	}
+
+}
+
+public class ElasticsearchLexicalExporter(
+	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
+	ElasticsearchEndpoint endpoint,
+	string indexNamespace,
+	DistributedTransport transport,
+	DateTimeOffset batchIndexDate
+)
+	: ElasticsearchExporter<CatalogIndexChannelOptions<DocumentationDocument>, CatalogIndexChannel<DocumentationDocument>>
+	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
+	{
+		BulkOperationIdLookup = d => d.Url,
+		ScriptedHashBulkUpsertLookup = (d, channelHash) =>
+		{
+			var rand = string.Empty;
+			//if (d.Url.StartsWith("/docs/reference/search-connectors"))
+			//	rand = Guid.NewGuid().ToString("N");
+			d.Hash = HashedBulkUpdate.CreateHash(channelHash, rand, d.Url, d.Body ?? string.Empty, string.Join(",", d.Headings.OrderBy(h => h)));
+			d.LastUpdated = batchIndexDate;
+			d.BatchIndexDate = batchIndexDate;
+			return new HashedBulkUpdate("hash", d.Hash, "ctx._source.batch_index_date = params.batch_index_date",
+				new Dictionary<string, string>
+				{
+					{ "batch_index_date", d.BatchIndexDate.ToString("o") }
+				});
+		},
+		GetMapping = () => CreateMapping(null),
+		GetMappingSettings = CreateMappingSetting,
+		IndexFormat =
+			$"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
+		ActiveSearchAlias = $"{endpoint.IndexNamePrefix.Replace("semantic", "lexical").ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}"
+	});
+
+public class ElasticsearchSemanticExporter(
+	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
+	ElasticsearchEndpoint endpoint,
+	string indexNamespace,
+	DistributedTransport transport
+)
+	: ElasticsearchExporter<SemanticIndexChannelOptions<DocumentationDocument>, SemanticIndexChannel<DocumentationDocument>>
+	(logFactory, collector, endpoint, transport, o => new(o), t => new(t)
+	{
+		BulkOperationIdLookup = d => d.Url,
+		GetMapping = (inferenceId, _) => CreateMapping(inferenceId),
+		GetMappingSettings = (_, _) => CreateMappingSetting(),
+		IndexFormat = $"{endpoint.IndexNamePrefix.ToLowerInvariant()}-{indexNamespace.ToLowerInvariant()}-{{0:yyyy.MM.dd.HHmmss}}",
+		ActiveSearchAlias = $"{endpoint.IndexNamePrefix}-{indexNamespace.ToLowerInvariant()}",
+		IndexNumThreads = endpoint.IndexNumThreads,
+		SearchNumThreads = endpoint.SearchNumThreads,
+		InferenceCreateTimeout = TimeSpan.FromMinutes(endpoint.BootstrapTimeout ?? 4)
+	});
+
+public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
+{
+#pragma warning disable IDE0052
+	private readonly IDiagnosticsCollector _collector;
+#pragma warning restore IDE0052
+	private readonly ILogger _logger;
+	private readonly ElasticsearchLexicalExporter _lexicalChannel;
+#pragma warning disable IDE0052
+	private readonly ElasticsearchSemanticExporter _semanticChannel;
+#pragma warning restore IDE0052
+	private readonly IElasticsearchExporter _channel;
+
+	protected ElasticsearchEndpoint Endpoint { get; }
+
+	private readonly DateTimeOffset _batchIndexDate = DateTimeOffset.UtcNow;
+	private readonly DistributedTransport _transport;
+
+	public ElasticsearchMarkdownExporter(
+		ILoggerFactory logFactory,
+		IDiagnosticsCollector collector,
+		DocumentationEndpoints endpoints,
+		string indexNamespace
+	)
+	{
+		_collector = collector;
+		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
+		Endpoint = endpoints.Elasticsearch;
 
 		var es = endpoints.Elasticsearch;
 
@@ -209,75 +326,36 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 					: null
 		};
 
-		var transport = new DistributedTransport(configuration);
+		_transport = new DistributedTransport(configuration);
 
-		//The max num threads per allocated node, from testing its best to limit our max concurrency
-		//producing to this number as well
-		var options = NewOptions(transport);
-		var i = 0;
-		options.BufferOptions = new BufferOptions
-		{
-			OutboundBufferMaxSize = Endpoint.BufferSize,
-			ExportMaxConcurrency = Endpoint.IndexNumThreads,
-			ExportMaxRetries = Endpoint.MaxRetries,
-		};
-		options.SerializerContext = SourceGenerationContext.Default;
-		options.ExportBufferCallback = () =>
-		{
-			var count = Interlocked.Increment(ref i);
-			_logger.LogInformation("Exported {Count} documents to Elasticsearch index {Format}",
-				count * Endpoint.BufferSize, options.IndexFormat);
-		};
-		options.ExportExceptionCallback = e => _logger.LogError(e, "Failed to export document");
-		options.ServerRejectionCallback = items => _logger.LogInformation("Server rejection: {Rejection}", items.First().Item2);
-		_channel = NewChannel(options);
-		_logger.LogInformation($"Bootstrapping {nameof(SemanticIndexChannel<DocumentationDocument>)} Elasticsearch target for indexing");
-		_ = await _channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+		_lexicalChannel = new ElasticsearchLexicalExporter(logFactory, collector, es, indexNamespace, _transport, _batchIndexDate);
+		_semanticChannel = new ElasticsearchSemanticExporter(logFactory, collector, es, indexNamespace, _transport);
+		_channel = _lexicalChannel;
+
 	}
 
+	/// <inheritdoc />
+	public async ValueTask StartAsync(Cancel ctx = default)
+	{
+		_ = await _lexicalChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+		return;
+	}
+
+	/// <inheritdoc />
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
-		if (_channel is null)
-			return;
+		var stopped = await _channel.StopAsync(ctx);
 
-		_logger.LogInformation("Waiting to drain all inflight exports to Elasticsearch");
-		var drained = await _channel.WaitForDrainAsync(null, ctx);
-		if (!drained)
-			collector.EmitGlobalError("Elasticsearch export: failed to complete indexing in a timely fashion while shutting down");
-
-		_logger.LogInformation("Refreshing target index {Index}", _channel.IndexName);
-		var refreshed = await _channel.RefreshAsync(ctx);
-		if (!refreshed)
-			_logger.LogError("Refreshing target index {Index} did not complete successfully", _channel.IndexName);
-
-		_logger.LogInformation("Applying aliases to {Index}", _channel.IndexName);
-		var swapped = await _channel.ApplyAliasesAsync(ctx);
-		if (!swapped)
-			collector.EmitGlobalError($"${nameof(ElasticsearchMarkdownExporter)} failed to apply aliases to index {_channel.IndexName}");
-	}
-
-	public void Dispose()
-	{
-		if (_channel is not null)
+		var semanticIndex = _semanticChannel.Channel.IndexName;
+		var semanticIndexHead = await _transport.HeadAsync(semanticIndex, ctx);
+		if (!semanticIndexHead.ApiCallDetails.HasSuccessfulStatusCode)
 		{
-			_channel.Complete();
-			_channel.Dispose();
+			_ = await _semanticChannel.Channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, null, ctx);
+			var semanticIndexPut = await _transport.PutAsync<StringResponse>(semanticIndex, PostData.String("{}"), ctx);
+			if (!semanticIndexPut.ApiCallDetails.HasSuccessfulStatusCode)
+				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
+			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
 		}
-
-		GC.SuppressFinalize(this);
-	}
-
-	private async ValueTask<bool> TryWrite(DocumentationDocument document, Cancel ctx = default)
-	{
-		if (_channel is null)
-			return false;
-
-		if (_channel.TryWrite(document))
-			return true;
-
-		if (await _channel.WaitToWriteAsync(ctx))
-			return _channel.TryWrite(document);
-		return false;
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
@@ -314,7 +392,6 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 		var doc = new DocumentationDocument
 		{
 			Url = url,
-			Hash = ShortId.Create(url, body),
 			Title = file.Title,
 			Body = body,
 			StrippedBody = body.StripMarkdown(),
@@ -327,9 +404,9 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 				Title = i.NavigationTitle,
 				Url = i.Url
 			}).Reverse().ToArray(),
-			Headings = headings,
+			Headings = headings
 		};
-		return await TryWrite(doc, ctx);
+		return await _channel.TryWrite(doc, ctx);
 	}
 
 	/// <inheritdoc />
@@ -339,5 +416,12 @@ public abstract class ElasticsearchMarkdownExporterBase<TChannelOptions, TChanne
 			return false;
 
 		return await _channel.RefreshAsync(ctx);
+	}
+
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		_lexicalChannel.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
