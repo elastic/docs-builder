@@ -42,7 +42,6 @@ builder.Services.AddElasticDocsApiUsecases(Environment.GetEnvironmentVariable("E
 builder.WebHost.UseKestrelHttpsConfiguration();
 
 var app = builder.Build();
-Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 var v1 = app.MapGroup("/docs/_api/v1");
 v1.MapElasticDocsApiEndpoints();
 
