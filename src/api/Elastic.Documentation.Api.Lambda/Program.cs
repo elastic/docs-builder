@@ -9,6 +9,9 @@ using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.ServiceDefaults;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 try
 {
@@ -22,6 +25,29 @@ try
 	_ = builder.AddDocumentationServiceDefaults(ref args);
 	process.Refresh();
 	Console.WriteLine($"Documentation service defaults added. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
+
+	_ = builder.AddElasticOpenTelemetry(edotBuilder =>
+	{
+		_ = edotBuilder
+			.WithElasticTracing(tracing =>
+			{
+				_ = tracing
+					.AddAspNetCoreInstrumentation()
+					.AddHttpClientInstrumentation();
+			})
+			.WithElasticLogging()
+			.WithElasticMetrics(metrics =>
+			{
+				_ = metrics
+					.AddAspNetCoreInstrumentation()
+					.AddHttpClientInstrumentation()
+					.AddProcessInstrumentation()
+					.AddRuntimeInstrumentation();
+			});
+	});
+
+	process.Refresh();
+	Console.WriteLine($"Elastic OTel configured. Memory: {process.WorkingSet64 / 1024 / 1024} MB");
 
 	_ = builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, new SourceGeneratorLambdaJsonSerializer<LambdaJsonSerializerContext>());
 	process.Refresh();
