@@ -1,7 +1,7 @@
 @layer components {
 	.markdown-content {
 		hr {
-			@apply h-[1px] border-0 bg-grey-20 mb-8 mt-9;
+			@apply bg-grey-20 mt-9 mb-8 h-[1px] border-0;
 		}
 	}
 }
