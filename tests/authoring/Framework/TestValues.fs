@@ -110,7 +110,7 @@ and MarkdownTestContext =
                 let file = kv.Value.File
                 let document = kv.Value.Document
                 let html = kv.Value.Html
-                let! minimal = kv.Value.File.MinimalParseAsync(ctx)
+                let! minimal = kv.Value.File.MinimalParseAsync((fun s -> this.Set.TryFindDocumentByRelativePath s), ctx)
                 return { File = file; Document = document; MinimalParse = minimal; Html = html; Context = this  }
             })
             // this is not great code, refactor or depend on FSharp.Control.TaskSeq

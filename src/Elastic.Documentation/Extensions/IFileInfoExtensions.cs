@@ -34,6 +34,13 @@ public static class IFileInfoExtensions
 		var parent = file.Directory;
 		return parent is not null && parent.HasParent(parentName);
 	}
+
+	public static IFileInfo NewCombine(this IFileInfoFactory fileInfo, params string[] paths)
+	{
+		paths = paths.Select(f => f.OptionalWindowsReplace()).ToArray();
+		var fi = fileInfo.New(Path.Combine(paths));
+		return fi;
+	}
 }
 
 public static class IDirectoryInfoExtensions
@@ -94,5 +101,21 @@ public static class IDirectoryInfoExtensions
 		} while (parent != null);
 
 		return false;
+	}
+
+	/// Gets the first  <paramref name="parentName"/>, parent of <paramref name="directory"/>
+	public static IDirectoryInfo? GetParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)
+	{
+		if (string.Equals(directory.Name, parentName, comparison))
+			return directory;
+		var parent = directory;
+		do
+		{
+			if (string.Equals(parent.Name, parentName, comparison))
+				return parent;
+			parent = parent.Parent;
+		} while (parent != null);
+
+		return null;
 	}
 }

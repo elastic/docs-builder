@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Site.Navigation;
 

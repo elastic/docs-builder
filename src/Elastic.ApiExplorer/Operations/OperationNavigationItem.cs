@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Extensions;
-using Elastic.Documentation.Site.Navigation;
+using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Models.Interfaces;
 using RazorSlices;

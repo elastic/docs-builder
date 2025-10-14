@@ -209,12 +209,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		UpdateLinkUrl(link, linkMarkdown, url, context, anchor);
 	}
 
-	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context,
-		IFileInfo file, string url)
+	private static MarkdownFile? SetLinkData(LinkInline link, InlineProcessor processor, ParserContext context, IFileInfo file, string url)
 	{
-		if (context.DocumentationFileLookup(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
+		if (context.TryFindDocument(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{
-			link.SetData(nameof(currentMarkdown.NavigationRoot), currentMarkdown.NavigationRoot);
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(currentMarkdown, out var navigationLookup))
+				link.SetData("NavigationRoot", navigationLookup.NavigationRoot);
 
 			if (link.IsImage)
 			{
@@ -225,9 +225,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 
 
-		var linkMarkdown = context.DocumentationFileLookup(file) as MarkdownFile;
+		var linkMarkdown = context.TryFindDocument(file) as MarkdownFile;
 		if (linkMarkdown is not null)
-			link.SetData($"Target{nameof(currentMarkdown.NavigationRoot)}", linkMarkdown.NavigationRoot);
+		{
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup))
+				link.SetData("TargetNavigationRoot", navigationLookup.NavigationRoot);
+
+		}
 		return linkMarkdown;
 	}
 
@@ -310,9 +314,16 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (linkMarkdown is not null)
 		{
-			// if url is null it's an anchor link
-			if (!string.IsNullOrEmpty(url))
-				newUrl = linkMarkdown.Url;
+			if (context.PositionalNavigation.MarkdownNavigationLookup.TryGetValue(linkMarkdown, out var navigationLookup)
+				&& !string.IsNullOrEmpty(navigationLookup.Url))
+			{
+				// Navigation URLs are absolute and start with /
+				// Apply the same prefix handling as UpdateRelativeUrl would for absolute paths
+				newUrl = navigationLookup.Url;
+				var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+				if (!string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
+					newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
+			}
 		}
 		else
 			newUrl = UpdateRelativeUrl(context, url);
@@ -351,7 +362,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
-			if (newUrl.StartsWith("../") && context.DocumentationFileLookup(context.MarkdownSourcePath) is SnippetFile snippet)
+			if (newUrl.StartsWith("../") && context.TryFindDocument(context.MarkdownSourcePath) is SnippetFile snippet)
 			{
 				//figure out how many nested folders inside `_snippets` we need to ignore.
 				var d = snippet.SourceFile.Directory;
@@ -392,7 +403,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = newUrl[2..];
 		}
 
-		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix))
+		if (!string.IsNullOrWhiteSpace(newUrl) && !string.IsNullOrWhiteSpace(urlPathPrefix) && !newUrl.StartsWith(urlPathPrefix))
 			newUrl = $"{urlPathPrefix.TrimEnd('/')}{newUrl}";
 
 		// eat overall path prefix since its gets appended later

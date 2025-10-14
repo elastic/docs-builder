@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Extensions;
 using Microsoft.Extensions.Logging;
 using SoftCircuits.IniFileParser;
 
@@ -48,23 +49,39 @@ public partial record GitCheckoutInformation
 				RepositoryName = "docs-builder"
 			};
 		}
-
 		var fakeRef = Guid.NewGuid().ToString()[..16];
-		var gitConfig = Git(source, Path.Combine(".git", "config"));
+
+		var gitDir = GitDir(source, ".git");
+		if (!gitDir.Exists)
+		{
+			// try a worktree .git file
+			var worktreeFile = Git(source, ".git");
+			if (!worktreeFile.Exists)
+				return Unavailable;
+			var workTreePath = Read(source, ".git")?.Replace("gitdir: ", string.Empty);
+			if (workTreePath is null)
+				return Unavailable;
+			//TODO read branch info from worktree do not fall through
+			gitDir = fileSystem.DirectoryInfo.New(workTreePath).GetParent(".git");
+			if (gitDir is null || !gitDir.Exists)
+				return Unavailable;
+		}
+
+		var gitConfig = Git(gitDir, "config");
 		if (!gitConfig.Exists)
 		{
 			logger?.LogInformation("Git checkout information not available.");
 			return Unavailable;
 		}
 
-		var head = Read(source, Path.Combine(".git", "HEAD")) ?? fakeRef;
+		var head = Read(gitDir, "HEAD") ?? fakeRef;
 		var gitRef = head;
 		var branch = head.Replace("refs/heads/", string.Empty);
 		//not detached HEAD
 		if (head.StartsWith("ref:", StringComparison.OrdinalIgnoreCase))
 		{
 			head = head.Replace("ref: ", string.Empty);
-			gitRef = Read(source, Path.Combine(".git", head)) ?? fakeRef;
+			gitRef = Read(gitDir, head) ?? fakeRef;
 			branch = branch.Replace("ref: ", string.Empty);
 		}
 		else
@@ -116,6 +133,9 @@ public partial record GitCheckoutInformation
 
 		IFileInfo Git(IDirectoryInfo directoryInfo, string path) =>
 			fileSystem.FileInfo.New(Path.Combine(directoryInfo.FullName, path));
+
+		IDirectoryInfo GitDir(IDirectoryInfo directoryInfo, string path) =>
+			fileSystem.DirectoryInfo.New(Path.Combine(directoryInfo.FullName, path));
 
 		string? Read(IDirectoryInfo directoryInfo, string path)
 		{

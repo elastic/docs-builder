@@ -39,10 +39,6 @@ public record ConfigurationFile : ITableOfContentsScope
 
 	public HashSet<Product> Products { get; } = [];
 
-	public HashSet<string> ImplicitFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-	public Glob[] Globs { get; } = [];
-
 	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
@@ -195,8 +191,6 @@ public record ConfigurationFile : ITableOfContentsScope
 			reader.EmitError("Could not load docset.yml", e);
 			throw;
 		}
-
-		Globs = [.. ImplicitFolders.Select(f => Glob.Parse($"{f}{Path.DirectorySeparatorChar}*.md"))];
 	}
 
 }

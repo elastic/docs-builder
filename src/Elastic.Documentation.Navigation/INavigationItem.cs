@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Documentation.Site.Navigation;
+namespace Elastic.Documentation.Navigation;
 
 /// Represents navigation model data for documentation elements.
 public interface INavigationModel
@@ -63,7 +63,7 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 	string Id { get; }
 
 	/// Gets the index model associated with this node.
-	TIndex Index { get; }
+	ILeafNavigationItem<TIndex> Index { get; }
 
 	/// <summary>
 	/// Gets the collection of child navigation items.

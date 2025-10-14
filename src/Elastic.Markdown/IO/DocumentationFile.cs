@@ -1,7 +1,10 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
+
+using System.Collections.Frozen;
 using System.IO.Abstractions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.FrontMatter;
 
@@ -44,7 +47,8 @@ public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string 
 	private bool _parsed;
 
 	public SnippetAnchors? GetAnchors(
-		DocumentationSet set,
+		IDiagnosticsCollector collector,
+		Func<string, DocumentationFile?> documentationFileLookup,
 		MarkdownParser parser,
 		YamlFrontMatter? frontMatter
 	)
@@ -58,7 +62,7 @@ public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string 
 		}
 
 		var document = parser.MinimalParseAsync(SourceFile, default).GetAwaiter().GetResult();
-		var toc = MarkdownFile.GetAnchors(set, parser, frontMatter, document, new Dictionary<string, string>(), out var anchors);
+		var toc = MarkdownFile.GetAnchors(collector, documentationFileLookup, parser, frontMatter, document, new Dictionary<string, string>(), out var anchors);
 		Anchors = new SnippetAnchors(anchors, toc);
 		_parsed = true;
 		return Anchors;

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -27,6 +28,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public IDirectoryInfo OutputDirectory { get; }
 
 	public ConfigurationFile Configuration { get; }
+
+	public DocumentationSetFile ConfigurationYaml { get; set; }
 
 	public VersionsConfiguration VersionsConfiguration { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
@@ -108,9 +111,13 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 		Configuration = new ConfigurationFile(this, VersionsConfiguration, ProductsConfiguration);
+
+		var yaml = readFileSystem.File.ReadAllText(Configuration.SourceFile.FullName);
+		ConfigurationYaml = DocumentationSetFile.Deserialize(yaml);
 		GoogleTagManager = new GoogleTagManagerConfiguration
 		{
 			Enabled = false
 		};
 	}
+
 }

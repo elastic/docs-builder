@@ -1,4 +1,4 @@
-# docs-builder
+#ocs-builder
 
 [![ci](https://github.com/elastic/docs-builder/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/elastic/docs-builder/actions/workflows/ci.yml)
 

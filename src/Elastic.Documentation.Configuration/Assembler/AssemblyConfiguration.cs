@@ -5,7 +5,6 @@
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Extensions;
 using YamlDotNet.Serialization;
-using YamlStaticContext = Elastic.Documentation.Configuration.Serialization.YamlStaticContext;
 
 namespace Elastic.Documentation.Configuration.Assembler;
 
