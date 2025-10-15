@@ -69,6 +69,7 @@ public record ConfigurationFile
 			return;
 		}
 
+
 		var redirectFile = new RedirectFile(_context);
 		Redirects = redirectFile.Redirects;
 

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.TableOfContents;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
@@ -15,7 +15,7 @@ public interface IDocsBuilderExtension
 	IDocumentationFileExporter? FileExporter { get; }
 
 	/// Visit the <paramref name="tocItem"/> and its equivalent <see cref="DocumentationFile"/>
-	void Visit(DocumentationFile file, ITocItem tocItem);
+	void Visit(DocumentationFile file, ITableOfContentsItem tocItem);
 
 	/// Create an instance of <see cref="DocumentationFile"/> if it matches the <paramref name="file"/>.
 	/// Return `null` to let another extension handle this.

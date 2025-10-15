@@ -29,8 +29,6 @@ public class AssembleSources
 
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
-	public FrozenDictionary<Uri, TocConfigurationMapping> TocConfigurationMapping { get; }
-
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
 	public static async Task<AssembleSources> AssembleAsync(
@@ -87,43 +85,6 @@ public class AssembleSources
 			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, configurationContext,
 				availableExporters))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
-			.ToFrozenDictionary();
-
-		TocConfigurationMapping = NavigationTocMappings
-			.Select(kv =>
-			{
-				var repo = kv.Value.Source.Scheme;
-				if (!AssembleSets.TryGetValue(repo, out var set))
-					throw new Exception($"Unable to find repository: {repo}");
-
-				var fs = set.BuildContext.ReadFileSystem;
-				var config = set.BuildContext.Configuration;
-				var tocDirectory = Path.Combine(config.ScopeDirectory.FullName, kv.Value.Source.Host, kv.Value.Source.AbsolutePath.TrimStart('/'));
-				var relative = Path.GetRelativePath(config.ScopeDirectory.FullName, tocDirectory);
-				IFileInfo[] tocFiles =
-				[
-					fs.FileInfo.New(Path.Combine(tocDirectory, "toc.yml")),
-					fs.FileInfo.New(Path.Combine(tocDirectory, "_toc.yml")),
-					fs.FileInfo.New(Path.Combine(tocDirectory, "docset.yml")),
-					fs.FileInfo.New(Path.Combine(tocDirectory, "_docset.yml"))
-				];
-				var file = tocFiles.FirstOrDefault(f => f.Exists);
-				if (file is null)
-				{
-					assembleContext.Collector.EmitWarning(assembleContext.ConfigurationFileProvider.AssemblerFile,
-						$"Unable to find toc file in {tocDirectory}");
-					file = tocFiles.First();
-				}
-
-				var toc = new TableOfContentsConfiguration(config, file, fs.DirectoryInfo.New(tocDirectory), set.BuildContext, 0, relative);
-				var mapping = new TocConfigurationMapping
-				{
-					TopLevel = kv.Value,
-					RepositoryConfigurationFile = config,
-					TableOfContentsConfiguration = toc
-				};
-				return new KeyValuePair<Uri, TocConfigurationMapping>(kv.Value.Source, mapping);
-			})
 			.ToFrozenDictionary();
 	}
 

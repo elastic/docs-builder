@@ -65,7 +65,7 @@ public class DocumentationSetNavigation<TModel>
 		// Convert TOC items to navigation items
 		var items = new List<INavigationItem>();
 		var index = -1;
-		foreach (var tocItem in documentationSet.Toc)
+		foreach (var tocItem in documentationSet.TableOfContents)
 		{
 			var navItem = ConvertToNavigationItem(
 				tocItem,
@@ -735,7 +735,7 @@ public class DocumentationSetNavigation<TModel>
 		// First, process items from the toc.yml file if it exists
 		if (tocFile != null)
 		{
-			foreach (var child in tocFile.Toc)
+			foreach (var child in tocFile.TableOfContents)
 			{
 				var childNav = ConvertToNavigationItem(
 					child,
@@ -765,7 +765,7 @@ public class DocumentationSetNavigation<TModel>
 		// Validate TOCs have children
 		if (children.Count == 0)
 		{
-			var hasTocFileChildren = tocFile?.Toc.Count > 0;
+			var hasTocFileChildren = tocFile?.TableOfContents.Count > 0;
 			var hasTocRefChildren = tocRef.Children.Count > 0;
 
 			if (!hasTocFileChildren && !hasTocRefChildren)

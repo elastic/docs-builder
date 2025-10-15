@@ -41,31 +41,31 @@ public class PhysicalDocsetTests
 		docSet.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
 
 		// Assert TOC structure
-		docSet.Toc.Should().NotBeEmpty();
+		docSet.TableOfContents.Should().NotBeEmpty();
 
 		// First item should be index.md
-		var firstItem = docSet.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
+		var firstItem = docSet.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		firstItem.Path.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 
 		// Should have hidden files (404.md, developer-notes.md)
-		var hiddenFiles = docSet.Toc.OfType<FileRef>().Where(f => f.Hidden).ToList();
+		var hiddenFiles = docSet.TableOfContents.OfType<FileRef>().Where(f => f.Hidden).ToList();
 		hiddenFiles.Should().Contain(f => f.Path == "404.md");
 		hiddenFiles.Should().Contain(f => f.Path == "developer-notes.md");
 
 		// Should have folders
-		docSet.Toc.OfType<FolderRef>().Should().NotBeEmpty();
-		var contributeFolder = docSet.Toc.OfType<FolderRef>().FirstOrDefault(f => f.Path == "contribute");
+		docSet.TableOfContents.OfType<FolderRef>().Should().NotBeEmpty();
+		var contributeFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "contribute");
 		contributeFolder.Should().NotBeNull();
 		contributeFolder.Children.Should().NotBeEmpty();
 
 		// Should have TOC references
-		var tocRefs = docSet.Toc.OfType<IsolatedTableOfContentsRef>().ToList();
+		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().ToList();
 		tocRefs.Should().NotBeEmpty();
 		tocRefs.Should().Contain(toc => toc.Source == "development");
 
 		// Should have deeply nested structures
-		var testingFolder = docSet.Toc.OfType<FolderRef>().FirstOrDefault(f => f.Path == "testing");
+		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "testing");
 		testingFolder.Should().NotBeNull();
 		testingFolder.Children.Should().NotBeEmpty();
 	}
@@ -77,7 +77,7 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 
-		var folderNames = docSet.Toc.OfType<FolderRef>().Select(f => f.Path).ToList();
+		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.Path).ToList();
 
 		// Assert expected folders exist
 		folderNames.Should().Contain("contribute");
@@ -97,7 +97,7 @@ public class PhysicalDocsetTests
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 
 		// Test the configure folder has nested folders
-		var configureFolder = docSet.Toc.OfType<FolderRef>().First(f => f.Path == "configure");
+		var configureFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "configure");
 		configureFolder.Children.Should().NotBeEmpty();
 
 		// Should have site and content-set folders
@@ -106,7 +106,7 @@ public class PhysicalDocsetTests
 		nestedFolders.Should().Contain("content-set");
 
 		// Test the cli folder has nested folders
-		var cliFolder = docSet.Toc.OfType<FolderRef>().First(f => f.Path == "cli");
+		var cliFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "cli");
 		var cliNestedFolders = cliFolder.Children.OfType<FolderRef>().Select(f => f.Path).ToList();
 		cliNestedFolders.Should().Contain("docset");
 		cliNestedFolders.Should().Contain("assembler");
@@ -121,7 +121,7 @@ public class PhysicalDocsetTests
 		var docSet = DocumentationSetFile.Deserialize(yaml);
 
 		// Find testing folder
-		var testingFolder = docSet.Toc.OfType<FolderRef>().First(f => f.Path == "testing");
+		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "testing");
 
 		// Look for file with children (cross-links.md with crosslink children)
 		var fileWithChildren = testingFolder.Children.OfType<FileRef>()

@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.Plugins.DetectionRules.TableOfContents;
-using Elastic.Documentation.Configuration.TableOfContents;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.IO.NewNavigation;
@@ -20,7 +20,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
 
 	private DetectionRuleOverviewFile? _overviewFile;
-	public void Visit(DocumentationFile file, ITocItem tocItem)
+	public void Visit(DocumentationFile file, ITableOfContentsItem tocItem)
 	{
 		// TODO the parsing of rules should not happen at ITocItem reading time.
 		// ensure the file has an instance of the rule the reference parsed.
@@ -63,7 +63,7 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
 	)
 	{
-		var rules = Build.Configuration.TableOfContents.OfType<FileReference>().First().Children.OfType<RuleReference>().ToArray();
+		var rules = Build.ConfigurationYaml.TableOfContents.OfType<FileRef>().First().Children.OfType<RuleReference>().ToArray();
 		if (rules.Length == 0)
 			return [];
 

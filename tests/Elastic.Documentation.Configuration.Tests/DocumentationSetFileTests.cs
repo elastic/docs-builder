@@ -107,10 +107,10 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(2);
-		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
+		result.TableOfContents.Should().HaveCount(2);
+		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.Path.Should().Be("index.md");
-		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Path.Should().Be("getting-started.md");
 	}
 
@@ -128,14 +128,14 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(3);
-		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
+		result.TableOfContents.Should().HaveCount(3);
+		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.Hidden.Should().BeFalse();
-		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
-		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Path.Should().Be("404.md");
-		result.Toc.ElementAt(2).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(2).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
 	}
 
@@ -154,8 +154,8 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(1);
-		var folder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
+		result.TableOfContents.Should().HaveCount(1);
+		var folder = result.TableOfContents.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
 		folder.Path.Should().Be("contribute");
 		folder.Children.Should().HaveCount(2);
 		folder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
@@ -177,9 +177,9 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(2);
-		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>();
-		result.Toc.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>()
+		result.TableOfContents.Should().HaveCount(2);
+		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>();
+		result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>()
 			.Which.Source.Should().Be("development");
 	}
 
@@ -199,8 +199,8 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(2);
-		var fileWithChildren = result.Toc.ElementAt(1).Should().BeOfType<FileRef>().Subject;
+		result.TableOfContents.Should().HaveCount(2);
+		var fileWithChildren = result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Subject;
 		fileWithChildren.Children.Should().HaveCount(1);
 		var crosslink = fileWithChildren.Children.ElementAt(0).Should().BeOfType<CrossLinkRef>().Subject;
 		crosslink.Title.Should().Be("Getting Started Guide");
@@ -226,8 +226,8 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(1);
-		var topFolder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
+		result.TableOfContents.Should().HaveCount(1);
+		var topFolder = result.TableOfContents.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
 		topFolder.Path.Should().Be("configure");
 		topFolder.Children.Should().HaveCount(2);
 
@@ -297,22 +297,22 @@ public class DocumentationSetFileTests
 		result.Api.Should().HaveCount(2);
 
 		// Assert TOC structure - 4 root items
-		result.Toc.Should().HaveCount(4);
+		result.TableOfContents.Should().HaveCount(4);
 
 		// First item: simple file reference
-		var firstItem = result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
+		var firstItem = result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		firstItem.Path.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 		firstItem.Children.Should().BeEmpty();
 
 		// Second item: hidden file reference
-		var secondItem = result.Toc.ElementAt(1).Should().BeOfType<FileRef>().Subject;
+		var secondItem = result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Subject;
 		secondItem.Path.Should().Be("404.md");
 		secondItem.Hidden.Should().BeTrue();
 		secondItem.Children.Should().BeEmpty();
 
 		// Third item: folder with a deeply nested structure
-		var configureFolder = result.Toc.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
+		var configureFolder = result.TableOfContents.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
 		configureFolder.Path.Should().Be("configure");
 		configureFolder.Children.Should().HaveCount(3);
 
@@ -349,7 +349,7 @@ public class DocumentationSetFileTests
 		crosslink.Children.Should().BeEmpty();
 
 		// Fourth item: toc reference
-		var tocRef = result.Toc.ElementAt(3).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		var tocRef = result.TableOfContents.ElementAt(3).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
 		tocRef.Source.Should().Be("development");
 		tocRef.Children.Should().BeEmpty();
 	}
@@ -370,8 +370,8 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(1);
-		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		result.TableOfContents.Should().HaveCount(1);
+		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 		guide.Path.Should().Be("guide.md");
 		guide.Children.Should().HaveCount(3);
 		guide.Children.ElementAt(0).Should().BeOfType<FileRef>()
@@ -397,8 +397,8 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(1);
-		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		result.TableOfContents.Should().HaveCount(1);
+		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 		guide.Path.Should().Be("api/guide.md");
 		guide.Children.Should().HaveCount(2);
 		guide.Children.ElementAt(0).Should().BeOfType<FileRef>()
@@ -439,7 +439,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().BeEmpty();
+		result.TableOfContents.Should().BeEmpty();
 	}
 
 	[Fact]
@@ -456,7 +456,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var file = result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
+		var file = result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		var crosslink = file.Children.ElementAt(0).Should().BeOfType<CrossLinkRef>().Subject;
 		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started.md/"); // URI normalization adds trailing slash
 		crosslink.Title.Should().BeNull();
@@ -477,14 +477,14 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Toc.Should().HaveCount(4);
-		result.Toc.ElementAt(0).Should().BeOfType<IndexFileRef>()
+		result.TableOfContents.Should().HaveCount(4);
+		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()
 			.Which.Hidden.Should().BeFalse();
-		result.Toc.ElementAt(1).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
-		result.Toc.ElementAt(2).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(2).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeFalse();
-		result.Toc.ElementAt(3).Should().BeOfType<FileRef>()
+		result.TableOfContents.ElementAt(3).Should().BeOfType<FileRef>()
 			.Which.Hidden.Should().BeTrue();
 	}
 
@@ -506,7 +506,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var guide = result.Toc.ElementAt(0).Should().BeOfType<FileRef>().Subject;
+		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
 		var subsection1 = section1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
@@ -576,7 +576,7 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var apiFolder = result.Toc.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
+		var apiFolder = result.TableOfContents.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
 		apiFolder.Children.Should().HaveCount(3);
 		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>();
 		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>();

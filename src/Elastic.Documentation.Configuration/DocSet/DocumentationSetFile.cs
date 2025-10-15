@@ -15,7 +15,7 @@ public class TableOfContentsFile
 	public string? Project { get; set; }
 
 	[YamlMember(Alias = "toc")]
-	public TableOfContents Toc { get; set; } = [];
+	public TableOfContents TableOfContents { get; set; } = [];
 
 	public static TableOfContentsFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
@@ -44,9 +44,6 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	[YamlMember(Alias = "api")]
 	public Dictionary<string, string> Api { get; set; } = [];
-
-	[YamlMember(Alias = "toc")]
-	public new TableOfContents Toc { get; set; } = [];
 
 	public static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);

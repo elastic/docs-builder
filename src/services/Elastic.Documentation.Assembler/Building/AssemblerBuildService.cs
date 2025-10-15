@@ -60,12 +60,6 @@ public class AssemblerBuildService(
 			assembleContext.OutputDirectory.Delete(true);
 		}
 
-		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext.Collector, assembleContext.ConfigurationFileProvider, assemblyConfiguration)
-			|| assembleContext.Collector.Errors > 0)
-			return false;
-
 		_logger.LogInformation("Get all clone directory information");
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();
@@ -76,14 +70,19 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Preparing all assemble sources for build");
 		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
-		var navigationFile = new GlobalNavigationFile(collector, configurationContext.ConfigurationFileProvider, assemblyConfiguration, assembleSources.TocConfigurationMapping);
 
-		_logger.LogInformation("Create global navigation");
-
-		var yaml = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(yaml.FullName, ctx));
+		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets);
+		var navigationFile = new GlobalNavigationFile(collector, siteNavigationFile, navigationFileInfo);
+
+		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
+		// this validates all path prefixes are unique, early exit if duplicates are detected
+		if (!GlobalNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
+			return false;
+
+		_logger.LogInformation("Create global navigation");
 
 		var pathProvider = new GlobalNavigationPathProvider(navigationFile, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);

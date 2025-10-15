@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -24,8 +25,12 @@ public class GlobalNavigationService(
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
+		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
+		var navigationYaml = fileSystem.File.ReadAllText(navigationFileInfo.FullName);
+		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
+
 		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!GlobalNavigationFile.ValidatePathPrefixes(collector, assembleContext.ConfigurationFileProvider, configuration) || collector.Errors > 0)
+		if (!GlobalNavigationFile.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo) || collector.Errors > 0)
 			return false;
 
 		await namespaceChecker.CheckAllPublishedLinks(assembleContext.Collector, ctx);
