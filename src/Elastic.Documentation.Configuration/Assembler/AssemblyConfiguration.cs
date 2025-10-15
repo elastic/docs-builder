@@ -129,7 +129,7 @@ public record AssemblyConfiguration
 	/// <paramref name="repository"/>.
 	public ContentSourceMatch Match(string repository, string branchOrTag)
 	{
-		var match = new ContentSourceMatch(null, null, false);
+		var match = new ContentSourceMatch(null, null, null, false);
 		var tokens = repository.Split('/');
 		var repositoryName = tokens.Last();
 		var owner = tokens.First();
@@ -141,34 +141,29 @@ public record AssemblyConfiguration
 		{
 			var current = r.GetBranch(ContentSource.Current);
 			var next = r.GetBranch(ContentSource.Next);
+			var edge = r.GetBranch(ContentSource.Edge);
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (current == branchOrTag)
 				match = match with { Current = ContentSource.Current };
 
 			if (next == branchOrTag)
-				match = match with
-				{
-					Next = ContentSource.Next
-				};
+				match = match with { Next = ContentSource.Next };
+
+			if (edge == branchOrTag)
+				match = match with { Edge = ContentSource.Edge };
+
 			if (isVersionBranch && SemVersion.TryParse(branchOrTag + ".0", out var v))
 			{
 				// if the current branch is a version, only speculatively match if branch is actually a new version
 				if (SemVersion.TryParse(current + ".0", out var currentVersion))
 				{
 					if (v >= currentVersion)
-						match = match with
-						{
-							Speculative = true
-						};
+						match = match with { Speculative = true };
 				}
 				// assume we are newly onboarding the repository to current/next
 				else
-					match = match with
-					{
-						Speculative = true
-					};
+					match = match with { Speculative = true };
 			}
-
 			return match;
 		}
 
@@ -177,27 +172,27 @@ public record AssemblyConfiguration
 			// this is an unknown new elastic repository
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (isVersionBranch || branchOrTag == "main" || branchOrTag == "master")
-				return match with
-				{
-					Speculative = true
-				};
+				return match with { Speculative = true };
 		}
 
 		if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
-			match = match with
-			{
-				Current = ContentSource.Current
-			};
+			match = match with { Current = ContentSource.Current };
+
 		if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
-			match = match with
-			{
-				Next = ContentSource.Next
-			};
+			match = match with { Next = ContentSource.Next };
+
+		if (Narrative.GetBranch(ContentSource.Edge) == branchOrTag)
+			match = match with { Edge = ContentSource.Edge };
+
+		// if we haven't matched anything yet, and the branch is 'main' or 'master' always build
+		if (match is { Current: null, Next: null, Edge: null, Speculative: false}
+			&& branchOrTag is "main" or "master")
+			return match with { Speculative = true };
 
 		return match;
 	}
 
-	public record ContentSourceMatch(ContentSource? Current, ContentSource? Next, bool Speculative);
+	public record ContentSourceMatch(ContentSource? Current, ContentSource? Next, ContentSource? Edge, bool Speculative);
 }
 
 internal static partial class ContentSourceRegex

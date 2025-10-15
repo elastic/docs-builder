@@ -42,11 +42,12 @@ public class RepositoryBuildMatchingService(
 		// environment does not matter to check the configuration, defaulting to dev
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 		var matches = assembleContext.Configuration.Match(repo, refName);
-		if (matches is { Current: null, Next: null, Speculative: false })
+		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })
 		{
 			_logger.LogInformation("'{Repository}' '{BranchOrTag}' combination not found in configuration.", repo, refName);
 			await githubActionsService.SetOutputAsync("content-source-match", "false");
 			await githubActionsService.SetOutputAsync("content-source-next", "false");
+			await githubActionsService.SetOutputAsync("content-source-edge", "false");
 			await githubActionsService.SetOutputAsync("content-source-current", "false");
 			await githubActionsService.SetOutputAsync("content-source-speculative", "false");
 			return false;
@@ -60,6 +61,7 @@ public class RepositoryBuildMatchingService(
 		await githubActionsService.SetOutputAsync("content-source-match", "true");
 		await githubActionsService.SetOutputAsync("content-source-next", matches.Next is not null ? "true" : "false");
 		await githubActionsService.SetOutputAsync("content-source-current", matches.Current is not null ? "true" : "false");
+		await githubActionsService.SetOutputAsync("content-source-edge", matches.Edge is not null ? "true" : "false");
 		await githubActionsService.SetOutputAsync("content-source-speculative", matches.Speculative ? "true" : "false");
 		return true;
 	}
