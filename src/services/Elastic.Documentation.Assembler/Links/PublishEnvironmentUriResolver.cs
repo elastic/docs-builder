@@ -5,56 +5,183 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.DocSet;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 
 namespace Elastic.Documentation.Assembler.Links;
 
+/// <summary>
+/// Resolves cross-link URIs (e.g., elasticsearch://path/to/file.md) to absolute HTTP URLs
+/// based on the navigation configuration's source → path_prefix mappings.
+/// </summary>
 public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 {
-	private readonly FrozenDictionary<Uri, NavigationTocMapping> _topLevelMappings;
-	private Uri BaseUri { get; }
+	private readonly FrozenDictionary<Uri, NavigationTocMapping> _navigationMappings;
+	private readonly Uri _baseUri;
+	private readonly string? _pathPrefix;
 
-	private PublishEnvironment PublishEnvironment { get; }
-
-	private IReadOnlyList<string> TableOfContentsPrefixes { get; }
-
-	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, NavigationTocMapping> topLevelMappings, PublishEnvironment environment)
+	/// <summary>
+	/// Creates a new resolver that maps cross-link URIs to absolute URLs.
+	/// </summary>
+	/// <param name="navigationMappings">Mappings from navigation.yml (toc sources to path prefixes)</param>
+	/// <param name="environment">The publish environment containing base URI and optional path prefix</param>
+	public PublishEnvironmentUriResolver(FrozenDictionary<Uri, NavigationTocMapping> navigationMappings, PublishEnvironment environment)
 	{
-		_topLevelMappings = topLevelMappings;
-		PublishEnvironment = environment;
-
-		TableOfContentsPrefixes = [..topLevelMappings
-			.Values
-			.Select(p =>
-			{
-				var source = p.Source.ToString();
-				return source.EndsWith(":///", StringComparison.OrdinalIgnoreCase) ? source[..^1] : source;
-			})
-			.OrderByDescending(v => v.Length)
-		];
+		_navigationMappings = navigationMappings;
+		_pathPrefix = environment.PathPrefix;
 
 		if (!Uri.TryCreate(environment.Uri, UriKind.Absolute, out var uri))
 			throw new Exception($"Could not parse uri {environment.Uri} in environment {environment}");
 
-		BaseUri = uri;
+		_baseUri = uri;
 	}
 
+	/// <summary>
+	/// Resolves a cross-link URI to an absolute HTTP URL using navigation mappings.
+	/// </summary>
+	/// <param name="crossLinkUri">The cross-link URI (e.g., elasticsearch://reference/query-dsl)</param>
+	/// <param name="path">The relative file path within the repository (e.g., reference/query-dsl), already URL-formatted</param>
+	/// <returns>The absolute HTTP URL based on navigation.yml mappings</returns>
+	/// <example>
+	/// Given navigation.yml has:
+	///   - toc: elasticsearch://reference
+	///     path_prefix: docs/elasticsearch/reference
+	///
+	/// Input: crossLinkUri = elasticsearch://reference/query-dsl, path = reference/query-dsl
+	/// Output: https://www.elastic.co/docs/elasticsearch/reference/query-dsl
+	/// </example>
 	public Uri Resolve(Uri crossLinkUri, string path)
 	{
-		var subPath = GetSubPathPrefix(crossLinkUri, ref path);
+		// The path parameter is the repository-relative path from links.json, converted to URL format
+		// Example: elasticsearch://reference/query-dsl/bool-query.md → path = "reference/query-dsl/bool-query"
 
-		var fullPath = (PublishEnvironment.PathPrefix, subPath) switch
+		// Find the navigation mapping for this source
+		var mapping = FindBestMatchForSource(crossLinkUri);
+
+		if (mapping != null)
 		{
-			(null or "", null or "") => path,
-			(null or "", var p) => $"{p}/{path.TrimStart('/')}",
-			(var p, null or "") => $"{p}/{path.TrimStart('/')}",
-			var (p, pp) => $"{p}/{pp}/{path.TrimStart('/')}"
-		};
+			// The navigation defines how this source maps to a URL path
+			// Extract what part of 'path' is beyond the source prefix
+			var sourcePrefix = $"{mapping.Source.Host}/{mapping.Source.AbsolutePath.TrimStart('/')}".Trim('/');
+			var remainingPath = path;
 
-		return new Uri(BaseUri, fullPath);
+			// If the path starts with the source prefix, get the remainder
+			if (!string.IsNullOrEmpty(sourcePrefix) && path.StartsWith(sourcePrefix, StringComparison.Ordinal))
+			{
+				remainingPath = path.Length > sourcePrefix.Length
+					? path.Substring(sourcePrefix.Length).TrimStart('/')
+					: string.Empty;
+			}
+
+			// Build final path: path_prefix + remaining path
+			var finalPath = string.IsNullOrEmpty(remainingPath)
+				? mapping.SourcePathPrefix
+				: $"{mapping.SourcePathPrefix}/{remainingPath}";
+
+			// Apply environment prefix if present
+			if (!string.IsNullOrEmpty(_pathPrefix))
+				finalPath = $"{_pathPrefix}/{finalPath.TrimStart('/')}";
+
+			return new Uri(_baseUri, finalPath);
+		}
+
+		// No mapping found - use path as-is with optional environment prefix
+		var fallbackPath = !string.IsNullOrEmpty(_pathPrefix) ? $"{_pathPrefix}/{path.TrimStart('/')}" : path;
+		return new Uri(_baseUri, fallbackPath);
 	}
 
+	/// <summary>
+	/// Finds the best (longest) matching navigation mapping for a cross-link URI.
+	/// Uses longest-prefix matching to handle nested sources.
+	/// </summary>
+	/// <example>
+	/// If navigation has:
+	///   - elasticsearch://reference → docs/elasticsearch/reference
+	///   - elasticsearch://reference/query-dsl → docs/elasticsearch/reference/query-dsl
+	///
+	/// For "elasticsearch://reference/query-dsl/bool-query", we match the longer (more specific) mapping.
+	/// </example>
+	private NavigationTocMapping? FindBestMatchForSource(Uri crossLinkUri)
+	{
+		NavigationTocMapping? bestMatch = null;
+		var bestMatchLength = -1;
+
+		// Build the full source path from the cross-link URI
+		var crossLinkSource = $"{crossLinkUri.Scheme}://{crossLinkUri.Host}/{crossLinkUri.AbsolutePath.TrimStart('/')}".TrimEnd('/');
+
+		foreach (var mapping in _navigationMappings.Values)
+		{
+			// Build the mapping's source as a string for comparison
+			var mappingSource = $"{mapping.Source.Scheme}://{mapping.Source.Host}/{mapping.Source.AbsolutePath.TrimStart('/')}".TrimEnd('/');
+
+			// Check if the cross-link starts with this mapping's source
+			if (crossLinkSource.StartsWith(mappingSource, StringComparison.Ordinal))
+			{
+				// Keep the longest (most specific) match
+				if (mappingSource.Length > bestMatchLength)
+				{
+					bestMatch = mapping;
+					bestMatchLength = mappingSource.Length;
+				}
+			}
+		}
+
+		return bestMatch;
+	}
+
+	/// <summary>
+	/// Resolves a cross-link URI to all its sub-paths for validation purposes.
+	/// Used by NavigationPrefixChecker to detect path collisions.
+	/// </summary>
+	/// <param name="crossLinkUri">The cross-link URI to resolve</param>
+	/// <param name="path">The relative path within the repository</param>
+	/// <returns>Array of URL path prefixes for collision detection</returns>
+	public string[] ResolveToSubPaths(Uri crossLinkUri, string path)
+	{
+		// Find the navigation mapping
+		var mapping = FindBestMatchForSource(crossLinkUri);
+
+		if (mapping == null)
+		{
+			// No mapping found - return the path as-is
+			return [path];
+		}
+
+		// Get the source prefix to calculate the relative path
+		var sourcePrefix = $"{mapping.Source.Host}/{mapping.Source.AbsolutePath.TrimStart('/')}".Trim('/');
+		var remainingPath = path;
+
+		if (!string.IsNullOrEmpty(sourcePrefix) && path.StartsWith(sourcePrefix, StringComparison.Ordinal))
+		{
+			remainingPath = path.Length > sourcePrefix.Length
+				? path.Substring(sourcePrefix.Length).TrimStart('/')
+				: string.Empty;
+		}
+
+		// Build all sub-paths for this URL path
+		// For example, "reference/query-dsl/bool-query" generates:
+		// - "reference/"
+		// - "reference/query-dsl/"
+		// - "reference/query-dsl/bool-query/"
+		var urlPath = MarkdownPathToUrlPath(remainingPath);
+		var tokens = urlPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		var paths = new List<string>();
+
+		var accumulated = "";
+		for (var index = 0; index < tokens.Length; index++)
+		{
+			accumulated += tokens[index] + '/';
+			paths.Add($"{mapping.SourcePathPrefix}/{accumulated.TrimStart('/')}");
+		}
+
+		// Add the base path_prefix itself
+		paths.Add($"{mapping.SourcePathPrefix}/");
+
+		return paths.ToArray();
+	}
+
+	/// <summary>
+	/// Converts a markdown file path to a URL path by removing .md extension and /index suffixes.
+	/// </summary>
 	public static string MarkdownPathToUrlPath(string path)
 	{
 		if (path.EndsWith("/index.md", StringComparison.OrdinalIgnoreCase))
@@ -62,86 +189,5 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		if (path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
 			path = path[..^3];
 		return path;
-
-	}
-
-	public string[] ResolveToSubPaths(Uri crossLinkUri, string path)
-	{
-		var lookup = crossLinkUri.ToString().TrimEnd('/').AsSpan();
-		if (lookup.EndsWith("index.md", StringComparison.Ordinal))
-			lookup = lookup[..^8];
-		if (lookup.EndsWith(".md", StringComparison.Ordinal))
-			lookup = lookup[..^3];
-
-		Uri? match = null;
-		foreach (var prefix in TableOfContentsPrefixes)
-		{
-			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
-				continue;
-			match = new Uri(prefix);
-			break;
-		}
-
-		if (match is null || !_topLevelMappings.TryGetValue(match, out var toc))
-		{
-			var fallBack = new Uri(lookup.ToString());
-			return [$"{fallBack.Host}/{fallBack.AbsolutePath.Trim('/')}"];
-		}
-		path = MarkdownPathToUrlPath(path);
-
-		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
-		var relativePathSpan = path.AsSpan();
-		var newRelativePath = relativePathSpan.StartsWith(originalPath, StringComparison.Ordinal)
-			? relativePathSpan.Slice(originalPath.Length).TrimStart('/').ToString()
-			: relativePathSpan.TrimStart(originalPath).TrimStart('/').ToString();
-
-		var tokens = newRelativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		var paths = new List<string>();
-		var p = "";
-		for (var index = 0; index < tokens.Length; index++)
-		{
-			p += tokens[index] + '/';
-			paths.Add(p);
-		}
-
-		return paths
-			.Select(i => $"{toc.SourcePathPrefix}/{i.TrimStart('/')}")
-			.Concat([$"{toc.SourcePathPrefix}/"])
-			.ToArray();
-	}
-
-	private string GetSubPathPrefix(Uri crossLinkUri, ref string path)
-	{
-		var lookup = crossLinkUri.ToString().AsSpan();
-		if (lookup.EndsWith(".md", StringComparison.Ordinal))
-			lookup = lookup[..^3];
-
-		// the temporary fix only spotted two instances of this:
-		// Error: Unable to find defined toc for url: docs-content:///manage-data/ingest/transform-enrich/set-up-an-enrich-processor.md
-		// Error: Unable to find defined toc for url: kibana:///reference/configuration-reference.md
-		if (lookup.IndexOf(":///") >= 0)
-			lookup = lookup.ToString().Replace(":///", "://").AsSpan();
-
-		Uri? match = null;
-		foreach (var prefix in TableOfContentsPrefixes)
-		{
-			if (!lookup.StartsWith(prefix, StringComparison.Ordinal))
-				continue;
-			match = new Uri(prefix);
-			break;
-		}
-
-		if (match is null || !_topLevelMappings.TryGetValue(match, out var toc))
-			return string.Empty;
-
-
-		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/'));
-		if (originalPath == toc.SourcePathPrefix)
-			return string.Empty;
-
-		var newRelativePath = path.AsSpan().GetTrimmedRelativePath(originalPath);
-		path = Path.Combine(toc.SourcePathPrefix, newRelativePath);
-
-		return string.Empty;
 	}
 }

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Products;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -45,6 +46,10 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "api")]
 	public Dictionary<string, string> Api { get; set; } = [];
 
+	// TODO remove this
+	[YamlMember(Alias = "products")]
+	public List<ProductLink> Products { get; set; } = [];
+
 	public static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
 }
@@ -54,6 +59,8 @@ public class DocumentationSetFeatures
 {
 	[YamlMember(Alias = "primary-nav", ApplyNamingConventions = false)]
 	public bool? PrimaryNav { get; set; }
+	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
+	public bool? DisableGithubEditLink { get; set; }
 }
 
 public class TableOfContents : List<ITableOfContentsItem>

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation.Isolated;
@@ -13,6 +14,7 @@ using Generator.Equals;
 namespace Elastic.Markdown.IO.NewNavigation;
 
 [Equatable]
+[DebuggerDisplay("{RelativePath,nq}")]
 public partial record FilePath
 {
 	public FilePath(IFileInfo fileInfo, IDirectoryInfo sourceDirectory)
@@ -64,8 +66,12 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 	/// <inheritdoc />
 	public MarkdownFile? TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
 	{
-		if (Files.TryGetValue(new FilePath(path, _context.DocumentationSourceDirectory), out var file) && file is MarkdownFile markdown)
-			return markdown;
+		var filePath = new FilePath(path, _context.DocumentationSourceDirectory);
+		if (Files.TryGetValue(filePath, out var file))
+		{
+			if (file is MarkdownFile markdown)
+				return markdown;
+		}
 		return null;
 	}
 

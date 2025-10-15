@@ -28,4 +28,5 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(PhantomRegistration))]
+[YamlSerializable(typeof(ProductLink))]
 public partial class YamlStaticContext;
