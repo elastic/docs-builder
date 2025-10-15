@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.DocSet;
-using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -46,7 +45,7 @@ public class NavigationPrefixChecker
 		var navigationYaml = context.ReadFileSystem.File.ReadAllText(navigationFileInfo.FullName);
 		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
 
-		_phantoms = GlobalNavigationFile.GetPhantomPrefixes(siteNavigationFile);
+		_phantoms = SiteNavigationFile.GetPhantomPrefixes(siteNavigationFile);
 
 		_repositories = context.Configuration.AvailableRepositories.Values
 			.Select(r => r.Name)

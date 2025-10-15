@@ -4,8 +4,8 @@
 
 using System.Collections.Immutable;
 using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.Navigation;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.IO;
@@ -20,7 +20,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 	public ImmutableSortedSet<string> TableOfContentsPrefixes { get; }
 	private ImmutableSortedSet<string> PhantomPrefixes { get; }
 
-	public GlobalNavigationPathProvider(GlobalNavigationFile navigationFile, AssembleSources assembleSources, AssembleContext context)
+	public GlobalNavigationPathProvider(SiteNavigation navigation, AssembleSources assembleSources, AssembleContext context)
 	{
 		_assembleSources = assembleSources;
 		_context = context;
@@ -35,7 +35,7 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			.OrderByDescending(v => v.Length)
 		];
 
-		PhantomPrefixes = [..navigationFile.Phantoms
+		PhantomPrefixes = [..navigation.Phantoms
 			.Select(p =>
 			{
 				var source = p.Source.ToString();

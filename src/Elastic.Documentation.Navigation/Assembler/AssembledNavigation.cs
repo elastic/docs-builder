@@ -27,6 +27,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		IsCrossLink = false;
 		Id = ShortId.Create("site");
 		IsUsingNavigationDropdown = false;
+		Phantoms = siteNavigationFile.Phantoms;
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
 		{
@@ -63,6 +64,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	private readonly Dictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> _nodes;
 	public IReadOnlyDictionary<Uri, INodeNavigationItem<IDocumentationFile, INavigationItem>> Nodes => _nodes;
 
+	public IReadOnlyCollection<PhantomRegistration> Phantoms { get; }
 
 	//TODO Obsolete?
 	public IReadOnlyCollection<INodeNavigationItem<INavigationModel, INavigationItem>> TopLevelItems =>
