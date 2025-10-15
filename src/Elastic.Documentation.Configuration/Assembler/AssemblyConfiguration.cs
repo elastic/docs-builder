@@ -30,9 +30,9 @@ public record AssemblyConfiguration
 			// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
 			// this allows us to test new docset features as part of the assembler build
 			if (skipPrivateRepositories
-				&& config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
-				&& Paths.GetSolutionDirectory() is { } solutionDir
-			)
+			    && config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
+			    && Paths.GetSolutionDirectory() is { } solutionDir
+			   )
 			{
 				var docsRepositoryPath = Path.Combine(solutionDir.FullName, "docs");
 				config.ReferenceRepositories["docs-builder"] = docsContentRepository with
@@ -86,7 +86,10 @@ public record AssemblyConfiguration
 		};
 		// ensure we always null path if we are running in CI
 		if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
-			repository = repository with { Path = null };
+			repository = repository with
+			{
+				Path = null
+			};
 
 		if (string.IsNullOrEmpty(repository.Origin))
 		{
@@ -144,13 +147,22 @@ public record AssemblyConfiguration
 			var edge = r.GetBranch(ContentSource.Edge);
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (current == branchOrTag)
-				match = match with { Current = ContentSource.Current };
+				match = match with
+				{
+					Current = ContentSource.Current
+				};
 
 			if (next == branchOrTag)
-				match = match with { Next = ContentSource.Next };
+				match = match with
+				{
+					Next = ContentSource.Next
+				};
 
 			if (edge == branchOrTag)
-				match = match with { Edge = ContentSource.Edge };
+				match = match with
+				{
+					Edge = ContentSource.Edge
+				};
 
 			if (isVersionBranch && SemVersion.TryParse(branchOrTag + ".0", out var v))
 			{
@@ -158,12 +170,19 @@ public record AssemblyConfiguration
 				if (SemVersion.TryParse(current + ".0", out var currentVersion))
 				{
 					if (v >= currentVersion)
-						match = match with { Speculative = true };
+						match = match with
+						{
+							Speculative = true
+						};
 				}
 				// assume we are newly onboarding the repository to current/next
 				else
-					match = match with { Speculative = true };
+					match = match with
+					{
+						Speculative = true
+					};
 			}
+
 			return match;
 		}
 
@@ -172,22 +191,37 @@ public record AssemblyConfiguration
 			// this is an unknown new elastic repository
 			var isVersionBranch = ContentSourceRegex.MatchVersionBranch().IsMatch(branchOrTag);
 			if (isVersionBranch || branchOrTag == "main" || branchOrTag == "master")
-				return match with { Speculative = true };
+				return match with
+				{
+					Speculative = true
+				};
 		}
 
 		if (Narrative.GetBranch(ContentSource.Current) == branchOrTag)
-			match = match with { Current = ContentSource.Current };
+			match = match with
+			{
+				Current = ContentSource.Current
+			};
 
 		if (Narrative.GetBranch(ContentSource.Next) == branchOrTag)
-			match = match with { Next = ContentSource.Next };
+			match = match with
+			{
+				Next = ContentSource.Next
+			};
 
 		if (Narrative.GetBranch(ContentSource.Edge) == branchOrTag)
-			match = match with { Edge = ContentSource.Edge };
+			match = match with
+			{
+				Edge = ContentSource.Edge
+			};
 
 		// if we haven't matched anything yet, and the branch is 'main' or 'master' always build
-		if (match is { Current: null, Next: null, Edge: null, Speculative: false}
-			&& branchOrTag is "main" or "master")
-			return match with { Speculative = true };
+		if (match is { Current: null, Next: null, Edge: null, Speculative: false }
+		    && branchOrTag is "main" or "master")
+			return match with
+			{
+				Speculative = true
+			};
 
 		return match;
 	}
