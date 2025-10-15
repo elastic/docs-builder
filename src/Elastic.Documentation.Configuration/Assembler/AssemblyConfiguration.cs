@@ -30,8 +30,8 @@ public record AssemblyConfiguration
 			// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
 			// this allows us to test new docset features as part of the assembler build
 			if (skipPrivateRepositories
-			    && config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
-			    && Paths.GetSolutionDirectory() is { } solutionDir
+				&& config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
+				&& Paths.GetSolutionDirectory() is { } solutionDir
 			   )
 			{
 				var docsRepositoryPath = Path.Combine(solutionDir.FullName, "docs");
