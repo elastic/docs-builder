@@ -237,7 +237,7 @@ public record AssemblyConfiguration
 
 		// if we haven't matched anything yet, and the branch is 'main' or 'master' always build
 		if (match is { Current: null, Next: null, Edge: null, Speculative: false }
-		    && branchOrTag is "main" or "master")
+			&& branchOrTag is "main" or "master")
 		{
 			return match with
 			{
