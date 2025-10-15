@@ -93,6 +93,7 @@ toc:
       - file: conditionals.md
       - file: csv-include.md
       - hidden: diagrams.md
+      - file: directives.md
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md
