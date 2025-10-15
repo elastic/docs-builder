@@ -16,6 +16,7 @@ public enum Exporter
 	DocumentationState,
 	LinkMetadata,
 	Redirects,
+	MarkdownValidation
 }
 public static class ExportOptions
 {

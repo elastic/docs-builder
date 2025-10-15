@@ -27,6 +27,7 @@ public static class ExporterExtensions
 			markdownExporters.Add(new ElasticsearchMarkdownSemanticExporter(logFactory, context.Collector, indexNamespace, context.Endpoints));
 		if (exportOptions.Contains(Exporter.ElasticsearchNoSemantic))
 			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, indexNamespace, context.Endpoints));
+		markdownExporters.Add(new MarkdownValidationExporter());
 		return markdownExporters;
 	}
 }
