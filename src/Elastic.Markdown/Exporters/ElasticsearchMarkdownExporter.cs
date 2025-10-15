@@ -356,6 +356,41 @@ public class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposable
 				throw new Exception($"Failed to create index {semanticIndex}: {semanticIndexPut}");
 			_ = await _semanticChannel.Channel.ApplyAliasesAsync(ctx);
 		}
+
+		var semanticWriteAlias = string.Format(_semanticChannel.Channel.Options.IndexFormat, "latest");
+		var lexicalWriteAlias = string.Format(_lexicalChannel.Channel.Options.IndexFormat, "latest");
+
+		var reindexUrl = "/_reindex?wait_for_completion=false&require_alias=true&scroll=10m";
+		var request = PostData.Serializable(new
+		{
+			source = new
+			{
+				index = lexicalWriteAlias,
+				size = 100,
+				query = new
+				{
+					range = new
+					{
+						last_updated = new { gte = _batchIndexDate.ToString("o") }
+					}
+				},
+				dest = new { index = semanticWriteAlias }
+			}
+		});
+		var reindexNewChanges = await _transport.PostAsync<DynamicResponse>(reindexUrl, request, ctx);
+		var taskId = reindexNewChanges.Body.Get<string>("task");
+		var completed = false;
+		do
+		{
+			var reindexTask = await _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ctx);
+			completed = reindexTask.Body.Get<bool>("completed");
+			var total = reindexTask.Body.Get<int>("task.status.total");
+			var updated = reindexTask.Body.Get<int>("task.status.updated");
+			var deleted = reindexTask.Body.Get<int>("task.status.deleted");
+			var deleted = reindexTask.Body.Get<int>("task.status.deleted");
+
+		} while (!completed);
+
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
