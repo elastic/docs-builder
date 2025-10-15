@@ -52,7 +52,7 @@ All documentation pages must include an `applies_to` tag in the YAML frontmatter
 
 A header can be followed by an `{applies_to}` directive which contextualizes the applicability of the section further.
 
-Section-level `{applies_to}` directives require triple backticks because their content is literal. Refer to [](directives.md#literal-directives) for more information.
+Section-level `{applies_to}` directives require triple backticks because their content is literal. Refer to [](directives.md#exception-literal-blocks) for more information.
 
 ````markdown
 ```{applies_to}
