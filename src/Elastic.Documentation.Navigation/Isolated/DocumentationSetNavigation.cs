@@ -75,7 +75,7 @@ public class DocumentationSetNavigation<TModel>
 				root: NavigationRoot,
 				prefixProvider: PathPrefixProvider,
 				depth: Depth,
-				parentPath: ""
+				parentContextPath: "" // Root level, no parent path
 			);
 
 			if (navItem != null)
@@ -156,14 +156,14 @@ public class DocumentationSetNavigation<TModel>
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		IPathPrefixProvider prefixProvider,
 		int depth,
-		string parentPath
+		string parentContextPath
 	) =>
 		tocItem switch
 		{
 			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, prefixProvider),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
 			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth, parentPath),
+			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth, parentContextPath),
 			_ => null
 		};
 
@@ -185,44 +185,6 @@ public class DocumentationSetNavigation<TModel>
 	{
 		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, hidden, index, 0, parent, root, prefixProvider, []);
 		return new VirtualFileNavigation<TModel>(documentationFile, fileInfo, virtualFileNavigationArgs);
-	}
-
-	/// <summary>
-	/// Resolves TOC path handling overlapping path segments to avoid duplication.
-	/// For example, parentPath="troubleshoot/ingest" + tocSource="ingest/opentelemetry" → "troubleshoot/ingest/opentelemetry"
-	/// </summary>
-	private static string ResolveTocPath(string parentPath, string tocSource)
-	{
-		if (string.IsNullOrEmpty(parentPath))
-			return tocSource;
-
-		// If tocSource already starts with parentPath, don't combine them
-		if (tocSource.StartsWith($"{parentPath}/", StringComparison.Ordinal))
-			return tocSource;
-
-		// Check for overlapping path segments at the end of parentPath and start of tocSource
-		// e.g., parentPath="troubleshoot/ingest" + tocSource="ingest/opentelemetry"
-		var parentSegments = parentPath.Split('/');
-		var tocSegments = tocSource.Split('/');
-
-		// Find longest overlap
-		for (var overlapLength = Math.Min(parentSegments.Length, tocSegments.Length); overlapLength > 0; overlapLength--)
-		{
-			var parentEnd = string.Join("/", parentSegments[^overlapLength..]);
-			var tocStart = string.Join("/", tocSegments[..overlapLength]);
-
-			if (parentEnd.Equals(tocStart, StringComparison.Ordinal))
-			{
-				// Found overlap - combine parent with non-overlapping part of toc
-				var tocRemainder = string.Join("/", tocSegments[overlapLength..]);
-				return string.IsNullOrEmpty(tocRemainder)
-					? parentPath
-					: $"{parentPath}/{tocRemainder}";
-			}
-		}
-
-		// No overlap found, combine normally
-		return $"{parentPath}/{tocSource}";
 	}
 
 	/// <summary>
@@ -258,7 +220,7 @@ public class DocumentationSetNavigation<TModel>
 	/// <summary>
 	/// Processes children recursively and returns the list of navigation items.
 	/// Since LoadAndResolve has already prepended parent paths to all children,
-	/// we pass an empty parentPath to avoid double-prepending paths.
+	/// we don't need to calculate paths here.
 	/// </summary>
 	private List<INavigationItem> ProcessFileChildren(
 		FileRef fileRef,
@@ -277,7 +239,7 @@ public class DocumentationSetNavigation<TModel>
 				(INodeNavigationItem<INavigationModel, INavigationItem>)tempFileNavigation, root,
 				prefixProvider, // Files don't change the URL root
 				0, // Depth will be set by child
-				"" // Empty parentPath because LoadAndResolve already resolved all paths
+				"" // Files already have full paths from LoadAndResolve
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -441,7 +403,7 @@ public class DocumentationSetNavigation<TModel>
 				root,
 				prefixProvider, // Keep parent's prefix provider
 				depth + 1,
-				folderPath // Pass folderPath so TOCs inside folders can find their toc.yml files
+				folderPath // Pass folder path for TOC resolution
 			);
 
 			if (childNav != null)
@@ -451,7 +413,7 @@ public class DocumentationSetNavigation<TModel>
 		// Validate that we have children (LoadAndResolve should have ensured this)
 		if (children.Count == 0)
 		{
-			context.EmitError(context.ConfigurationPath, $"Folder navigation '{folderPath}' has children defined but none could be created");
+			context.Collector.EmitError(folderRef.Context, $"Folder navigation '{folderPath}' has children defined but none could be created ({folderRef.Context}:)");
 			return null;
 		}
 
@@ -476,66 +438,18 @@ public class DocumentationSetNavigation<TModel>
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		IPathPrefixProvider prefixProvider,
 		int depth,
-		string parentPath
+		string parentContextPath
 	)
 	{
-		// Determine the full TOC path for file system operations
-		IDirectoryInfo tocDirectory;
-		string tocPath;
+		// TOC paths in tocRef.Path are relative to their parent.
+		// Combine with parentContextPath to get the full path for file system operations.
+		var tocPath = string.IsNullOrEmpty(parentContextPath)
+			? tocRef.Path
+			: $"{parentContextPath}/{tocRef.Path}";
 
-		// Check if parent is a TOC (or placeholder for a TOC being constructed)
-		var parentTocDirectory = parent switch
-		{
-			TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
-			TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.TableOfContentsDirectory,
-			_ => null
-		};
-
-		if (parentTocDirectory != null)
-		{
-			// Nested TOC: use parent TOC's directory as base
-			tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-				context.ReadFileSystem.Path.Combine(parentTocDirectory.FullName, tocRef.Path)
-			);
-			// Extract the relative path from the documentation source directory
-			var fullPath = tocDirectory.FullName;
-			var basePath = context.DocumentationSourceDirectory.FullName.TrimEnd('/');
-			tocPath = fullPath.StartsWith(basePath, StringComparison.Ordinal)
-				? fullPath[(basePath.Length + 1)..]
-				: tocRef.Path;
-		}
-		else
-		{
-			// Check if we're inside a TOC (parent TOC but not nested under another TOC's directory)
-			var parentTocDir = prefixProvider switch
-			{
-				TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
-				TemporaryNavigationPlaceholder placeholder when placeholder.TableOfContentsDirectory != null => placeholder.TableOfContentsDirectory,
-				_ => null
-			};
-
-			if (parentTocDir != null)
-			{
-				// Inside a TOC: resolve relative to the parent TOC's directory
-				tocPath = string.IsNullOrEmpty(parentPath)
-					? tocRef.Path
-					: ResolveTocPath(parentPath, tocRef.Path);
-
-				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-					context.ReadFileSystem.Path.Combine(parentTocDir.FullName, tocPath)
-				);
-			}
-			else
-			{
-				// Root-level: use parentPath (which comes from folder structure)
-				// Check for path overlap to avoid duplication
-				tocPath = ResolveTocPath(parentPath, tocRef.Path);
-
-				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-					context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
-				);
-			}
-		}
+		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
+			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
+		);
 
 		// Read and deserialize the toc.yml file
 		var tocFilePath = context.ReadFileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
@@ -544,20 +458,15 @@ public class DocumentationSetNavigation<TModel>
 		if (context.ReadFileSystem.File.Exists(tocFilePath))
 			tocFile = TableOfContentsFile.Deserialize(context.ReadFileSystem.File.ReadAllText(tocFilePath));
 		else
-			context.EmitError(context.ConfigurationPath, $"Table of contents file not found: {tocFilePath}");
-
-		// Create the TOC navigation that will be the parent for children
-		// For TOCs nested under other TOCs, use just the source name since the parent TOC's path is the base
-		// For TOCs at root or under folders, use the full tocPath
-		var navigationParentPath = (parent != null && parentTocDirectory != null) ? tocRef.Path : tocPath;
+			context.Collector.EmitError(tocRef.Context, $"Table of contents file not found: {tocFilePath} ({tocRef.Context}:)");
 
 		var placeholderNavigation = new TemporaryNavigationPlaceholder(
 			depth + 1,
-			ShortId.Create(navigationParentPath),
+			ShortId.Create(tocPath),
 			parent,
 			root,
 			prefixProvider,
-			navigationParentPath,
+			tocPath,
 			tocDirectory
 		);
 
@@ -569,8 +478,8 @@ public class DocumentationSetNavigation<TModel>
 		// Children should be defined in the toc.yml file, not in the parent YAML
 		if (tocRef.Children.Count > 0)
 		{
-			context.EmitError(context.ConfigurationPath,
-				$"TableOfContents '{tocRef.Path}' may not contain children, define children in '{tocRef.Path}/toc.yml' instead.");
+			context.Collector.EmitError(tocRef.Context,
+				$"TableOfContents '{tocRef.Path}' may not contain children, define children in '{tocRef.Path}/toc.yml' instead. ({tocRef.Context}:)");
 		}
 
 		// Always use tocFile.TableOfContents which contains unresolved children from toc.yml
@@ -588,7 +497,7 @@ public class DocumentationSetNavigation<TModel>
 					root,
 					placeholderNavigation, // Placeholder acts as the new prefix provider for children
 					depth + 1,
-					"" // Reset parentPath since TOC is new prefixProvider - children paths are relative to this TOC
+					tocPath // Children of TOC are relative to this TOC's path
 				);
 
 				if (childNav != null)
@@ -603,16 +512,16 @@ public class DocumentationSetNavigation<TModel>
 			var hasTocRefChildren = tocRef.Children.Count > 0;
 
 			if (!hasTocFileChildren && !hasTocRefChildren)
-				context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has no children defined");
+				context.Collector.EmitError(tocRef.Context, $"Table of contents navigation '{tocPath}' has no children defined ({tocRef.Context}:)");
 			else
-				context.EmitError(context.ConfigurationPath, $"Table of contents navigation '{navigationParentPath}' has children defined but none could be created");
+				context.Collector.EmitError(tocRef.Context, $"Table of contents navigation '{tocPath}' has children defined but none could be created ({tocRef.Context}:)");
 			return null;
 		}
 
 		var finalTocNavigation = new TableOfContentsNavigation(
 			tocDirectory,
 			depth + 1,
-			navigationParentPath,
+			tocPath,
 			parent,
 			prefixProvider,
 			children,
