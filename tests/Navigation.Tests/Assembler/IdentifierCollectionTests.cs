@@ -18,8 +18,8 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		// Test platform repository
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Root identifier should be <repository>://
@@ -33,10 +33,8 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Test platform repository with nested TOCs
-		var platformContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.ConfigurationPath, fileSystem);
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Should collect identifiers from nested TOCs
@@ -56,10 +54,8 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Test observability repository (no nested TOCs)
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), fileSystem);
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
 		// Should only have root identifier
@@ -75,8 +71,8 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		// Test platform repository with nested TOCs
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Get the deployment-guide TOC
@@ -98,14 +94,14 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		// Create multiple documentation sets
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), fileSystem);
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
 		// Each should have its own set of identifiers

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.DocSet;
 using Elastic.Documentation.Navigation.Isolated;
 using FluentAssertions;
@@ -20,8 +21,10 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		             - file: getting-started.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -43,8 +46,10 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		                 - file: section2.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -71,12 +76,14 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		           toc:
 		             - file: nest/guide.md
 		               children:
-		                 - file: nest/section1.md
-		                 - file: nest/section2.md
+		                 - file: section1.md
+		                 - file: section2.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -108,8 +115,10 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		                     - file: subsection.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -140,8 +149,10 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		                 - file: section1.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 		var fileNav = navigation.NavigationItems.First() as INodeNavigationItem<IDocumentationFile, INavigationItem>;
@@ -174,8 +185,10 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		                     - file: topics.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 

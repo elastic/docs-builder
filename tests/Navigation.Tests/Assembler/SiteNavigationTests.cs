@@ -40,11 +40,11 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		// Create DocumentationSetNavigation instances for the referenced repos
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/observability/docs/docset.yml"));
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), fileSystem);
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
 		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
-		var searchDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/serverless-search/docs/docset.yml"));
+		var searchDocset = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"), fileSystem);
 		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(searchDocset, searchContext, GenericDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav, searchNav };
@@ -78,7 +78,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		// Create DocumentationSetNavigation for platform
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };

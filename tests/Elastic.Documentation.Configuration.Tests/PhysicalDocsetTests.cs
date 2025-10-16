@@ -16,7 +16,8 @@ public class PhysicalDocsetTests
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		// Assert basic properties
 		docSet.Project.Should().Be("doc-builder");
@@ -62,7 +63,7 @@ public class PhysicalDocsetTests
 		// Should have TOC references
 		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().ToList();
 		tocRefs.Should().NotBeEmpty();
-		tocRefs.Should().Contain(toc => toc.Source == "development");
+		tocRefs.Should().Contain(toc => toc.Path == "development");
 
 		// Should have deeply nested structures
 		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.Path == "testing");
@@ -75,7 +76,8 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.Path).ToList();
 
@@ -94,7 +96,8 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		// Test the configure folder has nested folders
 		var configureFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "configure");
@@ -118,7 +121,8 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		// Find testing folder
 		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.Path == "testing");

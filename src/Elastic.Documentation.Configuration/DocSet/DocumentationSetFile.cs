@@ -51,23 +51,45 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "products")]
 	public List<ProductLink> Products { get; set; } = [];
 
-	public static new DocumentationSetFile Deserialize(string json) =>
+	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
+	{
+		if (item is FileRef fileRef)
+			return [fileRef];
+		if (item is FolderRef folderRef)
+			return folderRef.Children.SelectMany(GetFileRefs).ToArray();
+		if (item is IsolatedTableOfContentsRef tocRef)
+			return tocRef.Children.SelectMany(GetFileRefs).ToArray();
+		if (item is CrossLinkRef crossLinkRef)
+			return [];
+		throw new Exception($"Unexpected item type {item.GetType().Name}");
+	}
+
+	private static new DocumentationSetFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
 
 	/// <summary>
 	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IFileInfo docsetPath, IFileSystem fileSystem)
+	public static DocumentationSetFile LoadAndResolve(IFileInfo docsetPath, IFileSystem? fileSystem = null)
 	{
+		fileSystem ??= docsetPath.FileSystem;
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
-		var docSet = Deserialize(yaml);
-
 		var sourceDirectory = docsetPath.Directory!;
-		docSet.TableOfContents = ResolveTableOfContents(docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "");
+		return LoadAndResolve(yaml, sourceDirectory, fileSystem);
+	}
 
+	/// <summary>
+	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
+	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
+	/// </summary>
+	public static DocumentationSetFile LoadAndResolve(string yaml, IDirectoryInfo sourceDirectory, IFileSystem fileSystem)
+	{
+		var docSet = Deserialize(yaml);
+		docSet.TableOfContents = ResolveTableOfContents(docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "");
 		return docSet;
 	}
+
 
 	/// <summary>
 	/// Recursively resolves all IsolatedTableOfContentsRef items in a table of contents,
@@ -78,7 +100,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		IReadOnlyCollection<ITableOfContentsItem> items,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string parentPath)
+		string parentPath
+	)
 	{
 		var resolved = new TableOfContents();
 
@@ -107,16 +130,12 @@ public class DocumentationSetFile : TableOfContentsFile
 		IsolatedTableOfContentsRef tocRef,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string parentPath)
+		string parentPath
+	)
 	{
-		// Compute TOC path
-		var tocPath = string.IsNullOrEmpty(parentPath)
-			? tocRef.Source
-			: $"{parentPath}/{tocRef.Source}";
+		var tocPath = string.IsNullOrEmpty(parentPath) ? tocRef.Path : $"{parentPath}/{tocRef.Path}";
 
-		var tocDirectory = fileSystem.DirectoryInfo.New(
-			fileSystem.Path.Combine(baseDirectory.FullName, tocPath)
-		);
+		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, tocPath));
 
 		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
 
@@ -131,11 +150,12 @@ public class DocumentationSetFile : TableOfContentsFile
 		var resolvedChildren = ResolveTableOfContents(tocFile.TableOfContents, baseDirectory, fileSystem, tocPath);
 
 		// Return a new IsolatedTableOfContentsRef with the resolved children
-		return new IsolatedTableOfContentsRef(tocRef.Source, resolvedChildren);
+		return new IsolatedTableOfContentsRef(tocPath, resolvedChildren);
 	}
 
 	/// <summary>
 	/// Resolves a FileRef by prepending the parent path to the file path and recursively resolving children.
+	/// The parent path provides the correct context for child resolution.
 	/// </summary>
 	private static ITableOfContentsItem ResolveFileRef(
 		FileRef fileRef,
@@ -143,9 +163,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IFileSystem fileSystem,
 		string parentPath)
 	{
-		var fullPath = string.IsNullOrEmpty(parentPath)
-			? fileRef.Path
-			: $"{parentPath}/{fileRef.Path}";
+		var fullPath = string.IsNullOrEmpty(parentPath) ? fileRef.Path : $"{parentPath}/{fileRef.Path}";
 
 		if (fileRef.Children.Count == 0)
 		{
@@ -178,9 +196,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IFileSystem fileSystem,
 		string parentPath)
 	{
-		var fullPath = string.IsNullOrEmpty(parentPath)
-			? folderRef.Path
-			: $"{parentPath}/{folderRef.Path}";
+		var fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.Path : $"{parentPath}/{folderRef.Path}";
 
 		if (folderRef.Children.Count == 0)
 			return new FolderRef(fullPath, []);
@@ -239,7 +255,7 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 public record FolderRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
-public record IsolatedTableOfContentsRef(string Source, IReadOnlyCollection<ITableOfContentsItem> Children)
+public record IsolatedTableOfContentsRef(string Path, IReadOnlyCollection<ITableOfContentsItem> Children)
 	: ITableOfContentsItem;
 
 

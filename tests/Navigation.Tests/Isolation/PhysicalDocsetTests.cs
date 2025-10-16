@@ -13,15 +13,29 @@ namespace Elastic.Documentation.Navigation.Tests.Isolation;
 public class PhysicalDocsetTests(ITestOutputHelper output)
 {
 	[Fact]
+	public void DocsContentPathsAllExists()
+	{
+		var docsetPath = Path.Combine("/Users/mpdreamz/Projects/docs-content", "docset.yml");
+		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
+
+		var fileSystem = new FileSystem();
+		var configPath = fileSystem.FileInfo.New(docsetPath);
+		var docSet = DocumentationSetFile.LoadAndResolve(configPath);
+		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
+		foreach (var fileRef in fileRefs)
+		{
+			var path = fileSystem.FileInfo.New(Path.Combine(configPath.Directory!.FullName, fileRef.Path));
+			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
+		}
+	}
+	[Fact]
 	public async Task DocsContentHasNoErrors()
 	{
 		var docsetPath = Path.Combine("/Users/mpdreamz/Projects/docs-content", "docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
-		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-
 		var fileSystem = new FileSystem();
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine("/Users/mpdreamz/Projects/docs-content"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine("/Users/mpdreamz/Projects/docs-content", ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
@@ -48,9 +62,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var docsetPath = Path.Combine(folder, "docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
-		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath));
 		docSet.TableOfContents.Should().NotBeEmpty();
-		var fileRefs = docSet.TableOfContents.SelectMany(GetFileRefs).ToList();
+		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 
 		var docsDir = fileSystem.DirectoryInfo.New(folder);
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(folder, "..", ".artifacts", "test-output"));
@@ -68,18 +82,6 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		// Assert navigation was built successfully
 		navigation.NavigationItems.Should().NotBeEmpty();
 
-		static FileRef[] GetFileRefs(ITableOfContentsItem item)
-		{
-			if (item is FileRef fileRef)
-				return [fileRef];
-			if (item is FolderRef folderRef)
-				return folderRef.Children.SelectMany(GetFileRefs).ToArray();
-			if (item is IsolatedTableOfContentsRef tocRef)
-				return tocRef.Children.SelectMany(GetFileRefs).ToArray();
-			if (item is CrossLinkRef crossLinkRef)
-				return [];
-			throw new Exception($"Unexpected item type {item.GetType().Name}");
-		}
 	}
 
 	[Fact]
@@ -88,10 +90,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
-		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-
 		var fileSystem = new FileSystem();
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
@@ -127,10 +127,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 	public async Task PhysicalDocsetNavigationHasCorrectUrls()
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
-		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-
 		var fileSystem = new FileSystem();
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
@@ -155,10 +153,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 	public async Task PhysicalDocsetNavigationIncludesNestedTocs()
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
-		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-
 		var fileSystem = new FileSystem();
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
@@ -192,10 +188,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 	public async Task PhysicalDocsetNavigationHandlesHiddenFiles()
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
-		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-
 		var fileSystem = new FileSystem();
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
@@ -217,10 +211,9 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 	public async Task PhysicalDocsetNavigationHandlesCrossLinks()
 	{
 		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
-		var yaml = File.ReadAllText(docsetPath);
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-
 		var fileSystem = new FileSystem();
+		var docSet = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath));
+
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);

@@ -111,9 +111,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 
-		// Deserialize the YAML first, then pass it to ConfigurationFile
-		var yaml = ConfigurationPath.Exists ? readFileSystem.File.ReadAllText(ConfigurationPath.FullName) : "";
-		ConfigurationYaml = string.IsNullOrEmpty(yaml) ? new DocumentationSetFile() : DocumentationSetFile.Deserialize(yaml);
+		// Load and resolve the docset file, or create an empty one if it doesn't exist
+		ConfigurationYaml = ConfigurationPath.Exists
+			? DocumentationSetFile.LoadAndResolve(ConfigurationPath, readFileSystem)
+			: new DocumentationSetFile();
 
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration

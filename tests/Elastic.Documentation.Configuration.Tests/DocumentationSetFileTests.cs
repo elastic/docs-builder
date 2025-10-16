@@ -10,7 +10,9 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class DocumentationSetFileTests
 {
-	private DocumentationSetFile Deserialize(string yaml) => DocumentationSetFile.Deserialize(yaml);
+	// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
+	private DocumentationSetFile Deserialize(string yaml) =>
+		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 	[Fact]
 	public void DeserializesBasicProperties()
@@ -181,7 +183,7 @@ public class DocumentationSetFileTests
 		result.TableOfContents.Should().HaveCount(2);
 		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>();
 		result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>()
-			.Which.Source.Should().Be("development");
+			.Which.Path.Should().Be("development");
 	}
 
 	[Fact]
@@ -351,7 +353,7 @@ public class DocumentationSetFileTests
 
 		// Fourth item: toc reference
 		var tocRef = result.TableOfContents.ElementAt(3).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		tocRef.Source.Should().Be("development");
+		tocRef.Path.Should().Be("development");
 		tocRef.Children.Should().BeEmpty();
 	}
 
@@ -639,7 +641,7 @@ public class DocumentationSetFileTests
 
 		// Second item: development TOC (preserved as IsolatedTableOfContentsRef with resolved children)
 		var developmentToc = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		developmentToc.Source.Should().Be("development");
+		developmentToc.Path.Should().Be("development");
 		developmentToc.Children.Should().HaveCount(3, "should have index, contributing file, and internals folder");
 
 		developmentToc.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()
@@ -664,7 +666,7 @@ public class DocumentationSetFileTests
 
 		// Advanced TOC preserved as IsolatedTableOfContentsRef within guides folder
 		var advancedToc = guidesFolder.Children.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		advancedToc.Source.Should().Be("advanced");
+		advancedToc.Path.Should().Be("advanced");
 		advancedToc.Children.Should().HaveCount(2);
 
 		advancedToc.Children.ElementAt(0).Should().BeOfType<IndexFileRef>()

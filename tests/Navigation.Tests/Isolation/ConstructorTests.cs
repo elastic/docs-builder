@@ -21,8 +21,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		             - file: index.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -49,8 +51,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		             - file: index.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -67,8 +71,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		             - file: getting-started.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -91,8 +97,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		             - hidden: 404.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -113,8 +121,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		               crosslink: docs-content://guide.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -138,8 +148,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		                 - file: install.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
-		var context = CreateContext();
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
+		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -174,9 +186,10 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		              """;
 
 		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
 		fileSystem.AddDirectory("/docs/api");
 		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -213,8 +226,9 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/api");
 		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
+		fileSystem.AddDirectory("/docs");
 
-		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
+		var docSet = DocumentationSetFile.LoadAndResolve(docSetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -252,8 +266,9 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fileSystem.AddDirectory("/docs/api");
 		fileSystem.AddDirectory("/docs/api/extra");
 		fileSystem.AddFile("/docs/api/toc.yml", new MockFileData(tocYaml));
+		fileSystem.AddDirectory("/docs");
 
-		var docSet = DocumentationSetFile.Deserialize(docSetYaml);
+		var docSet = DocumentationSetFile.LoadAndResolve(docSetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 

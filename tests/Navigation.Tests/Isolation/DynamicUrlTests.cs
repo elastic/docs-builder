@@ -23,7 +23,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		                 - file: install.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -64,7 +66,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		                     - file: deep.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -93,7 +97,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		                 - file: advanced.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -117,7 +123,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		                     - file: advanced.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -148,10 +156,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		               children:
 		                 - file: clients/getting-started.md
 		                   children:
-		                     - file: clients/advanced.md
+		                     - file: advanced.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -182,10 +192,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		               children:
 		                 - file: clients/index.md
 		                   children:
-		                     - file: clients/advanced.md
+		                     - file: advanced.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -218,7 +230,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		                 - file: advanced.md
 		           """;
 
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext();
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -249,7 +263,7 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/guides/api");
 		fileSystem.AddFile("/docs/guides/api/toc.yml", new MockFileData(tocYaml));
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);

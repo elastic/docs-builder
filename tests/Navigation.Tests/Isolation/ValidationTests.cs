@@ -27,8 +27,8 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/api");
-		fileSystem.AddDirectory("/docs/api/nested-toc");
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
@@ -55,8 +55,8 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		           """;
 
 		var fileSystem = new MockFileSystem();
-		fileSystem.AddDirectory("/docs/api");
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
@@ -90,8 +90,8 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/setup/advanced");
-		fileSystem.AddDirectory("/docs/setup/advanced/performance");
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
@@ -126,8 +126,8 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/docs/guides/api");
-		fileSystem.AddDirectory("/docs/docs/guides/api/endpoints");
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		fileSystem.AddDirectory("/docs");
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
@@ -155,8 +155,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/api");
 		// Note: not adding /docs/api/toc.yml file
-
-		var docSet = DocumentationSetFile.Deserialize(yaml);
+		var docSet = DocumentationSetFile.LoadAndResolve(yaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 		var context = CreateContext(fileSystem);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 

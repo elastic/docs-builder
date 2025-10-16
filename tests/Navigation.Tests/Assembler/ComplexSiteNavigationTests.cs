@@ -49,8 +49,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docsetYaml = fileSystem.File.ReadAllText(docsetPath);
-			var docset = DocumentationSetFile.Deserialize(docsetYaml);
+			var docset = DocumentationSetFile.LoadAndResolve(fileSystem.FileInfo.New(docsetPath), fileSystem);
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
@@ -124,8 +123,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
@@ -172,8 +171,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
@@ -229,8 +228,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.Deserialize(
-			fileSystem.File.ReadAllText("/checkouts/current/platform/docs/docset.yml"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{

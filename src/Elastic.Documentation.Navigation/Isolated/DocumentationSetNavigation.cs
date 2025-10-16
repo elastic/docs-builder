@@ -160,9 +160,9 @@ public class DocumentationSetNavigation<TModel>
 	) =>
 		tocItem switch
 		{
-			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, prefixProvider, parentPath),
+			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, root, prefixProvider),
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, root),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth, parentPath),
+			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, root, prefixProvider, depth),
 			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, root, prefixProvider, depth, parentPath),
 			_ => null
 		};
@@ -186,44 +186,6 @@ public class DocumentationSetNavigation<TModel>
 		var virtualFileNavigationArgs = new VirtualFileNavigationArgs(fullPath, hidden, index, 0, parent, root, prefixProvider, []);
 		return new VirtualFileNavigation<TModel>(documentationFile, fileInfo, virtualFileNavigationArgs);
 	}
-
-	/// <summary>
-	/// Resolves the relative path for URL generation, handling parent path and deeplinked paths.
-	/// </summary>
-	private static string ResolveFileRelativePath(string fileRefPath, string parentPath)
-	{
-		if (string.IsNullOrEmpty(parentPath))
-			return fileRefPath;
-
-		// Extract parent's directory (everything before the last /)
-		var parentDir = parentPath.Contains('/')
-			? parentPath[..parentPath.LastIndexOf('/')]
-			: "";
-
-		// Extract child's directory from fileRef.Path
-		var childDir = fileRefPath.Contains('/')
-			? fileRefPath[..fileRefPath.LastIndexOf('/')]
-			: "";
-
-		// Check for deeplinked paths where child's directory is already in parent path
-		// Case 1: parentDir ends with childDir (e.g., parentPath="guides/clients/getting-started", childDir="clients")
-		// Case 2: parentPath ends with childDir (e.g., parentPath="guides/clients", childDir="clients")
-		return !string.IsNullOrEmpty(childDir) &&
-			(parentDir == childDir || parentDir.EndsWith($"/{childDir}", StringComparison.Ordinal) ||
-				parentPath.EndsWith(childDir, StringComparison.Ordinal))
-			? fileRefPath[(childDir.Length + 1)..] // Strip child's directory from path
-			: fileRefPath.StartsWith($"{parentPath}/", StringComparison.Ordinal)
-				? fileRefPath[(parentPath.Length + 1)..] // If file path starts with parent path, extract just the relative part
-				: fileRefPath;
-	}
-
-	/// <summary>
-	/// Combines parent path with relative path to create the full file path.
-	/// </summary>
-	private static string CreateFullFilePath(string relativePathForUrl, string parentPath) =>
-		string.IsNullOrEmpty(parentPath)
-			? relativePathForUrl
-			: $"{parentPath}/{relativePathForUrl}";
 
 	/// <summary>
 	/// Resolves TOC path handling overlapping path segments to avoid duplication.
@@ -264,33 +226,16 @@ public class DocumentationSetNavigation<TModel>
 	}
 
 	/// <summary>
-	/// Resolves the file info based on the context and prefix provider.
+	/// Resolves the file info based on the file path. Since LoadAndResolve has already processed paths,
+	/// we simply combine the documentation source directory with the file path.
 	/// </summary>
 	private static IFileInfo ResolveFileInfo(
 		IDocumentationSetContext context,
-		IPathPrefixProvider prefixProvider,
-		string relativePathForUrl,
-		string fullPath)
+		string filePath)
 	{
 		var fs = context.ReadFileSystem;
-
-		// When inside a TOC, files are relative to the TOC directory, not the parent path
-		// Check both actual TableOfContentsNavigation and temporary placeholders
-		var tocDirectory = prefixProvider switch
-		{
-			TableOfContentsNavigation toc => toc.TableOfContentsDirectory,
-			TemporaryNavigationPlaceholder placeholder => placeholder.TableOfContentsDirectory,
-			_ => null
-		};
-
-		if (tocDirectory != null)
-		{
-			// For TOC children, use the TOC directory as the base
-			return fs.FileInfo.New(fs.Path.Combine(tocDirectory.FullName, relativePathForUrl));
-		}
-
-		// For other files, use the documentation source directory + full path
-		return fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, fullPath));
+		// FileRef.Path already contains the correct path from LoadAndResolve
+		return fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, filePath));
 	}
 
 	/// <summary>
@@ -311,32 +256,16 @@ public class DocumentationSetNavigation<TModel>
 	}
 
 	/// <summary>
-	/// Computes the parent path for children by removing .md extension and /index suffix if present.
-	/// </summary>
-	private static string DetermineParentPathForChildren(string fullPath)
-	{
-		// Remove .md extension
-		var parentPathForChildren = fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fullPath[..^3]
-			: fullPath;
-
-		// If this is an index file, also remove the /index suffix for children's parent path
-		if (parentPathForChildren.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
-			parentPathForChildren = parentPathForChildren[..^6]; // Remove "/index"
-
-		return parentPathForChildren;
-	}
-
-	/// <summary>
 	/// Processes children recursively and returns the list of navigation items.
+	/// Since LoadAndResolve has already prepended parent paths to all children,
+	/// we pass an empty parentPath to avoid double-prepending paths.
 	/// </summary>
 	private List<INavigationItem> ProcessFileChildren(
 		FileRef fileRef,
 		IDocumentationSetContext context,
 		INodeNavigationItem<TModel, INavigationItem> tempFileNavigation,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider,
-		string parentPathForChildren)
+		IPathPrefixProvider prefixProvider)
 	{
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
@@ -348,7 +277,7 @@ public class DocumentationSetNavigation<TModel>
 				(INodeNavigationItem<INavigationModel, INavigationItem>)tempFileNavigation, root,
 				prefixProvider, // Files don't change the URL root
 				0, // Depth will be set by child
-				parentPathForChildren
+				"" // Empty parentPath because LoadAndResolve already resolved all paths
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -403,20 +332,14 @@ public class DocumentationSetNavigation<TModel>
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
-		IPathPrefixProvider prefixProvider,
-		string parentPath
+		IPathPrefixProvider prefixProvider
 	)
 	{
-		var test = "config-file-format-type.md";
-		if (fileRef.Path.EndsWith(test, StringComparison.OrdinalIgnoreCase))
-		{
-		}
-		// Resolve paths
-		var relativePathForUrl = ResolveFileRelativePath(fileRef.Path, parentPath);
-		var fullPath = CreateFullFilePath(relativePathForUrl, parentPath);
+		// FileRef.Path already contains the correct path from LoadAndResolve
+		var fullPath = fileRef.Path;
 
 		// Create file info and documentation file
-		var fileInfo = ResolveFileInfo(context, prefixProvider, relativePathForUrl, fullPath);
+		var fileInfo = ResolveFileInfo(context, fullPath);
 		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
 		if (documentationFile == null)
 			return null;
@@ -432,8 +355,8 @@ public class DocumentationSetNavigation<TModel>
 		var tempFileNavigation = CreateTemporaryFileNavigation(documentationFile, fileInfo, fullPath, fileRef.Hidden, index, parent, root, prefixProvider);
 
 		// Process children recursively
-		var parentPathForChildren = DetermineParentPathForChildren(fullPath);
-		var children = ProcessFileChildren(fileRef, context, tempFileNavigation, root, prefixProvider, parentPathForChildren);
+		// Note: LoadAndResolve has already prepended parent paths to all children, so we don't need to calculate parentPathForChildren
+		var children = ProcessFileChildren(fileRef, context, tempFileNavigation, root, prefixProvider);
 
 		// Validate and order children
 		ValidateNavigationItems(children, context, fullPath);
@@ -488,12 +411,11 @@ public class DocumentationSetNavigation<TModel>
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		IRootNavigationItem<INavigationModel, INavigationItem> root,
 		IPathPrefixProvider prefixProvider,
-		int depth,
-		string parentPath
+		int depth
 	)
 	{
-		// Check for path overlap to avoid duplication
-		var folderPath = ResolveTocPath(parentPath, folderRef.Path);
+		// FolderRef.Path already contains the correct path from LoadAndResolve
+		var folderPath = folderRef.Path;
 
 		// Create temporary placeholder for parent reference
 		var children = new List<INavigationItem>();
@@ -518,7 +440,7 @@ public class DocumentationSetNavigation<TModel>
 				root,
 				prefixProvider, // Keep parent's prefix provider
 				depth + 1,
-				folderPath // Pass folder path for children
+				folderPath // Pass folderPath so TOCs inside folders can find their toc.yml files
 			);
 
 			if (childNav != null)
@@ -667,14 +589,14 @@ public class DocumentationSetNavigation<TModel>
 		{
 			// Nested TOC: use parent TOC's directory as base
 			tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-				context.ReadFileSystem.Path.Combine(parentTocDirectory.FullName, tocRef.Source)
+				context.ReadFileSystem.Path.Combine(parentTocDirectory.FullName, tocRef.Path)
 			);
 			// Extract the relative path from the documentation source directory
 			var fullPath = tocDirectory.FullName;
 			var basePath = context.DocumentationSourceDirectory.FullName.TrimEnd('/');
 			tocPath = fullPath.StartsWith(basePath, StringComparison.Ordinal)
 				? fullPath[(basePath.Length + 1)..]
-				: tocRef.Source;
+				: tocRef.Path;
 		}
 		else
 		{
@@ -690,8 +612,8 @@ public class DocumentationSetNavigation<TModel>
 			{
 				// Inside a TOC: resolve relative to the parent TOC's directory
 				tocPath = string.IsNullOrEmpty(parentPath)
-					? tocRef.Source
-					: ResolveTocPath(parentPath, tocRef.Source);
+					? tocRef.Path
+					: ResolveTocPath(parentPath, tocRef.Path);
 
 				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 					context.ReadFileSystem.Path.Combine(parentTocDir.FullName, tocPath)
@@ -701,7 +623,7 @@ public class DocumentationSetNavigation<TModel>
 			{
 				// Root-level: use parentPath (which comes from folder structure)
 				// Check for path overlap to avoid duplication
-				tocPath = ResolveTocPath(parentPath, tocRef.Source);
+				tocPath = ResolveTocPath(parentPath, tocRef.Path);
 
 				tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
 					context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, tocPath)
@@ -721,7 +643,7 @@ public class DocumentationSetNavigation<TModel>
 		// Create the TOC navigation that will be the parent for children
 		// For TOCs nested under other TOCs, use just the source name since the parent TOC's path is the base
 		// For TOCs at root or under folders, use the full tocPath
-		var navigationParentPath = (parent != null && parentTocDirectory != null) ? tocRef.Source : tocPath;
+		var navigationParentPath = (parent != null && parentTocDirectory != null) ? tocRef.Path : tocPath;
 
 		var placeholderNavigation = new TemporaryNavigationPlaceholder(
 			depth + 1,
@@ -737,7 +659,9 @@ public class DocumentationSetNavigation<TModel>
 		var children = new List<INavigationItem>();
 		var childIndex = 0;
 
-		// First, process items from the toc.yml file if it exists
+		// Always use tocFile.TableOfContents which contains unresolved children from toc.yml
+		// LoadAndResolve resolves children relative to the base directory, but TOC navigation
+		// needs children relative to the TOC directory, so we ignore tocRef.Children
 		if (tocFile != null)
 		{
 			foreach (var child in tocFile.TableOfContents)
@@ -756,15 +680,6 @@ public class DocumentationSetNavigation<TModel>
 				if (childNav != null)
 					children.Add(childNav);
 			}
-		}
-
-		// Validate that TOC references should not have children defined in navigation
-		if (tocRef.Children.Count > 0)
-		{
-			context.EmitError(
-				context.ConfigurationPath,
-				$"TableOfContents '{tocRef.Source}' may not contain children, define children in '{tocRef.Source}/toc.yml' instead."
-			);
 		}
 
 		// Validate TOCs have children
