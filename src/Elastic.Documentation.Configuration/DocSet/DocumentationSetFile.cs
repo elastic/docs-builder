@@ -129,8 +129,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// Resolves an IsolatedTableOfContentsRef by loading the TOC file and returning a new ref with resolved children.
 	/// If the TOC has children defined in parent YAML (tocRef.Children), those are preserved so DocumentationSetNavigation
 	/// can emit a validation error. Otherwise, children are loaded from toc.yml and resolved with parent paths prepended.
-	/// Unlike folders and files, TOC refs keep their relative path (not prepended with parent path) because they
-	/// establish a new navigation context. However, their children DO get the full path prepended.
+	/// The TOC's path is set to the full path (including parent path) for consistency with files and folders.
 	/// </summary>
 	private static ITableOfContentsItem? ResolveIsolatedToc(
 		IsolatedTableOfContentsRef tocRef,
@@ -146,14 +145,14 @@ public class DocumentationSetFile : TableOfContentsFile
 		// If TOC has children in parent YAML, preserve them for validation
 		// DocumentationSetNavigation will emit an error for this case
 		if (tocRef.Children.Count > 0)
-			return new IsolatedTableOfContentsRef(tocRef.Path, tocRef.Children, parentContext);
+			return new IsolatedTableOfContentsRef(fullTocPath, tocRef.Children, parentContext);
 
 		// Load and resolve children from toc.yml file
 		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, fullTocPath));
 		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
 
 		if (!fileSystem.File.Exists(tocFilePath))
-			return new IsolatedTableOfContentsRef(tocRef.Path, [], parentContext); // Return empty children, DocumentationSetNavigation will emit error
+			return new IsolatedTableOfContentsRef(fullTocPath, [], parentContext); // Return empty children, DocumentationSetNavigation will emit error
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		var tocFile = TableOfContentsFile.Deserialize(tocYaml);
@@ -163,9 +162,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		// The context for children is the toc.yml file that defines them
 		var resolvedChildren = ResolveTableOfContents(tocFile.TableOfContents, baseDirectory, fileSystem, fullTocPath, tocFilePath);
 
-		// Return TOC ref with original relative path, but with resolved children
+		// Return TOC ref with FULL path and resolved children
 		// The context remains the parent context (where this TOC was referenced)
-		return new IsolatedTableOfContentsRef(tocRef.Path, resolvedChildren, parentContext);
+		return new IsolatedTableOfContentsRef(fullTocPath, resolvedChildren, parentContext);
 	}
 
 	/// <summary>

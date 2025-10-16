@@ -306,6 +306,13 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(docsetYaml, fileSystem.DirectoryInfo.New("/docs"), fileSystem);
 
+		var setup = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f=>f.Path == "setup");
+		setup.Should().NotBeNull("setup folder should exist");
+		setup.Children.Count.Should().Be(3, "should include 2 children");
+		var advanced = setup.Children.OfType<IsolatedTableOfContentsRef>().FirstOrDefault();
+		advanced.Should().NotBeNull("advanced TOC should exist");
+		advanced.Path.Should().Be("setup/advanced");
+
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
